@@ -1,0 +1,9 @@
+{
+    "recommendations": [
+        "svelte.svelte-vscode",
+        "ms-vscode-remote.remote-containers",
+        "antfu.vite",
+        "bradlc.vscode-tailwindcss",
+        "esbenp.prettier-vscode"
+    ]
+}
