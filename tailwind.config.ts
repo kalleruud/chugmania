@@ -1,13 +1,13 @@
-import aspectRatio from '@tailwindcss/aspect-ratio';
-import forms from '@tailwindcss/forms';
-import type { Config } from 'tailwindcss';
+import aspectRatio from '@tailwindcss/aspect-ratio'
+import forms from '@tailwindcss/forms'
+import type { Config } from 'tailwindcss'
 
 export default {
-	content: ['./src/**/*.{html,js,svelte,ts}'],
+  content: ['./src/**/*.{html,js,svelte,ts}'],
 
-	theme: {
-		extend: {}
-	},
+  theme: {
+    extend: {},
+  },
 
-	plugins: [forms, aspectRatio]
-} satisfies Config;
+  plugins: [forms, aspectRatio],
+} satisfies Config
