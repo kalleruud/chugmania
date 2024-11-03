@@ -1,5 +1,5 @@
-import { sqliteTable, text, integer, blob } from 'drizzle-orm/sqlite-core'
 import { randomUUID } from 'crypto'
+import { blob, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
 export type TrackLevel = 'white' | 'green' | 'blue' | 'red' | 'black' | 'custom'
 export type TrackType = 'drift' | 'valley' | 'lagoon' | 'stadium'
