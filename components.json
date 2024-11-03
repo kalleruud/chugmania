@@ -7,8 +7,8 @@
     "baseColor": "stone"
   },
   "aliases": {
-    "components": "src/lib/components",
-    "utils": "src/lib/utils"
+    "components": "$lib/components",
+    "utils": "$lib/utils"
   },
   "typescript": true
 }
