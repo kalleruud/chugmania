@@ -42,7 +42,7 @@ export const actions = {
       const { email, password, name } = getFields(await request.formData())
       console.debug('Registering user with email:', email)
 
-      const user = await db.register(email, password!, name!)
+      await db.register(email, password!, name!)
       const token = await db.login(email, password!)
       cookies.set('auth', token!, { path: '/' })
 
@@ -55,9 +55,9 @@ export const actions = {
 
 function getFields(data: FormData) {
   return {
-    email: data.get('email')!.toString()!.toLowerCase().trim(),
-    password: data.get('password')?.toString(),
-    name: data.get('name')?.toString(),
+    email: data.get('email')!.valueOf().toLocaleString().toLowerCase().trim(),
+    password: data.get('password')?.valueOf().toLocaleString(),
+    name: data.get('name')?.valueOf().toLocaleString(),
   }
 }
 
