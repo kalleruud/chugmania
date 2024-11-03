@@ -16,7 +16,6 @@
     if (!form) return
     console.debug('form', form)
     if (form.formMode) mode = form.formMode
-    console.debug('mode', mode)
   })
 
   function getDetails(mode: FormMode) {
@@ -67,7 +66,6 @@
             required
             autocomplete="email"
             placeholder="jeghar@litentiss.no"
-            disabled={mode !== 'lookup'}
           />
         </fieldset>
         {#if mode === 'register'}
