@@ -66,6 +66,7 @@
 		"zod": "^3.23.8"
 	},
 	"dependencies": {
+		"@fontsource/titillium-web": "^5.1.0",
 		"better-sqlite3": "^11.1.2",
 		"drizzle-orm": "^0.33.0",
 		"jsonwebtoken": "^9.0.2",

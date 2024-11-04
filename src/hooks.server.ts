@@ -23,5 +23,7 @@ export const handle: Handle = async ({ event, resolve }) => {
     throw redirect(302, '/login')
   }
 
-  return resolve(event)
+  return resolve(event, {
+    preload: ({ type }) => type === 'font' || type === 'js' || type === 'css',
+  })
 }
