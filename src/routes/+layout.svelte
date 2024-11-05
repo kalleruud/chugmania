@@ -1,52 +1,57 @@
 <script lang="ts">
   import House from 'lucide-svelte/icons/house'
-  import Package2 from 'lucide-svelte/icons/package-2'
-  import ShoppingCart from 'lucide-svelte/icons/shopping-cart'
-
-  import { ModeToggle } from '@/components/ui/mode-toggle'
+  import Flag from 'lucide-svelte/icons/flag'
+  import Sun from 'lucide-svelte/icons/sun'
+  import Moon from 'lucide-svelte/icons/moon'
+  import { resetMode, setMode } from 'mode-watcher'
+  import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js'
+  import { Button } from '$lib/components/ui/button/index.js'
+  import { page } from '$app/stores'
   import '@fontsource/titillium-web'
   import { ModeWatcher } from 'mode-watcher'
   import '../app.css'
 
   let { children } = $props()
+  const buttonClass =
+    'flex h-9 w-9 items-center justify-center rounded-lg text-accent-foreground transition-colors hover:text-foreground md:h-8 md:w-8'
 </script>
 
 <ModeWatcher />
-<div class="flex min-h-screen w-full flex-col bg-muted/40">
+<div class="flex min-h-screen w-full flex-col">
   <aside class="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex">
     <nav class="flex flex-col items-center gap-4 px-2 sm:py-5">
-      <a
-        href="##"
-        class="group flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-lg font-semibold text-primary-foreground md:h-8 md:w-8 md:text-base"
-      >
-        <Package2 class="h-4 w-4 transition-all group-hover:scale-110" />
-        <span class="sr-only">Acme Inc</span>
-      </a>
-
-      <a
-        href="##"
-        class="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
-      >
+      <a href="/" class={buttonClass} class:bg-accent={$page.url.pathname === '/'}>
         <House class="h-5 w-5" />
-        <span class="sr-only">Dashboard</span>
+        <span class="sr-only">Home</span>
       </a>
-      <a
-        href="##"
-        class="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-accent-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
-      >
-        <ShoppingCart class="h-5 w-5" />
-        <span class="sr-only">Orders</span>
+      <a href="/sessions" class={buttonClass} class:bg-accent={$page.url.pathname === '/sessions'}>
+        <Flag class="h-5 w-5" />
+        <span class="sr-only">Sessions</span>
       </a>
     </nav>
     <nav class="mt-auto flex flex-col items-center gap-4 px-2 sm:py-5">
-      <a
-        href="##"
-        class="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
-      >
-        <ModeToggle />
-        <span class="sr-only">Settings</span>
-      </a>
+      <div class={buttonClass}>
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger asChild let:builder>
+            <Button builders={[builder]} variant="ghost" size="icon">
+              <Sun class="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+              <Moon
+                class="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
+              />
+              <span class="sr-only">Toggle theme</span>
+            </Button>
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content align="end">
+            <DropdownMenu.Item on:click={() => setMode('light')}>Light</DropdownMenu.Item>
+            <DropdownMenu.Item on:click={() => setMode('dark')}>Dark</DropdownMenu.Item>
+            <DropdownMenu.Item on:click={() => resetMode()}>System</DropdownMenu.Item>
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
+        <span class="sr-only">Display mode</span>
+      </div>
     </nav>
   </aside>
-  {@render children()}
+  <div class="sm:pl-14">
+    {@render children()}
+  </div>
 </div>
