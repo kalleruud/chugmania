@@ -1,5 +1,5 @@
 import { verifyToken } from '$lib/server/db'
-import { redirect, type Handle } from '@sveltejs/kit'
+import { fail, redirect, type Handle } from '@sveltejs/kit'
 
 export const handle: Handle = async ({ event, resolve }) => {
   const token = event.cookies.get('auth')
@@ -11,7 +11,7 @@ export const handle: Handle = async ({ event, resolve }) => {
       event.cookies.delete('auth', { path: '/' })
       throw redirect(302, '/login')
     }
-    console.log(event.url.pathname)
+
     if (event.url.pathname === '/login') {
       // Redirect to home page
       console.info('User logged in, redirecting to home page')
@@ -25,5 +25,13 @@ export const handle: Handle = async ({ event, resolve }) => {
 
   return resolve(event, {
     preload: ({ type }) => type === 'font' || type === 'js' || type === 'css',
+  })
+}
+
+export function handleError(error: unknown) {
+  console.error(error)
+  return fail(500, {
+    message: error instanceof Error ? error.message : 'Something went wrong',
+    error: error,
   })
 }
