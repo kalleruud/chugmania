@@ -2,7 +2,7 @@ import Database from 'better-sqlite3'
 import { eq } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/better-sqlite3'
 import { generateTracks } from './data'
-import { tracks, users } from './schema'
+import { sessions, tracks, users } from './schema'
 import jwt from 'jsonwebtoken'
 
 const db = drizzle(new Database('local.db'))
@@ -35,6 +35,16 @@ export function verifyToken(token: string) {
     console.error('Failed to verify token:', error.message)
     return
   }
+}
+
+export async function getSessions() {
+  console.debug('Getting sessions')
+  return await db.select().from(sessions).orderBy(sessions.date).limit(10)
+}
+
+export async function createSession(session: typeof sessions.$inferInsert) {
+  console.debug('Creating session')
+  return await db.insert(sessions).values(session).returning()
 }
 
 async function findUser(email: string) {
