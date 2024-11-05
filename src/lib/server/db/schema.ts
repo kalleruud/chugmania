@@ -28,8 +28,14 @@ export const users = sqliteTable('users', {
 
 export const sessions = sqliteTable('sessions', {
   ...common,
-  date: integer('date').notNull(),
+  description: text('description'),
+  date: integer('date', { mode: 'timestamp' })
+    .notNull()
+    .$defaultFn(() => new Date()),
   type: text('type').$type<SessionType>().notNull(),
+  createdBy: text('created_by')
+    .notNull()
+    .references(() => users.id),
 })
 
 export const tracks = sqliteTable('tracks', {
