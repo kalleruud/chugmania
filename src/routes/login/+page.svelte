@@ -77,7 +77,7 @@
               type="text"
               required
               placeholder="Judas"
-              minlength={2}
+              minlength={3}
               autocomplete="name"
             />
           </fieldset>
