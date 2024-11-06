@@ -1,9 +1,9 @@
 import { randomUUID } from 'crypto'
 import { blob, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import type { SessionType } from '../managers/session.manager'
 
 export type TrackLevel = 'white' | 'green' | 'blue' | 'red' | 'black' | 'custom'
 export type TrackType = 'drift' | 'valley' | 'lagoon' | 'stadium'
-export type SessionType = 'practice' | 'tournament'
 
 const common = {
   id: text('id').primaryKey().$defaultFn(randomUUID),

@@ -1,11 +1,11 @@
 import Database from 'better-sqlite3'
 import { eq } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/better-sqlite3'
-import { generateTracks } from './data'
-import { sessions, tracks, users } from './schema'
 import jwt from 'jsonwebtoken'
+import { generateTracks } from './data'
+import { timeEntries, tracks, users } from './schema'
 
-const db = drizzle(new Database('local.db'))
+export const db = drizzle(new Database('local.db'))
 
 // Seed the database with tracks if it's empty
 db.select()
@@ -37,14 +37,13 @@ export function verifyToken(token: string) {
   }
 }
 
-export async function getSessions() {
-  console.debug('Getting sessions')
-  return await db.select().from(sessions).orderBy(sessions.date).limit(10)
-}
-
-export async function createSession(session: typeof sessions.$inferInsert) {
-  console.debug('Creating session')
-  return await db.insert(sessions).values(session).returning()
+export async function getTimeEntries(sessionId: string) {
+  console.debug('Getting time entries for session:', sessionId)
+  return await db
+    .select()
+    .from(timeEntries)
+    .where(eq(timeEntries.session, sessionId))
+    .orderBy(timeEntries.duration)
 }
 
 async function findUser(email: string) {
