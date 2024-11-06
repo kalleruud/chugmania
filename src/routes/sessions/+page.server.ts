@@ -1,12 +1,12 @@
-import * as db from '$lib/server/db'
 import { verifyToken } from '$lib/server/db'
+import SessionManager from '@/server/managers/session.manager'
 import { fail, type Actions } from '@sveltejs/kit'
 import { handleError } from '../../hooks.server'
 import type { PageServerLoad } from './$types'
 
 export const load = (async () => {
   return {
-    sessions: await db.getSessions(),
+    sessions: await SessionManager.getAll(),
   }
 }) satisfies PageServerLoad
 
@@ -20,7 +20,7 @@ export const actions = {
       const user = verifyToken(token)
       if (!user) return fail(401, { message: 'Invalid token' })
 
-      await db.createSession({
+      await SessionManager.create({
         type: 'practice',
         createdBy: user.id,
       })

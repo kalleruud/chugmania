@@ -5,25 +5,10 @@
   import ChevronRight from 'lucide-svelte/icons/chevron-right'
   import Flag from 'lucide-svelte/icons/flag'
   import type { PageData } from './$types'
-  import type { SessionType } from '@/server/db/schema'
 
   let { data }: { data: PageData } = $props()
-  const timeFormat = new Intl.RelativeTimeFormat('nb')
-
-  const typeString: Record<SessionType, string> = {
-    practice: 'Practice',
-    tournament: 'Turnering',
-  }
-
-  function formatDate(then: Date) {
-    const now = new Date()
-    const diff = then.getTime() - now.getTime()
-    return timeFormat.format(Math.floor(diff / (1000 * 60 * 60 * 24)), 'days')
-  }
 
   function relativeDay(then: Date) {
-    const now = new Date()
-    const diff = then.getTime() - now.getTime()
     return then.toLocaleDateString('nb', { weekday: 'long', month: 'long', day: 'numeric' })
   }
 </script>
@@ -42,7 +27,7 @@
           <div class="flex gap-2">
             <Flag class="h-6 w-6" />
             <div>
-              <Card.Title>{session.description ?? typeString[session.type]}</Card.Title>
+              <Card.Title>{session.description ?? session.typeString}</Card.Title>
               <Card.Description>{relativeDay(session.date)}</Card.Description>
             </div>
           </div>
