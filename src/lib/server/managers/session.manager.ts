@@ -1,11 +1,11 @@
 import { db } from '$lib/server/db'
 import { eq } from 'drizzle-orm'
-import { sessions } from '../db/schema'
+import { sessions } from '$lib/server/db/schema'
 
 export type SessionType = 'practice' | 'tournament'
 
 export default class SessionManager {
-  static typeString: Record<SessionType, string> = {
+  private static readonly typeString: Record<SessionType, string> = {
     practice: 'Practice',
     tournament: 'Turnering',
   }
