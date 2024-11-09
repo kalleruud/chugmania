@@ -1,14 +1,13 @@
 <script lang="ts">
-  import House from 'lucide-svelte/icons/house'
-  import Flag from 'lucide-svelte/icons/flag'
-  import Sun from 'lucide-svelte/icons/sun'
-  import Moon from 'lucide-svelte/icons/moon'
-  import { resetMode, setMode } from 'mode-watcher'
-  import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js'
-  import { Button } from '$lib/components/ui/button/index.js'
   import { page } from '$app/stores'
+  import { Button } from '$lib/components/ui/button/index.js'
+  import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js'
   import '@fontsource/titillium-web'
-  import { ModeWatcher } from 'mode-watcher'
+  import Flag from 'lucide-svelte/icons/flag'
+  import House from 'lucide-svelte/icons/house'
+  import Moon from 'lucide-svelte/icons/moon'
+  import Sun from 'lucide-svelte/icons/sun'
+  import { ModeWatcher, resetMode, setMode } from 'mode-watcher'
   import '../app.css'
 
   let { children } = $props()
@@ -17,11 +16,11 @@
 </script>
 
 <ModeWatcher />
-<div class="flex min-h-screen w-full flex-col">
+<div class="flex w-screen flex-col">
   <aside class="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex">
     <nav class="flex flex-col items-center gap-4 px-2 sm:py-5">
       <a href="/" class={buttonClass} class:bg-accent={$page.url.pathname === '/'}>
-        <House class="h-5 w-5" />
+        <House class="size-5" />
         <span class="sr-only">Home</span>
       </a>
       <a
@@ -29,7 +28,7 @@
         class={buttonClass}
         class:bg-accent={$page.url.pathname.includes('/sessions')}
       >
-        <Flag class="h-5 w-5" />
+        <Flag class="size-5" />
         <span class="sr-only">Sessions</span>
       </a>
     </nav>
@@ -38,9 +37,9 @@
         <DropdownMenu.Root>
           <DropdownMenu.Trigger asChild let:builder>
             <Button builders={[builder]} variant="ghost" size="icon">
-              <Sun class="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+              <Sun class="size-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
               <Moon
-                class="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
+                class="absolute size-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
               />
               <span class="sr-only">Toggle theme</span>
             </Button>

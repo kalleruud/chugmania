@@ -41,8 +41,8 @@
   }
 </script>
 
-<div class="flex h-screen items-center justify-center">
-  <Card.Root class="w-full max-w-sm">
+<div class="flex h-dvh items-center justify-center">
+  <Card.Root class="mx-4 w-full md:max-w-sm">
     <Card.Header>
       <Card.Title class="text-2xl">{details.title}</Card.Title>
       <Card.Description>{details.description}</Card.Description>
