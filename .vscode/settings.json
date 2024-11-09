@@ -2,6 +2,7 @@
   "editor.tabSize": 2,
   "editor.detectIndentation": false,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "css.customData": [".vscode/tailwind.json"],
 
   "files.exclude": {
     "*.d.ts": true,
