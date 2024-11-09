@@ -40,7 +40,7 @@ export const sessions = sqliteTable('sessions', {
 
 export const tracks = sqliteTable('tracks', {
   ...common,
-  name: text('name').unique().notNull(),
+  number: integer('number').notNull(),
   level: text('level').$type<TrackLevel>().notNull(),
   type: text('type').$type<TrackType>().notNull(),
   isChuggable: integer('is_chuggable', { mode: 'boolean' })

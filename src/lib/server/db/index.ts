@@ -2,23 +2,9 @@ import Database from 'better-sqlite3'
 import { eq } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/better-sqlite3'
 import jwt from 'jsonwebtoken'
-import { generateTracks } from './data'
-import { timeEntries, tracks, users } from './schema'
+import { timeEntries, users } from './schema'
 
 export const db = drizzle(new Database('local.db'))
-
-// Seed the database with tracks if it's empty
-db.select()
-  .from(tracks)
-  .then(result => {
-    if (result.length > 0) return
-    console.info('Adding tracks to the database')
-    db.insert(tracks)
-      .values(generateTracks())
-      .then(() => {
-        console.info('Tracks added successfully')
-      })
-  })
 
 const privateKey = crypto.getRandomValues(new Uint8Array(32)).toString()
 const jwtOptions: jwt.SignOptions = {

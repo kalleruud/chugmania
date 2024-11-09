@@ -1,5 +1,9 @@
 import { verifyToken } from '$lib/server/db'
+import TrackManager from '@/server/managers/track.manager'
 import { fail, redirect, type Handle } from '@sveltejs/kit'
+
+// Seed the database with tracks if it's empty
+TrackManager.init().then(() => console.info('Tracks initialized'))
 
 export const handle: Handle = async ({ event, resolve }) => {
   const token = event.cookies.get('auth')

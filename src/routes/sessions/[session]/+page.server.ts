@@ -3,10 +3,12 @@ import SessionManager from '@/server/managers/session.manager'
 import type { PageServerLoad } from './$types'
 import { fail, type Actions } from '@sveltejs/kit'
 import { handleError } from '../../../hooks.server'
+import TrackManager from '@/server/managers/track.manager'
 
 export const load = (async route => {
   return {
     session: await SessionManager.get(route.params.session),
+    tracks: await TrackManager.getAll(),
     entries: await db.getTimeEntries(route.params.session),
   }
 }) satisfies PageServerLoad
