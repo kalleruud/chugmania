@@ -1,60 +1,36 @@
 <script lang="ts">
   import { page } from '$app/stores'
-  import { Button } from '$lib/components/ui/button/index.js'
-  import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js'
   import '@fontsource/titillium-web'
   import Flag from 'lucide-svelte/icons/flag'
   import House from 'lucide-svelte/icons/house'
-  import Moon from 'lucide-svelte/icons/moon'
-  import Sun from 'lucide-svelte/icons/sun'
-  import { ModeWatcher, resetMode, setMode } from 'mode-watcher'
+  import { ModeWatcher } from 'mode-watcher'
   import '../app.css'
 
   let { children } = $props()
-  const buttonClass =
-    'flex h-9 w-9 items-center justify-center rounded-lg text-accent-foreground transition-colors hover:text-foreground md:h-8 md:w-8'
+  let { pathname } = $page.url
+
+  const navButtonClasses = (isSelected: boolean) =>
+    'flex flex-col items-center justify-center rounded-lg transition-colors hover:text-secondary-foreground' +
+    (isSelected ? ' text-foreground' : ' text-muted-foreground')
 </script>
 
 <ModeWatcher />
-<div class="flex w-screen flex-col">
-  <aside class="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col border-r bg-background sm:flex">
-    <nav class="flex flex-col items-center gap-4 px-2 sm:py-5">
-      <a href="/" class={buttonClass} class:bg-accent={$page.url.pathname === '/'}>
+<div class="w-dvh flex flex-col">
+  <aside
+    class="fixed left-0 z-10 flex bg-background max-sm:bottom-0 max-sm:h-16 max-sm:w-full max-sm:flex-row max-sm:place-content-center max-sm:border-t sm:inset-y-0 sm:w-20 sm:flex-col sm:border-r"
+  >
+    <nav class="flex gap-4 sm:flex-col sm:py-6">
+      <a href="/" class={navButtonClasses(pathname === '/')}>
         <House class="size-5" />
-        <span class="sr-only">Home</span>
+        <span>Home</span>
       </a>
-      <a
-        href="/sessions"
-        class={buttonClass}
-        class:bg-accent={$page.url.pathname.includes('/sessions')}
-      >
+      <a href="/sessions" class={navButtonClasses(pathname.startsWith('/sessions'))}>
         <Flag class="size-5" />
-        <span class="sr-only">Sessions</span>
+        <span>Sessions</span>
       </a>
-    </nav>
-    <nav class="mt-auto flex flex-col items-center gap-4 px-2 sm:py-5">
-      <div class={buttonClass}>
-        <DropdownMenu.Root>
-          <DropdownMenu.Trigger asChild let:builder>
-            <Button builders={[builder]} variant="ghost" size="icon">
-              <Sun class="size-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-              <Moon
-                class="absolute size-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
-              />
-              <span class="sr-only">Toggle theme</span>
-            </Button>
-          </DropdownMenu.Trigger>
-          <DropdownMenu.Content align="end">
-            <DropdownMenu.Item on:click={() => setMode('light')}>Light</DropdownMenu.Item>
-            <DropdownMenu.Item on:click={() => setMode('dark')}>Dark</DropdownMenu.Item>
-            <DropdownMenu.Item on:click={() => resetMode()}>System</DropdownMenu.Item>
-          </DropdownMenu.Content>
-        </DropdownMenu.Root>
-        <span class="sr-only">Display mode</span>
-      </div>
     </nav>
   </aside>
-  <div class="sm:pl-14">
+  <div class="sm:pl-20">
     {@render children()}
   </div>
 </div>
