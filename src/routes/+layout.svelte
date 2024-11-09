@@ -24,7 +24,7 @@
         <House class="h-5 w-5" />
         <span class="sr-only">Home</span>
       </a>
-      <a href="/sessions" class={buttonClass} class:bg-accent={$page.url.pathname === '/sessions'}>
+      <a href="/sessions" class={buttonClass} class:bg-accent={$page.url.pathname.includes('/sessions')}>
         <Flag class="h-5 w-5" />
         <span class="sr-only">Sessions</span>
       </a>
