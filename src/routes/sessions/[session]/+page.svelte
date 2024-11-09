@@ -1,9 +1,7 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
   import { Button } from '$lib/components/ui/button/index.js'
-  import * as Card from '$lib/components/ui/card/index.js'
-  import ChevronRight from 'lucide-svelte/icons/chevron-right'
-  import Flag from 'lucide-svelte/icons/flag'
+  import TrackGrid from '@/components/track-grid/track-grid.svelte'
   import type { PageData } from './$types'
 
   let { data }: { data: PageData } = $props()
@@ -21,19 +19,6 @@
         <Button type="submit">New</Button>
       </form>
     </div>
-    {#each data.entries as entry}
-      <a href={'entries/' + entry.id}>
-        <Card.Root class="flex items-center justify-between p-6 transition-colors hover:bg-accent">
-          <div class="flex gap-2">
-            <Flag class="h-6 w-6" />
-            <div>
-              <Card.Title>{entry.user}</Card.Title>
-              <Card.Description>{entry.duration}</Card.Description>
-            </div>
-          </div>
-          <ChevronRight class="h-6 w-6" />
-        </Card.Root>
-      </a>
-    {/each}
+    <TrackGrid tracks={data.tracks} onClick={track => console.log(`Clicked #${track.name}`)} />
   </main>
 </div>

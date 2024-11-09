@@ -4,11 +4,18 @@ import { tracks, type TrackLevel, type TrackType } from '$lib/server/db/schema'
 type InsertTrack = typeof tracks.$inferInsert
 type SelectTrack = typeof tracks.$inferSelect
 
+export type Track = SelectTrack & {
+  name: string
+}
+
 export default class TrackManager {
-  static async getAll() {
+  static async getAll(): Promise<Track[]> {
     console.debug('Getting tracks')
     const items = await db.select().from(tracks).orderBy(tracks.number)
-    return items
+    return items.map(item => ({
+      ...item,
+      name: this.getNameOf(item),
+    }))
   }
 
   static async init() {
@@ -41,6 +48,6 @@ export default class TrackManager {
   }
 
   static getNameOf(track: SelectTrack) {
-    return `#${track.number.toString().padStart(2, '0')}`
+    return `${track.number.toString().padStart(2, '0')}`
   }
 }
