@@ -55,7 +55,9 @@ const config: Config = {
         sm: 'calc(var(--radius) - 4px)',
       },
       fontFamily: {
-        sans: [...fontFamily.sans],
+        sans: ['Titillium Web', ...fontFamily.sans],
+        f1: ['"Formula 1"', ...fontFamily.sans],
+        numeric: ['"Formula 1 Year"', ...fontFamily.sans],
       },
     },
   },

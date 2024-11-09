@@ -25,12 +25,12 @@
   font-weight: 900;
 }
 
-/* @font-face {
+@font-face {
   font-family: 'Formula 1';
   font-display: block;
   src: url('/fonts/f1/f1_wide.ttf') format('truetype');
-  font-stretch: wider;
-} */
+  font-stretch: expanded;
+}
 
 @font-face {
   font-family: 'Formula 1 Year';

@@ -80,10 +80,9 @@
   h4,
   h5,
   h6 {
-    font-family: 'Formula 1', sans-serif;
+    @apply font-f1;
   }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Titillium Web', sans-serif;
   }
 }
