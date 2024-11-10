@@ -1,29 +1,23 @@
-import { verifyToken } from '$lib/server/db'
 import SessionManager from '@/server/managers/session.manager'
-import { fail, type Actions } from '@sveltejs/kit'
+import { type Actions } from '@sveltejs/kit'
 import { handleError } from '../../hooks.server'
 import type { PageServerLoad } from './$types'
 
-export const load = (async () => {
+export const load = (async ({ locals }) => {
+  if (!locals.user) throw new Error('Unauthorized')
+
   return {
-    sessions: await SessionManager.getAll(),
+    sessions: await SessionManager.getAll(locals.user?.email),
   }
 }) satisfies PageServerLoad
 
 export const actions = {
-  create: async ({ cookies }) => {
+  create: async ({ locals }) => {
     try {
       console.debug('Received create session request')
-      const token = cookies.get('auth')
-      if (!token) return fail(401, { message: 'No token provided' })
+      if (!locals.user) throw new Error('Unauthorized')
 
-      const user = verifyToken(token)
-      if (!user) return fail(401, { message: 'Invalid token' })
-
-      await SessionManager.create({
-        type: 'practice',
-        createdBy: user.id,
-      })
+      await SessionManager.create('practice', locals.user)
 
       return { success: true }
     } catch (error) {
