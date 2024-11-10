@@ -1,4 +1,4 @@
-import { db } from '$lib/server/db'
+import db from '$lib/server/db'
 import { tracks, type TrackLevel, type TrackType } from '$lib/server/db/schema'
 
 type InsertTrack = typeof tracks.$inferInsert
@@ -47,7 +47,7 @@ export default class TrackManager {
     return items
   }
 
-  static getNameOf(track: SelectTrack) {
+  private static getNameOf(track: SelectTrack) {
     return `${track.number.toString().padStart(2, '0')}`
   }
 }

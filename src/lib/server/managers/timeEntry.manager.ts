@@ -1,9 +1,9 @@
-import { db } from '$lib/server/db'
+import db from '$lib/server/db'
 import { eq } from 'drizzle-orm'
 import { timeEntries } from '../db/schema'
 
 export default class TimeEntryManager {
-  static async getAll(sessionId: string) {
+  static async getBySession(sessionId: string) {
     console.debug('Getting time entries for session:', sessionId)
     const items = await db
       .select()

@@ -1,12 +1,13 @@
 // See https://svelte.dev/docs/kit/types#app.d.ts
-import type { users } from '$lib/server/db/schema'
+import type { PublicUser } from '@/server/managers/user.manager'
 
 // for information about these interfaces
 declare global {
   namespace App {
     // interface Error {}
     interface Locals {
-      user?: typeof users.$inferSelect
+      user?: PublicUser
+      redirect?: string
     }
     // interface PageData {}
     // interface PageState {}

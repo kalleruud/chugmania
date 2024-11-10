@@ -1,6 +1,6 @@
-import { db } from '$lib/server/db'
-import { eq } from 'drizzle-orm'
+import db from '$lib/server/db'
 import { sessions } from '$lib/server/db/schema'
+import { eq } from 'drizzle-orm'
 
 export type SessionType = 'practice' | 'tournament'
 
@@ -28,6 +28,9 @@ export default class SessionManager {
 
   static async create(session: typeof sessions.$inferInsert) {
     console.debug('Creating session')
-    return await db.insert(sessions).values(session).returning()
+    const items = await db.insert(sessions).values(session).returning()
+    const item = items.at(0)
+    if (!item) throw new Error('Failed to create session')
+    return item
   }
 }

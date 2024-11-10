@@ -13,9 +13,7 @@
   let details = $derived(getDetails(mode))
 
   $effect(() => {
-    if (!form) return
-    console.debug('form', form)
-    if (form.formMode) mode = form.formMode
+    if (form?.formMode) mode = form.formMode
   })
 
   function getDetails(mode: FormMode) {
@@ -41,6 +39,10 @@
   }
 </script>
 
+<svelte:head>
+  <title>Logg inn</title>
+</svelte:head>
+
 <div class="flex h-dvh items-center justify-center">
   <Card.Root class="mx-4 w-full md:max-w-sm">
     <Card.Header>
@@ -54,7 +56,7 @@
         method="POST"
         use:enhance={() =>
           async ({ update }) =>
-            update({ reset: false })}
+            await update({ reset: false })}
         action={`?/${mode}`}
       >
         <fieldset class="form-group grid gap-2">
@@ -63,6 +65,7 @@
             id="email"
             name="email"
             type="email"
+            autofocus={mode === 'lookup'}
             required
             autocomplete="email"
             placeholder="jeghar@litentiss.no"
@@ -75,27 +78,26 @@
               id="name"
               name="name"
               type="text"
-              required
               placeholder="Judas"
+              autofocus={mode === 'register'}
               minlength={3}
               autocomplete="name"
             />
           </fieldset>
         {/if}
-        {#if mode !== 'lookup'}
-          <fieldset class="form-group grid gap-2">
-            <Label for="password">Passord</Label>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              required
-              placeholder="passord123"
-              minlength={6}
-              autocomplete={mode === 'login' ? 'new-password' : 'current-password'}
-            />
-          </fieldset>
-        {/if}
+        <fieldset class="form-group grid gap-2" class:hidden={mode === 'lookup'}>
+          <Label for="password">Passord</Label>
+          <Input
+            id="password"
+            name="password"
+            type="password"
+            autofocus={mode === 'login'}
+            required={mode !== 'lookup'}
+            placeholder="passord123"
+            minlength={6}
+            autocomplete={mode === 'login' ? 'new-password' : 'current-password'}
+          />
+        </fieldset>
       </form>
     </Card.Content>
     <Card.Footer>
