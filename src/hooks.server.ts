@@ -7,20 +7,21 @@ import { fail, redirect, type Handle } from '@sveltejs/kit'
 TrackManager.init().then(() => console.info('Tracks initialized'))
 
 export const handle: Handle = async ({ event, resolve }) => {
-  if (!event.url.pathname.startsWith('/login')) {
-    const result = UserManager.verifyAuth(event.cookies)
-    if (isFailed(result)) {
-      console.warn(result.message + ',', 'redirecting to login page')
-      throw redirect(303, '/login')
+  const result = UserManager.verifyAuth(event.cookies)
+
+  if (isFailed(result)) {
+    console.warn(result.message)
+    if (!event.url.pathname.startsWith('/login')) {
+      console.debug('Redirecting to login page')
+      throw redirect(302, '/login')
     }
+  } else {
     event.locals.user = result
   }
 
-  const response = await resolve(event, {
+  return await resolve(event, {
     preload: ({ type }) => type === 'font' || type === 'js' || type === 'css',
   })
-
-  return response
 }
 
 export function handleError(error: unknown) {

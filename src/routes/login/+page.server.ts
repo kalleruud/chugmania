@@ -1,8 +1,15 @@
 import UserManager from '@/server/managers/user.manager'
-import { fail } from '@sveltejs/kit'
-import type { Actions } from './$types'
+import { fail, redirect } from '@sveltejs/kit'
+import type { Actions, PageServerLoad } from './$types'
+import { isFailed } from '@/server/managers/utils'
 
 export type FormMode = 'lookup' | 'register' | 'login'
+
+export const load = (async ({ locals }) => {
+  if (locals.user) throw redirect(303, locals.redirect ?? '/')
+
+  return {}
+}) satisfies PageServerLoad
 
 export const actions = {
   lookup: async ({ request }) => {
@@ -24,8 +31,8 @@ export const actions = {
       console.debug('Logging in user with email:', email)
       if (!password) return fail(400, { message: 'Password not provided' })
 
-      const token = await UserManager.loginEmail(email, password, cookies)
-      if (!token) return fail(401, { message: 'Invalid email or password' })
+      const result = await UserManager.loginEmail(email, password, cookies)
+      if (isFailed(result)) return fail(result.status, { message: result.message })
 
       return {}
     } catch (error) {
@@ -40,8 +47,9 @@ export const actions = {
       console.debug('Registering user with email:', email)
 
       await UserManager.register(email, password, name)
-      const token = await UserManager.loginEmail(email, password, cookies)
-      if (!token) return fail(500, { message: 'Failed to log in user after registration' })
+      const result = await UserManager.loginEmail(email, password, cookies)
+      if (isFailed(result))
+        return fail(500, { message: 'Failed to log in user after registration: ' + result.message })
 
       return {}
     } catch (error) {

@@ -1,4 +1,4 @@
-import { ISSUER, PRIVATE_KEY, TOKEN_EXPIRY } from '$env/static/private'
+import { ENV, ISSUER, PRIVATE_KEY, TOKEN_EXPIRY } from '$env/static/private'
 import db from '$lib/server/db'
 import { hash } from '@/utils'
 import { type Cookies } from '@sveltejs/kit'
@@ -93,7 +93,8 @@ export default class UserManager {
     }
 
     const token = this.generateToken(user)
-    cookies.set(authCookieKey, token, { path: '/' })
+    const isDev = ENV !== 'production'
+    cookies.set(authCookieKey, token, { path: '/', secure: !isDev })
 
     console.info('Logged in:', user.email)
     return token
