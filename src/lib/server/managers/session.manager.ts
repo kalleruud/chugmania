@@ -2,7 +2,10 @@ import db from '$lib/server/db'
 import { sessions } from '$lib/server/db/schema'
 import { eq } from 'drizzle-orm'
 import type { PublicUser } from './user.manager'
+import TrackManager from './track.manager'
+import TimeEntryManager from './timeEntry.manager'
 
+export type Session = typeof sessions.$inferSelect
 export type SessionType = 'practice' | 'tournament'
 
 export default class SessionManager {
@@ -43,5 +46,17 @@ export default class SessionManager {
     const item = items.at(0)
     if (!item) throw new Error('Failed to create session')
     return item
+  }
+
+  static async getTracksWithEntries(sessionId: string) {
+    console.debug('Getting tracks with entries for session:', sessionId)
+    const tracks = await TrackManager.getBySession(sessionId)
+    const entries = await TimeEntryManager.getBySession(sessionId)
+    return tracks.map(track => {
+      return {
+        ...track,
+        entries: entries.filter(entry => entry.track.id === track.id),
+      }
+    })
   }
 }

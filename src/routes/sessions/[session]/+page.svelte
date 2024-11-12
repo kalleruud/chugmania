@@ -1,10 +1,9 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
   import { Button } from '$lib/components/ui/button/index.js'
-  import TrackGrid from '@/components/track-grid/track-grid.svelte'
   import type { PageData } from './$types'
 
-  let { data }: { data: PageData } = $props()
+  const { data }: { data: PageData } = $props()
 </script>
 
 <svelte:head>
@@ -15,9 +14,21 @@
   <main class="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
     <div class="flex justify-between">
       <h1>{data.session?.date?.toLocaleDateString()}</h1>
-      <form use:enhance method="POST" action={`?/create`}>
-        <Button type="submit">New</Button>
-      </form>
     </div>
+    <form use:enhance method="POST" action={`?/add`}>
+      <Button type="submit">New</Button>
+    </form>
+    {#each data.tracks as track}
+      <div>
+        <h2>{track.name}</h2>
+        {#each track.entries as entry}
+          <div class="flex flex-row">
+            <p>{entry.user.name}</p>
+            <p>{entry.track.name}</p>
+            <p>{entry.duration}</p>
+          </div>
+        {/each}
+      </div>
+    {/each}
   </main>
 </div>

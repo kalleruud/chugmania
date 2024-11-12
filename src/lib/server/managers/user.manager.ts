@@ -21,6 +21,8 @@ const jwtOptions: jwt.SignOptions = {
 }
 
 export default class UserManager {
+  static readonly table = users
+
   static isUser(user: unknown): user is User {
     if (!user) return false
     if (!(user instanceof Object)) return false
@@ -41,14 +43,7 @@ export default class UserManager {
   }
 
   private static generateToken(user: typeof users.$inferSelect) {
-    return jwt.sign(
-      {
-        ...user,
-        passwordHash: undefined,
-      } satisfies PublicUser,
-      privateKey,
-      jwtOptions
-    )
+    return jwt.sign(this.getDetails(user), privateKey, jwtOptions)
   }
 
   static async getUser(email: string): Promise<User | FailDetails> {
@@ -122,5 +117,12 @@ export default class UserManager {
     }
 
     return user
+  }
+
+  static getDetails(user: User): PublicUser {
+    return {
+      ...user,
+      passwordHash: undefined,
+    }
   }
 }
