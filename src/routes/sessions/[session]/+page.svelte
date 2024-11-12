@@ -19,6 +19,5 @@
         <Button type="submit">New</Button>
       </form>
     </div>
-    <TrackGrid tracks={data.tracks} onClick={track => console.log(`Clicked #${track.name}`)} />
   </main>
 </div>
