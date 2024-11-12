@@ -11,8 +11,12 @@ export default class SessionManager {
     tournament: 'Turnering',
   }
 
-  static async getAll(user: string) {
-    console.debug(`[${user}]`, 'Getting sessions')
+  static init() {
+    console.debug('Initializing session manager')
+  }
+
+  static async getAll() {
+    console.debug('Getting sessions')
     const items = await db.select().from(sessions).orderBy(sessions.date).limit(10)
     return items.map(item => ({
       ...item,
@@ -20,15 +24,15 @@ export default class SessionManager {
     }))
   }
 
-  static async get(id: string, user: string) {
-    console.debug(`[${user}]`, 'Getting session:', id)
+  static async get(id: string) {
+    console.debug('Getting session:', id)
     const results = await db.select().from(sessions).where(eq(sessions.id, id)).limit(1)
     if (results.length === 0) throw new Error(`Session not found: ${id}`)
     return results.at(0)!
   }
 
   static async create(type: SessionType, user: PublicUser) {
-    console.debug(`[${user.id}]`, 'Creating session')
+    console.debug('Creating session')
     const items = await db
       .insert(sessions)
       .values({

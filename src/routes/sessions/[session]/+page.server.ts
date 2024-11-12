@@ -8,7 +8,7 @@ export const load = (async ({ params, locals }) => {
   if (!locals.user) throw new Error('Unauthorized')
 
   return {
-    session: await SessionManager.get(params.session, locals.user.email),
+    session: await SessionManager.get(params.session),
     tracks: await TrackManager.getAll(),
   }
 }) satisfies PageServerLoad
