@@ -1,6 +1,5 @@
 <script lang="ts">
   import { Button } from '$lib/components/ui/button/index.js'
-  import * as Command from '$lib/components/ui/command/index.js'
   import * as Popover from '$lib/components/ui/popover/index.js'
   import Search from 'lucide-svelte/icons/search'
   import { tick } from 'svelte'
