@@ -1,9 +1,13 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
   import { Button } from '$lib/components/ui/button/index.js'
+  import TrackLookup from '@/components/track-lookup/track-lookup.svelte'
   import type { PageData } from './$types'
 
   const { data }: { data: PageData } = $props()
+
+  type Track = (typeof data.allTracks)[number]
+  let selected = $state(undefined as Track | undefined)
 </script>
 
 <svelte:head>
@@ -16,6 +20,7 @@
       <h1>{data.session?.date?.toLocaleDateString()}</h1>
     </div>
     <form use:enhance method="POST" action={`?/add`}>
+      <TrackLookup placeholder="Velg en bane..." items={data.allTracks} bind:selected />
       <Button type="submit">New</Button>
     </form>
     {#each data.tracks as track}

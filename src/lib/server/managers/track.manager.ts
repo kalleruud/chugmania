@@ -76,6 +76,6 @@ export default class TrackManager {
   }
 
   private static getNameOf(track: SelectTrack) {
-    return `${track.number.toString().padStart(2, '0')}`
+    return `#${track.number.toString().padStart(2, '0')}`
   }
 }
