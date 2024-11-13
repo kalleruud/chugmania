@@ -1,6 +1,8 @@
 <script lang="ts">
   import { Button } from '$lib/components/ui/button/index.js'
   import * as Popover from '$lib/components/ui/popover/index.js'
+  import { cn } from '@/utils'
+  import { ChevronsUpDown } from 'lucide-svelte'
   import Search from 'lucide-svelte/icons/search'
   import { tick } from 'svelte'
 
@@ -10,6 +12,7 @@
     emptyLabel?: string
     items: T[]
     selected?: T
+    class?: string
   }
 
   let {
@@ -17,6 +20,7 @@
     emptyLabel: noneSelectedLabel,
     items,
     selected = $bindable(),
+    class: className,
   }: Props = $props()
 
   let open = $state(false)
@@ -47,10 +51,11 @@
   }
 </script>
 
-<div class="flex items-center space-x-4">
+<div class={cn('w-full max-w-sm', className)}>
   <Popover.Root bind:open let:ids>
     <Popover.Trigger asChild let:builder>
-      <Button builders={[builder]} variant="outline" size="sm" class="w-[150px] justify-start">
+      <Button builders={[builder]} variant="outline" size="sm" class="w-full justify-start">
+        <ChevronsUpDown class="mr-2 size-4 shrink-0 opacity-60" />
         {#if selected}
           {selected.name}
         {:else}
@@ -58,9 +63,9 @@
         {/if}
       </Button>
     </Popover.Trigger>
-    <Popover.Content class="w-[200px] p-0" side="right" align="start">
+    <Popover.Content class="w-full max-w-sm p-0" align="center">
       <div class="flex items-center border-b px-2">
-        <Search class="mr-2 h-4 w-4 shrink-0 opacity-60" />
+        <Search class="mr-2 size-4 shrink-0 opacity-60" />
         <input
           type="text"
           class="flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"

@@ -19,10 +19,11 @@
     <div class="flex justify-between">
       <h1>{data.session?.date?.toLocaleDateString()}</h1>
     </div>
-    <form use:enhance method="POST" action={`?/add`}>
+    <form class="flex flex-row gap-2" use:enhance method="POST" action={`?/add`}>
       <TrackLookup placeholder="Velg en bane..." items={data.allTracks} bind:selected />
-      <Button type="submit">New</Button>
+      <Button size="sm" type="submit">Legg til</Button>
     </form>
+    <Button>Registrer tid</Button>
     {#each data.tracks as track}
       <div>
         <h2>{track.name}</h2>
