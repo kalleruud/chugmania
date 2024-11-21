@@ -49,6 +49,14 @@ const config: Config = {
           foreground: 'hsl(var(--card-foreground) / <alpha-value>)',
         },
       },
+      padding: {
+        st: 'env(safe-area-inset-top)',
+        sb: 'env(safe-area-inset-bottom)',
+      },
+      margin: {
+        st: 'env(safe-area-inset-top)',
+        sb: 'env(safe-area-inset-bottom)',
+      },
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',

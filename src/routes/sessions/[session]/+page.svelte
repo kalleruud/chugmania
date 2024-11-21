@@ -1,7 +1,7 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
   import { Button } from '$lib/components/ui/button/index.js'
-  import TrackLookup from '@/components/track-lookup/track-lookup.svelte'
+  import TrackLookup from '@/components/track-lookup/lookup.svelte'
   import type { PageData } from './$types'
 
   const { data }: { data: PageData } = $props()

@@ -6,6 +6,7 @@ import { eq } from 'drizzle-orm'
 import jwt from 'jsonwebtoken'
 import { users } from '../db/schema'
 import type { FailDetails } from './utils'
+import type { LookupEntity } from '@/components/track-lookup/track-grid.server'
 
 if (!ISSUER) throw new Error('Missing environment variable: ISSUER')
 
@@ -56,6 +57,17 @@ export default class UserManager {
     }
 
     return user
+  }
+
+  static async getAll(): Promise<PublicUser[]> {
+    return (await db.select().from(users)).map(this.getDetails)
+  }
+
+  static async getAllLookup(): Promise<LookupEntity[]> {
+    return (await this.getAll()).map(user => ({
+      ...user,
+      label: user.name ?? user.email,
+    }))
   }
 
   static async userExists(email: string) {

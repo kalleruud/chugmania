@@ -1,5 +1,6 @@
 import db from '$lib/server/db'
 import { timeEntries, tracks, type TrackLevel, type TrackType } from '$lib/server/db/schema'
+import type { LookupEntity } from '@/components/track-lookup/track-grid.server'
 import { eq } from 'drizzle-orm'
 
 type InsertTrack = typeof tracks.$inferInsert
@@ -47,6 +48,13 @@ export default class TrackManager {
     console.debug('Getting tracks')
     const items = await db.select().from(tracks).orderBy(tracks.number)
     return items.map(item => this.getDetails(item))
+  }
+
+  static async getAllLookup(): Promise<LookupEntity[]> {
+    return (await this.getAll()).map(track => ({
+      ...track,
+      label: track.name,
+    }))
   }
 
   static async getBySession(session: string): Promise<Track[]> {

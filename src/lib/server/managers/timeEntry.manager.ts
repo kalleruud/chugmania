@@ -35,4 +35,15 @@ export default class TimeEntryManager {
     console.debug('Creating time entry')
     return await db.insert(timeEntries).values(timeEntry).returning()
   }
+
+  static toMs(minutes: number, seconds: number, houndreds: number) {
+    return minutes * 60000 + seconds * 1000 + houndreds * 10
+  }
+
+  static toString(ms: number) {
+    const minutes = Math.floor(ms / 60000)
+    const seconds = Math.floor((ms % 60000) / 1000)
+    const houndreds = Math.floor((ms % 1000) / 10)
+    return `${minutes}:${seconds.toString().padStart(2, '0')}.${houndreds.toString().padStart(2, '0')}`
+  }
 }

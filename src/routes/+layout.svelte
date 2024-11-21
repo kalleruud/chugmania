@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores'
   import '@fontsource/titillium-web'
+  import { Plus } from 'lucide-svelte'
   import Flag from 'lucide-svelte/icons/flag'
   import House from 'lucide-svelte/icons/house'
   import { ModeWatcher } from 'mode-watcher'
@@ -13,11 +14,11 @@
 </script>
 
 <ModeWatcher />
-<div class="w-dvh flex flex-col">
+<div class="mb-sb flex flex-col">
   <aside
-    class="fixed left-0 z-10 flex bg-background max-sm:bottom-0 max-sm:h-16 max-sm:w-full max-sm:flex-row max-sm:border-t sm:inset-y-0 sm:w-20 sm:flex-col sm:border-r"
+    class="mb-sb fixed left-0 z-10 flex bg-background max-sm:bottom-0 max-sm:h-16 max-sm:w-full max-sm:flex-row max-sm:border-t sm:inset-y-0 sm:w-20 sm:flex-col sm:border-r"
   >
-    <nav class="flex gap-4 max-sm:w-full max-sm:justify-evenly sm:flex-col sm:py-6">
+    <nav class="flex items-center gap-4 max-sm:w-full max-sm:justify-evenly sm:flex-col sm:py-6">
       <a
         href="/"
         class="{navButtonClasses} {$page.url.pathname === '/'
@@ -26,6 +27,13 @@
       >
         <House class="size-5" />
         <span>Home</span>
+      </a>
+      <a
+        href="/register"
+        class="flex h-10 w-12 flex-col items-center justify-center rounded-lg bg-primary"
+      >
+        <Plus class="size-7" color="black" />
+        <span class="sr-only">Sessions</span>
       </a>
       <a
         href="/sessions"
