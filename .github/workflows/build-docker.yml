@@ -9,6 +9,11 @@ on:
 jobs:
   docker:
     runs-on: ubuntu-latest
+    env:
+      DATABASE: ${{ vars.DATABASE }}
+      PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+      ISSUER: ${{ secrets.ISSUER }}
+      TOKEN_EXPIRY: ${{ secrets.TOKEN_EXPIRY }}
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
