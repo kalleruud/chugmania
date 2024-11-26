@@ -13,7 +13,7 @@ ENV ISSUER $ISSUER
 ENV TOKEN_EXPIRY $TOKEN_EXPIRY
 
 COPY package.json package-lock.json ./
-RUN npm ci --omit dev
+RUN npm ci
 
 COPY . .
 RUN mkdir -p config
