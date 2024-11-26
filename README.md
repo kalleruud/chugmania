@@ -1,38 +1,33 @@
-# sv
-
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
-
-## Creating a project
-
-If you're seeing this, you've probably already done this step. Congrats!
-
-```bash
-# create a new project in the current directory
-npx sv create
-
-# create a new project in my-app
-npx sv create my-app
-```
+# Chugmania
 
 ## Developing
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+1. Install and run [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+1. Run the devcontainer in VSCode
 
-```bash
-npm run dev
+## Deploying
 
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+Deploy using the following `docker-compose.yml` template:
+
+```yml
+services:
+  chugmania:
+    container_name: chugmania
+    image: mrkalle/chugmania:latest
+    ports:
+      - '<port>:3000'
+    env_file: .env
+    volumes: ./<appdata>/config:/app/config
+    restart: always
 ```
 
-## Building
+with the following dotenv file:
 
-To create a production version of your app:
-
-```bash
-npm run build
 ```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+NODE_ENV=production
+ORIGIN=https://chugmania.kallerud.no
+PRIVATE_KEY=<private_key>
+ISSUER=kallerud.no
+TOKEN_EXPIRY=7d
+DATABASE=config/local.db
+```
