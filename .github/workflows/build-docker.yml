@@ -9,11 +9,6 @@ on:
 jobs:
   docker:
     runs-on: ubuntu-latest
-    env:
-      DATABASE: ${{ vars.DATABASE }}
-      PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
-      ISSUER: ${{ secrets.ISSUER }}
-      TOKEN_EXPIRY: ${{ secrets.TOKEN_EXPIRY }}
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
@@ -33,4 +28,9 @@ jobs:
           file: ./dockerfile
           push: false
           platforms: linux/amd64,linux/arm64
+          build-args: |
+            DATABASE=${{ vars.DATABASE }}
+            PRIVATE_KEY=${{ secrets.PRIVATE_KEY }}
+            ISSUER=${{ secrets.ISSUER }}
+            TOKEN_EXPIRY=${{ secrets.TOKEN_EXPIRY }}
           tags: ${{ vars.DOCKER_USERNAME }}/chugmania
