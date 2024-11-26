@@ -2,11 +2,18 @@ FROM node:alpine AS build
 
 WORKDIR /app
 
-ARG DATABASE config/local.db
+ARG DATABASE
+ARG PRIVATE_KEY
+ARG ISSUER
+ARG TOKEN_EXPIRY
+
 ENV DATABASE $DATABASE
+ENV PRIVATE_KEY $PRIVATE_KEY
+ENV ISSUER $ISSUER
+ENV TOKEN_EXPIRY $TOKEN_EXPIRY
 
 COPY package.json package-lock.json ./
-RUN npm install
+RUN npm ci --omit dev
 
 COPY . .
 RUN mkdir -p config
