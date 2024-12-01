@@ -33,4 +33,5 @@ jobs:
             PRIVATE_KEY=${{ secrets.PRIVATE_KEY }}
             ISSUER=${{ secrets.ISSUER }}
             TOKEN_EXPIRY=${{ secrets.TOKEN_EXPIRY }}
+            NODE_ENV: development
           tags: ${{ vars.DOCKER_USERNAME }}/chugmania
