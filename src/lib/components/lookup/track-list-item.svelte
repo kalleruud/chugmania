@@ -1,6 +1,6 @@
 <script lang="ts">
   import { cn } from '@/utils'
-  import type { Track } from './track-grid.server'
+  import type { Track } from './lookup.server'
 
   type Props = {
     class?: string

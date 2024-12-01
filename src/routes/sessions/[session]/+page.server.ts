@@ -8,7 +8,7 @@ export const load = (async ({ params, locals }) => {
   if (!locals.user) throw new Error('Unauthorized')
   const session = await SessionManager.get(params.session)
   const tracks = await SessionManager.getTracksWithEntries(params.session)
-  const allTracks = await TrackManager.getAll()
+  const allTracks = await TrackManager.getAllLookup()
 
   return { session, tracks, allTracks }
 }) satisfies PageServerLoad

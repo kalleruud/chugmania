@@ -1,12 +1,11 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
-  import { afterNavigate, goto } from '$app/navigation'
+  import { goto } from '$app/navigation'
   import { page } from '$app/stores'
-  import Lookup from '@/components/track-lookup/lookup.svelte'
+  import Lookup from '@/components/lookup/lookup.svelte'
   import Button from '@/components/ui/button/button.svelte'
   import Input from '@/components/ui/input/input.svelte'
   import type { PageData } from './$types'
-  import { onMount } from 'svelte'
 
   const { data }: { data: PageData } = $props()
 

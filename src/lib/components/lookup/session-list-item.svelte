@@ -1,6 +1,6 @@
 <script lang="ts">
   import { cn } from '@/utils'
-  import type { Session } from './track-grid.server'
+  import type { Session } from './lookup.server'
 
   type Props = {
     class?: string

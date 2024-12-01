@@ -6,7 +6,7 @@ import { eq } from 'drizzle-orm'
 import jwt from 'jsonwebtoken'
 import { users } from '../db/schema'
 import type { FailDetails } from './utils'
-import type { LookupEntity } from '@/components/track-lookup/track-grid.server'
+import type { LookupEntity } from '@/components/lookup/lookup.server'
 
 if (!ISSUER) throw new Error('Missing environment variable: ISSUER')
 
@@ -107,7 +107,7 @@ export default class UserManager {
     return token
   }
 
-  private static isPasswordValid(providedHash: ArrayBuffer, expectedHash: Buffer<ArrayBufferLike>) {
+  private static isPasswordValid(providedHash: ArrayBuffer, expectedHash: Buffer) {
     return expectedHash.equals(Buffer.from(providedHash))
   }
 

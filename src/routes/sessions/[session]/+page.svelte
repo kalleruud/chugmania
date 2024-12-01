@@ -1,7 +1,7 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
   import { Button } from '$lib/components/ui/button/index.js'
-  import TrackLookup from '@/components/track-lookup/lookup.svelte'
+  import Lookup from '@/components/lookup/lookup.svelte'
   import type { PageData } from './$types'
 
   const { data }: { data: PageData } = $props()
@@ -20,7 +20,7 @@
       <h1>{data.session?.date?.toLocaleDateString()}</h1>
     </div>
     <form class="flex flex-row gap-2" use:enhance method="POST" action={`?/add`}>
-      <TrackLookup placeholder="Velg en bane..." items={data.allTracks} bind:selected />
+      <Lookup placeholder="Velg en bane..." items={data.allTracks} entity="track" bind:selected />
       <Button size="sm" type="submit">Legg til</Button>
     </form>
     <Button>Registrer tid</Button>

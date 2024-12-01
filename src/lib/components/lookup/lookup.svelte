@@ -5,7 +5,7 @@
   import { ChevronsUpDown } from 'lucide-svelte'
   import Search from 'lucide-svelte/icons/search'
   import { tick } from 'svelte'
-  import { type LookupEntity, type PublicUser, type Session, type Track } from './track-grid.server'
+  import { type LookupEntity, type PublicUser, type Session, type Track } from './lookup.server'
   import TrackListItem from './track-list-item.svelte'
   import UserListItem from './user-list-item.svelte'
   import SessionListItem from './session-list-item.svelte'

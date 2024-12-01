@@ -1,4 +1,4 @@
-import type { LookupEntity } from '@/components/track-lookup/track-grid.server'
+import type { LookupEntity } from '@/components/lookup/lookup.server'
 import SessionManager from '@/server/managers/session.manager'
 import TimeEntryManager from '@/server/managers/timeEntry.manager'
 import TrackManager from '@/server/managers/track.manager'

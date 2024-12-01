@@ -7,7 +7,7 @@ export const load = (async ({ locals }) => {
   if (!locals.user) throw new Error('Unauthorized')
 
   return {
-    sessions: await SessionManager.getAll(locals.user?.email),
+    sessions: await SessionManager.getAll(),
   }
 }) satisfies PageServerLoad
 
