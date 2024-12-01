@@ -46,15 +46,15 @@ function parseFields(data: FormData) {
   const houndreds = data.get('houndreds')?.toString()
 
   const duration = TimeEntryManager.toMs(
-    Number.parseInt(minutes || '0'),
-    Number.parseInt(seconds || '0'),
-    Number.parseInt(houndreds || '0')
+    Number.parseInt(minutes ?? '0'),
+    Number.parseInt(seconds ?? '0'),
+    Number.parseInt(houndreds ?? '0')
   )
 
   return {
     duration,
-    trackId: data.get('track')!.toString(),
-    sessionId: data.get('session')!.toString(),
-    userId: data.get('user')!.toString(),
+    trackId: data.get('track') as string,
+    sessionId: data.get('session') as string,
+    userId: data.get('user') as string,
   }
 }
