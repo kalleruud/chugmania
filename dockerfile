@@ -12,13 +12,14 @@ ENV PRIVATE_KEY=$PRIVATE_KEY
 ENV ISSUER=$ISSUER
 ENV TOKEN_EXPIRY=$TOKEN_EXPIRY
 
-COPY package.json package-lock.json ./
+COPY package*.json .
 RUN npm ci
 
 COPY . .
 RUN mkdir -p config
-RUN npm run build
+RUN npm run check
 RUN npm run db:migrate
+RUN npm run build
 
 FROM node:alpine AS run
 
