@@ -8,5 +8,8 @@
     "*.d.ts": true,
     "**/coverage": true,
     "**/node_modules": true
+  },
+  "[dockerfile]": {
+    "editor.defaultFormatter": "ms-azuretools.vscode-docker"
   }
 }
