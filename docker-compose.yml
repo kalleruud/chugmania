@@ -1,0 +1,18 @@
+services:
+  chugmania:
+    container_name: chugmania
+    build:
+      dockerfile: dockerfile
+      args:
+        DATABASE: config/local.db
+        PRIVATE_KEY: somekey
+        ISSUER: kallerud.no
+        TOKEN_EXPIRY: 7d
+    environment:
+      NODE_ENV: development
+      ORIGIN: http://localhost:5173
+    ports:
+      - '3000:3000'
+    volumes:
+      - ./config:/app/config
+    restart: always
