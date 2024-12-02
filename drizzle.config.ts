@@ -6,7 +6,7 @@ export default defineConfig({
   schema: './src/lib/server/db/schema.ts',
 
   dbCredentials: {
-    url: 'config/' + process.env.DB_FILE_NAME,
+    url: 'data/' + process.env.DB_FILE_NAME,
   },
 
   verbose: true,

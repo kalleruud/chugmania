@@ -13,7 +13,7 @@ services:
     ports:
       - '3000:3000'
     volumes:
-      - ./config:/app/config
+      - ./data:/app/data
     environment:
       NODE_ENV: development
       ORIGIN: http://10.0.0.136:3000
