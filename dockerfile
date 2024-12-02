@@ -16,7 +16,7 @@ COPY package*.json .
 RUN npm ci
 
 COPY . .
-RUN mkdir -p config
+RUN mkdir -p data
 RUN npm run db:migrate
 RUN npm run build
 
