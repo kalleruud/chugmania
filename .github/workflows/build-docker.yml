@@ -29,9 +29,9 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           build-args: |
+            NODE_ENV: production
             DB_FILE_NAME=${{ vars.DB_FILE_NAME }}
             PRIVATE_KEY=${{ secrets.PRIVATE_KEY }}
             ISSUER=${{ secrets.ISSUER }}
             TOKEN_EXPIRY=${{ secrets.TOKEN_EXPIRY }}
-            NODE_ENV: development
           tags: ${{ vars.DOCKER_USERNAME }}/chugmania
