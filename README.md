@@ -29,5 +29,5 @@ ORIGIN=https://chugmania.kallerud.no
 PRIVATE_KEY=<private_key>
 ISSUER=kallerud.no
 TOKEN_EXPIRY=7d
-DATABASE=config/local.db
+DB_FILE_NAME=local.db
 ```
