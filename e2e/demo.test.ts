@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test('home page has expected h1', async ({ page }) => {
+test('Show login screen when not logged in', async ({ page }) => {
 	await page.goto('/');
-	await expect(page.locator('h1')).toBeVisible();
+	await expect(page.getByTestId('login-form')).toBeVisible();
 });
