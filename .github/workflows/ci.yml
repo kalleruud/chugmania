@@ -46,6 +46,7 @@ jobs:
 
       - name: Install dependencies
         run: |
+          mkdir -p data
           npm ci
           npm run db:migrate
 
