@@ -12,23 +12,16 @@ ENV PRIVATE_KEY=$PRIVATE_KEY
 ENV ISSUER=$ISSUER
 ENV TOKEN_EXPIRY=$TOKEN_EXPIRY
 
+USER root
+
 COPY package*.json .
 RUN npm ci
 
 COPY . .
-RUN mkdir -p data
+RUN mkdir -p data && chown -R node:node data
 RUN npm run db:migrate
 RUN npm run build
 
-FROM node:alpine AS run
-
-WORKDIR /app
-
-COPY --from=build /app/build ./build
-COPY --from=build /app/package.json ./package.json
-COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/data ./data
-
 RUN ulimit -c unlimited
 
-ENTRYPOINT ["node", "build"]
+ENTRYPOINT ["sh", "run.sh"]
