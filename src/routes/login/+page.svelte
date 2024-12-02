@@ -51,6 +51,7 @@
     </Card.Header>
     <Card.Content>
       <form
+        data-testid="login-form"
         id="login-form"
         class="grid gap-4"
         method="POST"
