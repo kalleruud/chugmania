@@ -40,6 +40,7 @@
     "@types/eslint": "^9.6.0",
     "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "^22.8.7",
+    "@vitest/coverage-v8": "^2.1.6",
     "autoprefixer": "^10.4.20",
     "bits-ui": "^0.21.16",
     "clsx": "^2.1.1",

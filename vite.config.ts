@@ -6,5 +6,10 @@ export default defineConfig({
 
   test: {
     include: ['src/**/*.{test,spec}.{js,ts}'],
+    coverage: {
+      include: ['src/**/*.{js,ts}'],
+      reporter: ['text', 'json-summary', 'json'],
+      reportOnFailure: true,
+    },
   },
 })
