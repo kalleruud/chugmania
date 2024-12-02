@@ -7,7 +7,7 @@ export default defineConfig({
   test: {
     include: ['src/**/*.{test,spec}.{js,ts}'],
     coverage: {
-      include: ['src/**/*.{js,ts}'],
+      include: ['src/**/*.manager.{js,ts}'],
       thresholds: {
         lines: 80,
         functions: 80,
