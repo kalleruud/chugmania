@@ -60,7 +60,7 @@ jobs:
         if: ${{ !cancelled() }}
         with:
           name: playwright-report
-          path: test-results/
+          path: playwright-report/
           retention-days: 30
 
   unit-tests:
