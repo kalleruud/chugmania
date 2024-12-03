@@ -25,7 +25,7 @@
   let formIsValid = $derived(() => !!track && !!user && !!session && (minutes || seconds))
 
   const numberInputClass =
-    'flex w-14 rounded-md border bg-transparent text-center outline-none placeholder:text-muted-foreground focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'
+    'flex w-20 rounded-md border bg-transparent text-center outline-none placeholder:text-muted-foreground focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'
 
   $effect(() => {
     let params = new URLSearchParams()
@@ -39,11 +39,8 @@
 
 <div class="flex flex-col sm:max-w-md sm:gap-4 sm:py-4">
   <main class="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
-    <div class="flex justify-between">
-      <h1>Registrer tid</h1>
-    </div>
     <form class="flex flex-col gap-4" use:enhance method="POST" action={`?/add`}>
-      <div class="flex h-16 w-full flex-row justify-center gap-2 text-3xl caret-muted">
+      <div class="my-24 flex h-28 w-full flex-row justify-center gap-2 text-5xl caret-muted">
         <input
           class={numberInputClass}
           id="minutes"
@@ -90,21 +87,18 @@
       <Lookup
         name="user"
         placeholder="Velg en bruker..."
-        entity="user"
         items={data.allUsers}
         bind:selected={user}
       />
       <Lookup
         name="session"
         placeholder="Velg en session..."
-        entity="session"
         items={data.allSessions}
         bind:selected={session}
       />
       <Lookup
         name="track"
         placeholder="Velg en bane..."
-        entity="track"
         items={data.allTracks}
         bind:selected={track}
       />

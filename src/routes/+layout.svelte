@@ -30,7 +30,9 @@
       </a>
       <a
         href="/register"
-        class="flex h-10 w-12 flex-col items-center justify-center rounded-lg bg-primary"
+        class="flex h-10 w-12 flex-col items-center justify-center rounded-lg {$page.url.pathname.startsWith('/register')
+          ? 'bg-foreground'
+          : 'bg-stone-400'}"
       >
         <Plus class="size-7" color="black" />
         <span class="sr-only">Sessions</span>

@@ -5,15 +5,11 @@
   import { ChevronsUpDown } from 'lucide-svelte'
   import Search from 'lucide-svelte/icons/search'
   import { tick } from 'svelte'
-  import { type LookupEntity, type PublicUser, type Session, type Track } from './lookup.server'
-  import TrackListItem from './track-list-item.svelte'
-  import UserListItem from './user-list-item.svelte'
-  import SessionListItem from './session-list-item.svelte'
+  import { type LookupEntity } from './lookup.server'
 
   type Props = {
     placeholder: string
     emptyLabel?: string
-    entity: 'track' | 'session' | 'user'
     items: LookupEntity[]
     selected?: LookupEntity
     class?: string
@@ -21,7 +17,6 @@
   }
 
   let {
-    entity,
     placeholder,
     emptyLabel: noneSelectedLabel,
     items,
@@ -68,15 +63,7 @@
         <ChevronsUpDown class="mr-2 size-4 shrink-0 opacity-60" />
         {#if selected}
           <input type="hidden" {name} value={selected.id} />
-          {#if entity === 'track'}
-            <TrackListItem item={selected as unknown as Track} />
-          {/if}
-          {#if entity === 'user'}
-            <UserListItem item={selected as unknown as PublicUser} />
-          {/if}
-          {#if entity === 'session'}
-            <SessionListItem item={selected as unknown as Session} />
-          {/if}
+          <div>{selected.label}</div>
         {:else}
           <div class="text-muted-foreground">{placeholder}</div>
         {/if}
@@ -103,18 +90,10 @@
           <ul class="overflow-hidden p-1 text-foreground">
             {#each results() as item}
               <button
-                class="relative flex w-full select-none items-center rounded-sm px-2 py-1.5 outline-none hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                class="relative flex w-full select-none items-center rounded-sm px-2 py-1.5 outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 onclick={() => onSelect(item, ids.trigger)}
               >
-                {#if entity === 'track'}
-                  <TrackListItem item={item as unknown as Track} />
-                {/if}
-                {#if entity === 'user'}
-                  <UserListItem item={item as unknown as PublicUser} />
-                {/if}
-                {#if entity === 'session'}
-                  <SessionListItem item={item as unknown as Session} />
-                {/if}
+                <li class="items -center flex w-full truncate">{item.label}</li>
               </button>
             {/each}
           </ul>
