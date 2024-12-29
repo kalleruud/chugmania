@@ -37,8 +37,8 @@
   })
 </script>
 
-<div class="flex flex-col sm:max-w-md sm:gap-4 sm:py-4">
-  <main class="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
+<div class="flex flex-col">
+  <main class="gap-4 p-4">
     <form class="flex flex-col gap-4" use:enhance method="POST" action={`?/add`}>
       <div class="my-24 flex h-28 w-full flex-row justify-center gap-2 text-5xl caret-muted">
         <input

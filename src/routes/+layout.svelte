@@ -13,7 +13,7 @@
 <ModeWatcher />
 <div class="flex h-screen flex-col">
   <aside class="pb-safe fixed bottom-0 z-10 w-full border-t bg-background">
-    <nav class="flex items-center justify-evenly text-sm">
+    <nav class="flex items-center justify-evenly py-2 text-sm">
       <a
         href="/"
         class="flex flex-col place-items-center {$page.url.pathname === '/'
@@ -45,7 +45,7 @@
       </a>
     </nav>
   </aside>
-  <div class="m-safe place-items-center">
+  <div class="m-safe">
     {@render children()}
   </div>
 </div>
