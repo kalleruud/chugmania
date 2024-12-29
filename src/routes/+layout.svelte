@@ -16,7 +16,7 @@
 <ModeWatcher />
 <div class="mb-sb flex flex-col">
   <aside
-    class="mb-sb fixed left-0 z-10 flex bg-background max-sm:bottom-0 max-sm:h-16 max-sm:w-full max-sm:flex-row max-sm:border-t sm:inset-y-0 sm:w-20 sm:flex-col sm:border-r"
+    class="fixed left-0 z-10 mb-sb flex bg-background max-sm:bottom-0 max-sm:h-16 max-sm:w-full max-sm:flex-row max-sm:border-t sm:inset-y-0 sm:w-20 sm:flex-col sm:border-r"
   >
     <nav class="flex items-center gap-4 max-sm:w-full max-sm:justify-evenly sm:flex-col sm:py-6">
       <a
@@ -30,7 +30,9 @@
       </a>
       <a
         href="/register"
-        class="flex h-10 w-12 flex-col items-center justify-center rounded-lg {$page.url.pathname.startsWith('/register')
+        class="flex h-10 w-12 flex-col items-center justify-center rounded-lg {$page.url.pathname.startsWith(
+          '/register'
+        )
           ? 'bg-foreground'
           : 'bg-stone-400'}"
       >
