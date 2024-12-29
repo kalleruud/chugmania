@@ -74,6 +74,7 @@
     "better-sqlite3": "^11.1.2",
     "drizzle-orm": "^0.33.0",
     "jsonwebtoken": "^9.0.2",
-    "mode-watcher": "^0.4.1"
+    "mode-watcher": "^0.4.1",
+    "tailwindcss-safe-area": "^0.6.0"
   }
 }
