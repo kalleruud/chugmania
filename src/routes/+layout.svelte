@@ -8,24 +8,19 @@
   import '../app.css'
 
   let { children } = $props()
-
-  const navButtonClasses =
-    'flex flex-col items-center justify-center rounded-lg transition-colors sm:hover:text-secondary-foreground'
 </script>
 
 <ModeWatcher />
-<div class="mb-sb flex flex-col">
-  <aside
-    class="fixed left-0 z-10 mb-sb flex bg-background max-sm:bottom-0 max-sm:h-16 max-sm:w-full max-sm:flex-row max-sm:border-t sm:inset-y-0 sm:w-20 sm:flex-col sm:border-r"
-  >
-    <nav class="flex items-center gap-4 max-sm:w-full max-sm:justify-evenly sm:flex-col sm:py-6">
+<div class="flex h-screen flex-col">
+  <aside class="pb-safe fixed bottom-0 z-10 w-full border-t bg-background">
+    <nav class="flex items-center justify-evenly text-sm">
       <a
         href="/"
-        class="{navButtonClasses} {$page.url.pathname === '/'
+        class="flex flex-col place-items-center {$page.url.pathname === '/'
           ? 'text-foreground'
           : 'text-stone-400'}"
       >
-        <House class="size-5" />
+        <House class="size-6" />
         <span>Home</span>
       </a>
       <a
@@ -41,16 +36,16 @@
       </a>
       <a
         href="/sessions"
-        class="{navButtonClasses} {$page.url.pathname.startsWith('/sessions')
+        class="flex flex-col place-items-center {$page.url.pathname.startsWith('/sessions')
           ? 'text-foreground'
           : 'text-stone-400'}"
       >
-        <Flag class="size-5" />
+        <Flag class="size-6" />
         <span>Sessions</span>
       </a>
     </nav>
   </aside>
-  <div class="sm:pl-20">
+  <div class="m-safe place-items-center">
     {@render children()}
   </div>
 </div>
