@@ -20,7 +20,7 @@
       <h1>{data.session?.date?.toLocaleDateString()}</h1>
     </div>
     <form class="flex flex-row gap-2" use:enhance method="POST" action={`?/add`}>
-      <Lookup placeholder="Velg en bane..." items={data.allTracks} entity="track" bind:selected />
+      <Lookup placeholder="Velg en bane..." items={data.allTracks} bind:selected />
       <Button size="sm" type="submit">Legg til</Button>
     </form>
     <Button>Registrer tid</Button>
