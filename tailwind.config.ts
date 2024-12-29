@@ -1,5 +1,6 @@
 import { fontFamily } from 'tailwindcss/defaultTheme'
 import type { Config } from 'tailwindcss'
+import SafeAreaPlugin from 'tailwindcss-safe-area'
 
 const config: Config = {
   darkMode: ['class'],
@@ -69,6 +70,7 @@ const config: Config = {
       },
     },
   },
+  plugins: [SafeAreaPlugin],
 }
 
 export default config
