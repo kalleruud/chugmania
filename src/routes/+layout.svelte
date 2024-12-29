@@ -50,7 +50,7 @@
       </a>
     </nav>
   </aside>
-  <div class="max-sm:pb-16 sm:pl-20">
+  <div class="sm:pl-20">
     {@render children()}
   </div>
 </div>
