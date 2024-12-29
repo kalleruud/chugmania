@@ -40,17 +40,17 @@
 </script>
 
 <svelte:head>
-  <title>Logg inn</title>
+  <title>Chugmania - Logg inn</title>
 </svelte:head>
 
-<div class="flex flex-col items-center justify-center">
+<div class="flex h-dvh touch-none flex-col items-center justify-center gap-4 p-4 pb-36">
   <h1 class="text-2xl">{details.title}</h1>
   <p>{details.description}</p>
 
   <form
     data-testid="login-form"
     id="login-form"
-    class="grid gap-4"
+    class="grid w-full gap-4"
     method="POST"
     use:enhance={() =>
       async ({ update }) =>
@@ -83,7 +83,7 @@
         />
       </fieldset>
     {/if}
-    <fieldset class="form-group grid gap-2" class:hidden={mode === 'lookup'}>
+    <fieldset class="form-group grid gap-2">
       <Label for="password">Passord</Label>
       <Input
         id="password"
