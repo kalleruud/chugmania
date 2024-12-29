@@ -1,40 +1,39 @@
 <script lang="ts">
-  import { enhance } from '$app/forms'
-  import { Button } from '$lib/components/ui/button/index.js'
-  import Lookup from '@/components/lookup/lookup.svelte'
   import type { PageData } from './$types'
 
   const { data }: { data: PageData } = $props()
-
-  type Track = (typeof data.allTracks)[number]
-  let selected = $state(undefined as Track | undefined)
+  const { session, sessionData } = data
 </script>
 
 <svelte:head>
   <title>{data.session.description ?? data.session.type}</title>
 </svelte:head>
 
-<div class="flex flex-col sm:gap-4 sm:py-4">
-  <main class="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
-    <div class="flex justify-between">
-      <h1>{data.session?.date?.toLocaleDateString()}</h1>
-    </div>
-    <form class="flex flex-row gap-2" use:enhance method="POST" action={`?/add`}>
-      <Lookup placeholder="Velg en bane..." items={data.allTracks} bind:selected />
-      <Button size="sm" type="submit">Legg til</Button>
-    </form>
-    <Button>Registrer tid</Button>
-    {#each data.tracks as track}
-      <div>
-        <h2>{track.name}</h2>
-        {#each track.entries as entry}
-          <div class="flex flex-row">
-            <p>{entry.user.name}</p>
-            <p>{entry.track.name}</p>
-            <p>{entry.duration}</p>
-          </div>
-        {/each}
+<main class="p-4">
+  <h1>{session.date.toLocaleDateString()}</h1>
+  <div>
+    {#each sessionData as { track, entries }}
+      <div class="flex flex-col gap-2 border-b py-4">
+        <h2 class="text-accent-foreground">{track.name}</h2>
+
+        <ul class="divide-y divide-solid">
+          {#each entries as entry, i}
+            <li>
+              <div class="flex w-full justify-between py-2">
+                <div class="flex gap-2">
+                  <p class="font-f1 italic text-muted-foreground">{i + 1}</p>
+                  <p class="font-f1 font-bold">{entry.user.name.substring(0, 3).toUpperCase()}</p>
+                </div>
+                <p class="font-f1">{entry.readableDuration}</p>
+                <p class="w-24 font-f1 italic text-muted-foreground">{entry.readableGap}</p>
+              </div>
+              {#if entry.comment}
+                <p class="text-muted-foreground">{entry.comment}</p>
+              {/if}
+            </li>
+          {/each}
+        </ul>
       </div>
     {/each}
-  </main>
-</div>
+  </div>
+</main>
