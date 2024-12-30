@@ -21,6 +21,7 @@ get along, so we shut typescript up by casting `value` to `never`.
 	bind:value={value as never}
 	bind:ref
 	bind:placeholder
+	locale="nb-NO"
 	{weekdayFormat}
 	class={cn("p-3", className)}
 	{...restProps}
