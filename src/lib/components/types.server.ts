@@ -9,3 +9,4 @@ export type Track = T
 export type PublicUser = U
 
 export type FormMode = 'login' | 'register'
+export type ResponseMessage = { success: boolean; message?: string }

@@ -6,14 +6,14 @@
   import type { FormMode } from '../types.server'
 
   type Props = {
-    className?: string
+    class?: string
     title?: string
     description?: string
     button?: string
     mode?: FormMode
   }
 
-  let { className, title, description, button = 'Kjør', mode }: Props = $props()
+  let { class: className, title, description, button = 'Kjør', mode }: Props = $props()
 </script>
 
 {#if title}
