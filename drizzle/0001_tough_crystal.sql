@@ -18,4 +18,6 @@ INSERT INTO sessions (id, updated_at, created_at, deleted_at, description, type,
   SELECT id, updated_at, created_at, deleted_at, description, type, created_by
   FROM _sessions_old;
 --> statement-breakpoint
+DROP TABLE _sessions_old;
+--> statement-breakpoint
 PRAGMA foreign_keys=on;
