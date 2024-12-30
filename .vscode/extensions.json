@@ -3,6 +3,8 @@
     "svelte.svelte-vscode",
     "ms-vscode-remote.remote-containers",
     "bradlc.vscode-tailwindcss",
-    "esbenp.prettier-vscode"
+    "esbenp.prettier-vscode",
+    "alexcvzz.vscode-sqlite",
+    "adpyke.vscode-sql-formatter"
   ]
 }
