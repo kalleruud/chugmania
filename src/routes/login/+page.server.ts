@@ -12,19 +12,6 @@ export const load = (async ({ locals }) => {
 }) satisfies PageServerLoad
 
 export const actions = {
-  lookup: async ({ request }) => {
-    try {
-      const { email } = getFields(await request.formData())
-      console.debug('Looking up user with email:', email)
-
-      const exists = await UserManager.userExists(email)
-
-      const formMode: FormMode = exists ? 'login' : 'register'
-      return { formMode }
-    } catch (error) {
-      handleError(error)
-    }
-  },
   login: async ({ cookies, request }) => {
     try {
       const { email, password } = getFields(await request.formData())
@@ -42,6 +29,7 @@ export const actions = {
   register: async ({ cookies, request }) => {
     try {
       const { email, password, name } = getFields(await request.formData())
+      console.debug('Registering user with email:', email)
       if (!password) return fail(400, { message: 'Password not provided' })
       if (!name) return fail(400, { message: 'Name not provided' })
       console.debug('Registering user with email:', email)
