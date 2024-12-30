@@ -28,9 +28,7 @@
   let triggerRef = $state<HTMLButtonElement>(null!)
   let open = $state(false)
   let search = $state('')
-  let results = $derived(() =>
-    items.filter(i => i.label?.toLowerCase().includes(search.toLowerCase()))
-  )
+  let results = $derived(items.filter(i => i.label?.toLowerCase().includes(search.toLowerCase())))
 
   function onSelect(item: LookupEntity) {
     closeAndFocusTrigger()
@@ -82,12 +80,12 @@
           bind:value={search}
         />
       </div>
-      {#if results().length === 0}
+      {#if results.length === 0}
         <div class="py-6 text-center text-sm">{noneSelectedLabel ?? 'Ingen funnet'}</div>
       {:else}
         <ul class="max-h-64 overflow-y-auto overflow-x-hidden">
           <ul class="overflow-hidden p-1 text-foreground">
-            {#each results() as item}
+            {#each results as item}
               <button
                 class="relative flex w-full select-none items-center rounded-sm px-2 py-1.5 outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:hover:bg-accent"
                 onclick={() => onSelect(item)}
