@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button } from '$lib/components/ui/button/index.js'
+  import { buttonVariants } from '$lib/components/ui/button/index.js'
   import * as Popover from '$lib/components/ui/popover/index.js'
   import { cn } from '@/utils'
   import { ChevronsUpDown } from 'lucide-svelte'
@@ -25,51 +25,60 @@
     name: name,
   }: Props = $props()
 
+  let triggerRef = $state<HTMLButtonElement>(null!)
   let open = $state(false)
   let search = $state('')
   let results = $derived(() =>
     items.filter(i => i.label?.toLowerCase().includes(search.toLowerCase()))
   )
 
-  function onSelect(item: LookupEntity, triggerId: string) {
-    console.log('onSelect', item.label)
-
-    open = false
-    selected = items.find(i => i.id === item.id)
+  function onSelect(item: LookupEntity) {
+    closeAndFocusTrigger()
+    if (item.id === selected?.id) {
+      selected = undefined
+    } else {
+      selected = items.find(i => i.id === item.id)
+    }
     console.log('selected', selected)
+  }
 
-    // We want to refocus the trigger button when the user selects
-    // an item from the list so users can continue navigating the
-    // rest of the form with the keyboard.
+  // We want to refocus the trigger button when the user selects
+  // an item from the list so users can continue navigating the
+  // rest of the form with the keyboard.
+  function closeAndFocusTrigger() {
+    if (!open) return
+    open = false
     tick().then(() => {
-      document.getElementById(triggerId)?.focus()
+      triggerRef.focus()
     })
   }
 </script>
 
 <div class={cn('w-full', className)}>
-  <Popover.Root bind:open let:ids>
-    <Popover.Trigger asChild let:builder>
-      <Button builders={[builder]} variant="outline" class="w-full justify-start">
-        <ChevronsUpDown class="mr-2 size-4 shrink-0 opacity-60" />
-        {#if selected}
-          <input type="hidden" {name} value={selected.id} />
-          <div>{selected.label}</div>
-        {:else}
-          <div class="text-muted-foreground">{placeholder}</div>
-        {/if}
-      </Button>
+  <Popover.Root bind:open>
+    <Popover.Trigger
+      bind:ref={triggerRef}
+      class={cn(
+        buttonVariants({
+          variant: 'outline',
+          class: 'w-full justify-start',
+        }),
+        !selected && 'text-muted-foreground'
+      )}
+    >
+      <input type="hidden" {name} value={selected?.id} />
+      <ChevronsUpDown />
+      {selected ? selected.label : placeholder}
     </Popover.Trigger>
     <Popover.Content class="w-full max-w-sm p-0" align="center">
       <div class="flex items-center border-b px-2">
         <Search class="mr-2 size-4 shrink-0 opacity-60" />
         <input
           type="text"
+          inputmode="search"
           class="flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
           placeholder="Søk..."
-          min={0}
-          max={200}
-          inputmode="numeric"
+          max={10}
           bind:value={search}
         />
       </div>
@@ -80,8 +89,8 @@
           <ul class="overflow-hidden p-1 text-foreground">
             {#each results() as item}
               <button
-                class="relative flex w-full select-none items-center rounded-sm px-2 py-1.5 outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                onclick={() => onSelect(item, ids.trigger)}
+                class="relative flex w-full select-none items-center rounded-sm px-2 py-1.5 outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:hover:bg-accent"
+                onclick={() => onSelect(item)}
               >
                 <li class="items -center flex w-full truncate">{item.label}</li>
               </button>

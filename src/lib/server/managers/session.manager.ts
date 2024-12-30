@@ -1,15 +1,15 @@
 import db from '$lib/server/db'
 import { sessions } from '$lib/server/db/schema'
-import { fromDate, getLocalTimeZone, today, type DateValue } from '@internationalized/date'
-import { desc, eq, lte } from 'drizzle-orm'
+import { getLocalTimeZone, today } from '@internationalized/date'
+import { desc, eq } from 'drizzle-orm'
 import TimeEntryManager from './timeEntry.manager'
 import TrackManager from './track.manager'
 import type { PublicUser } from './user.manager'
-import { toRelativeLocaleDateString } from './utils'
+import { toRelativeLocaleDateString } from '@/utils'
 
 type SessionSelect = typeof sessions.$inferSelect
 export type Session = Omit<SessionSelect, 'date'> & {
-  date: DateValue
+  date: Date
   typeString: string
   relativeDate: string
 }
@@ -45,14 +45,10 @@ export default class SessionManager {
   static async getMostRecent() {
     console.debug('Getting most recent session')
     const todayString = today(getLocalTimeZone()).toString()
-    const item = (
-      await db
-        .select()
-        .from(sessions)
-        .where(lte(sessions.date, todayString))
-        .orderBy(desc(sessions.date))
-        .limit(1)
-    ).at(0)
+    const item = await db.query.sessions.findFirst({
+      where: eq(sessions.date, todayString),
+      orderBy: desc(sessions.date),
+    })
 
     return !item ? undefined : this.getDetails(item)
   }
@@ -105,16 +101,16 @@ export default class SessionManager {
           session.type.includes(query) ||
           session.description?.includes(query) ||
           session.date.toString().includes(query) ||
-          toRelativeLocaleDateString(session.date.toDate(getLocalTimeZone())).includes(query)
+          toRelativeLocaleDateString(session.date).includes(query)
       )
-      .sort((a, b) => a.date.compare(b.date))
+      .sort((a, b) => a.date.getTime() - b.date.getTime())
   }
 
   static getDetails(session: SessionSelect): Session {
     const date = new Date(session.date)
     return {
       ...session,
-      date: fromDate(date, getLocalTimeZone()),
+      date,
       typeString: SessionManager.typeString[session.type],
       relativeDate: toRelativeLocaleDateString(date),
     }

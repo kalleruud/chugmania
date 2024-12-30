@@ -14,10 +14,12 @@ export const load = (async ({ locals }) => {
 
   const allUsers: LookupEntity[] = await UserManager.getAllLookup()
   const mostRecentSession = await SessionManager.getMostRecent()
+  const mostRecentTimeEntry = await TimeEntryManager.getMostRecent()
+
   const allSessions: LookupEntity[] = await SessionManager.getAllLookup()
   const allTracks: LookupEntity[] = await TrackManager.getAllLookup()
 
-  return { user, allUsers, allTracks, allSessions, mostRecentSession }
+  return { user, allUsers, allTracks, allSessions, mostRecentSession, mostRecentTimeEntry }
 }) satisfies PageServerLoad
 
 export const actions = {

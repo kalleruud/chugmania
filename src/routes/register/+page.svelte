@@ -1,31 +1,34 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
   import { goto } from '$app/navigation'
-  import { page } from '$app/stores'
   import { Calendar } from '$lib/components/ui/calendar/index.js'
   import * as Popover from '$lib/components/ui/popover/index.js'
+  import type { LookupEntity } from '@/components/lookup/lookup.server'
   import Lookup from '@/components/lookup/lookup.svelte'
-  import Button from '@/components/ui/button/button.svelte'
+  import Button, { buttonVariants } from '@/components/ui/button/button.svelte'
   import Input from '@/components/ui/input/input.svelte'
-  import { cn } from '@/utils'
+
+  import { cn, toRelativeLocaleDateString } from '@/utils'
   import {
     DateFormatter,
+    fromDate,
     getLocalTimeZone,
-    today,
-    toZoned,
-    ZonedDateTime,
     type DateValue,
   } from '@internationalized/date'
   import CalendarIcon from 'lucide-svelte/icons/calendar'
   import type { PageData } from './$types'
 
   const { data }: { data: PageData } = $props()
+  const { allUsers, allTracks, mostRecentSession, mostRecentTimeEntry } = data
 
-  let track = $state(data.allTracks.find(t => t.label === $page.url.searchParams.get('track')))
-  let date: DateValue | undefined = $state(today(getLocalTimeZone()))
-
-  let user = $state(
-    data.allUsers.find(u => u.id === ($page.url.searchParams.get('user') ?? data.user.id))
+  let selectedUser = $state<LookupEntity | undefined>(
+    allUsers.find(u => u.id === mostRecentTimeEntry?.user.id)
+  )
+  let selectedTrack = $state<LookupEntity | undefined>(
+    allTracks.find(t => t.id === mostRecentTimeEntry?.track.id)
+  )
+  let selectedDate = $state<DateValue | undefined>(
+    !mostRecentSession?.date ? undefined : fromDate(mostRecentSession.date, getLocalTimeZone())
   )
 
   const df = new DateFormatter('nb-NO', {
@@ -35,22 +38,22 @@
   let minutes = $state(undefined as number | undefined)
   let seconds = $state(undefined as number | undefined)
 
-  let formIsValid = $derived(() => !!track && !!user && !!date && (minutes || seconds))
+  let formIsValid = $derived(selectedTrack && selectedUser && selectedDate && (minutes || seconds))
 
   const numberInputClass =
     'flex w-20 rounded-md border bg-transparent text-center outline-none placeholder:text-muted-foreground focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'
 
   $effect(() => {
     let params = new URLSearchParams()
-    if (track) params.set('track', track.label)
-    if (user) params.set('user', user.id)
-    if (date) params.set('session', date.toString())
+    if (selectedTrack) params.set('track', selectedTrack.label)
+    if (selectedUser) params.set('user', selectedUser.id)
+    if (selectedDate) params.set('session', selectedDate.toString())
 
     goto('?' + params.toString())
   })
 </script>
 
-<div class="flex flex-col">
+<div class="flex touch-none flex-col">
   <main class="gap-4 p-4">
     <form class="flex flex-col gap-4" use:enhance method="POST" action={`?/add`}>
       <div class="my-24 flex h-28 w-full flex-row justify-center gap-2 text-5xl caret-muted">
@@ -97,40 +100,46 @@
           enterkeyhint="next"
         />
       </div>
-      <Lookup
-        name="user"
-        placeholder="Velg en bruker..."
-        items={data.allUsers}
-        bind:selected={user}
-      />
+
+      <div class="flex gap-4">
+        <Lookup
+          name="user"
+          placeholder="Velg en spiller..."
+          items={allUsers}
+          bind:selected={selectedUser}
+        />
+
+        <Lookup
+          name="track"
+          placeholder="Velg en bane..."
+          items={allTracks}
+          bind:selected={selectedTrack}
+        />
+      </div>
+
       <Popover.Root>
-        <Popover.Trigger asChild let:builder>
-          <input type="hidden" name="date" value={date} />
-          <Button
-            variant="outline"
-            class={cn(
-              'w-full justify-start text-left font-normal',
-              !date && 'text-muted-foreground'
-            )}
-            builders={[builder]}
-          >
-            <CalendarIcon class="mr-2 size-4" />
-            {date ? df.format(date.toDate(getLocalTimeZone())) : 'Velg dato...'}
-          </Button>
+        <Popover.Trigger
+          class={cn(
+            buttonVariants({
+              variant: 'outline',
+              class: 'w-full justify-start text-left font-normal',
+            }),
+            !selectedDate && 'text-muted-foreground'
+          )}
+        >
+          <input type="hidden" name="date" value={selectedDate} />
+          <CalendarIcon />
+          {selectedDate
+            ? toRelativeLocaleDateString(selectedDate.toDate(getLocalTimeZone()))
+            : 'Velg dato...'}
         </Popover.Trigger>
         <Popover.Content class="w-auto p-0">
-          <Calendar bind:value={date} initialFocus />
+          <Calendar type="single" bind:value={selectedDate} initialFocus />
         </Popover.Content>
       </Popover.Root>
 
-      <Lookup
-        name="track"
-        placeholder="Velg en bane..."
-        items={data.allTracks}
-        bind:selected={track}
-      />
       <Input type="text" name="comment" placeholder="Kommentar..." />
-      <Button type="submit" disabled={!formIsValid()}>Registrer tid</Button>
+      <Button type="submit" disabled={!formIsValid}>Registrer tid</Button>
     </form>
   </main>
 </div>

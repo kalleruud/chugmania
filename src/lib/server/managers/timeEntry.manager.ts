@@ -35,6 +35,27 @@ export default class TimeEntryManager {
     }))
   }
 
+  static async getMostRecent(): Promise<TimeEntry | undefined> {
+    const item = (
+      await db
+        .select()
+        .from(timeEntries)
+        .where(isNull(timeEntries.deletedAt))
+        .innerJoin(TrackManager.table, eq(timeEntries.track, TrackManager.table.id))
+        .innerJoin(UserManager.table, eq(timeEntries.user, UserManager.table.id))
+        .orderBy(timeEntries.duration)
+        .limit(1)
+    ).at(0)
+
+    return item
+      ? {
+          ...this.getDetails(item.time_entries),
+          track: TrackManager.getDetails(item.tracks),
+          user: UserManager.getDetails(item.users),
+        }
+      : undefined
+  }
+
   static async create(timeEntry: typeof timeEntries.$inferInsert) {
     console.debug('Creating time entry')
     return await db.insert(timeEntries).values(timeEntry).returning()

@@ -1,3 +1,4 @@
+import { CalendarDate, type DateValue } from '@internationalized/date'
 import { type ClassValue, clsx } from 'clsx'
 import { cubicOut } from 'svelte/easing'
 import type { TransitionConfig } from 'svelte/transition'
@@ -57,4 +58,29 @@ export const flyAndScale = (
 
 export async function hash(value: string) {
   return await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value))
+}
+
+export function toRelativeLocaleDateString(then: Date, locales: Intl.LocalesArgument = 'nb') {
+  const today = new Date()
+  const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000)
+  const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000)
+  const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+  const lastWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+
+  if (then.toDateString() === today.toDateString()) return 'I dag'
+  if (then.toDateString() === yesterday.toDateString()) return 'I går'
+  if (then.toDateString() === tomorrow.toDateString()) return 'I morgen'
+
+  if (then >= lastWeek && then <= today)
+    return 'Forrige ' + then.toLocaleDateString(locales, { weekday: 'long' })
+
+  if (then >= today && then <= nextWeek)
+    return 'Neste ' + then.toLocaleDateString(locales, { weekday: 'long' })
+
+  return then.toLocaleDateString(locales, { month: 'long', day: 'numeric', year: 'numeric' })
+}
+
+export function fromString(value: string): CalendarDate {
+  const date = new Date(Date.parse(value))
+  return new CalendarDate(date.getFullYear(), date.getMonth() + 1, date.getDate())
 }
