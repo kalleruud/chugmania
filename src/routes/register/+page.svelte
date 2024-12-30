@@ -8,13 +8,8 @@
   import Button, { buttonVariants } from '@/components/ui/button/button.svelte'
   import Input from '@/components/ui/input/input.svelte'
 
-  import { cn, toRelativeLocaleDateString } from '@/utils'
-  import {
-    DateFormatter,
-    fromDate,
-    getLocalTimeZone,
-    type DateValue,
-  } from '@internationalized/date'
+  import { cn, fromDate, toRelativeLocaleDateString } from '@/utils'
+  import { CalendarDate, DateFormatter, getLocalTimeZone } from '@internationalized/date'
   import CalendarIcon from 'lucide-svelte/icons/calendar'
   import type { PageData } from './$types'
 
@@ -27,13 +22,9 @@
   let selectedTrack = $state<LookupEntity | undefined>(
     allTracks.find(t => t.id === mostRecentTimeEntry?.track.id)
   )
-  let selectedDate = $state<DateValue | undefined>(
-    !mostRecentSession?.date ? undefined : fromDate(mostRecentSession.date, getLocalTimeZone())
+  let selectedDate = $state<CalendarDate | undefined>(
+    !mostRecentSession?.date ? undefined : fromDate(mostRecentSession.date)
   )
-
-  const df = new DateFormatter('nb-NO', {
-    dateStyle: 'long',
-  })
 
   let minutes = $state(undefined as number | undefined)
   let seconds = $state(undefined as number | undefined)

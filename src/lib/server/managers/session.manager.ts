@@ -1,7 +1,7 @@
 import db from '$lib/server/db'
 import { sessions } from '$lib/server/db/schema'
 import { getLocalTimeZone, today } from '@internationalized/date'
-import { desc, eq } from 'drizzle-orm'
+import { and, desc, eq, isNull } from 'drizzle-orm'
 import TimeEntryManager from './timeEntry.manager'
 import TrackManager from './track.manager'
 import type { PublicUser } from './user.manager'
@@ -63,9 +63,11 @@ export default class SessionManager {
 
   static async getFromDate(date: string) {
     console.debug('Getting session from:', date)
-    const results = await db.select().from(sessions).where(eq(sessions.date, date)).limit(1)
-    const result = results.at(0)
-    return !result ? undefined : this.getDetails(result)
+    const result = await db.query.sessions.findFirst({
+      where: and(eq(sessions.date, date), isNull(sessions.deletedAt)),
+    })
+    if (!result) return undefined
+    return this.getDetails(result)
   }
 
   static async create(type: SessionType, user: PublicUser) {

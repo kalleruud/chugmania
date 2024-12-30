@@ -1,4 +1,4 @@
-import { CalendarDate, type DateValue } from '@internationalized/date'
+import { CalendarDate } from '@internationalized/date'
 import { type ClassValue, clsx } from 'clsx'
 import { cubicOut } from 'svelte/easing'
 import type { TransitionConfig } from 'svelte/transition'
@@ -83,4 +83,8 @@ export function toRelativeLocaleDateString(then: Date, locales: Intl.LocalesArgu
 export function fromString(value: string): CalendarDate {
   const date = new Date(Date.parse(value))
   return new CalendarDate(date.getFullYear(), date.getMonth() + 1, date.getDate())
+}
+
+export function fromDate(value: Date): CalendarDate {
+  return new CalendarDate(value.getFullYear(), value.getMonth() + 1, value.getDate())
 }
