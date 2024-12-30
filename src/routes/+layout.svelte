@@ -11,7 +11,8 @@
 
 <ModeWatcher />
 <div class="flex h-screen flex-col">
-  <aside class="fixed bottom-0 z-10 w-full border-t bg-background pb-safe">
+  <div class="z-9 fixed w-full bg-background/75 backdrop-blur pt-safe"></div>
+  <aside class="fixed bottom-0 z-10 w-full border-t bg-background/75 backdrop-blur pb-safe">
     <nav class="flex items-center justify-around py-2 text-sm">
       <a
         href="/"
