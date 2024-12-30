@@ -7,28 +7,22 @@
 
   type Props = {
     className?: string
+    title?: string
+    description?: string
+    button?: string
     mode?: FormMode
   }
 
-  let { className, mode }: Props = $props()
-
-  let details = $derived(
-    mode === 'register'
-      ? {
-          title: 'Registrer deg',
-          description: 'Dytt inn infoen din, så er du klar til å chugge på null tid',
-          button: 'Kroppen min er klar',
-        }
-      : {
-          title: 'Nættopp',
-          description: 'Skriv inn mailen din for å logge inn',
-          button: 'Trykk her hvis du har liten tiss',
-        }
-  )
+  let { className, title, description, button = 'Kjør', mode }: Props = $props()
 </script>
 
-<h1>{details.title}</h1>
-<p class="text-muted-foreground">{details.description}</p>
+{#if title}
+  <h1>{title}</h1>
+{/if}
+
+{#if description}
+  <p class="text-muted-foreground">{description}</p>
+{/if}
 
 <form
   data-testid="login-form"
@@ -76,5 +70,5 @@
     />
   </fieldset>
 
-  <Button type="submit">{details.button}</Button>
+  <Button type="submit">{button}</Button>
 </form>
