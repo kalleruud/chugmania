@@ -7,3 +7,5 @@ export type Session = S
 export type TimeEntry = TE
 export type Track = T
 export type PublicUser = U
+
+export type FormMode = 'login' | 'register'

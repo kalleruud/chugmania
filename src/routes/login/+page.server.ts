@@ -3,8 +3,6 @@ import { fail, redirect } from '@sveltejs/kit'
 import type { Actions, PageServerLoad } from './$types'
 import { isFailed } from '@/server/managers/utils'
 
-export type FormMode = 'lookup' | 'register' | 'login'
-
 export const load = (async ({ locals }) => {
   if (locals.user) throw redirect(303, locals.redirect ?? '/')
 

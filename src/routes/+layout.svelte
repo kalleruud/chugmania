@@ -9,6 +9,10 @@
   let { children } = $props()
 </script>
 
+<svelte:head>
+  <title>Chugmania</title>
+</svelte:head>
+
 <ModeWatcher />
 <div class="flex h-screen flex-col">
   <div class="z-9 fixed w-full bg-background/75 backdrop-blur pt-safe"></div>
