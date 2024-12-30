@@ -87,7 +87,10 @@
           <ul class="overflow-hidden p-1 text-foreground">
             {#each results as item}
               <button
-                class="relative flex w-full select-none items-center rounded-sm px-2 py-1.5 outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:hover:bg-accent"
+                class="relative flex w-full select-none items-center rounded-sm px-2 py-1.5 outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 {selected?.id ===
+                item.id
+                  ? 'bg-primary text-background'
+                  : 'sm:hover:bg-muted'}"
                 onclick={() => onSelect(item)}
               >
                 <li class="items -center flex w-full truncate">{item.label}</li>
