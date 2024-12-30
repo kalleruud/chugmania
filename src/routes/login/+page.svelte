@@ -1,56 +1,60 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
   import { Button } from '$lib/components/ui/button/index.js'
-  import * as Card from '$lib/components/ui/card/index.js'
   import { Input } from '$lib/components/ui/input/index.js'
   import { Label } from '$lib/components/ui/label/index.js'
-  import type { ActionData, PageData } from './$types'
   import type { FormMode } from './+page.server'
 
-  let { form }: { data: PageData; form: ActionData } = $props()
-
-  let mode = $state<FormMode>('lookup')
-  let details = $derived(getDetails(mode))
-
-  $effect(() => {
-    if (form?.formMode) mode = form.formMode
-  })
-
-  function getDetails(mode: FormMode) {
-    if (mode === 'lookup')
-      return {
-        title: 'Nættopp',
-        description: 'Skriv inn mailen din for å logge inn eller opprette en bruker.',
-        button: 'Fortsett',
-      }
-
-    if (mode === 'register')
-      return {
-        title: 'Registrer deg',
-        description: 'Fant ingen bruker med den mailen, vil du registrere deg?',
-        button: 'Registrer',
-      }
-
-    return {
-      title: 'Logg inn',
-      description: 'Skriv inn passordet ditt for å logge inn.',
-      button: 'Logg inn',
-    }
-  }
+  let mode = $state<FormMode>('login')
+  let details = $derived(
+    mode === 'register'
+      ? {
+          title: 'Registrer deg',
+          description: 'Dytt inn infoen din, så er du klar til å chugge på null tid.',
+          button: 'Registrer',
+        }
+      : {
+          title: 'Nættopp',
+          description: 'Skriv inn mailen din for å logge inn.',
+          button: 'Logg inn',
+        }
+  )
 </script>
 
 <svelte:head>
-  <title>Chugmania - Logg inn</title>
+  <title>Chugmania - {details.title}</title>
 </svelte:head>
 
-<div class="flex h-dvh touch-none flex-col items-center justify-center gap-4 p-4 pb-36">
-  <h1 class="text-2xl">{details.title}</h1>
-  <p>{details.description}</p>
+<div class="fixed bottom-32 w-full touch-none select-none">
+  <div class="rounded-lg bg-secondary p-1">
+    <button
+      type="button"
+      class="rounded-sm py-1"
+      class:bg-background={mode === 'login'}
+      class:text-muted-foreground={mode !== 'login'}
+      onclick={() => (mode = 'login')}
+    >
+      Logg inn
+    </button>
+    <button
+      type="button"
+      class="rounded-sm py-1"
+      class:bg-background={mode === 'register'}
+      class:text-muted-foreground={mode !== 'register'}
+      onclick={() => (mode = 'register')}
+    >
+      Registrer
+    </button>
+  </div>
+</div>
+<div class="flex h-dvh touch-none flex-col justify-center p-4 pb-36">
+  <h1>{details.title}</h1>
+  <p class="text-muted-foreground">{details.description}</p>
 
   <form
     data-testid="login-form"
     id="login-form"
-    class="grid w-full gap-4"
+    class="mt-4 grid w-full gap-4"
     method="POST"
     use:enhance={() =>
       async ({ update }) =>
@@ -63,7 +67,6 @@
         id="email"
         name="email"
         type="email"
-        autofocus={mode === 'lookup'}
         required
         autocomplete="email"
         placeholder="jeghar@litentiss.no"
@@ -77,7 +80,6 @@
           name="name"
           type="text"
           placeholder="Judas"
-          autofocus={mode === 'register'}
           minlength={3}
           autocomplete="name"
         />
@@ -89,13 +91,13 @@
         id="password"
         name="password"
         type="password"
-        autofocus={mode === 'login'}
         required={mode !== 'lookup'}
         placeholder="passord123"
         minlength={6}
         autocomplete={mode === 'login' ? 'new-password' : 'current-password'}
       />
     </fieldset>
+
+    <Button class="w-full" type="submit">{details.button}</Button>
   </form>
-  <Button class="w-full" form="login-form" type="submit">{details.button}</Button>
 </div>
