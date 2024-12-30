@@ -9,6 +9,6 @@ export default defineConfig({
 
   verbose: true,
   strict: true,
-  schema: './src/server/db/schema.ts',
+  schema: './src/lib/server/db/schema.ts',
   dialect: 'sqlite',
 })

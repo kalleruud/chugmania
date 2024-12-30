@@ -11,7 +11,7 @@ CREATE TABLE sessions (
 	created_at integer NOT NULL,
 	deleted_at integer,
 	description text,
-	date string NOT NULL,
+	date text NOT NULL,
 	type text NOT NULL,
 	created_by text NOT NULL,
 	FOREIGN KEY (created_by) REFERENCES users(id) ON UPDATE no action ON DELETE no action
