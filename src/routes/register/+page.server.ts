@@ -5,7 +5,6 @@ import TimeEntryManager from '@/server/managers/timeEntry.manager'
 import TrackManager from '@/server/managers/track.manager'
 import UserManager, { type PublicUser } from '@/server/managers/user.manager'
 import { type Actions } from '@sveltejs/kit'
-import { handleError } from '../../hooks.server'
 import type { PageServerLoad } from './$types'
 
 export const load = (async ({ locals }) => {
@@ -26,15 +25,11 @@ export const actions = {
   add: async ({ request, locals }) => {
     if (!locals.user) throw new Error('Unauthorized')
 
-    try {
-      console.log('Registering new time')
-      const data = await parseFields(await request.formData(), locals.user)
-      const entry = await TimeEntryManager.create(data)
+    console.log('Registering new time')
+    const data = await parseFields(await request.formData(), locals.user)
+    const entry = await TimeEntryManager.create(data)
 
-      return { success: true, entry }
-    } catch (error) {
-      handleError(error)
-    }
+    return { success: true, entry }
   },
 } satisfies Actions
 
