@@ -2,27 +2,40 @@
   import { enhance } from '$app/forms'
   import { goto } from '$app/navigation'
   import { page } from '$app/stores'
+  import { Calendar } from '$lib/components/ui/calendar/index.js'
+  import * as Popover from '$lib/components/ui/popover/index.js'
   import Lookup from '@/components/lookup/lookup.svelte'
   import Button from '@/components/ui/button/button.svelte'
   import Input from '@/components/ui/input/input.svelte'
+  import { cn } from '@/utils'
+  import {
+    DateFormatter,
+    getLocalTimeZone,
+    today,
+    toZoned,
+    ZonedDateTime,
+    type DateValue,
+  } from '@internationalized/date'
+  import CalendarIcon from 'lucide-svelte/icons/calendar'
   import type { PageData } from './$types'
 
   const { data }: { data: PageData } = $props()
 
   let track = $state(data.allTracks.find(t => t.label === $page.url.searchParams.get('track')))
-  let session = $state(
-    data.allSessions.find(
-      s => s.id === ($page.url.searchParams.get('session') ?? data.mostRecentSession?.id)
-    )
-  )
+  let date: DateValue | undefined = $state(today(getLocalTimeZone()))
+
   let user = $state(
     data.allUsers.find(u => u.id === ($page.url.searchParams.get('user') ?? data.user.id))
   )
 
+  const df = new DateFormatter('nb-NO', {
+    dateStyle: 'long',
+  })
+
   let minutes = $state(undefined as number | undefined)
   let seconds = $state(undefined as number | undefined)
 
-  let formIsValid = $derived(() => !!track && !!user && !!session && (minutes || seconds))
+  let formIsValid = $derived(() => !!track && !!user && !!date && (minutes || seconds))
 
   const numberInputClass =
     'flex w-20 rounded-md border bg-transparent text-center outline-none placeholder:text-muted-foreground focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'
@@ -31,7 +44,7 @@
     let params = new URLSearchParams()
     if (track) params.set('track', track.label)
     if (user) params.set('user', user.id)
-    if (session) params.set('session', session.id)
+    if (date) params.set('session', date.toString())
 
     goto('?' + params.toString())
   })
@@ -90,12 +103,26 @@
         items={data.allUsers}
         bind:selected={user}
       />
-      <Lookup
-        name="session"
-        placeholder="Velg en session..."
-        items={data.allSessions}
-        bind:selected={session}
-      />
+      <Popover.Root>
+        <Popover.Trigger asChild let:builder>
+          <input type="hidden" name="date" value={date} />
+          <Button
+            variant="outline"
+            class={cn(
+              'w-full justify-start text-left font-normal',
+              !date && 'text-muted-foreground'
+            )}
+            builders={[builder]}
+          >
+            <CalendarIcon class="mr-2 size-4" />
+            {date ? df.format(date.toDate(getLocalTimeZone())) : 'Velg dato...'}
+          </Button>
+        </Popover.Trigger>
+        <Popover.Content class="w-auto p-0">
+          <Calendar bind:value={date} initialFocus />
+        </Popover.Content>
+      </Popover.Root>
+
       <Lookup
         name="track"
         placeholder="Velg en bane..."

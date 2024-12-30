@@ -5,8 +5,7 @@
   import { ChevronsUpDown } from 'lucide-svelte'
   import Search from 'lucide-svelte/icons/search'
   import { tick } from 'svelte'
-
-  type LookupEntity = { id: string; label: string; type?: string; date?: Date }
+  import type { LookupEntity } from './lookup.server'
 
   type Props = {
     placeholder: string
@@ -29,16 +28,7 @@
   let open = $state(false)
   let search = $state('')
   let results = $derived(() =>
-    items
-      .filter(i => i.label?.toLowerCase().includes(search.toLowerCase()))
-      .sort((a, b) => {
-        if (a.date && b.date) {
-          return a.date.getTime() - b.date.getTime()
-        }
-        const indexA = a.label.toLowerCase().indexOf(search.toLowerCase())
-        const indexB = b.label.toLowerCase().indexOf(search.toLowerCase())
-        return indexA - indexB
-      })
+    items.filter(i => i.label?.toLowerCase().includes(search.toLowerCase()))
   )
 
   function onSelect(item: LookupEntity, triggerId: string) {

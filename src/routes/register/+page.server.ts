@@ -1,12 +1,12 @@
 import type { LookupEntity } from '@/components/lookup/lookup.server'
+import type { timeEntries } from '@/server/db/schema'
 import SessionManager from '@/server/managers/session.manager'
 import TimeEntryManager from '@/server/managers/timeEntry.manager'
 import TrackManager from '@/server/managers/track.manager'
-import UserManager from '@/server/managers/user.manager'
+import UserManager, { type PublicUser } from '@/server/managers/user.manager'
 import { type Actions } from '@sveltejs/kit'
 import { handleError } from '../../hooks.server'
 import type { PageServerLoad } from './$types'
-import type { timeEntries } from '@/server/db/schema'
 
 export const load = (async ({ locals }) => {
   if (!locals.user) throw new Error('Unauthorized')
@@ -21,10 +21,12 @@ export const load = (async ({ locals }) => {
 }) satisfies PageServerLoad
 
 export const actions = {
-  add: async ({ request }) => {
+  add: async ({ request, locals }) => {
+    if (!locals.user) throw new Error('Unauthorized')
+
     try {
       console.log('Registering new time')
-      const data = parseFields(await request.formData())
+      const data = await parseFields(await request.formData(), locals.user)
       const entry = await TimeEntryManager.create(data)
 
       return { success: true, entry }
@@ -34,7 +36,7 @@ export const actions = {
   },
 } satisfies Actions
 
-function parseFields(data: FormData) {
+async function parseFields(data: FormData, user: PublicUser) {
   let minutes = data.get('minutes')?.toString() ?? ''
   minutes = minutes?.length === 0 ? '0' : minutes
 
@@ -50,12 +52,18 @@ function parseFields(data: FormData) {
     Number.parseInt(houndredths)
   )
 
+  const dateString = data.get('date') as string
+  console.log('dateString:', dateString)
+
+  const session =
+    (await SessionManager.getFromDate(dateString)) ??
+    (await SessionManager.create('practice', user))
   const comment = data.get('comment')?.toString()
 
   return {
     duration,
     track: data.get('track') as string,
-    session: data.get('session') as string,
+    session: session.id,
     user: data.get('user') as string,
     comment: comment?.length ? comment : undefined,
     amount: 0.5,

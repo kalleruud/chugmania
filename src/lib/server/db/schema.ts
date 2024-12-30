@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto'
 import { blob, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import type { SessionType } from '../managers/session.manager'
+import { getLocalTimeZone, today } from '@internationalized/date'
 
 export type TrackLevel = 'white' | 'green' | 'blue' | 'red' | 'black' | 'custom'
 export type TrackType = 'drift' | 'valley' | 'lagoon' | 'stadium'
@@ -29,9 +30,9 @@ export const users = sqliteTable('users', {
 export const sessions = sqliteTable('sessions', {
   ...common,
   description: text('description'),
-  date: integer('date', { mode: 'timestamp' })
+  date: text('date')
     .notNull()
-    .$defaultFn(() => new Date()),
+    .$defaultFn(() => today(getLocalTimeZone()).toString()),
   type: text('type').$type<SessionType>().notNull(),
   createdBy: text('created_by')
     .notNull()

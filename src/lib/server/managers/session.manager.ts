@@ -1,13 +1,15 @@
 import db from '$lib/server/db'
 import { sessions } from '$lib/server/db/schema'
-import { desc, eq, lt } from 'drizzle-orm'
+import { fromDate, getLocalTimeZone, today, type DateValue } from '@internationalized/date'
+import { desc, eq, lte } from 'drizzle-orm'
 import TimeEntryManager from './timeEntry.manager'
 import TrackManager from './track.manager'
 import type { PublicUser } from './user.manager'
 import { toRelativeLocaleDateString } from './utils'
 
 type SessionSelect = typeof sessions.$inferSelect
-export type Session = SessionSelect & {
+export type Session = Omit<SessionSelect, 'date'> & {
+  date: DateValue
   typeString: string
   relativeDate: string
 }
@@ -35,18 +37,19 @@ export default class SessionManager {
   static async getAllLookup() {
     console.debug('Getting session lookup')
     return (await SessionManager.getAll()).map(session => ({
-      ...this.getDetails(session),
-      label: `${session.typeString} - ${session.date.toLocaleDateString()}`,
+      ...session,
+      label: `${session.typeString} - ${session.relativeDate}`,
     }))
   }
 
   static async getMostRecent() {
     console.debug('Getting most recent session')
+    const todayString = today(getLocalTimeZone()).toString()
     const item = (
       await db
         .select()
         .from(sessions)
-        .where(lt(sessions.date, new Date()))
+        .where(lte(sessions.date, todayString))
         .orderBy(desc(sessions.date))
         .limit(1)
     ).at(0)
@@ -60,6 +63,13 @@ export default class SessionManager {
     const result = results.at(0)
     if (!this.isSession(result)) throw new Error(`Session not found: ${id}`)
     return this.getDetails(result)
+  }
+
+  static async getFromDate(date: string) {
+    console.debug('Getting session from:', date)
+    const results = await db.select().from(sessions).where(eq(sessions.date, date)).limit(1)
+    const result = results.at(0)
+    return !result ? undefined : this.getDetails(result)
   }
 
   static async create(type: SessionType, user: PublicUser) {
@@ -88,23 +98,25 @@ export default class SessionManager {
     })
   }
 
-  static search(query: string, all: SessionSelect[]) {
+  static search(query: string, all: Session[]) {
     return all
       .filter(
         session =>
           session.type.includes(query) ||
           session.description?.includes(query) ||
-          session.date.toISOString().includes(query) ||
-          session.date.toLocaleDateString().includes(query)
+          session.date.toString().includes(query) ||
+          toRelativeLocaleDateString(session.date.toDate(getLocalTimeZone())).includes(query)
       )
-      .sort((a, b) => a.date.getTime() - b.date.getTime())
+      .sort((a, b) => a.date.compare(b.date))
   }
 
   static getDetails(session: SessionSelect): Session {
+    const date = new Date(session.date)
     return {
       ...session,
+      date: fromDate(date, getLocalTimeZone()),
       typeString: SessionManager.typeString[session.type],
-      relativeDate: toRelativeLocaleDateString(session.date),
+      relativeDate: toRelativeLocaleDateString(date),
     }
   }
 
