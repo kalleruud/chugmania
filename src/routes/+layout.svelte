@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores'
   import '@fontsource/titillium-web'
-  import { Car, IdCard, Map, Plus } from 'lucide-svelte'
+  import { Beer, IdCard, Map, Plus } from 'lucide-svelte'
   import Flag from 'lucide-svelte/icons/flag'
   import { ModeWatcher } from 'mode-watcher'
   import '../app.css'
@@ -20,7 +20,7 @@
           ? 'text-foreground'
           : 'text-stone-400'}"
       >
-        <Car class="size-6" />
+        <Beer class="size-6" />
         <span>I dag</span>
       </a>
       <a
