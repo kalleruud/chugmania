@@ -15,13 +15,13 @@
 
   <div>
     {#each sessionData as { track, entries }}
-      <div class="mb-4 flex flex-col gap-2 border-b py-4 font-f1 text-sm">
+      <div class="mb-4 flex flex-col gap-2 border-b py-4 text-sm">
         <h2 class="text-accent-foreground">{track.name}</h2>
 
         <ul class="divide-y divide-solid">
           {#each entries as entry, i}
-            <li>
-              <div class="flex w-full justify-between py-2">
+            <li class="py-2">
+              <div class="flex w-full justify-between font-f1">
                 <div class="flex gap-2">
                   <p class="italic text-muted-foreground">{i + 1}</p>
                   <p class="font-bold">{entry.user.name.substring(0, 3).toUpperCase()}</p>

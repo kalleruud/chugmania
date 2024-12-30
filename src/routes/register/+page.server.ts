@@ -6,6 +6,7 @@ import UserManager from '@/server/managers/user.manager'
 import { type Actions } from '@sveltejs/kit'
 import { handleError } from '../../hooks.server'
 import type { PageServerLoad } from './$types'
+import type { timeEntries } from '@/server/db/schema'
 
 export const load = (async ({ locals }) => {
   if (!locals.user) throw new Error('Unauthorized')
@@ -24,14 +25,7 @@ export const actions = {
     try {
       console.log('Registering new time')
       const data = parseFields(await request.formData())
-
-      const entry = await TimeEntryManager.create({
-        duration: data.duration,
-        track: data.trackId,
-        session: data.sessionId,
-        user: data.userId,
-        amount: 0.5,
-      })
+      const entry = await TimeEntryManager.create(data)
 
       return { success: true, entry }
     } catch (error) {
@@ -41,20 +35,29 @@ export const actions = {
 } satisfies Actions
 
 function parseFields(data: FormData) {
-  const minutes = data.get('minutes')?.toString()
-  const seconds = data.get('seconds')?.toString()
-  const houndreds = data.get('houndreds')?.toString()
+  let minutes = data.get('minutes')?.toString() ?? ''
+  minutes = minutes?.length === 0 ? '0' : minutes
+
+  let seconds = data.get('seconds')?.toString() ?? ''
+  seconds = seconds?.length === 0 ? '0' : seconds
+
+  let houndredths = data.get('houndredths')?.toString() ?? ''
+  houndredths = houndredths?.length === 0 ? '0' : houndredths
 
   const duration = TimeEntryManager.toMs(
-    Number.parseInt(minutes ?? '0'),
-    Number.parseInt(seconds ?? '0'),
-    Number.parseInt(houndreds ?? '0')
+    Number.parseInt(minutes),
+    Number.parseInt(seconds),
+    Number.parseInt(houndredths)
   )
+
+  const comment = data.get('comment')?.toString()
 
   return {
     duration,
-    trackId: data.get('track') as string,
-    sessionId: data.get('session') as string,
-    userId: data.get('user') as string,
-  }
+    track: data.get('track') as string,
+    session: data.get('session') as string,
+    user: data.get('user') as string,
+    comment: comment?.length ? comment : undefined,
+    amount: 0.5,
+  } satisfies typeof timeEntries.$inferInsert
 }

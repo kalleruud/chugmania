@@ -74,7 +74,7 @@
         </div>
         <input
           class={numberInputClass}
-          name="hundreds"
+          name="houndredths"
           type="text"
           min={0}
           max={59}
