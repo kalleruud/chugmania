@@ -1,12 +1,13 @@
-import { NODE_ENV, ISSUER, PRIVATE_KEY, TOKEN_EXPIRY } from '$env/static/private'
+import { ISSUER, NODE_ENV, PRIVATE_KEY, TOKEN_EXPIRY } from '$env/static/private'
 import db from '$lib/server/db'
+import type { LookupEntity } from '@/components/lookup/lookup.server'
 import { hash } from '@/utils'
 import { type Cookies } from '@sveltejs/kit'
-import { eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 import jwt from 'jsonwebtoken'
-import { users } from '../db/schema'
+import { sessions, timeEntries, users } from '../db/schema'
+import SessionManager from './session.manager'
 import type { FailDetails } from './utils'
-import type { LookupEntity } from '@/components/lookup/lookup.server'
 
 if (!ISSUER) throw new Error('Missing environment variable: ISSUER')
 
@@ -63,9 +64,26 @@ export default class UserManager {
     return (await db.select().from(users)).map(this.getDetails)
   }
 
+  static async getUsersFromSession(sessionId: string): Promise<PublicUser[]> {
+    const items = await db
+      .select()
+      .from(users)
+      .innerJoin(sessions, eq(timeEntries.session, sessionId))
+      .innerJoin(timeEntries, eq(users.id, timeEntries.user))
+      .where(
+        and(isNull(users.deletedAt), isNull(sessions.deletedAt), isNull(timeEntries.deletedAt))
+      )
+
+    return items.map(item => this.getDetails(item.users))
+  }
+
   static async getAllLookup(): Promise<LookupEntity[]> {
+    const latestSession = await SessionManager.getMostRecent()
+    const latestUsers = latestSession ? await this.getUsersFromSession(latestSession.id) : []
+
     return (await this.getAll()).map(user => ({
       ...user,
+      featured: latestUsers.some(u => u.id === user.id),
       label: user.name ?? user.email,
     }))
   }

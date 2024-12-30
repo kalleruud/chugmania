@@ -9,7 +9,7 @@
   import Input from '@/components/ui/input/input.svelte'
 
   import { cn, fromDate, toRelativeLocaleDateString } from '@/utils'
-  import { CalendarDate, DateFormatter, getLocalTimeZone } from '@internationalized/date'
+  import { CalendarDate, getLocalTimeZone } from '@internationalized/date'
   import CalendarIcon from 'lucide-svelte/icons/calendar'
   import type { PageData } from './$types'
 
@@ -56,7 +56,7 @@
           min={0}
           max={59}
           maxlength={2}
-          placeholder="0"
+          placeholder="4"
           inputmode="numeric"
           enterkeyhint="next"
           bind:value={minutes}
@@ -71,7 +71,7 @@
           min={0}
           max={59}
           maxlength={2}
-          placeholder="00"
+          placeholder="20"
           inputmode="numeric"
           enterkeyhint="next"
           bind:value={seconds}
@@ -86,7 +86,7 @@
           min={0}
           max={59}
           maxlength={2}
-          placeholder="00"
+          placeholder="69"
           inputmode="numeric"
           enterkeyhint="next"
         />

@@ -6,6 +6,7 @@ import TimeEntryManager from './timeEntry.manager'
 import TrackManager from './track.manager'
 import type { PublicUser } from './user.manager'
 import { toRelativeLocaleDateString } from '@/utils'
+import type { LookupEntity } from '@/components/lookup/lookup.server'
 
 type SessionSelect = typeof sessions.$inferSelect
 export type Session = Omit<SessionSelect, 'date'> & {
@@ -34,10 +35,12 @@ export default class SessionManager {
     }))
   }
 
-  static async getAllLookup() {
+  static async getAllLookup(): Promise<LookupEntity[]> {
     console.debug('Getting session lookup')
-    return (await SessionManager.getAll()).map(session => ({
+    const initialCount = 10
+    return (await SessionManager.getAll()).map((session, i) => ({
       ...session,
+      featured: i <= initialCount,
       label: `${session.typeString} - ${session.relativeDate}`,
     }))
   }

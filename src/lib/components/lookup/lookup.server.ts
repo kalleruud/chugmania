@@ -1,1 +1,7 @@
-export type LookupEntity = { id: string; label: string; type?: string; date?: Date }
+export type LookupEntity = {
+  id: string
+  featured: boolean
+  label: string
+  type?: string
+  date?: Date
+}

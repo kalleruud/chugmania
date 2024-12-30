@@ -12,10 +12,10 @@ export const load = (async ({ locals }) => {
   if (!locals.user) throw new Error('Unauthorized')
   const { user } = locals
 
-  const allUsers: LookupEntity[] = await UserManager.getAllLookup()
   const mostRecentSession = await SessionManager.getMostRecent()
   const mostRecentTimeEntry = await TimeEntryManager.getMostRecent()
 
+  const allUsers: LookupEntity[] = await UserManager.getAllLookup()
   const allSessions: LookupEntity[] = await SessionManager.getAllLookup()
   const allTracks: LookupEntity[] = await TrackManager.getAllLookup()
 

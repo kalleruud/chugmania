@@ -53,6 +53,7 @@ export default class TrackManager {
   static async getAllLookup(): Promise<LookupEntity[]> {
     return (await this.getAll()).map(track => ({
       ...track,
+      featured: track.isChuggable,
       label: track.name,
     }))
   }

@@ -28,7 +28,14 @@
   let triggerRef = $state<HTMLButtonElement>(null!)
   let open = $state(false)
   let search = $state('')
-  let results = $derived(items.filter(i => i.label?.toLowerCase().includes(search.toLowerCase())))
+  const featured = items.filter(i => i.featured)
+  let results = $derived(
+    search.length > 0
+      ? items.filter(i => i.label?.toLowerCase().includes(search.toLowerCase()))
+      : featured.length > 0
+        ? featured
+        : items
+  )
 
   function onSelect(item: LookupEntity) {
     closeAndFocusTrigger()
