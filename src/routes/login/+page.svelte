@@ -2,7 +2,6 @@
   import { enhance } from '$app/forms'
   import { Button } from '$lib/components/ui/button/index.js'
   import { Input } from '$lib/components/ui/input/index.js'
-  import { Label } from '$lib/components/ui/label/index.js'
   import type { FormMode } from './+page.server'
 
   let mode = $state<FormMode>('login')
@@ -61,7 +60,7 @@
       action={`?/${mode}`}
     >
       <fieldset class="form-group grid gap-2">
-        <Label for="email">E-post</Label>
+        <p>E-post</p>
         <Input
           id="email"
           name="email"
@@ -73,7 +72,7 @@
       </fieldset>
       {#if mode === 'register'}
         <fieldset class="form-group grid gap-2">
-          <Label for="name">Navn</Label>
+          <p>Navn</p>
           <Input
             id="name"
             name="name"
@@ -85,7 +84,7 @@
         </fieldset>
       {/if}
       <fieldset class="form-group grid gap-2">
-        <Label for="password">Passord</Label>
+        <p>Passord</p>
         <Input
           id="password"
           name="password"
