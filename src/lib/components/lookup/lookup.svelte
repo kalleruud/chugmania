@@ -79,7 +79,6 @@
           placeholder="Søk..."
           min={0}
           max={200}
-          maxlength={3}
           inputmode="numeric"
           bind:value={search}
         />
