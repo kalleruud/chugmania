@@ -14,7 +14,7 @@
     {#each data.sessions as session}
       <a
         href={'sessions/' + session.id}
-        class="flex items-center justify-between gap-4 rounded-lg border p-4 transition-colors max-sm:hover:bg-accent"
+        class="flex items-center justify-between gap-1 rounded-lg border p-4 transition-colors sm:hover:bg-accent"
       >
         <SessionListView class="w-full" {session} />
         <ChevronRight class="size-6" />

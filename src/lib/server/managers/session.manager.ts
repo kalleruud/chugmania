@@ -4,8 +4,13 @@ import { desc, eq, lt } from 'drizzle-orm'
 import TimeEntryManager from './timeEntry.manager'
 import TrackManager from './track.manager'
 import type { PublicUser } from './user.manager'
+import { toRelativeLocaleDateString } from './utils'
 
-export type Session = typeof sessions.$inferSelect
+type SessionSelect = typeof sessions.$inferSelect
+export type Session = SessionSelect & {
+  typeString: string
+  relativeDate: string
+}
 export type SessionType = 'practice' | 'tournament'
 
 export default class SessionManager {
@@ -22,7 +27,7 @@ export default class SessionManager {
     console.debug('Getting sessions')
     const items = await db.select().from(sessions).orderBy(desc(sessions.date))
     return items.map(item => ({
-      ...item,
+      ...this.getDetails(item),
       typeString: SessionManager.typeString[item.type],
     }))
   }
@@ -30,20 +35,23 @@ export default class SessionManager {
   static async getAllLookup() {
     console.debug('Getting session lookup')
     return (await SessionManager.getAll()).map(session => ({
-      ...session,
+      ...this.getDetails(session),
       label: `${session.typeString} - ${session.date.toLocaleDateString()}`,
     }))
   }
 
   static async getMostRecent() {
     console.debug('Getting most recent session')
-    const items = await db
-      .select()
-      .from(sessions)
-      .where(lt(sessions.date, new Date()))
-      .orderBy(desc(sessions.date))
-      .limit(1)
-    return items.at(0)
+    const item = (
+      await db
+        .select()
+        .from(sessions)
+        .where(lt(sessions.date, new Date()))
+        .orderBy(desc(sessions.date))
+        .limit(1)
+    ).at(0)
+
+    return !item ? undefined : this.getDetails(item)
   }
 
   static async get(id: string) {
@@ -51,7 +59,7 @@ export default class SessionManager {
     const results = await db.select().from(sessions).where(eq(sessions.id, id)).limit(1)
     const result = results.at(0)
     if (!this.isSession(result)) throw new Error(`Session not found: ${id}`)
-    return result
+    return this.getDetails(result)
   }
 
   static async create(type: SessionType, user: PublicUser) {
@@ -68,7 +76,7 @@ export default class SessionManager {
     return item
   }
 
-  static async getTracksWithEntries(sessionId: string) {
+  static async getSessionData(sessionId: string) {
     console.debug('Getting tracks with entries for session:', sessionId)
     const tracks = await TrackManager.getBySession(sessionId)
     const entries = await TimeEntryManager.getBySession(sessionId)
@@ -80,7 +88,7 @@ export default class SessionManager {
     })
   }
 
-  static search(query: string, all: Session[]) {
+  static search(query: string, all: SessionSelect[]) {
     return all
       .filter(
         session =>
@@ -90,6 +98,14 @@ export default class SessionManager {
           session.date.toLocaleDateString().includes(query)
       )
       .sort((a, b) => a.date.getTime() - b.date.getTime())
+  }
+
+  static getDetails(session: SessionSelect): Session {
+    return {
+      ...session,
+      typeString: SessionManager.typeString[session.type],
+      relativeDate: toRelativeLocaleDateString(session.date),
+    }
   }
 
   static isSession(item: unknown): item is Session {

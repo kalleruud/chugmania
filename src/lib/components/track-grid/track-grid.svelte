@@ -1,6 +1,6 @@
 <script lang="ts">
   import * as Card from '$lib/components/ui/card'
-  import type { Track } from './track-grid.server'
+  import type { Track } from '../types.server'
 
   interface Props {
     tracks: Track[]
@@ -41,10 +41,10 @@
               class="
                 aspect-square
                 max-w-16
-                p-1
                 content-center
                 justify-items-center
                 overflow-clip
+                p-1
                 transition-colors
                 {trackStyles[track.level]}
               "

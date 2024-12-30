@@ -11,7 +11,7 @@
 
 <main class="p-4">
   <h1>{session.type.toLocaleUpperCase()}</h1>
-  <p class="text-muted-foreground">{session.date.toLocaleDateString()}</p>
+  <p class="text-muted-foreground">{session.relativeDate}</p>
 
   <div>
     {#each sessionData as { track, entries }}
