@@ -14,4 +14,5 @@ export const actions = {
   login: async ({ cookies, request }) =>
     await LoginManager.login(await request.formData(), cookies),
   register: async ({ request }) => LoginManager.register(await request.formData()),
+  logout: async ({ cookies }) => LoginManager.logout(cookies),
 } satisfies Actions

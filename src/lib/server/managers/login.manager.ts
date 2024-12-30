@@ -1,6 +1,6 @@
 import { ISSUER, PRIVATE_KEY, TOKEN_EXPIRY } from '$env/static/private'
 import type { ResponseMessage } from '@/components/types.server'
-import { fail, type ActionFailure, type Cookies } from '@sveltejs/kit'
+import { fail, redirect, type ActionFailure, type Cookies } from '@sveltejs/kit'
 import jwt from 'jsonwebtoken'
 import UserManager, { type PublicUser } from './user.manager'
 import { hash } from '@/utils'
@@ -42,19 +42,21 @@ export default class LoginManager {
     return expectedHash.equals(Buffer.from(providedHash))
   }
 
-  private static async logout(cookies: Cookies) {
+  static async logout(cookies: Cookies) {
+    console.debug('Logging out')
     cookies.delete(authCookieKey, { path: '/' })
+    throw redirect(302, '/login')
   }
 
   static verifyAuth(cookies: Cookies): PublicUser | ActionFailure<ResponseMessage> {
     try {
       const token = cookies.get(authCookieKey)
-      if (!token) throw Error('No auth token provided')
+      if (!token) return fail(401, { success: false, message: 'You have been logged out.' })
 
       return jwt.verify(token, privateKey, jwtOptions) as PublicUser
     } catch (error) {
       if (!(error instanceof jwt.JsonWebTokenError)) throw error
-      console.error('Failed to verify token:', error.message)
+      console.warn('Failed to verify token:', error.message)
       return fail(401, { success: false, message: 'You have been logged out.' })
     }
   }
