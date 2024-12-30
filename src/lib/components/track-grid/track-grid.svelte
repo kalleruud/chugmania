@@ -1,5 +1,4 @@
 <script lang="ts">
-  import * as Card from '$lib/components/ui/card'
   import type { Track } from '../types.server'
 
   interface Props {
@@ -37,7 +36,7 @@
       <div class="inline-grid grid-cols-5 gap-1 p-1">
         {#each trackChunk as track}
           <button onclick={() => onClick(track)}>
-            <Card.Root
+            <div
               class="
                 aspect-square
                 max-w-16
@@ -50,7 +49,7 @@
               "
             >
               <h3 class="font-f1 text-xl font-black tracking-wider">{track.name}</h3>
-            </Card.Root>
+            </div>
           </button>
         {/each}
       </div>
