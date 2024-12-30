@@ -10,10 +10,12 @@
 </svelte:head>
 
 <main class="p-4">
-  <h1>{session.date.toLocaleDateString()}</h1>
+  <h1>{session.type.toLocaleUpperCase()}</h1>
+  <p class="text-muted-foreground">{session.date.toLocaleDateString()}</p>
+
   <div>
     {#each sessionData as { track, entries }}
-      <div class="flex flex-col gap-2 border-b py-4">
+      <div class="mb-4 flex flex-col gap-2 border-b py-4 font-f1 text-sm">
         <h2 class="text-accent-foreground">{track.name}</h2>
 
         <ul class="divide-y divide-solid">
@@ -21,11 +23,21 @@
             <li>
               <div class="flex w-full justify-between py-2">
                 <div class="flex gap-2">
-                  <p class="font-f1 italic text-muted-foreground">{i + 1}</p>
-                  <p class="font-f1 font-bold">{entry.user.name.substring(0, 3).toUpperCase()}</p>
+                  <p class="italic text-muted-foreground">{i + 1}</p>
+                  <p class="font-bold">{entry.user.name.substring(0, 3).toUpperCase()}</p>
                 </div>
-                <p class="font-f1">{entry.readableDuration}</p>
-                <p class="w-24 font-f1 italic text-muted-foreground">{entry.readableGap}</p>
+
+                <div class="flex gap-2 tracking-wide">
+                  <p class="w-20">{entry.readableDuration}</p>
+
+                  <p class="w-20 italic text-muted-foreground">
+                    {entry.readableGap}
+                  </p>
+
+                  <p class="w-20 italic text-muted-foreground">
+                    {entry.readableLeaderGap}
+                  </p>
+                </div>
               </div>
               {#if entry.comment}
                 <p class="text-muted-foreground">{entry.comment}</p>

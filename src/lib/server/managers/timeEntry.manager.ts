@@ -9,6 +9,8 @@ export type TimeEntry = Omit<TimeEntrySelect, 'track' | 'user'> & {
   track: Track
   user: PublicUser
   readableDuration: string
+  leaderGap?: number
+  readableLeaderGap?: string
   gap?: number
   readableGap?: string
 }
@@ -50,9 +52,16 @@ export default class TimeEntryManager {
   ): (T & { gap?: number; readableGap?: string })[] {
     return timeEntries.map((entry, i) => {
       if (i === 0) return entry
+      const leader = timeEntries[0]
       const previous = timeEntries[i - 1]
+
       const gap = entry.duration - previous.duration
-      return { ...entry, gap: gap, readableGap: TimeEntryManager.toGapString(gap) }
+      const readableGap = TimeEntryManager.toGapString(gap)
+
+      const leaderGap = entry.duration - leader.duration
+      const readableLeaderGap = TimeEntryManager.toGapString(leaderGap)
+
+      return { ...entry, gap, readableGap, leaderGap, readableLeaderGap }
     })
   }
 
