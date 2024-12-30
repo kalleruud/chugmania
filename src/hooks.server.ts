@@ -4,7 +4,7 @@ import { isFailed } from '@/server/managers/utils'
 import { fail, redirect, type Handle } from '@sveltejs/kit'
 
 // Seed the database with tracks if it's empty
-TrackManager.init().then(() => console.info('Tracks initialized'))
+TrackManager.init()
 
 export const handle: Handle = async ({ event, resolve }) => {
   const result = UserManager.verifyAuth(event.cookies)
