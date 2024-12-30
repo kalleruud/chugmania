@@ -82,7 +82,9 @@
     @apply font-f1 font-bold;
     font-size: x-large;
   }
-  h3,
+  h3 {
+    @apply font-f1 font-bold;
+  }
   h4,
   h5,
   h6 {

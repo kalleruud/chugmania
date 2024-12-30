@@ -1,14 +1,9 @@
 <script lang="ts">
-  import * as Card from '$lib/components/ui/card/index.js'
+  import SessionListView from '@/components/session/session-list-view.svelte'
   import ChevronRight from 'lucide-svelte/icons/chevron-right'
-  import Flag from 'lucide-svelte/icons/flag'
   import type { PageData } from './$types'
 
   let { data }: { data: PageData } = $props()
-
-  function relativeDay(then: Date) {
-    return then.toLocaleDateString('nb', { weekday: 'long', month: 'long', day: 'numeric' })
-  }
 </script>
 
 <div class="flex flex-col sm:gap-4 sm:py-4">
@@ -17,17 +12,12 @@
       <h1>Sessions</h1>
     </div>
     {#each data.sessions as session}
-      <a href={'sessions/' + session.id}>
-        <Card.Root class="flex items-center justify-between p-6 transition-colors hover:bg-accent">
-          <div class="flex gap-2">
-            <Flag class="size-6" />
-            <div>
-              <Card.Title>{session.description ?? session.typeString}</Card.Title>
-              <Card.Description>{relativeDay(session.date)}</Card.Description>
-            </div>
-          </div>
-          <ChevronRight class="size-6" />
-        </Card.Root>
+      <a
+        href={'sessions/' + session.id}
+        class="flex items-center justify-between gap-4 rounded-lg border p-4 transition-colors max-sm:hover:bg-accent"
+      >
+        <SessionListView class="w-full" {session} />
+        <ChevronRight class="size-6" />
       </a>
     {/each}
   </main>
