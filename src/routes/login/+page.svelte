@@ -22,20 +22,20 @@
   <title>{details[mode].title}</title>
 </svelte:head>
 
-<div class="flex h-dvh w-full touch-none flex-col items-center justify-center">
-  <div class="mb-8 flex w-5/6 max-w-lg rounded-lg bg-secondary p-1">
+<div class="flex h-dvh w-full touch-none flex-col items-center">
+  <div class="m-8 flex w-5/6 max-w-lg rounded-lg bg-secondary p-1">
     <button
       type="button"
-      class="flex-1 rounded-sm py-1"
+      class="flex-1 rounded-sm py-1 transition-colors"
       class:bg-background={mode === 'login'}
       class:text-muted-foreground={mode !== 'login'}
       onclick={() => (mode = 'login')}
     >
-      <p>Logg inn</p>
+      Logg inn
     </button>
     <button
       type="button"
-      class="flex-1 rounded-sm py-1"
+      class="flex-1 rounded-sm py-1 transition-colors"
       class:bg-background={mode === 'register'}
       class:text-muted-foreground={mode !== 'register'}
       onclick={() => (mode = 'register')}
@@ -43,7 +43,7 @@
       Registrer
     </button>
   </div>
-  <div class="w-full max-w-2xl p-4 pb-36">
+  <div class="w-full max-w-2xl px-4">
     <Login {...details[mode]} {mode} />
   </div>
 </div>
