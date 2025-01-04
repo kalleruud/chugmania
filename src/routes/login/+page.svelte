@@ -12,14 +12,14 @@
     },
     login: {
       title: 'Nættopp',
-      description: 'Skriv inn mailen din for å logge inn',
+      description: 'Skriv inn mailen din for å logge inn, ditt svin',
       button: 'Trykk her hvis du har liten tiss',
     },
   }
 </script>
 
 <svelte:head>
-  <title>{details[mode].title}</title>
+  <title>{'Chugmania | ' + details[mode].title}</title>
 </svelte:head>
 
 <div class="flex h-dvh w-full touch-none flex-col items-center">
