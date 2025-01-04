@@ -28,6 +28,6 @@
   </ul>
 </main>
 
-{#if loggedInUser.isAdmin}
-  <Login class="fixed bottom-20 px-4 mb-safe" mode="register" button="Kast under bussen" />
+{#if loggedInUser.role === 'admin'}
+  <Login class="fixed bottom-20 px-4 mb-safe" mode="register" button="Registrer" />
 {/if}

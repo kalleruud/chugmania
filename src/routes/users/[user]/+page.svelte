@@ -16,6 +16,7 @@
 
 <HeaderBar class="px-4 py-2">
   <h1>{user.name}</h1>
+  <p class="font-f1 italic text-muted-foreground">{user.role}</p>
 </HeaderBar>
 
 <main class="mt-16 grid gap-8 p-4">
@@ -57,9 +58,9 @@
       <Button variant="secondary" type="submit">Logg ut</Button>
     </form>
 
-    {#if loggedInUser.isAdmin}
+    {#if loggedInUser.role === 'admin'}
       <form class="flex w-full justify-center" use:enhance method="POST" action="?/delete">
-        <Button variant="destructive" type="submit">Yeet</Button>
+        <Button variant="destructive" type="submit">Yeet user</Button>
       </form>
     {/if}
   {/if}

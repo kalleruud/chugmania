@@ -1,10 +1,9 @@
+import { getLocalTimeZone, today } from '@internationalized/date'
 import { randomUUID } from 'crypto'
 import { blob, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import type { SessionType } from '../managers/session.manager'
-import { getLocalTimeZone, today } from '@internationalized/date'
-
-export type TrackLevel = 'white' | 'green' | 'blue' | 'red' | 'black' | 'custom'
-export type TrackType = 'drift' | 'valley' | 'lagoon' | 'stadium'
+import type { TrackLevel, TrackType } from '../managers/track.manager'
+import type { Role } from '../managers/user.manager'
 
 const common = {
   id: text('id').primaryKey().$defaultFn(randomUUID),
@@ -23,9 +22,10 @@ export const users = sqliteTable('users', {
   name: text('name').notNull(),
   shortName: text('short_name').unique(),
   passwordHash: blob('password', { mode: 'buffer' }).notNull(),
-  isAdmin: integer('is_admin', { mode: 'boolean' })
+  role: text('role')
+    .$type<Role>()
     .notNull()
-    .$default(() => false),
+    .$default(() => 'user'),
 })
 
 export const sessions = sqliteTable('sessions', {

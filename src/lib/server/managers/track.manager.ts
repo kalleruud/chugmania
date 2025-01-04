@@ -1,10 +1,13 @@
 import db from '$lib/server/db'
-import { timeEntries, tracks, type TrackLevel, type TrackType } from '$lib/server/db/schema'
+import { timeEntries, tracks } from '$lib/server/db/schema'
 import type { LookupEntity } from '@/components/lookup/lookup.server'
 import { eq } from 'drizzle-orm'
 
 type InsertTrack = typeof tracks.$inferInsert
 type SelectTrack = typeof tracks.$inferSelect
+
+export type TrackLevel = 'white' | 'green' | 'blue' | 'red' | 'black' | 'custom'
+export type TrackType = 'drift' | 'valley' | 'lagoon' | 'stadium'
 
 export type Track = SelectTrack & {
   name: string

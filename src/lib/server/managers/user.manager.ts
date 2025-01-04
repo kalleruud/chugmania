@@ -6,6 +6,8 @@ import { sessions, timeEntries, users } from '../db/schema'
 import SessionManager from './session.manager'
 
 type User = typeof users.$inferSelect
+
+export type Role = 'admin' | 'moderator' | 'user'
 export type PublicUser = Omit<User, 'passwordHash'> & {
   shortName: string
   passwordHash: undefined
