@@ -28,6 +28,6 @@ NODE_ENV=production
 ORIGIN=https://chugmania.kallerud.no
 PRIVATE_KEY=<private_key>
 ISSUER=kallerud.no
-TOKEN_EXPIRY=7d
+TOKEN_EXPIRY_H=730
 DB_FILE_NAME=local.db
 ```

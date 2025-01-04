@@ -37,5 +37,5 @@ jobs:
             DB_FILE_NAME=${{ vars.DB_FILE_NAME }}
             PRIVATE_KEY=${{ secrets.PRIVATE_KEY }}
             ISSUER=${{ secrets.ISSUER }}
-            TOKEN_EXPIRY=${{ secrets.TOKEN_EXPIRY }}
+            TOKEN_EXPIRY_H=${{ vars.TOKEN_EXPIRY_H }}
           tags: ${{ vars.DOCKER_USERNAME }}/chugmania

@@ -1,4 +1,4 @@
-import { ISSUER, PRIVATE_KEY, TOKEN_EXPIRY } from '$env/static/private'
+import { ISSUER, PRIVATE_KEY, TOKEN_EXPIRY_H } from '$env/static/private'
 import type { ResponseMessage } from '@/components/types.server'
 import { hash } from '@/utils'
 import { fail, redirect, type ActionFailure, type Cookies } from '@sveltejs/kit'
@@ -7,12 +7,13 @@ import UserManager, { type PublicUser } from './user.manager'
 
 if (!ISSUER) throw new Error('Missing environment variable: ISSUER')
 
+const tokenExpiryMs = Number.parseFloat(TOKEN_EXPIRY_H) * 60 * 60 * 1000
 const authCookieKey = 'auth'
 const privateKey: jwt.Secret = PRIVATE_KEY ?? crypto.getRandomValues(new Uint8Array(256))
 const jwtOptions: jwt.SignOptions = {
   issuer: ISSUER,
   algorithm: 'HS256',
-  expiresIn: TOKEN_EXPIRY,
+  expiresIn: tokenExpiryMs / 1000,
 }
 
 export default class LoginManager {
@@ -37,6 +38,7 @@ export default class LoginManager {
       httpOnly: true,
       sameSite: 'strict',
       secure: false,
+      expires: new Date(Date.now() + tokenExpiryMs),
     })
 
     console.info('Logged in:', user.email)

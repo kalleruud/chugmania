@@ -30,7 +30,7 @@ jobs:
             DB_FILE_NAME=${{ vars.DB_FILE_NAME }}
             PRIVATE_KEY=${{ secrets.PRIVATE_KEY }}
             ISSUER=${{ secrets.ISSUER }}
-            TOKEN_EXPIRY=${{ secrets.TOKEN_EXPIRY }}
+            TOKEN_EXPIRY_H=${{ vars.TOKEN_EXPIRY_H }}
 
   e2e-tests:
     runs-on: ubuntu-latest
@@ -39,7 +39,7 @@ jobs:
       DB_FILE_NAME: ${{ vars.DB_FILE_NAME }}
       PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
       ISSUER: ${{ secrets.ISSUER }}
-      TOKEN_EXPIRY: ${{ secrets.TOKEN_EXPIRY }}
+      TOKEN_EXPIRY_H: ${{ vars.TOKEN_EXPIRY_H }}
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
