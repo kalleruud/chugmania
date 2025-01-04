@@ -26,7 +26,7 @@ export default class UserManager {
     const password = randomUUID()
     console.info('email:', email)
     console.info('password:', password)
-    await this.create(email, password, 'Admin')
+    await this.create(email, password, 'Admin', 'admin')
     console.info('Admin user created successfully')
   }
 
