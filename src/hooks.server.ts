@@ -3,8 +3,10 @@ import TrackManager from '@/server/managers/track.manager'
 import UserManager from '@/server/managers/user.manager'
 import { redirect, type Handle } from '@sveltejs/kit'
 
+console.debug('\nStarting server')
 // Seed the database with tracks if it's empty
 TrackManager.init()
+UserManager.init()
 
 export const handle: Handle = async ({ event, resolve }) => {
   const result = LoginManager.verifyAuth(event.cookies)

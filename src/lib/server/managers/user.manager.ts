@@ -21,10 +21,13 @@ export default class UserManager {
   static async init() {
     const result = await db.select().from(users)
     if (result.length > 0) return
-    console.info('Initializing admin user')
+    console.log('Initializing admin user')
+    const email = 'admin@chugmania.no'
     const password = randomUUID()
+    console.info('email:', email)
     console.info('password:', password)
-    await this.create('admin@chugmania.no', password, 'Admin')
+    await this.create(email, password, 'Admin')
+    console.info('Admin user created successfully')
   }
 
   static isUser(user: unknown): user is PublicUser {

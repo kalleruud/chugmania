@@ -24,7 +24,7 @@ export default class TrackManager {
   static async init() {
     const result = await db.select().from(tracks)
     if (result.length > 0) return
-    console.info('Initializing tracks')
+    console.log('Initializing tracks')
     await db.insert(tracks).values(this.generateTracks())
     console.info('Tracks added successfully')
   }
