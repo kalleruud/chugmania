@@ -18,6 +18,15 @@ export type PublicUser = Omit<User, 'passwordHash'> & {
 export default class UserManager {
   static readonly table = users
 
+  static async init() {
+    const result = await db.select().from(users)
+    if (result.length > 0) return
+    console.info('Initializing admin user')
+    const password = randomUUID()
+    console.info('password:', password)
+    await this.create('admin@chugmania.no', password, 'Admin')
+  }
+
   static isUser(user: unknown): user is PublicUser {
     if (!user) return false
     if (!(user instanceof Object)) return false
