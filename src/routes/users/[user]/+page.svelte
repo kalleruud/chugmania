@@ -36,6 +36,7 @@
       <fieldset class="form-group grid gap-2">
         <label for={'shortName'}>Kort navn</label>
         <Input
+          class="uppercase"
           id={'shortName'}
           name={'shortName'}
           minlength={3}

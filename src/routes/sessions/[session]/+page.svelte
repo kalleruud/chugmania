@@ -24,7 +24,7 @@
               <div class="flex w-full justify-between font-f1">
                 <div class="flex gap-2">
                   <p class="italic text-muted-foreground">{i + 1}</p>
-                  <p class="font-bold">{entry.user.name.substring(0, 3).toUpperCase()}</p>
+                  <p class="font-bold">{entry.user.shortName}</p>
                 </div>
 
                 <div class="flex gap-2 tracking-wide">
