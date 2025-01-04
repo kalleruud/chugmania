@@ -1,7 +1,6 @@
 import UserManager from '@/server/managers/user.manager'
-import type { Actions, PageServerLoad } from './$types'
-import LoginManager from '@/server/managers/login.manager'
 import { redirect } from '@sveltejs/kit'
+import type { PageServerLoad } from './$types'
 
 export const load = (async ({ locals }) => {
   const users = await UserManager.getAll()
@@ -9,10 +8,3 @@ export const load = (async ({ locals }) => {
 
   return { users, loggedInUser: locals.user }
 }) satisfies PageServerLoad
-
-export const actions = {
-  login: async ({ cookies, request }) =>
-    await LoginManager.login(await request.formData(), cookies),
-  register: async ({ request }) => LoginManager.register(await request.formData()),
-  logout: async ({ cookies }) => LoginManager.logout(cookies),
-} satisfies Actions

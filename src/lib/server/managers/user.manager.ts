@@ -20,19 +20,20 @@ export default class UserManager {
     return 'email' in user && 'name' in user
   }
 
-  static async getUserById(id: string): Promise<User> {
+  static async getUserById(id: string): Promise<PublicUser> {
     const user = await db.query.users.findFirst({ where: eq(users.id, id) })
-
     if (!user) throw new Error(`User not found: ${id}`)
-    return user
+    return this.getDetails(user)
   }
 
   static async getUserByEmail(email: string): Promise<User | undefined> {
-    return await db.query.users.findFirst({ where: eq(users.email, email) })
+    return await db.query.users.findFirst({
+      where: and(eq(users.email, email), isNull(users.deletedAt)),
+    })
   }
 
   static async getAll(): Promise<PublicUser[]> {
-    return (await db.select().from(users)).map(this.getDetails)
+    return (await db.select().from(users).where(isNull(users.deletedAt))).map(this.getDetails)
   }
 
   static async getUsersFromSession(sessionId: string): Promise<PublicUser[]> {
@@ -72,6 +73,35 @@ export default class UserManager {
     const user = created.at(0)
     if (!user) throw new Error(`Failed to create user '${email}'`)
     return this.getDetails(user)
+  }
+
+  static async update(data: FormData) {
+    const id = data.get('id')!.toString()
+    if (id?.length === 0) throw new Error('No user ID provided')
+    console.debug('Updating user:', id)
+
+    const email = data.get('email')!.toString().trim().toLowerCase()
+    const name = data.get('name')!.toString().trim()
+    const shortName = data.get('shortName')!.toString().toUpperCase().trim()
+    const password = data.get('password')!.toString().trim()
+
+    await db
+      .update(users)
+      .set({
+        email: email.length > 0 ? email : undefined,
+        name: name.length > 0 ? name : undefined,
+        shortName: shortName.length > 0 ? shortName : undefined,
+        passwordHash: password.length > 0 ? Buffer.from(await hash(password)) : undefined,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, id))
+  }
+
+  static async delete(data: FormData) {
+    const id = data.get('id')?.toString().trim().toLowerCase()
+    if (!id) throw new Error('No user ID provided')
+    console.debug('Deleting user:', id)
+    await db.update(users).set({ deletedAt: new Date() }).where(eq(users.id, id))
   }
 
   static generateShortName(name: string): string {
