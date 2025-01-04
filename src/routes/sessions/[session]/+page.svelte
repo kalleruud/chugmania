@@ -1,4 +1,5 @@
 <script lang="ts">
+  import HeaderBar from '@/components/ui/header-bar/header-bar.svelte'
   import type { PageData } from './$types'
 
   const { data }: { data: PageData } = $props()
@@ -9,13 +10,15 @@
   <title>{data.session.description ?? data.session.type}</title>
 </svelte:head>
 
-<main class="p-4">
+<HeaderBar class="grid px-4 py-2">
   <h1>{session.type.toLocaleUpperCase()}</h1>
   <p class="text-muted-foreground">{session.relativeDate}</p>
+</HeaderBar>
 
+<main class="mt-24 p-4">
   <div>
     {#each sessionData as { track, entries }}
-      <div class="mb-4 flex flex-col gap-2 border-b py-4 text-sm">
+      <div class="mb-4 flex flex-col gap-2 border-b text-sm">
         <h2 class="text-accent-foreground">{track.name}</h2>
 
         <ul class="divide-y divide-solid">
