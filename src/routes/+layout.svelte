@@ -57,8 +57,8 @@
         <span>Sessions</span>
       </a>
       <a
-        href="/players"
-        class="flex w-12 flex-col place-items-center {$page.url.pathname.startsWith('/players')
+        href="/users"
+        class="flex w-12 flex-col place-items-center {$page.url.pathname.startsWith('/users')
           ? 'text-foreground'
           : 'text-stone-400'}"
       >
