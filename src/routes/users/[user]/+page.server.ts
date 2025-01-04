@@ -4,20 +4,22 @@ import LoginManager from '@/server/managers/login.manager'
 import { fail } from '@sveltejs/kit'
 
 export const load = (async ({ params, locals }) => {
-  if (!locals.user) throw new Error('Unauthorized')
+  const { user: currentUser } = locals
+  const { user: lookupUserId } = params
+  if (!currentUser) throw new Error('Unauthorized')
 
-  const loggedInUser = locals.user
-  const user = await UserManager.getUserById(params.user)
+  const isCurrentUser = currentUser.id === lookupUserId
+  const user = isCurrentUser ? currentUser : await UserManager.getUserById(params.user)
 
-  return { user, loggedInUser }
+  return { user, currentUser, isCurrentUser }
 }) satisfies PageServerLoad
 
 export const actions = {
-  update: async ({ request, locals }) => {
+  update: async ({ request, locals, cookies }) => {
     const form = await request.formData()
     try {
       if (form.get('id') !== locals.user?.id) throw new Error('Unauthorized')
-      await UserManager.update(form)
+      await UserManager.update(form, cookies)
     } catch (e) {
       if (!(e instanceof Error)) throw e
       console.error(e)
@@ -30,7 +32,7 @@ export const actions = {
   delete: async ({ request, locals }) => {
     const form = await request.formData()
     try {
-      if (form.get('id') !== locals.user?.id) throw new Error('Unauthorized')
+      if (locals.user?.role !== 'admin') throw new Error('Unauthorized')
       await UserManager.delete(form)
     } catch (e) {
       if (!(e instanceof Error)) throw e

@@ -3,6 +3,8 @@ import type { ResponseMessage } from '@/components/types.server'
 import { hash } from '@/utils'
 import { fail, redirect, type ActionFailure, type Cookies } from '@sveltejs/kit'
 import jwt from 'jsonwebtoken'
+import { users } from '../db/schema'
+
 import UserManager, { type PublicUser } from './user.manager'
 
 if (!ISSUER) throw new Error('Missing environment variable: ISSUER')
@@ -32,6 +34,13 @@ export default class LoginManager {
       return fail(400, { success: false, message: 'Incorrect password' })
     }
 
+    this.updateToken(user, cookies)
+
+    console.info('Logged in:', user.email)
+    return { success: true }
+  }
+
+  static updateToken(user: typeof users.$inferSelect, cookies: Cookies) {
     const token = jwt.sign(UserManager.getDetails(user), privateKey, jwtOptions)
     cookies.set(authCookieKey, token, {
       path: '/',
@@ -40,9 +49,6 @@ export default class LoginManager {
       secure: false,
       expires: new Date(Date.now() + tokenExpiryMs),
     })
-
-    console.info('Logged in:', user.email)
-    return { success: true }
   }
 
   private static isPasswordValid(providedHash: ArrayBuffer, expectedHash: Buffer) {

@@ -6,8 +6,7 @@
   import type { PageData } from './$types'
 
   let { data }: { data: PageData } = $props()
-  const { user, loggedInUser } = data
-  const isMe = user.id === loggedInUser.id
+  const { user, currentUser, isCurrentUser } = data
 </script>
 
 <svelte:head>
@@ -20,7 +19,7 @@
 </HeaderBar>
 
 <main class="mt-20 grid gap-8 p-4">
-  {#if isMe}
+  {#if isCurrentUser}
     <form class="grid gap-4" use:enhance method="POST" action="?/update">
       <input type="hidden" name="id" value={user.id} />
 
@@ -48,7 +47,7 @@
 
       <fieldset class="form-group grid gap-2">
         <label for={'password'}>Passord</label>
-        <Input id={'password'} name={'password'} type={'password'} placeholder="password123" />
+        <Input id={'password'} name={'password'} type="password" placeholder="••••••••" />
       </fieldset>
 
       <Button class="mt-4" type="submit">Dunk inn oppdatert data</Button>
@@ -57,11 +56,11 @@
     <form class="flex w-full justify-center" use:enhance method="POST" action="?/logout">
       <Button variant="secondary" type="submit">Logg ut</Button>
     </form>
+  {/if}
 
-    {#if loggedInUser.role === 'admin'}
-      <form class="flex w-full justify-center" use:enhance method="POST" action="?/delete">
-        <Button variant="destructive" type="submit">Yeet user</Button>
-      </form>
-    {/if}
+  {#if currentUser.role === 'admin' && user.role !== 'admin'}
+    <form class="flex w-full justify-center" use:enhance method="POST" action="?/delete">
+      <Button variant="destructive" type="submit">Yeet user</Button>
+    </form>
   {/if}
 </main>

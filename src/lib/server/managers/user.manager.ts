@@ -5,6 +5,8 @@ import { randomUUID } from 'crypto'
 import { and, eq, isNull } from 'drizzle-orm'
 import { sessions, timeEntries, users } from '../db/schema'
 import SessionManager from './session.manager'
+import type { Cookies } from '@sveltejs/kit'
+import LoginManager from './login.manager'
 
 type User = typeof users.$inferSelect
 
@@ -97,17 +99,17 @@ export default class UserManager {
     return this.getDetails(user)
   }
 
-  static async update(data: FormData) {
-    const id = data.get('id')!.toString()
+  static async update(data: FormData, cookies: Cookies) {
+    const id = data.get('id') as string
     if (id?.length === 0) throw new Error('No user ID provided')
     console.debug('Updating user:', id)
 
-    const email = data.get('email')!.toString().trim().toLowerCase()
-    const name = data.get('name')!.toString().trim()
-    const shortName = data.get('shortName')!.toString().toUpperCase().trim()
-    const password = data.get('password')!.toString().trim()
+    const email = (data.get('email') as string).trim().toLowerCase()
+    const name = (data.get('name') as string).trim()
+    const shortName = (data.get('shortName') as string).toUpperCase().trim()
+    const password = (data.get('password') as string).trim()
 
-    await db
+    const result = await db
       .update(users)
       .set({
         email: email.length > 0 ? email : undefined,
@@ -117,6 +119,11 @@ export default class UserManager {
         updatedAt: new Date(),
       })
       .where(eq(users.id, id))
+      .returning()
+
+    const user = result.at(0)
+    if (!user) throw new Error(`Failed to update user '${id}'`)
+    LoginManager.updateToken(user, cookies)
   }
 
   static async delete(data: FormData) {
