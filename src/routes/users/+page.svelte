@@ -2,6 +2,7 @@
   import { enhance } from '$app/forms'
   import { Button } from '$lib/components/ui/button/index.js'
   import Login from '@/components/login/login.svelte'
+  import HeaderBar from '@/components/ui/header-bar/header-bar.svelte'
   import UserRow from '@/components/user/user-row.svelte'
   import type { PageData } from './$types'
 
@@ -9,18 +10,21 @@
   const { users, loggedInUser } = data
 </script>
 
-<main class="m-4 flex touch-none flex-col justify-between pb-12 h-screen-safe">
-  <div>
-    <h1>Spillere</h1>
+<HeaderBar class="px-4 py-2">
+  <h1>Spillere</h1>
+</HeaderBar>
+
+<main class="mt-16 flex flex-col p-4">
+  <div class="">
     {#each users as user}
-      <UserRow class="border-b p-4" {user} />
+      <UserRow {user} />
     {/each}
   </div>
-
-  <form use:enhance method="POST" action="?/logout">
-    <Button class="w-full" type="submit">Logg ut</Button>
-  </form>
 </main>
+
+<form class="fixed mb-16 w-full p-4 bottom-safe" use:enhance method="POST" action="?/logout">
+  <Button class="w-full" type="submit">Logg ut</Button>
+</form>
 
 {#if loggedInUser.isAdmin}
   <Login class="fixed bottom-20 px-4 mb-safe" mode="register" button="Kast under bussen" />
