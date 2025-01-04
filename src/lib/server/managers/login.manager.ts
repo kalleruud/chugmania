@@ -1,9 +1,9 @@
-import { ISSUER, NODE_ENV, PRIVATE_KEY, TOKEN_EXPIRY } from '$env/static/private'
+import { ISSUER, PRIVATE_KEY, TOKEN_EXPIRY } from '$env/static/private'
 import type { ResponseMessage } from '@/components/types.server'
+import { hash } from '@/utils'
 import { fail, redirect, type ActionFailure, type Cookies } from '@sveltejs/kit'
 import jwt from 'jsonwebtoken'
 import UserManager, { type PublicUser } from './user.manager'
-import { hash } from '@/utils'
 
 if (!ISSUER) throw new Error('Missing environment variable: ISSUER')
 
@@ -32,12 +32,11 @@ export default class LoginManager {
     }
 
     const token = jwt.sign(UserManager.getDetails(user), privateKey, jwtOptions)
-    const isProd = NODE_ENV === 'production'
     cookies.set(authCookieKey, token, {
       path: '/',
-      httpOnly: isProd,
+      httpOnly: true,
       sameSite: 'strict',
-      secure: isProd,
+      secure: false,
     })
 
     console.info('Logged in:', user.email)
