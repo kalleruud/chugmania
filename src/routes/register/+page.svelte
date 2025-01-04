@@ -44,8 +44,8 @@
   })
 </script>
 
-<div class="flex touch-none flex-col">
-  <main class="gap-4 p-4">
+<div class="flex w-full touch-none flex-col items-center">
+  <main class="w-full max-w-xl p-4">
     <form class="flex flex-col gap-4" use:enhance method="POST" action={`?/add`}>
       <div class="my-24 flex h-28 w-full flex-row justify-center gap-2 text-5xl caret-muted">
         <input
