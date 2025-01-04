@@ -1,8 +1,9 @@
 <script lang="ts">
-  import type { PageData } from './$types'
-  import Login from '@/components/login/login.svelte'
-  import { Button } from '$lib/components/ui/button/index.js'
   import { enhance } from '$app/forms'
+  import { Button } from '$lib/components/ui/button/index.js'
+  import Login from '@/components/login/login.svelte'
+  import UserRow from '@/components/user/user-row.svelte'
+  import type { PageData } from './$types'
 
   let { data }: { data: PageData } = $props()
   const { users, loggedInUser } = data
@@ -12,7 +13,7 @@
   <div>
     <h1>Spillere</h1>
     {#each users as user}
-      <p>{user.name}</p>
+      <UserRow class="border-b p-4" {user} />
     {/each}
   </div>
 
