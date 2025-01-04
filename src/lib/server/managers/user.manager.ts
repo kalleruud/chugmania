@@ -6,7 +6,10 @@ import { sessions, timeEntries, users } from '../db/schema'
 import SessionManager from './session.manager'
 
 type User = typeof users.$inferSelect
-export type PublicUser = Omit<User, 'passwordHash'> & { passwordHash: undefined }
+export type PublicUser = Omit<User, 'passwordHash'> & {
+  shortName: string
+  passwordHash: undefined
+}
 
 export default class UserManager {
   static readonly table = users
@@ -64,9 +67,18 @@ export default class UserManager {
     return this.getDetails(user)
   }
 
+  static generateShortName(name: string): string {
+    if (name.includes(' ')) {
+      const nameParts = name.split(' ')
+      return (name.at(0) + nameParts[nameParts.length - 1]).toUpperCase()
+    }
+    return name.substring(0, 3).toUpperCase()
+  }
+
   static getDetails(user: User): PublicUser {
     return {
       ...user,
+      shortName: user.shortName ?? UserManager.generateShortName(user.name),
       passwordHash: undefined,
     }
   }

@@ -21,6 +21,7 @@ export const users = sqliteTable('users', {
   ...common,
   email: text('email').notNull().unique(),
   name: text('name').notNull(),
+  shortName: text('short_name').unique(),
   passwordHash: blob('password', { mode: 'buffer' }).notNull(),
   isAdmin: integer('is_admin', { mode: 'boolean' })
     .notNull()
