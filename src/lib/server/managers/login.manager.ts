@@ -1,4 +1,4 @@
-import { ISSUER, PRIVATE_KEY, TOKEN_EXPIRY } from '$env/static/private'
+import { ISSUER, NODE_ENV, PRIVATE_KEY, TOKEN_EXPIRY } from '$env/static/private'
 import type { ResponseMessage } from '@/components/types.server'
 import { fail, redirect, type ActionFailure, type Cookies } from '@sveltejs/kit'
 import jwt from 'jsonwebtoken'
@@ -32,7 +32,13 @@ export default class LoginManager {
     }
 
     const token = jwt.sign(UserManager.getDetails(user), privateKey, jwtOptions)
-    cookies.set(authCookieKey, token, { path: '/' })
+    const isProd = NODE_ENV === 'production'
+    cookies.set(authCookieKey, token, {
+      path: '/',
+      httpOnly: isProd,
+      sameSite: 'strict',
+      secure: isProd,
+    })
 
     console.info('Logged in:', user.email)
     return { success: true }
@@ -51,13 +57,13 @@ export default class LoginManager {
   static verifyAuth(cookies: Cookies): PublicUser | ActionFailure<ResponseMessage> {
     try {
       const token = cookies.get(authCookieKey)
-      if (!token) return fail(401, { success: false, message: 'You have been logged out.' })
+      if (!token)
+        return fail(401, { success: false, message: 'Could not retrieve auth key from cookies' })
 
       return jwt.verify(token, privateKey, jwtOptions) as PublicUser
     } catch (error) {
       if (!(error instanceof jwt.JsonWebTokenError)) throw error
-      console.warn('Failed to verify token:', error.message)
-      return fail(401, { success: false, message: 'You have been logged out.' })
+      return fail(401, { success: false, message: `Failed to verify token: ${error.message}` })
     }
   }
 
