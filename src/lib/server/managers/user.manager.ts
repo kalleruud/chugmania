@@ -20,7 +20,14 @@ export default class UserManager {
     return 'email' in user && 'name' in user
   }
 
-  static async getUser(email: string): Promise<User | undefined> {
+  static async getUserById(id: string): Promise<User> {
+    const user = await db.query.users.findFirst({ where: eq(users.id, id) })
+
+    if (!user) throw new Error(`User not found: ${id}`)
+    return user
+  }
+
+  static async getUserByEmail(email: string): Promise<User | undefined> {
     return await db.query.users.findFirst({ where: eq(users.email, email) })
   }
 

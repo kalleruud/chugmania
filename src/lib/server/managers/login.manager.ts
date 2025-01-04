@@ -24,7 +24,7 @@ export default class LoginManager {
     console.debug('Logging in user:', email)
     if (!password) return fail(400, { success: false, message: 'Password not provided' })
 
-    const user = await UserManager.getUser(email)
+    const user = await UserManager.getUserByEmail(email)
 
     if (!user) return fail(400, { success: false, message: 'User not found' })
     if (!this.isPasswordValid(await hash(password), user.passwordHash)) {
