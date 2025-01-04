@@ -1,6 +1,7 @@
 import db from '$lib/server/db'
 import type { LookupEntity } from '@/components/lookup/lookup.server'
 import { hash } from '@/utils'
+import { randomUUID } from 'crypto'
 import { and, eq, isNull } from 'drizzle-orm'
 import { sessions, timeEntries, users } from '../db/schema'
 import SessionManager from './session.manager'
@@ -10,6 +11,7 @@ type User = typeof users.$inferSelect
 export type Role = 'admin' | 'moderator' | 'user'
 export type PublicUser = Omit<User, 'passwordHash'> & {
   shortName: string
+  readableRole: string
   passwordHash: undefined
 }
 
@@ -62,13 +64,19 @@ export default class UserManager {
     }))
   }
 
-  static async create(email: string, password: string, name: string): Promise<PublicUser> {
+  static async create(
+    email: string,
+    password: string,
+    name: string,
+    role?: Role
+  ): Promise<PublicUser> {
     const created = await db
       .insert(users)
       .values({
         email,
         passwordHash: Buffer.from(await hash(password)),
         name,
+        role,
       })
       .returning()
 
@@ -114,9 +122,21 @@ export default class UserManager {
     return name.substring(0, 3).toUpperCase()
   }
 
+  static getReadableRole(role: Role): string {
+    switch (role) {
+      case 'admin':
+        return 'Supreme World Champion'
+      case 'moderator':
+        return 'Minion'
+      case 'user':
+        return 'Casual penis enjoyer'
+    }
+  }
+
   static getDetails(user: User): PublicUser {
     return {
       ...user,
+      readableRole: UserManager.getReadableRole(user.role),
       shortName: user.shortName ?? UserManager.generateShortName(user.name),
       passwordHash: undefined,
     }

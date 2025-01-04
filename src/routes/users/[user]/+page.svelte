@@ -16,10 +16,10 @@
 
 <HeaderBar class="px-4 py-2">
   <h1>{user.name}</h1>
-  <p class="font-f1 italic text-muted-foreground">{user.role}</p>
+  <p class="font-f1 italic text-muted-foreground">{user.readableRole}</p>
 </HeaderBar>
 
-<main class="mt-16 grid gap-8 p-4">
+<main class="mt-20 grid gap-8 p-4">
   {#if isMe}
     <form class="grid gap-4" use:enhance method="POST" action="?/update">
       <input type="hidden" name="id" value={user.id} />
@@ -51,7 +51,7 @@
         <Input id={'password'} name={'password'} type={'password'} placeholder="password123" />
       </fieldset>
 
-      <Button class="mt-4" type="submit">Dunk inn ny data</Button>
+      <Button class="mt-4" type="submit">Dunk inn oppdatert data</Button>
     </form>
 
     <form class="flex w-full justify-center" use:enhance method="POST" action="?/logout">
