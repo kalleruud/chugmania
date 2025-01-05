@@ -5,6 +5,7 @@
     "bradlc.vscode-tailwindcss",
     "esbenp.prettier-vscode",
     "alexcvzz.vscode-sqlite",
-    "adpyke.vscode-sql-formatter"
+    "adpyke.vscode-sql-formatter",
+    "ms-playwright.playwright"
   ]
 }
