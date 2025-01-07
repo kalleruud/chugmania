@@ -1,12 +1,12 @@
 import db from '$lib/server/db'
 import type { LookupEntity } from '@/components/lookup/lookup.server'
 import { hash } from '@/utils'
+import type { Cookies } from '@sveltejs/kit'
 import { randomUUID } from 'crypto'
 import { and, eq, isNull } from 'drizzle-orm'
 import { sessions, timeEntries, users } from '../db/schema'
-import SessionManager from './session.manager'
-import type { Cookies } from '@sveltejs/kit'
 import LoginManager from './login.manager'
+import SessionManager from './session.manager'
 
 type User = typeof users.$inferSelect
 
@@ -133,14 +133,6 @@ export default class UserManager {
     await db.update(users).set({ deletedAt: new Date() }).where(eq(users.id, id))
   }
 
-  static generateShortName(name: string): string {
-    if (name.includes(' ')) {
-      const nameParts = name.split(' ')
-      return (name.at(0) + nameParts[nameParts.length - 1]).toUpperCase()
-    }
-    return name.substring(0, 3).toUpperCase()
-  }
-
   static getReadableRole(role: Role): string {
     switch (role) {
       case 'admin':
@@ -156,7 +148,7 @@ export default class UserManager {
     return {
       ...user,
       readableRole: UserManager.getReadableRole(user.role),
-      shortName: user.shortName ?? UserManager.generateShortName(user.name),
+      shortName: user.shortName ?? user.name.substring(0, 3).toUpperCase(),
       passwordHash: undefined,
     }
   }
