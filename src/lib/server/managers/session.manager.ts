@@ -28,7 +28,11 @@ export default class SessionManager {
 
   static async getAll() {
     console.debug('Getting sessions')
-    const items = await db.select().from(sessions).orderBy(desc(sessions.date))
+    const items = await db
+      .select()
+      .from(sessions)
+      .where(isNull(sessions.deletedAt))
+      .orderBy(desc(sessions.date))
     return items.map(item => ({
       ...this.getDetails(item),
       typeString: SessionManager.typeString[item.type],
@@ -85,6 +89,11 @@ export default class SessionManager {
     const item = items.at(0)
     if (!item) throw new Error('Failed to create session')
     return item
+  }
+
+  static async delete(id: string) {
+    console.debug('Deleting session:', id)
+    await db.update(sessions).set({ deletedAt: new Date() }).where(eq(sessions.id, id))
   }
 
   static async getSessionData(sessionId: string) {

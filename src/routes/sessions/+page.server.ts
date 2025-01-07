@@ -7,6 +7,7 @@ export const load = (async ({ locals }) => {
 
   return {
     sessions: await SessionManager.getAll(),
+    user: locals.user,
   }
 }) satisfies PageServerLoad
 
@@ -14,8 +15,9 @@ export const actions = {
   create: async ({ locals }) => {
     console.debug('Received create session request')
     if (!locals.user) throw new Error('Unauthorized')
+    if (locals.user.role !== 'admin') throw new Error('Forbidden')
 
-    await SessionManager.create('practice', locals.user)
+    await SessionManager.create('tournament', locals.user)
 
     return { success: true }
   },

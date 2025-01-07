@@ -1,9 +1,11 @@
 <script lang="ts">
+  import { enhance } from '$app/forms'
+  import Button from '@/components/ui/button/button.svelte'
   import HeaderBar from '@/components/ui/header-bar/header-bar.svelte'
   import type { PageData } from './$types'
 
   const { data }: { data: PageData } = $props()
-  const { session, sessionData } = data
+  const { user, session, sessionData } = data
 </script>
 
 <svelte:head>
@@ -51,4 +53,10 @@
       </div>
     {/each}
   </div>
+  {#if user.role === 'admin'}
+    <form use:enhance method="post" action="?/delete">
+      <input type="hidden" name="id" value={session.id} />
+      <Button variant="destructive" type="submit">Slett</Button>
+    </form>
+  {/if}
 </main>

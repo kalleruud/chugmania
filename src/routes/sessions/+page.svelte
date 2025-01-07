@@ -1,14 +1,23 @@
 <script lang="ts">
+  import { enhance } from '$app/forms'
   import SessionListView from '@/components/session/session-list-view.svelte'
+  import Button from '@/components/ui/button/button.svelte'
+  import HeaderBar from '@/components/ui/header-bar/header-bar.svelte'
   import ChevronRight from 'lucide-svelte/icons/chevron-right'
   import type { PageData } from './$types'
-  import HeaderBar from '@/components/ui/header-bar/header-bar.svelte'
 
   let { data }: { data: PageData } = $props()
+  const { user } = data
+  let addOpen = $state(false)
 </script>
 
-<HeaderBar class="px-4 py-2">
+<HeaderBar class="flex items-center justify-between px-4 py-2">
   <h1>Sessions</h1>
+  {#if user.role === 'admin'}
+    <form use:enhance method="post" action="?/create">
+      <Button variant="secondary" type="submit">Create tournament</Button>
+    </form>
+  {/if}
 </HeaderBar>
 
 <main class="mt-16 flex flex-col gap-4 p-4">
