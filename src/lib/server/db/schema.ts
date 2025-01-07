@@ -65,3 +65,40 @@ export const timeEntries = sqliteTable('time_entries', {
   amount: integer('amount_l').notNull(),
   comment: text('comment'),
 })
+
+export const matches = sqliteTable('matches', {
+  ...common,
+  user1: text('user_1')
+    .notNull()
+    .references(() => users.id),
+  user2: text('user_2')
+    .notNull()
+    .references(() => users.id),
+  winner: text('winner').references(() => users.id),
+  track: text('track')
+    .notNull()
+    .references(() => tracks.id),
+  session: text('session')
+    .notNull()
+    .references(() => sessions.id),
+  amount: integer('amount_l').notNull(),
+  comment: text('comment'),
+})
+
+export const groups = sqliteTable('groups', {
+  ...common,
+  name: text('name').notNull().unique(),
+  session: text('session')
+    .notNull()
+    .references(() => sessions.id),
+})
+
+export const groupUsers = sqliteTable('group_users', {
+  ...common,
+  user: text('user')
+    .notNull()
+    .references(() => users.id),
+  session: text('group')
+    .notNull()
+    .references(() => groups.id),
+})
