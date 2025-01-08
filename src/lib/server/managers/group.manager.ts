@@ -14,9 +14,9 @@ export default class GroupManager {
       .orderBy(groups.name)
   }
 
-  static async create(sessionId: string, name?: string) {
+  static async create(sessionId: string, groupSize?: number, name?: string) {
+    const existingGroupCount = groupSize ?? (await this.getAllFromSession(sessionId)).length
     console.debug('Creating group for session', sessionId)
-    const existingGroupCount = (await this.getAllFromSession(sessionId)).length
     return await db.insert(groups).values({
       name: name ?? String.fromCharCode(97 + existingGroupCount).toUpperCase(),
       session: sessionId,

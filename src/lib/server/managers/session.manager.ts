@@ -1,12 +1,13 @@
 import db from '$lib/server/db'
 import { sessions } from '$lib/server/db/schema'
+import type { LookupEntity } from '@/components/lookup/lookup.server'
+import { toRelativeLocaleDateString } from '@/utils'
 import { getLocalTimeZone, today } from '@internationalized/date'
 import { and, desc, eq, isNull } from 'drizzle-orm'
+import GroupManager from './group.manager'
 import TimeEntryManager from './timeEntry.manager'
 import TrackManager from './track.manager'
 import type { PublicUser } from './user.manager'
-import { toRelativeLocaleDateString } from '@/utils'
-import type { LookupEntity } from '@/components/lookup/lookup.server'
 
 type SessionSelect = typeof sessions.$inferSelect
 export type Session = Omit<SessionSelect, 'date'> & {
@@ -94,6 +95,11 @@ export default class SessionManager {
   static async update(id: string, description: string | null) {
     console.debug('Updating session:', id)
     await db.update(sessions).set({ description }).where(eq(sessions.id, id))
+  }
+
+  static async addGroup(id: string, groupSize?: number) {
+    console.debug('Adding group to session:', id)
+    await GroupManager.create(id, groupSize)
   }
 
   static async delete(id: string) {
