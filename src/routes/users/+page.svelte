@@ -6,7 +6,7 @@
   import type { PageData } from './$types'
 
   let { data }: { data: PageData } = $props()
-  const { users, loggedInUser } = data
+  const { users, loggedInUser } = $derived(data)
 </script>
 
 <HeaderBar class="flex items-center justify-between px-4 py-2">

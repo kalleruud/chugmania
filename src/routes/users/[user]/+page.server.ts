@@ -1,7 +1,7 @@
-import UserManager from '@/server/managers/user.manager'
-import type { Actions, PageServerLoad } from './$types'
 import LoginManager from '@/server/managers/login.manager'
+import UserManager from '@/server/managers/user.manager'
 import { fail } from '@sveltejs/kit'
+import type { Actions, PageServerLoad } from './$types'
 
 export const load = (async ({ params, locals }) => {
   const { user: currentUser } = locals

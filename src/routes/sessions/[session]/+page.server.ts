@@ -25,7 +25,7 @@ export const load = (async ({ params, locals }) => {
   })
 
   return {
-    user: locals.user,
+    loggedInUser: locals.user,
     session,
     tracksWithEntries,
     groups: await GroupManager.getAllFromSession(session.id),

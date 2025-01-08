@@ -1,26 +1,15 @@
 <script lang="ts">
-  import { applyAction, deserialize, enhance } from '$app/forms'
-  import { invalidateAll } from '$app/navigation'
-  import Lookup from '@/components/lookup/lookup.svelte'
+  import { enhance } from '$app/forms'
   import Button from '@/components/ui/button/button.svelte'
   import HeaderBar from '@/components/ui/header-bar/header-bar.svelte'
   import Input from '@/components/ui/input/input.svelte'
   import Popup from '@/components/ui/popup/popup.svelte'
-  import type { ActionResult } from '@sveltejs/kit'
-  import {
-    CheckIcon,
-    PencilIcon,
-    PlusIcon,
-    RefreshCwIcon,
-    Rotate3DIcon,
-    Trash2Icon,
-    XIcon,
-  } from 'lucide-svelte'
+  import { CheckIcon, PencilIcon, RefreshCwIcon, XIcon } from 'lucide-svelte'
   import { tick } from 'svelte'
   import type { PageData } from './$types'
 
   const { data }: { data: PageData } = $props()
-  const { user, session, tracksWithEntries, groups, userLookup } = $derived(data)
+  const { loggedInUser, session, tracksWithEntries, groups } = $derived(data)
   let isEditingTitle = $state(false)
   let titleEditRef = $state<HTMLElement>(null!)
 
@@ -71,7 +60,7 @@
     {:else}
       <div class="flex items-center gap-2">
         <h1 class="uppercase">{session.description ?? session.type}</h1>
-        {#if user.role === 'admin'}
+        {#if loggedInUser.role === 'admin'}
           <button class="p-2" onclick={onClickEdit}>
             <PencilIcon class="size-4 text-muted-foreground" />
           </button>
@@ -122,13 +111,22 @@
       <ul class="divide-y divide-solid">
         {#each groups as group}
           <li class="flex w-full justify-between py-2 font-f1 font-bold">
-            {group.name}
+            <span>{group.name}</span>
+            <div class="flex gap-4">
+              {#each group.users as user}
+                <span
+                  class="italic {user.id === loggedInUser.id
+                    ? 'text-primary'
+                    : 'text-muted-foreground'}">{user.shortName}</span
+                >
+              {/each}
+            </div>
           </li>
         {/each}
       </ul>
     </div>
   </div>
-  {#if user.role === 'admin'}
+  {#if loggedInUser.role === 'admin'}
     <form use:enhance method="post" action="?/generateGroups">
       <Button type="submit">
         <RefreshCwIcon class="size-4" />
