@@ -6,7 +6,7 @@
   import type { PageData } from './$types'
 
   let { data }: { data: PageData } = $props()
-  const { user, currentUser, isCurrentUser } = data
+  const { user, currentUser, isCurrentUser } = $derived(data)
 </script>
 
 <svelte:head>
