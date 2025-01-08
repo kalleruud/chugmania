@@ -72,6 +72,26 @@
 </HeaderBar>
 
 <main class="mt-24 p-4">
+  {#if loggedInUser.role === 'admin'}
+    <div class="mb-4 flex gap-2 rounded-lg bg-secondary p-2">
+      <form use:enhance method="post" action="?/generateGroups">
+        <Button type="submit">
+          <RefreshCwIcon class="size-4" />
+          Generer grupper
+        </Button>
+      </form>
+      <Popup
+        title="Sikker?"
+        description="Er du sikker på at du vil slette denne sessionen?"
+        triggerText="Slett"
+        triggerVariant="destructive"
+        buttons={[
+          { title: 'Avbryt' },
+          { title: 'Slett', action: '?/delete', variant: 'destructive' },
+        ]}
+      />
+    </div>
+  {/if}
   <div>
     {#each tracksWithEntries as { track, entries }}
       <div class="mb-4 flex flex-col gap-2 border-b text-sm">
@@ -107,6 +127,7 @@
       </div>
     {/each}
 
+    <h2 class="text-accent-foreground">Grupper</h2>
     <div class="mb-4 flex flex-col gap-2 border-b text-lg">
       <ul class="divide-y divide-solid">
         {#each groups as group}
@@ -125,23 +146,6 @@
         {/each}
       </ul>
     </div>
+    <h2 class="text-accent-foreground">Matcher</h2>
   </div>
-  {#if loggedInUser.role === 'admin'}
-    <form use:enhance method="post" action="?/generateGroups">
-      <Button type="submit">
-        <RefreshCwIcon class="size-4" />
-        Generer grupper
-      </Button>
-    </form>
-    <Popup
-      title="Sikker?"
-      description="Er du sikker på at du vil slette denne sessionen?"
-      triggerText="Slett"
-      triggerVariant="destructive"
-      buttons={[
-        { title: 'Avbryt' },
-        { title: 'Slett', action: '?/delete', variant: 'destructive' },
-      ]}
-    />
-  {/if}
 </main>
