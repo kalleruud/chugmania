@@ -3,7 +3,7 @@
   import Button from '@/components/ui/button/button.svelte'
   import HeaderBar from '@/components/ui/header-bar/header-bar.svelte'
   import Input from '@/components/ui/input/input.svelte'
-  import { ConeIcon, PencilIcon, TrophyIcon } from 'lucide-svelte'
+  import { ConeIcon, CrossIcon, PencilIcon, TrophyIcon, XIcon } from 'lucide-svelte'
   import { tick } from 'svelte'
   import type { PageData } from './$types'
 
@@ -15,6 +15,9 @@
   function onClickEdit() {
     isEditingTitle = true
     tick().then(() => titleEditRef?.focus())
+  }
+  function cancelEditing() {
+    isEditingTitle = false
   }
 </script>
 
@@ -32,12 +35,11 @@
     {#if isEditingTitle}
       <form
         class="flex items-center gap-4"
-        use:enhance={() => {
-          return ({ update }) => {
-            isEditingTitle = false
+        use:enhance={() =>
+          ({ update }) => {
+            cancelEditing()
             update()
-          }
-        }}
+          }}
         method="post"
         action="?/update"
       >
@@ -52,6 +54,9 @@
           placeholder={session.type}
         />
         <Button type="submit">Lagre</Button>
+        <button class="p-2" onclick={cancelEditing}>
+          <XIcon class="size-4" />
+        </button>
       </form>
     {:else}
       <div class="flex items-center gap-2">
