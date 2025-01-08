@@ -8,15 +8,13 @@
   import type { PageData } from './$types'
 
   const { data }: { data: PageData } = $props()
-  const { user, session, sessionData } = data
+  const { user, session, sessionData } = $derived(data)
   let isEditingTitle = $state(false)
   let titleEditRef = $state<HTMLElement>(null!)
 
   function onClickEdit() {
     isEditingTitle = true
-    tick().then(() => {
-      titleEditRef?.focus()
-    })
+    tick().then(() => titleEditRef?.focus())
   }
 </script>
 
@@ -32,14 +30,24 @@
       <TrophyIcon class="size-8" />
     {/if}
     {#if isEditingTitle}
-      <form class="flex items-center gap-4" use:enhance method="post" action="?/update">
+      <form
+        class="flex items-center gap-4"
+        use:enhance={() => {
+          return ({ update }) => {
+            isEditingTitle = false
+            update()
+          }
+        }}
+        method="post"
+        action="?/update"
+      >
         <input type="hidden" name="id" value={session.id} />
         <Input
           bind:ref={titleEditRef}
           name="title"
           type="text"
           value={session.description}
-          class="font-f1 font-black uppercase m-1"
+          class="m-1 font-f1 font-black uppercase"
           style="font-size: xx-large"
           placeholder={session.type}
         />

@@ -33,9 +33,7 @@ export const actions = {
     const description = form.get('title') as string
     if (!sessionId) throw new Error('Session ID is required')
 
-    if (description.length > 0) {
-      await SessionManager.update(sessionId, description)
-    }
+    await SessionManager.update(sessionId, description.length > 0 ? description : null)
     return { success: true }
   },
   delete: async ({ request, locals }) => {

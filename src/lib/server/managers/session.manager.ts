@@ -91,7 +91,7 @@ export default class SessionManager {
     return item
   }
 
-  static async update(id: string, description: string | undefined) {
+  static async update(id: string, description: string | null) {
     console.debug('Updating session:', id)
     await db.update(sessions).set({ description }).where(eq(sessions.id, id))
   }
