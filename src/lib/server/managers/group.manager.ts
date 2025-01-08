@@ -12,11 +12,15 @@ export type Group = GroupSelect & {
 export default class GroupManager {
   static async getAllFromSession(sessionId: string) {
     console.debug('Getting groups for session', sessionId)
-    return await db
-      .select()
-      .from(groups)
-      .where(and(isNull(groups.deletedAt), eq(groups.session, sessionId)))
-      .orderBy(groups.name)
+    return Promise.all(
+      (
+        await db
+          .select()
+          .from(groups)
+          .where(and(isNull(groups.deletedAt), eq(groups.session, sessionId)))
+          .orderBy(groups.name)
+      ).map(g => this.getDetails(g))
+    )
   }
 
   static async create(sessionId: string, amount: number = 1) {

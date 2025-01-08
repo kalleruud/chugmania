@@ -22,20 +22,21 @@ export default class TournamentManager {
         : middleIndex - Math.ceil(i / 2)
     )
 
+    // Determine group sizes
+    const sizes = distributionOrder.map((_, i) => baseSize + (i < extraPlayers ? 1 : 0))
+
     await Promise.all(
       distributionOrder.map(async (groupIndex, i) => {
         const group = groups[groupIndex]
-
-        const groupSize = baseSize + (i < extraPlayers ? 1 : 0)
-        const players = shuffledPlayers.slice(i * groupSize, (i + 1) * groupSize)
+        const index = sizes.slice(0, i).reduce((acc, size) => acc + size, 0)
+        const size = sizes[i]
 
         await GroupManager.addUsers(
           group.id,
-          players.map(player => player.id)
+          shuffledPlayers.slice(index, index + size).map(player => player.id)
         )
       })
     )
-
     return groups
   }
 
