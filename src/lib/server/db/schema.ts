@@ -98,7 +98,7 @@ export const groupUsers = sqliteTable('group_users', {
   user: text('user')
     .notNull()
     .references(() => users.id),
-  session: text('group')
+  group: text('group')
     .notNull()
     .references(() => groups.id),
 })
