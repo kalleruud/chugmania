@@ -87,7 +87,7 @@ export const matches = sqliteTable('matches', {
 
 export const groups = sqliteTable('groups', {
   ...common,
-  name: text('name').notNull().unique(),
+  name: text('name').notNull(),
   session: text('session')
     .notNull()
     .references(() => sessions.id),
