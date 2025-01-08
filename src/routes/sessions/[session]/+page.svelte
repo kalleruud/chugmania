@@ -3,10 +3,10 @@
   import Button from '@/components/ui/button/button.svelte'
   import HeaderBar from '@/components/ui/header-bar/header-bar.svelte'
   import Input from '@/components/ui/input/input.svelte'
-  import { ConeIcon, CrossIcon, PencilIcon, TrophyIcon, XIcon } from 'lucide-svelte'
+  import Popup from '@/components/ui/popup/popup.svelte'
+  import { PencilIcon, XIcon } from 'lucide-svelte'
   import { tick } from 'svelte'
   import type { PageData } from './$types'
-  import Popup from '@/components/ui/popup/popup.svelte'
 
   const { data }: { data: PageData } = $props()
   const { user, session, sessionData } = $derived(data)
