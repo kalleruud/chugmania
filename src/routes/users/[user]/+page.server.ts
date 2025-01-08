@@ -18,8 +18,12 @@ export const actions = {
   update: async ({ request, locals, cookies }) => {
     const form = await request.formData()
     try {
-      if (form.get('id') !== locals.user?.id) throw new Error('Unauthorized')
-      await UserManager.update(form, cookies)
+      if (locals.user?.role !== 'admin' && form.get('id') !== locals.user?.id)
+        throw new Error('Unauthorized')
+      await UserManager.update(form)
+      if (locals.user?.id === form.get('id')) {
+        LoginManager.refresh(cookies)
+      }
     } catch (e) {
       if (!(e instanceof Error)) throw e
       console.error(e)

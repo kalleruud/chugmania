@@ -51,6 +51,20 @@ export default class LoginManager {
     })
   }
 
+  static async refresh(cookies: Cookies) {
+    console.debug('Refreshing token')
+    const user = this.verifyAuth(cookies)
+    if (!UserManager.isUser(user)) return this.logout(cookies)
+    const updatedUser = await UserManager.getUserByEmail(user.email)
+
+    if (!updatedUser) {
+      console.warn('Failed to refresh token: User not found')
+      return this.logout(cookies)
+    }
+
+    this.updateToken(updatedUser, cookies)
+  }
+
   private static isPasswordValid(providedHash: ArrayBuffer, expectedHash: Buffer) {
     return expectedHash.equals(Buffer.from(providedHash))
   }

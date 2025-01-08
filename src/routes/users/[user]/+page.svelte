@@ -19,7 +19,7 @@
 </HeaderBar>
 
 <main class="mt-20 grid gap-8 p-4">
-  {#if isCurrentUser}
+  {#if isCurrentUser || currentUser.role === 'admin'}
     <form class="grid gap-4" use:enhance method="POST" action="?/update">
       <input type="hidden" name="id" value={user.id} />
 

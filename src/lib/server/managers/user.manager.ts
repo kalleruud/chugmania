@@ -1,11 +1,9 @@
 import db from '$lib/server/db'
 import type { LookupEntity } from '@/components/lookup/lookup.server'
 import { hash } from '@/utils'
-import type { Cookies } from '@sveltejs/kit'
 import { randomUUID } from 'crypto'
 import { and, eq, isNull } from 'drizzle-orm'
 import { groupUsers, sessions, timeEntries, users } from '../db/schema'
-import LoginManager from './login.manager'
 import SessionManager from './session.manager'
 
 type User = typeof users.$inferSelect
@@ -110,7 +108,7 @@ export default class UserManager {
     return this.getDetails(user)
   }
 
-  static async update(data: FormData, cookies: Cookies) {
+  static async update(data: FormData) {
     const id = data.get('id') as string
     if (id?.length === 0) throw new Error('No user ID provided')
     console.debug('Updating user:', id)
@@ -134,7 +132,6 @@ export default class UserManager {
 
     const user = result.at(0)
     if (!user) throw new Error(`Failed to update user '${id}'`)
-    LoginManager.updateToken(user, cookies)
   }
 
   static async delete(data: FormData) {
