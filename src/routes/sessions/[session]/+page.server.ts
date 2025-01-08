@@ -1,8 +1,8 @@
 import SessionManager from '@/server/managers/session.manager'
 import TimeEntryManager, { type TimeEntry } from '@/server/managers/timeEntry.manager'
 import { type Track } from '@/server/managers/track.manager'
-import type { Actions, PageServerLoad } from './$types'
 import { redirect } from '@sveltejs/kit'
+import type { Actions, PageServerLoad } from './$types'
 
 export const load = (async ({ params, locals }) => {
   if (!locals.user) throw new Error('Unauthorized')
@@ -25,6 +25,19 @@ export const load = (async ({ params, locals }) => {
 }) satisfies PageServerLoad
 
 export const actions = {
+  update: async ({ request, locals }) => {
+    if (!locals.user) throw new Error('Unauthorized')
+    if (locals.user.role !== 'admin') throw new Error('Forbidden')
+    const form = await request.formData()
+    const sessionId = form.get('id') as string
+    const description = form.get('title') as string
+    if (!sessionId) throw new Error('Session ID is required')
+
+    if (description.length > 0) {
+      await SessionManager.update(sessionId, description)
+    }
+    return { success: true }
+  },
   delete: async ({ request, locals }) => {
     if (!locals.user) throw new Error('Unauthorized')
     if (locals.user.role !== 'admin') throw new Error('Forbidden')

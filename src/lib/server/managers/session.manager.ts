@@ -91,6 +91,11 @@ export default class SessionManager {
     return item
   }
 
+  static async update(id: string, description: string | undefined) {
+    console.debug('Updating session:', id)
+    await db.update(sessions).set({ description }).where(eq(sessions.id, id))
+  }
+
   static async delete(id: string) {
     console.debug('Deleting session:', id)
     await db.update(sessions).set({ deletedAt: new Date() }).where(eq(sessions.id, id))
