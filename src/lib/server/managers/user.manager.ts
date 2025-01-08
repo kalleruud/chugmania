@@ -4,7 +4,7 @@ import { hash } from '@/utils'
 import type { Cookies } from '@sveltejs/kit'
 import { randomUUID } from 'crypto'
 import { and, eq, isNull } from 'drizzle-orm'
-import { sessions, timeEntries, users } from '../db/schema'
+import { groupUsers, sessions, timeEntries, users } from '../db/schema'
 import LoginManager from './login.manager'
 import SessionManager from './session.manager'
 
@@ -65,6 +65,17 @@ export default class UserManager {
       )
 
     return items.map(item => this.getDetails(item.users))
+  }
+
+  static async getUsersFromGroup(groupId: string) {
+    console.debug('Getting users for group', groupId)
+    return (
+      await db
+        .select()
+        .from(groupUsers)
+        .where(and(isNull(groupUsers.deletedAt), eq(groupUsers.group, groupId)))
+        .innerJoin(users, eq(users.id, groupUsers.user))
+    ).map(gu => this.getDetails(gu.users))
   }
 
   static async getAllLookup(): Promise<LookupEntity[]> {

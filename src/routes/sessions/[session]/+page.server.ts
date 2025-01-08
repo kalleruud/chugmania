@@ -1,9 +1,11 @@
+import GroupManager from '@/server/managers/group.manager'
 import SessionManager from '@/server/managers/session.manager'
 import TimeEntryManager, { type TimeEntry } from '@/server/managers/timeEntry.manager'
+import TournamentManager from '@/server/managers/tournament.manager'
 import { type Track } from '@/server/managers/track.manager'
+import UserManager from '@/server/managers/user.manager'
 import { fail, redirect } from '@sveltejs/kit'
 import type { Actions, PageServerLoad } from './$types'
-import GroupManager from '@/server/managers/group.manager'
 
 export const load = (async ({ params, locals }) => {
   if (!locals.user) throw new Error('Unauthorized')
@@ -22,9 +24,13 @@ export const load = (async ({ params, locals }) => {
     tracksWithEntries[i] = { track, entries: TimeEntryManager.getDurationGaps(entries) }
   })
 
-  const groups = await GroupManager.getAllFromSession(session.id)
-
-  return { user: locals.user, session, tracksWithEntries, groups }
+  return {
+    user: locals.user,
+    session,
+    tracksWithEntries,
+    groups: await GroupManager.getAllFromSession(session.id),
+    userLookup: await UserManager.getAllLookup(),
+  }
 }) satisfies PageServerLoad
 
 export const actions = {
@@ -42,17 +48,13 @@ export const actions = {
     await SessionManager.delete(params.session)
     throw redirect(303, '/sessions')
   },
-  addGroup: async ({ locals, params }) => {
+  generateGroups: async ({ locals, params }) => {
     if (!locals.user) return fail(401, { message: 'Unauthorized' })
     if (locals.user.role !== 'admin') return fail(403, { message: 'Forbidden' })
 
-    await SessionManager.addGroup(params.session)
-  },
-  deleteGroup: async ({ request, locals }) => {
-    if (!locals.user) return fail(401, { message: 'Unauthorized' })
-    if (locals.user.role !== 'admin') return fail(403, { message: 'Forbidden' })
-    const form = await request.formData()
-    const id = form.get('id') as string
-    await GroupManager.delete(id)
+    const players = await UserManager.getAll()
+    if (players.length < 4) return fail(400, { message: 'Not enough players' })
+    await TournamentManager.clearGroups(params.session)
+    await TournamentManager.generateGroups(params.session, players, 4)
   },
 } satisfies Actions

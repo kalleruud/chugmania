@@ -1,15 +1,26 @@
 <script lang="ts">
-  import { enhance } from '$app/forms'
+  import { applyAction, deserialize, enhance } from '$app/forms'
+  import { invalidateAll } from '$app/navigation'
+  import Lookup from '@/components/lookup/lookup.svelte'
   import Button from '@/components/ui/button/button.svelte'
   import HeaderBar from '@/components/ui/header-bar/header-bar.svelte'
   import Input from '@/components/ui/input/input.svelte'
   import Popup from '@/components/ui/popup/popup.svelte'
-  import { CheckIcon, PencilIcon, PlusIcon, Trash2Icon, XIcon } from 'lucide-svelte'
+  import type { ActionResult } from '@sveltejs/kit'
+  import {
+    CheckIcon,
+    PencilIcon,
+    PlusIcon,
+    RefreshCwIcon,
+    Rotate3DIcon,
+    Trash2Icon,
+    XIcon,
+  } from 'lucide-svelte'
   import { tick } from 'svelte'
   import type { PageData } from './$types'
 
   const { data }: { data: PageData } = $props()
-  const { user, session, tracksWithEntries, groups } = $derived(data)
+  const { user, session, tracksWithEntries, groups, userLookup } = $derived(data)
   let isEditingTitle = $state(false)
   let titleEditRef = $state<HTMLElement>(null!)
 
@@ -17,6 +28,7 @@
     isEditingTitle = true
     tick().then(() => titleEditRef?.focus())
   }
+
   function cancelEditing() {
     isEditingTitle = false
   }
@@ -111,24 +123,16 @@
         {#each groups as group}
           <li class="flex w-full justify-between py-2 font-f1 font-bold">
             {group.name}
-            {#if user.role === 'admin'}
-              <form use:enhance method="post">
-                <input type="hidden" name="id" value={group.id} />
-                <button type="submit" formaction="?/deleteGroup">
-                  <Trash2Icon class="size-4 text-destructive" />
-                </button>
-              </form>
-            {/if}
           </li>
         {/each}
       </ul>
     </div>
   </div>
   {#if user.role === 'admin'}
-    <form use:enhance method="post" action="?/addGroup">
+    <form use:enhance method="post" action="?/generateGroups">
       <Button type="submit">
-        <PlusIcon class="size-4" />
-        Legg til gruppe
+        <RefreshCwIcon class="size-4" />
+        Generer grupper
       </Button>
     </form>
     <Popup
