@@ -4,9 +4,10 @@
   import { Beer, IdCard, Map, Plus } from 'lucide-svelte'
   import Flag from 'lucide-svelte/icons/flag'
   import { ModeWatcher } from 'mode-watcher'
+  import type { Snippet } from 'svelte'
   import '../app.css'
 
-  let { children } = $props()
+  let { children }: { children: Snippet } = $props()
 </script>
 
 <svelte:head>
