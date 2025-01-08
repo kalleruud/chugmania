@@ -25,25 +25,18 @@ export const load = (async ({ params, locals }) => {
 }) satisfies PageServerLoad
 
 export const actions = {
-  update: async ({ request, locals }) => {
+  update: async ({ request, locals, params }) => {
     if (!locals.user) throw new Error('Unauthorized')
     if (locals.user.role !== 'admin') throw new Error('Forbidden')
     const form = await request.formData()
-    const sessionId = form.get('id') as string
     const description = form.get('title') as string
-    if (!sessionId) throw new Error('Session ID is required')
 
-    await SessionManager.update(sessionId, description.length > 0 ? description : null)
-    return { success: true }
+    await SessionManager.update(params.session, description.length > 0 ? description : null)
   },
-  delete: async ({ request, locals }) => {
+  delete: async ({ locals, params }) => {
     if (!locals.user) throw new Error('Unauthorized')
     if (locals.user.role !== 'admin') throw new Error('Forbidden')
-    const form = await request.formData()
-    const sessionId = form.get('id')?.toString()
-    if (!sessionId) throw new Error('Session ID is required')
-
-    await SessionManager.delete(sessionId)
+    await SessionManager.delete(params.session)
     throw redirect(303, '/sessions')
   },
 } satisfies Actions

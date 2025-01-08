@@ -6,6 +6,7 @@
   import { ConeIcon, CrossIcon, PencilIcon, TrophyIcon, XIcon } from 'lucide-svelte'
   import { tick } from 'svelte'
   import type { PageData } from './$types'
+  import Popup from '@/components/ui/popup/popup.svelte'
 
   const { data }: { data: PageData } = $props()
   const { user, session, sessionData } = $derived(data)
@@ -109,9 +110,15 @@
     {/each}
   </div>
   {#if user.role === 'admin'}
-    <form use:enhance method="post" action="?/delete">
-      <input type="hidden" name="id" value={session.id} />
-      <Button variant="destructive" type="submit">Slett</Button>
-    </form>
+    <Popup
+      title="Sikker?"
+      description="Er du sikker på at du vil slette denne sessionen?"
+      triggerText="Slett"
+      triggerVariant="destructive"
+      buttons={[
+        { title: 'Avbryt' },
+        { title: 'Slett', action: '?/delete', variant: 'destructive' },
+      ]}
+    />
   {/if}
 </main>
