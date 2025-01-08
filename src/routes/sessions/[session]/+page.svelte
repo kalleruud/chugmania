@@ -28,11 +28,6 @@
 
 <HeaderBar class="grid px-4 py-2">
   <div class="flex items-center gap-2">
-    {#if session.type === 'practice'}
-      <ConeIcon class="size-8" />
-    {:else}
-      <TrophyIcon class="size-8" />
-    {/if}
     {#if isEditingTitle}
       <form
         class="flex items-center gap-4"
