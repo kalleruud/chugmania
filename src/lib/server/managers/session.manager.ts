@@ -105,6 +105,7 @@ export default class SessionManager {
   static async delete(id: string) {
     console.debug('Deleting session:', id)
     await db.update(sessions).set({ deletedAt: new Date() }).where(eq(sessions.id, id))
+    await GroupManager.deleteBySession(id)
   }
 
   static async getSessionData(sessionId: string) {

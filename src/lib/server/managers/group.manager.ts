@@ -42,6 +42,20 @@ export default class GroupManager {
     await db.update(groupUsers).set({ deletedAt: new Date() }).where(eq(groupUsers.group, groupId))
   }
 
+  static async deleteBySession(sessionId: string) {
+    console.debug('Deleting groups for session', sessionId)
+    const deletedGroups = await db
+      .update(groups)
+      .set({ deletedAt: new Date() })
+      .where(eq(groups.session, sessionId))
+      .returning()
+    Promise.all(
+      deletedGroups.map(g =>
+        db.update(groupUsers).set({ deletedAt: new Date() }).where(eq(groupUsers.group, g.id))
+      )
+    )
+  }
+
   static async addUser(groupId: string, playerId: string) {
     console.debug('Adding user to group', groupId)
     return (
