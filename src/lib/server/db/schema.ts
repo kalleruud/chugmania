@@ -1,6 +1,6 @@
 import { getLocalTimeZone, today } from '@internationalized/date'
 import { randomUUID } from 'crypto'
-import { blob, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import { blob, integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import type { SessionType } from '../managers/session.manager'
 import type { TrackLevel, TrackType } from '../managers/track.manager'
 import type { Role } from '../managers/user.manager'
@@ -62,7 +62,7 @@ export const timeEntries = sqliteTable('time_entries', {
     .notNull()
     .references(() => sessions.id),
   duration: integer('duration_ms').notNull(),
-  amount: integer('amount_l').notNull(),
+  amount: real('amount_l').notNull().default(0.5),
   comment: text('comment'),
 })
 
@@ -81,7 +81,7 @@ export const matches = sqliteTable('matches', {
   session: text('session')
     .notNull()
     .references(() => sessions.id),
-  amount: integer('amount_l').notNull(),
+  amount: real('amount_l').notNull().default(0.5),
   comment: text('comment'),
 })
 

@@ -43,6 +43,13 @@
       "when": 1736369004449,
       "tag": "0005_cultured_venom",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1736382789478,
+      "tag": "0006_wet_vivisector",
+      "breakpoints": true
     }
   ]
 }
