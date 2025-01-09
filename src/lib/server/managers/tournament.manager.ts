@@ -1,5 +1,6 @@
-import GroupManager from './group.manager'
-import MatchManager from './match.manager'
+import GroupManager, { type Group } from './group.manager'
+import MatchManager, { type NewMatch } from './match.manager'
+import type { Track } from './track.manager'
 import type { PublicUser } from './user.manager'
 
 export default class TournamentManager {
@@ -39,20 +40,21 @@ export default class TournamentManager {
 
   static async clearGroups(sessionId: string) {
     console.debug('Clearing groups for session', sessionId)
-    const groups = await GroupManager.getAllFromSession(sessionId)
-    await Promise.all(groups.map(group => GroupManager.delete(group.id)))
+    await GroupManager.deleteBySession(sessionId)
+    await MatchManager.deleteAllFromSession(sessionId)
   }
 
-  static genratePairings<T>(players: T[]) {
+  private static genratePairings<T>(players: T[]) {
     const rounds = players.length % 2 === 0 ? players.length - 1 : players.length
     const half = Math.ceil(players.length / 2)
 
     const pairings = new Array<{ a: T; b: T }>()
-    const playerIndexes = players.map((_, i) => i)
+    const playerIndexes = players.map((_, i) => i).slice(1)
 
     for (let i = 0; i < rounds; i++) {
-      const firstHalf = playerIndexes.slice(0, half)
-      const secondHalf = playerIndexes.slice(half, players.length).reverse()
+      const newPlayerIndexes = [0].concat(playerIndexes)
+      const firstHalf = newPlayerIndexes.slice(0, half)
+      const secondHalf = newPlayerIndexes.slice(half, players.length).reverse()
       console.log(firstHalf, secondHalf)
 
       for (let j = 0; j < firstHalf.length; j++) {
@@ -63,10 +65,67 @@ export default class TournamentManager {
         })
       }
 
+      // Rotate players
       playerIndexes.push(playerIndexes.shift()!)
     }
 
     return pairings
+  }
+
+  static generatePairs<T>(participants: T[]) {
+    const p = Array.from<T | undefined>(participants)
+    if (p.length % 2 == 1) p.push(undefined)
+
+    const half = p.length / 2
+    const tournamentPairings = []
+
+    const playerIndexes = p.map((_, i) => i).slice(1)
+
+    for (let round = 0; round < p.length - 1; round++) {
+      const roundPairings = []
+
+      const newPlayerIndexes = [0].concat(playerIndexes)
+
+      const firstHalf = newPlayerIndexes.slice(0, half)
+      const secondHalf = newPlayerIndexes.slice(half, p.length).reverse()
+
+      for (let i = 0; i < firstHalf.length; i++) {
+        const a = p[firstHalf[i]]
+        const b = p[secondHalf[i]]
+        if (!a || !b) continue
+        roundPairings.push({ a, b })
+      }
+
+      // Rotate players
+      playerIndexes.push(playerIndexes.shift()!)
+      tournamentPairings.push(roundPairings)
+    }
+
+    return tournamentPairings.flat()
+  }
+
+  static async generateMatchesForGroup(sessionId: string, groups: Group[], tracks: Track[]) {
+    console.debug('Generating matches for', groups.length, 'groups')
+
+    const pairings = groups.map(group => this.generatePairs(group.users))
+    const maxPairingsPerGroup = Math.max(...pairings.map(p => p.length))
+    const interleavedMatches = new Array<NewMatch>()
+
+    console.log(pairings.map(p => p.map(x => x.a?.name + ' vs ' + x.b?.name)))
+
+    for (let i = 0; i < maxPairingsPerGroup; i++) {
+      for (const groupPairs of pairings) {
+        if (i >= groupPairs.length) continue
+        interleavedMatches.push({
+          user1: groupPairs[i].a.id,
+          user2: groupPairs[i].b.id,
+          session: sessionId,
+          track: tracks[i].id,
+        })
+      }
+    }
+
+    return await MatchManager.createMany(interleavedMatches)
   }
 
   static async clearMatches(sessionId: string) {

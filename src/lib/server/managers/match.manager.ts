@@ -7,6 +7,8 @@ import type { Track } from './track.manager'
 import UserManager from './user.manager'
 import SessionManager from './session.manager'
 import TrackManager from './track.manager'
+import type { Group } from './group.manager'
+import GroupManager from './group.manager'
 
 export type NewMatch = typeof matches.$inferInsert
 export type Match = Omit<typeof matches.$inferSelect, 'user1' | 'user2' | 'session' | 'track'> & {
@@ -14,6 +16,8 @@ export type Match = Omit<typeof matches.$inferSelect, 'user1' | 'user2' | 'sessi
   user2: PublicUser
   session: Session
   track: Track
+  group1?: Group
+  group2?: Group
 }
 
 export default class MatchManager {
@@ -57,6 +61,8 @@ export default class MatchManager {
       user2: await UserManager.getUserById(match.user2),
       session: await SessionManager.get(match.session),
       track: await TrackManager.get(match.track),
+      group1: await GroupManager.getUserGroup(match.session, match.user1),
+      group2: await GroupManager.getUserGroup(match.session, match.user2),
     }
   }
 }

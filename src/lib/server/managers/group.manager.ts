@@ -10,6 +10,8 @@ export type Group = GroupSelect & {
 }
 
 export default class GroupManager {
+  static readonly table = groups
+
   static async getAllFromSession(sessionId: string) {
     console.debug('Getting groups for session', sessionId)
     return Promise.all(
@@ -80,6 +82,36 @@ export default class GroupManager {
       .delete(groupUsers)
       .where(and(eq(groupUsers.group, groupId), eq(groupUsers.user, userId)))
       .returning()
+  }
+
+  static async getUsersFromGroup(groupId: string) {
+    console.debug('Getting users from group', groupId)
+    return (
+      await db
+        .select()
+        .from(groupUsers)
+        .innerJoin(UserManager.table, eq(groupUsers.group, UserManager.table.id))
+        .where(and(isNull(groupUsers.deletedAt), eq(groupUsers.group, groupId)))
+    ).map(gu => UserManager.getDetails(gu.users))
+  }
+
+  static async getUserGroup(sessionId: string, userId: string) {
+    console.debug('Getting group for user', userId, 'in session', sessionId)
+    const result = await db
+      .select()
+      .from(groupUsers)
+      .innerJoin(
+        groups,
+        and(
+          isNull(groups.deletedAt),
+          eq(groups.session, sessionId),
+          eq(groupUsers.group, groups.id)
+        )
+      )
+      .where(and(isNull(groupUsers.deletedAt), eq(groupUsers.user, userId)))
+    const group = result.at(0)
+    if (!group) return undefined
+    return this.getDetails(group.groups)
   }
 
   static async getDetails(group: GroupSelect): Promise<Group> {

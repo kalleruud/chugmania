@@ -176,6 +176,11 @@
               {match.user2.shortName}
             </span>
             {match.track.name}
+            {#if match.group1 && match.group1?.id === match.group2?.id}
+              <span class="italic text-muted-foreground">
+                Gruppe {match.group1?.name}
+              </span>
+            {/if}
           </li>
         {/each}
       </ul>

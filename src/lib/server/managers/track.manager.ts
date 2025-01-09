@@ -22,7 +22,7 @@ export default class TrackManager {
   static readonly table = tracks
 
   static async init() {
-    const result = await db.select().from(tracks)
+    const result = await this.getAll()
     if (result.length > 0) return
     console.log('Initializing tracks')
     await db.insert(tracks).values(this.generateTracks())
@@ -47,12 +47,17 @@ export default class TrackManager {
     return items
   }
 
-  static async getAll(isChuggable: boolean = true): Promise<Track[]> {
+  static async getAll(isChuggable?: boolean): Promise<Track[]> {
     console.debug('Getting tracks')
     const items = await db
       .select()
       .from(tracks)
-      .where(eq(tracks.isChuggable, isChuggable))
+      .where(
+        and(
+          isNull(tracks.deletedAt),
+          isChuggable === undefined ? undefined : eq(tracks.isChuggable, isChuggable)
+        )
+      )
       .orderBy(tracks.number)
     return items.map(item => this.getDetails(item))
   }

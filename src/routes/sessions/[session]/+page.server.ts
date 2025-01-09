@@ -3,7 +3,7 @@ import MatchManager from '@/server/managers/match.manager'
 import SessionManager from '@/server/managers/session.manager'
 import TimeEntryManager, { type TimeEntry } from '@/server/managers/timeEntry.manager'
 import TournamentManager from '@/server/managers/tournament.manager'
-import { type Track } from '@/server/managers/track.manager'
+import TrackManager, { type Track } from '@/server/managers/track.manager'
 import UserManager from '@/server/managers/user.manager'
 import { fail, redirect } from '@sveltejs/kit'
 import type { Actions, PageServerLoad } from './$types'
@@ -63,9 +63,9 @@ export const actions = {
     if (!locals.user) return fail(401, { message: 'Unauthorized' })
     if (locals.user.role !== 'admin') return fail(403, { message: 'Forbidden' })
 
-    const users = await UserManager.getAll()
-    // const tracks = await TrackManager.getAll()
     await TournamentManager.clearMatches(params.session)
-    TournamentManager.generateMatchesForGroup([users[0], users[1], users[2], users[3], users[4], users[5]])
+    const groups = await GroupManager.getAllFromSession(params.session)
+    const tracks = await TrackManager.getAll()
+    TournamentManager.generateMatchesForGroup(params.session, groups, tracks)
   },
 } satisfies Actions
