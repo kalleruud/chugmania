@@ -2,7 +2,7 @@ import GroupManager from '@/server/managers/group.manager'
 import SessionManager from '@/server/managers/session.manager'
 import TimeEntryManager, { type TimeEntry } from '@/server/managers/timeEntry.manager'
 import TournamentManager from '@/server/managers/tournament.manager'
-import { type Track } from '@/server/managers/track.manager'
+import TrackManager, { type Track } from '@/server/managers/track.manager'
 import UserManager from '@/server/managers/user.manager'
 import { fail, redirect } from '@sveltejs/kit'
 import type { Actions, PageServerLoad } from './$types'
@@ -56,5 +56,18 @@ export const actions = {
     if (players.length < 4) return fail(400, { message: 'Not enough players' })
     await TournamentManager.clearGroups(params.session)
     await TournamentManager.generateGroups(params.session, players, 4)
+  },
+  scheduleMatches: async ({ locals, params }) => {
+    if (!locals.user) return fail(401, { message: 'Unauthorized' })
+    if (locals.user.role !== 'admin') return fail(403, { message: 'Forbidden' })
+
+    const users = await UserManager.getAll()
+    const tracks = await TrackManager.getAll()
+    await TournamentManager.clearMatches(params.session)
+    await TournamentManager.scheduleMatches(
+      params.session,
+      users.map(user => user.id),
+      tracks
+    )
   },
 } satisfies Actions

@@ -73,23 +73,31 @@
 
 <main class="mt-24 p-4">
   {#if loggedInUser.role === 'admin'}
-    <div class="mb-4 flex gap-2 rounded-lg bg-secondary p-2">
-      <form use:enhance method="post" action="?/generateGroups">
-        <Button type="submit">
-          <RefreshCwIcon class="size-4" />
-          Generer grupper
-        </Button>
-      </form>
-      <Popup
-        title="Sikker?"
-        description="Er du sikker på at du vil slette denne sessionen?"
-        triggerText="Slett"
-        triggerVariant="destructive"
-        buttons={[
-          { title: 'Avbryt' },
-          { title: 'Slett', action: '?/delete', variant: 'destructive' },
-        ]}
-      />
+    <div class="flex w-full justify-center">
+      <div class="mb-4 flex w-fit gap-2 rounded-lg bg-secondary p-2">
+        <form use:enhance method="post">
+          <Button type="submit" formaction="?/generateGroups">
+            <RefreshCwIcon class="size-4" />
+            <span>Generer grupper</span>
+          </Button>
+        </form>
+        <form use:enhance method="post">
+          <Button type="submit" formaction="?/scheduleMatches">
+            <RefreshCwIcon class="size-4" />
+            <span>Generer matcher</span>
+          </Button>
+        </form>
+        <Popup
+          title="Sikker?"
+          description="Er du sikker på at du vil slette denne sessionen?"
+          triggerText="Slett"
+          triggerVariant="destructive"
+          buttons={[
+            { title: 'Avbryt' },
+            { title: 'Slett', action: '?/delete', variant: 'destructive' },
+          ]}
+        />
+      </div>
     </div>
   {/if}
   <div>
