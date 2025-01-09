@@ -1,19 +1,23 @@
 import { and, eq, isNull } from 'drizzle-orm'
 import db from '../db'
 import { matches } from '../db/schema'
-import type { PublicUser } from './user.manager'
-import type { Session } from './session.manager'
-import type { Track } from './track.manager'
-import UserManager from './user.manager'
-import SessionManager from './session.manager'
-import TrackManager from './track.manager'
 import type { Group } from './group.manager'
 import GroupManager from './group.manager'
+import type { Session } from './session.manager'
+import SessionManager from './session.manager'
+import type { Track } from './track.manager'
+import TrackManager from './track.manager'
+import type { PublicUser } from './user.manager'
+import UserManager from './user.manager'
 
 export type NewMatch = typeof matches.$inferInsert
-export type Match = Omit<typeof matches.$inferSelect, 'user1' | 'user2' | 'session' | 'track'> & {
+export type Match = Omit<
+  typeof matches.$inferSelect,
+  'user1' | 'user2' | 'session' | 'track' | 'winner'
+> & {
   user1: PublicUser
   user2: PublicUser
+  winner?: PublicUser
   session: Session
   track: Track
   group1?: Group
@@ -56,14 +60,26 @@ export default class MatchManager {
 
   static async getDetails(match: typeof matches.$inferSelect): Promise<Match> {
     console.debug('Getting details for match', match.id)
+    const user1 = await UserManager.getUserById(match.user1)
+    const user2 = await UserManager.getUserById(match.user2)
+    let winner: PublicUser | undefined = undefined
+    if (match.winner === user1.id) winner = user1
+    else if (match.winner === user2.id) winner = user2
+    else if (match.winner) throw new Error(`Winner of ${match.id} does not match user1 or user2`)
     return {
       ...match,
-      user1: await UserManager.getUserById(match.user1),
-      user2: await UserManager.getUserById(match.user2),
+      user1,
+      user2,
+      winner,
       session: await SessionManager.get(match.session),
       track: await TrackManager.get(match.track),
       group1: await GroupManager.getUserGroup(match.session, match.user1),
       group2: await GroupManager.getUserGroup(match.session, match.user2),
     }
+  }
+
+  static async setWinner(matchId: string, winnerId: string | null) {
+    console.debug('Setting winner for match', matchId)
+    await db.update(matches).set({ winner: winnerId }).where(eq(matches.id, matchId))
   }
 }

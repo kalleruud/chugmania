@@ -68,4 +68,16 @@ export const actions = {
     const tracks = await TrackManager.getAll()
     TournamentManager.generateMatchesForGroup(params.session, groups, tracks)
   },
+  setWinner: async ({ request, locals }) => {
+    if (!locals.user) return fail(401, { message: 'Unauthorized' })
+    if (locals.user.role === 'user') return fail(403, { message: 'Forbidden' })
+    const form = await request.formData()
+
+    const matchId = form.get('match') as string
+    const winnerId = form.get('winner') as string
+    const currentWinner = form.get('currentWinner') as string | undefined
+    if (winnerId === currentWinner) {
+      await MatchManager.setWinner(matchId, null)
+    } else await MatchManager.setWinner(matchId, winnerId)
+  },
 } satisfies Actions

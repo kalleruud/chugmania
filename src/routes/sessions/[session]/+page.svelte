@@ -1,5 +1,7 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
+  import MatchRow from '@/components/match/match-row.svelte'
+  import type { Match, PublicUser } from '@/components/types.server'
   import Button from '@/components/ui/button/button.svelte'
   import HeaderBar from '@/components/ui/header-bar/header-bar.svelte'
   import Input from '@/components/ui/input/input.svelte'
@@ -74,7 +76,7 @@
 <main class="my-24 p-4">
   {#if loggedInUser.role === 'admin'}
     <div class="flex w-full justify-center">
-      <div class="mb-4 flex w-fit gap-2 rounded-lg bg-secondary p-2">
+      <div class="mb-4 flex w-fit gap-2 rounded-lg border p-2">
         <form use:enhance method="post">
           <Button type="submit" formaction="?/generateGroups">
             <RefreshCwIcon class="size-4" />
@@ -156,34 +158,10 @@
     </div>
 
     <h2 class="text-accent-foreground">Matcher</h2>
-    <div class="mb-4 border-b text-lg">
-      <ul class="grid divide-y divide-solid">
-        {#each matches as match}
-          <li class="flex justify-center gap-4 py-2 font-f1 font-bold">
-            <span
-              class="italic {match.user1.id === loggedInUser.id
-                ? 'text-primary'
-                : 'text-muted-foreground'}"
-            >
-              {match.user1.shortName}
-            </span>
-            vs
-            <span
-              class="italic {match.user2.id === loggedInUser.id
-                ? 'text-primary'
-                : 'text-muted-foreground'}"
-            >
-              {match.user2.shortName}
-            </span>
-            {match.track.name}
-            {#if match.group1 && match.group1?.id === match.group2?.id}
-              <span class="italic text-muted-foreground">
-                Gruppe {match.group1?.name}
-              </span>
-            {/if}
-          </li>
-        {/each}
-      </ul>
-    </div>
+    <ul class="divide-y divide-solid">
+      {#each matches as match}
+        <MatchRow {match} user={loggedInUser} />
+      {/each}
+    </ul>
   </div>
 </main>
