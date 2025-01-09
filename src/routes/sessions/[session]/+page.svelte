@@ -1,7 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
   import MatchRow from '@/components/match/match-row.svelte'
-  import type { Match, PublicUser } from '@/components/types.server'
   import Button from '@/components/ui/button/button.svelte'
   import HeaderBar from '@/components/ui/header-bar/header-bar.svelte'
   import Input from '@/components/ui/input/input.svelte'

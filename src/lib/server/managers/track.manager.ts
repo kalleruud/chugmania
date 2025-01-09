@@ -99,4 +99,9 @@ export default class TrackManager {
   private static getNameOf(track: SelectTrack) {
     return `#${track.number.toString().padStart(2, '0')}`
   }
+
+  static async update(id: string, isChuggable: boolean) {
+    console.debug('Updating track:', id)
+    await db.update(tracks).set({ isChuggable }).where(eq(tracks.id, id))
+  }
 }

@@ -29,7 +29,7 @@
       </a>
       <a
         href="/tracks"
-        class="flex w-12 flex-col place-items-center {$page.url.pathname === '/tracks'
+        class="flex w-12 flex-col place-items-center {$page.url.pathname.startsWith('/tracks')
           ? 'text-foreground'
           : 'text-stone-400'}"
       >
