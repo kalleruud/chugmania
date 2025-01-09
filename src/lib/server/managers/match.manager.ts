@@ -28,6 +28,7 @@ export default class MatchManager {
 
   static async createMany(values: (typeof matches.$inferInsert)[]) {
     console.debug('Creating', values.length, 'matches')
+    if (values.length === 0) return []
     return await db.insert(matches).values(values).returning()
   }
 
