@@ -1,8 +1,9 @@
 import GroupManager from '@/server/managers/group.manager'
+import MatchManager from '@/server/managers/match.manager'
 import SessionManager from '@/server/managers/session.manager'
 import TimeEntryManager, { type TimeEntry } from '@/server/managers/timeEntry.manager'
 import TournamentManager from '@/server/managers/tournament.manager'
-import TrackManager, { type Track } from '@/server/managers/track.manager'
+import { type Track } from '@/server/managers/track.manager'
 import UserManager from '@/server/managers/user.manager'
 import { fail, redirect } from '@sveltejs/kit'
 import type { Actions, PageServerLoad } from './$types'
@@ -29,6 +30,7 @@ export const load = (async ({ params, locals }) => {
     session,
     tracksWithEntries,
     groups: await GroupManager.getAllFromSession(session.id),
+    matches: await MatchManager.getAllFromSession(session.id),
     userLookup: await UserManager.getAllLookup(),
   }
 }) satisfies PageServerLoad
@@ -62,12 +64,8 @@ export const actions = {
     if (locals.user.role !== 'admin') return fail(403, { message: 'Forbidden' })
 
     const users = await UserManager.getAll()
-    const tracks = await TrackManager.getAll()
+    // const tracks = await TrackManager.getAll()
     await TournamentManager.clearMatches(params.session)
-    await TournamentManager.scheduleMatches(
-      params.session,
-      users.map(user => user.id),
-      tracks
-    )
+    TournamentManager.generateMatchesForGroup([users[0], users[1], users[2], users[3], users[4], users[5]])
   },
 } satisfies Actions

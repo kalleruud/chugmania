@@ -1,9 +1,20 @@
 import { and, eq, isNull } from 'drizzle-orm'
 import db from '../db'
 import { matches } from '../db/schema'
+import type { PublicUser } from './user.manager'
+import type { Session } from './session.manager'
+import type { Track } from './track.manager'
+import UserManager from './user.manager'
+import SessionManager from './session.manager'
+import TrackManager from './track.manager'
 
 export type NewMatch = typeof matches.$inferInsert
-export type Match = typeof matches.$inferSelect
+export type Match = Omit<typeof matches.$inferSelect, 'user1' | 'user2' | 'session' | 'track'> & {
+  user1: PublicUser
+  user2: PublicUser
+  session: Session
+  track: Track
+}
 
 export default class MatchManager {
   static async create(match: typeof matches.$inferInsert) {
@@ -28,9 +39,24 @@ export default class MatchManager {
 
   static async getAllFromSession(sessionId: string) {
     console.debug('Getting all matches from session', sessionId)
-    return await db
-      .select()
-      .from(matches)
-      .where(and(isNull(matches.deletedAt), eq(matches.session, sessionId)))
+    return Promise.all(
+      (
+        await db
+          .select()
+          .from(matches)
+          .where(and(isNull(matches.deletedAt), eq(matches.session, sessionId)))
+      ).map(match => this.getDetails(match))
+    )
+  }
+
+  static async getDetails(match: typeof matches.$inferSelect): Promise<Match> {
+    console.debug('Getting details for match', match.id)
+    return {
+      ...match,
+      user1: await UserManager.getUserById(match.user1),
+      user2: await UserManager.getUserById(match.user2),
+      session: await SessionManager.get(match.session),
+      track: await TrackManager.get(match.track),
+    }
   }
 }

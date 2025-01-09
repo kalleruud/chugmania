@@ -1,7 +1,5 @@
 import GroupManager from './group.manager'
-import type { Match, NewMatch } from './match.manager'
 import MatchManager from './match.manager'
-import type { Track } from './track.manager'
 import type { PublicUser } from './user.manager'
 
 export default class TournamentManager {
@@ -45,70 +43,39 @@ export default class TournamentManager {
     await Promise.all(groups.map(group => GroupManager.delete(group.id)))
   }
 
-  static async scheduleMatches(
-    session: string,
-    users: string[],
-    availableTracks: Track[]
-  ): Promise<Match[]> {
-    const matches: NewMatch[] = []
-    const userLastMatch: Record<string, number> = {}
-    const userTrackCount: Record<string, Record<string, number>> = {} // Track count per user per track
+  static generateMatchesForGroup(players: PublicUser[]) {
+    const matches = new Array<{ user1: string; user2: string }>()
 
-    // Generate all pairings
-    for (let i = 0; i < users.length; i++) {
-      const user1 = users[i]
-      for (let j = i + 1; j < users.length; j++) {
-        const user2 = users[j]
-        matches.push({ user1, user2, session, track: 'todo' })
+    for (let i = 0; i < players.length - 1; i++) {
+      const user1 = players[i].name
+      for (let j = i + 1; j < players.length; j++) {
+        const user2 = players[j].name
+        matches.push({ user1, user2 })
       }
     }
 
-    // Step 1: Randomly shuffle matches to get an initial schedule
-    matches.sort(() => Math.random() - 0.5)
+    const lastPlayed = new Map<string, number>()
+    const interleavedMatches: { user1: string; user2: string }[] = []
 
-    // Step 2: Schedule matches greedily, maximizing rest time between users and randomly selecting tracks
-    const scheduledMatches: NewMatch[] = []
-
-    while (matches.length > 0) {
-      // Sort remaining matches by the earliest available time for any user
-      matches.sort((a, b) => {
-        const lastA = Math.min(
-          userLastMatch[a.user1] ?? -Infinity,
-          userLastMatch[a.user2] ?? -Infinity
-        )
-        const lastB = Math.min(
-          userLastMatch[b.user1] ?? -Infinity,
-          userLastMatch[b.user2] ?? -Infinity
-        )
-        return lastA - lastB
-      })
-
-      const nextMatch = matches.shift()!
-
-      // Step 3: Randomly select a track from the available list
-      const selectedTrack = availableTracks[Math.floor(Math.random() * availableTracks.length)].id
-
-      // Assign the selected track to the match
-      nextMatch.track = selectedTrack
-
-      scheduledMatches.push(nextMatch)
-
-      // Update the last match times for the users
-      const matchIndex = scheduledMatches.length
-      userLastMatch[nextMatch.user1] = matchIndex
-      userLastMatch[nextMatch.user2] = matchIndex
-
-      // Update the track usage count for the users
-      if (!userTrackCount[nextMatch.user1]) userTrackCount[nextMatch.user1] = {}
-      if (!userTrackCount[nextMatch.user2]) userTrackCount[nextMatch.user2] = {}
-
-      userTrackCount[nextMatch.user1][selectedTrack] =
-        (userTrackCount[nextMatch.user1][selectedTrack] ?? 0) + 1
-      userTrackCount[nextMatch.user2][selectedTrack] =
-        (userTrackCount[nextMatch.user2][selectedTrack] ?? 0) + 1
+    for (let i = 0; i < matches.length; i++) {
+      interleavedMatches[i] = matches[i]
+      for (let j = i + 1; j < matches.length; j++) {
+        const matchA = interleavedMatches[i]
+        const matchB = matches[j]
+        const lastPlayedA =
+          (lastPlayed.get(matchA.user1) ?? -1) + (lastPlayed.get(matchA.user2) ?? -1)
+        const lastPlayedB =
+          (lastPlayed.get(matchB.user1) ?? -1) + (lastPlayed.get(matchB.user2) ?? -1)
+        if (lastPlayedA === -2) break
+        if (lastPlayedA > lastPlayedB) {
+          interleavedMatches[i] = matchB
+          matches[j] = matchA
+          console.log('Setting', matchB.user1, 'vs', matchB.user2, 'at', i)
+        }
+      }
+      lastPlayed.set(interleavedMatches[i].user1, i)
+      lastPlayed.set(interleavedMatches[i].user2, i)
     }
-
-    return await MatchManager.createMany(scheduledMatches)
   }
 
   static async clearMatches(sessionId: string) {

@@ -9,7 +9,7 @@
   import type { PageData } from './$types'
 
   const { data }: { data: PageData } = $props()
-  const { loggedInUser, session, tracksWithEntries, groups } = $derived(data)
+  const { loggedInUser, session, tracksWithEntries, groups, matches } = $derived(data)
   let isEditingTitle = $state(false)
   let titleEditRef = $state<HTMLElement>(null!)
 
@@ -71,7 +71,7 @@
   <p class="text-muted-foreground">{session.relativeDate}</p>
 </HeaderBar>
 
-<main class="mt-24 p-4">
+<main class="my-24 p-4">
   {#if loggedInUser.role === 'admin'}
     <div class="flex w-full justify-center">
       <div class="mb-4 flex w-fit gap-2 rounded-lg bg-secondary p-2">
@@ -154,6 +154,31 @@
         {/each}
       </ul>
     </div>
+
     <h2 class="text-accent-foreground">Matcher</h2>
+    <div class="mb-4 border-b text-lg">
+      <ul class="grid divide-y divide-solid">
+        {#each matches as match}
+          <li class="flex justify-center gap-4 py-2 font-f1 font-bold">
+            <span
+              class="italic {match.user1.id === loggedInUser.id
+                ? 'text-primary'
+                : 'text-muted-foreground'}"
+            >
+              {match.user1.shortName}
+            </span>
+            vs
+            <span
+              class="italic {match.user2.id === loggedInUser.id
+                ? 'text-primary'
+                : 'text-muted-foreground'}"
+            >
+              {match.user2.shortName}
+            </span>
+            {match.track.name}
+          </li>
+        {/each}
+      </ul>
+    </div>
   </div>
 </main>

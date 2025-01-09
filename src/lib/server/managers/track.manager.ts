@@ -1,7 +1,7 @@
 import db from '$lib/server/db'
 import { timeEntries, tracks } from '$lib/server/db/schema'
 import type { LookupEntity } from '@/components/lookup/lookup.server'
-import { eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 
 type InsertTrack = typeof tracks.$inferInsert
 type SelectTrack = typeof tracks.$inferSelect
@@ -47,9 +47,13 @@ export default class TrackManager {
     return items
   }
 
-  static async getAll(): Promise<Track[]> {
+  static async getAll(isChuggable: boolean = true): Promise<Track[]> {
     console.debug('Getting tracks')
-    const items = await db.select().from(tracks).orderBy(tracks.number)
+    const items = await db
+      .select()
+      .from(tracks)
+      .where(eq(tracks.isChuggable, isChuggable))
+      .orderBy(tracks.number)
     return items.map(item => this.getDetails(item))
   }
 
@@ -67,7 +71,7 @@ export default class TrackManager {
       .select()
       .from(tracks)
       .innerJoin(timeEntries, eq(tracks.id, timeEntries.track))
-      .where(eq(timeEntries.session, session))
+      .where(and(isNull(timeEntries.deletedAt), eq(timeEntries.session, session)))
 
     return result.map(item => this.getDetails(item.tracks))
   }
