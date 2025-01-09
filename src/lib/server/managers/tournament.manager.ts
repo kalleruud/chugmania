@@ -43,39 +43,30 @@ export default class TournamentManager {
     await Promise.all(groups.map(group => GroupManager.delete(group.id)))
   }
 
-  static generateMatchesForGroup(players: PublicUser[]) {
-    const matches = new Array<{ user1: string; user2: string }>()
+  static genratePairings<T>(players: T[]) {
+    const rounds = players.length % 2 === 0 ? players.length - 1 : players.length
+    const half = Math.ceil(players.length / 2)
 
-    for (let i = 0; i < players.length - 1; i++) {
-      const user1 = players[i].name
-      for (let j = i + 1; j < players.length; j++) {
-        const user2 = players[j].name
-        matches.push({ user1, user2 })
+    const pairings = new Array<{ a: T; b: T }>()
+    const playerIndexes = players.map((_, i) => i)
+
+    for (let i = 0; i < rounds; i++) {
+      const firstHalf = playerIndexes.slice(0, half)
+      const secondHalf = playerIndexes.slice(half, players.length).reverse()
+      console.log(firstHalf, secondHalf)
+
+      for (let j = 0; j < firstHalf.length; j++) {
+        if (j >= secondHalf.length) continue
+        pairings.push({
+          a: players[firstHalf[j]],
+          b: players[secondHalf[j]],
+        })
       }
+
+      playerIndexes.push(playerIndexes.shift()!)
     }
 
-    const lastPlayed = new Map<string, number>()
-    const interleavedMatches: { user1: string; user2: string }[] = []
-
-    for (let i = 0; i < matches.length; i++) {
-      interleavedMatches[i] = matches[i]
-      for (let j = i + 1; j < matches.length; j++) {
-        const matchA = interleavedMatches[i]
-        const matchB = matches[j]
-        const lastPlayedA =
-          (lastPlayed.get(matchA.user1) ?? -1) + (lastPlayed.get(matchA.user2) ?? -1)
-        const lastPlayedB =
-          (lastPlayed.get(matchB.user1) ?? -1) + (lastPlayed.get(matchB.user2) ?? -1)
-        if (lastPlayedA === -2) break
-        if (lastPlayedA > lastPlayedB) {
-          interleavedMatches[i] = matchB
-          matches[j] = matchA
-          console.log('Setting', matchB.user1, 'vs', matchB.user2, 'at', i)
-        }
-      }
-      lastPlayed.set(interleavedMatches[i].user1, i)
-      lastPlayed.set(interleavedMatches[i].user2, i)
-    }
+    return pairings
   }
 
   static async clearMatches(sessionId: string) {
