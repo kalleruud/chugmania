@@ -44,34 +44,6 @@ export default class TournamentManager {
     await MatchManager.deleteAllFromSession(sessionId)
   }
 
-  private static genratePairings<T>(players: T[]) {
-    const rounds = players.length % 2 === 0 ? players.length - 1 : players.length
-    const half = Math.ceil(players.length / 2)
-
-    const pairings = new Array<{ a: T; b: T }>()
-    const playerIndexes = players.map((_, i) => i).slice(1)
-
-    for (let i = 0; i < rounds; i++) {
-      const newPlayerIndexes = [0].concat(playerIndexes)
-      const firstHalf = newPlayerIndexes.slice(0, half)
-      const secondHalf = newPlayerIndexes.slice(half, players.length).reverse()
-      console.log(firstHalf, secondHalf)
-
-      for (let j = 0; j < firstHalf.length; j++) {
-        if (j >= secondHalf.length) continue
-        pairings.push({
-          a: players[firstHalf[j]],
-          b: players[secondHalf[j]],
-        })
-      }
-
-      // Rotate players
-      playerIndexes.push(playerIndexes.shift()!)
-    }
-
-    return pairings
-  }
-
   static generatePairs<T>(participants: T[]) {
     const p = Array.from<T | undefined>(participants)
     if (p.length % 2 == 1) p.push(undefined)

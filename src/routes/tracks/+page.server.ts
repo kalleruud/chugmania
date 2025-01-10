@@ -9,6 +9,7 @@ export const load = (async ({ locals }) => {
     user: locals.user,
     tracks: TrackManager.getAll(),
     trackLevelColors: TrackManager.TrackLevelColors,
+    trackTypeColors: TrackManager.TrackTypeColors,
     allTrackTypes: getEnumValues(TrackType).map(t => {
       const lookup: LookupEntity = { id: t, featured: false, label: t }
       return lookup

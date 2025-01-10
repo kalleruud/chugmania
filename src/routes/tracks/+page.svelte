@@ -1,8 +1,9 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
+  import { Badge } from '$lib/components/ui/badge/index.js'
   import { Switch } from '$lib/components/ui/switch/index.js'
   import Lookup from '@/components/lookup/lookup.svelte'
-  import { type LookupEntity, type Track } from '@/components/types.server'
+  import { type LookupEntity } from '@/components/types.server'
   import Button from '@/components/ui/button/button.svelte'
   import HeaderBar from '@/components/ui/header-bar/header-bar.svelte'
   import Input from '@/components/ui/input/input.svelte'
@@ -11,7 +12,8 @@
   import type { PageData } from './$types'
 
   let { data }: { data: PageData } = $props()
-  let { user, tracks, trackLevelColors, allTrackLevels, allTrackTypes } = $derived(data)
+  let { user, tracks, trackLevelColors, trackTypeColors, allTrackLevels, allTrackTypes } =
+    $derived(data)
   let filtering = $state(true)
 
   let isAdding = $state(false)
@@ -25,7 +27,13 @@
   <div class="flex items-center justify-between gap-4">
     {#if user.role === 'admin'}
       <Popup bind:open={isAdding} title="Ny bane?" triggerText="Ny" triggerVariant="secondary">
-        <form class="grid w-full gap-4" use:enhance method="post" action="?/create">
+        <form
+          class="grid w-full gap-4"
+          use:enhance
+          onsubmit={() => (isAdding = false)}
+          method="post"
+          action="?/create"
+        >
           <Input
             type="number"
             min={0}
@@ -54,7 +62,11 @@
 
           <div class="flex items-center justify-between">
             <label for="is_chuggable" class="text-muted-foreground">Chuggbar?</label>
-            <Switch name="is_chuggable" bind:checked={selectedIsChuggable} />
+            <Switch
+              name="is_chuggable"
+              value={selectedIsChuggable ? 'true' : 'false'}
+              bind:checked={selectedIsChuggable}
+            />
           </div>
           <Button type="submit">Jæ</Button>
           <Button type="reset" variant="outline" onclick={() => (isAdding = false)}>Næ</Button>
@@ -78,14 +90,17 @@
     <ul class="divide-y divide-solid">
       {#each filtering ? tracks.filter(t => t.isChuggable) : tracks as track}
         <li
-          class="flex items-center justify-between p-2 text-lg transition-colors sm:hover:bg-stone-900"
+          class="flex items-center justify-between gap-4 text-lg transition-colors sm:hover:bg-stone-900"
         >
-          <a class="w-full" href={'tracks/' + track.id}>
-            {track.name}
+          <a class="w-full py-2 ps-2" href={'tracks/' + track.id}>
+            <h3>{track.name}</h3>
           </a>
+
           <div class="flex items-center gap-2">
-            <span class="size-2 rounded-full bg-{trackLevelColors[track.level]}"></span>
-            <span>{track.type}</span>
+            <Badge class={track.level.class}>{track.level.id}</Badge>
+            <Badge class={track.type.class}>{track.type.id}</Badge>
+          </div>
+          <div class="flex items-center gap-2">
             {#if user.role === 'admin'}
               <form class="flex gap-2" use:enhance method="post" action="?/update">
                 <input type="hidden" name="id" value={track.id} />

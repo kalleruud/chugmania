@@ -23,9 +23,7 @@ export enum TrackLevel {
   CUSTOM = 'custom',
 }
 
-export type Track = SelectTrack & {
-  name: string
-}
+export type Track = ReturnType<(typeof TrackManager)['getDetails']>
 
 export type SessionTrack = SelectTrack & {
   duration: number
@@ -36,12 +34,19 @@ export default class TrackManager {
   static readonly table = tracks
 
   static readonly TrackLevelColors: Record<TrackLevel, string> = {
-    white: 'white',
-    green: 'green-500',
-    blue: 'blue-500',
-    red: 'red-500',
-    black: 'stone-300',
-    custom: '#f0f',
+    white: 'bg-white text-black',
+    green: 'bg-green-500',
+    blue: 'bg-blue-500',
+    red: 'bg-red-500',
+    black: 'bg-stone-900 text-white',
+    custom: 'bg-orange-500',
+  }
+
+  static readonly TrackTypeColors: Record<TrackType, string> = {
+    drift: 'bg-orange-900 text-white',
+    valley: 'bg-orange-500',
+    lagoon: 'bg-teal-300',
+    stadium: 'bg-blue-800 text-white',
   }
 
   static async init() {
@@ -88,6 +93,7 @@ export default class TrackManager {
   static async getAllLookup(): Promise<LookupEntity[]> {
     return (await this.getAll()).map(track => ({
       ...track,
+      type: track.type.id,
       featured: track.isChuggable,
       label: track.name,
     }))
@@ -112,10 +118,18 @@ export default class TrackManager {
     return this.getDetails(track)
   }
 
-  static getDetails(track: SelectTrack): Track {
+  static getDetails(track: SelectTrack) {
     return {
       ...track,
       name: this.getNameOf(track),
+      level: {
+        id: track.level,
+        class: this.TrackLevelColors[track.level],
+      },
+      type: {
+        id: track.type,
+        class: this.TrackTypeColors[track.type],
+      },
     }
   }
 
@@ -125,9 +139,10 @@ export default class TrackManager {
 
   static async create(form: FormData): Promise<Track> {
     const insert: InsertTrack = {
-      number: Number.parseInt(form.get(tracks.number.name) as string),
-      level: form.get(tracks.level.name) as TrackLevel,
-      type: form.get(tracks.type.name) as TrackType,
+      number: getFormValue(tracks.number.name, form)!,
+      level: getFormValue(tracks.level.name, form)!,
+      type: getFormValue(tracks.type.name, form)!,
+      isChuggable: getFormValue(tracks.isChuggable.name, form) === 'true',
     }
     console.debug('Creating track:', insert.number)
 
@@ -158,7 +173,9 @@ export default class TrackManager {
 
   static async delete(id: string): Promise<Track> {
     console.debug('Deleting track:', id)
-    const track = (await db.delete(tracks).where(eq(tracks.id, id)).returning()).at(0)
+    const track = (
+      await db.update(tracks).set({ deletedAt: new Date() }).where(eq(tracks.id, id)).returning()
+    ).at(0)
     if (!track) throw new Error(`Failed to delete track ${id}`)
     return this.getDetails(track)
   }
