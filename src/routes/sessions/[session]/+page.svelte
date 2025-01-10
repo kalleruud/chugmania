@@ -10,7 +10,7 @@
   import Popup from '@/components/ui/popup/popup.svelte'
   import { cn, fromDate, toRelativeLocaleDateString } from '@/utils'
   import { CalendarDate, getLocalTimeZone } from '@internationalized/date'
-  import { CheckIcon, PencilIcon, RefreshCwIcon, XIcon } from 'lucide-svelte'
+  import { CheckIcon, PencilIcon, RefreshCwIcon, SwordsIcon, UsersIcon, XIcon } from 'lucide-svelte'
   import CalendarIcon from 'lucide-svelte/icons/calendar'
   import { tick } from 'svelte'
   import type { PageData } from './$types'
@@ -111,13 +111,13 @@
       <div class="mb-4 flex w-fit gap-2 rounded-lg border p-2">
         <form use:enhance method="post">
           <Button type="submit" formaction="?/generateGroups">
-            <RefreshCwIcon class="size-4" />
+            <UsersIcon class="size-4" />
             <span>Generer grupper</span>
           </Button>
         </form>
         <form use:enhance method="post">
           <Button type="submit" formaction="?/scheduleMatches">
-            <RefreshCwIcon class="size-4" />
+            <SwordsIcon class="size-4" />
             <span>Generer matcher</span>
           </Button>
         </form>

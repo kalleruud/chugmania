@@ -1,5 +1,5 @@
 import GroupManager, { type Group } from './group.manager'
-import MatchManager, { type NewMatch } from './match.manager'
+import MatchManager, { type Match, type NewMatch } from './match.manager'
 import type { Track } from './track.manager'
 import type { PublicUser } from './user.manager'
 
@@ -139,6 +139,8 @@ export default class TournamentManager {
       })),
     }
   }
+
+  static generateBracket(groups: Group[], matces: Match[]) {}
 
   static async clearMatches(sessionId: string) {
     console.debug('Clearing matches for session', sessionId)
