@@ -14,6 +14,7 @@
   import CalendarIcon from 'lucide-svelte/icons/calendar'
   import { tick } from 'svelte'
   import type { PageData } from './$types'
+  import { invalidateAll } from '$app/navigation'
 
   const { data }: { data: PageData } = $props()
   let { loggedInUser, session, tracksWithEntries, groups, matches } = $derived(data)
@@ -102,6 +103,9 @@
         {/if}
       </div>
     {/if}
+    <Button onclick={() => invalidateAll()}>
+      <RefreshCwIcon class="size-4" />
+    </Button>
   </div>
 </HeaderBar>
 
