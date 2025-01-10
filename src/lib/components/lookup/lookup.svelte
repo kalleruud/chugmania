@@ -5,7 +5,7 @@
   import { ChevronsUpDown } from 'lucide-svelte'
   import Search from 'lucide-svelte/icons/search'
   import { tick } from 'svelte'
-  import type { LookupEntity } from './lookup.server'
+  import type { LookupEntity } from '../types.server'
 
   type Props = {
     placeholder: string

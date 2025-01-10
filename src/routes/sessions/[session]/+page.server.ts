@@ -73,9 +73,14 @@ export const actions = {
     if (locals.user.role !== 'admin') return fail(403, { message: 'Forbidden' })
 
     await TournamentManager.clearMatches(params.session)
-    const groups = await GroupManager.getAllFromSession(params.session)
-    const tracks = (await TrackManager.getAll(true)).sort(() => Math.random() - 0.5)
-    TournamentManager.generateMatchesForGroup(params.session, groups, tracks)
+    try {
+      const groups = await GroupManager.getAllFromSession(params.session)
+      const tracks = (await TrackManager.getAll(true)).sort(() => Math.random() - 0.5)
+      TournamentManager.generateMatchesForGroup(params.session, groups, tracks)
+    } catch (e) {
+      if (!(e instanceof Error)) throw e
+      return fail(400, { message: e.message })
+    }
   },
   setWinner: async ({ request, locals }) => {
     if (!locals.user) return fail(401, { message: 'Unauthorized' })

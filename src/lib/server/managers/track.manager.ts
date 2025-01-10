@@ -1,13 +1,26 @@
 import db from '$lib/server/db'
 import { timeEntries, tracks } from '$lib/server/db/schema'
-import type { LookupEntity } from '@/components/lookup/lookup.server'
+import { getEnumValues, type LookupEntity } from '@/components/types.server'
 import { and, eq, isNull } from 'drizzle-orm'
 
 type InsertTrack = typeof tracks.$inferInsert
 type SelectTrack = typeof tracks.$inferSelect
 
-export type TrackLevel = 'white' | 'green' | 'blue' | 'red' | 'black' | 'custom'
-export type TrackType = 'drift' | 'valley' | 'lagoon' | 'stadium'
+export enum TrackType {
+  DRIFT = 'drift',
+  VALLEY = 'valley',
+  LAGOON = 'lagoon',
+  STADIUM = 'stadium',
+}
+
+export enum TrackLevel {
+  WHITE = 'white',
+  GREEN = 'green',
+  BLUE = 'blue',
+  RED = 'red',
+  BLACK = 'black',
+  CUSTOM = 'custom',
+}
 
 export type Track = SelectTrack & {
   name: string
@@ -33,8 +46,8 @@ export default class TrackManager {
     const trackCount = 200
     const items = []
 
-    const levels: TrackLevel[] = ['white', 'green', 'blue', 'red', 'black']
-    const types: TrackType[] = ['drift', 'valley', 'lagoon', 'stadium']
+    const levels: TrackLevel[] = getEnumValues(TrackLevel) as TrackLevel[]
+    const types: TrackType[] = getEnumValues(TrackType) as TrackType[]
 
     for (let i = 0; i < trackCount; i++) {
       items.push({
@@ -98,6 +111,20 @@ export default class TrackManager {
 
   private static getNameOf(track: SelectTrack) {
     return `#${track.number.toString().padStart(2, '0')}`
+  }
+
+  static async create(form: FormData): Promise<Track> {
+    const insert: InsertTrack = {
+      number: Number.parseInt(form.get('number') as string),
+      level: form.get('level') as TrackLevel,
+      type: form.get('type') as TrackType,
+    }
+    console.debug('Creating track:', insert.number)
+
+    const result = await db.insert(tracks).values(insert).returning()
+    const track = result.at(0)
+    if (!track) throw new Error(`Failed to create track ${insert.number}`)
+    return this.getDetails(track)
   }
 
   static async update(id: string, isChuggable: boolean) {

@@ -60,7 +60,7 @@
 
   {#if currentUser.role === 'admin' && user.role !== 'admin'}
     <form class="flex w-full justify-center" use:enhance method="POST" action="?/delete">
-      <Button variant="destructive" type="submit">Yeet user</Button>
+      <Button name="id" value={user.id} variant="destructive" type="submit">Yeet user</Button>
     </form>
   {/if}
 </main>

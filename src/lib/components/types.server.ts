@@ -5,6 +5,14 @@ import { type TimeEntry as TE } from '@/server/managers/timeEntry.manager'
 import { type Track as T } from '@/server/managers/track.manager'
 import { type PublicUser as U } from '@/server/managers/user.manager'
 
+export type LookupEntity = {
+  id: string
+  featured: boolean
+  label: string
+  type?: string
+  date?: Date
+}
+
 export type Session = S
 export type TimeEntry = TE
 export type Track = T
@@ -14,3 +22,12 @@ export type Group = G
 
 export type FormMode = 'login' | 'register'
 export type ResponseMessage = { success: boolean; message?: string }
+
+interface EnumObject {
+  [enumValue: number]: string
+}
+
+export function getEnumValues(e: EnumObject): string[] {
+  // @ts-ignore
+  return Object.keys(e).map(i => e[i])
+}

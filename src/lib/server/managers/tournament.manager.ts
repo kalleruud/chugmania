@@ -1,3 +1,4 @@
+import { max } from 'drizzle-orm'
 import GroupManager, { type Group } from './group.manager'
 import MatchManager, { type Match, type NewMatch } from './match.manager'
 import type { Track } from './track.manager'
@@ -110,6 +111,7 @@ export default class TournamentManager {
     const pairings = groups.map(group => this.generatePairs(group.users))
     const maxPairingsPerGroup = Math.max(...pairings.map(p => p.length))
     const interleavedMatches = new Array<NewMatch>()
+    if (tracks.length < maxPairingsPerGroup) throw new Error('Not enough tracks for all pairings')
 
     console.log(pairings.map(p => p.map(x => x.a?.name + ' vs ' + x.b?.name)))
 

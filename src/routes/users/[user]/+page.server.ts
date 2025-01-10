@@ -1,6 +1,6 @@
 import LoginManager from '@/server/managers/login.manager'
 import UserManager from '@/server/managers/user.manager'
-import { fail } from '@sveltejs/kit'
+import { fail, redirect } from '@sveltejs/kit'
 import type { Actions, PageServerLoad } from './$types'
 
 export const load = (async ({ params, locals }) => {
@@ -38,6 +38,7 @@ export const actions = {
     try {
       if (locals.user?.role !== 'admin') throw new Error('Unauthorized')
       await UserManager.delete(form)
+      throw redirect(303, '/users')
     } catch (e) {
       if (!(e instanceof Error)) throw e
       console.error(e)
