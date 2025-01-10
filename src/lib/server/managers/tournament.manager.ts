@@ -1,4 +1,3 @@
-import { max } from 'drizzle-orm'
 import GroupManager, { type Group } from './group.manager'
 import MatchManager, { type Match, type NewMatch } from './match.manager'
 import type { Track } from './track.manager'

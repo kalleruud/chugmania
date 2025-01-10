@@ -1,6 +1,7 @@
 import db from '$lib/server/db'
 import { timeEntries, tracks } from '$lib/server/db/schema'
 import { getEnumValues, type LookupEntity } from '@/components/types.server'
+import { getFormString, getFormValue } from '@/utils'
 import { and, eq, isNull } from 'drizzle-orm'
 
 type InsertTrack = typeof tracks.$inferInsert
@@ -33,6 +34,15 @@ export type SessionTrack = SelectTrack & {
 
 export default class TrackManager {
   static readonly table = tracks
+
+  static readonly TrackLevelColors: Record<TrackLevel, string> = {
+    white: 'white',
+    green: 'green-500',
+    blue: 'blue-500',
+    red: 'red-500',
+    black: 'stone-300',
+    custom: '#f0f',
+  }
 
   static async init() {
     const result = await this.getAll()
@@ -115,9 +125,9 @@ export default class TrackManager {
 
   static async create(form: FormData): Promise<Track> {
     const insert: InsertTrack = {
-      number: Number.parseInt(form.get('number') as string),
-      level: form.get('level') as TrackLevel,
-      type: form.get('type') as TrackType,
+      number: Number.parseInt(form.get(tracks.number.name) as string),
+      level: form.get(tracks.level.name) as TrackLevel,
+      type: form.get(tracks.type.name) as TrackType,
     }
     console.debug('Creating track:', insert.number)
 
@@ -127,8 +137,29 @@ export default class TrackManager {
     return this.getDetails(track)
   }
 
-  static async update(id: string, isChuggable: boolean) {
+  static async update(form: FormData): Promise<Track> {
+    const id = getFormString(tracks.id.name, form)
+    if (!id) throw new Error('Track ID is required')
+
+    const insert: Partial<SelectTrack> = {
+      number: getFormValue(tracks.number.name, form),
+      level: getFormValue(tracks.level.name, form),
+      type: getFormValue(tracks.type.name, form),
+      isChuggable: getFormValue(tracks.isChuggable.name, form) === 'true',
+    }
+
     console.debug('Updating track:', id)
-    await db.update(tracks).set({ isChuggable }).where(eq(tracks.id, id))
+
+    const track = (await db.update(tracks).set(insert).where(eq(tracks.id, id)).returning()).at(0)
+
+    if (!track) throw new Error(`Failed to update track ${id}`)
+    return this.getDetails(track)
+  }
+
+  static async delete(id: string): Promise<Track> {
+    console.debug('Deleting track:', id)
+    const track = (await db.delete(tracks).where(eq(tracks.id, id)).returning()).at(0)
+    if (!track) throw new Error(`Failed to delete track ${id}`)
+    return this.getDetails(track)
   }
 }

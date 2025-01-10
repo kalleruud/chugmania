@@ -10,14 +10,6 @@ export const load = (async ({ params, locals }) => {
 }) satisfies PageServerLoad
 
 export const actions = {
-  create: async ({ request, locals }) => {
-    if (!locals.user) throw new Error('Unauthorized')
-    if (locals.user.role !== 'admin') throw new Error('Forbidden')
-
-    return {
-      track: await TrackManager.create(await request.formData()),
-    }
-  },
   toggleChuggable: async ({ params, locals }) => {
     if (!locals.user) throw new Error('Unauthorized')
     if (locals.user.role !== 'admin') throw new Error('Forbidden')

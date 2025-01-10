@@ -1,7 +1,8 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
+  import { Switch } from '$lib/components/ui/switch/index.js'
   import Lookup from '@/components/lookup/lookup.svelte'
-  import { type LookupEntity } from '@/components/types.server'
+  import { type LookupEntity, type Track } from '@/components/types.server'
   import Button from '@/components/ui/button/button.svelte'
   import HeaderBar from '@/components/ui/header-bar/header-bar.svelte'
   import Input from '@/components/ui/input/input.svelte'
@@ -10,12 +11,13 @@
   import type { PageData } from './$types'
 
   let { data }: { data: PageData } = $props()
-  let { tracks, user, allTrackLevels, allTrackTypes } = $derived(data)
+  let { user, tracks, trackLevelColors, allTrackLevels, allTrackTypes } = $derived(data)
   let filtering = $state(true)
 
   let isAdding = $state(false)
   let selectedType = $state<LookupEntity>()
   let selectedLevel = $state<LookupEntity>()
+  let selectedIsChuggable = $state(true)
 </script>
 
 <HeaderBar class="flex items-center justify-between px-4 py-2">
@@ -28,24 +30,32 @@
             type="number"
             min={0}
             step={1}
-            name="name"
+            name="number"
             inputmode="numeric"
             placeholder="Nummer"
             required
           />
-          <Lookup
-            name="type"
-            placeholder="Velg banetype..."
-            items={allTrackTypes}
-            bind:selected={selectedType}
-          />
 
-          <Lookup
-            name="level"
-            placeholder="Velg level..."
-            items={allTrackLevels}
-            bind:selected={selectedLevel}
-          />
+          <div class="flex gap-4">
+            <Lookup
+              name="type"
+              placeholder="Velg banetype..."
+              items={allTrackTypes}
+              bind:selected={selectedType}
+            />
+
+            <Lookup
+              name="level"
+              placeholder="Velg level..."
+              items={allTrackLevels}
+              bind:selected={selectedLevel}
+            />
+          </div>
+
+          <div class="flex items-center justify-between">
+            <label for="is_chuggable" class="text-muted-foreground">Chuggbar?</label>
+            <Switch name="is_chuggable" bind:checked={selectedIsChuggable} />
+          </div>
           <Button type="submit">Jæ</Button>
           <Button type="reset" variant="outline" onclick={() => (isAdding = false)}>Næ</Button>
         </form>
@@ -67,19 +77,43 @@
   {:then tracks}
     <ul class="divide-y divide-solid">
       {#each filtering ? tracks.filter(t => t.isChuggable) : tracks as track}
-        <li>
-          <a
-            class="my-1 flex items-center justify-between rounded-md p-2 text-lg transition-colors sm:hover:bg-muted"
-            href={'tracks/' + track.id}
-          >
+        <li
+          class="flex items-center justify-between p-2 text-lg transition-colors sm:hover:bg-stone-900"
+        >
+          <a class="w-full" href={'tracks/' + track.id}>
             {track.name}
-            <div class="flex items-center gap-2">
-              {#if track.isChuggable}
-                <p class="text-sm text-muted-foreground">Chuggable</p>
-              {/if}
-              <ChevronRight class="size-4 text-muted-foreground" />
-            </div>
           </a>
+          <div class="flex items-center gap-2">
+            <span class="size-2 rounded-full bg-{trackLevelColors[track.level]}"></span>
+            <span>{track.type}</span>
+            {#if user.role === 'admin'}
+              <form class="flex gap-2" use:enhance method="post" action="?/update">
+                <input type="hidden" name="id" value={track.id} />
+                <Button
+                  name="is_chuggable"
+                  value={track.isChuggable ? 'false' : 'true'}
+                  type="submit"
+                  class="h-8"
+                  variant={track.isChuggable ? 'default' : 'outline'}
+                  size="sm"
+                >
+                  Chuggable
+                </Button>
+                <Button
+                  type="submit"
+                  class="h-8"
+                  formaction="?/delete"
+                  variant="destructive"
+                  size="sm"
+                >
+                  Slett
+                </Button>
+              </form>
+            {:else if track.isChuggable}
+              <p class="text-sm text-muted-foreground">Chuggable</p>
+            {/if}
+            <ChevronRight class="size-4 text-muted-foreground" />
+          </div>
         </li>
       {/each}
     </ul>

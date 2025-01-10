@@ -56,6 +56,16 @@ export const flyAndScale = (
   }
 }
 
+export function getFormString(key: string, form: FormData): string | undefined {
+  const value = form.get(key) as string | null
+  if (!value || value.length === 0) return undefined
+  return value
+}
+
+export function getFormValue<T>(key: string, form: FormData): T | undefined {
+  return getFormString(key, form) as T | undefined
+}
+
 export async function hash(value: string) {
   return await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value))
 }
