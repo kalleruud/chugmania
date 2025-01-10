@@ -74,7 +74,7 @@ export const actions = {
 
     await TournamentManager.clearMatches(params.session)
     const groups = await GroupManager.getAllFromSession(params.session)
-    const tracks = await TrackManager.getAll()
+    const tracks = (await TrackManager.getAll(true)).sort(() => Math.random() - 0.5)
     TournamentManager.generateMatchesForGroup(params.session, groups, tracks)
   },
   setWinner: async ({ request, locals }) => {
