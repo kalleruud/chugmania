@@ -2,6 +2,7 @@
   import { enhance } from '$app/forms'
   import { Calendar } from '$lib/components/ui/calendar/index.js'
   import * as Popover from '$lib/components/ui/popover/index.js'
+  import GroupCompact from '@/components/group/group-compact.svelte'
   import MatchRow from '@/components/match/match-row.svelte'
   import Button, { buttonVariants } from '@/components/ui/button/button.svelte'
   import HeaderBar from '@/components/ui/header-bar/header-bar.svelte'
@@ -168,27 +169,16 @@
       </div>
     {/each}
 
-    <h2 class="text-accent-foreground">Grupper</h2>
-    <div class="mb-4 flex flex-col gap-2 border-b text-lg">
-      <ul class="divide-y divide-solid">
-        {#each groups as group}
-          <li class="flex w-full justify-between py-2 font-f1 font-bold">
-            <span>{group.name}</span>
-            <div class="flex gap-4">
-              {#each group.users as user}
-                <span
-                  class="italic {user.id === loggedInUser.id
-                    ? 'text-primary'
-                    : 'text-muted-foreground'}">{user.shortName}</span
-                >
-              {/each}
-            </div>
-          </li>
-        {/each}
-      </ul>
+    <h2>Grupper</h2>
+    <div class="my-4 grid gap-4">
+      {#each groups as group}
+        <div class="flex flex-col gap-2 rounded-xl border bg-black p-4">
+          <GroupCompact {group} user={loggedInUser} />
+        </div>
+      {/each}
     </div>
 
-    <h2 class="text-accent-foreground">Matcher</h2>
+    <h2 class="pt-4">Matcher</h2>
     <ul class="divide-y divide-solid">
       {#each matches as match}
         <MatchRow {match} user={loggedInUser} />

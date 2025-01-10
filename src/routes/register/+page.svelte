@@ -14,7 +14,7 @@
   import type { PageData } from './$types'
 
   const { data }: { data: PageData } = $props()
-  const { allUsers, allTracks, mostRecentSession, mostRecentTimeEntry } = $derived(data)
+  const { allUsers, allTracks, mostRecentSession, mostRecentTimeEntry } = data
 
   let selectedUser = $state<LookupEntity | undefined>(
     allUsers.find(u => u.id === mostRecentTimeEntry?.user.id)

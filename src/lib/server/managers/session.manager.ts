@@ -18,6 +18,7 @@ export type Session = Omit<SessionSelect, 'date'> & {
 export type SessionType = 'practice' | 'tournament'
 
 export default class SessionManager {
+  static readonly table = sessions
   private static readonly typeString: Record<SessionType, string> = {
     practice: 'Practice',
     tournament: 'Turnering',

@@ -16,7 +16,7 @@
       <input type="hidden" name="match" value={match.id} />
       <input type="hidden" name="currentWinner" value={match.winner?.id} />
       <button
-        class="h-fit rounded-xl border px-4 py-2 text-2xl italic
+        class="h-fit rounded-xl border px-4 py-2 text-2xl italic transition-colors
         {match.user1.id === user.id ? 'text-primary' : 'text-muted-foreground'}
         {isWinner(match.user2) && 'border-red-900 bg-red-950 text-black'}
         {isWinner(match.user1) && 'border-green-300 bg-green-900 text-green-300'}"
@@ -36,7 +36,7 @@
       <input type="hidden" name="match" value={match.id} />
       <input type="hidden" name="currentWinner" value={match.winner?.id} />
       <button
-        class="h-fit rounded-xl border px-4 py-2 text-2xl italic
+        class="h-fit rounded-xl border px-4 py-2 text-2xl italic transition-colors
         {match.user2.id === user.id ? 'text-primary' : 'text-muted-foreground'}
         {isWinner(match.user1) && 'border-red-900 bg-red-950 text-black'}
         {isWinner(match.user2) && 'border-green-300 bg-green-900 text-green-300'}"

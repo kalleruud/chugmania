@@ -128,6 +128,18 @@ export default class TournamentManager {
     return await MatchManager.createMany(interleavedMatches)
   }
 
+  static async getGroupDetails(group: Group) {
+    console.debug('Getting points for session', group.id)
+    const matches = await MatchManager.getAllFromGroup(group.id)
+    return {
+      ...group,
+      users: group.users.map(u => ({
+        ...u,
+        points: matches.filter(m => m.winner?.id === u.id).length,
+      })),
+    }
+  }
+
   static async clearMatches(sessionId: string) {
     console.debug('Clearing matches for session', sessionId)
     await MatchManager.deleteAllFromSession(sessionId)

@@ -25,11 +25,19 @@ export const load = (async ({ params, locals }) => {
     tracksWithEntries[i] = { track, entries: TimeEntryManager.getDurationGaps(entries) }
   })
 
+  const groupDetails = await Promise.all(
+    (await GroupManager.getAllFromSession(session.id)).map(TournamentManager.getGroupDetails)
+  )
+
+  groupDetails.forEach(group => {
+    group.users.sort((a, b) => b.points - a.points)
+  })
+
   return {
     loggedInUser: locals.user,
     session,
     tracksWithEntries,
-    groups: await GroupManager.getAllFromSession(session.id),
+    groups: groupDetails,
     matches: await MatchManager.getAllFromSession(session.id),
     userLookup: await UserManager.getAllLookup(),
   }

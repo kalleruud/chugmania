@@ -1,6 +1,6 @@
 import { and, eq, isNull } from 'drizzle-orm'
 import db from '../db'
-import { matches } from '../db/schema'
+import { groups, matches } from '../db/schema'
 import type { Group } from './group.manager'
 import GroupManager from './group.manager'
 import type { Session } from './session.manager'
@@ -55,6 +55,20 @@ export default class MatchManager {
           .from(matches)
           .where(and(isNull(matches.deletedAt), eq(matches.session, sessionId)))
       ).map(match => this.getDetails(match))
+    )
+  }
+
+  static async getAllFromGroup(groupId: string) {
+    console.debug('Getting all matches from group', groupId)
+    return Promise.all(
+      (
+        await db
+          .select()
+          .from(matches)
+          .innerJoin(SessionManager.table, eq(matches.session, SessionManager.table.id))
+          .innerJoin(GroupManager.table, eq(SessionManager.table.id, GroupManager.table.session))
+          .where(and(isNull(matches.deletedAt), eq(groups.id, groupId)))
+      ).map(r => this.getDetails(r.matches))
     )
   }
 
