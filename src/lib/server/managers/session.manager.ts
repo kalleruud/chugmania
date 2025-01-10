@@ -92,9 +92,9 @@ export default class SessionManager {
     return item
   }
 
-  static async update(id: string, description: string | null) {
+  static async update(id: string, description: string | null, date: string) {
     console.debug('Updating session:', id)
-    await db.update(sessions).set({ description }).where(eq(sessions.id, id))
+    await db.update(sessions).set({ description, date }).where(eq(sessions.id, id))
   }
 
   static async addGroup(id: string, groupSize?: number) {

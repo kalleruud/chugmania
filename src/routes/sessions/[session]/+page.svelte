@@ -1,26 +1,33 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
+  import { Calendar } from '$lib/components/ui/calendar/index.js'
+  import * as Popover from '$lib/components/ui/popover/index.js'
   import MatchRow from '@/components/match/match-row.svelte'
-  import Button from '@/components/ui/button/button.svelte'
+  import Button, { buttonVariants } from '@/components/ui/button/button.svelte'
   import HeaderBar from '@/components/ui/header-bar/header-bar.svelte'
   import Input from '@/components/ui/input/input.svelte'
   import Popup from '@/components/ui/popup/popup.svelte'
+  import { cn, fromDate, toRelativeLocaleDateString } from '@/utils'
+  import { CalendarDate, getLocalTimeZone } from '@internationalized/date'
   import { CheckIcon, PencilIcon, RefreshCwIcon, XIcon } from 'lucide-svelte'
+  import CalendarIcon from 'lucide-svelte/icons/calendar'
   import { tick } from 'svelte'
   import type { PageData } from './$types'
 
   const { data }: { data: PageData } = $props()
-  const { loggedInUser, session, tracksWithEntries, groups, matches } = $derived(data)
-  let isEditingTitle = $state(false)
+  let { loggedInUser, session, tracksWithEntries, groups, matches } = $derived(data)
+  let isEditing = $state(false)
   let titleEditRef = $state<HTMLElement>(null!)
+  let selectedDate = $state<CalendarDate | undefined>(undefined)
 
   function onClickEdit() {
-    isEditingTitle = true
+    isEditing = true
+    selectedDate = fromDate(session.date)
     tick().then(() => titleEditRef?.focus())
   }
 
   function cancelEditing() {
-    isEditingTitle = false
+    isEditing = false
   }
 </script>
 
@@ -30,7 +37,7 @@
 
 <HeaderBar class="grid px-4 py-2">
   <div class="flex items-center gap-2">
-    {#if isEditingTitle}
+    {#if isEditing}
       <form
         class="flex items-center gap-4"
         use:enhance={() =>
@@ -42,15 +49,38 @@
         action="?/update"
       >
         <input type="hidden" name="id" value={session.id} />
-        <Input
-          bind:ref={titleEditRef}
-          name="title"
-          type="text"
-          value={session.description}
-          class="m-1 font-f1 font-black uppercase"
-          style="font-size: xx-large"
-          placeholder={session.type}
-        />
+        <div class="grid w-fit gap-2">
+          <Input
+            bind:ref={titleEditRef}
+            name="title"
+            type="text"
+            value={session.description}
+            class="font-f1 font-black uppercase"
+            style="font-size: xx-large"
+            placeholder={session.type}
+          />
+
+          <Popover.Root>
+            <Popover.Trigger
+              class={cn(
+                buttonVariants({
+                  variant: 'outline',
+                  class: 'justify-start text-left font-normal',
+                }),
+                !selectedDate && 'text-muted-foreground'
+              )}
+            >
+              <input type="hidden" name="date" value={selectedDate} />
+              <CalendarIcon />
+              {selectedDate
+                ? toRelativeLocaleDateString(selectedDate.toDate(getLocalTimeZone()))
+                : 'Velg dato...'}
+            </Popover.Trigger>
+            <Popover.Content class="w-auto p-0">
+              <Calendar type="single" bind:value={selectedDate} initialFocus />
+            </Popover.Content>
+          </Popover.Root>
+        </div>
         <button class="p-2" type="submit">
           <CheckIcon class="size-4 text-green-500" />
         </button>
@@ -59,17 +89,19 @@
         </button>
       </form>
     {:else}
-      <div class="flex items-center gap-2">
-        <h1 class="uppercase">{session.description ?? session.type}</h1>
+      <div class="flex w-full items-center justify-between">
+        <div>
+          <h1 class="uppercase">{session.description ?? session.type}</h1>
+          <p class="text-muted-foreground">{session.relativeDate}</p>
+        </div>
         {#if loggedInUser.role === 'admin'}
           <button class="p-2" onclick={onClickEdit}>
-            <PencilIcon class="size-4 text-muted-foreground" />
+            <PencilIcon class="size-4" />
           </button>
         {/if}
       </div>
     {/if}
   </div>
-  <p class="text-muted-foreground">{session.relativeDate}</p>
 </HeaderBar>
 
 <main class="my-24 p-4">

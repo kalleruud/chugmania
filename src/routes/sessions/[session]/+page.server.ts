@@ -41,8 +41,9 @@ export const actions = {
     if (locals.user.role !== 'admin') return fail(403, { message: 'Forbidden' })
     const form = await request.formData()
     const description = form.get('title') as string
+    const date = form.get('date') as string
 
-    await SessionManager.update(params.session, description.length > 0 ? description : null)
+    await SessionManager.update(params.session, description.length > 0 ? description : null, date)
   },
   delete: async ({ locals, params }) => {
     if (!locals.user) return fail(401, { message: 'Unauthorized' })
