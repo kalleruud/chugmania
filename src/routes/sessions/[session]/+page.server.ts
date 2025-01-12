@@ -30,12 +30,16 @@ export const load = (async ({ params, locals }) => {
   )
 
   groupDetails.forEach(group => {
-    group.users.sort((a, b) => b.points - a.points)
+    group.users.sort((a, b) => b.wins - a.wins)
   })
+
+  const tracks = (await TrackManager.getAll(true)).sort(() => Math.random() - 0.5)
+  const bracket = await TournamentManager.generateBracket(session, groupDetails, tracks)
 
   return {
     loggedInUser: locals.user,
     session,
+    bracket,
     tracksWithEntries,
     groups: groupDetails,
     matches: await MatchManager.getAllFromSession(session.id),

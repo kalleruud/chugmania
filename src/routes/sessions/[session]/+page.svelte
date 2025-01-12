@@ -17,7 +17,7 @@
   import { invalidateAll } from '$app/navigation'
 
   const { data }: { data: PageData } = $props()
-  let { loggedInUser, session, tracksWithEntries, groups, matches } = $derived(data)
+  let { loggedInUser, session, tracksWithEntries, groups, matches, bracket } = $derived(data)
   let isEditing = $state(false)
   let titleEditRef = $state<HTMLElement>(null!)
   let selectedDate = $state<CalendarDate | undefined>(undefined)
@@ -138,55 +138,70 @@
       </div>
     </div>
   {/if}
-  <div>
-    {#each tracksWithEntries as { track, entries }}
-      <div class="mb-4 flex flex-col gap-2 border-b text-sm">
-        <h2 class="text-accent-foreground">{track.name}</h2>
+  <div class="grid gap-4">
+    {#if tracksWithEntries.length > 0}
+      <div>
+        <h2>Tider</h2>
+        {#each tracksWithEntries as { track, entries }}
+          <div class="mb-4 flex flex-col gap-2 border-b text-sm">
+            <h2 class="text-accent-foreground">{track.name}</h2>
 
-        <ul class="divide-y divide-solid">
-          {#each entries as entry, i}
-            <li class="py-2">
-              <div class="flex w-full justify-between font-f1">
-                <div class="flex gap-2">
-                  <p class="italic text-muted-foreground">{i + 1}</p>
-                  <p class="font-bold">{entry.user.shortName}</p>
-                </div>
+            <ul class="divide-y divide-solid">
+              {#each entries as entry, i}
+                <li class="py-2">
+                  <div class="flex w-full justify-between font-f1">
+                    <div class="flex gap-2">
+                      <p class="italic text-muted-foreground">{i + 1}</p>
+                      <p class="font-bold">{entry.user.shortName}</p>
+                    </div>
 
-                <div class="flex gap-2 tracking-wide">
-                  <p class="w-20">{entry.readableDuration}</p>
+                    <div class="flex gap-2 tracking-wide">
+                      <p class="w-20">{entry.readableDuration}</p>
 
-                  <p class="w-20 italic text-muted-foreground">
-                    {entry.readableGap}
-                  </p>
+                      <p class="w-20 italic text-muted-foreground">
+                        {entry.readableGap}
+                      </p>
 
-                  <p class="w-20 italic text-muted-foreground">
-                    {entry.readableLeaderGap}
-                  </p>
-                </div>
-              </div>
-              {#if entry.comment}
-                <p class="text-muted-foreground">{entry.comment}</p>
-              {/if}
-            </li>
-          {/each}
-        </ul>
+                      <p class="w-20 italic text-muted-foreground">
+                        {entry.readableLeaderGap}
+                      </p>
+                    </div>
+                  </div>
+                  {#if entry.comment}
+                    <p class="text-muted-foreground">{entry.comment}</p>
+                  {/if}
+                </li>
+              {/each}
+            </ul>
+          </div>
+        {/each}
       </div>
-    {/each}
+    {/if}
 
-    <h2>Grupper</h2>
-    <div class="my-4 grid gap-4">
-      {#each groups as group}
-        <div class="flex flex-col gap-2 rounded-xl border bg-black p-4">
-          <GroupCompact {group} user={loggedInUser} />
-        </div>
-      {/each}
+    <div class="w-full">
+      <h2>Grupper</h2>
+      <div class="my-4 grid grid-cols-2 gap-4 sm:flex">
+        {#each groups as group}
+          <div class="flex w-full flex-col gap-2 rounded-xl border p-4">
+            <GroupCompact {group} user={loggedInUser} />
+          </div>
+        {/each}
+      </div>
     </div>
 
-    <h2 class="pt-4">Matcher</h2>
-    <ul class="divide-y divide-solid">
-      {#each matches as match}
+    <div class="w-full">
+      <h2 class="pt-4">Matcher</h2>
+      <ul class="divide-y divide-solid">
+        {#each matches as match}
         <MatchRow {match} user={loggedInUser} />
-      {/each}
-    </ul>
+        {/each}
+      </ul>
+      <h2 class="pt-4">Sluttspill</h2>
+      <ul class="divide-y divide-solid">
+        {#each bracket as round}
+          <MatchRow match={round} user={loggedInUser} />
+        {/each}
+      </ul>
+    </div>
   </div>
 </main>

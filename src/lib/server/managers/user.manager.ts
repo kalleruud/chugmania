@@ -1,5 +1,5 @@
 import db from '$lib/server/db'
-import type { LookupEntity } from '@/components/lookup/lookup.server'
+import type { LookupEntity } from '@/components/types.server'
 import { hash } from '@/utils'
 import { randomUUID } from 'crypto'
 import { and, eq, isNull } from 'drizzle-orm'
@@ -49,7 +49,9 @@ export default class UserManager {
   }
 
   static async getAll(): Promise<PublicUser[]> {
-    return (await db.select().from(users).where(isNull(users.deletedAt))).map(this.getDetails)
+    return (await db.select().from(users).where(isNull(users.deletedAt)).orderBy(users.name)).map(
+      this.getDetails
+    )
   }
 
   static async getUsersFromSession(sessionId: string): Promise<PublicUser[]> {

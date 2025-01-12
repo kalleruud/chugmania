@@ -1,9 +1,24 @@
+import type { Session } from '@/components/types.server'
 import GroupManager, { type Group } from './group.manager'
 import MatchManager, { type Match, type NewMatch } from './match.manager'
 import type { Track } from './track.manager'
 import type { PublicUser } from './user.manager'
 
+export type BracketRound = Partial<Match> & {
+  user1LastMatch: Partial<Match> | undefined
+  user2LastMatch: Partial<Match> | undefined
+}
+
 export default class TournamentManager {
+  static readonly finalNames = [
+    'Sekstendelsfinale',
+    'Åttenedelsfinale',
+    'Kvartfinale',
+    'Bronsefinale',
+    'Semifinale',
+    'Finale',
+  ]
+
   static async generateGroups(sessionId: string, users: PublicUser[], groupCount: 2 | 4 | 8 | 16) {
     console.debug('Generating groups for session', sessionId)
     const shuffledusers = [...users].sort(() => Math.random() - 0.5)
@@ -104,16 +119,152 @@ export default class TournamentManager {
   static async getGroupDetails(group: Group) {
     console.debug('Getting points for session', group.id)
     const matches = await MatchManager.getAllFromGroup(group.id)
+    const users = group.users.map(u => ({
+      ...u,
+      wins: matches.filter(m => m.winner?.id === u.id).length,
+      played: matches.filter(m => (m.user1.id === u.id || m.user2.id === u.id) && m.winner).length,
+      playedAll:
+        matches.filter(m => (m.user1.id === u.id || m.user2.id === u.id) && m.winner).length >=
+        group.users.length - 1,
+    }))
+
+    users.sort((a, b) => b.wins - a.wins)
+
     return {
       ...group,
-      users: group.users.map(u => ({
-        ...u,
-        points: matches.filter(m => m.winner?.id === u.id).length,
-      })),
+      users,
     }
   }
 
-  static generateBracket(groups: Group[], matces: Match[]) {}
+  private static async generateBracketRound(
+    session: Session,
+    matches: BracketRound[],
+    track: Track,
+    loserBracketMatches?: BracketRound[],
+    extraLosers?: (PublicUser | undefined)[],
+    doubleElimination: boolean = true
+  ): Promise<{
+    winnerMatches: BracketRound[]
+    loserMatches: BracketRound[][] | undefined
+  }> {
+    if (matches.length === 1) {
+      return {
+        winnerMatches: [
+          {
+            user1: matches[0].winner,
+            user1LastMatch: matches[0],
+            user2: loserBracketMatches?.[0].winner ?? extraLosers?.[0],
+            user2LastMatch: loserBracketMatches?.[0],
+            session,
+            track,
+          },
+        ],
+        loserMatches: undefined,
+      }
+    }
+
+    const winnerMatches: BracketRound[] = []
+    let loserMatches: BracketRound[][] | undefined = []
+    for (let i = 0; i < matches.length; i += 2) {
+      winnerMatches.push({
+        user1: matches[i].winner,
+        user1LastMatch: matches[i],
+        user2: matches[i + 1].winner,
+        user2LastMatch: matches[i + 1],
+        session,
+        track,
+      })
+      if (!doubleElimination) {
+        loserMatches = undefined
+        continue
+      }
+
+      loserMatches?.push([
+        {
+          user1:
+            matches[i].user1?.id === matches[i].winner?.id ? matches[i].user2 : matches[i].user1,
+          user1LastMatch: matches[i],
+          user2: loserBracketMatches?.[i].winner ?? extraLosers?.[i],
+          user2LastMatch: loserBracketMatches?.[i],
+          session,
+          track,
+        },
+        {
+          user1:
+            matches[i].user2?.id === matches[i].winner?.id ? matches[i].user1 : matches[i].user2,
+          user1LastMatch: matches[i],
+          user2: loserBracketMatches?.[i].winner ?? extraLosers?.[i],
+          user2LastMatch: loserBracketMatches?.[i],
+          session,
+          track,
+        },
+      ])
+    }
+
+    if (loserMatches && !extraLosers && loserMatches.length > winnerMatches.length) {
+      loserMatches.push(
+        (await this.generateBracketRound(session, loserMatches.at(-1), track, [], [], false))
+          .winnerMatches
+      )
+    }
+
+    return { winnerMatches, loserMatches }
+  }
+
+  static pairFinalists(
+    session: Session,
+    groups: Awaited<ReturnType<typeof this.getGroupDetails>>[],
+    track: Track
+  ) {
+    const finishedGroups = groups.filter(g => g.users.every(u => u.playedAll))
+    const first = finishedGroups.map(g => g.users[0])
+    const second = finishedGroups.map(g => g.users[1])
+    second.push(second.shift()!)
+
+    return first.map(
+      (p1, i) =>
+        ({
+          user1: p1,
+          user1LastMatch: undefined,
+          user2: second[i],
+          user2LastMatch: undefined,
+          session,
+          track,
+        }) satisfies BracketRound
+    )
+  }
+
+  static async generateBracket(session: Session, groups: Group[], allTracks: Track[]) {
+    const trackStack = [...allTracks]
+    const finalists = await Promise.all(groups.map(this.getGroupDetails))
+    const pairs = this.pairFinalists(session, finalists, trackStack.pop()!)
+    trackStack.push(trackStack.shift()!)
+    const thirdPlaceUsers = groups.map(g => g.users.at(0))
+
+    const bracketMatches = [
+      await this.generateBracketRound(session, pairs, trackStack[0], [], thirdPlaceUsers),
+    ]
+    const returnThis = [bracketMatches[0].winnerMatches]
+    if (bracketMatches[0].loserMatches) returnThis.push(bracketMatches[0].loserMatches.flat())
+
+    while (bracketMatches.at(-1)?.winnerMatches?.length > 1) {
+      console.log('Generating next round')
+      const { winnerMatches, loserMatches } = bracketMatches.at(-1)!
+
+      const newMatches = await this.generateBracketRound(
+        session,
+        winnerMatches,
+        trackStack[0],
+        loserMatches?.[loserMatches.length - 1]
+      )
+      bracketMatches.push(newMatches)
+      trackStack.push(trackStack.shift()!)
+      returnThis.push(newMatches.winnerMatches)
+      if (newMatches.loserMatches) returnThis.push(newMatches.loserMatches.flat())
+    }
+
+    return returnThis.flat()
+  }
 
   static async clearMatches(sessionId: string) {
     console.debug('Clearing matches for session', sessionId)
