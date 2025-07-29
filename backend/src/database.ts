@@ -1,6 +1,4 @@
-import { drizzle } from 'drizzle-orm/libsql'
-import { createClient } from '@libsql/client';
+import { drizzle } from 'drizzle-orm/libsql/node'
 
-const client = createClient({ url: "file:data/db.sqlite" });
-const db = drizzle({ client });
+const db = drizzle({ connection: 'file:local.db' })
 export default db
