@@ -22,15 +22,5 @@
     "prettier": "^3.6.2",
     "typescript": "~5.8.3",
     "vite": "^7.0.4"
-  },
-  "prettier": {
-    "arrowParens": "avoid",
-    "endOfLine": "lf",
-    "jsxSingleQuote": true,
-    "semi": false,
-    "singleQuote": true,
-    "tabWidth": 2,
-    "trailingComma": "es5",
-    "useTabs": false
   }
 }
