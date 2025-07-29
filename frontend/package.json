@@ -9,6 +9,16 @@
     "lint": "eslint .",
     "preview": "vite preview"
   },
+  "prettier": {
+    "arrowParens": "avoid",
+    "endOfLine": "lf",
+    "jsxSingleQuote": true,
+    "semi": false,
+    "singleQuote": true,
+    "tabWidth": 2,
+    "trailingComma": "es5",
+    "useTabs": false
+  },
   "dependencies": {
     "react": "^19.1.0",
     "react-dom": "^19.1.0"

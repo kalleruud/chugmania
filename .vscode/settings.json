@@ -1,12 +1,4 @@
 {
-  "editor.tabSize": 2,
-  "editor.detectIndentation": false,
-  "editor.defaultFormatter": "esbenp.prettier-vscode",
-  "files.exclude": {
-    "**/*.d.ts": true,
-    "**/coverage": true,
-    "**/node_modules": true
-  },
-  "editor.formatOnSave": true,
-  "editor.formatOnPaste": true
+  "prettier.configPath": "frontend/package.json",
+  "prettier.prettierPath": "frontend/node_modules/prettier"
 }
