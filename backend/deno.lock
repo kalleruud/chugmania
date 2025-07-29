@@ -5,8 +5,7 @@
     "npm:cors@^2.8.5": "2.8.5",
     "npm:drizzle-kit@~0.31.4": "0.31.4_esbuild@0.25.8",
     "npm:drizzle-orm@~0.44.4": "0.44.4",
-    "npm:socket.io@^4.8.1": "4.8.1",
-    "npm:tsx@^4.20.3": "4.20.3"
+    "npm:socket.io@^4.8.1": "4.8.1"
   },
   "npm": {
     "@drizzle-team/brocli@0.10.2": {
@@ -404,12 +403,6 @@
         "ms"
       ]
     },
-    "debug@4.4.1": {
-      "integrity": "sha512-KcKCqiftBJcZr++7ykoDIEwSa3XWowTfNPo92BYxjXiyYEVrUQh2aLyhxBCwww+heortUFxEJYcRzosstTEBYQ==",
-      "dependencies": [
-        "ms"
-      ]
-    },
     "detect-libc@2.0.2": {
       "integrity": "sha512-UX6sGumvvqSaXgdKGUsgZWqcUyIXZ/vZTrlRT/iobiKhGL0zL4d3osHj3uqllWJK+i+sixDS/3COVEOFbupFyw=="
     },
@@ -438,7 +431,7 @@
         "base64id",
         "cookie",
         "cors",
-        "debug@4.3.7",
+        "debug",
         "engine.io-parser",
         "ws"
       ]
@@ -446,7 +439,7 @@
     "esbuild-register@3.6.0_esbuild@0.25.8": {
       "integrity": "sha512-H2/S7Pm8a9CL1uhp9OvjwrBh5Pvx0H8qVOxNu8Wed9Y7qv56MPtq+GGM8RJpq6glYJn9Wspr8uw7l55uyinNeg==",
       "dependencies": [
-        "debug@4.4.1",
+        "debug",
         "esbuild@0.25.8"
       ]
     },
@@ -598,7 +591,7 @@
     "socket.io-adapter@2.5.5": {
       "integrity": "sha512-eLDQas5dzPgOWCk9GuuJC2lBqItuhKI4uxGgo9aIV7MYbk2h9Q6uULEh8WBzThoI7l+qU9Ast9fVUmkqPP9wYg==",
       "dependencies": [
-        "debug@4.3.7",
+        "debug",
         "ws"
       ]
     },
@@ -606,7 +599,7 @@
       "integrity": "sha512-/GbIKmo8ioc+NIWIhwdecY0ge+qVBSMdgxGygevmdHj24bsfgtCmcUUcQ5ZzcylGFHsN3k4HB4Cgkl96KVnuew==",
       "dependencies": [
         "@socket.io/component-emitter",
-        "debug@4.3.7"
+        "debug"
       ]
     },
     "socket.io@4.8.1": {
@@ -615,7 +608,7 @@
         "accepts",
         "base64id",
         "cors",
-        "debug@4.3.7",
+        "debug",
         "engine.io",
         "socket.io-adapter",
         "socket.io-parser"
@@ -630,17 +623,6 @@
     },
     "source-map@0.6.1": {
       "integrity": "sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g=="
-    },
-    "tsx@4.20.3": {
-      "integrity": "sha512-qjbnuR9Tr+FJOMBqJCW5ehvIo/buZq7vH7qD7JziU98h6l3qGy0a/yPFjwO+y0/T7GFpNgNAvEcPPVfyT8rrPQ==",
-      "dependencies": [
-        "esbuild@0.25.8",
-        "get-tsconfig"
-      ],
-      "optionalDependencies": [
-        "fsevents"
-      ],
-      "bin": true
     },
     "undici-types@6.21.0": {
       "integrity": "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ=="
@@ -660,8 +642,7 @@
       "npm:@libsql/client@~0.15.10",
       "npm:drizzle-kit@~0.31.4",
       "npm:drizzle-orm@~0.44.4",
-      "npm:socket.io@^4.8.1",
-      "npm:tsx@^4.20.3"
+      "npm:socket.io@^4.8.1"
     ]
   }
 }
