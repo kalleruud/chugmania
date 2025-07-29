@@ -1,4 +1,10 @@
 {
-  "prettier.configPath": "frontend/package.json",
-  "prettier.prettierPath": "frontend/node_modules/prettier"
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSave": true,
+  "editor.formatOnPaste": true,
+  "files.exclude": {
+    "**/*.d.ts": true,
+    "**/coverage": true,
+    "**/node_modules": true
+  }
 }
