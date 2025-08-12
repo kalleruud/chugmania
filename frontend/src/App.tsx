@@ -1,7 +1,12 @@
 import { useState } from 'react'
+import './App.css'
 import reactLogo from './assets/react.svg'
 import viteLogo from './vite.svg'
-import './App.css'
+import { io } from 'socket.io-client'
+
+const socket = io('localhost:6996', {
+  transports: ['websocket'],
+})
 
 function App() {
   const [count, setCount] = useState(0)
