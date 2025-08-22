@@ -1,12 +1,12 @@
-import { io } from 'socket.io-client'
 import Login from './components/Login'
-
-const socket = io('localhost:6996', {
-  transports: ['websocket'],
-})
+import { useAuth } from './contexts/AuthContext'
+import Home from './Home'
 
 function App() {
-  return <Login />
+  const { isLoggedIn } = useAuth()
+
+  if (!isLoggedIn) return <Login />
+  return <Home />
 }
 
 export default App

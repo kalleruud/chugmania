@@ -1,4 +1,5 @@
-import { ExtendedError, Server } from 'socket.io'
+import { Server, ExtendedError } from 'socket.io'
+import { ErrorResponse } from '../../common/models/responses.ts'
 import ConnectionManager from './managers/connection.manager.ts'
 
 const port = 6996
@@ -17,11 +18,15 @@ io.use((socket, next) => {
   const token = socket.handshake.auth.token
   if (token) return next()
 
+  console.debug(new Date().toISOString(), socket.id, 'Invalid token')
   const err = {
     name: 'AuthenticationError',
-    message: 'You must be logged in to see this content.',
+    message: 'You must be logged in to see this content',
     data: {
-      content: 'Hello World',
+      content: {
+        isSuccess: false,
+        error: Error('You must be logged in to see this content'),
+      } satisfies ErrorResponse,
     },
   } satisfies ExtendedError
 

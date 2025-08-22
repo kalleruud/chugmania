@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
+import { useAuth } from '../contexts/AuthContext'
 
-function Login() {
+export default function Login() {
+  const { login } = useAuth()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -16,6 +18,7 @@ function Login() {
     setError('')
     // Replace this with your actual login logic
     console.log('Logging in with:', { username, password })
+    login(username, password)
   }
 
   return (
@@ -26,7 +29,7 @@ function Login() {
       >
         <h2 className='text-2xl font-semibold text-center'>Login</h2>
 
-        <div>
+        <div className='grid gap-1'>
           <label className='grid gap-1'>
             <p>Username</p>
             <input
@@ -42,22 +45,25 @@ function Login() {
               type='password'
               value={password}
               onChange={e => setPassword(e.target.value)}
-              className='w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
+              className='w-full p-2 border transition rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
             />
           </label>
         </div>
 
-        {error && <p className='text-red-700 border-red-400 border-1 rounded-xl p-4 bg-red-200 text-sm'>{error}</p>}
+        {error && (
+          <p className='text-red-700 border-red-400 border-1 rounded-xl p-4 bg-red-200 text-sm'>
+            {error}
+          </p>
+        )}
 
         <button
           type='submit'
-          className='w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition'
+          disabled={username.length < 2 && password.length < 8}
+          className='w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300 hover:cursor-pointer disabled:hover:cursor-not-allowed'
         >
-          Login
+          <p>Login</p>
         </button>
       </form>
     </div>
   )
 }
-
-export default Login

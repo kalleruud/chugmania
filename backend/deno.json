@@ -1,6 +1,7 @@
 {
   "tasks": {
-    "dev": "deno run --watch --allow-ffi --allow-net --allow-read --allow-write --allow-env --allow-sys src/server.ts"
+    "dev": "deno run --watch --allow-ffi --allow-net --allow-read --allow-write --allow-env --allow-sys src/server.ts",
+    "studio": "drizzle-kit studio"
   },
   "nodeModulesDir": "auto",
   "imports": {
