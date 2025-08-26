@@ -51,6 +51,7 @@ export function ConnectionProvider({
       socket.off('connect')
       socket.off('disconnect')
       socket.off('connect_error')
+      socket.disconnect()
     }
   }, [])
 
