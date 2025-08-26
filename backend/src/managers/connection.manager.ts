@@ -73,4 +73,8 @@ export default class ConnectionManager {
     )
     return true
   }
+
+  static async getConnections() {
+    return await db.query.connections.findMany()
+  }
 }
