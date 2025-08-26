@@ -1,13 +1,13 @@
 {
   "tasks": {
-    "dev": "deno run --watch --allow-ffi --allow-net --allow-read --allow-write --allow-env --allow-sys src/server.ts",
+    "dev": "deno run --watch -A src/server.ts",
     "studio": "drizzle-kit studio"
   },
   "nodeModulesDir": "auto",
   "imports": {
     "@common/": "../common/",
     "@database/": "./database/",
-    "@libsql/client": "npm:@libsql/client@^0.15.10",
+    "@libsql/client": "npm:@libsql/client@^0.15.12",
     "drizzle-kit": "npm:drizzle-kit@^0.31.4",
     "drizzle-orm": "npm:drizzle-orm@^0.44.4",
     "socket.io": "npm:socket.io@^4.8.1"
