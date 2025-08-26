@@ -1,5 +1,5 @@
-import { Server, ExtendedError } from 'socket.io'
-import { ErrorResponse } from '../../common/models/responses.ts'
+import { ErrorResponse } from '@common/models/responses.ts'
+import { ExtendedError, Server } from 'socket.io'
 import ConnectionManager from './managers/connection.manager.ts'
 
 const port = 6996

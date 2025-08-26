@@ -1,5 +1,5 @@
+import tryCatch from '@common/utils/try-catch.ts'
 import { eq } from 'drizzle-orm'
-import tryCatch from '../../../common/utils/try-catch.ts'
 import { connections } from '../../schema/connections.ts'
 import db from '../database.ts'
 

@@ -1,6 +1,6 @@
+import { UserInfo } from '@common/models/user.ts'
+import tryCatch from '@common/utils/try-catch.ts'
 import { eq } from 'drizzle-orm'
-import { type UserInfo } from '../../../common/models/user.ts'
-import tryCatch from '../../../common/utils/try-catch.ts'
 import { users } from '../../schema/users.ts'
 import db from '../database.ts'
 
