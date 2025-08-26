@@ -1,6 +1,6 @@
-import tryCatch from '@common/utils/try-catch.ts'
-import db from '@database/database.ts'
-import { connections } from '@database/schema.ts'
+import tryCatch from '@common/utils/try-catch'
+import db from '@database/database'
+import { connections } from '@database/schema'
 import { eq } from 'drizzle-orm'
 
 export default class ConnectionManager {

@@ -1,0 +1,32 @@
+{
+  "name": "chugmania-backend",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "main": "src/server.ts",
+  "scripts": {
+    "start": "tsx watch src/server.ts",
+    "check": "tsc --noEmit",
+    "build": "pkgroll"
+  },
+  "exports": "./dist/index.mjs",
+  "dependencies": {
+    "better-sqlite3": "^12.2.0",
+    "drizzle-orm": "^0.44.5",
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^24.3.0",
+    "drizzle-kit": "^0.31.4",
+    "prettier": "^3.6.2",
+    "simple-git-hooks": "^2.13.1",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  },
+  "simple-git-hooks": {
+    "pre-commit": [
+      "npm run check"
+    ]
+  }
+}

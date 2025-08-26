@@ -1,11 +1,9 @@
-import { User, UserInfo } from '@common/models/user.ts'
-import tryCatch from '@common/utils/try-catch.ts'
-import { jwtVerify, SignJWT } from 'https://deno.land/x/jose@v6.0.13/index.ts'
-import 'jsr:@std/dotenv/load'
+import { type User, type UserInfo } from '@common/models/user'
+import tryCatch from '@common/utils/try-catch'
 import { Buffer } from 'node:buffer'
 
-const TOKEN_EXPIRY_H = Deno.env.get('TOKEN_EXPIRY_H') ?? '1'
-const SECRET = Deno.env.get('SECRET')
+const TOKEN_EXPIRY_H = process.env.TOKEN_EXPIRY_H ?? '1'
+const SECRET = process.env.SECRET
 const PRIVATE_KEY = SECRET
   ? new TextEncoder().encode(SECRET)
   : await crypto.subtle.generateKey({ name: 'HMAC', hash: 'SHA-512' }, true, [

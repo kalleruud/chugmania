@@ -1,5 +1,5 @@
+import { randomUUID } from 'crypto'
 import { blob, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
-import { randomUUID } from 'node:crypto'
 
 const common = {
   id: text().primaryKey().$defaultFn(randomUUID),
