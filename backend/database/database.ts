@@ -1,8 +1,12 @@
 import * as schema from '@database/schema'
-import { drizzle } from 'drizzle-orm/libsql/node'
+import Database from 'better-sqlite3'
+import { drizzle } from 'drizzle-orm/better-sqlite3'
 
-const db_file = process.env.DB_FILE_NAME
-if (!db_file) throw Error("Missing environment varible 'DB_FILE_NAME'")
+const DB_URL = process.env.DB_URL
+if (!DB_URL) throw Error("Missing environment varible 'DB_URL'")
 
-const db = drizzle({ connection: db_file, schema })
+const database = new Database(DB_URL)
+database.pragma('journal_mode = WAL')
+
+const db = drizzle(database, { schema })
 export default db

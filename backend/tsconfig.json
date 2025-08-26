@@ -34,5 +34,6 @@
       "@database/*": ["./database/*"]
     }
   },
-  "include": ["src", "../common"]
+  "include": ["src", "../common", "*.ts"],
+  "exclude": ["dist", "node_modules"]
 }
