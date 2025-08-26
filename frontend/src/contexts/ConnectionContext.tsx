@@ -1,4 +1,3 @@
-// ConnectionContext.tsx
 import {
   createContext,
   useContext,
@@ -14,9 +13,7 @@ type ConnectionContextType = {
   isConnected: boolean
 }
 
-const socket = io('http://localhost:6996', {
-  autoConnect: false,
-})
+const socket = io('http://localhost:6996')
 
 const ConnectionContext = createContext<ConnectionContextType>({
   isConnected: socket.connected,
@@ -30,15 +27,13 @@ export function ConnectionProvider({
   const context = useMemo(() => ({ isConnected, socket }), [isConnected])
 
   useEffect(() => {
-    socket.connect()
-
     socket.on('connect', () => {
       console.log('Connected to backend:', socket.id)
       setIsConnected(socket.connected)
     })
 
     socket.on('disconnect', () => {
-      console.log('Disconnected from backend')
+      console.warn('Disconnected from backend')
       setIsConnected(socket.connected)
     })
 
@@ -51,7 +46,6 @@ export function ConnectionProvider({
       socket.off('connect')
       socket.off('disconnect')
       socket.off('connect_error')
-      socket.disconnect()
     }
   }, [])
 
