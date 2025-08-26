@@ -6,6 +6,7 @@
   "nodeModulesDir": "auto",
   "imports": {
     "@common/": "../common/",
+    "@database/": "./database/",
     "@libsql/client": "npm:@libsql/client@^0.15.10",
     "drizzle-kit": "npm:drizzle-kit@^0.31.4",
     "drizzle-orm": "npm:drizzle-orm@^0.44.4",
