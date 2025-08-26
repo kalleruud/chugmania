@@ -1,4 +1,4 @@
-import tryCatch from '@common/utils/try-catch'
+import tryCatch from '@chugmania/common/utils/try-catch.js'
 import db from '@database/database'
 import { connections } from '@database/schema'
 import { eq } from 'drizzle-orm'

@@ -15,6 +15,7 @@
   },
   "exports": "./dist/index.mjs",
   "dependencies": {
+    "@chugmania/common": "file:../common",
     "better-sqlite3": "^12.2.0",
     "drizzle-orm": "^0.44.5",
     "jsonwebtoken": "^9.0.2",

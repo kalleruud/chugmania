@@ -1,7 +1,6 @@
 {
   "compilerOptions": {
     /* Base Options */
-    "baseUrl": ".",
     "allowJs": false,
     "esModuleInterop": true,
     "isolatedModules": true,
@@ -29,8 +28,8 @@
     "noUnusedParameters": true,
 
     /* Paths */
+    "baseUrl": ".",
     "paths": {
-      "@common/*": ["../common/*"],
       "@database/*": ["./database/*"]
     }
   },
