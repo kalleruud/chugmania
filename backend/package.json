@@ -6,7 +6,7 @@
   "main": "src/server.ts",
   "scripts": {
     "start": "tsx watch --env-file .env src/server.ts",
-    "check": "tsc --noEmit",
+    "check": "tsc --noEmit & prettier -c .",
     "build": "pkgroll",
     "db:gen": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
