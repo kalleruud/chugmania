@@ -3,6 +3,7 @@ import tryCatch from '@common/utils/try-catch.ts'
 import { eq } from 'drizzle-orm'
 import { users } from '../../schema/users.ts'
 import db from '../database.ts'
+import AuthManager from './auth.manager.ts'
 
 export default class UserManager {
   static readonly table = users
@@ -14,10 +15,13 @@ export default class UserManager {
 
     if (error) throw error
     if (data.length > 0) throw Error(`Couldn't find user with email ${email}`)
+    const { passwordHash, ...userInfo } = data[0]
 
-    const userInfo = data[0] as UserInfo
-    userInfo.passwordHash = undefined
+    const { error: failed } = await tryCatch(
+      AuthManager.checkPassword(password, passwordHash)
+    )
+    if (failed) throw Error(`Incorrect password ${email}`)
 
-    return data[0]
+    return userInfo
   }
 }
