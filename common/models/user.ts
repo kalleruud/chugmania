@@ -1,4 +1,4 @@
-import { users } from '../../backend/database/schema.ts'
+import { users } from '../../backend/database/schema'
 
 export type User = typeof users.$inferSelect
 export type CreateUser = typeof users.$inferInsert

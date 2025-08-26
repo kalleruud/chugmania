@@ -1,39 +1,50 @@
 import { type User, type UserInfo } from '@common/models/user'
 import tryCatch from '@common/utils/try-catch'
-import { Buffer } from 'node:buffer'
+import { type Secret, type SignOptions, sign, verify } from 'jsonwebtoken'
 
 const TOKEN_EXPIRY_H = process.env.TOKEN_EXPIRY_H ?? '1'
-const SECRET = process.env.SECRET
-const PRIVATE_KEY = SECRET
-  ? new TextEncoder().encode(SECRET)
-  : await crypto.subtle.generateKey({ name: 'HMAC', hash: 'SHA-512' }, true, [
-      'sign',
-      'verify',
-    ])
+const SECRET: Secret =
+  process.env.SECRET ?? Buffer.from(crypto.getRandomValues(new Uint8Array(256)))
 
 const tokenExpiryMs = Number.parseFloat(TOKEN_EXPIRY_H) * 60 * 60 * 1000
 
 export default class AuthManager {
   static readonly AUTH_COOKIE_KEY = 'auth'
-
-  static async sign(user: UserInfo) {
-    return await new SignJWT(user)
-      .setProtectedHeader({ alg: 'SH512' })
-      .setIssuedAt()
-      .setExpirationTime(tokenExpiryMs)
-      .sign(PRIVATE_KEY)
+  private static readonly JWT_OPTIONS: SignOptions = {
+    algorithm: 'HS512',
+    expiresIn: tokenExpiryMs / 1_000,
   }
 
-  static async verify(token: string) {
+  static sign(user: UserInfo) {
+    return sign(user, SECRET, this.JWT_OPTIONS)
+  }
+
+  static async verify(
+    token: string | undefined
+  ): Promise<UserInfo | undefined> {
+    if (!token) {
+      console.error('Invalid JWT: No token provided')
+      return undefined
+    }
+
     const { data, error } = await tryCatch(
-      jwtVerify<UserInfo>(token, PRIVATE_KEY)
+      new Promise<UserInfo>((resolve, reject) => {
+        verify(token, SECRET, (err, decoded) => {
+          if (err) reject(err)
+          else if (decoded) resolve(decoded as UserInfo)
+          else
+            reject(new Error('JWT verification failed: Decoded data is empty.'))
+        })
+      })
     )
+
     if (error) {
       console.error('Invalid JWT:', error)
       return undefined
     }
+
     console.log('JWT verified')
-    return data.payload
+    return data
   }
 
   static async checkPassword(

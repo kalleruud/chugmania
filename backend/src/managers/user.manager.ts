@@ -1,9 +1,9 @@
-import { UserInfo } from '@common/models/user.ts'
-import tryCatch from '@common/utils/try-catch.ts'
-import db from '@database/database.ts'
-import { users } from '@database/schema.ts'
+import { type UserInfo } from '@common/models/user'
+import tryCatch from '@common/utils/try-catch'
+import db from '@database/database'
+import { users } from '@database/schema'
 import { eq } from 'drizzle-orm'
-import AuthManager from './auth.manager.ts'
+import AuthManager from './auth.manager'
 
 export default class UserManager {
   static readonly table = users

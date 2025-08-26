@@ -1,5 +1,5 @@
-import { ExtendedError, Server, Socket } from 'socket.io'
-import ConnectionManager from './managers/connection.manager.ts'
+import { type ExtendedError, Server, Socket } from 'socket.io'
+import ConnectionManager from './managers/connection.manager'
 
 const port = 6996
 const io = new Server(port, { cors: { origin: '*' } })
