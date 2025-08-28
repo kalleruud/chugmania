@@ -1,5 +1,5 @@
-import { type UserInfo } from '@common/models/user'
-import tryCatch from '@common/utils/try-catch'
+import { type UserInfo } from '@chugmania/common/models/user.js'
+import tryCatch from '@chugmania/common/utils/try-catch.js'
 import db from '@database/database'
 import { users } from '@database/schema'
 import { eq } from 'drizzle-orm'

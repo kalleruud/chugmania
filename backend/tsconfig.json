@@ -7,16 +7,20 @@
     "moduleDetection": "force",
     "resolveJsonModule": true,
     "skipLibCheck": true,
-    "target": "es2022",
+    "target": "esnext",
     "verbatimModuleSyntax": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "lib": ["esnext"],
+    "types": ["node"],
 
     /* Strictness */
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
 
-    /* If transpiling with TypeScript: */
-    "module": "preserve",
+    "module": "esnext",
+    "moduleResolution": "bundler",
     "outDir": "dist",
     "sourceMap": true,
 
