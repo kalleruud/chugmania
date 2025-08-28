@@ -11,7 +11,7 @@ const common = {
 }
 
 export const connections = sqliteTable('connections', {
-  socket: text().unique().notNull(),
+  socket: text().primaryKey().notNull(),
   user: text().references(() => users.id),
   createdAt: integer({ mode: 'timestamp' })
     .notNull()

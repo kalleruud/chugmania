@@ -1,8 +1,10 @@
 import React, { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { useConnection } from '../contexts/ConnectionContext'
 
 export default function Login() {
   const { login } = useAuth()
+  const { isConnected } = useConnection()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -28,6 +30,9 @@ export default function Login() {
         className='bg-white grid text-sm font-medium p-6 rounded-2xl shadow-md w-80 gap-2'
       >
         <h2 className='text-2xl font-semibold text-center'>Login</h2>
+        <p className='font-mono'>
+          Is connected: {isConnected ? 'True' : 'False'}
+        </p>
 
         <div className='grid gap-1'>
           <label className='grid gap-1'>

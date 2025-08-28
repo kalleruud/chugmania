@@ -6,16 +6,15 @@ import { eq } from 'drizzle-orm'
 export default class ConnectionManager {
   static readonly table = connections
 
-  static async connect(socketId: string, userId: string) {
+  static async connect(
+    socketId: string,
+    userId: string | undefined = undefined
+  ) {
     const { data, error } = await tryCatch(
       db
         .insert(this.table)
         .values({ socket: socketId, user: userId })
         .onConflictDoNothing({ target: this.table.socket })
-        .onConflictDoUpdate({
-          target: this.table.user,
-          set: { socket: socketId },
-        })
         .returning({ socket: this.table.socket })
     )
 
@@ -32,8 +31,8 @@ export default class ConnectionManager {
     console.debug(
       new Date().toISOString(),
       socketId,
-      'Stored connection:',
-      data
+      'Stored connection',
+      data.at(0)?.socket
     )
     return true
   }
@@ -60,7 +59,7 @@ export default class ConnectionManager {
       console.warn(
         new Date().toISOString(),
         socketId,
-        `Removed ${data.length} connections:`,
+        `Something went wrong: Removed ${data.length} connections:`,
         data.map(d => d.socket)
       )
       return data.length > 0
@@ -72,9 +71,5 @@ export default class ConnectionManager {
       'Successfully removed connection'
     )
     return true
-  }
-
-  static async getConnections() {
-    return await db.query.connections.findMany()
   }
 }
