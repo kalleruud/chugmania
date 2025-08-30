@@ -1,8 +1,14 @@
+import { isLoginRequest } from '@chugmania/common/models/requests.js'
+import type {
+  BackendResponse,
+  ErrorResponse,
+  LoginSuccessResponse,
+} from '@chugmania/common/models/responses.js'
 import { type User, type UserInfo } from '@chugmania/common/models/user.js'
-import tryCatch from '@chugmania/common/utils/try-catch.js'
+import { tryCatch, tryCatchAsync } from '@chugmania/common/utils/try-catch.js'
 import jwt from 'jsonwebtoken'
-
-import type { Socket } from 'socket.io'
+import type { ExtendedError, Socket } from 'socket.io'
+import UserManager from './user.manager'
 
 const TOKEN_EXPIRY_H = process.env.TOKEN_EXPIRY_H ?? '1'
 const SECRET: jwt.Secret =
@@ -11,67 +17,97 @@ const SECRET: jwt.Secret =
 const tokenExpiryMs = Number.parseFloat(TOKEN_EXPIRY_H) * 60 * 60 * 1000
 
 export default class AuthManager {
-  static readonly AUTH_COOKIE_KEY = 'auth'
   private static readonly JWT_OPTIONS: jwt.SignOptions = {
     algorithm: 'HS512',
     expiresIn: tokenExpiryMs / 1_000,
   }
 
-  static sign(user: UserInfo) {
+  private static sign(user: UserInfo) {
     return jwt.sign(user, SECRET, this.JWT_OPTIONS)
   }
 
-  static async verify(
-    token: string | undefined
-  ): Promise<UserInfo | undefined> {
-    if (!token) {
-      console.error('Invalid JWT: No token provided')
-      return undefined
-    }
-
-    const { data, error } = await tryCatch(
-      new Promise<UserInfo>((resolve, reject) => {
-        jwt.verify(token, SECRET, (err, decoded) => {
-          if (err) reject(err)
-          else if (decoded) resolve(decoded as UserInfo)
-          else
-            reject(new Error('JWT verification failed: Decoded data is empty.'))
-        })
-      })
-    )
-
-    if (error) {
-      console.error('Invalid JWT:', error)
-      return undefined
-    }
-
-    console.log('JWT verified')
-    return data
+  private static verify(token: string | undefined): UserInfo {
+    if (!token) throw new Error('No JWT token provided')
+    return jwt.verify(token, SECRET) as UserInfo
   }
 
-  static async checkPassword(
-    password: string,
+  private static async isPasswordValid(
+    providedPassword: string,
     expectedHash: User['passwordHash']
   ) {
-    if (expectedHash.equals(await this.hash(password))) return
-    throw Error('The provided password is incorrect')
+    return expectedHash.equals(await this.hash(providedPassword))
   }
 
-  static async hash(s: string): Promise<User['passwordHash']> {
+  private static async hash(s: string): Promise<User['passwordHash']> {
     const encoder = new TextEncoder()
     return Buffer.from(await crypto.subtle.digest('SHA-512', encoder.encode(s)))
   }
 
-  static async checkAuth(socket: Socket) {
+  static async checkAuth(socket: Socket): Promise<ExtendedError | UserInfo> {
     console.debug(new Date().toISOString(), socket.id, '🔑 Checking auth...')
-    const token = socket.handshake.auth.token
-    if (token)
-      console.debug(
-        new Date().toISOString(),
-        socket.id,
-        '🔓 Found token:',
-        token
-      )
-    else console.debug(new Date().toISOString(), socket.id, '🔒 No token found')
+    const token = socket.handshake.auth.token as string
+
+    if (!token) {
+      console.debug(new Date().toISOString(), socket.id, '🔒 No token found')
+      return {
+        name: 'LoginError',
+        message: '',
+      } satisfies ExtendedError
+    }
+
+    console.debug(new Date().toISOString(), socket.id, '🔓 Found token:', token)
+
+    const { data: user, error } = tryCatch(AuthManager.verify(token))
+    if (error) {
+      console.debug(new Date().toISOString(), socket.id, error.message)
+      return error
+    }
+
+    console.debug(
+      new Date().toISOString(),
+      socket.id,
+      '👤 Logged in:',
+      user.email
+    )
+    return user
+  }
+
+  static async onLogin(
+    socket: Socket,
+    request: unknown
+  ): Promise<BackendResponse> {
+    if (!isLoginRequest(request))
+      throw Error('Failed to log in: email or password not provided.')
+
+    const { email, password } = request
+    const { data, error } = await tryCatchAsync(UserManager.getUser(email))
+
+    if (error) {
+      console.error(new Date().toISOString(), socket.id, error.message)
+      return {
+        success: false,
+        message: error.message,
+      } satisfies ErrorResponse
+    }
+
+    if (!data) {
+      console.error(new Date().toISOString(), socket.id, 'User not found')
+      return {
+        success: false,
+        message: 'User not found',
+      } satisfies ErrorResponse
+    }
+
+    const { passwordHash, ...userInfo } = data
+
+    return (await this.isPasswordValid(password, passwordHash))
+      ? ({
+          success: true,
+          token: this.sign(userInfo),
+        } satisfies LoginSuccessResponse)
+      : ({
+          success: false,
+          message: 'Incorrect password',
+        } satisfies ErrorResponse)
   }
 }

@@ -1,11 +1,23 @@
 export type BackendResponse = LoginSuccessResponse | ErrorResponse
 
 export type LoginSuccessResponse = {
-  isSuccess: true
+  success: true
   token: string
 }
 
+export function isLoginSuccessResponse(
+  data: any
+): data is LoginSuccessResponse {
+  if (typeof data !== 'object') return false
+  return data.success && data.token
+}
+
 export type ErrorResponse = {
-  isSuccess: false
-  error: Error
+  success: false
+  message: string
+}
+
+export function isErrorResponse(data: any): data is ErrorResponse {
+  if (typeof data !== 'object') return false
+  return data.success === false && data.message
 }

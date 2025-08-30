@@ -5,22 +5,20 @@ import { useConnection } from '../contexts/ConnectionContext'
 export default function Login() {
   const { login } = useAuth()
   const { isConnected } = useConnection()
-  const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!username || !password) {
-      setError('Please enter both username and password.')
+    if (!email || !password) {
+      setError('Please enter both email and password.')
       return
     }
 
     setError('')
-    // Replace this with your actual login logic
-    console.log('Logging in with:', { username, password })
-    login(username, password)
+    login(email, password)
   }
 
   return (
@@ -36,11 +34,11 @@ export default function Login() {
 
         <div className='grid gap-1'>
           <label className='grid gap-1'>
-            <p>Username</p>
+            <p>Email</p>
             <input
               type='text'
-              value={username}
-              onChange={e => setUsername(e.target.value)}
+              value={email}
+              onChange={e => setEmail(e.target.value)}
               className='w-full p-2 border transition rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
             />
           </label>
@@ -63,7 +61,7 @@ export default function Login() {
 
         <button
           type='submit'
-          disabled={username.length < 2 && password.length < 8}
+          disabled={email.length < 2 && password.length < 8}
           className='w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300 hover:cursor-pointer disabled:hover:cursor-not-allowed'
         >
           <p>Login</p>

@@ -1,3 +1,9 @@
+import { AUTH_KEY, WS_LOGIN_NAME } from '@chugmania/common/models/constants.ts'
+import type { LoginRequest } from '@chugmania/common/models/requests.js'
+import {
+  isErrorResponse,
+  isLoginSuccessResponse,
+} from '@chugmania/common/models/responses.js'
 import {
   createContext,
   useContext,
@@ -5,13 +11,12 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { type BackendResponse } from '../../../common/models/responses'
 import { useConnection } from './ConnectionContext'
 
 type AuthContextType = {
   isLoggedIn: boolean
   token: string | null
-  login: (username: string, password: string) => void
+  login: (email: string, password: string) => void
   logout: () => void
 }
 
@@ -19,22 +24,30 @@ const AuthContext = createContext<AuthContextType | null>(null)
 
 export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const { socket } = useConnection()
-  const [token, setToken] = useState<string | null>(localStorage.getItem('jwt'))
+  const [token, setToken] = useState<string | null>(
+    localStorage.getItem(AUTH_KEY)
+  )
 
-  function handleLoginResponse(response: BackendResponse) {
-    if (!response.isSuccess) return console.error(response.error.message)
-
-    setToken(response.token)
-    localStorage.setItem('jwt', response.token)
+  function handleLoginResponse(response: any) {
+    if (isErrorResponse(response)) return console.error(response.message)
+    if (isLoginSuccessResponse(response)) {
+      setToken(response.token)
+      localStorage.setItem(AUTH_KEY, response.token)
+    }
   }
 
-  const login = (username: string, password: string) => {
-    socket.emit('login', { username, password }, handleLoginResponse)
+  const login = (email: string, password: string) => {
+    console.log('Logging in with:', { email, password })
+    socket.emit(
+      WS_LOGIN_NAME,
+      { email, password } satisfies LoginRequest,
+      handleLoginResponse
+    )
   }
 
   const logout = () => {
     socket.emit('logout')
-    localStorage.removeItem('jwt')
+    localStorage.removeItem(AUTH_KEY)
     setToken(null)
   }
 

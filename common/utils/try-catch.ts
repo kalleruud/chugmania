@@ -11,8 +11,16 @@ type Failure<E> = {
 
 type Result<T, E = Error> = Success<T> | Failure<E>
 
-// Main wrapper function
-export default async function tryCatch<T, E = Error>(
+export function tryCatch<T, E = Error>(func: T): Result<T, E> {
+  try {
+    const data = func
+    return { data, error: null }
+  } catch (error) {
+    return { data: null, error: error as E }
+  }
+}
+
+export async function tryCatchAsync<T, E = Error>(
   promise: Promise<T>
 ): Promise<Result<T, E>> {
   try {
