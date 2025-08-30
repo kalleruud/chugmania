@@ -10,14 +10,6 @@ const common = {
   deletedAt: integer({ mode: 'timestamp' }),
 }
 
-export const connections = sqliteTable('connections', {
-  socket: text().primaryKey().notNull(),
-  user: text().references(() => users.id),
-  createdAt: integer({ mode: 'timestamp' })
-    .notNull()
-    .$defaultFn(() => new Date()),
-})
-
 export type UserRole = 'admin' | 'moderator' | 'user'
 
 export const users = sqliteTable('users', {
