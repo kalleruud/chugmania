@@ -3,21 +3,13 @@ import { useAuth } from '../contexts/AuthContext'
 import { useConnection } from '../contexts/ConnectionContext'
 
 export default function Login() {
-  const { login } = useAuth()
+  const { login, errorMessage } = useAuth()
   const { isConnected } = useConnection()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-
-    if (!email || !password) {
-      setError('Please enter both email and password.')
-      return
-    }
-
-    setError('')
     login(email, password)
   }
 
@@ -53,9 +45,9 @@ export default function Login() {
           </label>
         </div>
 
-        {error && (
+        {errorMessage && (
           <p className='text-red-700 border-red-400 border-1 rounded-xl p-4 bg-red-200 text-sm'>
-            {error}
+            {errorMessage}
           </p>
         )}
 
