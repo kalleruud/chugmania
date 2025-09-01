@@ -1,3 +1,11 @@
+import { useAuth } from './contexts/AuthContext'
+
 export default function Home() {
-  return <h1>Home</h1>
+  const { logout } = useAuth()
+  return (
+    <>
+      <h1>Home</h1>
+      <button onClick={() => logout()}>Logout</button>
+    </>
+  )
 }

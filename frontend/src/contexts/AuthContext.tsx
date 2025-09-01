@@ -58,7 +58,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
       setToken(response.token)
       return localStorage.setItem(AUTH_KEY, response.token)
     }
-    
+
     throw new Error('Shit went bad')
   }
 
@@ -71,7 +71,6 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   }
 
   const logout = () => {
-    socket.emit('logout')
     localStorage.removeItem(AUTH_KEY)
     setToken(null)
   }
