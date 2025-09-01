@@ -115,7 +115,7 @@ export default function Login() {
           disabled={!isInputValid()}
           className='w-full rounded-lg py-2 font-semibold uppercase tracking-wider bg-gradient-to-r from-[var(--f1-accent)] to-[#ff3b2f] text-white shadow-[0_10px_30px_-10px_rgba(225,6,0,0.6)] hover:from-[#ff3b2f] hover:to-[var(--f1-accent)] active:scale-[0.99] transition disabled:opacity-50 disabled:cursor-not-allowed'
         >
-          {isRegistering ? 'Enter the Grid' : 'Lights Out'}
+          {isRegistering ? 'Sign up' : 'Sign in'}
         </button>
 
         <button
