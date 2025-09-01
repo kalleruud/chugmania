@@ -1,14 +1,19 @@
-import { isLoginRequest } from '@chugmania/common/models/requests.js'
+import {
+  isLoginRequest,
+  isRegisterRequest,
+} from '@chugmania/common/models/requests.js'
 import type {
   BackendResponse,
   ErrorResponse,
   LoginSuccessResponse,
+  RegisterSuccessResponse,
 } from '@chugmania/common/models/responses.js'
 import { type User, type UserInfo } from '@chugmania/common/models/user.js'
 import { tryCatch, tryCatchAsync } from '@chugmania/common/utils/try-catch.js'
 import jwt from 'jsonwebtoken'
 import type { ExtendedError, Socket } from 'socket.io'
 import UserManager from './user.manager'
+import type { users } from '@database/schema'
 
 const TOKEN_EXPIRY_H = process.env.TOKEN_EXPIRY_H ?? '1'
 const SECRET: jwt.Secret =
@@ -70,6 +75,37 @@ export default class AuthManager {
       user.email
     )
     return user
+  }
+
+  static async onRegister(
+    socket: Socket,
+    request: unknown
+  ): Promise<BackendResponse> {
+    if (!isRegisterRequest(request))
+      throw Error('Failed to register: email or password not provided.')
+
+    const { data: user, error } = await tryCatchAsync(
+      UserManager.createUser({
+        email: request.email,
+        name: request.name,
+        shortName: request.shortName,
+        passwordHash: await this.hash(request.password),
+      } satisfies typeof users.$inferInsert)
+    )
+
+    if (error) {
+      console.error(new Date().toISOString(), socket.id, error.message)
+      return {
+        success: false,
+        message: error.message,
+      } satisfies ErrorResponse
+    }
+
+    const { passwordHash: _, ...userInfo } = user
+    return {
+      success: true,
+      token: this.sign(userInfo),
+    } satisfies RegisterSuccessResponse
   }
 
   static async onLogin(

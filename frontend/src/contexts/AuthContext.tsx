@@ -1,8 +1,16 @@
-import { AUTH_KEY, WS_LOGIN_NAME } from '@chugmania/common/models/constants.ts'
-import type { LoginRequest } from '@chugmania/common/models/requests.js'
+import {
+  AUTH_KEY,
+  WS_LOGIN_NAME,
+  WS_REGISTER_NAME,
+} from '@chugmania/common/models/constants.ts'
+import type {
+  LoginRequest,
+  RegisterRequest,
+} from '@chugmania/common/models/requests.js'
 import {
   isErrorResponse,
   isLoginSuccessResponse,
+  isRegisterSuccessResponse,
 } from '@chugmania/common/models/responses.js'
 import {
   createContext,
@@ -17,7 +25,8 @@ type AuthContextType = {
   isLoggedIn: boolean
   token: string | null
   errorMessage: string | undefined
-  login: (email: string, password: string) => void
+  login: (request: LoginRequest) => void
+  register: (request: RegisterRequest) => void
   logout: () => void
 }
 
@@ -32,26 +41,33 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     localStorage.getItem(AUTH_KEY)
   )
 
-  function handleLoginResponse(response: any) {
+  function handleResponse(response: unknown) {
     if (isErrorResponse(response)) {
       console.error(response.message)
       return setErrorMessage(response.message)
     }
+
     if (isLoginSuccessResponse(response)) {
       setErrorMessage('')
       setToken(response.token)
       return localStorage.setItem(AUTH_KEY, response.token)
     }
+
+    if (isRegisterSuccessResponse(response)) {
+      setErrorMessage('')
+      setToken(response.token)
+      return localStorage.setItem(AUTH_KEY, response.token)
+    }
+    
     throw new Error('Shit went bad')
   }
 
-  const login: AuthContextType['login'] = (email: string, password: string) => {
-    console.log('Logging in with:', { email, password })
-    socket.emit(
-      WS_LOGIN_NAME,
-      { email, password } satisfies LoginRequest,
-      handleLoginResponse
-    )
+  const login: AuthContextType['login'] = r => {
+    socket.emit(WS_LOGIN_NAME, r, handleResponse)
+  }
+
+  const register: AuthContextType['register'] = r => {
+    socket.emit(WS_REGISTER_NAME, r, handleResponse)
   }
 
   const logout = () => {
@@ -67,6 +83,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
         errorMessage,
         token,
         login,
+        register,
         logout,
       }) satisfies AuthContextType,
     [token, errorMessage]

@@ -16,4 +16,21 @@ export default class UserManager {
 
     return user
   }
+
+  static async createUser(userData: typeof users.$inferInsert) {
+    const { data: user, error } = await tryCatchAsync(
+      db.insert(users).values(userData).returning()
+    )
+
+    if (error) {
+      if (error.message.includes('UNIQUE constraint failed')) {
+        error.message = 'Email alreadt registered'
+      }
+      throw error
+    }
+
+    if (user.length != 1)
+      throw new Error('Unknown error: Failed to create user')
+    return user[0]!
+  }
 }
