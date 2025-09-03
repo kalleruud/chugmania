@@ -12,25 +12,13 @@ export default function Login() {
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
-    if (isRegistering) {
-      register({
-        email: email.trim().toLowerCase(),
-        name: name.trim(),
-        shortName: shortName.trim() ? shortName.trim().toUpperCase() : null,
-        password,
-      })
-    } else {
-      login({ email: email.trim().toLowerCase(), password })
-    }
+    isRegistering
+      ? register({ email, name, shortName, password })
+      : login({ email, password })
   }
 
   function isInputValid() {
-    const base =
-      email.length >= 6 && email.includes('@') && password.length >= 8
-    if (!isRegistering) return base
-    const nameOk = name.trim().length >= 2
-    const shortOk = /^[A-Za-z]{3}$/.test(shortName.trim())
-    return base && nameOk && shortOk
+    return email.length >= 8 && email.includes('@') && password.length >= 8
   }
 
   return (
@@ -78,7 +66,6 @@ export default function Login() {
                     placeholder='Ola Normann'
                     onChange={e => setName(e.target.value)}
                     className='w-full pl-10 pr-3 py-2 rounded-lg bg-white/5 border border-white/10 text-slate-100 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-[var(--f1-accent)]/60 focus:border-[var(--f1-accent)] transition'
-                    required
                   />
                 </div>
               </label>
@@ -94,9 +81,6 @@ export default function Login() {
                     value={shortName}
                     onChange={e => setShortName(e.target.value.toUpperCase())}
                     className='w-full pl-10 pr-3 py-2 rounded-lg bg-white/5 border border-white/10 text-slate-100 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-[var(--f1-accent)]/60 focus:border-[var(--f1-accent)] transition uppercase'
-                    pattern='[A-Za-z]{3}'
-                    title='Short name must be exactly 3 letters'
-                    required
                   />
                 </div>
               </label>

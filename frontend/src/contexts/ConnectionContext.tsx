@@ -13,12 +13,7 @@ type ConnectionContextType = {
   isConnected: boolean
 }
 
-const DEFAULT_BACKEND_PORT = 6996
-const backendURL =
-  (import.meta as any).env?.VITE_BACKEND_URL ??
-  `${window.location.protocol}//${window.location.hostname}:${DEFAULT_BACKEND_PORT}`
-
-const socket = io(backendURL)
+const socket = io('http://localhost:6996')
 
 const ConnectionContext = createContext<ConnectionContextType>({
   isConnected: socket.connected,

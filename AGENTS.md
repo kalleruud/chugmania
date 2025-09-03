@@ -16,7 +16,6 @@
   - `cd frontend && npm install`
   - `npm start`: Run Vite dev server.
   - `npm run build`: Type-check and production build.
-  - `npm run check`: Type-checks and verifies Prettier formatting.
 - Common
   - `cd common`: No build; used via `file:../common`. Re-run `npm install` in frontend/backend after changes if linking breaks.
 

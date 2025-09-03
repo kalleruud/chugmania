@@ -11,35 +11,13 @@ import type {
 import { type User, type UserInfo } from '@chugmania/common/models/user.js'
 import { tryCatch, tryCatchAsync } from '@chugmania/common/utils/try-catch.js'
 import jwt from 'jsonwebtoken'
-import fs from 'node:fs'
-import path from 'node:path'
 import type { ExtendedError, Socket } from 'socket.io'
 import UserManager from './user.manager'
 import type { users } from '@database/schema'
 
 const TOKEN_EXPIRY_H = process.env.TOKEN_EXPIRY_H ?? '1'
-function loadOrCreateSecret(): jwt.Secret {
-  if (process.env.SECRET) return process.env.SECRET
-  try {
-    const secretFile =
-      process.env.SECRET_FILE ?? path.resolve(process.cwd(), 'data/jwt.secret')
-    if (fs.existsSync(secretFile)) {
-      const raw = fs.readFileSync(secretFile, 'utf8').trim()
-      if (raw) return raw
-    }
-    // create
-    const bytes = crypto.getRandomValues(new Uint8Array(64))
-    const secret = Buffer.from(bytes).toString('base64')
-    fs.mkdirSync(path.dirname(secretFile), { recursive: true })
-    fs.writeFileSync(secretFile, secret, 'utf8')
-    return secret
-  } catch (e) {
-    // last resort ephemeral
-    return Buffer.from(crypto.getRandomValues(new Uint8Array(64)))
-  }
-}
-
-const SECRET: jwt.Secret = loadOrCreateSecret()
+const SECRET: jwt.Secret =
+  process.env.SECRET ?? Buffer.from(crypto.getRandomValues(new Uint8Array(256)))
 
 const tokenExpiryMs = Number.parseFloat(TOKEN_EXPIRY_H) * 60 * 60 * 1000
 
@@ -106,42 +84,12 @@ export default class AuthManager {
     if (!isRegisterRequest(request))
       throw Error('Failed to register: email or password not provided.')
 
-    // Basic server-side validation and normalization
-    const email = String(request.email).trim().toLowerCase()
-    const name = String(request.name).trim()
-    const rawShort = (request.shortName ?? null) as string | null
-    const shortName =
-      rawShort && rawShort.trim().length > 0
-        ? rawShort.trim().toUpperCase()
-        : null
-    const password = String(request.password)
-
-    const emailValid = /.+@.+\..+/.test(email)
-    if (!emailValid) {
-      return { success: false, message: 'Please provide a valid email' }
-    }
-    if (name.length < 2) {
-      return { success: false, message: 'Name must be at least 2 characters' }
-    }
-    if (shortName !== null && !/^[A-Z]{3}$/.test(shortName)) {
-      return {
-        success: false,
-        message: 'Short name must be exactly 3 letters (A–Z)',
-      }
-    }
-    if (password.length < 8) {
-      return {
-        success: false,
-        message: 'Password must be at least 8 characters',
-      }
-    }
-
     const { data: user, error } = await tryCatchAsync(
       UserManager.createUser({
-        email,
-        name,
-        shortName,
-        passwordHash: await this.hash(password),
+        email: request.email,
+        name: request.name,
+        shortName: request.shortName,
+        passwordHash: await this.hash(request.password),
       } satisfies typeof users.$inferInsert)
     )
 
