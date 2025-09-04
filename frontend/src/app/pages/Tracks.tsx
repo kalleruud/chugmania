@@ -44,7 +44,7 @@ export default function Tracks() {
   })
 
   return (
-    <div className='space-y-4'>
+    <div className='flex-1 min-w-0 space-y-4'>
       <input
         value={search}
         onChange={e => setSearch(e.target.value)}
@@ -54,7 +54,7 @@ export default function Tracks() {
       {loading ? (
         <p>Loading...</p>
       ) : (
-        <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
+        <div className='grid gap-4 grid-cols-[repeat(auto-fit,minmax(260px,1fr))]'>
           {filtered.map(t => (
             <TrackCard key={t.id} track={t} />
           ))}
