@@ -12,19 +12,13 @@ import type {
   GetTrackLeaderboardRequest,
 } from '@chugmania/common/models/requests.js'
 import type { ErrorResponse } from '@chugmania/common/models/responses.js'
-import { createServer } from 'http'
 import { Server } from 'socket.io'
 import AuthManager from './managers/auth.manager'
 import ConnectionManager from './managers/connection.manager'
 import TrackManager from './managers/track.manager'
 
 const port = 6996
-const httpServer = createServer((_req, res) => {
-  res.statusCode = 404
-  res.end()
-})
-
-const io = new Server(httpServer, { cors: { origin: '*' } })
+const io = new Server(port, { cors: { origin: '*' } })
 
 await TrackManager.seed()
 
@@ -74,5 +68,3 @@ io.use((socket, next) => {
     .catch(next)
     .then(() => next())
 })
-
-httpServer.listen(port)
