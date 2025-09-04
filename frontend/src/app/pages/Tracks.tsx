@@ -10,6 +10,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useConnection } from '../../contexts/ConnectionContext'
 import TrackCard from '../components/TrackCard'
 import { Search, X } from 'lucide-react'
+import TagPill from '../components/TagPill'
 
 export default function Tracks() {
   const [tracks, setTracks] = useState<TrackSummary[]>([])
@@ -48,22 +49,6 @@ export default function Tracks() {
     )
   })
 
-  const tagBase =
-    'rounded-full border px-2.5 py-1 text-[11px] uppercase tracking-wider'
-  const levelClasses: Record<string, string> = {
-    white: 'text-black bg-white border-white/80',
-    green: 'text-green-300 bg-green-500/10 border-green-500/40',
-    blue: 'text-sky-300 bg-sky-500/10 border-sky-500/40',
-    red: 'text-red-300 bg-red-500/10 border-red-500/40',
-    black: 'text-slate-200 bg-black/40 border-slate-600/60',
-    custom: 'text-amber-300 bg-amber-500/10 border-amber-500/40',
-  }
-  const typeClasses: Record<string, string> = {
-    drift: 'text-fuchsia-300 bg-fuchsia-500/10 border-fuchsia-500/40',
-    valley: 'text-lime-300 bg-lime-500/10 border-lime-500/40',
-    lagoon: 'text-cyan-300 bg-cyan-500/10 border-cyan-500/40',
-    stadium: 'text-orange-300 bg-orange-500/10 border-orange-500/40',
-  }
   const levels = ['white', 'green', 'blue', 'red', 'black', 'custom']
   const types = ['drift', 'valley', 'lagoon', 'stadium']
 
@@ -102,54 +87,30 @@ export default function Tracks() {
       <div className='mx-auto w-full max-w-3xl space-y-2'>
         <div className='flex flex-wrap items-center gap-2'>
           <span className='text-label-muted text-[11px] uppercase tracking-wider'>Level:</span>
-          <button
-            type='button'
-            onClick={() => setLevelFilter(null)}
-            className={`${tagBase} ${
-              levelFilter === null
-                ? 'border-white/20 bg-white/10 text-slate-200'
-                : 'border-white/10 bg-white/5 text-slate-300 hover:border-white/20'
-            }`}
-          >
-            All
-          </button>
           {levels.map(l => (
-            <button
+            <TagPill
               key={l}
-              type='button'
+              variant='level'
+              value={l}
+              selected={levelFilter !== null ? levelFilter === l : undefined}
               onClick={() => setLevelFilter(prev => (prev === l ? null : l))}
-              className={`${tagBase} ${levelClasses[l] ?? ''} ${
-                levelFilter === l ? 'ring-2 ring-accent/60' : ''
-              }`}
             >
               {l}
-            </button>
+            </TagPill>
           ))}
         </div>
         <div className='flex flex-wrap items-center gap-2'>
           <span className='text-label-muted text-[11px] uppercase tracking-wider'>Type:</span>
-          <button
-            type='button'
-            onClick={() => setTypeFilter(null)}
-            className={`${tagBase} ${
-              typeFilter === null
-                ? 'border-white/20 bg-white/10 text-slate-200'
-                : 'border-white/10 bg-white/5 text-slate-300 hover:border-white/20'
-            }`}
-          >
-            All
-          </button>
           {types.map(t => (
-            <button
+            <TagPill
               key={t}
-              type='button'
+              variant='type'
+              value={t}
+              selected={typeFilter !== null ? typeFilter === t : undefined}
               onClick={() => setTypeFilter(prev => (prev === t ? null : t))}
-              className={`${tagBase} ${typeClasses[t] ?? ''} ${
-                typeFilter === t ? 'ring-2 ring-accent/60' : ''
-              }`}
             >
               {t}
-            </button>
+            </TagPill>
           ))}
         </div>
       </div>

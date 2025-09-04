@@ -2,28 +2,12 @@ import type { TrackSummary } from '@chugmania/common/models/track.js'
 import { formatTime } from '@chugmania/common/utils/time.js'
 import { formatTrackName } from '@chugmania/common/utils/track.js'
 import { Link } from 'react-router-dom'
+import TagPill from './TagPill'
 
 export default function TrackCard({
   track,
 }: Readonly<{ track: TrackSummary }>) {
-  const levelClasses: Record<string, string> = {
-    white: 'text-black bg-white border-white/80',
-    green: 'text-green-300 bg-green-500/10 border-green-500/40',
-    blue: 'text-sky-300 bg-sky-500/10 border-sky-500/40',
-    red: 'text-red-300 bg-red-500/10 border-red-500/40',
-    black: 'text-slate-200 bg-black/40 border-slate-600/60',
-    custom: 'text-amber-300 bg-amber-500/10 border-amber-500/40',
-  }
-
-  const typeClasses: Record<string, string> = {
-    drift: 'text-fuchsia-300 bg-fuchsia-500/10 border-fuchsia-500/40',
-    valley: 'text-lime-300 bg-lime-500/10 border-lime-500/40',
-    lagoon: 'text-cyan-300 bg-cyan-500/10 border-cyan-500/40',
-    stadium: 'text-orange-300 bg-orange-500/10 border-orange-500/40',
-  }
-
-  const tagBase =
-    'rounded-full border px-2.5 py-1 text-[11px] uppercase tracking-wider'
+  
 
   const levelRail: Record<string, string> = {
     white: 'from-white to-white/70',
@@ -76,8 +60,8 @@ export default function TrackCard({
         </div>
 
         <div className='flex items-center gap-2.5 text-slate-300'>
-          <span className={`${tagBase} ${levelClasses[track.level] ?? ''}`}>{track.level}</span>
-          <span className={`${tagBase} ${typeClasses[track.type] ?? ''}`}>{track.type}</span>
+          <TagPill variant='level' value={track.level}>{track.level}</TagPill>
+          <TagPill variant='type' value={track.type}>{track.type}</TagPill>
         </div>
       </div>
       {/* Glow on hover */}
