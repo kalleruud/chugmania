@@ -43,7 +43,7 @@ export default function Track() {
     const dim = term ? !t.user.name.toLowerCase().includes(term) : false
     let gap = 0
     if (gapMode === 'leader') gap = t.duration - leaderboard[0]?.duration
-    else if (i > 0) gap = t.duration - leaderboard[i - 1]!.duration
+    else if (i > 0) gap = t.duration - leaderboard[i - 1].duration
     return { ...t, dim, gap }
   })
 
