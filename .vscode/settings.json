@@ -6,5 +6,8 @@
     "**/*.d.ts": true,
     "**/coverage": true,
     "**/node_modules": true
+  },
+  "files.associations": {
+    "*.css": "tailwindcss"
   }
 }

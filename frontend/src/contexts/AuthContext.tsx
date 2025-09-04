@@ -2,7 +2,7 @@ import {
   AUTH_KEY,
   WS_LOGIN_NAME,
   WS_REGISTER_NAME,
-} from '@chugmania/common/models/constants.ts'
+} from '@chugmania/common/models/constants.js'
 import type {
   LoginRequest,
   RegisterRequest,

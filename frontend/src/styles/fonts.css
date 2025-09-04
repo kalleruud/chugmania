@@ -1,0 +1,67 @@
+@import 'tailwindcss';
+
+@font-face {
+  font-family: 'F1';
+  font-display: block;
+  font-style: normal;
+  src: url('/fonts/f1/f1_regular.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'F1';
+  font-weight: bold;
+  font-display: block;
+  src: url('/fonts/f1/f1_bold.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'F1';
+  font-style: italic;
+  font-display: block;
+  src: url('/fonts/f1/f1_italic.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'F1';
+  font-weight: 900;
+  font-display: block;
+  src: url('/fonts/f1/f1_black.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'F1 Wide';
+  font-display: block;
+  src: url('/fonts/f1/f1_wide.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'F1 Year';
+  font-display: block;
+  src: url('/fonts/f1/f1_year.ttf') format('truetype');
+}
+
+@theme {
+  --font-f1: 'F1', 'Titillium Web', sans-serif;
+}
+
+@layer utilities {
+  .font-f1-bold {
+    @apply font-bold;
+    font-family: 'F1', 'Titillium Web', sans-serif;
+  }
+  .font-f1-italic {
+    @apply italic;
+    font-family: 'F1', 'Titillium Web', sans-serif;
+  }
+  .font-f1-black {
+    @apply font-black;
+    font-family: 'F1', 'Titillium Web', sans-serif;
+  }
+  .font-f1-wide {
+    font-family: 'F1 Wide', 'Titillium Web', sans-serif;
+  }
+  .font-f1-year {
+    @apply font-black;
+    font-family: 'F1 Year', 'Titillium Web', sans-serif;
+  }
+}

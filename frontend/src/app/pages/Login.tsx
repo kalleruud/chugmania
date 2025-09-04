@@ -1,9 +1,11 @@
-import { useState, type FormEvent } from 'react'
-import { useAuth } from '../contexts/AuthContext'
-import { AtSign, Lock, User, Type } from 'lucide-react'
+import { AtSign, Lock, Type, User } from 'lucide-react'
+import { useEffect, useState, type FormEvent } from 'react'
+import { useAuth } from '../../contexts/AuthContext'
+import { useNavigate } from 'react-router-dom'
 
 export default function Login() {
-  const { login, register, errorMessage } = useAuth()
+  const { login, register, errorMessage, isLoggedIn } = useAuth()
+  const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [name, setName] = useState('')
   const [shortName, setShortName] = useState('')
@@ -17,21 +19,25 @@ export default function Login() {
       : login({ email, password })
   }
 
+  useEffect(() => {
+    if (isLoggedIn) return navigate('/')
+  }, [isLoggedIn])
+
   function isInputValid() {
     return email.length >= 8 && email.includes('@') && password.length >= 8
   }
 
   return (
-    <div className='min-h-screen w-full text-slate-100 flex items-center justify-center p-6'>
+    <div className='flex w-full items-center justify-center p-6'>
       <form
         onSubmit={handleSubmit}
-        className='w-full max-w-sm rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-2xl p-6 grid gap-4 text-sm font-f1'
+        className='font-f1 bg-background-secondary grid w-full max-w-sm gap-4 rounded-2xl border border-white/10 p-6 text-sm shadow-2xl backdrop-blur-xl'
       >
         <div className='text-center'>
-          <h2 className='text-2xl font-extrabold tracking-wider uppercase text-[var(--f1-accent)]'>
+          <h2 className='text-accent text-2xl font-extrabold uppercase tracking-wider'>
             {isRegistering ? 'Sign Up' : 'Sign In'}
           </h2>
-          <p className='text-slate-400 text-xs'>
+          <p className='text-label-secondary text-xs'>
             Fuel your session and hit the track
           </p>
         </div>
@@ -40,14 +46,14 @@ export default function Login() {
           <label className='grid gap-1'>
             <span className='sr-only'>Email</span>
             <div className='relative'>
-              <AtSign className='absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400' />
+              <AtSign className='text-label-muted absolute left-3 top-1/2 size-4 -translate-y-1/2' />
               <input
                 type='email'
                 minLength={8}
                 placeholder='you@example.com'
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                className='w-full pl-10 pr-3 py-2 rounded-lg bg-white/5 border border-white/10 text-slate-100 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-[var(--f1-accent)]/60 focus:border-[var(--f1-accent)] transition'
+                className='focus:ring-accent/60 focus:border-accent placeholder:text-label-muted w-full rounded-lg border border-white/10 bg-white/5 py-2 pl-10 pr-3 outline-none transition focus:ring-2'
               />
             </div>
           </label>
@@ -57,7 +63,7 @@ export default function Login() {
               <label className='grid gap-1'>
                 <span className='sr-only'>Name</span>
                 <div className='relative'>
-                  <User className='absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400' />
+                  <User className='text-label-muted absolute left-3 top-1/2 size-4 -translate-y-1/2' />
                   <input
                     type='text'
                     value={name}
@@ -65,14 +71,14 @@ export default function Login() {
                     minLength={2}
                     placeholder='Ola Normann'
                     onChange={e => setName(e.target.value)}
-                    className='w-full pl-10 pr-3 py-2 rounded-lg bg-white/5 border border-white/10 text-slate-100 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-[var(--f1-accent)]/60 focus:border-[var(--f1-accent)] transition'
+                    className='focus:ring-accent/60 focus:border-accent placeholder:text-label-muted w-full rounded-lg border border-white/10 bg-white/5 py-2 pl-10 pr-3 outline-none transition focus:ring-2'
                   />
                 </div>
               </label>
               <label className='grid gap-1'>
                 <span className='sr-only'>Short Name</span>
                 <div className='relative'>
-                  <Type className='absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400' />
+                  <Type className='text-label-muted absolute left-3 top-1/2 size-4 -translate-y-1/2' />
                   <input
                     type='text'
                     maxLength={3}
@@ -80,7 +86,7 @@ export default function Login() {
                     placeholder='NOR'
                     value={shortName}
                     onChange={e => setShortName(e.target.value.toUpperCase())}
-                    className='w-full pl-10 pr-3 py-2 rounded-lg bg-white/5 border border-white/10 text-slate-100 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-[var(--f1-accent)]/60 focus:border-[var(--f1-accent)] transition uppercase'
+                    className='focus:ring-accent/60 focus:border-accent placeholder:text-label-muted w-full rounded-lg border border-white/10 bg-white/5 py-2 pl-10 pr-3 uppercase outline-none transition focus:ring-2'
                   />
                 </div>
               </label>
@@ -90,7 +96,7 @@ export default function Login() {
           <label className='grid gap-1'>
             <span className='sr-only'>Password</span>
             <div className='relative'>
-              <Lock className='absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400' />
+              <Lock className='text-label-muted absolute left-3 top-1/2 size-4 -translate-y-1/2' />
               <input
                 type='password'
                 value={password}
@@ -98,14 +104,14 @@ export default function Login() {
                 minLength={8}
                 placeholder='••••••••'
                 onChange={e => setPassword(e.target.value)}
-                className='w-full pl-10 pr-3 py-2 rounded-lg bg-white/5 border border-white/10 text-slate-100 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-[var(--f1-accent)]/60 focus:border-[var(--f1-accent)] transition'
+                className='focus:ring-accent/60 focus:border-accent placeholder:text-label-muted w-full rounded-lg border border-white/10 bg-white/5 py-2 pl-10 pr-3 outline-none transition focus:ring-2'
               />
             </div>
           </label>
         </div>
 
         {errorMessage && (
-          <p className='text-red-300 border border-red-500/30 rounded-lg p-3 bg-red-500/10 text-xs'>
+          <p className='rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-300'>
             {errorMessage}
           </p>
         )}
@@ -113,7 +119,7 @@ export default function Login() {
         <button
           type='submit'
           disabled={!isInputValid()}
-          className='w-full rounded-lg py-2 font-semibold uppercase tracking-wider bg-gradient-to-r from-[var(--f1-accent)] to-[#ff3b2f] text-white shadow-[0_10px_30px_-10px_rgba(225,6,0,0.6)] hover:from-[#ff3b2f] hover:to-[var(--f1-accent)] active:scale-[0.99] transition disabled:opacity-50 disabled:cursor-not-allowed'
+          className='to-accent-secondary from-accent shadow-accent/60 w-full rounded-lg bg-gradient-to-br py-2 font-semibold uppercase tracking-wider shadow-[0_10px_30px_-10px_rgba(var(--color-accent),0.6)] transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none'
         >
           {isRegistering ? 'Sign up' : 'Sign in'}
         </button>
@@ -121,7 +127,7 @@ export default function Login() {
         <button
           type='button'
           onClick={() => setIsRegistering(!isRegistering)}
-          className='text-[var(--f1-accent)]/90 hover:text-[var(--f1-accent)] text-xs underline-offset-4 hover:underline transition'
+          className='text-accent/90 hover:text-accent text-xs underline-offset-4 transition hover:underline'
         >
           {isRegistering
             ? 'Already racing? Sign in'
