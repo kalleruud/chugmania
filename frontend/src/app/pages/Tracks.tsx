@@ -6,11 +6,11 @@ import {
 } from '@chugmania/common/models/responses.js'
 import type { TrackSummary } from '@chugmania/common/models/track.js'
 import { formatTrackName } from '@chugmania/common/utils/track.js'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useConnection } from '../../contexts/ConnectionContext'
 import TrackCard from '../components/TrackCard'
-import { Search, X } from 'lucide-react'
 import TagPill from '../components/TagPill'
+import SearchBar from '../components/SearchBar'
 
 export default function Tracks() {
   const [tracks, setTracks] = useState<TrackSummary[]>([])
@@ -52,36 +52,10 @@ export default function Tracks() {
   const levels = ['white', 'green', 'blue', 'red', 'black', 'custom']
   const types = ['drift', 'valley', 'lagoon', 'stadium']
 
-  const inputRef = useRef<HTMLInputElement | null>(null)
-
   return (
     <div className='flex-1 min-w-0 space-y-4'>
-      <div className='mx-auto flex w-full max-w-3xl items-center gap-3'>
-        <div className='relative flex-1'>
-          <Search
-            size={20}
-            className='text-label-muted pointer-events-none absolute left-5 top-1/2 -translate-y-1/2'
-            aria-hidden='true'
-          />
-          <input
-            ref={inputRef}
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder='Search tracks, types, levels, or players'
-            className='focus:ring-accent/60 focus:border-accent placeholder:text-label-muted h-14 w-full rounded-xl border border-white/10 bg-white/5 pl-12 pr-12 text-base outline-none transition focus:ring-2'
-            aria-label='Search tracks'
-          />
-          {search && (
-            <button
-              type='button'
-              onClick={() => setSearch('')}
-              className='text-label-muted hover:text-white absolute right-2.5 top-1/2 -translate-y-1/2 rounded-xl p-2 transition'
-              aria-label='Clear search'
-            >
-              <X size={18} />
-            </button>
-          )}
-        </div>
+      <div className='mx-auto w-full max-w-3xl'>
+        <SearchBar value={search} onChange={setSearch} />
       </div>
       {/* Filters */}
       <div className='mx-auto w-full max-w-3xl space-y-2'>
