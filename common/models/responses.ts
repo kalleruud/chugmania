@@ -1,3 +1,5 @@
+import type { TopTime, Track, TrackSummary } from './track'
+
 export type BackendResponse = LoginSuccessResponse | RegisterSuccessResponse | ErrorResponse
 
 export type LoginSuccessResponse = {
@@ -31,3 +33,8 @@ export function isErrorResponse(data: any): data is ErrorResponse {
   if (typeof data !== 'object') return false
   return data.success === false && data.message
 }
+
+export type GetTracksResponse = { tracks: TrackSummary[] }
+export type GetTrackDetailsResponse = Track
+export type GetTrackLeaderboardResponse = { times: TopTime[] }
+

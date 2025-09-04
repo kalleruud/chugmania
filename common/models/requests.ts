@@ -17,3 +17,19 @@ export function isRegisterRequest(data: any): data is RegisterRequest {
   if (typeof data !== 'object') return false
   return data.email && data.password && data.name
 }
+
+export type GetTracksRequest = {
+  offset?: number
+  limit?: number
+}
+
+export type GetTrackDetailsRequest = {
+  id: string
+}
+
+export type GetTrackLeaderboardRequest = {
+  id: string
+  offset?: number
+  limit?: number
+}
+

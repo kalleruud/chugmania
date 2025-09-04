@@ -38,6 +38,7 @@ If logged in:
 - Displays all tracks as cards with top 3 lap times, amount of laps, level and type displayed as tags. Sorted by track number.
 - Users can search on any of the displayed information on the card (Even on the names of the top 3 users)
 - Clicking on a track card opens a full page of track data and the full leaderboards
+- Track names are shown as `#05`, `#15`, `#134` (derived from track number and not stored in the database)
 
 ##### Track
 
@@ -120,6 +121,12 @@ Always keep AGENTS.md and README.md updated!
   - `npm run build`: Type-check and production build.
 - Common
   - `cd common`: Used via `file:../common`. If linking breaks, re-run `npm install` in frontend/backend.
+
+## Socket Events
+
+- `getTracks` – list tracks with lap counts and top times.
+- `getTrack` – track details.
+- `getTrackLeaderboard` – best laps per user.
 
 ## Coding Style & Naming Conventions
 
