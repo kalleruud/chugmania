@@ -1,5 +1,5 @@
-import { useRef } from 'react'
 import { Search, X } from 'lucide-react'
+import { useRef } from 'react'
 
 type Props = {
   value: string
@@ -35,7 +35,7 @@ export default function SearchBar({
         <button
           type='button'
           onClick={() => onChange('')}
-          className='text-label-muted hover:text-white absolute right-2.5 top-1/2 -translate-y-1/2 rounded-xl p-2 transition'
+          className='text-label-muted absolute right-2.5 top-1/2 -translate-y-1/2 rounded-xl p-2 transition hover:text-white'
           aria-label='Clear search'
         >
           <X size={18} />
@@ -44,4 +44,3 @@ export default function SearchBar({
     </div>
   )
 }
-

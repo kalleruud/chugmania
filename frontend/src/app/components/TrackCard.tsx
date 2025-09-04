@@ -7,8 +7,6 @@ import TagPill from './TagPill'
 export default function TrackCard({
   track,
 }: Readonly<{ track: TrackSummary }>) {
-  
-
   const levelRail: Record<string, string> = {
     white: 'from-white to-white/70',
     green: 'from-green-400 to-green-600',
@@ -36,10 +34,8 @@ export default function TrackCard({
             {formatTrackName(track.number)}
           </h3>
           <div className='ml-auto text-xs text-slate-300'>
-            <span className='rounded-md border border-white/10 bg-white/5 px-2.5 py-1'>{
-              track.lapCount
-            }{' '}
-              laps
+            <span className='rounded-md border border-white/10 bg-white/5 px-2.5 py-1'>
+              {track.lapCount} laps
             </span>
           </div>
         </div>
@@ -49,7 +45,10 @@ export default function TrackCard({
             <div className='text-label-muted p-3 text-xs'>No times yet</div>
           ) : (
             track.topTimes.map((t, i) => (
-              <div key={t.user.id} className='flex items-center justify-between p-3 text-base text-slate-200'>
+              <div
+                key={t.user.id}
+                className='flex items-center justify-between p-3 text-base text-slate-200'
+              >
                 <span className='text-slate-300'>
                   <span className='text-slate-400'>{i + 1}.</span> {t.user.name}
                 </span>
@@ -60,12 +59,22 @@ export default function TrackCard({
         </div>
 
         <div className='flex items-center gap-2.5 text-slate-300'>
-          <TagPill variant='level' value={track.level}>{track.level}</TagPill>
-          <TagPill variant='type' value={track.type}>{track.type}</TagPill>
+          <TagPill variant='level' value={track.level}>
+            {track.level}
+          </TagPill>
+          <TagPill variant='type' value={track.type}>
+            {track.type}
+          </TagPill>
         </div>
       </div>
       {/* Glow on hover */}
-      <div className='pointer-events-none absolute inset-0 rounded-xl opacity-0 transition group-hover:opacity-100' style={{ boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.06), 0 10px 30px -10px rgba(255,255,255,0.08)' }} />
+      <div
+        className='pointer-events-none absolute inset-0 rounded-xl opacity-0 transition group-hover:opacity-100'
+        style={{
+          boxShadow:
+            'inset 0 0 0 1px rgba(255,255,255,0.06), 0 10px 30px -10px rgba(255,255,255,0.08)',
+        }}
+      />
     </Link>
   )
 }

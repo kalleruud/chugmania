@@ -8,9 +8,9 @@ import type { TrackSummary } from '@chugmania/common/models/track.js'
 import { formatTrackName } from '@chugmania/common/utils/track.js'
 import { useEffect, useState } from 'react'
 import { useConnection } from '../../contexts/ConnectionContext'
-import TrackCard from '../components/TrackCard'
-import TagPill from '../components/TagPill'
 import SearchBar from '../components/SearchBar'
+import TagPill from '../components/TagPill'
+import TrackCard from '../components/TrackCard'
 
 export default function Tracks() {
   const [tracks, setTracks] = useState<TrackSummary[]>([])
@@ -38,13 +38,13 @@ export default function Tracks() {
 
   const term = search.toLowerCase()
   const filtered = tracks.filter(t => {
-    if (levelFilter && t.level !== levelFilter) return false
-    if (typeFilter && t.type !== typeFilter) return false
+    if (levelFilter && t.track.level !== levelFilter) return false
+    if (typeFilter && t.track.type !== typeFilter) return false
     return (
-      t.number.toString().includes(term) ||
-      formatTrackName(t.number).toLowerCase().includes(term) ||
-      t.level.toLowerCase().includes(term) ||
-      t.type.toLowerCase().includes(term) ||
+      t.track.number.toString().includes(term) ||
+      formatTrackName(t.track.number).toLowerCase().includes(term) ||
+      t.track.level.toLowerCase().includes(term) ||
+      t.track.type.toLowerCase().includes(term) ||
       t.topTimes.some(tt => tt.user.name.toLowerCase().includes(term))
     )
   })
@@ -53,14 +53,16 @@ export default function Tracks() {
   const types = ['drift', 'valley', 'lagoon', 'stadium']
 
   return (
-    <div className='flex-1 min-w-0 space-y-4'>
+    <div className='min-w-0 flex-1 space-y-4'>
       <div className='mx-auto w-full max-w-3xl'>
         <SearchBar value={search} onChange={setSearch} />
       </div>
       {/* Filters */}
       <div className='mx-auto w-full max-w-3xl space-y-2'>
         <div className='flex flex-wrap items-center gap-2'>
-          <span className='text-label-muted text-[11px] uppercase tracking-wider'>Level:</span>
+          <span className='text-label-muted text-[11px] uppercase tracking-wider'>
+            Level:
+          </span>
           {levels.map(l => (
             <TagPill
               key={l}
@@ -74,7 +76,9 @@ export default function Tracks() {
           ))}
         </div>
         <div className='flex flex-wrap items-center gap-2'>
-          <span className='text-label-muted text-[11px] uppercase tracking-wider'>Type:</span>
+          <span className='text-label-muted text-[11px] uppercase tracking-wider'>
+            Type:
+          </span>
           {types.map(t => (
             <TagPill
               key={t}
@@ -91,9 +95,9 @@ export default function Tracks() {
       {loading ? (
         <p>Loading...</p>
       ) : (
-        <div className='grid gap-4 grid-cols-[repeat(auto-fit,minmax(260px,1fr))]'>
+        <div className='grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-4'>
           {filtered.map(t => (
-            <TrackCard key={t.id} track={t} />
+            <TrackCard key={t.track.id} track={t} />
           ))}
         </div>
       )}

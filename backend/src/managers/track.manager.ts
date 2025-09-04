@@ -1,8 +1,4 @@
-import type {
-  TopTime,
-  Track,
-  TrackSummary,
-} from '@chugmania/common/models/track.js'
+import type { TopTime, TrackSummary } from '@chugmania/common/models/track.js'
 import { tryCatchAsync } from '@chugmania/common/utils/try-catch.js'
 import db from '@database/database'
 import {
@@ -13,6 +9,7 @@ import {
   users,
 } from '@database/schema'
 import { asc, count, eq } from 'drizzle-orm'
+import UserManager from './user.manager'
 
 export default class TrackManager {
   static async seed(): Promise<void> {
@@ -39,11 +36,7 @@ export default class TrackManager {
     t: typeof tracks.$inferSelect
   ): Promise<TrackSummary> {
     const topQuery = db
-      .select({
-        duration: timeEntries.duration,
-        userId: timeEntries.user,
-        userName: users.name,
-      })
+      .select()
       .from(timeEntries)
       .leftJoin(users, eq(users.id, timeEntries.user))
       .where(eq(timeEntries.track, t.id))
@@ -64,17 +57,14 @@ export default class TrackManager {
     if (countError) throw countError
 
     const topTimes: TopTime[] = (topRows ?? []).map(r => ({
-      user: { id: r.userId, name: r.userName ?? '' },
-      duration: r.duration,
+      timeEntry: r.time_entries,
+      user: UserManager.toUserInfo(r.users!),
     }))
 
     const lapCount = countRows?.[0]?.value ?? 0
 
     return {
-      id: t.id,
-      number: t.number,
-      level: t.level,
-      type: t.type,
+      track: t,
       lapCount,
       topTimes,
     }
@@ -94,7 +84,7 @@ export default class TrackManager {
     return summaries
   }
 
-  static async getTrack(id: string): Promise<Track> {
+  static async getTrack(id: string): Promise<TrackSummary> {
     const { data, error } = await tryCatchAsync(
       db.query.tracks.findFirst({ where: eq(tracks.id, id) })
     )
@@ -112,11 +102,7 @@ export default class TrackManager {
   ): Promise<TopTime[]> {
     const { data, error } = await tryCatchAsync(
       db
-        .select({
-          duration: timeEntries.duration,
-          userId: timeEntries.user,
-          userName: users.name,
-        })
+        .select()
         .from(timeEntries)
         .leftJoin(users, eq(users.id, timeEntries.user))
         .where(eq(timeEntries.track, id))
@@ -127,17 +113,20 @@ export default class TrackManager {
     const rows = data ?? []
     const best = new Map<string, TopTime>()
     for (const r of rows) {
-      const existing = best.get(r.userId)
-      if (!existing || r.duration < existing.duration) {
-        best.set(r.userId, {
-          user: { id: r.userId, name: r.userName ?? '' },
-          duration: r.duration,
+      if (!r.users) {
+        throw new Error('User not found for time entry')
+      }
+      const existing = best.get(r.users.id)
+      if (!existing || r.time_entries.duration < existing.timeEntry.duration) {
+        best.set(r.users.id, {
+          user: UserManager.toUserInfo(r.users),
+          timeEntry: r.time_entries,
         })
       }
     }
 
     const sorted = Array.from(best.values()).sort(
-      (a, b) => a.duration - b.duration
+      (a, b) => a.timeEntry.duration - b.timeEntry.duration
     )
     return sorted.slice(offset, offset + limit)
   }

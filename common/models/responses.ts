@@ -1,4 +1,4 @@
-import type { TopTime, Track, TrackSummary } from './track'
+import type { TopTime, TrackSummary } from './track'
 
 export type BackendResponse = LoginSuccessResponse | RegisterSuccessResponse | ErrorResponse
 
@@ -35,6 +35,5 @@ export function isErrorResponse(data: any): data is ErrorResponse {
 }
 
 export type GetTracksResponse = { tracks: TrackSummary[] }
-export type GetTrackDetailsResponse = Track
+export type GetTrackDetailsResponse = TrackSummary
 export type GetTrackLeaderboardResponse = { times: TopTime[] }
-

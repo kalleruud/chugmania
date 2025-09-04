@@ -1,17 +1,17 @@
-import { tracks } from "@database/schema"
+import { tracks } from "../../backend/database/schema"
 import type { TimeEntry } from "./TimeEntry"
+import type { UserInfo } from "./user"
 
 export type Track = typeof tracks.$inferSelect
 export type CreateTrack = typeof tracks.$inferInsert
 
-export type TopTime = Omit<TimeEntry, 'track' | 'updatedAt' | 'createdAt' | 'deletedAt'> &{
-  user: {
-    id: string
-    name: string
-  }
+export type TopTime = {
+  timeEntry: TimeEntry
+  user: UserInfo
 }
 
-export type TrackSummary = Omit<Track, 'updatedAt' | 'createdAt' | 'deletedAt'> & {
+export type TrackSummary = {
+  track: Track
   lapCount: number
   topTimes: TopTime[]
 }

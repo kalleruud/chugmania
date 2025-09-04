@@ -58,15 +58,15 @@ export default function TagPill({
       .map(t => `hover:${t}`)
       .join(' ')
 
-  let selectedClass = '';
+  let selectedClass = ''
   if (hasSelected) {
     selectedClass = selected
       ? `${colored} hover:brightness-110`
-      : `${neutral} ${toHover(colored)}`;
+      : `${neutral} ${toHover(colored)}`
   } else {
-    selectedClass = colored;
+    selectedClass = colored
   }
-  const cls = `${base} ${selectedClass} ${className}`;
+  const cls = `${base} ${selectedClass} ${className}`
 
   if (onClick) {
     return (

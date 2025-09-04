@@ -1,3 +1,4 @@
+import type { UserInfo } from '@chugmania/common/models/user.js'
 import { tryCatchAsync } from '@chugmania/common/utils/try-catch.js'
 import db from '@database/database'
 import { users } from '@database/schema'
@@ -32,5 +33,10 @@ export default class UserManager {
     if (user.length != 1)
       throw new Error('Unknown error: Failed to create user')
     return user[0]!
+  }
+
+  static toUserInfo(user: typeof users.$inferSelect): UserInfo {
+    const { passwordHash, ...userInfo } = user
+    return userInfo
   }
 }

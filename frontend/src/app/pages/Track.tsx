@@ -7,7 +7,7 @@ import {
   type ErrorResponse,
   type GetTrackLeaderboardResponse,
 } from '@chugmania/common/models/responses.js'
-import type { TopTime, Track } from '@chugmania/common/models/track.js'
+import type { TopTime, TrackSummary } from '@chugmania/common/models/track.js'
 import { formatTime } from '@chugmania/common/utils/time.js'
 import { formatTrackName } from '@chugmania/common/utils/track.js'
 import { useEffect, useState } from 'react'
@@ -16,7 +16,7 @@ import { useConnection } from '../../contexts/ConnectionContext'
 
 export default function Track() {
   const { id } = useParams()
-  const [track, setTrack] = useState<Track | null>(null)
+  const [summary, setSummary] = useState<TrackSummary | null>(null)
   const [leaderboard, setLeaderboard] = useState<TopTime[]>([])
   const [search, setSearch] = useState('')
   const [gapMode, setGapMode] = useState<'leader' | 'previous'>('leader')
@@ -24,10 +24,14 @@ export default function Track() {
 
   useEffect(() => {
     if (!id) return
-    socket.emit(WS_GET_TRACK_NAME, { id }, (d: Track | ErrorResponse) => {
-      if (isErrorResponse(d)) console.error(d.message)
-      else setTrack(d)
-    })
+    socket.emit(
+      WS_GET_TRACK_NAME,
+      { id },
+      (d: TrackSummary | ErrorResponse) => {
+        if (isErrorResponse(d)) console.error(d.message)
+        else setSummary(d)
+      }
+    )
     socket.emit(
       WS_GET_LEADERBOARD_NAME,
       { id },
@@ -42,15 +46,17 @@ export default function Track() {
   const filtered = leaderboard.map((t, i) => {
     const dim = term ? !t.user.name.toLowerCase().includes(term) : false
     let gap = 0
-    if (gapMode === 'leader') gap = t.duration - leaderboard[0]?.duration
-    else if (i > 0) gap = t.duration - leaderboard[i - 1].duration
+    if (gapMode === 'leader')
+      gap = t.timeEntry.duration - leaderboard[0]?.timeEntry.duration
+    else if (i > 0)
+      gap = t.timeEntry.duration - leaderboard[i - 1].timeEntry.duration
     return { ...t, dim, gap }
   })
 
-  return track ? (
+  return summary ? (
     <div className='space-y-4'>
       <h2 className='font-f1-black text-accent text-2xl uppercase tracking-wider'>
-        {formatTrackName(track.number)}
+        {formatTrackName(summary.track.number)}
       </h2>
       <div className='flex gap-2'>
         <input
@@ -78,7 +84,7 @@ export default function Track() {
               {i + 1}. {t.user.name}
             </span>
             <span className='flex gap-2'>
-              {formatTime(t.duration)}
+              {formatTime(t.timeEntry.duration)}
               {i > 0 && (
                 <span className='rounded bg-white/10 px-1 text-xs'>
                   +{formatTime(t.gap)}
