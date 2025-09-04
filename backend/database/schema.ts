@@ -23,3 +23,29 @@ export const users = sqliteTable('users', {
     .notNull()
     .$default(() => 'user'),
 })
+
+export type TrackLevel = 'white' | 'green' | 'blue' | 'red' | 'black' | 'custom'
+export type TrackType = 'drift' | 'valley' | 'lagoon' | 'stadium'
+
+export const tracks = sqliteTable('tracks', {
+  ...common,
+  number: integer().notNull(),
+  level: text().$type<TrackLevel>().notNull(),
+  type: text().$type<TrackType>().notNull(),
+  isChuggable: integer({ mode: 'boolean' })
+    .notNull()
+    .$default(() => false),
+})
+
+export const timeEntries = sqliteTable('time_entries', {
+  ...common,
+  user: text()
+    .notNull()
+    .references(() => users.id),
+  track: text()
+    .notNull()
+    .references(() => tracks.id),
+  duration: integer('duration_ms').notNull(),
+  amount: integer('amount_l').notNull(),
+  comment: text(),
+})
