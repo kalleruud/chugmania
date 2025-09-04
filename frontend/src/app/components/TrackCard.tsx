@@ -23,7 +23,7 @@ export default function TrackCard({
   }
 
   const tagBase =
-    'rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wider'
+    'rounded-full border px-2.5 py-1 text-[11px] uppercase tracking-wider'
 
   const levelRail: Record<string, string> = {
     white: 'from-white to-white/70',
@@ -37,22 +37,22 @@ export default function TrackCard({
   return (
     <Link
       to={`/tracks/${track.id}`}
-      className='group relative block overflow-hidden rounded-xl border border-white/10 bg-white/5 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] transition hover:border-white/20 hover:bg-white/10'
+      className='group relative block overflow-hidden rounded-xl border border-white/10 bg-white/5 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] transition hover:border-white/20 hover:bg-white/10'
     >
       {/* Accent rail colored by level */}
       <div
-        className={`absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b opacity-70 transition group-hover:opacity-100 ${
+        className={`absolute inset-y-0 left-0 w-2 bg-gradient-to-b opacity-70 transition group-hover:opacity-100 ${
           levelRail[track.level] ?? 'from-accent to-accent-secondary/80'
         }`}
       />
 
-      <div className='pl-3'>
-        <div className='mb-3 flex items-baseline gap-2'>
-          <h3 className='font-f1-black text-accent text-xl uppercase tracking-wider'>
+      <div className='pl-4'>
+        <div className='mb-4 flex items-baseline gap-2'>
+          <h3 className='font-f1-black text-accent text-2xl uppercase tracking-wider'>
             {formatTrackName(track.number)}
           </h3>
-          <div className='ml-auto text-[11px] text-slate-300'>
-            <span className='rounded-md border border-white/10 bg-white/5 px-2 py-0.5'>{
+          <div className='ml-auto text-xs text-slate-300'>
+            <span className='rounded-md border border-white/10 bg-white/5 px-2.5 py-1'>{
               track.lapCount
             }{' '}
               laps
@@ -60,12 +60,12 @@ export default function TrackCard({
           </div>
         </div>
 
-        <div className='mb-3 divide-y divide-white/5 rounded-lg border border-white/10 bg-black/20'>
+        <div className='mb-4 divide-y divide-white/5 rounded-lg border border-white/10 bg-black/20'>
           {track.topTimes.length === 0 ? (
             <div className='text-label-muted p-3 text-xs'>No times yet</div>
           ) : (
             track.topTimes.map((t, i) => (
-              <div key={t.user.id} className='flex items-center justify-between p-2.5 text-sm text-slate-200'>
+              <div key={t.user.id} className='flex items-center justify-between p-3 text-base text-slate-200'>
                 <span className='text-slate-300'>
                   <span className='text-slate-400'>{i + 1}.</span> {t.user.name}
                 </span>
@@ -75,7 +75,7 @@ export default function TrackCard({
           )}
         </div>
 
-        <div className='flex items-center gap-2 text-slate-300'>
+        <div className='flex items-center gap-2.5 text-slate-300'>
           <span className={`${tagBase} ${levelClasses[track.level] ?? ''}`}>{track.level}</span>
           <span className={`${tagBase} ${typeClasses[track.type] ?? ''}`}>{track.type}</span>
         </div>
