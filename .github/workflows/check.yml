@@ -2,8 +2,10 @@ name: Check
 
 on:
   pull_request:
-    branches:
-      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   check:
@@ -30,4 +32,3 @@ jobs:
       - name: Run check
         run: npm run check
         working-directory: ${{ matrix.project }}
-
