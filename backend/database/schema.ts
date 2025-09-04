@@ -1,6 +1,5 @@
 import { randomUUID } from 'crypto'
 import { blob, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
-import type { TrackLevel, TrackType } from './types'
 
 const common = {
   id: text().primaryKey().$defaultFn(randomUUID),
@@ -25,6 +24,9 @@ export const users = sqliteTable('users', {
     .$default(() => 'user'),
 })
 
+export type TrackLevel = 'white' | 'green' | 'blue' | 'red' | 'black' | 'custom'
+export type TrackType = 'drift' | 'valley' | 'lagoon' | 'stadium'
+
 export const tracks = sqliteTable('tracks', {
   ...common,
   number: integer().notNull(),
@@ -34,8 +36,6 @@ export const tracks = sqliteTable('tracks', {
     .notNull()
     .$default(() => false),
 })
-
-export type { TrackLevel, TrackType }
 
 export const timeEntries = sqliteTable('time_entries', {
   ...common,

@@ -1,13 +1,11 @@
-import {
-  WS_GET_TRACKS_NAME,
-} from '@chugmania/common/models/constants.js'
-import type { TrackSummary } from '@chugmania/common/models/track.js'
-import { formatTrackName } from '@chugmania/common/utils/track.js'
+import { WS_GET_TRACKS_NAME } from '@chugmania/common/models/constants.js'
 import {
   isErrorResponse,
   type ErrorResponse,
   type GetTracksResponse,
 } from '@chugmania/common/models/responses.js'
+import type { TrackSummary } from '@chugmania/common/models/track.js'
+import { formatTrackName } from '@chugmania/common/utils/track.js'
 import { useEffect, useState } from 'react'
 import { useConnection } from '../../contexts/ConnectionContext'
 import TrackCard from '../components/TrackCard'

@@ -2,14 +2,14 @@ import {
   WS_GET_LEADERBOARD_NAME,
   WS_GET_TRACK_NAME,
 } from '@chugmania/common/models/constants.js'
-import type { TopTime, Track } from '@chugmania/common/models/track.js'
-import { formatTrackName } from '@chugmania/common/utils/track.js'
-import { formatTime } from '@chugmania/common/utils/time.js'
 import {
   isErrorResponse,
   type ErrorResponse,
   type GetTrackLeaderboardResponse,
 } from '@chugmania/common/models/responses.js'
+import type { TopTime, Track } from '@chugmania/common/models/track.js'
+import { formatTime } from '@chugmania/common/utils/time.js'
+import { formatTrackName } from '@chugmania/common/utils/track.js'
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useConnection } from '../../contexts/ConnectionContext'
@@ -24,14 +24,10 @@ export default function Track() {
 
   useEffect(() => {
     if (!id) return
-    socket.emit(
-      WS_GET_TRACK_NAME,
-      { id },
-      (d: Track | ErrorResponse) => {
-        if (isErrorResponse(d)) console.error(d.message)
-        else setTrack(d)
-      }
-    )
+    socket.emit(WS_GET_TRACK_NAME, { id }, (d: Track | ErrorResponse) => {
+      if (isErrorResponse(d)) console.error(d.message)
+      else setTrack(d)
+    })
     socket.emit(
       WS_GET_LEADERBOARD_NAME,
       { id },

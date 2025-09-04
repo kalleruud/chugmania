@@ -1,21 +1,10 @@
-import type { TrackLevel, TrackType } from '@database/types'
-export type { TrackLevel, TrackType }
+import { tracks } from "@database/schema"
+import type { TimeEntry } from "./TimeEntry"
 
-export type TopTime = {
-  user: {
-    id: string
-    name: string
-  }
-  duration: number
-}
+export type Track = typeof tracks.$inferSelect
+export type CreateTrack = typeof tracks.$inferInsert
 
-export type TrackSummary = {
-  id: string
-  number: number
-  level: TrackLevel
-  type: TrackType
+export type TrackSummary = Omit<Track, 'updatedAt' | 'createdAt' | 'deletedAt'> & {
   lapCount: number
-  topTimes: TopTime[]
+  topTimes: TimeEntry[]
 }
-
-export type Track = TrackSummary
