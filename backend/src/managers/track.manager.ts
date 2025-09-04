@@ -56,10 +56,15 @@ export default class TrackManager {
     if (topError) throw topError
     if (countError) throw countError
 
-    const topTimes: TopTime[] = (topRows ?? []).map(r => ({
-      timeEntry: r.time_entries,
-      user: UserManager.toUserInfo(r.users!),
-    }))
+    const topTimes: TopTime[] = (topRows ?? []).map(r => {
+      if (!r.users) {
+        throw new Error(`User not found for time entry: ${JSON.stringify(r)}`)
+      }
+      return {
+        timeEntry: r.time_entries,
+        user: UserManager.toUserInfo(r.users),
+      }
+    })
 
     const lapCount = countRows?.[0]?.value ?? 0
 
@@ -114,7 +119,7 @@ export default class TrackManager {
     const best = new Map<string, TopTime>()
     for (const r of rows) {
       if (!r.users) {
-        throw new Error('User not found for time entry')
+        throw new Error(`User not found for time entry: ${JSON.stringify(r)}`)
       }
       const existing = best.get(r.users.id)
       if (!existing || r.time_entries.duration < existing.timeEntry.duration) {
