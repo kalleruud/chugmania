@@ -3,7 +3,9 @@ import { formatTime } from '@chugmania/common/utils/time.js'
 import { formatTrackName } from '@chugmania/common/utils/track.js'
 import { Link } from 'react-router-dom'
 
-export default function TrackCard({ track }: Readonly<{ track: TrackSummary }>) {
+export default function TrackCard({
+  track,
+}: Readonly<{ track: TrackSummary }>) {
   return (
     <Link
       to={`/tracks/${track.id}`}
