@@ -25,6 +25,7 @@
     "sourceMap": true,
 
     /* Linting */
+    "noImplicitAny": true,
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
