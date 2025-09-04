@@ -1,5 +1,66 @@
 # Repository Guidelines
 
+## Project Description & Goals
+
+This is a web app called "Chugmania", made for tracking lap times in the game Trackmania Turbo.
+
+The most important features of the app are:
+- Users can sign up and sign in, but anyone can see all data without logging in.
+- Users can submit lap times in the format "01:23.45". This lap-time input is within one click
+- Users can easily look up each tracks leaderboards, and each users stats and best leaderboard entries.
+- When the backend does an update to the db, the change should be emitted to all clients. For example, when a lap time is submitted, it should be displayed on all clients.
+- When a client receives an unexpected update from the backend, display it as a toast. For example, when someone registered a new lap time.
+
+### Lap Time Input
+
+Accepts the lap time, a user a track and a comment.
+- The lap time is unput in 6 boxes on the format "##:##.##", like an OTP input. Inputting values should move focus to the next box. Backspase moves focus backwards, arrowkeys moves focus to the relative box. Only valid times should be accepted max value is "59:59.99", and min value is "00:00.01".
+  - Allow boxes to be empty, just assume there is a "0" there. So "x1:6x:x1" (where "x" is empty) is also valid.
+- Users are input by a searchable dropdown. Always default to the last input user or yourself. Users can't see this options, only moderators and admins.
+- Tracks are also input by a searchable dropdown. Always default to the tracks page you're on or the last input track. If non of these exists, default to empty.
+
+### Pages
+
+#### Home/Dashboard Page
+
+- If not logged in, redirect to Tracks page
+- Displays your user data
+- Displays the Lap Time Input component
+- Displays all track cards where you have a lap-time registered.
+
+#### Track list
+
+- Displays all tracks as cards with top 3 lap times, amount of laps, level and type displayed as tags. Sorted by track number.
+- Users can search on any of the displayed information on the card (Even on the names of the top 3 users)
+- Clicking on a track card opens a full page of track data and the full leaderboards
+
+##### Track
+
+- Displays the Lap Time Input component above the leaderboard
+- Displays the tracks leaderboard with the best lap time from each user sorted by duration as well as their leaderboard position as a number. The leaderboard fetches 100 users at a time and fetches the next 100 when scrolling to the bottom.
+- Leaderboards are searchable, indexed on player name. The search just "dims" the lap times not fitting the search. On submit, scroll to the highest result.
+- On leaderboards, users can switch between displaying the gap to the lap time above or the gap to the leader. Formatted as "+1.23" (seconds and houndreths) and displayed as a tag.
+
+#### Players
+
+- Displays all players as cards with top 3 leaderboard positions.
+
+### Security
+
+- Anonymous users can view all data on the site, but not modify anything.
+- Users can create, delete and modify their own times and user details.
+- Moderators can create, delete and modify anyones lap times, as well as creating, modifying and deleting custom tracks.
+- Admins can do anything a moderator can, and modify any users details.
+
+### UI & Code
+
+The UI is clean and intuitive dark-mode made with well organized tailwind css. The design is inspired by the Formula 1 TV graphics and the [F1 Website](https://f1.com).
+
+The code is simple and minimal, and very easily readable. Modular components are heavily utilized to avoid code duplication and keep the UI unified. For example, instead of creating a new button every time, create a reusable button component with configurable parameters and use that instead.
+
+Refactoring is encouraged!
+Always keep AGENTS.md and README.md updated!
+
 ## Project Structure & Module Organization
 - `backend/`: Node.js + TypeScript Socket.IO server. Database in `backend/database/` (Drizzle + SQLite). Runtime data in `backend/data/`. Entry at `src/server.ts`.
 - `frontend/`: React + Vite app (TypeScript). Entry at `frontend/src/App.tsx`.
