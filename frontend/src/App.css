@@ -1,0 +1,21 @@
+@import 'tailwindcss';
+@import './styles/fonts.css';
+@import './styles/theme.css';
+
+@layer base {
+  #root {
+    @apply text-label;
+    font-family: 'Titillium Web', sans-serif;
+
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  .main-background {
+    @apply bg-radial-[at_100%_0%] from-background-secondary to-background to-75%;
+  }
+
+  h1 {
+    @apply text-accent font-f1 text-4xl font-black uppercase;
+  }
+}

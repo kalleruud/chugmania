@@ -1,15 +1,13 @@
 {
-  "editor.tabSize": 2,
-  "editor.detectIndentation": false,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
-  "css.customData": [".vscode/tailwind.json"],
-
+  "editor.formatOnSave": true,
+  "editor.formatOnPaste": true,
   "files.exclude": {
-    "*.d.ts": true,
+    "**/*.d.ts": true,
     "**/coverage": true,
     "**/node_modules": true
   },
-  "[dockerfile]": {
-    "editor.defaultFormatter": "ms-azuretools.vscode-docker"
+  "files.associations": {
+    "*.css": "tailwindcss"
   }
 }
