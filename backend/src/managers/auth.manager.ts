@@ -10,10 +10,10 @@ import type {
 } from '@chugmania/common/models/responses.js'
 import { type User, type UserInfo } from '@chugmania/common/models/user.js'
 import { tryCatch, tryCatchAsync } from '@chugmania/common/utils/try-catch.js'
+import type { users } from '@database/schema'
 import jwt from 'jsonwebtoken'
 import type { ExtendedError, Socket } from 'socket.io'
 import UserManager from './user.manager'
-import type { users } from '@database/schema'
 
 const TOKEN_EXPIRY_H = process.env.TOKEN_EXPIRY_H ?? '1'
 const SECRET: jwt.Secret =

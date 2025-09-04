@@ -1,7 +1,7 @@
 import { AtSign, Lock, Type, User } from 'lucide-react'
 import { useEffect, useState, type FormEvent } from 'react'
-import { useAuth } from '../../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../../contexts/AuthContext'
 
 export default function Login() {
   const { login, register, errorMessage, isLoggedIn } = useAuth()

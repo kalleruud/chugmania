@@ -7,6 +7,6 @@
   "tabWidth": 2,
   "trailingComma": "es5",
   "useTabs": false,
-  "tailwindStylesheet": "./frontend/src/styles/App.css",
-  "plugins": ["prettier-plugin-organize-imports"]
+  "tailwindStylesheet": "./src/styles/App.css",
+  "plugins": ["prettier-plugin-organize-imports", "prettier-plugin-tailwindcss"]
 }
