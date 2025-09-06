@@ -58,12 +58,8 @@ export default function Tracks() {
       <div className='mx-auto w-full max-w-3xl'>
         <SearchBar value={search} onChange={setSearch} />
       </div>
-      {/* Filters */}
-      <div className='mx-auto w-full max-w-3xl space-y-2'>
-        <div className='flex flex-wrap items-center gap-2'>
-          <span className='text-label-muted text-[11px] uppercase tracking-wider'>
-            Level:
-          </span>
+      <div className='mx-auto flex w-full max-w-3xl flex-col items-center justify-center gap-2 md:flex-row md:justify-between'>
+        <div className='flex flex-wrap justify-center gap-2'>
           {levels.map(l => (
             <TagPill
               key={l}
@@ -76,10 +72,7 @@ export default function Tracks() {
             </TagPill>
           ))}
         </div>
-        <div className='flex flex-wrap items-center gap-2'>
-          <span className='text-label-muted text-[11px] uppercase tracking-wider'>
-            Type:
-          </span>
+        <div className='flex flex-wrap justify-center gap-2'>
           {types.map(t => (
             <TagPill
               key={t}
@@ -94,13 +87,13 @@ export default function Tracks() {
         </div>
       </div>
       {loading ? (
-        <div className='flex items-center justify-center py-12'>
-          <Spinner size={64} className='text-accent' />
+        <div className='flex items-center justify-center pt-48'>
+          <Spinner size={48} className='text-accent' />
         </div>
       ) : (
         <div className='grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-4'>
           {filtered.map(t => (
-            <TrackCard key={t.track.id} track={t} />
+            <TrackCard key={t.track.id} summary={t} />
           ))}
         </div>
       )}

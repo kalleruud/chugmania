@@ -1,12 +1,14 @@
 import type { TrackSummary } from '@chugmania/common/models/track.js'
 import { formatTime } from '@chugmania/common/utils/time.js'
 import { formatTrackName } from '@chugmania/common/utils/track.js'
-import { Link } from 'react-router-dom'
+import { Link, type LinkProps } from 'react-router-dom'
 import TagPill from './TagPill'
 
-export default function TrackCard({
-  track: summary,
-}: Readonly<{ track: TrackSummary }>) {
+export default function TrackCard(
+  props: Readonly<Omit<LinkProps, 'to'> & { summary: TrackSummary }>
+) {
+  const { summary, className, ...rest } = props
+
   const levelRail: Record<string, string> = {
     white: 'from-white to-white/70',
     green: 'from-green-400 to-green-600',
@@ -19,7 +21,11 @@ export default function TrackCard({
   return (
     <Link
       to={`/tracks/${summary.track.id}`}
-      className='group relative block overflow-hidden rounded-xl border border-white/10 bg-white/5 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] transition hover:border-white/20 hover:bg-white/10'
+      className={
+        'group relative block overflow-hidden rounded-xl border border-white/10 bg-white/5 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] transition hover:border-white/20 hover:bg-white/10' +
+        className
+      }
+      {...rest}
     >
       {/* Accent rail colored by level */}
       <div

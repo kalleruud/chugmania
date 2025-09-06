@@ -3,12 +3,14 @@ import type { SVGProps } from 'react'
 export default function Spinner(
   props: SVGProps<SVGSVGElement> & { size?: number }
 ) {
-  const { size = 12, ...rest } = props
+  const { size = 24, ...rest } = props
   return (
     <svg
       xmlns='http://www.w3.org/2000/svg'
       width={size}
       height={size}
+      viewBox='0 0 24 24'
+      preserveAspectRatio='xMidYMid meet'
       stroke='currentColor'
       {...rest}
     >
@@ -24,8 +26,8 @@ export default function Spinner(
         }}
       >
         <circle
-          cx={size / 2}
-          cy={size / 2}
+          cx={12}
+          cy={12}
           r={9.5}
           fill='none'
           strokeWidth={3}
