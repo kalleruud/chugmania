@@ -9,6 +9,7 @@ import { formatTrackName } from '@chugmania/common/utils/track.js'
 import { useEffect, useState } from 'react'
 import { useConnection } from '../../contexts/ConnectionContext'
 import SearchBar from '../components/SearchBar'
+import Spinner from '../components/Spinner'
 import TagPill from '../components/TagPill'
 import TrackCard from '../components/TrackCard'
 
@@ -93,7 +94,9 @@ export default function Tracks() {
         </div>
       </div>
       {loading ? (
-        <p>Loading...</p>
+        <div className='flex items-center justify-center py-12'>
+          <Spinner size={64} className='text-accent' />
+        </div>
       ) : (
         <div className='grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-4'>
           {filtered.map(t => (
