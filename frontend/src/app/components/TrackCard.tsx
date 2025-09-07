@@ -2,7 +2,7 @@ import type { TrackSummary } from '@chugmania/common/models/track.js'
 import { formatTime } from '@chugmania/common/utils/time.js'
 import { formatTrackName } from '@chugmania/common/utils/track.js'
 import { Link, type LinkProps } from 'react-router-dom'
-import TagPill from './TagPill'
+import TrackTag from './TrackTag'
 
 export default function TrackCard(
   props: Readonly<Omit<LinkProps, 'to'> & { summary: TrackSummary }>
@@ -67,12 +67,12 @@ export default function TrackCard(
         </div>
 
         <div className='flex items-center gap-2.5 text-slate-300'>
-          <TagPill variant='level' value={summary.track.level}>
+          <TrackTag trackLevel={summary.track.level}>
             {summary.track.level}
-          </TagPill>
-          <TagPill variant='type' value={summary.track.type}>
+          </TrackTag>
+          <TrackTag trackType={summary.track.type}>
             {summary.track.type}
-          </TagPill>
+          </TrackTag>
         </div>
       </div>
       {/* Glow on hover */}

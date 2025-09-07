@@ -10,19 +10,20 @@ import {
   type TrackSummary,
 } from '@chugmania/common/models/track.js'
 import { formatTrackName } from '@chugmania/common/utils/track.js'
+import type { TrackLevel, TrackType } from '@database/schema'
 import { useEffect, useState } from 'react'
 import { useConnection } from '../../contexts/ConnectionContext'
 import SearchBar from '../components/SearchBar'
 import Spinner from '../components/Spinner'
-import TagPill from '../components/TagPill'
 import TrackCard from '../components/TrackCard'
+import TrackTag from '../components/TrackTag'
 
 export default function Tracks() {
   const [tracks, setTracks] = useState<TrackSummary[]>([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
-  const [levelFilter, setLevelFilter] = useState<string | null>(null)
-  const [typeFilter, setTypeFilter] = useState<string | null>(null)
+  const [levelFilter, setLevelFilter] = useState<TrackLevel | null>(null)
+  const [typeFilter, setTypeFilter] = useState<TrackType | null>(null)
   const { socket } = useConnection()
 
   useEffect(() => {
@@ -62,28 +63,26 @@ export default function Tracks() {
       <div className='mx-auto flex w-full max-w-3xl flex-col items-center justify-center gap-2 md:flex-row md:justify-between'>
         <div className='flex flex-wrap justify-center gap-2'>
           {TRACK_LEVELS.map(l => (
-            <TagPill
+            <TrackTag
               key={l}
-              variant='level'
-              value={l}
-              selected={levelFilter !== null ? levelFilter === l : undefined}
+              trackLevel={l}
+              selected={!levelFilter || levelFilter === l}
               onClick={() => setLevelFilter(prev => (prev === l ? null : l))}
             >
               {l}
-            </TagPill>
+            </TrackTag>
           ))}
         </div>
         <div className='flex flex-wrap justify-center gap-2'>
           {TRACK_TYPES.map(t => (
-            <TagPill
+            <TrackTag
               key={t}
-              variant='type'
-              value={t}
-              selected={typeFilter !== null ? typeFilter === t : undefined}
+              trackType={t}
+              selected={!typeFilter || typeFilter === t}
               onClick={() => setTypeFilter(prev => (prev === t ? null : t))}
             >
               {t}
-            </TagPill>
+            </TrackTag>
           ))}
         </div>
       </div>
