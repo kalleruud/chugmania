@@ -1,5 +1,5 @@
 import { tracks, type TrackLevel, type TrackType } from "../../backend/database/schema"
-import type { TimeEntry } from "./TimeEntry"
+import type { TimeEntry } from "./timeEntry"
 import type { UserInfo } from "./user"
 
 export type Track = typeof tracks.$inferSelect
