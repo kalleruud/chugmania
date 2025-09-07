@@ -1,13 +1,8 @@
 import type { TopTime, TrackSummary } from '@chugmania/common/models/track.js'
+import { TRACK_LEVELS, TRACK_TYPES } from '@chugmania/common/models/track.ts'
 import { tryCatchAsync } from '@chugmania/common/utils/try-catch.js'
 import db from '@database/database'
-import {
-  type TrackLevel,
-  type TrackType,
-  timeEntries,
-  tracks,
-  users,
-} from '@database/schema'
+import { timeEntries, tracks, users } from '@database/schema'
 import { asc, count, eq } from 'drizzle-orm'
 import UserManager from './user.manager'
 
@@ -18,14 +13,15 @@ export default class TrackManager {
     if (data) return
 
     const trackCount = 200
-    const levels: TrackLevel[] = ['white', 'green', 'blue', 'red', 'black']
-    const types: TrackType[] = ['drift', 'valley', 'lagoon', 'stadium']
+
     const items: (typeof tracks.$inferInsert)[] = []
     for (let i = 0; i < trackCount; i++) {
       items.push({
         number: i + 1,
-        level: levels[Math.floor(i / 40) % levels.length]!,
-        type: types[Math.floor(i / 10) % types.length]!,
+        level: TRACK_LEVELS.filter(t => t != 'custom')[
+          Math.floor(i / 40) % (TRACK_LEVELS.length - 1)
+        ]!,
+        type: TRACK_TYPES[Math.floor(i / 10) % TRACK_TYPES.length]!,
       })
     }
     await db.insert(tracks).values(items)

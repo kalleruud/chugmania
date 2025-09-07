@@ -4,7 +4,11 @@ import {
   type ErrorResponse,
   type GetTracksResponse,
 } from '@chugmania/common/models/responses.js'
-import type { TrackSummary } from '@chugmania/common/models/track.js'
+import {
+  TRACK_LEVELS,
+  TRACK_TYPES,
+  type TrackSummary,
+} from '@chugmania/common/models/track.js'
 import { formatTrackName } from '@chugmania/common/utils/track.js'
 import { useEffect, useState } from 'react'
 import { useConnection } from '../../contexts/ConnectionContext'
@@ -50,9 +54,6 @@ export default function Tracks() {
     )
   })
 
-  const levels = ['white', 'green', 'blue', 'red', 'black', 'custom']
-  const types = ['drift', 'valley', 'lagoon', 'stadium']
-
   return (
     <div className='min-w-0 flex-1 space-y-4'>
       <div className='mx-auto w-full max-w-3xl'>
@@ -60,7 +61,7 @@ export default function Tracks() {
       </div>
       <div className='mx-auto flex w-full max-w-3xl flex-col items-center justify-center gap-2 md:flex-row md:justify-between'>
         <div className='flex flex-wrap justify-center gap-2'>
-          {levels.map(l => (
+          {TRACK_LEVELS.map(l => (
             <TagPill
               key={l}
               variant='level'
@@ -73,7 +74,7 @@ export default function Tracks() {
           ))}
         </div>
         <div className='flex flex-wrap justify-center gap-2'>
-          {types.map(t => (
+          {TRACK_TYPES.map(t => (
             <TagPill
               key={t}
               variant='type'
