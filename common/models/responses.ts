@@ -1,6 +1,9 @@
 import type { TopTime, TrackSummary } from './track'
 
-export type BackendResponse = LoginSuccessResponse | RegisterSuccessResponse | ErrorResponse
+export type BackendResponse =
+  | LoginSuccessResponse
+  | RegisterSuccessResponse
+  | ErrorResponse
 
 export type LoginSuccessResponse = {
   success: true
@@ -12,7 +15,9 @@ export type RegisterSuccessResponse = {
   token: string
 }
 
-export function isRegisterSuccessResponse(data: any): data is RegisterSuccessResponse {
+export function isRegisterSuccessResponse(
+  data: any
+): data is RegisterSuccessResponse {
   if (typeof data !== 'object') return false
   return data.success && data.token
 }
