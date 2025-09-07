@@ -91,7 +91,7 @@ export default function Tracks() {
           <Spinner size={48} className='text-accent' />
         </div>
       ) : (
-        <div className='grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-4'>
+        <div className='grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] gap-4'>
           {filtered.map(t => (
             <TrackCard key={t.track.id} summary={t} />
           ))}
