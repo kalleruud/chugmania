@@ -1,14 +1,19 @@
-import type { TrackSummary } from '@chugmania/common/models/track.js'
-import { formatTime } from '@chugmania/common/utils/time.js'
+import type { Leaderboard } from '@chugmania/common/models/leaderboard.js'
 import { formatTrackName } from '@chugmania/common/utils/track.js'
 import { Link, type LinkProps } from 'react-router-dom'
+import TimeEntryRow from './TimeEntryRow'
 import TrackTag from './TrackTag'
 
-export default function TrackCard(
-  props: Readonly<Omit<LinkProps, 'to'> & { summary: TrackSummary }>
-) {
-  const { summary, className, ...rest } = props
+export type TrackCardProps = Readonly<
+  Omit<LinkProps, 'to'> & { leaderboard: Leaderboard }
+>
 
+export default function TrackCard({
+  leaderboard,
+  className,
+  ...rest
+}: Readonly<TrackCardProps>) {
+  const { track, totalEntries, entries } = leaderboard
   const levelRail: Record<string, string> = {
     white: 'from-white to-white/70',
     green: 'from-green-400 to-green-600',
@@ -20,7 +25,7 @@ export default function TrackCard(
 
   return (
     <Link
-      to={`/tracks/${summary.track.id}`}
+      to={`/tracks/${track.id}`}
       className={
         'group relative block overflow-hidden rounded-xl border border-white/10 bg-white/5 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] transition hover:border-white/20 hover:bg-white/10' +
         className
@@ -30,49 +35,33 @@ export default function TrackCard(
       {/* Accent rail colored by level */}
       <div
         className={`absolute inset-y-0 left-0 w-2 bg-gradient-to-b opacity-70 transition group-hover:opacity-100 ${
-          levelRail[summary.track.level] ?? 'from-accent to-accent-secondary/80'
+          levelRail[track.level] ?? 'from-accent to-accent-secondary/80'
         }`}
       />
 
       <div className='pl-4'>
         <div className='mb-4 flex items-baseline gap-2'>
           <h3 className='font-f1-black text-accent text-2xl uppercase tracking-wider'>
-            {formatTrackName(summary.track.number)}
+            {formatTrackName(track.number)}
           </h3>
           <div className='ml-auto text-xs text-slate-300'>
             <span className='rounded-md border border-white/10 bg-white/5 px-2.5 py-1'>
-              {summary.lapCount} laps
+              {totalEntries} laps
             </span>
           </div>
         </div>
 
-        <div className='mb-4 divide-y divide-white/5 rounded-lg border border-white/10 bg-black/20'>
-          {summary.topTimes.length === 0 ? (
+        <div className='mb-4 rounded-lg border border-white/10 bg-black/20'>
+          {entries.length === 0 ? (
             <div className='text-label-muted p-3 text-xs'>No times yet</div>
           ) : (
-            summary.topTimes.map((t, i) => (
-              <div
-                key={t.user.id}
-                className='flex items-center justify-between p-3 text-base text-slate-200'
-              >
-                <span className='text-slate-300'>
-                  <span className='text-slate-400'>{i + 1}.</span> {t.user.name}
-                </span>
-                <span className='font-f1-wide'>
-                  {formatTime(t.timeEntry.duration)}
-                </span>
-              </div>
-            ))
+            entries.map(t => <TimeEntryRow key={t.id} lapTime={t} />)
           )}
         </div>
 
         <div className='flex items-center gap-2.5 text-slate-300'>
-          <TrackTag trackLevel={summary.track.level}>
-            {summary.track.level}
-          </TrackTag>
-          <TrackTag trackType={summary.track.type}>
-            {summary.track.type}
-          </TrackTag>
+          <TrackTag trackLevel={track.level}>{track.level}</TrackTag>
+          <TrackTag trackType={track.type}>{track.type}</TrackTag>
         </div>
       </div>
       {/* Glow on hover */}

@@ -5,8 +5,8 @@ import {
 import type {
   BackendResponse,
   ErrorResponse,
-  LoginSuccessResponse,
-  RegisterSuccessResponse,
+  LoginResponse,
+  RegisterResponse,
 } from '@chugmania/common/models/responses.js'
 import { type User, type UserInfo } from '@chugmania/common/models/user.js'
 import { tryCatch, tryCatchAsync } from '@chugmania/common/utils/try-catch.js'
@@ -105,7 +105,7 @@ export default class AuthManager {
     return {
       success: true,
       token: this.sign(userInfo),
-    } satisfies RegisterSuccessResponse
+    } satisfies RegisterResponse
   }
 
   static async onLogin(
@@ -136,11 +136,20 @@ export default class AuthManager {
 
     const { passwordHash, ...userInfo } = data
 
+    console.debug(
+      new Date().toISOString(),
+      socket.id,
+      '👤 Logging in:',
+      userInfo.email,
+      passwordHash,
+      password
+    )
+
     return (await this.isPasswordValid(password, passwordHash))
       ? ({
           success: true,
           token: this.sign(userInfo),
-        } satisfies LoginSuccessResponse)
+        } satisfies LoginResponse)
       : ({
           success: false,
           message: 'Incorrect password',

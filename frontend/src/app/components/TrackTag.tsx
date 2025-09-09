@@ -15,11 +15,11 @@ export type TrackTagProps = TagProps &
   )
 
 const levelClasses: Record<TrackLevel, string> = {
-  white: 'text-black bg-white border-white/50 ',
+  white: 'text-black bg-white border-white/50',
   green: 'text-green-300 bg-green-500/10 border-green-500/40',
   blue: 'text-sky-300 bg-sky-500/10 border-sky-500/40',
   red: 'text-red-300 bg-red-500/10 border-red-500/40',
-  black: 'text-white-300 bg-black/40 border-white/10',
+  black: 'text-white-300 bg-black/40 border-white/40',
   custom: 'text-amber-300 bg-amber-500/10 border-amber-500/40',
 }
 

@@ -1,3 +1,5 @@
+import type { Track } from './track'
+
 export type LoginRequest = {
   email: string
   password: string
@@ -18,17 +20,6 @@ export function isRegisterRequest(data: any): data is RegisterRequest {
   return data.email && data.password && data.name
 }
 
-export type GetTracksRequest = {
-  offset?: number
-  limit?: number
-}
-
-export type GetTrackDetailsRequest = {
-  id: string
-}
-
-export type GetTrackLeaderboardRequest = {
-  id: string
-  offset?: number
-  limit?: number
+export type GetLeaderboardRequest = {
+  trackId: Track['id']
 }

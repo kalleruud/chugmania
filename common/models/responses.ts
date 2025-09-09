@@ -1,44 +1,27 @@
-import type { TopTime, TrackSummary } from './track'
+import type { Leaderboard } from './leaderboard'
 
 export type BackendResponse =
-  | LoginSuccessResponse
-  | RegisterSuccessResponse
   | ErrorResponse
-
-export type LoginSuccessResponse = {
-  success: true
-  token: string
-}
-
-export type RegisterSuccessResponse = {
-  success: true
-  token: string
-}
-
-export function isRegisterSuccessResponse(
-  data: any
-): data is RegisterSuccessResponse {
-  if (typeof data !== 'object') return false
-  return data.success && data.token
-}
-
-export function isLoginSuccessResponse(
-  data: any
-): data is LoginSuccessResponse {
-  if (typeof data !== 'object') return false
-  return data.success && data.token
-}
+  | GetLeaderboardsResponse
+  | LoginResponse
+  | RegisterResponse
 
 export type ErrorResponse = {
   success: false
   message: string
 }
 
-export function isErrorResponse(data: any): data is ErrorResponse {
-  if (typeof data !== 'object') return false
-  return data.success === false && data.message
+export type LoginResponse = {
+  success: true
+  token: string
 }
 
-export type GetTracksResponse = { tracks: TrackSummary[] }
-export type GetTrackDetailsResponse = TrackSummary
-export type GetTrackLeaderboardResponse = { times: TopTime[] }
+export type RegisterResponse = {
+  success: true
+  token: string
+}
+
+export type GetLeaderboardsResponse = {
+  success: true
+  leaderboards: Leaderboard[]
+}

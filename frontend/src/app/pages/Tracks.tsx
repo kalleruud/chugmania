@@ -1,14 +1,10 @@
-import { WS_GET_TRACKS_NAME } from '@chugmania/common/models/constants.js'
+import type { Leaderboard } from '@chugmania/common/models/leaderboard.js'
 import {
-  isErrorResponse,
   type ErrorResponse,
-  type GetTracksResponse,
+  type GetLeaderboardsResponse,
 } from '@chugmania/common/models/responses.js'
-import {
-  TRACK_LEVELS,
-  TRACK_TYPES,
-  type TrackSummary,
-} from '@chugmania/common/models/track.js'
+import { TRACK_LEVELS, TRACK_TYPES } from '@chugmania/common/models/track.js'
+import { WS_GET_LEADERBOARD_SUMMARIES } from '@chugmania/common/utils/constants.js'
 import { formatTrackName } from '@chugmania/common/utils/track.js'
 import type { TrackLevel, TrackType } from '@database/schema'
 import { useEffect, useState } from 'react'
@@ -19,31 +15,34 @@ import TrackCard from '../components/TrackCard'
 import TrackTag from '../components/TrackTag'
 
 export default function Tracks() {
-  const [tracks, setTracks] = useState<TrackSummary[]>([])
+  const [summaries, setSummaries] = useState<Leaderboard[]>([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [levelFilter, setLevelFilter] = useState<TrackLevel | null>(null)
   const [typeFilter, setTypeFilter] = useState<TrackType | null>(null)
-  const { socket } = useConnection()
+  const { socket, isConnected } = useConnection()
 
   useEffect(() => {
+    if (!isConnected) {
+      // TODO: Implement not connected ui
+      return
+    }
+
     socket.emit(
-      WS_GET_TRACKS_NAME,
+      WS_GET_LEADERBOARD_SUMMARIES,
       undefined,
-      (d: GetTracksResponse | ErrorResponse) => {
-        if (isErrorResponse(d)) {
+      (d: GetLeaderboardsResponse | ErrorResponse) => {
+        if (!d.success) {
           console.error(d.message)
-          window.alert('Failed to load tracks')
-        } else {
-          setTracks(d.tracks ?? [])
-        }
+          window.alert(d.message)
+        } else setSummaries(d.leaderboards)
         setLoading(false)
       }
     )
-  }, [socket])
+  }, [])
 
   const term = search.toLowerCase()
-  const filtered = tracks.filter(t => {
+  const filtered = summaries.filter(t => {
     if (levelFilter && t.track.level !== levelFilter) return false
     if (typeFilter && t.track.type !== typeFilter) return false
     return (
@@ -51,7 +50,7 @@ export default function Tracks() {
       formatTrackName(t.track.number).toLowerCase().includes(term) ||
       t.track.level.toLowerCase().includes(term) ||
       t.track.type.toLowerCase().includes(term) ||
-      t.topTimes.some(tt => tt.user.name.toLowerCase().includes(term))
+      t.entries.some(e => e.user.name.toLowerCase().includes(term))
     )
   })
 
@@ -93,7 +92,7 @@ export default function Tracks() {
       ) : (
         <div className='grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] gap-4'>
           {filtered.map(t => (
-            <TrackCard key={t.track.id} summary={t} />
+            <TrackCard key={t.track.id} leaderboard={t} />
           ))}
         </div>
       )}
