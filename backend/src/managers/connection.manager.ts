@@ -14,24 +14,28 @@ import LeaderboardManager from './leaderboard.manager'
 
 export default class ConnectionManager {
   static async connect(socket: Socket) {
-    console.debug(new Date().toISOString(), socket.id, '✅ Connected')
+    console.debug(new Date().toISOString(), socket.id, 'Connected')
 
-    this.setupUserHandling(socket)
-    this.setupLeaderboardHandling(socket)
+    ConnectionManager.setupUserHandling(socket)
+    ConnectionManager.setupLeaderboardHandling(socket)
   }
 
   static async disconnect(socket: Socket) {
-    console.debug(new Date().toISOString(), socket.id, '🚫 Disconnected')
+    console.debug(new Date().toISOString(), socket.id, 'Disconnected')
   }
 
   private static setupUserHandling(s: Socket) {
-    this.setOn(s, WS_LOGIN_NAME, AuthManager.onLogin)
-    this.setOn(s, WS_REGISTER_NAME, AuthManager.onRegister)
+    ConnectionManager.setOn(s, WS_LOGIN_NAME, AuthManager.onLogin)
+    ConnectionManager.setOn(s, WS_REGISTER_NAME, AuthManager.onRegister)
   }
 
   private static setupLeaderboardHandling(s: Socket) {
-    this.setOn(s, WS_GET_LEADERBOARD, LeaderboardManager.onGetLeaderboard)
-    this.setOn(
+    ConnectionManager.setOn(
+      s,
+      WS_GET_LEADERBOARD,
+      LeaderboardManager.onGetLeaderboard
+    )
+    ConnectionManager.setOn(
       s,
       WS_GET_LEADERBOARD_SUMMARIES,
       LeaderboardManager.onGetLeaderboardSummaries

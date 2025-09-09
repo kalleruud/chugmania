@@ -20,26 +20,23 @@ export default function Tracks() {
   const [loading, setLoading] = useState(true)
   const [levelFilter, setLevelFilter] = useState<TrackLevel | null>(null)
   const [typeFilter, setTypeFilter] = useState<TrackType | null>(null)
-  const { socket, isConnected } = useConnection()
+  const { socket } = useConnection()
 
   useEffect(() => {
-    if (!isConnected) {
-      // TODO: Implement not connected ui
-      return
-    }
-
     socket.emit(
       WS_GET_LEADERBOARD_SUMMARIES,
       undefined,
       (d: GetLeaderboardsResponse | ErrorResponse) => {
         if (!d.success) {
           console.error(d.message)
-          window.alert(d.message)
-        } else setSummaries(d.leaderboards)
+          return window.alert(d.message)
+        }
+
+        setSummaries(d.leaderboards)
         setLoading(false)
       }
     )
-  }, [])
+  }, [socket])
 
   const term = search.toLowerCase()
   const filtered = summaries.filter(t => {
