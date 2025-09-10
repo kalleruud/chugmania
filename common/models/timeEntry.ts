@@ -1,4 +1,4 @@
-import { timeEntries } from '@database/schema'
+import { timeEntries } from '../../backend/database/schema'
 import type { UserInfo } from './user'
 
 export type TimeEntry = typeof timeEntries.$inferSelect
@@ -12,8 +12,8 @@ export type LeaderboardEntryGap =
     }
   | {
       position?: 1
-      next?: never
-      previous?: number
+      next?: number
+      previous?: never
       leader?: never
     }
 
