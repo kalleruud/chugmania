@@ -11,7 +11,7 @@ type Props = {
 export default function SearchBar({
   value,
   onChange,
-  placeholder = 'Search tracks, types, levels, or players',
+  placeholder = 'Search...',
   className = '',
 }: Readonly<Props>) {
   const inputRef = useRef<HTMLInputElement | null>(null)
@@ -35,7 +35,7 @@ export default function SearchBar({
         <button
           type='button'
           onClick={() => onChange('')}
-          className='text-label-muted absolute right-2.5 top-1/2 -translate-y-1/2 rounded-xl p-2 transition hover:text-white'
+          className='text-label-muted absolute right-2.5 top-1/2 -translate-y-1/2 rounded-xl p-2 transition hover:cursor-pointer hover:text-white'
           aria-label='Clear search'
         >
           <X size={18} />

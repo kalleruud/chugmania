@@ -5,6 +5,7 @@
   --color-accent-secondary: oklch(41.098% 0.16466 28.698);
 
   --color-label: oklch(92.176% 0.0232 48.285);
+  --color-label-accent: oklch(0.7596 0.1246 30);
   --color-label-muted: oklch(61.824% 0.01582 17.345);
 
   --color-background: oklch(0.15 0.005 39);
