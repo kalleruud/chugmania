@@ -122,12 +122,6 @@ Always keep AGENTS.md and README.md updated!
 - Common
   - `cd common`: Used via `file:../common`. If linking breaks, re-run `npm install` in frontend/backend.
 
-## Socket Events
-
-- `getTracks` – list tracks with lap counts and top times.
-- `getTrack` – track details.
-- `getTrackLeaderboard` – best laps per user.
-
 ## Coding Style & Naming Conventions
 
 - Formatting: Prettier (2 spaces, single quotes, no semicolons, trailing commas). Run `npm run check` in `backend/`.
