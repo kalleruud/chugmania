@@ -26,12 +26,18 @@ export default function LapTimeInput({ trackId }: Props) {
     index: number,
     e: React.KeyboardEvent<HTMLInputElement>,
   ) => {
-    if (e.key === 'Backspace' && !digits[index]) {
-      const prev = inputs.current[index - 1]
-      if (prev) {
-        prev.focus()
-        e.preventDefault()
+    if (e.key === 'Backspace') {
+      e.preventDefault()
+      const next = [...digits]
+      if (next[index]) {
+        next[index] = ''
+        setDigits(next)
+      } else if (index > 0) {
+        next[index - 1] = ''
+        setDigits(next)
+        inputs.current[index - 1]?.focus()
       }
+      return
     }
     if (e.key === 'ArrowLeft') inputs.current[index - 1]?.focus()
     if (e.key === 'ArrowRight') inputs.current[index + 1]?.focus()
