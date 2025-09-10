@@ -4,6 +4,7 @@ import type {
   BackendResponse,
   GetLeaderboardsResponse,
 } from '@chugmania/common/models/responses.js'
+import type { LeaderboardEntryGap } from '@chugmania/common/models/timeEntry.js'
 import type { Track } from '@chugmania/common/models/track.js'
 import db from '@database/database'
 import { timeEntries, tracks, users } from '@database/schema'
@@ -48,7 +49,7 @@ export default class LeaderboardManager {
       const prev = i > 0 ? arr[i - 1]!.entry.duration : undefined
       const next = i < arr.length - 1 ? arr[i + 1]!.entry.duration : undefined
 
-      const gap: any = { position: i + 1 }
+      const gap: LeaderboardEntryGap = { position: i + 1 }
       if (prev !== undefined) gap.previous = r.entry.duration - prev
       if (i > 0 && leaderDuration !== undefined)
         gap.leader = r.entry.duration - leaderDuration

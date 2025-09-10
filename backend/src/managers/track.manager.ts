@@ -7,7 +7,6 @@ import { tryCatchAsync } from '@chugmania/common/utils/try-catch.js'
 import db from '@database/database'
 import { timeEntries, tracks } from '@database/schema'
 import { asc, eq } from 'drizzle-orm'
-import type { Socket } from 'socket.io'
 
 export default class TrackManager {
   static async seed(): Promise<void> {
@@ -50,7 +49,7 @@ export default class TrackManager {
     return data.map(d => d.id)
   }
 
-  static async onGetTracks(s: Socket): Promise<BackendResponse> {
+  static async onGetTracks(): Promise<BackendResponse> {
     // If query looks like a number or #number, match by exact number; else return first N ordered by number
     const { data, error } = await tryCatchAsync(
       db

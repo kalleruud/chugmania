@@ -7,7 +7,6 @@ import { tryCatchAsync } from '@chugmania/common/utils/try-catch.js'
 import db from '@database/database'
 import { users } from '@database/schema'
 import { eq } from 'drizzle-orm'
-import type { Socket } from 'socket.io'
 
 export default class UserManager {
   static readonly table = users
@@ -45,7 +44,7 @@ export default class UserManager {
     return { passwordHash: user.passwordHash, userInfo }
   }
 
-  static async onGetUsers(s: Socket): Promise<BackendResponse> {
+  static async onGetUsers(): Promise<BackendResponse> {
     const { data, error } = await tryCatchAsync(db.select().from(users))
 
     if (error) throw error

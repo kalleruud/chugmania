@@ -101,10 +101,9 @@ export default class AuthManager {
       } satisfies ErrorResponse
     }
 
-    const { passwordHash: _, ...userInfo } = user
     return {
       success: true,
-      token: AuthManager.sign(userInfo),
+      token: AuthManager.sign(UserManager.toUserInfo(user).userInfo),
     } satisfies RegisterResponse
   }
 
@@ -134,14 +133,14 @@ export default class AuthManager {
       } satisfies ErrorResponse
     }
 
-    const { passwordHash, ...userInfo } = data
-
     console.debug(
       new Date().toISOString(),
       socket.id,
       '👤 Logging in:',
-      userInfo.email
+      request.email
     )
+
+    const { passwordHash, userInfo } = UserManager.toUserInfo(data)
 
     return (await AuthManager.isPasswordValid(password, passwordHash))
       ? ({
