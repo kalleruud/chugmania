@@ -8,6 +8,8 @@ type TableRowProps = React.DetailedHTMLProps<
   HTMLTableRowElement
 >
 
+type GapType = 'leader' | 'gap'
+
 function PositionBadgePart({ position }: Readonly<{ position?: number }>) {
   return (
     <td
@@ -25,18 +27,24 @@ function NameCellPart({ name }: Readonly<{ name: string }>) {
 
 function TimePart({ duration }: Readonly<{ duration: number }>) {
   return (
-    <td className={`font-f1-italic items-center tabular-nums`}>
+    <td className={`font-f1-italic items-center uppercase tabular-nums`}>
       {formatTime(duration).replace(/^0/, '')}
     </td>
   )
 }
 
-function GapPart({ duration }: Readonly<{ duration: number }>) {
+function GapPart({
+  gap,
+  gapType = 'leader',
+}: Readonly<{ gap?: LeaderboardEntry['gap']; gapType?: GapType }>) {
+  const duration = gapType === 'leader' ? gap?.leader : gap?.previous
+  const label = duration ? '+' + formatTime(duration, true) : gapType
+
   return (
     <td
-      className={`font-f1-italic text-label-muted items-center text-sm tabular-nums`}
+      className={`font-f1-italic text-label-muted items-center text-sm uppercase tabular-nums`}
     >
-      {'+' + formatTime(duration, true)}
+      {label}
     </td>
   )
 }
@@ -44,14 +52,14 @@ function GapPart({ duration }: Readonly<{ duration: number }>) {
 export default function TimeEntryRow({
   lapTime,
   position = lapTime.gap.position,
-  showTrack = false,
+  gapType = 'leader',
   className,
   ...rest
 }: Readonly<
   TableRowProps & {
     position?: number
     lapTime: LeaderboardEntry
-    showTrack?: boolean
+    gapType?: GapType
   }
 >) {
   const containerRef = useRef<HTMLTableRowElement | null>(null)
@@ -74,10 +82,9 @@ export default function TimeEntryRow({
     return {
       time: width >= 0, // always
       gap: width >= 300,
-      track: showTrack && width >= 520,
       comment: width >= 700,
     }
-  }, [width, showTrack])
+  }, [width])
 
   return (
     <tr
@@ -94,9 +101,7 @@ export default function TimeEntryRow({
         name={lapTime.user.shortName ?? lapTime.user.name.slice(0, 3)}
       />
 
-      {show.gap && lapTime.gap.previous && (
-        <GapPart duration={lapTime.gap.previous} />
-      )}
+      {show.gap && <GapPart gap={lapTime.gap} />}
       {show.time && <TimePart duration={lapTime.duration} />}
     </tr>
   )
