@@ -1,4 +1,3 @@
-import type { SearchTracksRequest } from '@chugmania/common/models/requests.js'
 import type {
   BackendResponse,
   GetTracksResponse,
@@ -51,14 +50,8 @@ export default class TrackManager {
     return data.map(d => d.id)
   }
 
-  static async onGetTracks(s: Socket, req?: unknown): Promise<BackendResponse> {
-    const { q, limit = 200 } = (req as SearchTracksRequest) ?? { q: '' }
-    const trimmed = (q ?? '').trim()
-
+  static async onGetTracks(s: Socket): Promise<BackendResponse> {
     // If query looks like a number or #number, match by exact number; else return first N ordered by number
-    const numMatch = trimmed.replace(/^#/, '')
-    const num = /^\d+$/.test(numMatch) ? parseInt(numMatch, 10) : null
-
     const { data, error } = await tryCatchAsync(
       db
         .select({
@@ -72,9 +65,7 @@ export default class TrackManager {
           deletedAt: tracks.deletedAt,
         })
         .from(tracks)
-        .where(num !== null ? eq(tracks.number, num) : undefined)
         .orderBy(asc(tracks.number))
-        .limit(limit)
     )
 
     if (error) throw error

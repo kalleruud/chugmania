@@ -1,5 +1,5 @@
 import type { Leaderboard } from '@chugmania/common/models/leaderboard.js'
-import type { GetLeaderboardRequest } from '@chugmania/common/models/requests.js'
+import { isGetLeaderboardRequest } from '@chugmania/common/models/requests.js'
 import type {
   BackendResponse,
   GetLeaderboardsResponse,
@@ -54,7 +54,7 @@ export default class LeaderboardManager {
         gap.leader = r.entry.duration - leaderDuration
       if (next !== undefined) gap.next = next - r.entry.duration
 
-      const { passwordHash: _, ...userInfo } = r.user
+      const userInfo = { ...r.user, passwordHash: undefined }
       return {
         id: r.entry.id,
         duration: r.entry.duration,
@@ -107,8 +107,9 @@ export default class LeaderboardManager {
     socket: Socket,
     request: unknown
   ): Promise<BackendResponse> {
-    const r = request as Partial<GetLeaderboardRequest>
-    if (!r?.trackId) throw new Error('Missing trackId')
+    if (!isGetLeaderboardRequest(request)) {
+      throw Error('Failed to fetch leaderboard')
+    }
 
     console.debug(
       new Date().toISOString(),
@@ -119,7 +120,7 @@ export default class LeaderboardManager {
     return {
       success: true,
       leaderboards: [
-        await LeaderboardManager.getLeaderboard(r.trackId, 0, 100),
+        await LeaderboardManager.getLeaderboard(request.trackId, 0, 100),
       ],
     } satisfies GetLeaderboardsResponse
   }

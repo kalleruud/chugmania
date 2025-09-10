@@ -25,7 +25,19 @@ export type GetLeaderboardRequest = {
   trackId: Track['id']
 }
 
-export type PostLapTime = Pick<
+export function isGetLeaderboardRequest(
+  data: any
+): data is GetLeaderboardRequest {
+  if (typeof data !== 'object') return false
+  return data.trackId
+}
+
+export type PostLapTimeRequest = Pick<
   TimeEntry,
   'duration' | 'user' | 'track' | 'comment'
 >
+
+export function isPostLapTimeRequest(data: any): data is PostLapTimeRequest {
+  if (typeof data !== 'object') return false
+  return data.duration && data.user && data.track
+}

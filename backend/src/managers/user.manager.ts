@@ -1,12 +1,13 @@
+import type {
+  BackendResponse,
+  GetUsersResponse,
+} from '@chugmania/common/models/responses.js'
+import type { User, UserInfo } from '@chugmania/common/models/user.js'
 import { tryCatchAsync } from '@chugmania/common/utils/try-catch.js'
 import db from '@database/database'
 import { users } from '@database/schema'
-import { eq, like } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import type { Socket } from 'socket.io'
-import type {
-  SearchUsersRequest,
-} from '@chugmania/common/models/requests.js'
-import type { BackendResponse } from '@chugmania/common/models/responses.js'
 
 export default class UserManager {
   static readonly table = users
@@ -39,28 +40,18 @@ export default class UserManager {
     return user[0]!
   }
 
-  static async onSearchUsers(
-    _s: Socket,
-    req?: unknown
-  ): Promise<BackendResponse> {
-    const { q, limit = 10 } = (req as SearchUsersRequest) ?? { q: '' }
+  static toUserInfo(user: User) {
+    const userInfo: UserInfo = { ...user, passwordHash: undefined }
+    return { passwordHash: user.passwordHash, userInfo }
+  }
 
-    const query = `%${(q ?? '').trim()}%`
-    const { data, error } = await tryCatchAsync(
-      db
-        .select({
-          id: users.id,
-          email: users.email,
-          name: users.name,
-          shortName: users.shortName,
-          role: users.role,
-        })
-        .from(users)
-        .where(q ? like(users.name, query) : undefined)
-        .limit(limit)
-    )
+  static async onGetUsers(s: Socket): Promise<BackendResponse> {
+    const { data, error } = await tryCatchAsync(db.select().from(users))
 
     if (error) throw error
-    return { success: true, users: data }
+
+    const userInfos = data.map(r => UserManager.toUserInfo(r).userInfo)
+
+    return { success: true, users: userInfos } satisfies GetUsersResponse
   }
 }

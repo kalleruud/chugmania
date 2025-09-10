@@ -32,7 +32,7 @@ export default class ConnectionManager {
   private static setupUserHandling(s: Socket) {
     ConnectionManager.setOn(s, WS_LOGIN_NAME, AuthManager.onLogin)
     ConnectionManager.setOn(s, WS_REGISTER_NAME, AuthManager.onRegister)
-    ConnectionManager.setOn(s, WS_GET_USERS, UserManager.onSearchUsers)
+    ConnectionManager.setOn(s, WS_GET_USERS, UserManager.onGetUsers)
   }
 
   private static setupLeaderboardHandling(s: Socket) {

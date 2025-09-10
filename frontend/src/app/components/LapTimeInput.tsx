@@ -1,4 +1,4 @@
-import type { PostLapTime as PostLapTimeRequest } from '@chugmania/common/models/requests.js'
+import type { PostLapTimeRequest } from '@chugmania/common/models/requests.js'
 import type {
   ErrorResponse,
   GetTracksResponse,
