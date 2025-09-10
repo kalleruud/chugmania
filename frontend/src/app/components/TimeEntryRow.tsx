@@ -21,8 +21,16 @@ function PositionBadgePart({ position }: Readonly<{ position?: number }>) {
   )
 }
 
-function NameCellPart({ name }: Readonly<{ name: string }>) {
-  return <td className='font-f1-bold flex-1 truncate uppercase'>{name}</td>
+function NameCellPart({
+  name,
+  hasComment = false,
+}: Readonly<{ name: string; hasComment: boolean }>) {
+  return (
+    <td className='font-f1-bold mr-auto flex gap-1 truncate uppercase'>
+      {name}
+      {hasComment && <span className='text-label-muted'> *</span>}
+    </td>
+  )
 }
 
 function TimePart({ duration }: Readonly<{ duration: number }>) {
@@ -90,16 +98,23 @@ export default function TimeEntryRow({
     <tr
       ref={containerRef}
       className={twMerge('flex items-center gap-3 py-1', className)}
+      title={lapTime.comment ?? undefined}
       role='row'
       {...rest}
     >
       <PositionBadgePart position={position} />
       <NameCellPart
         name={lapTime.user.shortName ?? lapTime.user.name.slice(0, 3)}
+        hasComment={!!lapTime.comment}
       />
 
       {show.gap && <GapPart gap={lapTime.gap} />}
       {show.time && <TimePart duration={lapTime.duration} />}
+      {show.comment && lapTime.comment && (
+        <td className='font-f1-italic text-label-muted items-center text-sm uppercase'>
+          {lapTime.comment}
+        </td>
+      )}
     </tr>
   )
 }
