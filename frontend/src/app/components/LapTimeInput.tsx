@@ -1,36 +1,43 @@
+import type { PostLapTime as PostLapTimeRequest } from '@chugmania/common/models/requests.js'
+import type {
+  ErrorResponse,
+  GetTracksResponse,
+  GetUsersResponse,
+} from '@chugmania/common/models/responses.js'
 import type { Track } from '@chugmania/common/models/track.js'
 import type { UserInfo } from '@chugmania/common/models/user.js'
 import {
-  WS_SEARCH_TRACKS,
-  WS_SEARCH_USERS,
+  WS_GET_TRACKS,
+  WS_GET_USERS,
+  WS_POST_LAPTIME,
 } from '@chugmania/common/utils/constants.js'
+import { formattedTimeToMs } from '@chugmania/common/utils/time.js'
 import { formatTrackName } from '@chugmania/common/utils/track.js'
 import {
   useCallback,
   useEffect,
   useRef,
   useState,
+  type FormEvent,
   type KeyboardEvent,
 } from 'react'
 import { useConnection } from '../../contexts/ConnectionContext'
+import SearchableDropdown, { type LookupItem } from './SearchableDropdown'
 
-type Props = Readonly<{ trackId?: string }>
-
-export default function LapTimeInput({ trackId }: Props) {
-  const [digits, setDigits] = useState<string[]>(Array(6).fill(''))
-
-  const [userId, setUserId] = useState('')
-  const [userName, setUserName] = useState('')
-  const [track, setTrack] = useState(trackId ?? '')
-  const [trackLabel, setTrackLabel] = useState('')
-  const [comment, setComment] = useState('')
-  const inputs = useRef<HTMLInputElement[]>([])
+export default function LapTimeInput({
+  trackId,
+  userId,
+}: Readonly<{ trackId?: Track['id']; userId?: Track['id'] }>) {
   const { socket } = useConnection()
+  const inputs = useRef<HTMLInputElement[]>([])
 
-  const [userOptions, setUserOptions] = useState<UserInfo[]>([])
-  const [trackOptions, setTrackOptions] = useState<Track[]>([])
-  const [showUserOptions, setShowUserOptions] = useState(false)
-  const [showTrackOptions, setShowTrackOptions] = useState(false)
+  const [digits, setDigits] = useState<string[]>(Array(6).fill(''))
+  const [user, setUser] = useState<LookupItem | undefined>(undefined)
+  const [track, setTrack] = useState<LookupItem | undefined>(undefined)
+  const [comment, setComment] = useState('')
+
+  const [users, setUsers] = useState<UserInfo[] | undefined>(undefined)
+  const [tracks, setTracks] = useState<Track[] | undefined>(undefined)
 
   const DIGIT = /^\d$/
 
@@ -45,7 +52,8 @@ export default function LapTimeInput({ trackId }: Props) {
   function setFocus(i: number) {
     inputs.current[i]?.focus()
   }
-  const handleKeyDown = (index: number, e: KeyboardEvent<HTMLInputElement>) => {
+
+  function handleKeyDown(index: number, e: KeyboardEvent<HTMLInputElement>) {
     e.preventDefault()
 
     switch (e.key) {
@@ -70,29 +78,71 @@ export default function LapTimeInput({ trackId }: Props) {
     }
   }
 
-  // Fetch options when typing (debounced)
   useEffect(() => {
-    if (!showUserOptions) return
-    const q = userName.trim()
-    const id = window.setTimeout(() => {
-      socket.emit(WS_SEARCH_USERS, { q, limit: 10 }, (res: any) => {
-        if (res?.success && Array.isArray(res.users)) setUserOptions(res.users)
-      })
-    }, 150)
-    return () => clearTimeout(id)
-  }, [userName, showUserOptions, socket])
+    if (userId) return
+    socket.emit(
+      WS_GET_USERS,
+      undefined,
+      (r: GetUsersResponse | ErrorResponse) => {
+        if (!r.success) {
+          console.error(r.message)
+          return window.alert(r.message)
+        }
+
+        setUsers(r.users)
+      }
+    )
+  }, [socket])
 
   useEffect(() => {
-    if (!showTrackOptions) return
-    const q = trackLabel.trim()
-    const id = window.setTimeout(() => {
-      socket.emit(WS_SEARCH_TRACKS, { q, limit: 10 }, (res: any) => {
-        if (res?.success && Array.isArray(res.tracks))
-          setTrackOptions(res.tracks)
-      })
-    }, 150)
-    return () => clearTimeout(id)
-  }, [trackLabel, showTrackOptions, socket])
+    if (userId) return
+    socket.emit(
+      WS_GET_TRACKS,
+      undefined,
+      (r: GetTracksResponse | ErrorResponse) => {
+        if (!r.success) {
+          console.error(r.message)
+          return window.alert(r.message)
+        }
+
+        setTracks(r.tracks)
+      }
+    )
+  }, [socket])
+
+  function getMs() {
+    const tenMinutes = digits[0] !== '' ? parseInt(digits[0]) * 10 : 0
+    const minutes = digits[1] !== '' ? parseInt(digits[1]) : 0
+
+    const tenSeconds = digits[2] !== '' ? parseInt(digits[2]) * 10 : 0
+    const seconds = digits[3] !== '' ? parseInt(digits[3]) : 0
+
+    const tenHundredths = digits[5] !== '' ? parseInt(digits[5]) * 10 : 0
+    const hundredths = digits[4] !== '' ? parseInt(digits[4]) : 0
+
+    return formattedTimeToMs(
+      tenMinutes + minutes,
+      tenSeconds + seconds,
+      tenHundredths + hundredths
+    )
+  }
+
+  function isInputValid(): boolean {
+    return !!(getMs() > 0 && (trackId || track) && (userId || user))
+  }
+
+  function handleSubmit(e: FormEvent) {
+    if (!user) throw Error('No user selected')
+    if (!track) throw Error('No track selected')
+    e.preventDefault()
+
+    socket.emit(WS_POST_LAPTIME, {
+      duration: getMs(),
+      user: userId ?? user?.id,
+      track: trackId ?? track?.id,
+      comment: comment,
+    } satisfies PostLapTimeRequest)
+  }
 
   return (
     <form className='flex flex-col gap-6'>
@@ -122,93 +172,58 @@ export default function LapTimeInput({ trackId }: Props) {
       </div>
 
       <div className='flex flex-col gap-2'>
-        <div className='flex gap-2'>
-          <div className='relative flex-1'>
-            <input
-              value={userName}
-              onChange={e => {
-                setUserName(e.target.value)
-                setShowUserOptions(true)
-              }}
-              onFocus={() => setShowUserOptions(true)}
-              onBlur={() => setTimeout(() => setShowUserOptions(false), 100)}
-              placeholder='User'
-              className='focus:ring-accent/60 focus:border-accent w-full rounded-lg border border-white/10 bg-white/5 p-2 outline-none transition focus:ring-2'
-            />
-            {showUserOptions && userOptions.length > 0 && (
-              <div className='bg-background/95 absolute z-10 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-white/10 shadow-lg'>
-                {userOptions.map(u => (
-                  <button
-                    type='button'
-                    key={u.id}
-                    onMouseDown={e => e.preventDefault()}
-                    onClick={() => {
-                      setUserId(u.id)
-                      setUserName(u.name)
-                      setShowUserOptions(false)
-                    }}
-                    className='flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-white/10'
-                  >
-                    <span className='font-f1-bold'>{u.name}</span>
-                    {u.shortName && (
-                      <span className='text-white/60'>({u.shortName})</span>
-                    )}
-                  </button>
-                ))}
-              </div>
+        {(!userId || !trackId) && (
+          <div className='flex gap-2'>
+            {!userId && (
+              <SearchableDropdown
+                required={true}
+                placeholder='Select user'
+                selected={user}
+                setSelected={setUser}
+                items={
+                  users?.map(
+                    u =>
+                      ({
+                        id: u.id,
+                        label: u.shortName ?? u.name,
+                      }) satisfies LookupItem
+                  ) ?? []
+                }
+              />
+            )}
+            {!trackId && (
+              <SearchableDropdown
+                required={true}
+                placeholder='Select track'
+                selected={track}
+                setSelected={setTrack}
+                items={
+                  tracks?.map(
+                    t =>
+                      ({
+                        id: t.id,
+                        label: formatTrackName(t.number),
+                      }) satisfies LookupItem
+                  ) ?? []
+                }
+              />
             )}
           </div>
-
-          <div className='relative flex-1'>
-            <input
-              value={trackLabel}
-              onChange={e => {
-                setTrackLabel(e.target.value)
-                setShowTrackOptions(true)
-              }}
-              onFocus={() => setShowTrackOptions(true)}
-              onBlur={() => setTimeout(() => setShowTrackOptions(false), 100)}
-              placeholder='Track (#05)'
-              className='focus:ring-accent/60 focus:border-accent w-full rounded-lg border border-white/10 bg-white/5 p-2 outline-none transition focus:ring-2'
-            />
-            {showTrackOptions && trackOptions.length > 0 && (
-              <div className='bg-background/95 absolute z-10 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-white/10 shadow-lg'>
-                {trackOptions.map(t => (
-                  <button
-                    type='button'
-                    key={t.id}
-                    onMouseDown={e => e.preventDefault()}
-                    onClick={() => {
-                      setTrack(t.id)
-                      setTrackLabel(formatTrackName(t.number))
-                      setShowTrackOptions(false)
-                    }}
-                    className='flex w-full items-center justify-between px-3 py-2 text-left hover:bg-white/10'
-                  >
-                    <span className='font-f1-bold'>
-                      {formatTrackName(t.number)}
-                    </span>
-                    <span className='text-white/60'>
-                      {t.level} · {t.type}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+        )}
 
         <input
           value={comment}
           onChange={e => setComment(e.target.value)}
           placeholder='Comment'
-          className='focus:ring-accent/60 focus:border-accent rounded-lg border border-white/10 bg-white/5 p-2 outline-none transition focus:ring-2'
+          className='focus:ring-accent/60 focus:border-accent rounded-lg border border-white/10 bg-white/5 px-4 py-2 outline-none transition focus:ring-2'
         />
       </div>
 
       <button
         type='submit'
-        className='to-accent-secondary from-accent shadow-accent/60 w-full cursor-pointer rounded-lg bg-gradient-to-br py-2 font-semibold uppercase tracking-wider shadow-[0_10px_30px_-10px_rgba(var(--color-accent),0.6)] transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none'
+        onSubmit={handleSubmit}
+        disabled={!isInputValid()}
+        className='to-accent-secondary font-f1 from-accent shadow-accent/60 w-full cursor-pointer rounded-lg bg-gradient-to-br py-2 font-semibold uppercase tracking-wider shadow-[0_10px_30px_-10px_rgba(var(--color-accent),0.6)] transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none'
       >
         Submit
       </button>

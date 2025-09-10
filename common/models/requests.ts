@@ -1,3 +1,4 @@
+import type { TimeEntry } from './timeEntry'
 import type { Track } from './track'
 
 export type LoginRequest = {
@@ -24,12 +25,7 @@ export type GetLeaderboardRequest = {
   trackId: Track['id']
 }
 
-export type SearchUsersRequest = {
-  q: string
-  limit?: number
-}
-
-export type SearchTracksRequest = {
-  q: string
-  limit?: number
-}
+export type PostLapTime = Pick<
+  TimeEntry,
+  'duration' | 'user' | 'track' | 'comment'
+>

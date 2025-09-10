@@ -1,14 +1,14 @@
 import type { Leaderboard } from './leaderboard'
-import type { UserInfo } from './user'
 import type { Track } from './track'
+import type { UserInfo } from './user'
 
 export type BackendResponse =
   | ErrorResponse
   | GetLeaderboardsResponse
   | LoginResponse
   | RegisterResponse
-  | SearchUsersResponse
-  | SearchTracksResponse
+  | GetUsersResponse
+  | GetTracksResponse
 
 export type ErrorResponse = {
   success: false
@@ -30,12 +30,12 @@ export type GetLeaderboardsResponse = {
   leaderboards: Leaderboard[]
 }
 
-export type SearchUsersResponse = {
+export type GetUsersResponse = {
   success: true
   users: UserInfo[]
 }
 
-export type SearchTracksResponse = {
+export type GetTracksResponse = {
   success: true
   tracks: Track[]
 }

@@ -1,13 +1,14 @@
+import type { SearchTracksRequest } from '@chugmania/common/models/requests.js'
+import type {
+  BackendResponse,
+  GetTracksResponse,
+} from '@chugmania/common/models/responses.js'
 import { TRACK_LEVELS, TRACK_TYPES } from '@chugmania/common/models/track.ts'
 import { tryCatchAsync } from '@chugmania/common/utils/try-catch.js'
 import db from '@database/database'
 import { timeEntries, tracks } from '@database/schema'
 import { asc, eq } from 'drizzle-orm'
 import type { Socket } from 'socket.io'
-import type {
-  SearchTracksRequest,
-} from '@chugmania/common/models/requests.js'
-import type { BackendResponse } from '@chugmania/common/models/responses.js'
 
 export default class TrackManager {
   static async seed(): Promise<void> {
@@ -50,11 +51,8 @@ export default class TrackManager {
     return data.map(d => d.id)
   }
 
-  static async onSearchTracks(
-    _s: Socket,
-    req?: unknown
-  ): Promise<BackendResponse> {
-    const { q, limit = 10 } = (req as SearchTracksRequest) ?? { q: '' }
+  static async onGetTracks(s: Socket, req?: unknown): Promise<BackendResponse> {
+    const { q, limit = 200 } = (req as SearchTracksRequest) ?? { q: '' }
     const trimmed = (q ?? '').trim()
 
     // If query looks like a number or #number, match by exact number; else return first N ordered by number
@@ -80,6 +78,6 @@ export default class TrackManager {
     )
 
     if (error) throw error
-    return { success: true, tracks: data }
+    return { success: true, tracks: data } satisfies GetTracksResponse
   }
 }
