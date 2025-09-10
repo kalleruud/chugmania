@@ -81,7 +81,7 @@ export default function TimeEntryRow({
   const show = useMemo(() => {
     return {
       time: width >= 0, // always
-      gap: width >= 300,
+      gap: width >= 270,
       comment: width >= 700,
     }
   }, [width])
