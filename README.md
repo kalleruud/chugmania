@@ -4,7 +4,6 @@ This repository contains:
 
 - `backend/`: Node.js + TypeScript Socket.IO server. Drizzle + SQLite in `backend/database/`, runtime data in `backend/data/`.
 - `frontend/`: React + Vite app (TypeScript). Entry at `frontend/src/App.tsx`.
-  - Tracks page lists all tracks with search and links to individual leaderboards.
 - `common/`: Shared TypeScript models/utilities, consumed via `file:../common`.
 
 ## Quick Start
