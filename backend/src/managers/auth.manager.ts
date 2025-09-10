@@ -5,8 +5,8 @@ import {
 import type {
   BackendResponse,
   ErrorResponse,
-  LoginSuccessResponse,
-  RegisterSuccessResponse,
+  LoginResponse,
+  RegisterResponse,
 } from '@chugmania/common/models/responses.js'
 import { type User, type UserInfo } from '@chugmania/common/models/user.js'
 import { tryCatch, tryCatchAsync } from '@chugmania/common/utils/try-catch.js'
@@ -28,7 +28,7 @@ export default class AuthManager {
   }
 
   private static sign(user: UserInfo) {
-    return jwt.sign(user, SECRET, this.JWT_OPTIONS)
+    return jwt.sign(user, SECRET, AuthManager.JWT_OPTIONS)
   }
 
   private static verify(token: string | undefined): UserInfo {
@@ -40,7 +40,7 @@ export default class AuthManager {
     providedPassword: string,
     expectedHash: User['passwordHash']
   ) {
-    return expectedHash.equals(await this.hash(providedPassword))
+    return expectedHash.equals(await AuthManager.hash(providedPassword))
   }
 
   private static async hash(s: string): Promise<User['passwordHash']> {
@@ -49,18 +49,18 @@ export default class AuthManager {
   }
 
   static async checkAuth(socket: Socket): Promise<ExtendedError | UserInfo> {
-    console.debug(new Date().toISOString(), socket.id, '🔑 Checking auth...')
+    console.debug(new Date().toISOString(), socket.id, 'Checking auth...')
     const token = socket.handshake.auth.token as string
 
     if (!token) {
-      console.debug(new Date().toISOString(), socket.id, '🔒 No token found')
+      console.debug(new Date().toISOString(), socket.id, 'No token found')
       return {
         name: 'LoginError',
-        message: '',
+        message: 'No token provided',
       } satisfies ExtendedError
     }
 
-    console.debug(new Date().toISOString(), socket.id, '🔓 Found token:', token)
+    console.debug(new Date().toISOString(), socket.id, 'Found token:', token)
 
     const { data: user, error } = tryCatch(AuthManager.verify(token))
     if (error) {
@@ -89,7 +89,7 @@ export default class AuthManager {
         email: request.email,
         name: request.name,
         shortName: request.shortName,
-        passwordHash: await this.hash(request.password),
+        passwordHash: await AuthManager.hash(request.password),
       } satisfies typeof users.$inferInsert)
     )
 
@@ -104,8 +104,8 @@ export default class AuthManager {
     const { passwordHash: _, ...userInfo } = user
     return {
       success: true,
-      token: this.sign(userInfo),
-    } satisfies RegisterSuccessResponse
+      token: AuthManager.sign(userInfo),
+    } satisfies RegisterResponse
   }
 
   static async onLogin(
@@ -136,11 +136,18 @@ export default class AuthManager {
 
     const { passwordHash, ...userInfo } = data
 
-    return (await this.isPasswordValid(password, passwordHash))
+    console.debug(
+      new Date().toISOString(),
+      socket.id,
+      '👤 Logging in:',
+      userInfo.email
+    )
+
+    return (await AuthManager.isPasswordValid(password, passwordHash))
       ? ({
           success: true,
-          token: this.sign(userInfo),
-        } satisfies LoginSuccessResponse)
+          token: AuthManager.sign(userInfo),
+        } satisfies LoginResponse)
       : ({
           success: false,
           message: 'Incorrect password',

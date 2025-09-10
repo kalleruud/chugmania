@@ -1,17 +1,17 @@
-import {
-  AUTH_KEY,
-  WS_LOGIN_NAME,
-  WS_REGISTER_NAME,
-} from '@chugmania/common/models/constants.js'
 import type {
   LoginRequest,
   RegisterRequest,
 } from '@chugmania/common/models/requests.js'
 import {
-  isErrorResponse,
-  isLoginSuccessResponse,
-  isRegisterSuccessResponse,
+  type ErrorResponse,
+  type LoginResponse,
+  type RegisterResponse,
 } from '@chugmania/common/models/responses.js'
+import {
+  AUTH_KEY,
+  WS_LOGIN_NAME,
+  WS_REGISTER_NAME,
+} from '@chugmania/common/utils/constants.js'
 import {
   createContext,
   useContext,
@@ -41,25 +41,17 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     localStorage.getItem(AUTH_KEY)
   )
 
-  function handleResponse(response: unknown) {
-    if (isErrorResponse(response)) {
+  function handleResponse(
+    response: ErrorResponse | LoginResponse | RegisterResponse
+  ) {
+    if (response.success === false) {
       console.error(response.message)
       return setErrorMessage(response.message)
     }
 
-    if (isLoginSuccessResponse(response)) {
-      setErrorMessage('')
-      setToken(response.token)
-      return localStorage.setItem(AUTH_KEY, response.token)
-    }
-
-    if (isRegisterSuccessResponse(response)) {
-      setErrorMessage('')
-      setToken(response.token)
-      return localStorage.setItem(AUTH_KEY, response.token)
-    }
-
-    throw new Error('Shit went bad')
+    setErrorMessage('')
+    setToken(response.token)
+    return localStorage.setItem(AUTH_KEY, response.token)
   }
 
   const login: AuthContextType['login'] = r => {

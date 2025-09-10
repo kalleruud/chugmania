@@ -9,5 +9,9 @@
   },
   "files.associations": {
     "*.css": "tailwindcss"
+  },
+  "sonarlint.connectedMode.project": {
+    "connectionId": "kallerud.no",
+    "projectKey": "chugmania"
   }
 }

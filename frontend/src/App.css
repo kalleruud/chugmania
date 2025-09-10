@@ -11,6 +11,14 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  *:focus-visible {
+    @apply ring-accent outline-none ring-2;
+  }
+
+  *::selection {
+    @apply bg-accent-secondary;
+  }
+
   .main-background {
     @apply bg-radial-[at_100%_0%] from-background-secondary to-background to-75%;
   }
