@@ -82,6 +82,7 @@ export default function Tracks() {
           ))}
         </div>
       </div>
+
       {loading ? (
         <div className='flex items-center justify-center pt-48'>
           <Spinner size={48} className='text-accent' />

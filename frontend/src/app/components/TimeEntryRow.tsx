@@ -89,10 +89,7 @@ export default function TimeEntryRow({
   return (
     <tr
       ref={containerRef}
-      className={twMerge(
-        'bg-background flex items-center gap-3 px-3 py-2',
-        className
-      )}
+      className={twMerge('flex items-center gap-3 py-1', className)}
       role='row'
       {...rest}
     >

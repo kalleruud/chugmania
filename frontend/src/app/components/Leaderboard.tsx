@@ -13,16 +13,27 @@ export default function LeaderboardView({
   ...rest
 }: Readonly<TableProps & { entries: Leaderboard['entries'] }>) {
   if (!entries.length) {
-    return <div>No entries available</div>
+    return (
+      <div
+        className={twMerge(
+          'text-label-muted font-f1-italic flex size-full items-center justify-center p-4 text-sm',
+          className
+        )}
+      >
+        No entries available
+      </div>
+    )
   }
 
   return (
-    <table className={twMerge('w-full rounded-lg', className)} {...rest}>
-      <tbody>
-        {entries.map(t => (
-          <TimeEntryRow key={t.id} lapTime={t} />
-        ))}
-      </tbody>
-    </table>
+    <div className={className} {...rest}>
+      <table className='w-full table-auto'>
+        <tbody>
+          {entries.map(t => (
+            <TimeEntryRow key={t.id} lapTime={t} />
+          ))}
+        </tbody>
+      </table>
+    </div>
   )
 }
