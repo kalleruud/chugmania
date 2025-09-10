@@ -119,7 +119,7 @@ export default function Login() {
         <button
           type='submit'
           disabled={!isInputValid()}
-          className='to-accent-secondary from-accent shadow-accent/60 w-full rounded-lg bg-gradient-to-br py-2 font-semibold uppercase tracking-wider shadow-[0_10px_30px_-10px_rgba(var(--color-accent),0.6)] transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none'
+          className='to-accent-secondary from-accent shadow-accent/60 w-full cursor-pointer rounded-lg bg-gradient-to-br py-2 font-semibold uppercase tracking-wider shadow-[0_10px_30px_-10px_rgba(var(--color-accent),0.6)] transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none'
         >
           {isRegistering ? 'Sign up' : 'Sign in'}
         </button>

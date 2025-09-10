@@ -1,19 +1,24 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { useConnection } from '../../contexts/ConnectionContext'
+import type { Track } from '@chugmania/common/models/track.js'
+import type { UserInfo } from '@chugmania/common/models/user.js'
 import {
   WS_SEARCH_TRACKS,
   WS_SEARCH_USERS,
 } from '@chugmania/common/utils/constants.js'
-import type { UserInfo } from '@chugmania/common/models/user.js'
-import type { Track } from '@chugmania/common/models/track.js'
 import { formatTrackName } from '@chugmania/common/utils/track.js'
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from 'react'
+import { useConnection } from '../../contexts/ConnectionContext'
 
 type Props = Readonly<{ trackId?: string }>
 
-const maxValues = { minutes: 59, seconds: 59 }
-
 export default function LapTimeInput({ trackId }: Props) {
   const [digits, setDigits] = useState<string[]>(Array(6).fill(''))
+
   const [userId, setUserId] = useState('')
   const [userName, setUserName] = useState('')
   const [track, setTrack] = useState(trackId ?? '')
@@ -28,12 +33,10 @@ export default function LapTimeInput({ trackId }: Props) {
   const [showTrackOptions, setShowTrackOptions] = useState(false)
 
   const DIGIT = /^\d$/
-  const inputClass =
-    'focus:ring-accent/60 focus:border-accent h-12 w-10 rounded-md border border-white/10 bg-white/5 text-center text-lg caret-transparent outline-none transition focus:ring-2'
 
-  const focusAt = useCallback((i: number) => {
+  function setFocus(i: number) {
     inputs.current[i]?.focus()
-  }, [])
+  }
 
   const setDigitAt = useCallback((i: number, val: string) => {
     setDigits(prev => {
@@ -43,37 +46,29 @@ export default function LapTimeInput({ trackId }: Props) {
     })
   }, [])
 
-  const isLimitedIndex = (i: number) => i === 0 || i === 2
+  const handleKeyDown = (index: number, e: KeyboardEvent<HTMLInputElement>) => {
+    e.preventDefault()
 
-  const handleChange = (index: number, value: string) => {
-    if (value !== '' && !DIGIT.test(value)) return
-    if (value !== '' && isLimitedIndex(index) && parseInt(value, 10) > 5) return
-    setDigitAt(index, value)
-    if (value) focusAt(index + 1)
-  }
-
-  const handleKeyDown = (
-    index: number,
-    e: React.KeyboardEvent<HTMLInputElement>
-  ) => {
-    if (DIGIT.test(e.key)) {
-      e.preventDefault()
-      if (isLimitedIndex(index) && parseInt(e.key, 10) > 5) return
-      setDigitAt(index, e.key)
-      focusAt(index + 1)
-      return
+    switch (e.key) {
+      case 'ArrowLeft':
+        setFocus(index - 1)
+        break
+      case 'Tab':
+      case ' ':
+      case 'ArrowRight':
+        setFocus(index + 1)
+        break
+      case 'Backspace':
+      case 'Delete':
+        setDigitAt(index, '')
+        setFocus(index - 1)
+        break
+      default:
+        if (DIGIT.test(e.key)) {
+          setDigitAt(index, e.key)
+          setFocus(index + 1)
+        }
     }
-    if (e.key === 'Backspace') {
-      e.preventDefault()
-      if (digits[index]) setDigitAt(index, '')
-      else if (index > 0) {
-        setDigitAt(index - 1, '')
-        focusAt(index - 1)
-      }
-      return
-    }
-    if (e.key === 'ArrowLeft') focusAt(index - 1)
-    if (e.key === 'ArrowRight') focusAt(index + 1)
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -111,7 +106,8 @@ export default function LapTimeInput({ trackId }: Props) {
     const q = trackLabel.trim()
     const id = window.setTimeout(() => {
       socket.emit(WS_SEARCH_TRACKS, { q, limit: 10 }, (res: any) => {
-        if (res?.success && Array.isArray(res.tracks)) setTrackOptions(res.tracks)
+        if (res?.success && Array.isArray(res.tracks))
+          setTrackOptions(res.tracks)
       })
     }, 150)
     return () => clearTimeout(id)
@@ -124,26 +120,28 @@ export default function LapTimeInput({ trackId }: Props) {
     >
       <div className='flex items-center justify-center gap-1'>
         {digits.map((d, i) => (
-          <span key={i} className='flex items-center'>
+          <span key={i} className='flex items-center gap-1'>
             <input
               ref={el => {
                 if (el) inputs.current[i] = el
               }}
               value={d}
-              onChange={e => handleChange(i, e.target.value)}
               onKeyDown={e => handleKeyDown(i, e)}
               onFocus={e => e.currentTarget.select()}
               onClick={e => e.currentTarget.select()}
-              className={inputClass}
+              className={
+                'focus:ring-accent/60 focus:border-accent font-f1-bold h-16 w-12 rounded-lg border border-white/10 bg-white/5 text-center text-2xl tabular-nums caret-transparent transition selection:bg-transparent invalid:border-red-500/30 invalid:bg-red-500/30 focus:ring-2'
+              }
               inputMode='numeric'
-              pattern='[0-9]*'
+              pattern={i === 0 || i === 2 ? '[0-5]' : '[0-9]'}
               maxLength={1}
             />
-            {i === 1 && <span className='text-xl'>:</span>}
-            {i === 3 && <span className='text-xl'>.</span>}
+            {i === 1 && <span className='font-f1 text-2xl'>:</span>}
+            {i === 3 && <span className='font-f1 text-2xl'>.</span>}
           </span>
         ))}
       </div>
+
       <div className='flex gap-2'>
         <div className='relative flex-1'>
           <input
@@ -155,10 +153,10 @@ export default function LapTimeInput({ trackId }: Props) {
             onFocus={() => setShowUserOptions(true)}
             onBlur={() => setTimeout(() => setShowUserOptions(false), 100)}
             placeholder='User'
-            className='focus:ring-accent/60 focus:border-accent w-full rounded-md border border-white/10 bg-white/5 p-2 outline-none transition focus:ring-2'
+            className='focus:ring-accent/60 focus:border-accent w-full rounded-lg border border-white/10 bg-white/5 p-2 outline-none transition focus:ring-2'
           />
           {showUserOptions && userOptions.length > 0 && (
-            <div className='absolute z-10 mt-1 max-h-64 w-full overflow-auto rounded-md border border-white/10 bg-background/95 shadow-lg'>
+            <div className='bg-background/95 absolute z-10 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-white/10 shadow-lg'>
               {userOptions.map(u => (
                 <button
                   type='button'
@@ -169,7 +167,7 @@ export default function LapTimeInput({ trackId }: Props) {
                     setUserName(u.name)
                     setShowUserOptions(false)
                   }}
-                  className='hover:bg-white/10 flex w-full items-center gap-2 px-3 py-2 text-left'
+                  className='flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-white/10'
                 >
                   <span className='font-f1-bold'>{u.name}</span>
                   {u.shortName && (
@@ -191,10 +189,10 @@ export default function LapTimeInput({ trackId }: Props) {
             onFocus={() => setShowTrackOptions(true)}
             onBlur={() => setTimeout(() => setShowTrackOptions(false), 100)}
             placeholder='Track (#05)'
-            className='focus:ring-accent/60 focus:border-accent w-full rounded-md border border-white/10 bg-white/5 p-2 outline-none transition focus:ring-2'
+            className='focus:ring-accent/60 focus:border-accent w-full rounded-lg border border-white/10 bg-white/5 p-2 outline-none transition focus:ring-2'
           />
           {showTrackOptions && trackOptions.length > 0 && (
-            <div className='absolute z-10 mt-1 max-h-64 w-full overflow-auto rounded-md border border-white/10 bg-background/95 shadow-lg'>
+            <div className='bg-background/95 absolute z-10 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-white/10 shadow-lg'>
               {trackOptions.map(t => (
                 <button
                   type='button'
@@ -205,9 +203,11 @@ export default function LapTimeInput({ trackId }: Props) {
                     setTrackLabel(formatTrackName(t.number))
                     setShowTrackOptions(false)
                   }}
-                  className='hover:bg-white/10 flex w-full items-center justify-between px-3 py-2 text-left'
+                  className='flex w-full items-center justify-between px-3 py-2 text-left hover:bg-white/10'
                 >
-                  <span className='font-f1-bold'>{formatTrackName(t.number)}</span>
+                  <span className='font-f1-bold'>
+                    {formatTrackName(t.number)}
+                  </span>
                   <span className='text-white/60'>
                     {t.level} · {t.type}
                   </span>
@@ -217,15 +217,17 @@ export default function LapTimeInput({ trackId }: Props) {
           )}
         </div>
       </div>
+
       <input
         value={comment}
         onChange={e => setComment(e.target.value)}
         placeholder='Comment'
-        className='focus:ring-accent/60 focus:border-accent rounded-md border border-white/10 bg-white/5 p-2 outline-none transition focus:ring-2'
+        className='focus:ring-accent/60 focus:border-accent rounded-lg border border-white/10 bg-white/5 p-2 outline-none transition focus:ring-2'
       />
+
       <button
         type='submit'
-        className='bg-accent text-background font-f1-bold rounded-md px-4 py-2 uppercase'
+        className='to-accent-secondary from-accent shadow-accent/60 w-full cursor-pointer rounded-lg bg-gradient-to-br py-2 font-semibold uppercase tracking-wider shadow-[0_10px_30px_-10px_rgba(var(--color-accent),0.6)] transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none'
       >
         Submit
       </button>
