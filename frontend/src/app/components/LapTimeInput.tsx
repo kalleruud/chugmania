@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 
 type Props = Readonly<{ trackId?: string }>
 
@@ -11,49 +11,58 @@ export default function LapTimeInput({ trackId }: Props) {
   const [comment, setComment] = useState('')
   const inputs = useRef<HTMLInputElement[]>([])
 
+  const DIGIT = /^\d$/
+  const inputClass =
+    'focus:ring-accent/60 focus:border-accent h-12 w-10 rounded-md border border-white/10 bg-white/5 text-center text-lg caret-transparent outline-none transition focus:ring-2'
+
+  const focusAt = useCallback((i: number) => {
+    inputs.current[i]?.focus()
+  }, [])
+
+  const setDigitAt = useCallback((i: number, val: string) => {
+    setDigits(prev => {
+      const next = prev.slice()
+      next[i] = val
+      return next
+    })
+  }, [])
+
+  const isLimitedIndex = (i: number) => i === 0 || i === 2
+
   const handleChange = (index: number, value: string) => {
-    if (value !== '' && !/^[0-9]$/.test(value)) return
-    const nextDigits = [...digits]
-    nextDigits[index] = value
-    setDigits(nextDigits)
-    if (value) {
-      const next = inputs.current[index + 1]
-      if (next) next.focus()
-    }
+    if (value !== '' && !DIGIT.test(value)) return
+    if (value !== '' && isLimitedIndex(index) && parseInt(value, 10) > 5) return
+    setDigitAt(index, value)
+    if (value) focusAt(index + 1)
   }
 
   const handleKeyDown = (
     index: number,
     e: React.KeyboardEvent<HTMLInputElement>
   ) => {
-    if (/^[0-9]$/.test(e.key)) {
+    if (DIGIT.test(e.key)) {
       e.preventDefault()
-      const next = [...digits]
-      next[index] = e.key
-      setDigits(next)
-      inputs.current[index + 1]?.focus()
+      if (isLimitedIndex(index) && parseInt(e.key, 10) > 5) return
+      setDigitAt(index, e.key)
+      focusAt(index + 1)
       return
     }
     if (e.key === 'Backspace') {
       e.preventDefault()
-      const next = [...digits]
-      if (next[index]) {
-        next[index] = ''
-        setDigits(next)
-      } else if (index > 0) {
-        next[index - 1] = ''
-        setDigits(next)
-        inputs.current[index - 1]?.focus()
+      if (digits[index]) setDigitAt(index, '')
+      else if (index > 0) {
+        setDigitAt(index - 1, '')
+        focusAt(index - 1)
       }
       return
     }
-    if (e.key === 'ArrowLeft') inputs.current[index - 1]?.focus()
-    if (e.key === 'ArrowRight') inputs.current[index + 1]?.focus()
+    if (e.key === 'ArrowLeft') focusAt(index - 1)
+    if (e.key === 'ArrowRight') focusAt(index + 1)
   }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    const t = digits.map(d => (d ? d : '0')).join('')
+    const t = digits.map(d => d ?? '0').join('')
     const minutes = parseInt(t.slice(0, 2))
     const seconds = parseInt(t.slice(2, 4))
     const hundredths = parseInt(t.slice(4))
@@ -76,24 +85,24 @@ export default function LapTimeInput({ trackId }: Props) {
     >
       <div className='flex items-center justify-center gap-1'>
         {digits.map((d, i) => (
-          <>
+          <span key={i} className='flex items-center'>
             <input
-              key={i}
               ref={el => {
                 if (el) inputs.current[i] = el
               }}
               value={d}
               onChange={e => handleChange(i, e.target.value)}
               onKeyDown={e => handleKeyDown(i, e)}
-              onFocus={e => e.target.select()}
+              onFocus={e => e.currentTarget.select()}
               onClick={e => e.currentTarget.select()}
-              className='focus:ring-accent/60 focus:border-accent h-12 w-10 rounded-md border border-white/10 bg-white/5 text-center text-lg caret-transparent outline-none transition focus:ring-2'
+              className={inputClass}
               inputMode='numeric'
+              pattern='[0-9]*'
               maxLength={1}
             />
             {i === 1 && <span className='text-xl'>:</span>}
             {i === 3 && <span className='text-xl'>.</span>}
-          </>
+          </span>
         ))}
       </div>
       <div className='flex gap-2'>
