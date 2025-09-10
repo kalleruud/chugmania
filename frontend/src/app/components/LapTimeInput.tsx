@@ -12,12 +12,14 @@ export default function LapTimeInput({ trackId }: Props) {
   const inputs = useRef<HTMLInputElement[]>([])
 
   const handleChange = (index: number, value: string) => {
-    if (!/^[0-9]$/.test(value)) return
+    if (value !== '' && !/^[0-9]$/.test(value)) return
     const nextDigits = [...digits]
     nextDigits[index] = value
     setDigits(nextDigits)
-    const next = inputs.current[index + 1]
-    if (next) next.focus()
+    if (value) {
+      const next = inputs.current[index + 1]
+      if (next) next.focus()
+    }
   }
 
   const handleKeyDown = (
