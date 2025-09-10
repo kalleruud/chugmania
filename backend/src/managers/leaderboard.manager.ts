@@ -10,7 +10,6 @@ import { timeEntries, tracks, users } from '@database/schema'
 import { asc, eq } from 'drizzle-orm'
 import type { Socket } from 'socket.io'
 import TrackManager from './track.manager'
-import UserManager from './user.manager'
 
 export default class LeaderboardManager {
   private static async getLeaderboard(
@@ -55,7 +54,7 @@ export default class LeaderboardManager {
         gap.leader = r.entry.duration - leaderDuration
       if (next !== undefined) gap.next = next - r.entry.duration
 
-      const userInfo = UserManager.toUserInfo(r.user)
+      const { passwordHash: _, ...userInfo } = r.user
       return {
         id: r.entry.id,
         duration: r.entry.duration,
