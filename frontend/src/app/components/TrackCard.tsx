@@ -1,7 +1,7 @@
 import type { Leaderboard } from '@chugmania/common/models/leaderboard.js'
 import { formatTrackName } from '@chugmania/common/utils/track.js'
 import { Link, type LinkProps } from 'react-router-dom'
-import TimeEntryRow from './TimeEntryRow'
+import LeaderboardView from './Leaderboard'
 import TrackTag from './TrackTag'
 
 export type TrackCardProps = Readonly<
@@ -51,13 +51,7 @@ export default function TrackCard({
           </div>
         </div>
 
-        <div className='mb-4 rounded-lg border border-white/10 bg-black/20'>
-          {entries.length === 0 ? (
-            <div className='text-label-muted p-3 text-xs'>No times yet</div>
-          ) : (
-            entries.map(t => <TimeEntryRow key={t.id} lapTime={t} />)
-          )}
-        </div>
+        <LeaderboardView entries={entries} />
 
         <div className='flex items-center gap-2.5 text-slate-300'>
           <TrackTag trackLevel={track.level}>{track.level}</TrackTag>
