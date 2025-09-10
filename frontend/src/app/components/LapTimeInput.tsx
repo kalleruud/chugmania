@@ -86,6 +86,7 @@ export default function LapTimeInput({ trackId }: Props) {
               onChange={e => handleChange(i, e.target.value)}
               onKeyDown={e => handleKeyDown(i, e)}
               onFocus={e => e.target.select()}
+              onClick={e => e.currentTarget.select()}
               className='focus:ring-accent/60 focus:border-accent h-12 w-10 rounded-md border border-white/10 bg-white/5 text-center text-lg outline-none transition focus:ring-2'
               inputMode='numeric'
               maxLength={1}
