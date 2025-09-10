@@ -3,6 +3,11 @@ import { tryCatchAsync } from '@chugmania/common/utils/try-catch.js'
 import db from '@database/database'
 import { timeEntries, tracks } from '@database/schema'
 import { asc, eq } from 'drizzle-orm'
+import type { Socket } from 'socket.io'
+import type {
+  SearchTracksRequest,
+} from '@chugmania/common/models/requests.js'
+import type { BackendResponse } from '@chugmania/common/models/responses.js'
 
 export default class TrackManager {
   static async seed(): Promise<void> {
@@ -43,5 +48,38 @@ export default class TrackManager {
 
     if (error) throw error
     return data.map(d => d.id)
+  }
+
+  static async onSearchTracks(
+    _s: Socket,
+    req?: unknown
+  ): Promise<BackendResponse> {
+    const { q, limit = 10 } = (req as SearchTracksRequest) ?? { q: '' }
+    const trimmed = (q ?? '').trim()
+
+    // If query looks like a number or #number, match by exact number; else return first N ordered by number
+    const numMatch = trimmed.replace(/^#/, '')
+    const num = /^\d+$/.test(numMatch) ? parseInt(numMatch, 10) : null
+
+    const { data, error } = await tryCatchAsync(
+      db
+        .select({
+          id: tracks.id,
+          number: tracks.number,
+          level: tracks.level,
+          type: tracks.type,
+          isChuggable: tracks.isChuggable,
+          createdAt: tracks.createdAt,
+          updatedAt: tracks.updatedAt,
+          deletedAt: tracks.deletedAt,
+        })
+        .from(tracks)
+        .where(num !== null ? eq(tracks.number, num) : undefined)
+        .orderBy(asc(tracks.number))
+        .limit(limit)
+    )
+
+    if (error) throw error
+    return { success: true, tracks: data }
   }
 }

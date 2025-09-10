@@ -4,5 +4,7 @@ export const WS_LOGIN_NAME = 'login'
 export const WS_REGISTER_NAME = 'register'
 export const WS_GET_LEADERBOARD_SUMMARIES = 'get_leaderboard_summaries'
 export const WS_GET_LEADERBOARD = 'get_leaderboard'
+export const WS_SEARCH_USERS = 'search_users'
+export const WS_SEARCH_TRACKS = 'search_tracks'
 
 export const AUTH_KEY = 'auth'

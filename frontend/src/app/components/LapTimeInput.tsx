@@ -1,4 +1,12 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useConnection } from '../../contexts/ConnectionContext'
+import {
+  WS_SEARCH_TRACKS,
+  WS_SEARCH_USERS,
+} from '@chugmania/common/utils/constants.js'
+import type { UserInfo } from '@chugmania/common/models/user.js'
+import type { Track } from '@chugmania/common/models/track.js'
+import { formatTrackName } from '@chugmania/common/utils/track.js'
 
 type Props = Readonly<{ trackId?: string }>
 
@@ -6,10 +14,18 @@ const maxValues = { minutes: 59, seconds: 59 }
 
 export default function LapTimeInput({ trackId }: Props) {
   const [digits, setDigits] = useState<string[]>(Array(6).fill(''))
-  const [user, setUser] = useState('')
+  const [userId, setUserId] = useState('')
+  const [userName, setUserName] = useState('')
   const [track, setTrack] = useState(trackId ?? '')
+  const [trackLabel, setTrackLabel] = useState('')
   const [comment, setComment] = useState('')
   const inputs = useRef<HTMLInputElement[]>([])
+  const { socket } = useConnection()
+
+  const [userOptions, setUserOptions] = useState<UserInfo[]>([])
+  const [trackOptions, setTrackOptions] = useState<Track[]>([])
+  const [showUserOptions, setShowUserOptions] = useState(false)
+  const [showTrackOptions, setShowTrackOptions] = useState(false)
 
   const DIGIT = /^\d$/
   const inputClass =
@@ -75,8 +91,31 @@ export default function LapTimeInput({ trackId }: Props) {
       return
     }
     const time = `${t.slice(0, 2)}:${t.slice(2, 4)}.${t.slice(4)}`
-    console.log({ user, track, comment, time })
+    console.log({ userId, track, comment, time })
   }
+
+  // Fetch options when typing (debounced)
+  useEffect(() => {
+    if (!showUserOptions) return
+    const q = userName.trim()
+    const id = window.setTimeout(() => {
+      socket.emit(WS_SEARCH_USERS, { q, limit: 10 }, (res: any) => {
+        if (res?.success && Array.isArray(res.users)) setUserOptions(res.users)
+      })
+    }, 150)
+    return () => clearTimeout(id)
+  }, [userName, showUserOptions, socket])
+
+  useEffect(() => {
+    if (!showTrackOptions) return
+    const q = trackLabel.trim()
+    const id = window.setTimeout(() => {
+      socket.emit(WS_SEARCH_TRACKS, { q, limit: 10 }, (res: any) => {
+        if (res?.success && Array.isArray(res.tracks)) setTrackOptions(res.tracks)
+      })
+    }, 150)
+    return () => clearTimeout(id)
+  }, [trackLabel, showTrackOptions, socket])
 
   return (
     <form
@@ -106,29 +145,77 @@ export default function LapTimeInput({ trackId }: Props) {
         ))}
       </div>
       <div className='flex gap-2'>
-        <input
-          list='users'
-          value={user}
-          onChange={e => setUser(e.target.value)}
-          placeholder='User'
-          className='focus:ring-accent/60 focus:border-accent flex-1 rounded-md border border-white/10 bg-white/5 p-2 outline-none transition focus:ring-2'
-        />
-        <datalist id='users'>
-          <option value='You' />
-          <option value='Alice' />
-          <option value='Bob' />
-        </datalist>
-        <input
-          list='tracks'
-          value={track}
-          onChange={e => setTrack(e.target.value)}
-          placeholder='Track'
-          className='focus:ring-accent/60 focus:border-accent flex-1 rounded-md border border-white/10 bg-white/5 p-2 outline-none transition focus:ring-2'
-        />
-        <datalist id='tracks'>
-          <option value='1'>#01</option>
-          <option value='2'>#02</option>
-        </datalist>
+        <div className='relative flex-1'>
+          <input
+            value={userName}
+            onChange={e => {
+              setUserName(e.target.value)
+              setShowUserOptions(true)
+            }}
+            onFocus={() => setShowUserOptions(true)}
+            onBlur={() => setTimeout(() => setShowUserOptions(false), 100)}
+            placeholder='User'
+            className='focus:ring-accent/60 focus:border-accent w-full rounded-md border border-white/10 bg-white/5 p-2 outline-none transition focus:ring-2'
+          />
+          {showUserOptions && userOptions.length > 0 && (
+            <div className='absolute z-10 mt-1 max-h-64 w-full overflow-auto rounded-md border border-white/10 bg-background/95 shadow-lg'>
+              {userOptions.map(u => (
+                <button
+                  type='button'
+                  key={u.id}
+                  onMouseDown={e => e.preventDefault()}
+                  onClick={() => {
+                    setUserId(u.id)
+                    setUserName(u.name)
+                    setShowUserOptions(false)
+                  }}
+                  className='hover:bg-white/10 flex w-full items-center gap-2 px-3 py-2 text-left'
+                >
+                  <span className='font-f1-bold'>{u.name}</span>
+                  {u.shortName && (
+                    <span className='text-white/60'>({u.shortName})</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className='relative flex-1'>
+          <input
+            value={trackLabel}
+            onChange={e => {
+              setTrackLabel(e.target.value)
+              setShowTrackOptions(true)
+            }}
+            onFocus={() => setShowTrackOptions(true)}
+            onBlur={() => setTimeout(() => setShowTrackOptions(false), 100)}
+            placeholder='Track (#05)'
+            className='focus:ring-accent/60 focus:border-accent w-full rounded-md border border-white/10 bg-white/5 p-2 outline-none transition focus:ring-2'
+          />
+          {showTrackOptions && trackOptions.length > 0 && (
+            <div className='absolute z-10 mt-1 max-h-64 w-full overflow-auto rounded-md border border-white/10 bg-background/95 shadow-lg'>
+              {trackOptions.map(t => (
+                <button
+                  type='button'
+                  key={t.id}
+                  onMouseDown={e => e.preventDefault()}
+                  onClick={() => {
+                    setTrack(t.id)
+                    setTrackLabel(formatTrackName(t.number))
+                    setShowTrackOptions(false)
+                  }}
+                  className='hover:bg-white/10 flex w-full items-center justify-between px-3 py-2 text-left'
+                >
+                  <span className='font-f1-bold'>{formatTrackName(t.number)}</span>
+                  <span className='text-white/60'>
+                    {t.level} · {t.type}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
       <input
         value={comment}

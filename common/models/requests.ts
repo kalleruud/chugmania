@@ -23,3 +23,13 @@ export function isRegisterRequest(data: any): data is RegisterRequest {
 export type GetLeaderboardRequest = {
   trackId: Track['id']
 }
+
+export type SearchUsersRequest = {
+  q: string
+  limit?: number
+}
+
+export type SearchTracksRequest = {
+  q: string
+  limit?: number
+}
