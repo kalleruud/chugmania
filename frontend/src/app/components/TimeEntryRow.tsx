@@ -98,7 +98,10 @@ export default function TimeEntryRow({
     <tr
       ref={containerRef}
       className={twMerge('flex items-center gap-3 py-1', className)}
-      title={lapTime.comment ?? undefined}
+      title={
+        lapTime.comment ??
+        `${lapTime.user.name} - ${formatTime(lapTime.duration)}`
+      }
       role='row'
       {...rest}
     >
@@ -110,11 +113,6 @@ export default function TimeEntryRow({
 
       {show.gap && <GapPart gap={lapTime.gap} />}
       {show.time && <TimePart duration={lapTime.duration} />}
-      {show.comment && lapTime.comment && (
-        <td className='font-f1-italic text-label-muted items-center text-sm uppercase'>
-          {lapTime.comment}
-        </td>
-      )}
     </tr>
   )
 }

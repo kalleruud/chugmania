@@ -9,6 +9,7 @@ import db from '@database/database'
 import { timeEntries, tracks, users } from '@database/schema'
 import { asc, eq } from 'drizzle-orm'
 import type { Socket } from 'socket.io'
+import TrackManager from './track.manager'
 import UserManager from './user.manager'
 
 export default class LeaderboardManager {
@@ -81,19 +82,10 @@ export default class LeaderboardManager {
     offset = 0,
     limit = 100
   ): Promise<Leaderboard[]> {
-    const trackRows = await db.query.tracks.findMany({
-      offset,
-      limit,
-      orderBy: asc(tracks.number),
-    })
-
-    console.debug(new Date().toISOString(), 'getLeaderboardSummaries', {
-      offset,
-      limit,
-    })
+    const trackRows = await TrackManager.getTrackIdsWithLapTimes(offset, limit)
 
     return Promise.all(
-      trackRows.map(t => LeaderboardManager.getLeaderboard(t.id, 0, 3))
+      trackRows.map(id => LeaderboardManager.getLeaderboard(id, 0, 3))
     )
   }
 

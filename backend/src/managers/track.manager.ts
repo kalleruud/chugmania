@@ -1,7 +1,8 @@
 import { TRACK_LEVELS, TRACK_TYPES } from '@chugmania/common/models/track.ts'
 import { tryCatchAsync } from '@chugmania/common/utils/try-catch.js'
 import db from '@database/database'
-import { tracks } from '@database/schema'
+import { timeEntries, tracks } from '@database/schema'
+import { asc, eq } from 'drizzle-orm'
 
 export default class TrackManager {
   static async seed(): Promise<void> {
@@ -23,5 +24,24 @@ export default class TrackManager {
     }
     await db.insert(tracks).values(items)
     console.log(`Inserted ${trackCount} tracks`)
+  }
+
+  static async getTrackIdsWithLapTimes(
+    offset = 0,
+    limit = 100
+  ): Promise<string[]> {
+    const { data, error } = await tryCatchAsync(
+      db
+        .select({ id: tracks.id })
+        .from(tracks)
+        .innerJoin(timeEntries, eq(tracks.id, timeEntries.track))
+        .groupBy(tracks.id)
+        .orderBy(asc(tracks.number))
+        .offset(offset)
+        .limit(limit)
+    )
+
+    if (error) throw error
+    return data.map(d => d.id)
   }
 }
