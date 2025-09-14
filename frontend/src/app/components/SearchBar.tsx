@@ -17,25 +17,23 @@ export default function SearchBar({
   const inputRef = useRef<HTMLInputElement | null>(null)
 
   return (
-    <div className={`relative ${className}`}>
-      <Search
-        size={20}
-        className='text-label-muted pointer-events-none absolute left-5 top-1/2 -translate-y-1/2'
-        aria-hidden='true'
-      />
+    <div
+      className={`focus-within:ring-accent/60 focus-within:border-accent flex w-full items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 outline-none transition focus-within:ring-2 ${className}`}
+    >
+      <Search className='text-label-muted size-5' aria-hidden='true' />
       <input
         ref={inputRef}
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
-        className='focus:ring-accent/60 focus:border-accent placeholder:text-label-muted h-14 w-full rounded-xl border border-white/10 bg-white/5 pl-12 pr-12 text-base outline-none transition focus:ring-2'
+        className='placeholder:text-label-muted flex-1 focus:ring-transparent'
         aria-label='Search'
       />
       {!!value && (
         <button
           type='button'
           onClick={() => onChange('')}
-          className='text-label-muted absolute right-2.5 top-1/2 -translate-y-1/2 rounded-xl p-2 transition hover:cursor-pointer hover:text-white'
+          className='text-label-muted rounded-xl transition hover:cursor-pointer hover:text-white'
           aria-label='Clear search'
         >
           <X size={18} />

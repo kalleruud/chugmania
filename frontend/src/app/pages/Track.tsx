@@ -9,18 +9,15 @@ import { useCallback, useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useConnection } from '../../contexts/ConnectionContext'
 import LapTimeInput from '../components/LapTimeInput'
-import SearchBar from '../components/SearchBar'
+import LeaderboardView from '../components/Leaderboard'
 import Spinner from '../components/Spinner'
 import Tag from '../components/Tag'
-import TimeEntryRow from '../components/TimeEntryRow'
 
 export default function Track() {
   const { id } = useParams()
   const { socket } = useConnection()
   const [entries, setEntries] = useState<LeaderboardEntry[]>([])
   const [loading, setLoading] = useState(true)
-  const [gapType, setGapType] = useState<'leader' | 'gap'>('leader')
-  const [search, setSearch] = useState('')
 
   const load = useCallback(() => {
     if (!id) return
@@ -48,65 +45,31 @@ export default function Track() {
     load()
   }, [id, load])
 
-  const term = search.toLowerCase()
-
-  function scrollToFirstMatch() {
-    const match = entries.find(e => e.user.name.toLowerCase().includes(term))
-    if (match) {
-      document
-        .getElementById(`entry-${match.id}`)
-        ?.scrollIntoView({ block: 'center' })
-    }
-  }
-
   return (
-    <div className='flex flex-col gap-4'>
-      <LapTimeInput trackId={id} />
-      <div className='mx-auto w-full max-w-3xl space-y-4'>
-        <form
-          onSubmit={e => {
-            e.preventDefault()
-            scrollToFirstMatch()
-          }}
-        >
-          <SearchBar value={search} onChange={setSearch} />
-        </form>
-        <div className='flex gap-2'>
-          <Tag
-            onClick={() => setGapType('leader')}
-            selected={gapType === 'leader'}
-          >
-            Leader gap
+    <div className='flex w-full flex-col col-auto gap-6'>
+      <section className='rounded-2xl border border-white/10 bg-white/5 px-5 pb-5 pt-10'>
+        <LapTimeInput trackId={id} />
+      </section>
+
+      <section className='rounded-2xl border border-white/10 bg-white/5 p-5'>
+        <header className='flex items-center justify-between border-b border-white/10 px-2 pb-2'>
+          <h2 className='font-f1 text-lg uppercase tracking-wider'>
+            Leaderboard
+          </h2>
+          <Tag variation='muted' aria-label='Entries shown'>
+            {entries.length} entries
           </Tag>
-          <Tag onClick={() => setGapType('gap')} selected={gapType === 'gap'}>
-            Previous gap
-          </Tag>
-        </div>
-        <div className='border-b border-white/10' />
+        </header>
+
         <div className='relative'>
-          <table className='w-full table-auto'>
-            <tbody>
-              {entries.map(e => {
-                const match = e.user.name.toLowerCase().includes(term)
-                return (
-                  <TimeEntryRow
-                    key={e.id}
-                    id={`entry-${e.id}`}
-                    lapTime={e}
-                    gapType={gapType}
-                    className={match ? undefined : 'opacity-30'}
-                  />
-                )
-              })}
-            </tbody>
-          </table>
+          <LeaderboardView entries={entries} />
           {loading && (
             <div className='flex justify-center p-4'>
               <Spinner size={24} className='text-accent' />
             </div>
           )}
         </div>
-      </div>
+      </section>
     </div>
   )
 }

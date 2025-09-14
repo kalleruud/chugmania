@@ -19,9 +19,11 @@ import {
   useEffect,
   useRef,
   useState,
+  type DetailedHTMLProps,
   type FormEvent,
   type KeyboardEvent,
 } from 'react'
+import { twMerge } from 'tailwind-merge'
 import { useAuth } from '../../contexts/AuthContext'
 import { useConnection } from '../../contexts/ConnectionContext'
 import SearchableDropdown, { type LookupItem } from './SearchableDropdown'
@@ -36,10 +38,17 @@ const cache: {
   track: undefined,
 }
 
+type LapTimeInputProps = DetailedHTMLProps<
+  React.FormHTMLAttributes<HTMLFormElement>,
+  HTMLFormElement
+> & { trackId?: Track['id']; userId?: Track['id'] }
+
 export default function LapTimeInput({
   trackId,
   userId,
-}: Readonly<{ trackId?: Track['id']; userId?: Track['id'] }>) {
+  className,
+  onSubmit,
+}: Readonly<LapTimeInputProps>) {
   const { socket } = useConnection()
   const { user: loggedInUser } = useAuth()
   const loggedInLookup = loggedInUser
@@ -193,13 +202,17 @@ export default function LapTimeInput({
         clearDigits()
       }
     )
+    onSubmit?.(e)
   }
 
   // Stable keys for each digit position to avoid using array index as key
   const DIGIT_KEYS = ['m10', 'm1', 's10', 's1', 'h1', 'h10'] as const
 
   return (
-    <form className='flex flex-col gap-6' onSubmit={handleSubmit}>
+    <form
+      className={twMerge('flex flex-col gap-6', className)}
+      onSubmit={handleSubmit}
+    >
       <div className='flex items-center justify-center gap-1'>
         {digits.map((d, i) => (
           <span key={DIGIT_KEYS[i]} className='flex items-center gap-1'>
@@ -277,7 +290,7 @@ export default function LapTimeInput({
       <button
         type='submit'
         disabled={!isInputValid()}
-        className='to-accent-secondary font-f1 from-accent shadow-accent/60 w-full cursor-pointer rounded-lg bg-gradient-to-br py-2 font-semibold uppercase tracking-wider shadow-[0_10px_30px_-10px_rgba(var(--color-accent),0.6)] transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none'
+        className='to-accent-secondary font-f1 from-accent shadow-accent/60 w-full cursor-pointer rounded-lg bg-gradient-to-br py-2 font-semibold uppercase tracking-wider shadow-[0_10px_30px_-10px_rgba(var(--color-accent),0.6)] transition valid:active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none'
       >
         Submit
       </button>
