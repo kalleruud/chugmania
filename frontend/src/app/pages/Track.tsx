@@ -1,17 +1,18 @@
-import type { LeaderboardEntry } from '@chugmania/common/models/timeEntry.js'
+import type { GetLeaderboardRequest } from '@chugmania/common/models/requests.js'
 import {
   type ErrorResponse,
   type GetLeaderboardsResponse,
 } from '@chugmania/common/models/responses.js'
+import type { LeaderboardEntry } from '@chugmania/common/models/timeEntry.js'
 import { WS_GET_LEADERBOARD } from '@chugmania/common/utils/constants.js'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useConnection } from '../../contexts/ConnectionContext'
+import LapTimeInput from '../components/LapTimeInput'
 import SearchBar from '../components/SearchBar'
 import Spinner from '../components/Spinner'
 import Tag from '../components/Tag'
 import TimeEntryRow from '../components/TimeEntryRow'
-import LapTimeInput from '../components/LapTimeInput'
 
 export default function Track() {
   const { id } = useParams()
@@ -24,40 +25,37 @@ export default function Track() {
   const [search, setSearch] = useState('')
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
 
-  const load = useCallback(
-    (o: number) => {
-      if (!id) return
-      setLoading(true)
-      socket.emit(
-        WS_GET_LEADERBOARD,
-        { trackId: id, offset: o },
-        (r: GetLeaderboardsResponse | ErrorResponse) => {
-          if (!r.success) {
-            console.error(r.message)
-            window.alert(r.message)
-            setLoading(false)
-            return
-          }
-          const lb = r.leaderboards[0]
-          setEntries(prev => [...prev, ...lb.entries])
-          setTotal(lb.totalEntries)
+  const load = useCallback(() => {
+    if (!id) return
+    setLoading(true)
+    socket.emit(
+      WS_GET_LEADERBOARD,
+      { trackId: id } satisfies GetLeaderboardRequest,
+      (r: GetLeaderboardsResponse | ErrorResponse) => {
+        if (!r.success) {
+          console.error(r.message)
+          window.alert(r.message)
           setLoading(false)
+          return
         }
-      )
-    },
-    [id, socket]
-  )
+        const lb = r.leaderboards[0]
+        setEntries(prev => [...prev, ...lb.entries])
+        setTotal(lb.totalEntries)
+        setLoading(false)
+      }
+    )
+  }, [id, socket])
 
   useEffect(() => {
     if (!id) return
     setEntries([])
     setOffset(0)
-    load(0)
+    load()
   }, [id, load])
 
   useEffect(() => {
     if (offset === 0) return
-    load(offset)
+    load()
   }, [offset, load])
 
   useEffect(() => {
@@ -74,9 +72,7 @@ export default function Track() {
   const term = search.toLowerCase()
 
   function scrollToFirstMatch() {
-    const match = entries.find(e =>
-      e.user.name.toLowerCase().includes(term)
-    )
+    const match = entries.find(e => e.user.name.toLowerCase().includes(term))
     if (match) {
       document
         .getElementById(`entry-${match.id}`)
@@ -97,7 +93,10 @@ export default function Track() {
           <SearchBar value={search} onChange={setSearch} />
         </form>
         <div className='flex gap-2'>
-          <Tag onClick={() => setGapType('leader')} selected={gapType === 'leader'}>
+          <Tag
+            onClick={() => setGapType('leader')}
+            selected={gapType === 'leader'}
+          >
             Leader gap
           </Tag>
           <Tag onClick={() => setGapType('gap')} selected={gapType === 'gap'}>
@@ -133,4 +132,3 @@ export default function Track() {
     </div>
   )
 }
-

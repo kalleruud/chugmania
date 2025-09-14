@@ -120,13 +120,7 @@ export default class LeaderboardManager {
 
     return {
       success: true,
-      leaderboards: [
-        await LeaderboardManager.getLeaderboard(
-          request.trackId,
-          request.offset ?? 0,
-          100
-        ),
-      ],
+      leaderboards: [await LeaderboardManager.getLeaderboard(request.trackId)],
     } satisfies GetLeaderboardsResponse
   }
 }
