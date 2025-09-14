@@ -121,7 +121,11 @@ export default class LeaderboardManager {
     return {
       success: true,
       leaderboards: [
-        await LeaderboardManager.getLeaderboard(request.trackId, 0, 100),
+        await LeaderboardManager.getLeaderboard(
+          request.trackId,
+          request.offset ?? 0,
+          100
+        ),
       ],
     } satisfies GetLeaderboardsResponse
   }

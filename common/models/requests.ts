@@ -23,6 +23,7 @@ export function isRegisterRequest(data: any): data is RegisterRequest {
 
 export type GetLeaderboardRequest = {
   trackId: Track['id']
+  offset?: number
 }
 
 export function isGetLeaderboardRequest(
