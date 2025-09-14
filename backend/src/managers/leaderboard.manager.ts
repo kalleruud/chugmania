@@ -50,10 +50,13 @@ export default class LeaderboardManager {
       const next = i < arr.length - 1 ? arr[i + 1]!.entry.duration : undefined
 
       const gap: LeaderboardEntryGap = { position: i + 1 }
-      if (prev !== undefined) gap.previous = r.entry.duration - prev
+      // Round gaps to nearest hundredth (10 ms) to avoid off-by-one issues
+      const roundToHundredth = (ms: number) => Math.round(ms / 10) * 10
+      if (prev !== undefined)
+        gap.previous = roundToHundredth(r.entry.duration - prev)
       if (i > 0 && leaderDuration !== undefined)
-        gap.leader = r.entry.duration - leaderDuration
-      if (next !== undefined) gap.next = next - r.entry.duration
+        gap.leader = roundToHundredth(r.entry.duration - leaderDuration)
+      if (next !== undefined) gap.next = roundToHundredth(next - r.entry.duration)
 
       const userInfo = { ...r.user, passwordHash: undefined }
       return {
