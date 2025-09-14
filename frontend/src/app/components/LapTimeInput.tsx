@@ -69,6 +69,12 @@ export default function LapTimeInput({
     cache.time[i] = val
   }, [])
 
+  const clearDigits = useCallback(() => {
+    const empty = Array(6).fill('')
+    cache.time = empty
+    setDigits(empty)
+  }, [])
+
   useEffect(() => {
     cache.user = selectedUser
   }, [selectedUser])
@@ -184,6 +190,7 @@ export default function LapTimeInput({
           console.error(r.message)
           return window.alert(r.message)
         }
+        clearDigits()
       }
     )
   }
