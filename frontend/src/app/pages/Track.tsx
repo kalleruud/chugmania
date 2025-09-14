@@ -24,40 +24,46 @@ export default function Track() {
   const [search, setSearch] = useState('')
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
 
-  const load = useCallback(() => {
-    if (!id) return
-    setLoading(true)
-    socket.emit(
-      WS_GET_LEADERBOARD,
-      { trackId: id, offset },
-      (r: GetLeaderboardsResponse | ErrorResponse) => {
-        if (!r.success) {
-          console.error(r.message)
-          window.alert(r.message)
+  const load = useCallback(
+    (o: number) => {
+      if (!id) return
+      setLoading(true)
+      socket.emit(
+        WS_GET_LEADERBOARD,
+        { trackId: id, offset: o },
+        (r: GetLeaderboardsResponse | ErrorResponse) => {
+          if (!r.success) {
+            console.error(r.message)
+            window.alert(r.message)
+            setLoading(false)
+            return
+          }
+          const lb = r.leaderboards[0]
+          setEntries(prev => [...prev, ...lb.entries])
+          setTotal(lb.totalEntries)
           setLoading(false)
-          return
         }
-        const lb = r.leaderboards[0]
-        setEntries(prev => [...prev, ...lb.entries])
-        setTotal(lb.totalEntries)
-        setLoading(false)
-      }
-    )
-  }, [id, offset, socket])
+      )
+    },
+    [id, socket]
+  )
 
   useEffect(() => {
+    if (!id) return
     setEntries([])
     setOffset(0)
-  }, [id])
+    load(0)
+  }, [id, load])
 
   useEffect(() => {
-    load()
-  }, [load])
+    if (offset === 0) return
+    load(offset)
+  }, [offset, load])
 
   useEffect(() => {
     if (!loadMoreRef.current) return
-    const observer = new IntersectionObserver(entries => {
-      const first = entries[0]
+    const observer = new IntersectionObserver(obs => {
+      const first = obs[0]
       if (first?.isIntersecting && !loading && entries.length < total) {
         setOffset(prev => prev + 100)
       }
