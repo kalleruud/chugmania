@@ -5,7 +5,7 @@ import {
 } from '@chugmania/common/models/responses.js'
 import type { LeaderboardEntry } from '@chugmania/common/models/timeEntry.js'
 import { WS_GET_LEADERBOARD } from '@chugmania/common/utils/constants.js'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useConnection } from '../../contexts/ConnectionContext'
 import LapTimeInput from '../components/LapTimeInput'
@@ -18,12 +18,9 @@ export default function Track() {
   const { id } = useParams()
   const { socket } = useConnection()
   const [entries, setEntries] = useState<LeaderboardEntry[]>([])
-  const [total, setTotal] = useState(0)
-  const [offset, setOffset] = useState(0)
   const [loading, setLoading] = useState(true)
   const [gapType, setGapType] = useState<'leader' | 'gap'>('leader')
   const [search, setSearch] = useState('')
-  const loadMoreRef = useRef<HTMLDivElement | null>(null)
 
   const load = useCallback(() => {
     if (!id) return
@@ -39,8 +36,7 @@ export default function Track() {
           return
         }
         const lb = r.leaderboards[0]
-        setEntries(prev => [...prev, ...lb.entries])
-        setTotal(lb.totalEntries)
+        setEntries(lb.entries)
         setLoading(false)
       }
     )
@@ -49,25 +45,8 @@ export default function Track() {
   useEffect(() => {
     if (!id) return
     setEntries([])
-    setOffset(0)
     load()
   }, [id, load])
-
-  useEffect(() => {
-    if (offset === 0) return
-    load()
-  }, [offset, load])
-
-  useEffect(() => {
-    if (!loadMoreRef.current) return
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry?.isIntersecting && !loading && entries.length < total) {
-        setOffset(prev => prev + 100)
-      }
-    })
-    observer.observe(loadMoreRef.current)
-    return () => observer.disconnect()
-  }, [entries.length, loading, total])
 
   const term = search.toLowerCase()
 
@@ -126,7 +105,6 @@ export default function Track() {
               <Spinner size={24} className='text-accent' />
             </div>
           )}
-          <div ref={loadMoreRef} />
         </div>
       </div>
     </div>
