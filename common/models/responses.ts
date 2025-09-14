@@ -5,14 +5,19 @@ import type { UserInfo } from './user'
 export type BackendResponse =
   | ErrorResponse
   | GetLeaderboardsResponse
+  | GetTracksResponse
+  | GetUsersResponse
   | LoginResponse
   | RegisterResponse
-  | GetUsersResponse
-  | GetTracksResponse
+  | SuccessResponse
 
 export type ErrorResponse = {
   success: false
   message: string
+}
+
+export type SuccessResponse = {
+  success: true
 }
 
 export type LoginResponse = {

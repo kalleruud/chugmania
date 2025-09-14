@@ -8,11 +8,13 @@ import {
   WS_GET_TRACKS,
   WS_GET_USERS,
   WS_LOGIN_NAME,
+  WS_POST_LAPTIME,
   WS_REGISTER_NAME,
 } from '@chugmania/common/utils/constants.js'
 import { Socket } from 'socket.io'
 import AuthManager from './auth.manager'
 import LeaderboardManager from './leaderboard.manager'
+import TimeEntryManager from './timeEntry.manager'
 import TrackManager from './track.manager'
 import UserManager from './user.manager'
 
@@ -23,6 +25,7 @@ export default class ConnectionManager {
     ConnectionManager.setupUserHandling(socket)
     ConnectionManager.setupLeaderboardHandling(socket)
     ConnectionManager.setupTrackHandling(socket)
+    ConnectionManager.setupTimeEntryHandling(socket)
   }
 
   static async disconnect(socket: Socket) {
@@ -46,6 +49,10 @@ export default class ConnectionManager {
       WS_GET_LEADERBOARD_SUMMARIES,
       LeaderboardManager.onGetLeaderboardSummaries
     )
+  }
+
+  private static setupTimeEntryHandling(s: Socket) {
+    ConnectionManager.setOn(s, WS_POST_LAPTIME, TimeEntryManager.onPostLapTime)
   }
 
   private static setupTrackHandling(s: Socket) {

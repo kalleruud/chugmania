@@ -50,7 +50,6 @@ export default class TrackManager {
   }
 
   static async onGetTracks(): Promise<BackendResponse> {
-    // If query looks like a number or #number, match by exact number; else return first N ordered by number
     const { data, error } = await tryCatchAsync(
       db
         .select({

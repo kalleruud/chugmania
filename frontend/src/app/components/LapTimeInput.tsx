@@ -1,8 +1,10 @@
 import type { PostLapTimeRequest } from '@chugmania/common/models/requests.js'
 import type {
+  BackendResponse,
   ErrorResponse,
   GetTracksResponse,
   GetUsersResponse,
+  SuccessResponse,
 } from '@chugmania/common/models/responses.js'
 import type { Track } from '@chugmania/common/models/track.js'
 import type { UserInfo } from '@chugmania/common/models/user.js'
@@ -132,16 +134,26 @@ export default function LapTimeInput({
   }
 
   function handleSubmit(e: FormEvent) {
+    e.preventDefault()
     if (!user) throw Error('No user selected')
     if (!track) throw Error('No track selected')
-    e.preventDefault()
 
-    socket.emit(WS_POST_LAPTIME, {
-      duration: getMs(),
-      user: userId ?? user?.id,
-      track: trackId ?? track?.id,
-      comment: comment,
-    } satisfies PostLapTimeRequest)
+    socket.emit(
+      WS_POST_LAPTIME,
+      {
+        duration: getMs(),
+        user: userId ?? user?.id,
+        track: trackId ?? track?.id,
+        comment: comment,
+        amount: 0.5,
+      } satisfies PostLapTimeRequest,
+      (r: BackendResponse | SuccessResponse) => {
+        if (!r.success) {
+          console.error(r.message)
+          return window.alert(r.message)
+        }
+      }
+    )
   }
 
   return (
@@ -154,6 +166,7 @@ export default function LapTimeInput({
                 if (el) inputs.current[i] = el
               }}
               value={d}
+              onChange={e => console.debug('Input:', e.target.value)}
               placeholder='0'
               onKeyDown={e => handleKeyDown(i, e)}
               onFocus={e => e.currentTarget.select()}

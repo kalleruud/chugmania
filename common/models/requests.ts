@@ -1,4 +1,4 @@
-import type { TimeEntry } from './timeEntry'
+import type { CreateTimeEntry } from './timeEntry'
 import type { Track } from './track'
 
 export type LoginRequest = {
@@ -32,10 +32,7 @@ export function isGetLeaderboardRequest(
   return data.trackId
 }
 
-export type PostLapTimeRequest = Pick<
-  TimeEntry,
-  'duration' | 'user' | 'track' | 'comment'
->
+export type PostLapTimeRequest = CreateTimeEntry
 
 export function isPostLapTimeRequest(data: any): data is PostLapTimeRequest {
   if (typeof data !== 'object') return false
