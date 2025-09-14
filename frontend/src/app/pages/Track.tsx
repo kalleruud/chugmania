@@ -62,9 +62,8 @@ export default function Track() {
 
   useEffect(() => {
     if (!loadMoreRef.current) return
-    const observer = new IntersectionObserver(obs => {
-      const first = obs[0]
-      if (first?.isIntersecting && !loading && entries.length < total) {
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry?.isIntersecting && !loading && entries.length < total) {
         setOffset(prev => prev + 100)
       }
     })
