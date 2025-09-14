@@ -8,3 +8,11 @@ export function formatTime(ms: number, truncate: boolean = false): string {
   if (truncate) return formatted.replace(/^00:/, '').replace(/^0/, '')
   return formatted
 }
+
+export function formattedTimeToMs(
+  minutes: number,
+  seconds: number,
+  hundredths: number
+) {
+  return minutes * 60_000 + seconds * 1000 + hundredths * 10
+}

@@ -4,5 +4,8 @@ export const WS_LOGIN_NAME = 'login'
 export const WS_REGISTER_NAME = 'register'
 export const WS_GET_LEADERBOARD_SUMMARIES = 'get_leaderboard_summaries'
 export const WS_GET_LEADERBOARD = 'get_leaderboard'
+export const WS_GET_USERS = 'get_users'
+export const WS_GET_TRACKS = 'get_tracks'
+export const WS_POST_LAPTIME = 'post_laptime'
 
 export const AUTH_KEY = 'auth'

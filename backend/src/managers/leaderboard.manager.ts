@@ -1,9 +1,10 @@
 import type { Leaderboard } from '@chugmania/common/models/leaderboard.js'
-import type { GetLeaderboardRequest } from '@chugmania/common/models/requests.js'
+import { isGetLeaderboardRequest } from '@chugmania/common/models/requests.js'
 import type {
   BackendResponse,
   GetLeaderboardsResponse,
 } from '@chugmania/common/models/responses.js'
+import type { LeaderboardEntryGap } from '@chugmania/common/models/timeEntry.js'
 import type { Track } from '@chugmania/common/models/track.js'
 import db from '@database/database'
 import { timeEntries, tracks, users } from '@database/schema'
@@ -48,13 +49,13 @@ export default class LeaderboardManager {
       const prev = i > 0 ? arr[i - 1]!.entry.duration : undefined
       const next = i < arr.length - 1 ? arr[i + 1]!.entry.duration : undefined
 
-      const gap: any = { position: i + 1 }
+      const gap: LeaderboardEntryGap = { position: i + 1 }
       if (prev !== undefined) gap.previous = r.entry.duration - prev
       if (i > 0 && leaderDuration !== undefined)
         gap.leader = r.entry.duration - leaderDuration
       if (next !== undefined) gap.next = next - r.entry.duration
 
-      const { passwordHash: _, ...userInfo } = r.user
+      const userInfo = { ...r.user, passwordHash: undefined }
       return {
         id: r.entry.id,
         duration: r.entry.duration,
@@ -107,8 +108,9 @@ export default class LeaderboardManager {
     socket: Socket,
     request: unknown
   ): Promise<BackendResponse> {
-    const r = request as Partial<GetLeaderboardRequest>
-    if (!r?.trackId) throw new Error('Missing trackId')
+    if (!isGetLeaderboardRequest(request)) {
+      throw Error('Failed to fetch leaderboard')
+    }
 
     console.debug(
       new Date().toISOString(),
@@ -119,7 +121,7 @@ export default class LeaderboardManager {
     return {
       success: true,
       leaderboards: [
-        await LeaderboardManager.getLeaderboard(r.trackId, 0, 100),
+        await LeaderboardManager.getLeaderboard(request.trackId, 0, 100),
       ],
     } satisfies GetLeaderboardsResponse
   }

@@ -1,3 +1,7 @@
+import type {
+  BackendResponse,
+  GetTracksResponse,
+} from '@chugmania/common/models/responses.js'
 import { TRACK_LEVELS, TRACK_TYPES } from '@chugmania/common/models/track.ts'
 import { tryCatchAsync } from '@chugmania/common/utils/try-catch.js'
 import db from '@database/database'
@@ -43,5 +47,26 @@ export default class TrackManager {
 
     if (error) throw error
     return data.map(d => d.id)
+  }
+
+  static async onGetTracks(): Promise<BackendResponse> {
+    const { data, error } = await tryCatchAsync(
+      db
+        .select({
+          id: tracks.id,
+          number: tracks.number,
+          level: tracks.level,
+          type: tracks.type,
+          isChuggable: tracks.isChuggable,
+          createdAt: tracks.createdAt,
+          updatedAt: tracks.updatedAt,
+          deletedAt: tracks.deletedAt,
+        })
+        .from(tracks)
+        .orderBy(asc(tracks.number))
+    )
+
+    if (error) throw error
+    return { success: true, tracks: data } satisfies GetTracksResponse
   }
 }

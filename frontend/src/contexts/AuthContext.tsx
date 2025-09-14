@@ -5,8 +5,8 @@ import type {
 import {
   type ErrorResponse,
   type LoginResponse,
-  type RegisterResponse,
 } from '@chugmania/common/models/responses.js'
+import { type UserInfo } from '@chugmania/common/models/user.js'
 import {
   AUTH_KEY,
   WS_LOGIN_NAME,
@@ -23,7 +23,7 @@ import { useConnection } from './ConnectionContext'
 
 type AuthContextType = {
   isLoggedIn: boolean
-  token: string | null
+  user: UserInfo | undefined
   errorMessage: string | undefined
   login: (request: LoginRequest) => void
   register: (request: RegisterRequest) => void
@@ -34,23 +34,18 @@ const AuthContext = createContext<AuthContextType | null>(null)
 
 export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const { socket } = useConnection()
-  const [errorMessage, setErrorMessage] = useState<string | undefined>(
-    undefined
-  )
-  const [token, setToken] = useState<string | null>(
-    localStorage.getItem(AUTH_KEY)
-  )
+  const [userInfo, setUserInfo] = useState<AuthContextType['user']>(undefined)
+  const [errorMessage, setErrorMessage] =
+    useState<AuthContextType['errorMessage']>(undefined)
 
-  function handleResponse(
-    response: ErrorResponse | LoginResponse | RegisterResponse
-  ) {
+  function handleResponse(response: ErrorResponse | LoginResponse) {
     if (response.success === false) {
       console.error(response.message)
       return setErrorMessage(response.message)
     }
 
     setErrorMessage('')
-    setToken(response.token)
+    setUserInfo(response.userInfo)
     return localStorage.setItem(AUTH_KEY, response.token)
   }
 
@@ -64,20 +59,20 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
 
   const logout = () => {
     localStorage.removeItem(AUTH_KEY)
-    setToken(null)
+    setUserInfo(undefined)
   }
 
   const context = useMemo(
     () =>
       ({
-        isLoggedIn: !!token,
+        isLoggedIn: !!userInfo,
         errorMessage,
-        token,
+        user: userInfo,
         login,
         register,
         logout,
       }) satisfies AuthContextType,
-    [token, errorMessage]
+    [userInfo, errorMessage]
   )
 
   return <AuthContext.Provider value={context}>{children}</AuthContext.Provider>
