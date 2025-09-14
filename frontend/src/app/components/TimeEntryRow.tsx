@@ -13,7 +13,9 @@ type GapType = 'leader' | 'gap'
 function PositionBadgePart({ position }: Readonly<{ position?: number }>) {
   return (
     <td
-      className={'text-label-muted flex items-center justify-center uppercase'}
+      className={
+        'text-label-muted font-f1 flex items-center justify-center uppercase'
+      }
       aria-label={`#${position}`}
     >
       <span>{position}</span>
