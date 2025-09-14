@@ -25,6 +25,8 @@ Accepts the lap time, a user a track and a comment.
 
 #### Home/Dashboard Page
 
+The homepage displays multiple sections:
+- Latest registered times (Last 7 days)
 - Displays "Top 10 global overall"-leaderboard using the "global ranking system", see Gamification & Stats
 - Displays "Top 10 global average"-leaderboard" using the "overall ranking system", see Gamification & Stats
 
