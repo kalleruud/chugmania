@@ -5,6 +5,7 @@ import type {
 import {
   WS_GET_LEADERBOARD,
   WS_GET_LEADERBOARD_SUMMARIES,
+  WS_GET_TRACK,
   WS_GET_TRACKS,
   WS_GET_USERS,
   WS_LOGIN_NAME,
@@ -57,6 +58,7 @@ export default class ConnectionManager {
 
   private static setupTrackHandling(s: Socket) {
     ConnectionManager.setOn(s, WS_GET_TRACKS, TrackManager.onGetTracks)
+    ConnectionManager.setOn(s, WS_GET_TRACK, TrackManager.onGetTrack)
   }
 
   private static async setOn(

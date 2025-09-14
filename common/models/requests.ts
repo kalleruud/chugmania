@@ -38,3 +38,12 @@ export function isPostLapTimeRequest(data: any): data is PostLapTimeRequest {
   if (typeof data !== 'object') return false
   return data.duration && data.user && data.track
 }
+
+export type GetTrackRequest = {
+  trackId: Track['id']
+}
+
+export function isGetTrackRequest(data: any): data is GetTrackRequest {
+  if (typeof data !== 'object') return false
+  return data.trackId
+}
