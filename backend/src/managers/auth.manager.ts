@@ -6,7 +6,6 @@ import type {
   BackendResponse,
   ErrorResponse,
   LoginResponse,
-  RegisterResponse,
 } from '@chugmania/common/models/responses.js'
 import { type User, type UserInfo } from '@chugmania/common/models/user.js'
 import { tryCatch, tryCatchAsync } from '@chugmania/common/utils/try-catch.js'
@@ -101,10 +100,13 @@ export default class AuthManager {
       } satisfies ErrorResponse
     }
 
+    const userInfo = UserManager.toUserInfo(user).userInfo
+
     return {
       success: true,
-      token: AuthManager.sign(UserManager.toUserInfo(user).userInfo),
-    } satisfies RegisterResponse
+      token: AuthManager.sign(userInfo),
+      userInfo,
+    } satisfies LoginResponse
   }
 
   static async onLogin(
@@ -146,6 +148,7 @@ export default class AuthManager {
       ? ({
           success: true,
           token: AuthManager.sign(userInfo),
+          userInfo,
         } satisfies LoginResponse)
       : ({
           success: false,

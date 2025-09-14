@@ -4,7 +4,6 @@ import type {
   ErrorResponse,
   GetTracksResponse,
   GetUsersResponse,
-  SuccessResponse,
 } from '@chugmania/common/models/responses.js'
 import type { Track } from '@chugmania/common/models/track.js'
 import type { UserInfo } from '@chugmania/common/models/user.js'
@@ -23,19 +22,37 @@ import {
   type FormEvent,
   type KeyboardEvent,
 } from 'react'
+import { useAuth } from '../../contexts/AuthContext'
 import { useConnection } from '../../contexts/ConnectionContext'
 import SearchableDropdown, { type LookupItem } from './SearchableDropdown'
+
+const cache: {
+  time: string[]
+  user: LookupItem | undefined
+  track: LookupItem | undefined
+} = {
+  time: Array(6).fill(''),
+  user: undefined,
+  track: undefined,
+}
 
 export default function LapTimeInput({
   trackId,
   userId,
 }: Readonly<{ trackId?: Track['id']; userId?: Track['id'] }>) {
   const { socket } = useConnection()
+  const { user: loggedInUser } = useAuth()
+  const loggedInLookup = loggedInUser
+    ? ({
+        id: loggedInUser.id,
+        label: loggedInUser.shortName ?? loggedInUser.name,
+      } satisfies LookupItem)
+    : undefined
   const inputs = useRef<HTMLInputElement[]>([])
 
-  const [digits, setDigits] = useState<string[]>(Array(6).fill(''))
-  const [user, setUser] = useState<LookupItem | undefined>(undefined)
-  const [track, setTrack] = useState<LookupItem | undefined>(undefined)
+  const [digits, setDigits] = useState(cache.time)
+  const [selectedUser, setSelectedUser] = useState(cache.user ?? loggedInLookup)
+  const [selectedTrack, setSelectedTrack] = useState(cache.track)
   const [comment, setComment] = useState('')
 
   const [users, setUsers] = useState<UserInfo[] | undefined>(undefined)
@@ -49,7 +66,16 @@ export default function LapTimeInput({
       next[i] = val
       return next
     })
+    cache.time[i] = val
   }, [])
+
+  useEffect(() => {
+    cache.user = selectedUser
+  }, [selectedUser])
+
+  useEffect(() => {
+    cache.track = selectedTrack
+  }, [selectedTrack])
 
   function setFocus(i: number) {
     inputs.current[i]?.focus()
@@ -97,7 +123,7 @@ export default function LapTimeInput({
   }, [socket])
 
   useEffect(() => {
-    if (userId) return
+    if (trackId) return
     socket.emit(
       WS_GET_TRACKS,
       undefined,
@@ -130,24 +156,30 @@ export default function LapTimeInput({
   }
 
   function isInputValid(): boolean {
-    return !!(getMs() > 0 && (trackId || track) && (userId || user))
+    return !!(
+      getMs() > 0 &&
+      (trackId || selectedTrack) &&
+      (userId || selectedUser)
+    )
   }
 
-  function handleSubmit(e: FormEvent) {
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    if (!user) throw Error('No user selected')
-    if (!track) throw Error('No track selected')
+    const uid = userId ?? selectedUser?.id
+    const tid = trackId ?? selectedTrack?.id
+    if (!uid) throw Error('No user selected')
+    if (!tid) throw Error('No track selected')
 
     socket.emit(
       WS_POST_LAPTIME,
       {
         duration: getMs(),
-        user: userId ?? user?.id,
-        track: trackId ?? track?.id,
+        user: uid,
+        track: tid,
         comment: comment,
         amount: 0.5,
       } satisfies PostLapTimeRequest,
-      (r: BackendResponse | SuccessResponse) => {
+      (r: BackendResponse) => {
         if (!r.success) {
           console.error(r.message)
           return window.alert(r.message)
@@ -156,11 +188,14 @@ export default function LapTimeInput({
     )
   }
 
+  // Stable keys for each digit position to avoid using array index as key
+  const DIGIT_KEYS = ['m10', 'm1', 's10', 's1', 'h1', 'h10'] as const
+
   return (
-    <form className='flex flex-col gap-6'>
+    <form className='flex flex-col gap-6' onSubmit={handleSubmit}>
       <div className='flex items-center justify-center gap-1'>
         {digits.map((d, i) => (
-          <span key={i} className='flex items-center gap-1'>
+          <span key={DIGIT_KEYS[i]} className='flex items-center gap-1'>
             <input
               ref={el => {
                 if (el) inputs.current[i] = el
@@ -191,8 +226,8 @@ export default function LapTimeInput({
               <SearchableDropdown
                 required={true}
                 placeholder='Select user'
-                selected={user}
-                setSelected={setUser}
+                selected={selectedUser}
+                setSelected={setSelectedUser}
                 items={
                   users?.map(
                     u =>
@@ -208,8 +243,8 @@ export default function LapTimeInput({
               <SearchableDropdown
                 required={true}
                 placeholder='Select track'
-                selected={track}
-                setSelected={setTrack}
+                selected={selectedTrack}
+                setSelected={setSelectedTrack}
                 items={
                   tracks?.map(
                     t =>
@@ -234,7 +269,6 @@ export default function LapTimeInput({
 
       <button
         type='submit'
-        onSubmit={handleSubmit}
         disabled={!isInputValid()}
         className='to-accent-secondary font-f1 from-accent shadow-accent/60 w-full cursor-pointer rounded-lg bg-gradient-to-br py-2 font-semibold uppercase tracking-wider shadow-[0_10px_30px_-10px_rgba(var(--color-accent),0.6)] transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none'
       >

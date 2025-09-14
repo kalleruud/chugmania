@@ -8,7 +8,6 @@ export type BackendResponse =
   | GetTracksResponse
   | GetUsersResponse
   | LoginResponse
-  | RegisterResponse
   | SuccessResponse
 
 export type ErrorResponse = {
@@ -23,11 +22,7 @@ export type SuccessResponse = {
 export type LoginResponse = {
   success: true
   token: string
-}
-
-export type RegisterResponse = {
-  success: true
-  token: string
+  userInfo: UserInfo
 }
 
 export type GetLeaderboardsResponse = {
