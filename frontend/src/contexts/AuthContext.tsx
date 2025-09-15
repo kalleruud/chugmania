@@ -8,13 +8,14 @@ import {
 } from '@chugmania/common/models/responses.js'
 import { type UserInfo } from '@chugmania/common/models/user.js'
 import {
-  AUTH_KEY,
+  WS_GET_USER_DATA,
   WS_LOGIN_NAME,
   WS_REGISTER_NAME,
 } from '@chugmania/common/utils/constants.js'
 import {
   createContext,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -33,7 +34,7 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | null>(null)
 
 export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
-  const { socket } = useConnection()
+  const { socket, setToken } = useConnection()
   const [userInfo, setUserInfo] = useState<AuthContextType['user']>(undefined)
   const [errorMessage, setErrorMessage] =
     useState<AuthContextType['errorMessage']>(undefined)
@@ -44,9 +45,9 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
       return setErrorMessage(response.message)
     }
 
-    setErrorMessage('')
+    setErrorMessage(undefined)
     setUserInfo(response.userInfo)
-    return localStorage.setItem(AUTH_KEY, response.token)
+    setToken(response.token)
   }
 
   const login: AuthContextType['login'] = r => {
@@ -58,9 +59,13 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   }
 
   const logout = () => {
-    localStorage.removeItem(AUTH_KEY)
+    setToken(undefined)
     setUserInfo(undefined)
   }
+
+  useEffect(() => {
+    socket.emit(WS_GET_USER_DATA, undefined, handleResponse)
+  }, [])
 
   const context = useMemo(
     () =>

@@ -59,8 +59,6 @@ export default class AuthManager {
       } satisfies ExtendedError
     }
 
-    console.debug(new Date().toISOString(), socket.id, 'Found token:', token)
-
     const { data: user, error } = tryCatch(AuthManager.verify(token))
     if (error) {
       console.debug(new Date().toISOString(), socket.id, error.message)
@@ -73,6 +71,8 @@ export default class AuthManager {
       '👤 Logged in:',
       user.email
     )
+
+    socket.user = user
     return user
   }
 
@@ -154,5 +154,13 @@ export default class AuthManager {
           success: false,
           message: 'Incorrect password',
         } satisfies ErrorResponse)
+  }
+
+  static async onGetUserData(s: Socket): Promise<BackendResponse> {
+    return {
+      success: true,
+      token: s.handshake.auth.token,
+      userInfo: s.user,
+    } satisfies LoginResponse
   }
 }

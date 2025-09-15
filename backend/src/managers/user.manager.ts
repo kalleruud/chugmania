@@ -46,11 +46,8 @@ export default class UserManager {
 
   static async onGetUsers(): Promise<BackendResponse> {
     const { data, error } = await tryCatchAsync(db.select().from(users))
-
     if (error) throw error
-
     const userInfos = data.map(r => UserManager.toUserInfo(r).userInfo)
-
     return { success: true, users: userInfos } satisfies GetUsersResponse
   }
 }

@@ -29,9 +29,9 @@ export default function LeaderboardView({
   }
 
   return (
-    <div className={className} {...rest}>
-      <table className='w-full table-auto'>
-        <tbody>
+    <div className={twMerge('flex w-full', className)} {...rest}>
+      <table className='flex w-full table-auto'>
+        <tbody className='flex w-full flex-col'>
           {entries.map(t => (
             <TimeEntryRow
               key={t.id}

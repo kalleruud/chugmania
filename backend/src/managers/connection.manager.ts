@@ -6,6 +6,7 @@ import {
   WS_GET_LEADERBOARD,
   WS_GET_LEADERBOARD_SUMMARIES,
   WS_GET_TRACKS,
+  WS_GET_USER_DATA,
   WS_GET_USERS,
   WS_LOGIN_NAME,
   WS_POST_LAPTIME,
@@ -35,6 +36,7 @@ export default class ConnectionManager {
   private static setupUserHandling(s: Socket) {
     ConnectionManager.setOn(s, WS_LOGIN_NAME, AuthManager.onLogin)
     ConnectionManager.setOn(s, WS_REGISTER_NAME, AuthManager.onRegister)
+    ConnectionManager.setOn(s, WS_GET_USER_DATA, AuthManager.onGetUserData)
     ConnectionManager.setOn(s, WS_GET_USERS, UserManager.onGetUsers)
   }
 

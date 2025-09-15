@@ -191,7 +191,7 @@ export default function LapTimeInput({
         duration: getMs(),
         user: uid,
         track: tid,
-        comment: comment,
+        comment: comment.trim() === '' ? undefined : comment.trim(),
         amount: 0.5,
       } satisfies PostLapTimeRequest,
       (r: BackendResponse) => {
@@ -204,6 +204,8 @@ export default function LapTimeInput({
     )
     onSubmit?.(e)
   }
+
+  if (!loggedInUser) return undefined
 
   // Stable keys for each digit position to avoid using array index as key
   const DIGIT_KEYS = ['m10', 'm1', 's10', 's1', 'h1', 'h10'] as const
@@ -242,7 +244,7 @@ export default function LapTimeInput({
       <div className='flex flex-col gap-2'>
         {(!userId || !trackId) && (
           <div className='flex gap-2'>
-            {!userId && (
+            {!userId && loggedInUser.role !== 'user' && (
               <SearchableDropdown
                 required={true}
                 placeholder='Select user'

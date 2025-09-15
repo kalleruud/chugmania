@@ -13,7 +13,7 @@ import { useConnection } from '../../contexts/ConnectionContext'
 import LapTimeInput from '../components/LapTimeInput'
 import LeaderboardView from '../components/Leaderboard'
 import Spinner from '../components/Spinner'
-import Tag from '../components/Tag'
+import TrackTag from '../components/TrackTag'
 
 export default function Track() {
   const { id } = useParams()
@@ -24,7 +24,6 @@ export default function Track() {
 
   useEffect(() => {
     if (!id) return
-    setLoading(true)
     socket.emit(
       WS_GET_LEADERBOARD,
       { trackId: id } satisfies GetLeaderboardRequest,
@@ -43,55 +42,28 @@ export default function Track() {
     )
   }, [id, socket])
 
+  if (loading)
+    return (
+      <div className='mt-12 flex w-full items-center justify-center'>
+        <Spinner />
+      </div>
+    )
+
+  if (!track) throw Error("Couldn't get track")
+
   return (
-    <div className='col-auto flex w-full flex-col gap-6'>
-      <section className='rounded-2xl border border-white/10 bg-white/5 p-5'>
-        <header className='mb-3 flex items-center justify-between border-b border-white/10 pb-2'>
-          <h2 className='font-f1 text-lg uppercase tracking-wider'>Track</h2>
-        </header>
-        {track ? (
-          <div className='flex flex-wrap items-center gap-3'>
-            <div className='font-f1-italic text-2xl uppercase'>
-              {formatTrackName(track.number)}
-            </div>
-            <Tag variation='colored' aria-label='Track level'>
-              {track.level}
-            </Tag>
-            <Tag variation='colored' aria-label='Track type'>
-              {track.type}
-            </Tag>
-            {track.isChuggable && (
-              <Tag className='uppercase' aria-label='Chuggable track'>
-                Chuggable
-              </Tag>
-            )}
-          </div>
-        ) : (
-          <div className='text-label-muted'>Loading track details…</div>
-        )}
-      </section>
-      <section className='rounded-2xl border border-white/10 bg-white/5 px-5 pb-5 pt-10'>
-        <LapTimeInput trackId={id} />
-      </section>
-
-      <section className='rounded-2xl border border-white/10 bg-white/5 p-5'>
-        <header className='flex items-center justify-between border-b border-white/10 px-2 pb-2'>
-          <h2 className='font-f1 text-lg uppercase tracking-wider'>
-            Leaderboard
-          </h2>
-          <Tag variation='muted' aria-label='Entries shown'>
-            {entries.length} entries
-          </Tag>
-        </header>
-
-        <div className='relative'>
-          <LeaderboardView entries={entries} />
-          {loading && (
-            <div className='flex justify-center p-4'>
-              <Spinner size={24} className='text-accent' />
-            </div>
-          )}
+    <div className='sticky flex w-full gap-6'>
+      <section className='flex flex-col gap-2'>
+        <h1>{formatTrackName(track?.number)}</h1>
+        <div className='flex gap-1'>
+          <TrackTag trackLevel={track.level}>{track.level}</TrackTag>
+          <TrackTag trackType={track.type}>{track.type}</TrackTag>
         </div>
+      </section>
+
+      <section className='flex w-full flex-col gap-4'>
+        <LapTimeInput className='bg-background-secondary rounded-2xl border border-white/10 p-4' />
+        <LeaderboardView entries={entries} />
       </section>
     </div>
   )
