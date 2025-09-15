@@ -1,7 +1,5 @@
-import { isGetTrackRequest } from '@chugmania/common/models/requests.js'
 import type {
   BackendResponse,
-  GetTrackResponse,
   GetTracksResponse,
 } from '@chugmania/common/models/responses.js'
 import { TRACK_LEVELS, TRACK_TYPES } from '@chugmania/common/models/track.ts'
@@ -9,7 +7,6 @@ import { tryCatchAsync } from '@chugmania/common/utils/try-catch.js'
 import db from '@database/database'
 import { timeEntries, tracks } from '@database/schema'
 import { asc, eq } from 'drizzle-orm'
-import type { Socket } from 'socket.io'
 
 export default class TrackManager {
   static async seed(): Promise<void> {
@@ -58,28 +55,7 @@ export default class TrackManager {
     )
 
     if (error) throw error
+    if (data.length === 0) throw Error('Found no leaderboards')
     return { success: true, tracks: data } satisfies GetTracksResponse
-  }
-
-  static async onGetTrack(
-    s: Socket,
-    request: unknown
-  ): Promise<BackendResponse> {
-    if (!isGetTrackRequest(request)) throw Error('Track id not supplied')
-
-    const { data: track, error } = await tryCatchAsync(
-      db.query.tracks.findFirst({ where: eq(tracks.id, request.trackId) })
-    )
-
-    console.debug(
-      new Date().toISOString(),
-      s.id,
-      'Fetched track: ',
-      request.trackId
-    )
-
-    if (error) throw error
-    if (!track) throw Error("Couldn't find track with id: " + request.trackId)
-    return { success: true, track } satisfies GetTrackResponse
   }
 }

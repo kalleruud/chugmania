@@ -56,7 +56,8 @@ export default class LeaderboardManager {
         gap.previous = roundToHundredth(r.entry.duration - prev)
       if (i > 0 && leaderDuration !== undefined)
         gap.leader = roundToHundredth(r.entry.duration - leaderDuration)
-      if (next !== undefined) gap.next = roundToHundredth(next - r.entry.duration)
+      if (next !== undefined)
+        gap.next = roundToHundredth(next - r.entry.duration)
 
       const userInfo = { ...r.user, passwordHash: undefined }
       return {

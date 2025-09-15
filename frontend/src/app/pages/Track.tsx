@@ -1,18 +1,11 @@
-import type {
-  GetLeaderboardRequest,
-  GetTrackRequest,
-} from '@chugmania/common/models/requests.js'
+import type { GetLeaderboardRequest } from '@chugmania/common/models/requests.js'
 import {
   type ErrorResponse,
   type GetLeaderboardsResponse,
-  type GetTrackResponse,
 } from '@chugmania/common/models/responses.js'
 import type { LeaderboardEntry } from '@chugmania/common/models/timeEntry.js'
 import type { Track } from '@chugmania/common/models/track.js'
-import {
-  WS_GET_LEADERBOARD,
-  WS_GET_TRACK,
-} from '@chugmania/common/utils/constants.js'
+import { WS_GET_LEADERBOARD } from '@chugmania/common/utils/constants.js'
 import { formatTrackName } from '@chugmania/common/utils/track.js'
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
@@ -33,25 +26,6 @@ export default function Track() {
     if (!id) return
     setLoading(true)
     socket.emit(
-      WS_GET_TRACK,
-      { trackId: id } satisfies GetTrackRequest,
-      (r: GetTrackResponse | ErrorResponse) => {
-        if (!r.success) {
-          console.error(r.message)
-          window.alert(r.message)
-          setLoading(false)
-          return
-        }
-        setTrack(r.track)
-        setLoading(false)
-      }
-    )
-  }, [id, socket])
-
-  useEffect(() => {
-    if (!id) return
-    setLoading(true)
-    socket.emit(
       WS_GET_LEADERBOARD,
       { trackId: id } satisfies GetLeaderboardRequest,
       (r: GetLeaderboardsResponse | ErrorResponse) => {
@@ -63,6 +37,7 @@ export default function Track() {
         }
         const lb = r.leaderboards[0]
         setEntries(lb.entries)
+        setTrack(lb.track)
         setLoading(false)
       }
     )
