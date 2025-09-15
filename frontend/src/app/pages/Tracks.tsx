@@ -52,7 +52,7 @@ export default function Tracks() {
   })
 
   return (
-    <div className='min-w-0 flex-1 space-y-4'>
+    <div className='min-w-0 flex-1 space-y-8'>
       <div className='mx-auto max-w-3xl space-y-4'>
         <SearchBar value={search} onChange={setSearch} />
 

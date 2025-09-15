@@ -20,7 +20,7 @@ export default function TrackCard({
     <Link
       to={`/tracks/${track.id}`}
       className={twMerge(
-        'hover:bg-white/8 flex flex-col gap-2 rounded-2xl border border-white/10 bg-white/5 p-6 transition hover:border-white/15',
+        'hover:bg-white/6 flex flex-col gap-2 rounded-2xl border border-white/10 bg-white/5 p-6 transition hover:border-white/15',
         className
       )}
       {...rest}
