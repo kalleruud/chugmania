@@ -10,7 +10,7 @@ export type TagProps = DetailedHTMLProps<
 }
 
 const base =
-  'rounded-lg border border-white/10 px-2.5 py-1 text-[11px] uppercase tracking-wider transition'
+  'rounded-2xl border border-white/10 px-2.5 py-1 text-xs uppercase transition'
 
 const focused = 'bg-white/10 border-white/20'
 const focusedColor = 'bg-accent/10 border-accent/50'
