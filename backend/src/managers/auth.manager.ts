@@ -8,10 +8,14 @@ import type {
   LoginResponse,
 } from '@chugmania/common/models/responses.js'
 import { type User, type UserInfo } from '@chugmania/common/models/user.js'
-import { tryCatch, tryCatchAsync } from '@chugmania/common/utils/try-catch.js'
-import type { users } from '@database/schema'
+import {
+  tryCatch,
+  tryCatchAsync,
+  type Result,
+} from '@chugmania/common/utils/try-catch.js'
+import { users } from '@database/schema'
 import jwt from 'jsonwebtoken'
-import type { ExtendedError, Socket } from 'socket.io'
+import type { Socket } from 'socket.io'
 import UserManager from './user.manager'
 
 const TOKEN_EXPIRY_H = process.env.TOKEN_EXPIRY_H ?? '1'
@@ -30,9 +34,11 @@ export default class AuthManager {
     return jwt.sign(user, SECRET, AuthManager.JWT_OPTIONS)
   }
 
-  private static verify(token: string | undefined): UserInfo {
-    if (!token) throw new Error('No JWT token provided')
-    return jwt.verify(token, SECRET) as UserInfo
+  private static verify(token: string | undefined): Result<UserInfo> {
+    if (!token) return { data: null, error: Error('No JWT token provided') }
+    const { data: user, error } = tryCatch(jwt.verify(token, SECRET))
+    if (error) return { data: null, error }
+    return { data: user as UserInfo, error: null }
   }
 
   private static async isPasswordValid(
@@ -47,33 +53,19 @@ export default class AuthManager {
     return Buffer.from(await crypto.subtle.digest('SHA-512', encoder.encode(s)))
   }
 
-  static async checkAuth(socket: Socket): Promise<ExtendedError | UserInfo> {
-    console.debug(new Date().toISOString(), socket.id, 'Checking auth...')
-    const token = socket.handshake.auth.token as string
+  static async checkAuth(socket: Socket): Promise<Result<UserInfo>> {
+    const result = AuthManager.verify(socket.handshake.auth.token)
+    if (result.error) return result
+    const { data: user } = result
 
-    if (!token) {
-      console.debug(new Date().toISOString(), socket.id, 'No token found')
-      return {
-        name: 'LoginError',
-        message: 'No token provided',
-      } satisfies ExtendedError
+    const userExists = await UserManager.userExists(user.email)
+    if (!userExists) {
+      const message = `User with email '${user.email}' doesn't exist`
+      console.warn(new Date().toISOString(), message)
+      return { data: null, error: Error(message) }
     }
 
-    const { data: user, error } = tryCatch(AuthManager.verify(token))
-    if (error) {
-      console.debug(new Date().toISOString(), socket.id, error.message)
-      return error
-    }
-
-    console.debug(
-      new Date().toISOString(),
-      socket.id,
-      '👤 Logged in:',
-      user.email
-    )
-
-    socket.user = user
-    return user
+    return { data: user, error: null }
   }
 
   static async onRegister(
@@ -157,10 +149,21 @@ export default class AuthManager {
   }
 
   static async onGetUserData(s: Socket): Promise<BackendResponse> {
+    const { data: user, error } = await AuthManager.checkAuth(s)
+    if (error)
+      return {
+        success: false,
+        message: error.message,
+      }
+    if (!user)
+      return {
+        success: false,
+        message: 'Must be logged in to get user data.',
+      }
     return {
       success: true,
       token: s.handshake.auth.token,
-      userInfo: s.user,
+      userInfo: user,
     } satisfies LoginResponse
   }
 }

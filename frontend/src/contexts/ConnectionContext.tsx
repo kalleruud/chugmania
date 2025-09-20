@@ -20,6 +20,7 @@ const socket = io('http://localhost:6996', {
 })
 
 const setToken: ConnectionContextType['setToken'] = token => {
+  // @ts-expect-error
   socket.auth.token = token
   if (!token) localStorage.removeItem(AUTH_KEY)
   else localStorage.setItem(AUTH_KEY, token)

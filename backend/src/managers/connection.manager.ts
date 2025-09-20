@@ -12,7 +12,7 @@ import {
   WS_POST_LAPTIME,
   WS_REGISTER_NAME,
 } from '@chugmania/common/utils/constants.js'
-import { Socket } from 'socket.io'
+import type { Socket } from 'socket.io'
 import AuthManager from './auth.manager'
 import LeaderboardManager from './leaderboard.manager'
 import TimeEntryManager from './timeEntry.manager'
@@ -20,48 +20,39 @@ import TrackManager from './track.manager'
 import UserManager from './user.manager'
 
 export default class ConnectionManager {
-  static async connect(socket: Socket) {
-    console.debug(new Date().toISOString(), socket.id, 'Connected')
+  static async connect(s: Socket) {
+    console.debug(new Date().toISOString(), s.id, 'Connected')
 
-    ConnectionManager.setupUserHandling(socket)
-    ConnectionManager.setupLeaderboardHandling(socket)
-    ConnectionManager.setupTrackHandling(socket)
-    ConnectionManager.setupTimeEntryHandling(socket)
+    // Setup user handling
+    ConnectionManager.setup(s, WS_LOGIN_NAME, AuthManager.onLogin)
+    ConnectionManager.setup(s, WS_REGISTER_NAME, AuthManager.onRegister)
+    ConnectionManager.setup(s, WS_GET_USER_DATA, AuthManager.onGetUserData)
+    ConnectionManager.setup(s, WS_GET_USERS, UserManager.onGetUsers)
+
+    // Setup leaderboard handling
+    ConnectionManager.setup(
+      s,
+      WS_GET_LEADERBOARD,
+      LeaderboardManager.onGetLeaderboard
+    )
+    ConnectionManager.setup(
+      s,
+      WS_GET_LEADERBOARD_SUMMARIES,
+      LeaderboardManager.onGetLeaderboardSummaries
+    )
+
+    // Setup track handling
+    ConnectionManager.setup(s, WS_GET_TRACKS, TrackManager.onGetTracks)
+
+    // Setup time entry handling
+    ConnectionManager.setup(s, WS_POST_LAPTIME, TimeEntryManager.onPostLapTime)
   }
 
   static async disconnect(socket: Socket) {
     console.debug(new Date().toISOString(), socket.id, 'Disconnected')
   }
 
-  private static setupUserHandling(s: Socket) {
-    ConnectionManager.setOn(s, WS_LOGIN_NAME, AuthManager.onLogin)
-    ConnectionManager.setOn(s, WS_REGISTER_NAME, AuthManager.onRegister)
-    ConnectionManager.setOn(s, WS_GET_USER_DATA, AuthManager.onGetUserData)
-    ConnectionManager.setOn(s, WS_GET_USERS, UserManager.onGetUsers)
-  }
-
-  private static setupLeaderboardHandling(s: Socket) {
-    ConnectionManager.setOn(
-      s,
-      WS_GET_LEADERBOARD,
-      LeaderboardManager.onGetLeaderboard
-    )
-    ConnectionManager.setOn(
-      s,
-      WS_GET_LEADERBOARD_SUMMARIES,
-      LeaderboardManager.onGetLeaderboardSummaries
-    )
-  }
-
-  private static setupTimeEntryHandling(s: Socket) {
-    ConnectionManager.setOn(s, WS_POST_LAPTIME, TimeEntryManager.onPostLapTime)
-  }
-
-  private static setupTrackHandling(s: Socket) {
-    ConnectionManager.setOn(s, WS_GET_TRACKS, TrackManager.onGetTracks)
-  }
-
-  private static async setOn(
+  private static async setup(
     s: Socket,
     event: string,
     handler: (s: Socket, request?: unknown) => Promise<BackendResponse>

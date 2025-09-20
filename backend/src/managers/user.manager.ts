@@ -44,6 +44,19 @@ export default class UserManager {
     return { passwordHash: user.passwordHash, userInfo }
   }
 
+  static async userExists(email: string): Promise<boolean> {
+    const { data, error } = await tryCatchAsync(
+      db.query.users.findFirst({ where: eq(users.email, email) })
+    )
+
+    if (error) {
+      console.warn(new Date().toISOString(), error.message)
+      return false
+    }
+
+    return !!data
+  }
+
   static async onGetUsers(): Promise<BackendResponse> {
     const { data, error } = await tryCatchAsync(db.select().from(users))
     if (error) throw error

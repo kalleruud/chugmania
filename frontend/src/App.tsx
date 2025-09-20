@@ -13,11 +13,11 @@ import { ConnectionProvider } from './contexts/ConnectionContext'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ConnectionProvider>
-      <AuthProvider>
-        <BrowserRouter
-          future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
-        >
+    <BrowserRouter
+      future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+    >
+      <ConnectionProvider>
+        <AuthProvider>
           <Routes>
             <Route element={<Layout />}>
               <Route index element={<Home />} />
@@ -27,8 +27,8 @@ createRoot(document.getElementById('root')!).render(
               <Route path='login' element={<Login />} />
             </Route>
           </Routes>
-        </BrowserRouter>
-      </AuthProvider>
-    </ConnectionProvider>
+        </AuthProvider>
+      </ConnectionProvider>
+    </BrowserRouter>
   </StrictMode>
 )

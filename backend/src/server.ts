@@ -3,7 +3,6 @@ import {
   WS_DISCONNECT_NAME,
 } from '@chugmania/common/utils/constants.js'
 import { Server } from 'socket.io'
-import AuthManager from './managers/auth.manager'
 import ConnectionManager from './managers/connection.manager'
 import TrackManager from './managers/track.manager'
 
@@ -17,9 +16,3 @@ io.on(WS_CONNECT_NAME, s =>
     s.on(WS_DISCONNECT_NAME, () => ConnectionManager.disconnect(s))
   })
 )
-
-io.use((socket, next) => {
-  AuthManager.checkAuth(socket)
-    .catch(next)
-    .then(() => next())
-})
