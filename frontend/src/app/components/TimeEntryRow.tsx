@@ -8,7 +8,7 @@ type TableRowProps = React.DetailedHTMLProps<
   HTMLTableRowElement
 >
 
-export type GapType = 'leader' | 'gap'
+export type GapType = 'leader' | 'interval'
 
 function PositionBadgePart({ position }: Readonly<{ position?: number }>) {
   return (
@@ -48,7 +48,7 @@ function GapPart({
   gapType = 'leader',
   onToggle,
 }: Readonly<{
-  gap?: LeaderboardEntry['gap']
+  gap?: LeaderboardEntry['interval']
   gapType?: GapType
   onToggle?: () => void
 }>) {

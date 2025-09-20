@@ -38,7 +38,7 @@ export default function LeaderboardView({
               lapTime={t}
               gapType={gapType}
               onToggleGapType={() =>
-                setGapType(prev => (prev === 'leader' ? 'gap' : 'leader'))
+                setGapType(prev => (prev === 'leader' ? 'interval' : 'leader'))
               }
             />
           ))}
