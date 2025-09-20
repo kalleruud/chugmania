@@ -6,6 +6,7 @@ export type BackendResponse =
   | ErrorResponse
   | GetLeaderboardsResponse
   | GetTracksResponse
+  | GetTrackResponse
   | GetUsersResponse
   | LoginResponse
   | SuccessResponse
@@ -33,6 +34,11 @@ export type GetLeaderboardsResponse = {
 export type GetUsersResponse = {
   success: true
   users: UserInfo[]
+}
+
+export type GetTrackResponse = {
+  success: true
+  track: Track
 }
 
 export type GetTracksResponse = {

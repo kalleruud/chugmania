@@ -8,7 +8,7 @@ type TableRowProps = React.DetailedHTMLProps<
   HTMLTableRowElement
 >
 
-type GapType = 'leader' | 'gap'
+export type GapType = 'leader' | 'interval'
 
 function PositionBadgePart({ position }: Readonly<{ position?: number }>) {
   return (
@@ -46,15 +46,37 @@ function TimePart({ duration }: Readonly<{ duration: number }>) {
 function GapPart({
   gap,
   gapType = 'leader',
-}: Readonly<{ gap?: LeaderboardEntry['gap']; gapType?: GapType }>) {
+  onToggle,
+}: Readonly<{
+  gap?: LeaderboardEntry['interval']
+  gapType?: GapType
+  onToggle?: () => void
+}>) {
   const duration = gapType === 'leader' ? gap?.leader : gap?.previous
-  const label = duration ? '+' + formatTime(duration, true) : gapType
+  const isPlaceholder = !duration
+  const label = isPlaceholder
+    ? gapType.toUpperCase()
+    : '+' + formatTime(duration, true)
 
   return (
     <td
-      className={`font-f1-italic text-label-muted items-center text-sm uppercase tabular-nums`}
+      className={
+        'font-f1-italic text-label-muted items-center text-sm uppercase tabular-nums'
+      }
     >
-      {label}
+      {isPlaceholder ? (
+        <button
+          type='button'
+          onClick={onToggle}
+          className='rounded-md px-2 py-1 transition hover:cursor-pointer hover:bg-white/10 hover:text-white hover:outline-none hover:ring-1 hover:ring-white/30'
+          aria-label='Toggle gap display'
+          title='Toggle gap display'
+        >
+          {label}
+        </button>
+      ) : (
+        label
+      )}
     </td>
   )
 }
@@ -64,12 +86,14 @@ export default function TimeEntryRow({
   position = lapTime.gap.position,
   gapType = 'leader',
   className,
+  onToggleGapType,
   ...rest
 }: Readonly<
   TableRowProps & {
     position?: number
     lapTime: LeaderboardEntry
     gapType?: GapType
+    onToggleGapType: () => void
   }
 >) {
   const containerRef = useRef<HTMLTableRowElement | null>(null)
@@ -113,7 +137,13 @@ export default function TimeEntryRow({
         hasComment={!!lapTime.comment}
       />
 
-      {show.gap && <GapPart gap={lapTime.gap} />}
+      {show.gap && (
+        <GapPart
+          gap={lapTime.gap}
+          gapType={gapType}
+          onToggle={onToggleGapType}
+        />
+      )}
       {show.time && <TimePart duration={lapTime.duration} />}
     </tr>
   )

@@ -52,34 +52,35 @@ export default function Tracks() {
   })
 
   return (
-    <div className='min-w-0 flex-1 space-y-4'>
-      <div className='mx-auto w-full max-w-3xl'>
+    <div className='min-w-0 flex-1 space-y-8'>
+      <div className='mx-auto max-w-3xl space-y-4'>
         <SearchBar value={search} onChange={setSearch} />
-      </div>
-      <div className='mx-auto flex w-full max-w-3xl flex-col items-center justify-center gap-2 md:flex-row md:justify-between'>
-        <div className='flex flex-wrap justify-center gap-2'>
-          {TRACK_LEVELS.map(l => (
-            <TrackTag
-              key={l}
-              trackLevel={l}
-              selected={!levelFilter || levelFilter === l}
-              onClick={() => setLevelFilter(prev => (prev === l ? null : l))}
-            >
-              {l}
-            </TrackTag>
-          ))}
-        </div>
-        <div className='flex flex-wrap justify-center gap-2'>
-          {TRACK_TYPES.map(t => (
-            <TrackTag
-              key={t}
-              trackType={t}
-              selected={!typeFilter || typeFilter === t}
-              onClick={() => setTypeFilter(prev => (prev === t ? null : t))}
-            >
-              {t}
-            </TrackTag>
-          ))}
+
+        <div className='mx-auto flex w-full max-w-3xl flex-col items-center justify-center gap-2 md:flex-row md:justify-between'>
+          <div className='flex flex-wrap justify-center gap-2'>
+            {TRACK_LEVELS.map(l => (
+              <TrackTag
+                key={l}
+                trackLevel={l}
+                selected={!levelFilter || levelFilter === l}
+                onClick={() => setLevelFilter(prev => (prev === l ? null : l))}
+              >
+                {l}
+              </TrackTag>
+            ))}
+          </div>
+          <div className='flex flex-wrap justify-center gap-2'>
+            {TRACK_TYPES.map(t => (
+              <TrackTag
+                key={t}
+                trackType={t}
+                selected={!typeFilter || typeFilter === t}
+                onClick={() => setTypeFilter(prev => (prev === t ? null : t))}
+              >
+                {t}
+              </TrackTag>
+            ))}
+          </div>
         </div>
       </div>
 

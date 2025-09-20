@@ -1,11 +1,13 @@
 import type { SVGProps } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 export default function Spinner(
   props: SVGProps<SVGSVGElement> & { size?: number }
 ) {
-  const { size = 24, ...rest } = props
+  const { size = 24, className, ...rest } = props
   return (
     <svg
+      className={twMerge('text-accent size-10', className)}
       xmlns='http://www.w3.org/2000/svg'
       width={size}
       height={size}

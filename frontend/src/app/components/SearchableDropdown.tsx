@@ -109,7 +109,7 @@ export default function SearchableDropdown({
         </span>
       </button>
       {open && (
-        <div className='bg-background/95 absolute left-0 right-0 z-10 mt-2 rounded-lg border border-white/10 p-0 shadow-lg backdrop-blur-xl'>
+        <div className='bg-background/75 absolute left-0 right-0 z-10 mt-2 rounded-lg border border-white/10 p-0 shadow-lg backdrop-blur-xl'>
           <div className='flex items-center gap-2 border-b border-white/10 px-2'>
             <Search size={16} className='text-label-muted' />
             <input

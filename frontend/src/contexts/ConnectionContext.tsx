@@ -1,3 +1,4 @@
+import { AUTH_KEY } from '@chugmania/common/utils/constants.js'
 import {
   createContext,
   useContext,
@@ -11,20 +12,35 @@ import { io, Socket } from 'socket.io-client'
 type ConnectionContextType = {
   socket: Socket
   isConnected: boolean
+  setToken: (token: string | undefined) => void
 }
 
-const socket = io('http://localhost:6996')
+const socket = io('http://localhost:6996', {
+  auth: { token: localStorage.getItem(AUTH_KEY) },
+})
+
+const setToken: ConnectionContextType['setToken'] = token => {
+  // @ts-expect-error
+  socket.auth.token = token
+  if (!token) localStorage.removeItem(AUTH_KEY)
+  else localStorage.setItem(AUTH_KEY, token)
+  socket.connect()
+}
 
 const ConnectionContext = createContext<ConnectionContextType>({
   isConnected: socket.connected,
   socket: socket,
+  setToken,
 })
 
 export function ConnectionProvider({
   children,
 }: Readonly<{ children: ReactNode }>) {
   const [isConnected, setIsConnected] = useState(socket.connected)
-  const context = useMemo(() => ({ isConnected, socket }), [isConnected])
+  const context = useMemo(
+    () => ({ isConnected, socket, setToken }),
+    [isConnected]
+  )
 
   useEffect(() => {
     socket.on('connect', () => {

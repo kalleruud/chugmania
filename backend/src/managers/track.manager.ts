@@ -51,22 +51,11 @@ export default class TrackManager {
 
   static async onGetTracks(): Promise<BackendResponse> {
     const { data, error } = await tryCatchAsync(
-      db
-        .select({
-          id: tracks.id,
-          number: tracks.number,
-          level: tracks.level,
-          type: tracks.type,
-          isChuggable: tracks.isChuggable,
-          createdAt: tracks.createdAt,
-          updatedAt: tracks.updatedAt,
-          deletedAt: tracks.deletedAt,
-        })
-        .from(tracks)
-        .orderBy(asc(tracks.number))
+      db.select().from(tracks).orderBy(asc(tracks.number))
     )
 
     if (error) throw error
+    if (data.length === 0) throw Error('Found no leaderboards')
     return { success: true, tracks: data } satisfies GetTracksResponse
   }
 }

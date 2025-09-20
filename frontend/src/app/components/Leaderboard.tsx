@@ -1,6 +1,7 @@
 import type { Leaderboard } from '@chugmania/common/models/leaderboard.js'
+import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import TimeEntryRow from './TimeEntryRow'
+import TimeEntryRow, { type GapType } from './TimeEntryRow'
 
 type TableProps = React.DetailedHTMLProps<
   React.TableHTMLAttributes<HTMLTableElement>,
@@ -12,6 +13,8 @@ export default function LeaderboardView({
   className,
   ...rest
 }: Readonly<TableProps & { entries: Leaderboard['entries'] }>) {
+  const [gapType, setGapType] = useState<GapType>('leader')
+
   if (!entries.length) {
     return (
       <div
@@ -26,11 +29,18 @@ export default function LeaderboardView({
   }
 
   return (
-    <div className={className} {...rest}>
-      <table className='w-full table-auto'>
-        <tbody>
+    <div className={twMerge('flex w-full', className)} {...rest}>
+      <table className='flex w-full table-auto'>
+        <tbody className='flex w-full flex-col'>
           {entries.map(t => (
-            <TimeEntryRow key={t.id} lapTime={t} />
+            <TimeEntryRow
+              key={t.id}
+              lapTime={t}
+              gapType={gapType}
+              onToggleGapType={() =>
+                setGapType(prev => (prev === 'leader' ? 'interval' : 'leader'))
+              }
+            />
           ))}
         </tbody>
       </table>
