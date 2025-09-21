@@ -10,7 +10,6 @@ import type { Track } from '../../../common/models/track'
 import { WS_GET_LEADERBOARD } from '../../../common/utils/constants'
 import { formatTrackName } from '../../../common/utils/track'
 import { useConnection } from '../../contexts/ConnectionContext'
-import LapTimeInput from '../components/LapTimeInput'
 import LeaderboardView from '../components/Leaderboard'
 import Spinner from '../components/Spinner'
 import TrackTag from '../components/TrackTag'
@@ -62,7 +61,6 @@ export default function Track() {
       </section>
 
       <section className='flex w-full flex-col gap-4'>
-        <LapTimeInput className='bg-background-secondary rounded-2xl border border-white/10 p-4' />
         <LeaderboardView entries={entries} />
       </section>
     </div>
