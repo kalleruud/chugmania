@@ -43,7 +43,11 @@ export default function TrackCard({
 
       <div className='border-b border-white/10' />
 
-      <LeaderboardView entries={entries} />
+      <LeaderboardView
+        entries={entries}
+        disabled={true}
+        className='pointer-events-none'
+      />
     </Link>
   )
 }

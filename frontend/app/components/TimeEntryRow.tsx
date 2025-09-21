@@ -13,9 +13,10 @@ export type GapType = 'leader' | 'interval'
 function PositionBadgePart({ position }: Readonly<{ position?: number }>) {
   return (
     <td
-      className={
-        'text-label-muted font-f1 flex items-center justify-center uppercase'
-      }
+      className={twMerge(
+        'font-kh-interface flex size-8 items-center justify-center rounded uppercase',
+        position === 1 ? 'bg-accent' : 'text-label-muted'
+      )}
       aria-label={`#${position}`}
     >
       <span>{position}</span>
@@ -67,8 +68,9 @@ function GapPart({
       {isPlaceholder ? (
         <button
           type='button'
+          disabled={!onToggle}
           onClick={onToggle}
-          className='rounded-md px-2 py-1 transition hover:cursor-pointer hover:bg-white/10 hover:text-white hover:outline-none hover:ring-1 hover:ring-white/30'
+          className='rounded-md px-2 py-1 transition enabled:hover:cursor-pointer enabled:hover:bg-white/10 enabled:hover:text-white enabled:hover:outline-none enabled:hover:ring-1 enabled:hover:ring-white/30'
           aria-label='Toggle gap display'
           title='Toggle gap display'
         >
@@ -85,6 +87,7 @@ export default function TimeEntryRow({
   lapTime,
   position = lapTime.gap.position,
   gapType = 'leader',
+  disabled = false,
   className,
   onToggleGapType,
   ...rest
@@ -93,6 +96,7 @@ export default function TimeEntryRow({
     position?: number
     lapTime: LeaderboardEntry
     gapType?: GapType
+    disabled?: boolean
     onToggleGapType: () => void
   }
 >) {
@@ -123,7 +127,7 @@ export default function TimeEntryRow({
   return (
     <tr
       ref={containerRef}
-      className={twMerge('flex items-center gap-3 py-1', className)}
+      className={twMerge('flex items-center gap-2', className)}
       title={
         lapTime.comment ??
         `${lapTime.user.name} - ${formatTime(lapTime.duration)}`
@@ -141,7 +145,7 @@ export default function TimeEntryRow({
         <GapPart
           gap={lapTime.gap}
           gapType={gapType}
-          onToggle={onToggleGapType}
+          onToggle={disabled ? undefined : onToggleGapType}
         />
       )}
       {show.time && <TimePart duration={lapTime.duration} />}

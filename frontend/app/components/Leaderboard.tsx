@@ -10,9 +10,12 @@ type TableProps = React.DetailedHTMLProps<
 
 export default function LeaderboardView({
   entries,
+  disabled = false,
   className,
   ...rest
-}: Readonly<TableProps & { entries: Leaderboard['entries'] }>) {
+}: Readonly<
+  TableProps & { entries: Leaderboard['entries']; disabled: boolean }
+>) {
   const [gapType, setGapType] = useState<GapType>('leader')
 
   if (!entries.length) {
@@ -37,6 +40,7 @@ export default function LeaderboardView({
               key={t.id}
               lapTime={t}
               gapType={gapType}
+              disabled={disabled}
               onToggleGapType={() =>
                 setGapType(prev => (prev === 'leader' ? 'interval' : 'leader'))
               }
