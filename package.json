@@ -1,0 +1,47 @@
+{
+  "name": "chugmania",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "main": "backend/src/server.ts",
+  "scripts": {
+    "start": "tsx watch --env-file .env backend/src/server.ts",
+    "prod": "tsx --env-file .env backend/src/server.ts",
+    "check": "tsc --noEmit && prettier -c ."
+  },
+  "dependencies": {
+    "@fontsource/titillium-web": "^5.2.6",
+    "better-sqlite3": "^12.2.0",
+    "drizzle-orm": "^0.44.5",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "lucide-react": "^0.540.0",
+    "react-dom": "^19.1.0",
+    "react-router-dom": "^6.30.1",
+    "react": "^19.1.0",
+    "socket.io-client": "^4.8.1",
+    "socket.io": "^4.8.1",
+    "tailwind-merge": "^3.3.1",
+    "tailwindcss": "^4.1.12",
+    "vite-express": "^0.21.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.12",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/express": "^5.0.3",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^24.3.0",
+    "@types/react-dom": "^19.1.6",
+    "@types/react": "^19.1.8",
+    "@vitejs/plugin-react": "^4.6.0",
+    "babel-plugin-react-compiler": "^19.1.0-rc.2",
+    "drizzle-kit": "^0.31.4",
+    "globals": "^16.3.0",
+    "prettier-plugin-organize-imports": "^4.2.0",
+    "prettier-plugin-tailwindcss": "^0.6.14",
+    "prettier": "^3.6.2",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2",
+    "vite": "^7.0.4"
+  }
+}

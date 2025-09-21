@@ -1,7 +1,7 @@
-import type { LeaderboardEntry } from '@chugmania/common/models/timeEntry.js'
-import { formatTime } from '@chugmania/common/utils/time.js'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import type { LeaderboardEntry } from '../../../../common/models/timeEntry'
+import { formatTime } from '../../../../common/utils/time'
 
 type TableRowProps = React.DetailedHTMLProps<
   React.HTMLAttributes<HTMLTableRowElement>,
@@ -48,7 +48,7 @@ function GapPart({
   gapType = 'leader',
   onToggle,
 }: Readonly<{
-  gap?: LeaderboardEntry['interval']
+  gap?: LeaderboardEntry['gap']
   gapType?: GapType
   onToggle?: () => void
 }>) {

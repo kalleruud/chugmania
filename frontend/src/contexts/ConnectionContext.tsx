@@ -1,4 +1,3 @@
-import { AUTH_KEY } from '@chugmania/common/utils/constants.js'
 import {
   createContext,
   useContext,
@@ -8,6 +7,7 @@ import {
   type ReactNode,
 } from 'react'
 import { io, Socket } from 'socket.io-client'
+import { AUTH_KEY } from '../../../common/utils/constants'
 
 type ConnectionContextType = {
   socket: Socket

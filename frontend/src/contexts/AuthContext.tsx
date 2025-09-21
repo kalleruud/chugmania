@@ -1,18 +1,3 @@
-import type {
-  LoginRequest,
-  RegisterRequest,
-} from '@chugmania/common/models/requests.js'
-import {
-  type ErrorResponse,
-  type LoginResponse,
-} from '@chugmania/common/models/responses.js'
-import { type UserInfo } from '@chugmania/common/models/user.js'
-import {
-  AUTH_KEY,
-  WS_GET_USER_DATA,
-  WS_LOGIN_NAME,
-  WS_REGISTER_NAME,
-} from '@chugmania/common/utils/constants.js'
 import {
   createContext,
   useContext,
@@ -22,6 +7,21 @@ import {
   type ReactNode,
 } from 'react'
 import { useNavigate } from 'react-router-dom'
+import type {
+  LoginRequest,
+  RegisterRequest,
+} from '../../../common/models/requests'
+import {
+  type ErrorResponse,
+  type LoginResponse,
+} from '../../../common/models/responses.js'
+import { type UserInfo } from '../../../common/models/user.js'
+import {
+  AUTH_KEY,
+  WS_GET_USER_DATA,
+  WS_LOGIN_NAME,
+  WS_REGISTER_NAME,
+} from '../../../common/utils/constants.js'
 import { useConnection } from './ConnectionContext'
 
 type AuthContextType = {

@@ -1,7 +1,8 @@
+import type { Socket } from 'socket.io'
 import type {
   BackendResponse,
   ErrorResponse,
-} from '@chugmania/common/models/responses.js'
+} from '../../../common/models/responses'
 import {
   WS_GET_LEADERBOARD,
   WS_GET_LEADERBOARD_SUMMARIES,
@@ -11,8 +12,7 @@ import {
   WS_LOGIN_NAME,
   WS_POST_LAPTIME,
   WS_REGISTER_NAME,
-} from '@chugmania/common/utils/constants.js'
-import type { Socket } from 'socket.io'
+} from '../../../common/utils/constants'
 import AuthManager from './auth.manager'
 import LeaderboardManager from './leaderboard.manager'
 import TimeEntryManager from './timeEntry.manager'

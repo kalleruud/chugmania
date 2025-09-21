@@ -1,12 +1,12 @@
+import { asc, eq } from 'drizzle-orm'
 import type {
   BackendResponse,
   GetTracksResponse,
-} from '@chugmania/common/models/responses.js'
-import { TRACK_LEVELS, TRACK_TYPES } from '@chugmania/common/models/track.ts'
-import { tryCatchAsync } from '@chugmania/common/utils/try-catch.js'
-import db from '@database/database'
-import { timeEntries, tracks } from '@database/schema'
-import { asc, eq } from 'drizzle-orm'
+} from '../../../common/models/responses'
+import { TRACK_LEVELS, TRACK_TYPES } from '../../../common/models/track'
+import { tryCatchAsync } from '../../../common/utils/try-catch'
+import db from '../../database/database'
+import { timeEntries, tracks } from '../../database/schema'
 
 export default class TrackManager {
   static async seed(): Promise<void> {

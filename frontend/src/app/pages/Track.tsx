@@ -1,14 +1,14 @@
-import type { GetLeaderboardRequest } from '@chugmania/common/models/requests.js'
+import { useEffect, useState } from 'react'
+import { useParams } from 'react-router-dom'
+import type { GetLeaderboardRequest } from '../../../../common/models/requests'
 import {
   type ErrorResponse,
   type GetLeaderboardsResponse,
-} from '@chugmania/common/models/responses.js'
-import type { LeaderboardEntry } from '@chugmania/common/models/timeEntry.js'
-import type { Track } from '@chugmania/common/models/track.js'
-import { WS_GET_LEADERBOARD } from '@chugmania/common/utils/constants.js'
-import { formatTrackName } from '@chugmania/common/utils/track.js'
-import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+} from '../../../../common/models/responses'
+import type { LeaderboardEntry } from '../../../../common/models/timeEntry'
+import type { Track } from '../../../../common/models/track'
+import { WS_GET_LEADERBOARD } from '../../../../common/utils/constants'
+import { formatTrackName } from '../../../../common/utils/track'
 import { useConnection } from '../../contexts/ConnectionContext'
 import LapTimeInput from '../components/LapTimeInput'
 import LeaderboardView from '../components/Leaderboard'

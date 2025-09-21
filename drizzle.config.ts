@@ -6,7 +6,7 @@ if (!DB_URL) throw Error("Missing environment varible 'DB_URL'")
 export default defineConfig({
   out: './drizzle',
   dialect: 'sqlite',
-  schema: './database/schema.ts',
+  schema: './backend/database/schema.ts',
   casing: 'camelCase',
   dbCredentials: {
     url: DB_URL,

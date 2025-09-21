@@ -1,19 +1,3 @@
-import type { PostLapTimeRequest } from '@chugmania/common/models/requests.js'
-import type {
-  BackendResponse,
-  ErrorResponse,
-  GetTracksResponse,
-  GetUsersResponse,
-} from '@chugmania/common/models/responses.js'
-import type { Track } from '@chugmania/common/models/track.js'
-import type { UserInfo } from '@chugmania/common/models/user.js'
-import {
-  WS_GET_TRACKS,
-  WS_GET_USERS,
-  WS_POST_LAPTIME,
-} from '@chugmania/common/utils/constants.js'
-import { formattedTimeToMs } from '@chugmania/common/utils/time.js'
-import { formatTrackName } from '@chugmania/common/utils/track.js'
 import {
   useCallback,
   useEffect,
@@ -24,6 +8,22 @@ import {
   type KeyboardEvent,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
+import type { PostLapTimeRequest } from '../../../../common/models/requests.js'
+import type {
+  BackendResponse,
+  ErrorResponse,
+  GetTracksResponse,
+  GetUsersResponse,
+} from '../../../../common/models/responses.js'
+import type { Track } from '../../../../common/models/track.js'
+import type { UserInfo } from '../../../../common/models/user.js'
+import {
+  WS_GET_TRACKS,
+  WS_GET_USERS,
+  WS_POST_LAPTIME,
+} from '../../../../common/utils/constants.js'
+import { formattedTimeToMs } from '../../../../common/utils/time.js'
+import { formatTrackName } from '../../../../common/utils/track.js'
 import { useAuth } from '../../contexts/AuthContext'
 import { useConnection } from '../../contexts/ConnectionContext'
 import SearchableDropdown, { type LookupItem } from './SearchableDropdown'

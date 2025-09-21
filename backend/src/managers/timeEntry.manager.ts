@@ -1,11 +1,11 @@
-import { isPostLapTimeRequest } from '@chugmania/common/models/requests.js'
+import type { Socket } from 'socket.io'
+import { isPostLapTimeRequest } from '../../../common/models/requests'
 import type {
   BackendResponse,
   SuccessResponse,
-} from '@chugmania/common/models/responses.js'
-import db from '@database/database'
-import { timeEntries } from '@database/schema'
-import type { Socket } from 'socket.io'
+} from '../../../common/models/responses'
+import db from '../../database/database'
+import { timeEntries } from '../../database/schema'
 import AuthManager from './auth.manager'
 
 export default class TimeEntryManager {

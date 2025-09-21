@@ -1,13 +1,13 @@
-import type { Leaderboard } from '@chugmania/common/models/leaderboard.js'
+import { useEffect, useState } from 'react'
+import type { TrackLevel, TrackType } from '../../../../backend/database/schema'
+import type { Leaderboard } from '../../../../common/models/leaderboard'
 import {
   type ErrorResponse,
   type GetLeaderboardsResponse,
-} from '@chugmania/common/models/responses.js'
-import { TRACK_LEVELS, TRACK_TYPES } from '@chugmania/common/models/track.js'
-import { WS_GET_LEADERBOARD_SUMMARIES } from '@chugmania/common/utils/constants.js'
-import { formatTrackName } from '@chugmania/common/utils/track.js'
-import type { TrackLevel, TrackType } from '@database/schema'
-import { useEffect, useState } from 'react'
+} from '../../../../common/models/responses'
+import { TRACK_LEVELS, TRACK_TYPES } from '../../../../common/models/track'
+import { WS_GET_LEADERBOARD_SUMMARIES } from '../../../../common/utils/constants'
+import { formatTrackName } from '../../../../common/utils/track'
 import { useConnection } from '../../contexts/ConnectionContext'
 import SearchBar from '../components/SearchBar'
 import Spinner from '../components/Spinner'

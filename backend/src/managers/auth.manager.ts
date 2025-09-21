@@ -1,21 +1,21 @@
+import jwt from 'jsonwebtoken'
+import type { Socket } from 'socket.io'
 import {
   isLoginRequest,
   isRegisterRequest,
-} from '@chugmania/common/models/requests.js'
+} from '../../../common/models/requests'
 import type {
   BackendResponse,
   ErrorResponse,
   LoginResponse,
-} from '@chugmania/common/models/responses.js'
-import { type User, type UserInfo } from '@chugmania/common/models/user.js'
+} from '../../../common/models/responses'
+import { type User, type UserInfo } from '../../../common/models/user'
 import {
   tryCatch,
   tryCatchAsync,
   type Result,
-} from '@chugmania/common/utils/try-catch.js'
-import { users } from '@database/schema'
-import jwt from 'jsonwebtoken'
-import type { Socket } from 'socket.io'
+} from '../../../common/utils/try-catch'
+import { users } from '../../database/schema'
 import UserManager from './user.manager'
 
 const TOKEN_EXPIRY_H = process.env.TOKEN_EXPIRY_H ?? '1'

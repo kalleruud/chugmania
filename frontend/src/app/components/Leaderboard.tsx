@@ -1,6 +1,6 @@
-import type { Leaderboard } from '@chugmania/common/models/leaderboard.js'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import type { Leaderboard } from '../../../../common/models/leaderboard.js'
 import TimeEntryRow, { type GapType } from './TimeEntryRow'
 
 type TableProps = React.DetailedHTMLProps<

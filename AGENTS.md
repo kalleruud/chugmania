@@ -26,11 +26,13 @@ Accepts the lap time, a user a track and a comment.
 #### Home/Dashboard Page
 
 The homepage displays multiple sections:
+
 - Latest registered times (Last 7 days)
 - Displays "Top 10 global overall"-leaderboard using the "global ranking system", see Gamification & Stats
 - Displays "Top 10 global average"-leaderboard" using the "overall ranking system", see Gamification & Stats
 
 If logged in:
+
 - Displays your user data and stats
 - Displays the Lap Time Input component
 - Displays all track cards where you have a lap-time registered.
@@ -81,7 +83,7 @@ If logged in:
   - "Top Chugger" (Top 10 overall ranking)
   - "Chugmaniac" (Top 3 overall ranking)
   - "Max Chugstappen" (Top 1 overall ranking)
-  > Display a toast on new acheivements
+    > Display a toast on new acheivements
 - Users can see **progress stats** like:
   - Number of laps completed
   - Average position per track
@@ -107,7 +109,7 @@ Always keep AGENTS.md and README.md updated!
 
 - `backend/`: Node.js + TypeScript Socket.IO server. Database in `backend/database/` (Drizzle + SQLite). Runtime data in `backend/data/`. Entry at `src/server.ts`.
 - `frontend/`: React + Vite app (TypeScript). Entry at `frontend/src/App.tsx`.
-- `common/`: Shared TypeScript models and utilities, consumed via `@chugmania/common`.
+- `common/`: Shared TypeScript models and utilities, consumed via `../../../../common`.
 - Place tests next to sources (e.g., `backend/src/foo.spec.ts`, `frontend/src/Bar.test.tsx`).
 
 ## Build, Test, and Development Commands
@@ -129,7 +131,7 @@ Always keep AGENTS.md and README.md updated!
 - Formatting: Prettier (2 spaces, single quotes, no semicolons, trailing commas). Run `npm run check` in `backend/`.
 - Language: TypeScript everywhere. Prefer explicit types at public boundaries.
 - Files: Backend managers use `name.manager.ts`. React components/contexts use `PascalCase.tsx`.
-- Imports: Use `@chugmania/common/*` in app code and `@database/*` within backend.
+- Imports: Use `../../../../common/*` in app code and `@database/*` within backend.
 - Code principles: write the minimal, easy-readable solution; match existing patterns and file layout.
 - Keep functions small and focused; prefer clear names over cleverness.
 - Avoid unnecessary abstractions, comments, and dependencies; implement only what is needed for the task.

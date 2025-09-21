@@ -1,12 +1,12 @@
+import { eq } from 'drizzle-orm'
 import type {
   BackendResponse,
   GetUsersResponse,
-} from '@chugmania/common/models/responses.js'
-import type { User, UserInfo } from '@chugmania/common/models/user.js'
-import { tryCatchAsync } from '@chugmania/common/utils/try-catch.js'
-import db from '@database/database'
-import { users } from '@database/schema'
-import { eq } from 'drizzle-orm'
+} from '../../../common/models/responses'
+import type { User, UserInfo } from '../../../common/models/user'
+import { tryCatchAsync } from '../../../common/utils/try-catch'
+import db from '../../database/database'
+import { users } from '../../database/schema'
 
 export default class UserManager {
   static readonly table = users

@@ -1,15 +1,15 @@
-import type { Leaderboard } from '@chugmania/common/models/leaderboard.js'
-import { isGetLeaderboardRequest } from '@chugmania/common/models/requests.js'
+import { asc, eq } from 'drizzle-orm'
+import type { Socket } from 'socket.io'
+import type { Leaderboard } from '../../../common/models/leaderboard'
+import { isGetLeaderboardRequest } from '../../../common/models/requests'
 import type {
   BackendResponse,
   GetLeaderboardsResponse,
-} from '@chugmania/common/models/responses.js'
-import type { LeaderboardEntryGap } from '@chugmania/common/models/timeEntry.js'
-import type { Track } from '@chugmania/common/models/track.js'
-import db from '@database/database'
-import { timeEntries, tracks, users } from '@database/schema'
-import { asc, eq } from 'drizzle-orm'
-import type { Socket } from 'socket.io'
+} from '../../../common/models/responses'
+import type { LeaderboardEntryGap } from '../../../common/models/timeEntry'
+import type { Track } from '../../../common/models/track'
+import db from '../../database/database'
+import { timeEntries, tracks, users } from '../../database/schema'
 import TrackManager from './track.manager'
 
 export default class LeaderboardManager {
