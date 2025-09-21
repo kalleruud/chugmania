@@ -87,7 +87,6 @@ export default function TimeEntryRow({
   lapTime,
   position = lapTime.gap.position,
   gapType = 'leader',
-  disabled = false,
   className,
   onToggleGapType,
   ...rest
@@ -96,7 +95,6 @@ export default function TimeEntryRow({
     position?: number
     lapTime: LeaderboardEntry
     gapType?: GapType
-    disabled?: boolean
     onToggleGapType: () => void
   }
 >) {
@@ -145,7 +143,7 @@ export default function TimeEntryRow({
         <GapPart
           gap={lapTime.gap}
           gapType={gapType}
-          onToggle={disabled ? undefined : onToggleGapType}
+          onToggle={onToggleGapType}
         />
       )}
       {show.time && <TimePart duration={lapTime.duration} />}
