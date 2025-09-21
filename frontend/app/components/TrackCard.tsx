@@ -14,7 +14,7 @@ export default function TrackCard({
   className,
   ...rest
 }: Readonly<TrackCardProps>) {
-  const { track, totalEntries, entries } = leaderboard
+  const { track, entries } = leaderboard
 
   return (
     <Link
@@ -26,19 +26,12 @@ export default function TrackCard({
       {...rest}
     >
       <div className='flex items-center justify-between gap-2'>
-        <h1>
-          {formatTrackName(track.number)}
-        </h1>
-        <div className='text-xs'>
-          <span className='rounded-md border border-white/10 bg-white/5 px-2.5 py-1'>
-            {totalEntries} laps
-          </span>
-        </div>
-      </div>
+        <h1>{formatTrackName(track.number)}</h1>
 
-      <div className='flex gap-2'>
-        <TrackTag trackLevel={track.level}>{track.level}</TrackTag>
-        <TrackTag trackType={track.type}>{track.type}</TrackTag>
+        <div className='flex gap-2'>
+          <TrackTag trackLevel={track.level}>{track.level}</TrackTag>
+          <TrackTag trackType={track.type}>{track.type}</TrackTag>
+        </div>
       </div>
 
       <div className='border-b border-white/10' />

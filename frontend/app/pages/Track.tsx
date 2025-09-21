@@ -52,7 +52,7 @@ export default function Track() {
 
   return (
     <div className='sticky flex w-full gap-6'>
-      <section className='flex flex-col gap-2'>
+      <section className='grid gap-4'>
         <h1>{formatTrackName(track?.number)}</h1>
         <div className='flex gap-1'>
           <TrackTag trackLevel={track.level}>{track.level}</TrackTag>
@@ -60,7 +60,7 @@ export default function Track() {
         </div>
       </section>
 
-      <section className='flex w-full flex-col gap-4'>
+      <section className='w-full'>
         <LeaderboardView entries={entries} />
       </section>
     </div>
