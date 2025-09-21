@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import type { LeaderboardEntry } from '../../../../common/models/timeEntry'
-import { formatTime } from '../../../../common/utils/time'
+import type { LeaderboardEntry } from '../../../common/models/timeEntry'
+import { formatTime } from '../../../common/utils/time'
 
 type TableRowProps = React.DetailedHTMLProps<
   React.HTMLAttributes<HTMLTableRowElement>,

@@ -1,0 +1,117 @@
+@import 'tailwindcss';
+
+/* Formula1 */
+
+@font-face {
+  font-family: 'Formula1';
+  src: url('/fonts/formula1/Formula1-Regular.woff2');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Formula1';
+  src: url('/fonts/formula1/Formula1-Bold.woff2');
+  font-weight: bold;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Formula1';
+  src: url('/fonts/formula1/Formula1-Black.woff2');
+  font-weight: 900;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Formula1';
+  src: url('/fonts/formula1/Formula1-Italic.woff2');
+  font-weight: 400;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: 'Formula1Wide';
+  src: url('/fonts/formula1/Formula1-Wide.woff2');
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Formula1Digits';
+  src: url('/fonts/formula1/Formula1-Year.woff2');
+  font-weight: 400;
+  font-style: normal;
+}
+
+/* KH Interference */
+
+@font-face {
+  font-family: 'KH Interference';
+  src: url('/fonts/kh-interference/KHInterference-Regular.woff2');
+  font-weight: 400;
+}
+
+@font-face {
+  font-family: 'KH Interference';
+  src: url('/fonts/kh-interference/KHInterference-Bold.woff2');
+  font-weight: bold;
+}
+
+/* Northwell */
+
+@font-face {
+  font-family: 'Northwell';
+  src: url('/fonts/northwell/northwell.woff2');
+  font-weight: 400;
+}
+
+@font-face {
+  font-family: 'Northwell Clean';
+  src: url('/fonts/northwell/northwell-clean.woff2');
+  font-weight: 400;
+}
+
+@font-face {
+  font-family: 'Northwell Alt';
+  src: url('/fonts/northwell/northwell-alt.woff2');
+  font-weight: 400;
+}
+
+@font-face {
+  font-family: 'Northwell Clean Alt';
+  src: url('/fonts/northwell/northwell-clean-alt.woff2');
+  font-weight: 400;
+}
+
+/* Formula1 Player Icons */
+
+@font-face {
+  font-family: 'F1PlayerIcons';
+  src: url('/fonts/formula1-player-icons/Formula1-Player-Icon.woff2');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@theme {
+  --font-f1: 'Formula1', 'Titillium Web', sans-serif;
+  --font-f1-wide: 'Formula1', 'Titillium Web', sans-serif;
+  --font-f1-digits: 'Formula1Wide', 'Titillium Web', sans-serif;
+  --font-northwell: 'Northwell', 'Titillium Web', sans-serif;
+  --font-kh-interface: 'KH Interference', 'Titillium Web', sans-serif;
+}
+
+@layer utilities {
+  .font-f1-bold {
+    @apply font-f1 font-bold;
+  }
+  .font-f1-italic {
+    @apply font-f1 italic;
+  }
+  .font-f1-black {
+    @apply font-f1 font-black;
+  }
+  .font-kh-interface-bold {
+    @apply font-kh-interface font-bold;
+  }
+}

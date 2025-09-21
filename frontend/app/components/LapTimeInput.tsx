@@ -8,22 +8,22 @@ import {
   type KeyboardEvent,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
-import type { PostLapTimeRequest } from '../../../../common/models/requests.js'
+import type { PostLapTimeRequest } from '../../../common/models/requests'
 import type {
   BackendResponse,
   ErrorResponse,
   GetTracksResponse,
   GetUsersResponse,
-} from '../../../../common/models/responses.js'
-import type { Track } from '../../../../common/models/track.js'
-import type { UserInfo } from '../../../../common/models/user.js'
+} from '../../../common/models/responses'
+import type { Track } from '../../../common/models/track'
+import type { UserInfo } from '../../../common/models/user'
 import {
   WS_GET_TRACKS,
   WS_GET_USERS,
   WS_POST_LAPTIME,
-} from '../../../../common/utils/constants.js'
-import { formattedTimeToMs } from '../../../../common/utils/time.js'
-import { formatTrackName } from '../../../../common/utils/track.js'
+} from '../../../common/utils/constants'
+import { formattedTimeToMs } from '../../../common/utils/time'
+import { formatTrackName } from '../../../common/utils/track'
 import { useAuth } from '../../contexts/AuthContext'
 import { useConnection } from '../../contexts/ConnectionContext'
 import SearchableDropdown, { type LookupItem } from './SearchableDropdown'

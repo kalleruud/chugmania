@@ -1,5 +1,5 @@
-import type { TrackLevel, TrackType } from '@database/schema'
 import { twMerge } from 'tailwind-merge'
+import type { TrackLevel, TrackType } from '../../../backend/database/schema'
 import Tag, { type TagProps } from './Tag'
 
 export type TrackTagProps = TagProps &

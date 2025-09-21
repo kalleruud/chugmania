@@ -1,7 +1,7 @@
 import { Link, type LinkProps } from 'react-router-dom'
 import { twMerge } from 'tailwind-merge'
-import type { Leaderboard } from '../../../../common/models/leaderboard'
-import { formatTrackName } from '../../../../common/utils/track'
+import type { Leaderboard } from '../../../common/models/leaderboard'
+import { formatTrackName } from '../../../common/utils/track'
 import LeaderboardView from './Leaderboard'
 import TrackTag from './TrackTag'
 
