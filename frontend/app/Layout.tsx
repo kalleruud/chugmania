@@ -1,8 +1,20 @@
-import { LogIn, LogOut, Plus } from 'lucide-react'
+import {
+  Home,
+  LogIn,
+  LogOut,
+  Map,
+  Plus,
+  Users,
+  type LucideIcon,
+} from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import LapTimeInput from './components/LapTimeInput'
+
+type MobileNavItem =
+  | { key: string; label: string; icon: LucideIcon; to: string }
+  | { key: string; label: string; icon: LucideIcon; action: () => void }
 
 export default function Layout() {
   const { isLoggedIn, logout } = useAuth()
@@ -15,6 +27,43 @@ export default function Layout() {
     { to: '/tracks', label: 'Tracks' },
     { to: '/players', label: 'Players' },
   ]
+
+  const mobileNavButtons: MobileNavItem[] = [
+    { key: 'home', label: 'Home', icon: Home, to: '/' },
+    { key: 'tracks', label: 'Tracks', icon: Map, to: '/tracks' },
+  ]
+
+  if (isLoggedIn) {
+    mobileNavButtons.push({
+      key: 'add',
+      label: 'Add time',
+      icon: Plus,
+      action: () => setShowTimeInput(true),
+    })
+  }
+
+  mobileNavButtons.push({
+    key: 'players',
+    label: 'Players',
+    icon: Users,
+    to: '/players',
+  })
+
+  if (isLoggedIn) {
+    mobileNavButtons.push({
+      key: 'logout',
+      label: 'Sign out',
+      icon: LogOut,
+      action: logout,
+    })
+  } else {
+    mobileNavButtons.push({
+      key: 'login',
+      label: 'Sign in',
+      icon: LogIn,
+      to: '/login',
+    })
+  }
 
   useEffect(() => {
     if (showTimeInput) document.body.style.overflow = 'hidden'
@@ -113,9 +162,50 @@ export default function Layout() {
         </div>
       )}
 
-      <main className='z-0 flex p-8' ref={containerRef}>
+      <main
+        className='z-0 flex w-full p-4 pb-24 sm:p-8 sm:pb-8'
+        ref={containerRef}
+      >
         <Outlet />
       </main>
+
+      <nav className='border-stroke fixed bottom-0 left-0 right-0 z-50 border-t bg-black/70 backdrop-blur-xl sm:hidden'>
+        <div className='mx-auto flex max-w-md items-center justify-around gap-1 px-3 py-2 text-xs font-semibold uppercase tracking-wider'>
+          {mobileNavButtons.map(item => {
+            const Icon = item.icon
+
+            if ('to' in item)
+              return (
+                <NavLink
+                  key={item.key}
+                  to={item.to}
+                  className={({ isActive }) =>
+                    `flex flex-col items-center gap-1 rounded-xl px-3 py-2 transition ${
+                      isActive
+                        ? 'bg-white/10 text-white'
+                        : 'text-label-muted hover:text-white'
+                    }`
+                  }
+                >
+                  <Icon size={18} />
+                  <span>{item.label}</span>
+                </NavLink>
+              )
+
+            return (
+              <button
+                key={item.key}
+                type='button'
+                onClick={item.action}
+                className='text-label-muted flex flex-col items-center gap-1 rounded-xl px-3 py-2 transition hover:bg-white/10 hover:text-white'
+              >
+                <Icon size={18} />
+                <span>{item.label}</span>
+              </button>
+            )
+          })}
+        </div>
+      </nav>
 
       <div className='main-background fixed left-0 top-0 -z-10 h-full w-full' />
     </>
