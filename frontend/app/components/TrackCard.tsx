@@ -26,9 +26,9 @@ export default function TrackCard({
       {...rest}
     >
       <div className='flex items-center justify-between gap-2'>
-        <h3 className='font-f1-black text-accent text-3xl uppercase tracking-wider'>
+        <h1>
           {formatTrackName(track.number)}
-        </h3>
+        </h1>
         <div className='text-xs'>
           <span className='rounded-md border border-white/10 bg-white/5 px-2.5 py-1'>
             {totalEntries} laps
