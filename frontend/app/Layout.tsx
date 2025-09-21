@@ -1,5 +1,5 @@
 import { LogIn, LogOut, Plus } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import LapTimeInput from './components/LapTimeInput'
@@ -7,6 +7,9 @@ import LapTimeInput from './components/LapTimeInput'
 export default function Layout() {
   const { isLoggedIn, logout } = useAuth()
   const [showTimeInput, setShowTimeInput] = useState(false)
+
+  const containerRef = useRef<HTMLTableRowElement | null>(null)
+  const [width, setWidth] = useState(0)
 
   const navButtons = [
     { to: '/tracks', label: 'Tracks' },
@@ -22,19 +25,31 @@ export default function Layout() {
     }
   }, [showTimeInput])
 
+  useEffect(() => {
+    if (!containerRef.current) return
+    const el = containerRef.current
+    const ro = new ResizeObserver(entries => {
+      const w = entries[0]?.contentRect.width
+      if (typeof w === 'number') setWidth(w)
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  const title = useMemo(() => {
+    return width >= 800 ? 'Chugmania' : 'CM'
+  }, [width])
+
   return (
     <>
-      <header className='sticky left-0 top-0 z-50 flex w-full justify-center px-4 pt-4'>
+      <header className='sticky left-0 top-0 z-50 hidden w-full justify-center px-4 pt-4 sm:flex'>
         <div className='border-stroke flex w-full max-w-5xl flex-wrap items-center justify-between gap-4 rounded-3xl border bg-black/30 p-4 backdrop-blur-xl'>
           <NavLink
             to='/'
             className='flex items-baseline text-white no-underline'
           >
-            <span className='font-f1-black text-accent hidden text-4xl uppercase tracking-wider sm:block'>
-              Chugmania
-            </span>
-            <span className='font-f1-black text-accent text-4xl uppercase tracking-wider sm:hidden'>
-              CM
+            <span className='font-f1-black text-accent text-4xl uppercase'>
+              {title}
             </span>
           </NavLink>
 
@@ -98,7 +113,7 @@ export default function Layout() {
         </div>
       )}
 
-      <main className='z-0 flex p-8'>
+      <main className='z-0 flex p-8' ref={containerRef}>
         <Outlet />
       </main>
 
