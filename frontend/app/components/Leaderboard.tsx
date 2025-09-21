@@ -32,7 +32,14 @@ export default function LeaderboardView({
   }
 
   return (
-    <div className={twMerge('flex w-full', className)} {...rest}>
+    <div
+      className={twMerge(
+        'flex w-full',
+        disabled ? 'pointer-events-none' : '',
+        className
+      )}
+      {...rest}
+    >
       <table className='flex w-full table-auto'>
         <tbody className='flex w-full flex-col'>
           {entries.map(t => (
