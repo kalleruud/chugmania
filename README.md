@@ -1,42 +1,43 @@
-# Chugmania Monorepo
+# Chugmania
 
-This repository contains:
+Full-stack Trackmania Turbo companion app for recording and exploring lap times. The backend (Express + Socket.IO + Drizzle/SQLite) and frontend (React + Vite) live in this single package and run together via Vite Express.
 
-- `backend/`: Node.js + TypeScript Socket.IO server. Drizzle + SQLite in `backend/database/`, runtime data in `backend/data/`.
-- `frontend/`: React + Vite app (TypeScript). Entry at `frontend/src/App.tsx`.
-- `common/`: Shared TypeScript models/utilities, consumed via `file:../common`.
+## Project Layout
 
-## Quick Start
+- `backend/`: Server code, Socket.IO handlers, database access, and seeds.
+- `frontend/`: React UI, components, and styles.
+- `common/`: Shared TypeScript models/utilities consumed by both sides.
+- `data/`: Development SQLite database (`/data/db.sqlite` at runtime). The directory is created on demand.
 
-### Backend
+## Getting Started
 
-1. `cd backend && npm install`
-2. Create `backend/.env` (see `.env.example`).
-3. `npm start` to run the dev server (tsx watch).
-4. Drizzle:
-   - `npm run db:gen` | `db:migrate` | `db:push` | `db:studio`
+1. `npm install`
+2. Copy `.env.example` to `.env` and fill in overrides (see `Security & Config`).
+3. `npm start`
+   - Serves the API/WebSocket server on `http://localhost:6997`.
+   - Serves the web app on `http://localhost:6996` via Vite Express proxy.
 
-### Frontend
+The SQLite database lives at `data/db.sqlite`. The app creates the parent directory automatically if it is missing.
 
-1. `cd frontend && npm install`
-2. `npm start` to run Vite dev server.
-3. `npm run build` for type-check + production build.
+## Useful Scripts
 
-### Common
-
-No build; imported from backend/frontend using `file:../common`.
+- `npm run prod` – start the server in production mode (no file watching).
+- `npm run build` – build the frontend for production.
+- `npm run check` – type-check the entire project and verify Prettier formatting.
+- `npm run db:gen` / `db:migrate` / `db:push` / `db:studio` – Drizzle schema tooling.
 
 ## Coding Style
 
 - Prettier: 2 spaces, single quotes, no semicolons, trailing commas.
-- TypeScript everywhere. Prefer explicit types at public boundaries.
+- TypeScript across the stack; add explicit types on public boundaries.
 - Backend managers use `name.manager.ts`; React components/contexts use `PascalCase.tsx`.
-- Imports: use `../../../../common/*` in app code, `@database/*` within backend.
+- Imports: reference shared code via `../../../../common/*` and backend database modules via `@database/*` aliases.
 
 ## Security & Config
 
-- Optional: `SECRET` (JWT), `TOKEN_EXPIRY_H` (default `1`).
-- SQLite files are ignored by Git; back up migrations via Drizzle commands.
+- Optional env vars: `SECRET` (JWT signing key) and `TOKEN_EXPIRY_H` (default `1`).
+- Keep `.env` out of source control; copy from `.env.example` for local development.
+- SQLite files are ignored by Git; use the Drizzle commands above to manage schema changes.
 
 ## Docker
 

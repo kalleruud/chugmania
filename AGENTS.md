@@ -114,17 +114,12 @@ Always keep AGENTS.md and README.md updated!
 
 ## Build, Test, and Development Commands
 
-- Backend
-  - `cd backend && npm install`: Install server deps.
-  - `npm start`: Run dev server with `tsx` (watches `src/server.ts`).
-  - `npm run check`: Type-check and verify Prettier formatting.
-  - Drizzle: `npm run db:gen | db:migrate | db:push | db:studio`.
-- Frontend
-  - `cd frontend && npm install`: Install web app deps.
-  - `npm start`: Run Vite dev server.
-  - `npm run build`: Type-check and production build.
-- Common
-  - `cd common`: Used via `file:../common`. If linking breaks, re-run `npm install` in frontend/backend.
+- Install dependencies once with `npm install` at the repository root.
+- `npm start`: Runs the combined Express + Vite dev server (backend on `6997`, frontend on `6996`).
+- `npm run prod`: Starts the backend in production mode without file watching.
+- `npm run build`: Produces the production frontend bundle.
+- `npm run check`: Type-checks the project and enforces Prettier formatting.
+- Drizzle tooling: `npm run db:gen | db:migrate | db:push | db:studio`.
 
 ## Coding Style & Naming Conventions
 
