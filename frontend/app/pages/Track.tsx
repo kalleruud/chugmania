@@ -50,13 +50,13 @@ export default function Track() {
 
   if (!track) throw Error("Couldn't get track")
 
-  const titleClass = track.level === 'custom' ? 'text-amber-700' : undefined
-
   return (
-    <div className='sticky flex w-full gap-6'>
-      <section className='grid gap-4'>
-        <h1 className={titleClass}>{formatTrackName(track?.number)}</h1>
-        <div className='flex gap-1'>
+    <div className='sticky flex w-full items-start gap-6'>
+      <section className='grid min-w-48 gap-8'>
+        <h1 className={track.level === 'custom' ? 'text-amber-600' : undefined}>
+          {formatTrackName(track.number)}
+        </h1>
+        <div className='flex gap-2'>
           <TrackTag trackLevel={track.level}>{track.level}</TrackTag>
           <TrackTag trackType={track.type}>{track.type}</TrackTag>
         </div>
