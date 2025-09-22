@@ -32,9 +32,6 @@ export const tracks = sqliteTable('tracks', {
   number: integer().notNull(),
   level: text().$type<TrackLevel>().notNull(),
   type: text().$type<TrackType>().notNull(),
-  isChuggable: integer({ mode: 'boolean' })
-    .notNull()
-    .$default(() => false),
 })
 
 export const timeEntries = sqliteTable('time_entries', {
