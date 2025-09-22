@@ -24,7 +24,7 @@ const setToken: ConnectionContextType['setToken'] = token => {
   socket.auth.token = token
   if (!token) localStorage.removeItem(AUTH_KEY)
   else localStorage.setItem(AUTH_KEY, token)
-  socket.connect()
+  socket.disconnect().connect()
 }
 
 const ConnectionContext = createContext<ConnectionContextType>({
