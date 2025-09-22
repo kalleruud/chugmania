@@ -6,6 +6,6 @@ export default defineConfig({
   schema: './backend/database/schema.ts',
   casing: 'camelCase',
   dbCredentials: {
-    url: '/data/db.sqlite',
+    url: 'data/db.sqlite',
   },
 })
