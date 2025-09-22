@@ -6,7 +6,7 @@
   "main": "backend/src/server.ts",
   "scripts": {
     "start": "tsx watch --env-file .env backend/src/server.ts",
-    "prod": "NODE_ENV=production tsx backend/src/server.ts",
+    "prod": "npm run db:push && NODE_ENV=production node dist/server/server.js",
     "check": "tsc --noEmit && prettier -c .",
     "build": "vite build",
     "db:gen": "drizzle-kit generate",
