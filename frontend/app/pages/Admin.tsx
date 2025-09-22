@@ -1,5 +1,5 @@
 import { AlertTriangle, ShieldCheck, Upload } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type DragEvent } from 'react'
 import type { ImportCsvTarget } from '../../../common/models/requests'
 import type {
   BackendResponse,
@@ -77,6 +77,7 @@ export default function Admin() {
   const { user } = useAuth()
   const { socket } = useConnection()
   const [uploads, setUploads] = useState(INITIAL_STATE)
+  const [dragTarget, setDragTarget] = useState<ImportCsvTarget | null>(null)
 
   const isAdmin = user?.role === 'admin'
 
@@ -207,6 +208,27 @@ export default function Admin() {
     }
   }
 
+  const handleDragOver =
+    (target: ImportCsvTarget) => (event: DragEvent<HTMLElement>) => {
+      event.preventDefault()
+      event.dataTransfer.dropEffect = 'copy'
+      if (dragTarget !== target) setDragTarget(target)
+    }
+
+  const handleDragLeave =
+    (target: ImportCsvTarget) => (event: DragEvent<HTMLElement>) => {
+      event.preventDefault()
+      if (dragTarget === target) setDragTarget(null)
+    }
+
+  const handleDrop =
+    (target: ImportCsvTarget) => (event: DragEvent<HTMLElement>) => {
+      event.preventDefault()
+      setDragTarget(null)
+      const file = event.dataTransfer.files?.[0]
+      if (file) handleFileChange(target, file)
+    }
+
   return (
     <div className='mx-auto flex w-full max-w-5xl flex-col gap-6'>
       {hero}
@@ -217,6 +239,7 @@ export default function Admin() {
           const hasFile = !!state.file
           const summary = state.summary
           const error = state.error
+          const isDragging = dragTarget === dataset.target
           return (
             <section
               key={dataset.target}
@@ -231,7 +254,13 @@ export default function Admin() {
                 </p>
               </div>
 
-              <label className='hover:border-accent/60 focus-within:border-accent/60 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-white/15 bg-white/5 px-4 py-10 text-center transition focus-within:bg-white/10 hover:bg-white/10'>
+              <label
+                className={`hover:border-accent/60 focus-within:border-accent/60 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-white/15 bg-white/5 px-4 py-10 text-center transition focus-within:bg-white/10 hover:bg-white/10 ${isDragging ? 'border-accent/60 bg-white/10 text-white' : ''}`}
+                onDragOver={handleDragOver(dataset.target)}
+                onDragLeave={handleDragLeave(dataset.target)}
+                onDrop={handleDrop(dataset.target)}
+                onDragEnter={handleDragOver(dataset.target)}
+              >
                 <Upload className='text-label-muted size-8' />
                 <div className='flex flex-col gap-1 text-sm'>
                   <span className='text-label-secondary'>
