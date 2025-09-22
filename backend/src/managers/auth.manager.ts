@@ -69,6 +69,21 @@ export default class AuthManager {
     return { data: user, error: null }
   }
 
+  static async createAdmin() {
+    if (await UserManager.adminExists()) return
+    const adminEmail = 'admin@chugmania.no'
+    const adminPassword = 'g9av67ds'
+
+    console.log('username:', adminEmail)
+    console.log('password:', adminPassword)
+    await UserManager.createUser({
+      email: adminEmail,
+      name: 'admin',
+      role: 'admin',
+      passwordHash: await AuthManager.hash(adminPassword),
+    })
+  }
+
   static async onRegister(
     socket: Socket,
     request: unknown

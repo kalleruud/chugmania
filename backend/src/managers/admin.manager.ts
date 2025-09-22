@@ -24,6 +24,8 @@ type ImportSummary = ImportCsvResponse['summary']
 
 type CsvRecord = Record<string, string>
 
+const DEFAULT_AMOUNT = 0.5
+
 export default class AdminManager {
   static async onImportCsv(
     socket: Socket,
@@ -90,10 +92,10 @@ export default class AdminManager {
     let insideQuotes = false
 
     for (let i = 0; i < cleaned.length; i++) {
-      const char = cleaned[i]!
+      const char = cleaned.charAt(i)
 
       if (char === '"') {
-        const next = cleaned[i + 1]
+        const next = cleaned.charAt(i + 1)
         if (insideQuotes && next === '"') {
           currentValue += '"'
           i++
@@ -153,13 +155,58 @@ export default class AdminManager {
       )
   }
 
+  private static createSummary(target: ImportSummary['target']): ImportSummary {
+    return { target, inserted: 0, updated: 0, skipped: 0 }
+  }
+
+  private static warnSkip(
+    target: ImportSummary['target'],
+    reason: string,
+    record: CsvRecord
+  ) {
+    console.warn(
+      new Date().toISOString(),
+      `[import:${target}] skipped row - ${reason}`,
+      record
+    )
+  }
+
+  private static normalizeString(value: string | undefined) {
+    const trimmed = value?.trim()
+    return trimmed && trimmed.length > 0 ? trimmed : undefined
+  }
+
+  private static normalizeEmail(value: string | undefined) {
+    const normalized = AdminManager.normalizeString(value)
+    return normalized?.toLowerCase()
+  }
+
+  private static normalizeId(value: string | undefined) {
+    const normalized = AdminManager.normalizeString(value)
+    return normalized && normalized.length > 0 ? normalized : undefined
+  }
+
+  private static toUpperOrNull(value: string | undefined) {
+    const normalized = AdminManager.normalizeString(value)
+    return normalized ? normalized.toUpperCase() : null
+  }
+
+  private static parseInt(value: string | undefined) {
+    const normalized = AdminManager.normalizeString(value)
+    if (!normalized) return null
+    const parsed = Number.parseInt(normalized, 10)
+    return Number.isNaN(parsed) ? null : parsed
+  }
+
+  private static parseFloat(value: string | undefined) {
+    const normalized = AdminManager.normalizeString(value)
+    if (!normalized) return null
+    const parsed = Number.parseFloat(normalized)
+    return Number.isNaN(parsed) ? null : parsed
+  }
+
   private static async importUsers(records: CsvRecord[]) {
-    const summary: ImportSummary = {
-      target: 'users',
-      inserted: 0,
-      updated: 0,
-      skipped: 0,
-    }
+    const summary = AdminManager.createSummary('users')
 
     if (records.length === 0) return summary
 
@@ -167,20 +214,25 @@ export default class AdminManager {
     const byEmail = new Map(existingUsers.map(u => [u.email.toLowerCase(), u]))
 
     for (const record of records) {
-      const email = record.email?.trim().toLowerCase()
-      const name = record.name?.trim()
-      const password = record.password?.trim()
+      const email = AdminManager.normalizeEmail(record.email)
+      const name = AdminManager.normalizeString(record.name)
+      const password = AdminManager.normalizeString(record.password)
 
       if (!email || !name || !password) {
         summary.skipped += 1
+        AdminManager.warnSkip(
+          'users',
+          'missing email, name, or password',
+          record
+        )
         continue
       }
 
-      const shortNameValue = record.shortName?.trim()
-      const shortName = shortNameValue ? shortNameValue.toUpperCase() : null
+      const shortName = AdminManager.toUpperOrNull(record.shortName)
       const role = AdminManager.parseRole(record.role)
       if (!role) {
         summary.skipped += 1
+        AdminManager.warnSkip('users', 'invalid role', record)
         continue
       }
 
@@ -208,7 +260,7 @@ export default class AdminManager {
         continue
       }
 
-      const id = record.id && record.id !== '' ? record.id : undefined
+      const id = AdminManager.normalizeId(record.id)
       const inserted = await db
         .insert(users)
         .values({
@@ -242,12 +294,7 @@ export default class AdminManager {
   }
 
   private static async importTracks(records: CsvRecord[]) {
-    const summary: ImportSummary = {
-      target: 'tracks',
-      inserted: 0,
-      updated: 0,
-      skipped: 0,
-    }
+    const summary = AdminManager.createSummary('tracks')
 
     if (records.length === 0) return summary
 
@@ -255,17 +302,16 @@ export default class AdminManager {
     const byId = new Map(existingTracks.map(t => [t.id, t]))
 
     for (const record of records) {
-      const trackNumber = record.number
-        ? Number.parseInt(record.number, 10)
-        : NaN
+      const trackNumber = AdminManager.parseInt(record.number)
       const level = AdminManager.parseLevel(record.level)
       const type = AdminManager.parseType(record.type)
-      if (!Number.isFinite(trackNumber) || !level || !type) {
+      if (trackNumber === null || !level || !type) {
         summary.skipped += 1
+        AdminManager.warnSkip('tracks', 'invalid number, level, or type', record)
         continue
       }
 
-      const id = record.id && record.id !== '' ? record.id : undefined
+      const id = AdminManager.normalizeId(record.id)
       if (id && byId.has(id)) {
         await db
           .update(tracks)
@@ -307,24 +353,18 @@ export default class AdminManager {
 
   private static parseLevel(level: string | undefined): TrackLevel | null {
     if (!level) return null
-    const normalized = level.trim().toLowerCase()
-    return (TRACK_LEVELS.find(l => l === normalized) ??
-      null) as TrackLevel | null
+    const normalized = level.trim().toLowerCase() as TrackLevel
+    return TRACK_LEVELS.includes(normalized) ? normalized : null
   }
 
   private static parseType(type: string | undefined): TrackType | null {
     if (!type) return null
-    const normalized = type.trim().toLowerCase()
-    return (TRACK_TYPES.find(t => t === normalized) ?? null) as TrackType | null
+    const normalized = type.trim().toLowerCase() as TrackType
+    return TRACK_TYPES.includes(normalized) ? normalized : null
   }
 
   private static async importTimeEntries(records: CsvRecord[]) {
-    const summary: ImportSummary = {
-      target: 'timeEntries',
-      inserted: 0,
-      updated: 0,
-      skipped: 0,
-    }
+    const summary = AdminManager.createSummary('timeEntries')
 
     if (records.length === 0) return summary
 
@@ -340,8 +380,9 @@ export default class AdminManager {
     for (const record of records) {
       const userId = record.user
       const trackId = record.track
-      const duration = record.ms ? Number.parseInt(record.ms, 10) : NaN
-      const amountValue = record.amount ? Number.parseFloat(record.amount) : 0.5
+      const duration = AdminManager.parseInt(record.duration ?? record.ms)
+      const amountValue =
+        AdminManager.parseFloat(record.amount) ?? DEFAULT_AMOUNT
       if (
         !userId ||
         !trackId ||
@@ -349,28 +390,28 @@ export default class AdminManager {
         !trackIds.has(trackId)
       ) {
         summary.skipped += 1
+        AdminManager.warnSkip(
+          'timeEntries',
+          'missing or unknown user/track id',
+          record
+        )
         continue
       }
 
-      if (!Number.isFinite(duration) || duration <= 0) {
+      if (duration === null || duration <= 0) {
         summary.skipped += 1
+        AdminManager.warnSkip('timeEntries', 'invalid duration', record)
         continue
       }
 
-      const commentRaw = record.comment?.trim()
-      const comment = commentRaw ? commentRaw : undefined
-      const timestamp = record.date
-        ? Number.parseInt(record.date, 10)
-        : Date.now()
-      const createdAt = Number.isFinite(timestamp)
-        ? new Date(timestamp)
-        : new Date()
+      const createdAt = AdminManager.toDate(record.date)
+      const comment = AdminManager.normalizeString(record.comment)
 
       values.push({
         user: userId,
         track: trackId,
         duration,
-        amount: Number.isFinite(amountValue) ? amountValue : 0.5,
+        amount: Number.isFinite(amountValue) ? amountValue : DEFAULT_AMOUNT,
         comment,
         createdAt,
         updatedAt: createdAt,
@@ -383,5 +424,12 @@ export default class AdminManager {
     }
 
     return summary
+  }
+
+  private static toDate(value: string | undefined) {
+    const timestamp = AdminManager.parseInt(value)
+    if (timestamp === null) return new Date()
+    const date = new Date(timestamp)
+    return Number.isNaN(date.valueOf()) ? new Date() : date
   }
 }
