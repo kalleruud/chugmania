@@ -3,11 +3,13 @@ import { blob, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
 const common = {
   id: text().primaryKey().$defaultFn(randomUUID),
-  updatedAt: integer({ mode: 'timestamp' }).$onUpdateFn(() => new Date()),
-  createdAt: integer({ mode: 'timestamp' })
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).$onUpdateFn(
+    () => new Date()
+  ),
+  createdAt: integer('created_at', { mode: 'timestamp' })
     .notNull()
     .$defaultFn(() => new Date()),
-  deletedAt: integer({ mode: 'timestamp' }),
+  deletedAt: integer('deleted_at', { mode: 'timestamp' }),
 }
 
 export type UserRole = 'admin' | 'moderator' | 'user'
@@ -16,8 +18,8 @@ export const users = sqliteTable('users', {
   ...common,
   email: text().notNull().unique(),
   name: text().notNull(),
-  shortName: text().unique(),
-  passwordHash: blob({ mode: 'buffer' }).notNull(),
+  shortName: text('short_name').unique(),
+  passwordHash: blob('password_hash', { mode: 'buffer' }).notNull(),
   role: text()
     .$type<UserRole>()
     .notNull()
@@ -42,7 +44,7 @@ export const timeEntries = sqliteTable('time_entries', {
   track: text()
     .notNull()
     .references(() => tracks.id),
-  duration: integer('duration_ms').notNull(),
+  duration: integer('duration_ms'),
   amount: integer('amount_l').notNull(),
   comment: text(),
 })
