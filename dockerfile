@@ -1,9 +1,14 @@
 FROM node:alpine
 WORKDIR /app
 
-COPY . .
-RUN npm ci --omit-dev && npm run build && mkdir -p data && chown -R node:node data && npm run db:push
-
 EXPOSE 6996
+EXPOSE 6997
+
+COPY . .
+
+RUN npm ci
+RUN npm run build
+RUN mkdir -p "/data" && chown -R node:node "/data"
+RUN npm run db:push
 
 ENTRYPOINT ["npm", "run", "prod"]

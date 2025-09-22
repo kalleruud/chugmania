@@ -18,16 +18,13 @@ import {
 import { users } from '../../database/schema'
 import UserManager from './user.manager'
 
-const TOKEN_EXPIRY_H = process.env.TOKEN_EXPIRY_H ?? '1'
-const SECRET: jwt.Secret =
-  process.env.SECRET ?? Buffer.from(crypto.getRandomValues(new Uint8Array(256)))
-
-const tokenExpiryMs = Number.parseFloat(TOKEN_EXPIRY_H) * 60 * 60 * 1000
+const SECRET: jwt.Secret = process.env.SECRET!
+if (!SECRET) throw Error("Missing environment variable 'SECRET'")
 
 export default class AuthManager {
   private static readonly JWT_OPTIONS: jwt.SignOptions = {
     algorithm: 'HS512',
-    expiresIn: tokenExpiryMs / 1_000,
+    expiresIn: '30DAYS',
   }
 
   private static sign(user: UserInfo) {

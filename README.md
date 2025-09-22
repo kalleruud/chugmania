@@ -35,6 +35,11 @@ No build; imported from backend/frontend using `file:../common`.
 
 ## Security & Config
 
-- Required: `DB_URL` in backend env.
 - Optional: `SECRET` (JWT), `TOKEN_EXPIRY_H` (default `1`).
 - SQLite files are ignored by Git; back up migrations via Drizzle commands.
+
+## Docker
+
+- The provided `Dockerfile` builds a production image that seeds the SQLite database at `/app/data/db.sqlite`.
+- Build with `docker build -t chugmania .` and run with `docker run -p 6996:6996 chugmania`.
+- Mount `/app/data` as a volume if you need the database to persist across container restarts.

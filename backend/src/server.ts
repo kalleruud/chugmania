@@ -8,7 +8,7 @@ import {
 import ConnectionManager from './managers/connection.manager'
 import TrackManager from './managers/track.manager'
 
-const port = 3310
+const port = 6997
 const app = express()
 const io = new Server(port, { cors: { origin: '*' } })
 
@@ -20,4 +20,4 @@ io.on(WS_CONNECT_NAME, s =>
   })
 )
 
-ViteExpress.listen(app, 6996, () => console.log(`Server listening on ${port}`))
+ViteExpress.listen(app, 6996)

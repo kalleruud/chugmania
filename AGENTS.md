@@ -131,7 +131,6 @@ Always keep AGENTS.md and README.md updated!
 - Formatting: Prettier (2 spaces, single quotes, no semicolons, trailing commas). Run `npm run check` in `backend/`.
 - Language: TypeScript everywhere. Prefer explicit types at public boundaries.
 - Files: Backend managers use `name.manager.ts`. React components/contexts use `PascalCase.tsx`.
-- Imports: Use `../../../../common/*` in app code and `@database/*` within backend.
 - Code principles: write the minimal, easy-readable solution; match existing patterns and file layout.
 - Keep functions small and focused; prefer clear names over cleverness.
 - Avoid unnecessary abstractions, comments, and dependencies; implement only what is needed for the task.
@@ -152,5 +151,5 @@ Always keep AGENTS.md and README.md updated!
 
 ## Security & Configuration Tips
 
-- Backend env: set `DB_URL` (required), `SECRET` (JWT; optional), `TOKEN_EXPIRY_H` (default `1`). Create `backend/.env` for local dev.
+- Backend env: set `SECRET` (JWT; optional), `TOKEN_EXPIRY_H` (default `1`). Create `.env` for local dev.
 - SQLite files are ignored by Git; back up migrations via Drizzle commands.
