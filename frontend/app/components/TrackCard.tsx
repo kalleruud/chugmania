@@ -26,7 +26,9 @@ export default function TrackCard({
       {...rest}
     >
       <div className='flex items-center justify-between gap-2'>
-        <h1>{formatTrackName(track.number)}</h1>
+        <h1 className={track.level === 'custom' ? 'text-amber-700' : undefined}>
+          {formatTrackName(track.number)}
+        </h1>
 
         <div className='flex gap-2'>
           <TrackTag trackLevel={track.level}>{track.level}</TrackTag>

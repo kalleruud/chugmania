@@ -307,7 +307,11 @@ export default class AdminManager {
       const type = AdminManager.parseType(record.type)
       if (trackNumber === null || !level || !type) {
         summary.skipped += 1
-        AdminManager.warnSkip('tracks', 'invalid number, level, or type', record)
+        AdminManager.warnSkip(
+          'tracks',
+          'invalid number, level, or type',
+          record
+        )
         continue
       }
 
