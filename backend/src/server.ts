@@ -8,13 +8,18 @@ import {
 import ConnectionManager from './managers/connection.manager'
 import TrackManager from './managers/track.manager'
 
-const PORT = 6996
+const PORT = process.env.PORT ? parseInt(process.env.PORT) : 6996
 const app = express()
 
 await TrackManager.seed()
 
 const server = ViteExpress.listen(app, PORT)
-const io = new Server(server, { cors: { origin: '*' } })
+const io = new Server(server, {
+  cors: {
+    origin: [process.env.ORIGIN ?? 'http://localhost:' + PORT],
+    credentials: true,
+  },
+})
 
 io.on(WS_CONNECT_NAME, s =>
   ConnectionManager.connect(s).then(() => {
