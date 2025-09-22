@@ -50,6 +50,10 @@ export default class AuthManager {
     return Buffer.from(await crypto.subtle.digest('SHA-512', encoder.encode(s)))
   }
 
+  static async hashPassword(password: string) {
+    return AuthManager.hash(password)
+  }
+
   static async checkAuth(socket: Socket): Promise<Result<UserInfo>> {
     const result = AuthManager.verify(socket.handshake.auth.token)
     if (result.error) return result

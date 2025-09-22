@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import './App.css'
 import Layout from './app/Layout'
+import Admin from './app/pages/Admin'
 import Home from './app/pages/Home'
 import Login from './app/pages/Login'
 import Players from './app/pages/Players'
@@ -25,6 +26,7 @@ createRoot(document.getElementById('root')!).render(
               <Route path='tracks/:id' element={<Track />} />
               <Route path='players' element={<Players />} />
               <Route path='login' element={<Login />} />
+              <Route path='admin' element={<Admin />} />
             </Route>
           </Routes>
         </AuthProvider>

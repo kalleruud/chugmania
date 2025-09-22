@@ -18,6 +18,12 @@ Full-stack Trackmania Turbo companion app for recording and exploring lap times.
 
 The SQLite database lives at `data/db.sqlite`. The app creates the parent directory automatically if it is missing.
 
+## Admin CSV Imports
+
+- Signed-in admins can open `/admin` to bulk import data from CSV files.
+- Each upload must match the columns used in `data/users.csv`, `data/tracks.csv`, or `data/timeEntry.csv`.
+- Successful imports report how many rows were inserted, updated, or skipped so you can verify the outcome.
+
 ## Useful Scripts
 
 - `npm run prod` – run the prebuilt backend (`dist/server/server.js`) with `NODE_ENV=production`.

@@ -1,4 +1,5 @@
 import type { Leaderboard } from './leaderboard'
+import type { ImportCsvTarget } from './requests'
 import type { Track } from './track'
 import type { UserInfo } from './user'
 
@@ -8,6 +9,7 @@ export type BackendResponse =
   | GetTracksResponse
   | GetTrackResponse
   | GetUsersResponse
+  | ImportCsvResponse
   | LoginResponse
   | SuccessResponse
 
@@ -18,6 +20,16 @@ export type ErrorResponse = {
 
 export type SuccessResponse = {
   success: true
+}
+
+export type ImportCsvResponse = {
+  success: true
+  summary: {
+    target: ImportCsvTarget
+    inserted: number
+    updated: number
+    skipped: number
+  }
 }
 
 export type LoginResponse = {

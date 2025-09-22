@@ -55,6 +55,12 @@ If logged in:
 
 - Displays all players as cards with top 3 leaderboard positions.
 
+#### Admin
+
+- Admin-only page for bulk data management.
+- Supports importing CSV files that mirror `data/users.csv`, `data/tracks.csv`, and `data/timeEntry.csv`.
+- Reports how many rows were inserted, updated, or skipped after each import.
+
 ### Gamification & Stats
 
 - Each player has a **personal best** for every track, highlighted in their stats.
