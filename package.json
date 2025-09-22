@@ -5,10 +5,12 @@
   "type": "module",
   "main": "backend/src/server.ts",
   "scripts": {
-    "start": "tsx watch --env-file .env backend/src/server.ts",
-    "prod": "npm run db:push && NODE_ENV=production node dist/server/server.js",
+    "start": "npm run db:push && node dist/server/server.js",
+    "dev": "tsx watch --env-file .env backend/src/server.ts",
     "check": "tsc --noEmit && prettier -c .",
-    "build": "vite build",
+    "build": "npm run build:frontend && npm run build:backend",
+    "build:frontend": "vite build",
+    "build:backend": "tsup backend/src/server.ts --format esm --target node20 --out-dir dist/server --clean",
     "db:gen": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
@@ -45,6 +47,7 @@
     "prettier-plugin-organize-imports": "^4.2.0",
     "prettier-plugin-tailwindcss": "^0.6.14",
     "prettier": "^3.6.2",
+    "tsup": "^8.5.0",
     "tsx": "^4.20.5",
     "typescript": "^5.9.2",
     "vite": "^7.0.4"

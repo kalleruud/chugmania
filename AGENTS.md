@@ -116,8 +116,10 @@ Always keep AGENTS.md and README.md updated!
 
 - Install dependencies once with `npm install` at the repository root.
 - `npm start`: Runs the combined Express + Vite dev server (API/WebSocket/frontend on `6996`).
-- `npm run prod`: Starts the backend in production mode without file watching.
-- `npm run build`: Produces the production frontend bundle.
+- `npm run prod`: Runs the prebuilt backend (`dist/server/server.js`) with `NODE_ENV=production`.
+- `npm run build`: Builds both the frontend bundle and backend runtime (`dist/` + `dist/server/`).
+- `npm run build:frontend`: Builds only the Vite bundle.
+- `npm run build:backend`: Bundles the backend/server with tsup.
 - `npm run check`: Type-checks the project and enforces Prettier formatting.
 - Drizzle tooling: `npm run db:gen | db:migrate | db:push | db:studio`.
 
@@ -146,5 +148,5 @@ Always keep AGENTS.md and README.md updated!
 
 ## Security & Configuration Tips
 
-- Backend env: set `SECRET` (JWT; optional), `TOKEN_EXPIRY_H` (default `1`). Create `.env` for local dev.
+- Backend env: in production set `SECRET` (JWT), `ORIGIN` (allowed frontend origin), and optionally `TOKEN_EXPIRY_H` (default `1`). Create `.env` for local dev.
 - SQLite files are ignored by Git; back up migrations via Drizzle commands.

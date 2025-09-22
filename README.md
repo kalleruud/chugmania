@@ -20,8 +20,10 @@ The SQLite database lives at `data/db.sqlite`. The app creates the parent direct
 
 ## Useful Scripts
 
-- `npm run prod` – start the server in production mode (no file watching).
-- `npm run build` – build the frontend for production.
+- `npm run prod` – run the prebuilt backend (`dist/server/server.js`) with `NODE_ENV=production`.
+- `npm run build` – build both the frontend bundle and the backend runtime (outputs to `dist/` and `dist/server/`).
+- `npm run build:frontend` – build the Vite bundle only.
+- `npm run build:backend` – bundle the backend/server with tsup.
 - `npm run check` – type-check the entire project and verify Prettier formatting.
 - `npm run db:gen` / `db:migrate` / `db:push` / `db:studio` – Drizzle schema tooling.
 
@@ -34,7 +36,8 @@ The SQLite database lives at `data/db.sqlite`. The app creates the parent direct
 
 ## Security & Config
 
-- Optional env vars: `SECRET` (JWT signing key) and `TOKEN_EXPIRY_H` (default `1`).
+- Required in production: `SECRET` (JWT signing key) and `ORIGIN` (allowed frontend origin for CORS).
+- Optional override: `TOKEN_EXPIRY_H` (default `1`).
 - Keep `.env` out of source control; copy from `.env.example` for local development.
 - SQLite files are ignored by Git; use the Drizzle commands above to manage schema changes.
 

@@ -9,4 +9,4 @@ RUN npm ci
 RUN npm run build
 RUN mkdir -p data && chown -R node:node data
 
-ENTRYPOINT ["npm", "run", "prod"]
+ENTRYPOINT ["npm", "start"]
