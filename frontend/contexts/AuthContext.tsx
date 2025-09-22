@@ -45,6 +45,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   function handleResponse(response: ErrorResponse | LoginResponse) {
     if (!response.success) {
       console.error(response.message)
+      logout()
       return setErrorMessage(response.message)
     }
 
