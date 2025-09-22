@@ -166,67 +166,65 @@ export default class AdminManager {
     const existingUsers = await db.select().from(users)
     const byEmail = new Map(existingUsers.map(u => [u.email.toLowerCase(), u]))
 
-    await db.transaction(async tx => {
-      for (const record of records) {
-        const email = record.email?.trim().toLowerCase()
-        const name = record.name?.trim()
-        const password = record.password?.trim()
+    for (const record of records) {
+      const email = record.email?.trim().toLowerCase()
+      const name = record.name?.trim()
+      const password = record.password?.trim()
 
-        if (!email || !name || !password) {
-          summary.skipped += 1
-          continue
-        }
-
-        const shortNameValue = record.shortName?.trim()
-        const shortName = shortNameValue ? shortNameValue.toUpperCase() : null
-        const role = AdminManager.parseRole(record.role)
-        if (!role) {
-          summary.skipped += 1
-          continue
-        }
-
-        const passwordHash = await AuthManager.hashPassword(password)
-        const existing = byEmail.get(email)
-
-        if (existing) {
-          await tx
-            .update(users)
-            .set({
-              name,
-              shortName,
-              passwordHash,
-              role,
-            })
-            .where(eq(users.id, existing.id))
-          byEmail.set(email, {
-            ...existing,
-            name,
-            shortName,
-            passwordHash,
-            role,
-          })
-          summary.updated += 1
-          continue
-        }
-
-        const id = record.id && record.id !== '' ? record.id : undefined
-        const inserted = await tx
-          .insert(users)
-          .values({
-            id,
-            email,
-            name,
-            shortName,
-            passwordHash,
-            role,
-          })
-          .returning()
-
-        summary.inserted += 1
-        const persisted = inserted[0]
-        if (persisted) byEmail.set(email, persisted)
+      if (!email || !name || !password) {
+        summary.skipped += 1
+        continue
       }
-    })
+
+      const shortNameValue = record.shortName?.trim()
+      const shortName = shortNameValue ? shortNameValue.toUpperCase() : null
+      const role = AdminManager.parseRole(record.role)
+      if (!role) {
+        summary.skipped += 1
+        continue
+      }
+
+      const passwordHash = await AuthManager.hashPassword(password)
+      const existing = byEmail.get(email)
+
+      if (existing) {
+        await db
+          .update(users)
+          .set({
+            name,
+            shortName,
+            passwordHash,
+            role,
+          })
+          .where(eq(users.id, existing.id))
+        byEmail.set(email, {
+          ...existing,
+          name,
+          shortName,
+          passwordHash,
+          role,
+        })
+        summary.updated += 1
+        continue
+      }
+
+      const id = record.id && record.id !== '' ? record.id : undefined
+      const inserted = await db
+        .insert(users)
+        .values({
+          id,
+          email,
+          name,
+          shortName,
+          passwordHash,
+          role,
+        })
+        .returning()
+
+      summary.inserted += 1
+      const persisted = inserted[0]
+      if (persisted) byEmail.set(email, persisted)
+    }
 
     return summary
   }
@@ -256,55 +254,53 @@ export default class AdminManager {
     const existingTracks = await db.select().from(tracks)
     const byId = new Map(existingTracks.map(t => [t.id, t]))
 
-    await db.transaction(async tx => {
-      for (const record of records) {
-        const trackNumber = record.number
-          ? Number.parseInt(record.number, 10)
-          : NaN
-        const level = AdminManager.parseLevel(record.level)
-        const type = AdminManager.parseType(record.type)
-        if (!Number.isFinite(trackNumber) || !level || !type) {
-          summary.skipped += 1
-          continue
-        }
+    for (const record of records) {
+      const trackNumber = record.number
+        ? Number.parseInt(record.number, 10)
+        : NaN
+      const level = AdminManager.parseLevel(record.level)
+      const type = AdminManager.parseType(record.type)
+      if (!Number.isFinite(trackNumber) || !level || !type) {
+        summary.skipped += 1
+        continue
+      }
 
-        const id = record.id && record.id !== '' ? record.id : undefined
-        if (id && byId.has(id)) {
-          await tx
-            .update(tracks)
-            .set({
-              number: trackNumber,
-              level,
-              type,
-            })
-            .where(eq(tracks.id, id))
-          const existing = byId.get(id)
-          if (existing)
-            byId.set(id, {
-              ...existing,
-              number: trackNumber,
-              level,
-              type,
-            })
-          summary.updated += 1
-          continue
-        }
-
-        const inserted = await tx
-          .insert(tracks)
-          .values({
-            id,
+      const id = record.id && record.id !== '' ? record.id : undefined
+      if (id && byId.has(id)) {
+        await db
+          .update(tracks)
+          .set({
             number: trackNumber,
             level,
             type,
           })
-          .returning()
-
-        summary.inserted += 1
-        const persisted = inserted[0]
-        if (persisted) byId.set(persisted.id, persisted)
+          .where(eq(tracks.id, id))
+        const existing = byId.get(id)
+        if (existing)
+          byId.set(id, {
+            ...existing,
+            number: trackNumber,
+            level,
+            type,
+          })
+        summary.updated += 1
+        continue
       }
-    })
+
+      const inserted = await db
+        .insert(tracks)
+        .values({
+          id,
+          number: trackNumber,
+          level,
+          type,
+        })
+        .returning()
+
+      summary.inserted += 1
+      const persisted = inserted[0]
+      if (persisted) byId.set(persisted.id, persisted)
+    }
 
     return summary
   }
@@ -382,9 +378,7 @@ export default class AdminManager {
     }
 
     if (values.length > 0) {
-      await db.transaction(async tx => {
-        await tx.insert(timeEntries).values(values)
-      })
+      await db.insert(timeEntries).values(values)
       summary.inserted = values.length
     }
 
