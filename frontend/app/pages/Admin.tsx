@@ -255,7 +255,7 @@ export default function Admin() {
               </div>
 
               <label
-                className={`hover:border-accent/60 focus-within:border-accent/60 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-white/15 bg-white/5 px-4 py-10 text-center transition focus-within:bg-white/10 hover:bg-white/10 ${isDragging ? 'border-accent/60 bg-white/10 text-white' : ''}`}
+                className={`focus-within:border-accent/60 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-white/15 bg-white/5 px-4 py-10 text-center transition focus-within:bg-white/10 hover:border-white/30 hover:bg-white/10 ${isDragging ? 'border-accent/60 bg-white/10 text-white' : ''}`}
                 onDragOver={handleDragOver(dataset.target)}
                 onDragLeave={handleDragLeave(dataset.target)}
                 onDrop={handleDrop(dataset.target)}
@@ -298,7 +298,7 @@ export default function Admin() {
               </button>
 
               {summary && (
-                <div className='border-stroke text-label-secondary rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs'>
+                <div className='text-label-secondary rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs'>
                   {formatSummary(summary)}
                 </div>
               )}
