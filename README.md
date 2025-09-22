@@ -14,8 +14,7 @@ Full-stack Trackmania Turbo companion app for recording and exploring lap times.
 1. `npm install`
 2. Copy `.env.example` to `.env` and fill in overrides (see `Security & Config`).
 3. `npm start`
-   - Serves the API/WebSocket server on `http://localhost:6997`.
-   - Serves the web app on `http://localhost:6996` via Vite Express proxy.
+   - Serves the API, WebSocket, and web app on `http://localhost:6996` via Vite Express.
 
 The SQLite database lives at `data/db.sqlite`. The app creates the parent directory automatically if it is missing.
 

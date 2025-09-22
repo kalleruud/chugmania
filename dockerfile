@@ -2,7 +2,6 @@ FROM node:alpine
 WORKDIR /app
 
 EXPOSE 6996
-EXPOSE 6997
 
 COPY . .
 

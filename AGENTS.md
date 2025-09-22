@@ -115,7 +115,7 @@ Always keep AGENTS.md and README.md updated!
 ## Build, Test, and Development Commands
 
 - Install dependencies once with `npm install` at the repository root.
-- `npm start`: Runs the combined Express + Vite dev server (backend on `6997`, frontend on `6996`).
+- `npm start`: Runs the combined Express + Vite dev server (API/WebSocket/frontend on `6996`).
 - `npm run prod`: Starts the backend in production mode without file watching.
 - `npm run build`: Produces the production frontend bundle.
 - `npm run check`: Type-checks the project and enforces Prettier formatting.

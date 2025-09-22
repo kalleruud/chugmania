@@ -15,7 +15,7 @@ type ConnectionContextType = {
   setToken: (token: string | undefined) => void
 }
 
-const socket = io('http://localhost:6997', {
+const socket = io('/', {
   auth: { token: localStorage.getItem(AUTH_KEY) },
 })
 

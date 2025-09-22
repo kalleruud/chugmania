@@ -8,16 +8,16 @@ import {
 import ConnectionManager from './managers/connection.manager'
 import TrackManager from './managers/track.manager'
 
-const port = 6997
+const PORT = 6996
 const app = express()
-const io = new Server(port, { cors: { origin: '*' } })
 
 await TrackManager.seed()
+
+const server = ViteExpress.listen(app, PORT)
+const io = new Server(server, { cors: { origin: '*' } })
 
 io.on(WS_CONNECT_NAME, s =>
   ConnectionManager.connect(s).then(() => {
     s.on(WS_DISCONNECT_NAME, () => ConnectionManager.disconnect(s))
   })
 )
-
-ViteExpress.listen(app, 6996)
