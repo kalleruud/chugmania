@@ -5,7 +5,6 @@ import {
   WS_CONNECT_NAME,
   WS_DISCONNECT_NAME,
 } from '../../common/utils/constants'
-import AuthManager from './managers/auth.manager'
 import ConnectionManager from './managers/connection.manager'
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 6996
@@ -24,5 +23,3 @@ io.on(WS_CONNECT_NAME, s =>
     s.on(WS_DISCONNECT_NAME, () => ConnectionManager.disconnect(s))
   })
 )
-
-await AuthManager.createAdmin()

@@ -236,7 +236,7 @@ export default class AdminManager {
         continue
       }
 
-      const passwordHash = await AuthManager.hashPassword(password)
+      const passwordHash = await AuthManager.hash(password)
       const existing = byEmail.get(email)
 
       if (existing) {
