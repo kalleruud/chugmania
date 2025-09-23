@@ -13,7 +13,7 @@
     "build:backend": "tsup backend/src/server.ts --format esm --target node20 --out-dir dist/server --clean",
     "db:gen": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:push": "drizzle-kit push",
+    "db:push": "drizzle-kit push --force",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
