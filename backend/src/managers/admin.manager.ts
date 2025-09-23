@@ -14,9 +14,14 @@ import AuthManager from './auth.manager'
 
 export default class AdminManager {
   private static async import(into: SQLiteTable<TableConfig>, data: string) {
-    const values = CsvParser.parse<typeof into.$inferInsert>(data)
+    const values = await CsvParser.parse<typeof into.$inferInsert>(data)
 
-    const inserts = await db.insert(into).values(values).returning()
+    const inserts = []
+    for (const value of values) {
+      console.log('importing:', value)
+      const inserted = await db.insert(into).values(value).returning()
+      inserts.push(inserted)
+    }
 
     return { imported: inserts.length, total: values.length }
   }
@@ -41,16 +46,23 @@ export default class AdminManager {
         message: 'Only admins can import CSV data.',
       }
 
+    console.debug(
+      new Date().toISOString(),
+      socket.id,
+      'Received CSV file:',
+      request.table
+    )
+
     let task: ReturnType<typeof AdminManager.import> | undefined = undefined
     switch (request.table) {
       case 'users':
-        task = AdminManager.import(users, request.table)
+        task = AdminManager.import(users, request.content)
         break
       case 'tracks':
-        task = AdminManager.import(tracks, request.table)
+        task = AdminManager.import(tracks, request.content)
         break
       case 'timeEntries':
-        task = AdminManager.import(timeEntries, request.table)
+        task = AdminManager.import(timeEntries, request.content)
         break
       default:
         throw Error(`Invalid table: '${request.table}'`)
