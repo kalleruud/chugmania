@@ -45,13 +45,9 @@ export default class AuthManager {
     return expectedHash.equals(await AuthManager.hash(providedPassword))
   }
 
-  private static async hash(s: string): Promise<User['passwordHash']> {
+  static async hash(s: string): Promise<User['passwordHash']> {
     const encoder = new TextEncoder()
     return Buffer.from(await crypto.subtle.digest('SHA-512', encoder.encode(s)))
-  }
-
-  static async hashPassword(password: string) {
-    return AuthManager.hash(password)
   }
 
   static async checkAuth(socket: Socket): Promise<Result<UserInfo>> {
@@ -158,12 +154,7 @@ export default class AuthManager {
       return {
         success: false,
         message: error.message,
-      }
-    if (!user)
-      return {
-        success: false,
-        message: 'Must be logged in to get user data.',
-      }
+      } satisfies BackendResponse
     return {
       success: true,
       token: s.handshake.auth.token,

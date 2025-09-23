@@ -3,13 +3,13 @@ import { blob, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
 const common = {
   id: text().primaryKey().$defaultFn(randomUUID),
-  updatedAt: integer('updated_at', { mode: 'timestamp' }).$onUpdateFn(
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).$onUpdateFn(
     () => new Date()
   ),
-  createdAt: integer('created_at', { mode: 'timestamp' })
+  createdAt: integer('created_at', { mode: 'timestamp_ms' })
     .notNull()
     .$defaultFn(() => new Date()),
-  deletedAt: integer('deleted_at', { mode: 'timestamp' }),
+  deletedAt: integer('deleted_at', { mode: 'timestamp_ms' }),
 }
 
 export type UserRole = 'admin' | 'moderator' | 'user'

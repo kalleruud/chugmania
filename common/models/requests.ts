@@ -1,3 +1,4 @@
+import * as schema from '../../backend/database/schema'
 import type { CreateTimeEntry } from './timeEntry'
 import type { Track } from './track'
 
@@ -39,21 +40,14 @@ export function isPostLapTimeRequest(data: any): data is PostLapTimeRequest {
   return data.duration && data.user && data.track
 }
 
-export type ImportCsvTarget = 'users' | 'tracks' | 'timeEntries'
-
 export type ImportCsvRequest = {
-  target: ImportCsvTarget
+  table: keyof typeof schema
   content: string
 }
 
 export function isImportCsvRequest(data: any): data is ImportCsvRequest {
   if (typeof data !== 'object' || data === null) return false
-  return (
-    typeof data.content === 'string' &&
-    (data.target === 'users' ||
-      data.target === 'tracks' ||
-      data.target === 'timeEntries')
-  )
+  return data.table && data.content
 }
 
 export type GetTrackRequest = {
