@@ -1,5 +1,10 @@
-import { useRef, useState, type DragEventHandler, type ChangeEvent } from 'react'
 import { Upload } from 'lucide-react'
+import {
+  useRef,
+  useState,
+  type ChangeEvent,
+  type DragEventHandler,
+} from 'react'
 import { twMerge } from 'tailwind-merge'
 
 type FileDropProps = {
@@ -31,49 +36,44 @@ export default function FileDrop({
     event.target.value = ''
   }
 
-  const handleDragOver: DragEventHandler<HTMLDivElement> = event => {
+  const handleDragOver: DragEventHandler<HTMLButtonElement> = event => {
     event.preventDefault()
     if (!dragging) setDragging(true)
     event.dataTransfer.dropEffect = 'copy'
   }
 
-  const handleDragLeave: DragEventHandler<HTMLDivElement> = event => {
+  const handleDragLeave: DragEventHandler<HTMLButtonElement> = event => {
     event.preventDefault()
     if (dragging) setDragging(false)
   }
 
-  const handleDrop: DragEventHandler<HTMLDivElement> = event => {
+  const handleDrop: DragEventHandler<HTMLButtonElement> = event => {
     event.preventDefault()
     setDragging(false)
     handleFiles(event.dataTransfer.files)
   }
 
   return (
-    <div
-      role='button'
-      tabIndex={0}
-      className={twMerge(
-        'focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-white/15 bg-white/5 px-4 py-10 text-center transition hover:border-white/30 hover:bg-white/10',
-        dragging ? 'border-accent/60 bg-white/10 text-white' : '',
-        className
-      )}
-      onClick={() => inputRef.current?.click()}
-      onKeyDown={event => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault()
-          inputRef.current?.click()
-        }
-      }}
-      onDragEnter={handleDragOver}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-    >
-      <Upload className='text-label-muted size-8' />
-      <div className='flex flex-col gap-1 text-sm'>
-        <span className='text-label-secondary'>{label}</span>
-        {hint && <span className='text-label-muted text-xs'>{hint}</span>}
-      </div>
+    <>
+      <button
+        type='button'
+        className={twMerge(
+          'flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-white/15 bg-white/5 px-4 py-10 text-center transition hover:border-white/30 hover:bg-white/10 focus:outline-none',
+          dragging ? 'border-white/30 bg-white/10 text-white' : '',
+          className
+        )}
+        onClick={() => inputRef.current?.click()}
+        onDragEnter={handleDragOver}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        <Upload className='text-label-muted size-8' />
+        <div className='flex flex-col gap-1 text-sm'>
+          <span className='text-label-secondary'>{label}</span>
+          {hint && <span className='text-label-muted text-xs'>{hint}</span>}
+        </div>
+      </button>
       <input
         ref={inputRef}
         type='file'
@@ -81,6 +81,6 @@ export default function FileDrop({
         className='sr-only'
         onChange={handleInputChange}
       />
-    </div>
+    </>
   )
 }
