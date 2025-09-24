@@ -13,6 +13,8 @@ concurrency:
 jobs:
   docker:
     runs-on: ubuntu-latest
+    environment: production
+
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
