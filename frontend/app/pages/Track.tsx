@@ -65,8 +65,8 @@ export default function Track() {
         </div>
       </header>
 
-      <section className='w-full p-2'>
-        <LeaderboardView entries={entries} />
+      <section className='w-full px-4'>
+        <LeaderboardView entries={entries} className='divide-stroke divide-y' />
       </section>
     </div>
   )

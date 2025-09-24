@@ -64,7 +64,7 @@ function GapPart({
   return (
     <td
       className={
-        'font-f1-italic text-label-muted items-center text-sm uppercase tabular-nums'
+        'font-f1-italic text-label-muted flex items-center text-sm uppercase tabular-nums'
       }
     >
       {isPlaceholder ? (
@@ -72,14 +72,14 @@ function GapPart({
           type='button'
           disabled={!onToggle}
           onClick={onToggle}
-          className='rounded-md px-2 py-1 transition enabled:hover:cursor-pointer enabled:hover:bg-white/10 enabled:hover:text-white enabled:hover:outline-none enabled:hover:ring-1 enabled:hover:ring-white/30'
+          className='text-label-muted/50 rounded-md px-2 py-1 transition enabled:hover:cursor-pointer enabled:hover:bg-white/10 enabled:hover:text-white enabled:hover:outline-none enabled:hover:ring-1 enabled:hover:ring-white/30'
           aria-label='Toggle gap display'
           title='Toggle gap display'
         >
           {label}
         </button>
       ) : (
-        label
+        <p className='px-2'>{label}</p>
       )}
     </td>
   )

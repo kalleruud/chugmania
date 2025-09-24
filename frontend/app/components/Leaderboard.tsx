@@ -10,9 +10,12 @@ type TableProps = React.DetailedHTMLProps<
 
 export default function LeaderboardView({
   entries,
+  compact = false,
   className,
   ...rest
-}: Readonly<TableProps & { entries: Leaderboard['entries'] }>) {
+}: Readonly<
+  TableProps & { entries: Leaderboard['entries']; compact?: boolean }
+>) {
   const [gapType, setGapType] = useState<GapType>('interval')
 
   if (!entries.length) {
@@ -29,14 +32,15 @@ export default function LeaderboardView({
   }
 
   return (
-    <div className={twMerge('flex w-full', className)} {...rest}>
+    <div className={'flex w-full'} {...rest}>
       <table className='flex w-full table-auto'>
-        <tbody className='flex w-full flex-col gap-1'>
+        <tbody className={twMerge('flex w-full flex-col gap-1', className)}>
           {entries.map(t => (
             <TimeEntryRow
               key={t.id}
               lapTime={t}
               gapType={gapType}
+              className={compact ? '' : 'py-1'}
               onToggleGapType={() =>
                 setGapType(prev => (prev === 'leader' ? 'interval' : 'leader'))
               }
