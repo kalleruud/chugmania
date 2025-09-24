@@ -9,10 +9,12 @@ import {
   WS_GET_TRACKS,
   WS_GET_USER_DATA,
   WS_GET_USERS,
+  WS_IMPORT_CSV,
   WS_LOGIN_NAME,
   WS_POST_LAPTIME,
   WS_REGISTER_NAME,
 } from '../../../common/utils/constants'
+import AdminManager from './admin.manager'
 import AuthManager from './auth.manager'
 import LeaderboardManager from './leaderboard.manager'
 import TimeEntryManager from './timeEntry.manager'
@@ -46,6 +48,9 @@ export default class ConnectionManager {
 
     // Setup time entry handling
     ConnectionManager.setup(s, WS_POST_LAPTIME, TimeEntryManager.onPostLapTime)
+
+    // Setup admin utilities
+    ConnectionManager.setup(s, WS_IMPORT_CSV, AdminManager.onImportCsv)
   }
 
   static async disconnect(socket: Socket) {

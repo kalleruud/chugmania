@@ -6,12 +6,9 @@ import {
   WS_DISCONNECT_NAME,
 } from '../../common/utils/constants'
 import ConnectionManager from './managers/connection.manager'
-import TrackManager from './managers/track.manager'
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 6996
 const app = express()
-
-await TrackManager.seed()
 
 const server = ViteExpress.listen(app, PORT)
 const io = new Server(server, {

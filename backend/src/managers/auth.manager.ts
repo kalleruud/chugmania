@@ -45,7 +45,7 @@ export default class AuthManager {
     return expectedHash.equals(await AuthManager.hash(providedPassword))
   }
 
-  private static async hash(s: string): Promise<User['passwordHash']> {
+  static async hash(s: string): Promise<User['passwordHash']> {
     const encoder = new TextEncoder()
     return Buffer.from(await crypto.subtle.digest('SHA-512', encoder.encode(s)))
   }
@@ -72,11 +72,14 @@ export default class AuthManager {
     if (!isRegisterRequest(request))
       throw Error('Failed to register: email or password not provided.')
 
+    const adminExists = await UserManager.adminExists()
+
     const { data: user, error } = await tryCatchAsync(
       UserManager.createUser({
         email: request.email,
         name: request.name,
         shortName: request.shortName,
+        role: adminExists ? 'user' : 'admin',
         passwordHash: await AuthManager.hash(request.password),
       } satisfies typeof users.$inferInsert)
     )
@@ -151,12 +154,7 @@ export default class AuthManager {
       return {
         success: false,
         message: error.message,
-      }
-    if (!user)
-      return {
-        success: false,
-        message: 'Must be logged in to get user data.',
-      }
+      } satisfies BackendResponse
     return {
       success: true,
       token: s.handshake.auth.token,

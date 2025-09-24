@@ -18,6 +18,7 @@ export type ErrorResponse = {
 
 export type SuccessResponse = {
   success: true
+  message?: string
 }
 
 export type LoginResponse = {

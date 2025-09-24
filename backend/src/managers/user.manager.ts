@@ -44,6 +44,23 @@ export default class UserManager {
     return { passwordHash: user.passwordHash, userInfo }
   }
 
+  static async adminExists(): Promise<boolean> {
+    const { data, error } = await tryCatchAsync(
+      db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.role, 'admin'))
+        .limit(1)
+    )
+
+    if (error) {
+      console.warn(new Date().toISOString(), error.message)
+      return false
+    }
+
+    return !!data?.length
+  }
+
   static async userExists(email: string): Promise<boolean> {
     const { data, error } = await tryCatchAsync(
       db.query.users.findFirst({ where: eq(users.email, email) })

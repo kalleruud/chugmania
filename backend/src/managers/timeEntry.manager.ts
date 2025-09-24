@@ -9,6 +9,19 @@ import { timeEntries } from '../../database/schema'
 import AuthManager from './auth.manager'
 
 export default class TimeEntryManager {
+  static readonly table = timeEntries
+
+  static async import(data: (typeof TimeEntryManager.table.$inferInsert)[]) {
+    const tasks = data.map(d =>
+      db
+        .insert(TimeEntryManager.table)
+        .values(data)
+        .onConflictDoUpdate({ target: TimeEntryManager.table.id, set: d })
+        .returning()
+    )
+
+    return (await Promise.all(tasks)).flat()
+  }
   static async onPostLapTime(
     s: Socket,
     request: unknown

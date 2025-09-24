@@ -15,18 +15,22 @@ export default function TrackCard({
   ...rest
 }: Readonly<TrackCardProps>) {
   const { track, entries } = leaderboard
+  const isCustom = track.level === 'custom'
 
   return (
     <Link
       to={`/tracks/${track.id}`}
       className={twMerge(
         'hover:bg-white/6 flex flex-col gap-2 rounded-2xl border border-white/10 bg-white/5 p-6 transition hover:border-white/15',
+        isCustom ? 'bg-amber-950/30 hover:bg-amber-950/40' : '',
         className
       )}
       {...rest}
     >
       <div className='flex items-center justify-between gap-2'>
-        <h1>{formatTrackName(track.number)}</h1>
+        <h1 className={isCustom ? 'text-amber-600' : undefined}>
+          {formatTrackName(track.number)}
+        </h1>
 
         <div className='flex gap-2'>
           <TrackTag trackLevel={track.level}>{track.level}</TrackTag>

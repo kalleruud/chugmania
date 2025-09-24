@@ -4,6 +4,7 @@ import {
   LogOut,
   Map,
   Plus,
+  Shield,
   Users,
   type LucideIcon,
 } from 'lucide-react'
@@ -17,7 +18,7 @@ type MobileNavItem =
   | { key: string; label: string; icon: LucideIcon; action: () => void }
 
 export default function Layout() {
-  const { isLoggedIn, logout } = useAuth()
+  const { isLoggedIn, logout, user } = useAuth()
   const [showTimeInput, setShowTimeInput] = useState(false)
 
   const containerRef = useRef<HTMLTableRowElement | null>(null)
@@ -27,6 +28,8 @@ export default function Layout() {
     { to: '/tracks', label: 'Tracks' },
     { to: '/players', label: 'Players' },
   ]
+
+  if (user?.role === 'admin') navButtons.push({ to: '/admin', label: 'Admin' })
 
   const mobileNavButtons: MobileNavItem[] = [
     { key: 'home', label: 'Home', icon: Home, to: '/' },
@@ -41,6 +44,14 @@ export default function Layout() {
       action: () => setShowTimeInput(true),
     })
   }
+
+  if (user?.role === 'admin')
+    mobileNavButtons.push({
+      key: 'admin',
+      label: 'Admin',
+      icon: Shield,
+      to: '/admin',
+    })
 
   mobileNavButtons.push({
     key: 'players',
