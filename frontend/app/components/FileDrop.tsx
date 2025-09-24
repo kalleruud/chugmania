@@ -127,9 +127,7 @@ export default function FileDrop({
               Selected: <span className='text-white'>{selectedFileName}</span>
             </span>
           )}
-          {error && (
-            <span className='text-red-400 text-xs'>{error}</span>
-          )}
+          {error && <span className='text-xs text-red-400'>{error}</span>}
           {loading && (
             <span className='text-label-muted text-xs'>Reading file…</span>
           )}
