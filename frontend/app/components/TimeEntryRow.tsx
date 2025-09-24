@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type { LeaderboardEntry } from '../../../common/models/timeEntry'
+import { getUserFullName } from '../../../common/models/user'
 import { formatTime } from '../../../common/utils/time'
 
 type TableRowProps = React.DetailedHTMLProps<
@@ -125,9 +126,12 @@ export default function TimeEntryRow({
 
   const name = useMemo(() => {
     if (width <= 400)
-      return lapTime.user.shortName ?? lapTime.user.name.slice(0, 3)
-    if (width <= 1000) return lapTime.user.name.split(' ').at(-1)!
-    return lapTime.user.name
+      return (
+        lapTime.user.shortName ??
+        (lapTime.user.lastName ?? lapTime.user.firstName).slice(0, 3)
+      )
+    if (width <= 600) return lapTime.user.lastName ?? lapTime.user.firstName
+    return getUserFullName(lapTime.user)
   }, [width])
 
   return (
@@ -136,7 +140,7 @@ export default function TimeEntryRow({
       className={twMerge('flex items-center gap-2', className)}
       title={
         lapTime.comment ??
-        `${lapTime.user.name} - ${lapTime.duration ? formatTime(lapTime.duration) : 'DNF'}`
+        `${name} - ${lapTime.duration ? formatTime(lapTime.duration) : 'DNF'} - ${lapTime.createdAt.toLocaleString()}`
       }
       role='row'
       {...rest}

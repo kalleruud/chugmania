@@ -17,7 +17,8 @@ export type UserRole = 'admin' | 'moderator' | 'user'
 export const users = sqliteTable('users', {
   ...common,
   email: text().notNull().unique(),
-  name: text().notNull(),
+  firstName: text('first_name').notNull(),
+  lastName: text('last_name'),
   shortName: text('short_name').unique(),
   passwordHash: blob('password_hash', { mode: 'buffer' }).notNull(),
   role: text()

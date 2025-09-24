@@ -50,7 +50,10 @@ export default function Track() {
 
   if (loading)
     return (
-      <div className='mt-12 flex w-full items-center justify-center' style={safeAreaStyle}>
+      <div
+        className='mt-24 flex w-full items-center justify-center'
+        style={safeAreaStyle}
+      >
         <Spinner />
       </div>
     )
@@ -58,7 +61,10 @@ export default function Track() {
   if (!track) throw Error("Couldn't get track")
 
   return (
-    <div className='grid w-full items-start gap-4 md:flex' style={safeAreaStyle}>
+    <div
+      className='grid w-full items-start gap-4 md:flex'
+      style={safeAreaStyle}
+    >
       <header
         className='bg-background/50 sticky top-0 flex min-w-48 items-center justify-between gap-8 border-b border-white/10 p-4 backdrop-blur-2xl md:grid'
         style={{ top: 'env(safe-area-inset-top, 0px)' }}

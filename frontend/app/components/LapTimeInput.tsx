@@ -16,7 +16,7 @@ import type {
   GetUsersResponse,
 } from '../../../common/models/responses'
 import type { Track } from '../../../common/models/track'
-import type { UserInfo } from '../../../common/models/user'
+import { type UserInfo } from '../../../common/models/user'
 import {
   WS_GET_TRACKS,
   WS_GET_USERS,
@@ -54,7 +54,7 @@ export default function LapTimeInput({
   const loggedInLookup = loggedInUser
     ? ({
         id: loggedInUser.id,
-        label: loggedInUser.shortName ?? loggedInUser.name,
+        label: loggedInUser.lastName ?? loggedInUser.firstName,
       } satisfies LookupItem)
     : undefined
   const inputs = useRef<HTMLInputElement[]>([])
@@ -255,7 +255,7 @@ export default function LapTimeInput({
                     u =>
                       ({
                         id: u.id,
-                        label: u.shortName ?? u.name,
+                        label: u.lastName ?? u.firstName,
                       }) satisfies LookupItem
                   ) ?? []
                 }

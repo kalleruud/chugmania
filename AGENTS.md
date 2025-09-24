@@ -59,6 +59,7 @@ If logged in:
 
 - Admin-only page for bulk data management.
 - Supports importing CSV files that mirror `data/users.csv`, `data/tracks.csv`, and `data/timeEntry.csv`.
+  - User CSV header: `email,firstName,lastName,id,shortName,password`
 - Reports how many rows were inserted, updated, or skipped after each import.
 
 ### Gamification & Stats
