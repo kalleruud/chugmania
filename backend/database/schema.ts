@@ -45,6 +45,6 @@ export const timeEntries = sqliteTable('time_entries', {
     .notNull()
     .references(() => tracks.id),
   duration: integer('duration_ms'),
-  amount: integer('amount_l').notNull(),
+  amount: integer('amount_l').notNull().default(0.5),
   comment: text(),
 })
