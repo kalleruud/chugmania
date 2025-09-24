@@ -43,7 +43,7 @@ export default function Track() {
 
   if (loading)
     return (
-      <div className='mt-12 flex w-full items-center justify-center'>
+      <div className='mt-24 flex w-full items-center justify-center'>
         <Spinner />
       </div>
     )
@@ -51,8 +51,11 @@ export default function Track() {
   if (!track) throw Error("Couldn't get track")
 
   return (
-    <div className='sticky flex w-full items-start gap-6'>
-      <section className='grid min-w-48 gap-8'>
+    <div className='grid w-full items-start gap-4 md:flex'>
+      <header
+        className='bg-background/50 sticky top-0 flex min-w-48 items-center justify-between gap-8 border-b border-white/10 p-4 backdrop-blur-2xl md:grid'
+        style={{ top: 'env(safe-area-inset-top, 0px)' }}
+      >
         <h1 className={track.level === 'custom' ? 'text-amber-600' : undefined}>
           {formatTrackName(track.number)}
         </h1>
@@ -60,10 +63,10 @@ export default function Track() {
           <TrackTag trackLevel={track.level}>{track.level}</TrackTag>
           <TrackTag trackType={track.type}>{track.type}</TrackTag>
         </div>
-      </section>
+      </header>
 
-      <section className='w-full'>
-        <LeaderboardView entries={entries} />
+      <section className='w-full px-4'>
+        <LeaderboardView entries={entries} className='divide-stroke divide-y' />
       </section>
     </div>
   )

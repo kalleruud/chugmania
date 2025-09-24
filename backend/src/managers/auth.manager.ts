@@ -73,14 +73,13 @@ export default class AuthManager {
       throw Error('Failed to register: email or password not provided.')
 
     const adminExists = await UserManager.adminExists()
+    const { password, ...insertUser } = request
 
     const { data: user, error } = await tryCatchAsync(
       UserManager.createUser({
-        email: request.email,
-        name: request.name,
-        shortName: request.shortName,
+        ...insertUser,
         role: adminExists ? 'user' : 'admin',
-        passwordHash: await AuthManager.hash(request.password),
+        passwordHash: await AuthManager.hash(password),
       } satisfies typeof users.$inferInsert)
     )
 

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type { LeaderboardEntry } from '../../../common/models/timeEntry'
+import { getUserFullName } from '../../../common/models/user'
 import { formatTime } from '../../../common/utils/time'
 
 type TableRowProps = React.DetailedHTMLProps<
@@ -36,10 +37,11 @@ function NameCellPart({
   )
 }
 
-function TimePart({ duration }: Readonly<{ duration: number }>) {
+function TimePart({ duration }: Readonly<{ duration?: number | null }>) {
+  const label = duration ? formatTime(duration).replace(/^0/, '') : 'DNF'
   return (
     <td className={`font-f1-italic items-center uppercase tabular-nums`}>
-      {formatTime(duration).replace(/^0/, '')}
+      {label}
     </td>
   )
 }
@@ -62,7 +64,7 @@ function GapPart({
   return (
     <td
       className={
-        'font-f1-italic text-label-muted items-center text-sm uppercase tabular-nums'
+        'font-f1-italic text-label-muted flex items-center text-sm uppercase tabular-nums'
       }
     >
       {isPlaceholder ? (
@@ -70,14 +72,14 @@ function GapPart({
           type='button'
           disabled={!onToggle}
           onClick={onToggle}
-          className='rounded-md px-2 py-1 transition enabled:hover:cursor-pointer enabled:hover:bg-white/10 enabled:hover:text-white enabled:hover:outline-none enabled:hover:ring-1 enabled:hover:ring-white/30'
+          className='text-label-muted/50 rounded-md px-2 py-1 transition enabled:hover:cursor-pointer enabled:hover:bg-white/10 enabled:hover:text-white enabled:hover:outline-none enabled:hover:ring-1 enabled:hover:ring-white/30'
           aria-label='Toggle gap display'
           title='Toggle gap display'
         >
           {label}
         </button>
       ) : (
-        label
+        <p className='px-2'>{label}</p>
       )}
     </td>
   )
@@ -122,22 +124,29 @@ export default function TimeEntryRow({
     }
   }, [width])
 
+  const name = useMemo(() => {
+    if (width <= 400)
+      return (
+        lapTime.user.shortName ??
+        (lapTime.user.lastName ?? lapTime.user.firstName).slice(0, 3)
+      )
+    if (width <= 600) return lapTime.user.lastName ?? lapTime.user.firstName
+    return getUserFullName(lapTime.user)
+  }, [width])
+
   return (
     <tr
       ref={containerRef}
       className={twMerge('flex items-center gap-2', className)}
       title={
         lapTime.comment ??
-        `${lapTime.user.name} - ${formatTime(lapTime.duration)}`
+        `${name} - ${lapTime.duration ? formatTime(lapTime.duration) : 'DNF'} - ${lapTime.createdAt.toLocaleString()}`
       }
       role='row'
       {...rest}
     >
       <PositionBadgePart position={position} />
-      <NameCellPart
-        name={lapTime.user.shortName ?? lapTime.user.name.slice(0, 3)}
-        hasComment={!!lapTime.comment}
-      />
+      <NameCellPart name={name} hasComment={!!lapTime.comment} />
 
       {show.gap && (
         <GapPart

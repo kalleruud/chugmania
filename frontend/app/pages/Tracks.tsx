@@ -6,6 +6,7 @@ import {
   type GetLeaderboardsResponse,
 } from '../../../common/models/responses'
 import { TRACK_LEVELS, TRACK_TYPES } from '../../../common/models/track'
+import { getUserFullName } from '../../../common/models/user'
 import { WS_GET_LEADERBOARD_SUMMARIES } from '../../../common/utils/constants'
 import { formatTrackName } from '../../../common/utils/track'
 import { useConnection } from '../../contexts/ConnectionContext'
@@ -47,7 +48,7 @@ export default function Tracks() {
       formatTrackName(t.track.number).toLowerCase().includes(term) ||
       t.track.level.toLowerCase().includes(term) ||
       t.track.type.toLowerCase().includes(term) ||
-      t.entries.some(e => e.user.name.toLowerCase().includes(term))
+      t.entries.some(e => getUserFullName(e.user).toLowerCase().includes(term))
     )
   })
 

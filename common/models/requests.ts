@@ -14,13 +14,20 @@ export function isLoginRequest(data: any): data is LoginRequest {
 }
 
 export type RegisterRequest = LoginRequest & {
-  name: UserInfo['name']
+  firstName: UserInfo['firstName']
+  lastName: UserInfo['lastName']
   shortName: UserInfo['shortName']
 }
 
 export function isRegisterRequest(data: any): data is RegisterRequest {
   if (typeof data !== 'object') return false
-  return data.email && data.password && data.name
+  return (
+    typeof data.email === 'string' &&
+    typeof data.password === 'string' &&
+    typeof data.firstName === 'string' &&
+    typeof data.lastName === 'string' &&
+    typeof data.shortName === 'string'
+  )
 }
 
 export type GetLeaderboardRequest = {

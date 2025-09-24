@@ -22,6 +22,7 @@ The SQLite database lives at `data/db.sqlite`. The app creates the parent direct
 
 - Signed-in admins can open `/admin` to bulk import data from CSV files.
 - Each upload must match the columns used in `data/users.csv`, `data/tracks.csv`, or `data/timeEntry.csv`.
+  - Users: `email,firstName,lastName,id,shortName,password`
 - Successful imports report how many rows were inserted, updated, or skipped so you can verify the outcome.
 
 ## Useful Scripts

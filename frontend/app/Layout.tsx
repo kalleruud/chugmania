@@ -173,10 +173,7 @@ export default function Layout() {
         </div>
       )}
 
-      <main
-        className='z-0 flex w-full p-4 pb-24 sm:p-8 sm:pb-8'
-        ref={containerRef}
-      >
+      <main className='z-0 flex w-full' ref={containerRef}>
         <Outlet />
       </main>
 
