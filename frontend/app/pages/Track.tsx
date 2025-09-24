@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import type { GetLeaderboardRequest } from '../../../common/models/requests'
 import {
@@ -20,13 +20,6 @@ export default function Track() {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [track, setTrack] = useState<Track | null>(null)
-  const safeAreaStyle: CSSProperties = {
-    paddingTop: 'env(safe-area-inset-top, 0px)',
-    paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-    paddingLeft: 'env(safe-area-inset-left, 0px)',
-    paddingRight: 'env(safe-area-inset-right, 0px)',
-    marginBottom: 'calc(-1 * env(safe-area-inset-bottom, 0px))',
-  }
 
   useEffect(() => {
     if (!id) return
@@ -50,10 +43,7 @@ export default function Track() {
 
   if (loading)
     return (
-      <div
-        className='mt-24 flex w-full items-center justify-center'
-        style={safeAreaStyle}
-      >
+      <div className='mt-24 flex w-full items-center justify-center'>
         <Spinner />
       </div>
     )
@@ -61,10 +51,7 @@ export default function Track() {
   if (!track) throw Error("Couldn't get track")
 
   return (
-    <div
-      className='grid w-full items-start gap-4 md:flex'
-      style={safeAreaStyle}
-    >
+    <div className='grid w-full items-start gap-4 md:flex'>
       <header
         className='bg-background/50 sticky top-0 flex min-w-48 items-center justify-between gap-8 border-b border-white/10 p-4 backdrop-blur-2xl md:grid'
         style={{ top: 'env(safe-area-inset-top, 0px)' }}
@@ -78,7 +65,7 @@ export default function Track() {
         </div>
       </header>
 
-      <section className='w-full'>
+      <section className='w-full p-2'>
         <LeaderboardView entries={entries} />
       </section>
     </div>
