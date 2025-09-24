@@ -14,7 +14,7 @@ function PositionBadgePart({ position }: Readonly<{ position?: number }>) {
   return (
     <td
       className={twMerge(
-        'font-kh-interface flex size-8 items-center justify-center rounded uppercase',
+        'font-kh-interface flex size-8 items-center justify-center rounded text-lg uppercase',
         position === 1 ? 'bg-accent' : 'text-label-muted'
       )}
       aria-label={`#${position}`}
@@ -36,10 +36,11 @@ function NameCellPart({
   )
 }
 
-function TimePart({ duration }: Readonly<{ duration: number }>) {
+function TimePart({ duration }: Readonly<{ duration?: number | null }>) {
+  const label = duration ? formatTime(duration).replace(/^0/, '') : 'DNF'
   return (
     <td className={`font-f1-italic items-center uppercase tabular-nums`}>
-      {formatTime(duration).replace(/^0/, '')}
+      {label}
     </td>
   )
 }
@@ -128,7 +129,7 @@ export default function TimeEntryRow({
       className={twMerge('flex items-center gap-2', className)}
       title={
         lapTime.comment ??
-        `${lapTime.user.name} - ${formatTime(lapTime.duration)}`
+        `${lapTime.user.name} - ${lapTime.duration ? formatTime(lapTime.duration) : 'DNF'}`
       }
       role='row'
       {...rest}

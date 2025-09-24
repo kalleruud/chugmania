@@ -1,4 +1,4 @@
-import { asc, eq } from 'drizzle-orm'
+import { asc, desc, eq, sql } from 'drizzle-orm'
 import type { Socket } from 'socket.io'
 import type { Leaderboard } from '../../../common/models/leaderboard'
 import { isGetLeaderboardRequest } from '../../../common/models/requests'
@@ -28,7 +28,11 @@ export default class LeaderboardManager {
       .from(timeEntries)
       .innerJoin(users, eq(users.id, timeEntries.user))
       .where(eq(timeEntries.track, trackId))
-      .orderBy(asc(timeEntries.duration))
+      .orderBy(
+        asc(sql`CASE WHEN ${timeEntries.duration} IS NULL THEN 1 ELSE 0 END`),
+        asc(timeEntries.duration),
+        desc(timeEntries.createdAt)
+      )
 
     const totalEntries = rows.length
 
@@ -46,17 +50,22 @@ export default class LeaderboardManager {
     // Compute gaps against previous and leader
     const leaderDuration = best[0]?.entry.duration
     const withGaps = best.map((r, i, arr) => {
-      const prev = i > 0 ? arr[i - 1]!.entry.duration : undefined
-      const next = i < arr.length - 1 ? arr[i + 1]!.entry.duration : undefined
+      const prev = i > 0 ? arr[i - 1]!.entry.duration : null
+      const next = i < arr.length - 1 ? arr[i + 1]!.entry.duration : null
 
       const gap: LeaderboardEntryGap = { position: i + 1 }
       // Round gaps to nearest hundredth (10 ms) to avoid off-by-one issues
       const roundToHundredth = (ms: number) => Math.round(ms / 10) * 10
-      if (prev !== undefined)
+      if (r.entry.duration && prev !== null)
         gap.previous = roundToHundredth(r.entry.duration - prev)
-      if (i > 0 && leaderDuration !== undefined)
+      if (
+        r.entry.duration &&
+        leaderDuration !== null &&
+        i > 0 &&
+        leaderDuration !== undefined
+      )
         gap.leader = roundToHundredth(r.entry.duration - leaderDuration)
-      if (next !== undefined)
+      if (r.entry.duration && next !== null)
         gap.next = roundToHundredth(next - r.entry.duration)
 
       const userInfo = { ...r.user, passwordHash: undefined }
