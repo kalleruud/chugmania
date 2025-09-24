@@ -8,26 +8,14 @@ import type {
 } from '../../../common/models/responses'
 import { WS_IMPORT_CSV } from '../../../common/utils/constants'
 import { useConnection } from '../../contexts/ConnectionContext'
-import FileDrop from '../components/FileDrop'
-
-async function readFile(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => {
-      const result = reader.result
-      resolve(typeof result === 'string' ? result : '')
-    }
-    reader.onerror = () => reject(Error(reader.error?.message))
-    reader.readAsText(file)
-  })
-}
+import FileDrop, { type FileDropSelection } from '../components/FileDrop'
 
 export default function Admin() {
   const { socket } = useConnection()
   const [isImporting, setIsImporting] = useState(false)
-  const [files, setFiles] = useState<Map<ImportCsvRequest['table'], File>>(
-    new Map()
-  )
+  const [files, setFiles] = useState<
+    Map<ImportCsvRequest['table'], FileDropSelection>
+  >(new Map())
 
   const datasets: {
     table: ImportCsvRequest['table']
@@ -53,7 +41,7 @@ export default function Admin() {
 
   const handleFileChange = (
     table: ImportCsvRequest['table'],
-    file: File | undefined
+    file: FileDropSelection | undefined
   ) => {
     setFiles(prev => {
       const next = new Map(prev)
@@ -63,25 +51,24 @@ export default function Admin() {
     })
   }
 
-  const handleImport = async (table: ImportCsvRequest['table']) => {
-    try {
-      const file = files.get(table)
-      if (!file) return
-      setIsImporting(true)
+  const handleImport = (table: ImportCsvRequest['table']) => {
+    const file = files.get(table)
+    if (!file) return
 
-      const content = await readFile(file)
+    try {
+      setIsImporting(true)
       socket.emit(
         WS_IMPORT_CSV,
-        { table, content } satisfies ImportCsvRequest,
+        { table, content: file.content } satisfies ImportCsvRequest,
         (response: SuccessResponse | ErrorResponse) => {
           if (!response.success) {
-            return alert(response.message)
+            alert(response.message)
           }
+          setIsImporting(false)
         }
       )
     } catch (err) {
       alert(err)
-    } finally {
       setIsImporting(false)
     }
   }
@@ -129,12 +116,6 @@ export default function Admin() {
                 label='Drop CSV here or click to select'
                 hint="Matches files in '/data/*.csv'"
               />
-
-              {file && (
-                <p className='text-label-secondary text-xs'>
-                  Selected: <span className='text-white'>{file.name}</span>
-                </p>
-              )}
 
               <button
                 type='button'
