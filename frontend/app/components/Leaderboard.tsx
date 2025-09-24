@@ -13,7 +13,7 @@ export default function LeaderboardView({
   className,
   ...rest
 }: Readonly<TableProps & { entries: Leaderboard['entries'] }>) {
-  const [gapType, setGapType] = useState<GapType>('leader')
+  const [gapType, setGapType] = useState<GapType>('interval')
 
   if (!entries.length) {
     return (
@@ -31,7 +31,7 @@ export default function LeaderboardView({
   return (
     <div className={twMerge('flex w-full', className)} {...rest}>
       <table className='flex w-full table-auto'>
-        <tbody className='flex w-full flex-col'>
+        <tbody className='flex w-full flex-col gap-1'>
           {entries.map(t => (
             <TimeEntryRow
               key={t.id}

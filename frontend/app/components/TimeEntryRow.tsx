@@ -14,7 +14,7 @@ function PositionBadgePart({ position }: Readonly<{ position?: number }>) {
   return (
     <td
       className={twMerge(
-        'font-kh-interface flex size-8 items-center justify-center rounded text-lg uppercase',
+        'font-kh-interface flex size-8 items-center justify-center rounded uppercase',
         position === 1 ? 'bg-accent' : 'text-label-muted'
       )}
       aria-label={`#${position}`}
@@ -123,6 +123,13 @@ export default function TimeEntryRow({
     }
   }, [width])
 
+  const name = useMemo(() => {
+    if (width <= 400)
+      return lapTime.user.shortName ?? lapTime.user.name.slice(0, 3)
+    if (width <= 1000) return lapTime.user.name.split(' ').at(-1)!
+    return lapTime.user.name
+  }, [width])
+
   return (
     <tr
       ref={containerRef}
@@ -135,10 +142,7 @@ export default function TimeEntryRow({
       {...rest}
     >
       <PositionBadgePart position={position} />
-      <NameCellPart
-        name={lapTime.user.shortName ?? lapTime.user.name.slice(0, 3)}
-        hasComment={!!lapTime.comment}
-      />
+      <NameCellPart name={name} hasComment={!!lapTime.comment} />
 
       {show.gap && (
         <GapPart
