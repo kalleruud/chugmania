@@ -29,7 +29,7 @@ export default class CsvParser {
     if (val === '' || val === undefined) return { key, value: null }
 
     if (key === 'password')
-      return { key: 'password_hash', value: await AuthManager.hash(val) }
+      return { key: 'passwordHash', value: await AuthManager.hash(val) }
 
     return { key, value: val }
   }

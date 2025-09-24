@@ -1,9 +1,10 @@
 import * as schema from '../../backend/database/schema'
 import type { CreateTimeEntry } from './timeEntry'
 import type { Track } from './track'
+import { type UserInfo } from './user'
 
 export type LoginRequest = {
-  email: string
+  email: UserInfo['email']
   password: string
 }
 
@@ -13,8 +14,8 @@ export function isLoginRequest(data: any): data is LoginRequest {
 }
 
 export type RegisterRequest = LoginRequest & {
-  name: string
-  shortName: string | null
+  name: UserInfo['name']
+  shortName: UserInfo['shortName']
 }
 
 export function isRegisterRequest(data: any): data is RegisterRequest {

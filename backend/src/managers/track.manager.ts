@@ -8,6 +8,20 @@ import db from '../../database/database'
 import { timeEntries, tracks } from '../../database/schema'
 
 export default class TrackManager {
+  static readonly table = tracks
+
+  static async import(data: (typeof TrackManager.table.$inferInsert)[]) {
+    const tasks = data.map(d =>
+      db
+        .insert(TrackManager.table)
+        .values(data)
+        .onConflictDoUpdate({ target: TrackManager.table.id, set: d })
+        .returning()
+    )
+
+    return (await Promise.all(tasks)).flat()
+  }
+
   static async getTrackIdsWithLapTimes(
     offset = 0,
     limit = 100

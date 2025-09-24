@@ -1,4 +1,3 @@
-import { SQLiteTable, TableConfig } from 'drizzle-orm/sqlite-core'
 import type { Socket } from 'socket.io'
 import { isImportCsvRequest } from '../../../common/models/requests'
 import type {
@@ -8,20 +7,22 @@ import type {
 } from '../../../common/models/responses'
 import { tryCatchAsync } from '../../../common/utils/try-catch'
 import db from '../../database/database'
+import * as schema from '../../database/schema'
 import { timeEntries, tracks, users } from '../../database/schema'
 import CsvParser from '../utils/csv-parser'
 import AuthManager from './auth.manager'
 
 export default class AdminManager {
-  private static async import(into: SQLiteTable<TableConfig>, data: string) {
+  private static async import(
+    into: (typeof schema)[keyof typeof schema],
+    data: string
+  ) {
     const values = await CsvParser.parse<typeof into.$inferInsert>(data)
-
-    const inserts = []
-    for (const value of values) {
-      console.log('importing:', value)
-      const inserted = await db.insert(into).values(value).returning()
-      inserts.push(inserted)
-    }
+    const inserts = await db
+      .insert(into)
+      .values(values)
+      .onConflictDoNothing()
+      .returning()
 
     return { imported: inserts.length, total: values.length }
   }
