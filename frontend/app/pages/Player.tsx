@@ -13,6 +13,7 @@ import { useConnection } from '../../contexts/ConnectionContext'
 import LoadingView from '../components/Loading'
 import TrackTag from '../components/TrackTag'
 import { Button } from '../components/Button'
+import { formatLapTimestamp } from '../utils/date'
 
 function formatDuration(duration: number | null) {
   if (duration == null) return 'DNF'
@@ -190,7 +191,7 @@ export default function Player() {
                             </p>
                           )}
                           <span className='text-label-muted text-[0.65rem] uppercase tracking-[0.3em]'>
-                            {lap.entry.createdAt.toLocaleString()}
+                            {formatLapTimestamp(lap.entry.createdAt)}
                           </span>
                         </div>
                       </li>

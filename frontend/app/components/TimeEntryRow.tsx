@@ -3,6 +3,7 @@ import { twMerge } from 'tailwind-merge'
 import type { LeaderboardEntry } from '../../../common/models/timeEntry'
 import { getUserFullName } from '../../../common/models/user'
 import { formatTime } from '../../../common/utils/time'
+import { formatLapTimestamp } from '../utils/date'
 import { Button } from './Button'
 
 type TableRowProps = React.DetailedHTMLProps<
@@ -143,7 +144,7 @@ export default function TimeEntryRow({
       className={twMerge('flex items-center gap-2', className)}
       title={
         lapTime.comment ??
-        `${name} - ${lapTime.duration ? formatTime(lapTime.duration) : 'DNF'} - ${lapTime.createdAt.toLocaleString()}`
+        `${name} - ${lapTime.duration ? formatTime(lapTime.duration) : 'DNF'} - ${formatLapTimestamp(lapTime.createdAt)}`
       }
       role='row'
       {...rest}
