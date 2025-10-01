@@ -1,5 +1,10 @@
 # Repository Guidelines
 
+## Implementaton Rules !!IMPORTANT!!
+
+- Stick to existing conventions, always look for existing approaches before implementing something new.
+- ALWAYS implement the simplest solution, don't introduce unnecessary complexity unless told to.
+
 ## Project Description & Goals
 
 This is a web app called "Chugmania", made for tracking lap times in the game Trackmania Turbo.
@@ -53,7 +58,18 @@ If logged in:
 
 #### Players
 
-- Displays all players as cards with top 3 leaderboard positions.
+- Displays all players as cards with top 3 leaderboard positions. (Fastest laps only)
+- Sorted by highest average leaderboard position. (Fastest laps only)
+- Highlights self if is logged in
+- Navigates to the full Player page on click
+
+##### Player
+
+- Displays user name and short name
+- Displays all lap times for each track with the corresponding lap time rank compared to all other times for the current track. (Not only fastest laps)
+- If is Admin or is logged in as the current player, allows:
+  - Updating and deleting lap times
+  - Updating user details (email, name, password, etc.)
 
 #### Admin
 
@@ -109,7 +125,7 @@ The UI is clean and intuitive dark-mode made with well organized tailwind css. T
 
 The code is simple and minimal, and very easily readable. Modular components are heavily utilized to avoid code duplication and keep the UI unified. For example, instead of creating a new button every time, create a reusable button component with configurable parameters and use that instead.
 
-Refactoring is encouraged!  
+Refactoring is encouraged!
 Always keep AGENTS.md and README.md updated!
 
 ## Project Structure & Module Organization
