@@ -62,6 +62,7 @@ If logged in:
 - Sorted by highest average leaderboard position. (Fastest laps only)
 - Highlights self if is logged in
 - Navigates to the full Player page on click
+- Backend socket event `get_player_summaries` returns these aggregates (average position, top 3 results per player).
 
 ##### Player
 

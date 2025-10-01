@@ -6,6 +6,7 @@ import type {
 import {
   WS_GET_LEADERBOARD,
   WS_GET_LEADERBOARD_SUMMARIES,
+  WS_GET_PLAYER_SUMMARIES,
   WS_GET_TRACKS,
   WS_GET_USER_DATA,
   WS_GET_USERS,
@@ -17,6 +18,7 @@ import {
 import AdminManager from './admin.manager'
 import AuthManager from './auth.manager'
 import LeaderboardManager from './leaderboard.manager'
+import PlayerManager from './player.manager'
 import TimeEntryManager from './timeEntry.manager'
 import TrackManager from './track.manager'
 import UserManager from './user.manager'
@@ -41,6 +43,12 @@ export default class ConnectionManager {
       s,
       WS_GET_LEADERBOARD_SUMMARIES,
       LeaderboardManager.onGetLeaderboardSummaries
+    )
+
+    ConnectionManager.setup(
+      s,
+      WS_GET_PLAYER_SUMMARIES,
+      PlayerManager.onGetPlayerSummaries
     )
 
     // Setup track handling

@@ -7,6 +7,7 @@ export const WS_GET_LEADERBOARD = 'get_leaderboard'
 export const WS_GET_USER_DATA = 'get_user_data'
 export const WS_GET_USERS = 'get_users'
 export const WS_GET_TRACKS = 'get_tracks'
+export const WS_GET_PLAYER_SUMMARIES = 'get_player_summaries'
 export const WS_POST_LAPTIME = 'post_laptime'
 export const WS_IMPORT_CSV = 'import_csv'
 
