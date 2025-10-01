@@ -66,3 +66,14 @@ export function isGetTrackRequest(data: any): data is GetTrackRequest {
   if (typeof data !== 'object') return false
   return data.trackId
 }
+
+export type GetPlayerDetailsRequest = {
+  playerId: UserInfo['id']
+}
+
+export function isGetPlayerDetailsRequest(
+  data: any
+): data is GetPlayerDetailsRequest {
+  if (typeof data !== 'object' || data === null) return false
+  return typeof data.playerId === 'string'
+}

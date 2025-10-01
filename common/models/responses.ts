@@ -1,4 +1,5 @@
 import type { Leaderboard } from './leaderboard'
+import type { PlayerDetail } from './playerDetail'
 import type { PlayerSummary } from './playerSummary'
 import type { Track } from './track'
 import type { UserInfo } from './user'
@@ -10,6 +11,7 @@ export type BackendResponse =
   | GetTrackResponse
   | GetUsersResponse
   | GetPlayerSummariesResponse
+  | GetPlayerDetailsResponse
   | LoginResponse
   | SuccessResponse
 
@@ -52,4 +54,9 @@ export type GetTracksResponse = {
 export type GetPlayerSummariesResponse = {
   success: true
   players: PlayerSummary[]
+}
+
+export type GetPlayerDetailsResponse = {
+  success: true
+  player: PlayerDetail
 }

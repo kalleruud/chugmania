@@ -7,6 +7,7 @@ import {
   WS_GET_LEADERBOARD,
   WS_GET_LEADERBOARD_SUMMARIES,
   WS_GET_PLAYER_SUMMARIES,
+  WS_GET_PLAYER_DETAILS,
   WS_GET_TRACKS,
   WS_GET_USER_DATA,
   WS_GET_USERS,
@@ -49,6 +50,12 @@ export default class ConnectionManager {
       s,
       WS_GET_PLAYER_SUMMARIES,
       PlayerManager.onGetPlayerSummaries
+    )
+
+    ConnectionManager.setup(
+      s,
+      WS_GET_PLAYER_DETAILS,
+      PlayerManager.onGetPlayerDetails
     )
 
     // Setup track handling

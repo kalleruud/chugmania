@@ -1,10 +1,15 @@
-import { asc, desc, eq, sql } from 'drizzle-orm'
+import { asc, desc, eq, inArray, sql } from 'drizzle-orm'
+import type { Socket } from 'socket.io'
 import type {
   BackendResponse,
   GetPlayerSummariesResponse,
+  GetPlayerDetailsResponse,
 } from '../../../common/models/responses'
 import type { PlayerSummary, PlayerTopResult } from '../../../common/models/playerSummary'
 import type { UserInfo } from '../../../common/models/user'
+import type { PlayerDetail, PlayerTrackGroup, PlayerTrackLap } from '../../../common/models/playerDetail'
+import type { GetPlayerDetailsRequest } from '../../../common/models/requests'
+import { isGetPlayerDetailsRequest } from '../../../common/models/requests'
 import db from '../../database/database'
 import { timeEntries, tracks, users } from '../../database/schema'
 
@@ -136,5 +141,152 @@ export default class PlayerManager {
       success: true,
       players,
     } satisfies GetPlayerSummariesResponse
+  }
+
+  static async onGetPlayerDetails(
+    _socket: Socket,
+    request: unknown
+  ): Promise<BackendResponse> {
+    if (!isGetPlayerDetailsRequest(request))
+      throw new Error('Invalid player details request')
+
+    const player = await db.query.users.findFirst({
+      where: eq(users.id, request.playerId),
+    })
+    if (!player) throw new Error('Player not found')
+
+    const playerInfo: UserInfo = {
+      ...player,
+      passwordHash: undefined,
+    }
+
+    const playerEntries = await db
+      .select({
+        entry: timeEntries,
+        track: tracks,
+      })
+      .from(timeEntries)
+      .innerJoin(tracks, eq(timeEntries.track, tracks.id))
+      .where(eq(timeEntries.user, request.playerId))
+      .orderBy(asc(tracks.number), desc(timeEntries.createdAt))
+
+    const trackIds = Array.from(
+      new Set(playerEntries.map(row => row.track.id))
+    )
+
+    const rankingMap = new Map<
+      string,
+      {
+        track: typeof tracks.$inferSelect
+        total: number
+        positions: Map<string, number | null>
+      }
+    >()
+
+    if (trackIds.length > 0) {
+      const rankingRows = await db
+        .select({
+          entryId: timeEntries.id,
+          duration: timeEntries.duration,
+          track: tracks,
+        })
+        .from(timeEntries)
+        .innerJoin(tracks, eq(timeEntries.track, tracks.id))
+        .where(inArray(tracks.id, trackIds))
+        .orderBy(
+          asc(tracks.number),
+          asc(sql`CASE WHEN ${timeEntries.duration} IS NULL THEN 1 ELSE 0 END`),
+          asc(timeEntries.duration),
+          desc(timeEntries.createdAt)
+        )
+
+      let currentTrackId: string | null = null
+      let currentPosition = 0
+
+      for (const row of rankingRows) {
+        const { track, entryId, duration } = row
+
+        if (track.id !== currentTrackId) {
+          currentTrackId = track.id
+          currentPosition = 0
+        }
+
+        if (!rankingMap.has(track.id)) {
+          rankingMap.set(track.id, {
+            track,
+            total: 0,
+            positions: new Map(),
+          })
+        }
+
+        const record = rankingMap.get(track.id)!
+        record.total += 1
+
+        if (duration == null) record.positions.set(entryId, null)
+        else {
+          currentPosition += 1
+          record.positions.set(entryId, currentPosition)
+        }
+      }
+    }
+
+    const groupedTracks = new Map<string, PlayerTrackGroup>()
+
+    for (const row of playerEntries) {
+      const { entry, track } = row
+      if (!groupedTracks.has(track.id)) {
+        groupedTracks.set(track.id, {
+          track,
+          laps: [],
+        })
+      }
+
+      const stats = rankingMap.get(track.id)
+      const position = stats?.positions.get(entry.id) ?? null
+      const total = stats?.total ?? 0
+
+      // Ensure we strip password hash from entry.user (already string)
+      const lap: PlayerTrackLap = {
+        entry,
+        position,
+        totalEntries: total,
+      }
+
+      groupedTracks.get(track.id)!.laps.push(lap)
+    }
+
+    const tracksDetails: PlayerTrackGroup[] = Array.from(
+      groupedTracks.values()
+    ).map(group => {
+      const stats = rankingMap.get(group.track.id)
+      const totalEntries = stats?.total ?? group.laps.length
+
+      const laps = group.laps
+        .map<PlayerTrackLap>(lap => ({
+          entry: lap.entry,
+          position: lap.position,
+          totalEntries: lap.totalEntries || totalEntries,
+        }))
+        .sort(
+          (a, b) => b.entry.createdAt.getTime() - a.entry.createdAt.getTime()
+        )
+
+      return {
+        track: group.track,
+        laps,
+      }
+    })
+
+    tracksDetails.sort((a, b) => a.track.number - b.track.number)
+
+    const detail: PlayerDetail = {
+      user: playerInfo,
+      tracks: tracksDetails,
+    }
+
+    return {
+      success: true,
+      player: detail,
+    } satisfies GetPlayerDetailsResponse
   }
 }

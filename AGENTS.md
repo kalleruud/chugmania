@@ -63,6 +63,7 @@ If logged in:
 - Highlights self if is logged in
 - Navigates to the full Player page on click
 - Backend socket event `get_player_summaries` returns these aggregates (average position, top 3 results per player).
+- Backend socket event `get_player_details` returns every lap grouped by track with per-track rankings for an individual player.
 
 ##### Player
 
