@@ -71,10 +71,10 @@ export default function Login() {
   }, [isLoggedIn])
 
   return (
-    <div className='font-f1 flex w-full items-center justify-center p-6'>
+    <div className='font-f1 flex h-dvh w-full items-center justify-center sm:items-baseline'>
       <form
         onSubmit={handleSubmit}
-        className='bg-background-secondary grid w-full max-w-sm gap-4 rounded-2xl border border-white/10 p-6 text-sm shadow-2xl backdrop-blur-xl'
+        className='grid w-full max-w-md items-start gap-4 p-6'
       >
         <div className='text-center'>
           <h1 className='text-accent text-2xl font-extrabold uppercase tracking-wider'>

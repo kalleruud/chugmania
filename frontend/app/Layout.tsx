@@ -173,12 +173,12 @@ export default function Layout() {
         </div>
       )}
 
-      <main className='z-0 flex w-full pb-24 sm:pb-0' ref={containerRef}>
+      <main className='z-0 pb-18 sm:pb-0' ref={containerRef}>
         <Outlet />
       </main>
 
-      <nav className='border-stroke fixed bottom-0 left-0 right-0 z-50 border-t bg-black/70 backdrop-blur-xl sm:hidden'>
-        <div className='mx-auto flex max-w-md items-center justify-around gap-1 px-3 py-2 text-xs font-semibold uppercase tracking-wider'>
+      <nav className='border-t-stroke fixed bottom-0 left-0 right-0 z-50 h-18 border-t bg-black/70 backdrop-blur-xl sm:hidden'>
+        <div className='font-f1 flex h-full items-center gap-2 px-2 text-xs uppercase tracking-wider'>
           {mobileNavButtons.map(item => {
             const Icon = item.icon
 
@@ -188,7 +188,7 @@ export default function Layout() {
                   key={item.key}
                   to={item.to}
                   className={({ isActive }) =>
-                    `flex flex-col items-center gap-1 rounded-xl px-3 py-2 transition ${
+                    `flex w-full flex-col items-center justify-center gap-1 rounded-xl py-2 transition ${
                       isActive
                         ? 'bg-white/10 text-white'
                         : 'text-label-muted hover:text-white'
@@ -205,7 +205,7 @@ export default function Layout() {
                 key={item.key}
                 type='button'
                 onClick={item.action}
-                className='text-label-muted flex flex-col items-center gap-1 rounded-xl px-3 py-2 transition hover:bg-white/10 hover:text-white'
+                className='text-label-muted flex flex-col items-center justify-center gap-1 rounded-xl py-2 transition hover:bg-white/10 hover:text-white'
               >
                 <Icon size={18} />
                 <span>{item.label}</span>

@@ -20,7 +20,7 @@
   }
 
   .main-background {
-    @apply bg-radial-[at_100%_0%] from-background-secondary to-background to-75%;
+    @apply bg-radial-[at_100%_0%] to-background from-orange-500/15;
   }
 
   h1 {
