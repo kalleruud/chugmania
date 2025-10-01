@@ -1,7 +1,5 @@
 import {
   Home,
-  LogIn,
-  LogOut,
   Map,
   Plus,
   Shield,
@@ -18,7 +16,7 @@ type MobileNavItem =
   | { key: string; label: string; icon: LucideIcon; action: () => void }
 
 export default function Layout() {
-  const { isLoggedIn, logout, user } = useAuth()
+  const { isLoggedIn, user } = useAuth()
   const [showTimeInput, setShowTimeInput] = useState(false)
 
   const containerRef = useRef<HTMLTableRowElement | null>(null)
@@ -59,22 +57,6 @@ export default function Layout() {
     icon: Users,
     to: '/players',
   })
-
-  if (isLoggedIn) {
-    mobileNavButtons.push({
-      key: 'logout',
-      label: 'Sign out',
-      icon: LogOut,
-      action: logout,
-    })
-  } else {
-    mobileNavButtons.push({
-      key: 'login',
-      label: 'Sign in',
-      icon: LogIn,
-      to: '/login',
-    })
-  }
 
   useEffect(() => {
     if (showTimeInput) document.body.style.overflow = 'hidden'
@@ -139,23 +121,6 @@ export default function Layout() {
             </button>
           )}
 
-          {!isLoggedIn ? (
-            <NavLink
-              to='/login'
-              className='inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-slate-100 shadow-sm transition hover:cursor-pointer hover:border-white/20 hover:bg-white/10'
-            >
-              <LogIn size={14} />
-              Sign in
-            </NavLink>
-          ) : (
-            <button
-              onClick={logout}
-              className='inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-slate-100 shadow-sm transition hover:cursor-pointer hover:border-white/20 hover:bg-white/10'
-            >
-              <LogOut size={14} />
-              Sign out
-            </button>
-          )}
         </div>
       </header>
 
