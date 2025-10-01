@@ -5,25 +5,15 @@ import {
   type ErrorResponse,
   type GetPlayerDetailsResponse,
 } from '../../../common/models/responses'
-import { formatTime } from '../../../common/utils/time'
-import { formatTrackName } from '../../../common/utils/track'
+import type { LeaderboardEntry } from '../../../common/models/timeEntry'
 import { WS_GET_PLAYER_DETAILS } from '../../../common/utils/constants'
+import { formatTrackName } from '../../../common/utils/track'
 import { useAuth } from '../../contexts/AuthContext'
 import { useConnection } from '../../contexts/ConnectionContext'
-import LoadingView from '../components/Loading'
-import TrackTag from '../components/TrackTag'
 import { Button } from '../components/Button'
-import { formatLapTimestamp } from '../utils/date'
-
-function formatDuration(duration: number | null) {
-  if (duration == null) return 'DNF'
-  return formatTime(duration)
-}
-
-function formatPosition(position: number | null, total: number) {
-  if (position == null) return `DNF · ${total}`
-  return `#${position} · ${total}`
-}
+import LoadingView from '../components/Loading'
+import TimeEntryRow from '../components/TimeEntryRow'
+import TrackTag from '../components/TrackTag'
 
 export default function Player() {
   const { id } = useParams<{ id: string }>()
@@ -76,7 +66,7 @@ export default function Player() {
           variant='tertiary'
           size='sm'
           onClick={() => navigate(-1)}
-          className='mx-auto text-accent'
+          className='text-accent mx-auto'
         >
           Go back
         </Button>
@@ -105,7 +95,7 @@ export default function Player() {
             </p>
           </div>
 
-          <div className='flex gap-6 text-xs uppercase tracking-widest text-label-muted'>
+          <div className='text-label-muted flex gap-6 text-xs uppercase tracking-widest'>
             <div className='text-right'>
               <span className='block text-[0.6rem]'>Tracks</span>
               <span className='font-f1-bold text-xl text-white'>
@@ -114,7 +104,9 @@ export default function Player() {
             </div>
             <div className='text-right'>
               <span className='block text-[0.6rem]'>Lap times</span>
-              <span className='font-f1-bold text-xl text-white'>{totalLaps}</span>
+              <span className='font-f1-bold text-xl text-white'>
+                {totalLaps}
+              </span>
             </div>
           </div>
         </div>
@@ -133,7 +125,28 @@ export default function Player() {
           {detail.tracks.map(trackGroup => {
             const bestPosition = trackGroup.laps
               .map(lap => lap.position ?? Number.POSITIVE_INFINITY)
-              .reduce((best, position) => Math.min(best, position), Number.POSITIVE_INFINITY)
+              .reduce(
+                (best, position) => Math.min(best, position),
+                Number.POSITIVE_INFINITY
+              )
+
+            const leaderboardEntries: LeaderboardEntry[] = trackGroup.laps.map(
+              lap => ({
+                id: lap.entry.id,
+                duration: lap.entry.duration,
+                amount: lap.entry.amount,
+                comment: lap.entry.comment ?? null,
+                createdAt: new Date(lap.entry.createdAt),
+                updatedAt: new Date(lap.entry.updatedAt),
+                deletedAt: lap.entry.deletedAt
+                  ? new Date(lap.entry.deletedAt)
+                  : null,
+                user: detail.user,
+                gap: {
+                  position: lap.position ?? undefined,
+                },
+              })
+            )
 
             return (
               <section
@@ -146,7 +159,9 @@ export default function Player() {
                       {formatTrackName(trackGroup.track.number)}
                     </h2>
                     <p className='text-label-secondary text-xs uppercase tracking-widest'>
-                      Total entries: {trackGroup.laps[0]?.totalEntries ?? trackGroup.laps.length}
+                      Total entries:{' '}
+                      {trackGroup.laps[0]?.totalEntries ??
+                        trackGroup.laps.length}
                     </p>
                   </div>
 
@@ -160,44 +175,29 @@ export default function Player() {
                   </div>
                 </header>
 
-                <ul className='space-y-2'>
-                  {trackGroup.laps.map(lap => {
-                    const isBest =
-                      lap.position != null && lap.position === bestPosition
+                <table className='flex w-full flex-col gap-2'>
+                  <tbody className='flex flex-col gap-2'>
+                    {trackGroup.laps.map((lap, index) => {
+                      const entry = leaderboardEntries[index]!
+                      const isBest =
+                        lap.position != null && lap.position === bestPosition
 
-                    return (
-                      <li
-                        key={lap.entry.id}
-                        className='flex flex-col gap-3 rounded-xl border border-white/10 bg-black/40 p-4 text-sm sm:flex-row sm:items-center sm:justify-between'
-                      >
-                        <div className='flex items-center gap-4'>
-                          <span
-                            className={
-                              'font-f1-bold text-lg uppercase' +
-                              (isBest ? ' text-accent' : ' text-white')
-                            }
-                          >
-                            {formatDuration(lap.entry.duration)}
-                          </span>
-                          <span className='text-label-secondary text-xs uppercase tracking-widest'>
-                            {formatPosition(lap.position, lap.totalEntries)}
-                          </span>
-                        </div>
-
-                        <div className='flex flex-1 flex-col gap-1 sm:items-end sm:text-right'>
-                          {lap.entry.comment && (
-                            <p className='text-label-muted text-xs italic'>
-                              “{lap.entry.comment}”
-                            </p>
-                          )}
-                          <span className='text-label-muted text-[0.65rem] uppercase tracking-[0.3em]'>
-                            {formatLapTimestamp(lap.entry.createdAt)}
-                          </span>
-                        </div>
-                      </li>
-                    )
-                  })}
-                </ul>
+                      return (
+                        <TimeEntryRow
+                          key={entry.id}
+                          lapTime={entry}
+                          position={lap.position ?? undefined}
+                          className={`rounded-xl border border-white/10 bg-black/40 px-4 py-3 ${
+                            isBest ? 'border-accent/50' : ''
+                          }`}
+                          showGap={false}
+                          showDate={true}
+                          dateValue={entry.createdAt}
+                        />
+                      )
+                    })}
+                  </tbody>
+                </table>
               </section>
             )
           })}

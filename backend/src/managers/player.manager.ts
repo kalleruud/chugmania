@@ -1,15 +1,21 @@
 import { asc, desc, eq, inArray, sql } from 'drizzle-orm'
 import type { Socket } from 'socket.io'
 import type {
-  BackendResponse,
-  GetPlayerSummariesResponse,
-  GetPlayerDetailsResponse,
-} from '../../../common/models/responses'
-import type { PlayerSummary, PlayerTopResult } from '../../../common/models/playerSummary'
-import type { UserInfo } from '../../../common/models/user'
-import type { PlayerDetail, PlayerTrackGroup, PlayerTrackLap } from '../../../common/models/playerDetail'
-import type { GetPlayerDetailsRequest } from '../../../common/models/requests'
+  PlayerDetail,
+  PlayerTrackGroup,
+  PlayerTrackLap,
+} from '../../../common/models/playerDetail'
+import type {
+  PlayerSummary,
+  PlayerTopResult,
+} from '../../../common/models/playerSummary'
 import { isGetPlayerDetailsRequest } from '../../../common/models/requests'
+import type {
+  BackendResponse,
+  GetPlayerDetailsResponse,
+  GetPlayerSummariesResponse,
+} from '../../../common/models/responses'
+import type { UserInfo } from '../../../common/models/user'
 import db from '../../database/database'
 import { timeEntries, tracks, users } from '../../database/schema'
 
@@ -170,9 +176,7 @@ export default class PlayerManager {
       .where(eq(timeEntries.user, request.playerId))
       .orderBy(asc(tracks.number), desc(timeEntries.createdAt))
 
-    const trackIds = Array.from(
-      new Set(playerEntries.map(row => row.track.id))
-    )
+    const trackIds = Array.from(new Set(playerEntries.map(row => row.track.id)))
 
     const rankingMap = new Map<
       string,

@@ -1,5 +1,5 @@
-import type { Track } from './track'
 import type { TimeEntry } from './timeEntry'
+import type { Track } from './track'
 import type { UserInfo } from './user'
 
 export type PlayerTrackLap = {

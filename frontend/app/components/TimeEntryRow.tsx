@@ -48,6 +48,15 @@ function TimePart({ duration }: Readonly<{ duration?: number | null }>) {
   )
 }
 
+function DatePart({ timestamp }: Readonly<{ timestamp?: Date | string }>) {
+  if (!timestamp) return null
+  return (
+    <td className='text-label-muted text-xs uppercase tabular-nums tracking-widest'>
+      {formatLapTimestamp(timestamp)}
+    </td>
+  )
+}
+
 function GapPart({
   gap,
   gapType = 'leader',
@@ -74,9 +83,9 @@ function GapPart({
           type='button'
           variant='tertiary'
           size='sm'
-          state={!onToggle ? 'disabled' : 'default'}
+          state={!onToggle ? 'disabled' : undefined}
           onClick={onToggle}
-          className='rounded-md px-2 py-1 normal-case text-label-muted/50 hover:bg-white/10 hover:text-white hover:no-underline'
+          className='text-label-muted/50 rounded-md px-2 py-1 normal-case hover:bg-white/10 hover:text-white hover:no-underline'
           aria-label='Toggle gap display'
           title='Toggle gap display'
         >
@@ -95,13 +104,19 @@ export default function TimeEntryRow({
   gapType = 'leader',
   className,
   onToggleGapType,
+  showGap = true,
+  showDate = false,
+  dateValue,
   ...rest
 }: Readonly<
   TableRowProps & {
     position?: number
     lapTime: LeaderboardEntry
     gapType?: GapType
-    onToggleGapType: () => void
+    onToggleGapType?: () => void
+    showGap?: boolean
+    showDate?: boolean
+    dateValue?: Date | string
   }
 >) {
   const containerRef = useRef<HTMLTableRowElement | null>(null)
@@ -123,10 +138,10 @@ export default function TimeEntryRow({
   const show = useMemo(() => {
     return {
       time: width >= 0, // always
-      gap: width >= 270,
-      comment: width >= 700,
+      gap: showGap && width >= 270,
+      date: showDate && width >= 700,
     }
-  }, [width])
+  }, [width, showGap, showDate])
 
   const name = useMemo(() => {
     if (width <= 400)
@@ -151,6 +166,8 @@ export default function TimeEntryRow({
     >
       <PositionBadgePart position={position} />
       <NameCellPart name={name} hasComment={!!lapTime.comment} />
+
+      {show.date && <DatePart timestamp={dateValue ?? lapTime.createdAt} />}
 
       {show.gap && (
         <GapPart

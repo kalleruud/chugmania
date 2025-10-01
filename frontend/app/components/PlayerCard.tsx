@@ -1,6 +1,9 @@
 import { Link } from 'react-router-dom'
 import { twMerge } from 'tailwind-merge'
-import type { PlayerSummary, PlayerTopResult } from '../../../common/models/playerSummary'
+import type {
+  PlayerSummary,
+  PlayerTopResult,
+} from '../../../common/models/playerSummary'
 import { getUserFullName } from '../../../common/models/user'
 import { formatTime } from '../../../common/utils/time'
 import { formatTrackName } from '../../../common/utils/track'
@@ -18,7 +21,9 @@ function renderResult(result: PlayerTopResult) {
       className='flex items-center justify-between gap-3 rounded-xl border border-white/5 bg-white/5 px-3 py-2 text-sm'
     >
       <span className='font-f1-bold text-white'>#{result.position}</span>
-      <span className='font-f1 text-label-secondary'>{formatTrackName(result.trackNumber)}</span>
+      <span className='font-f1 text-label-secondary'>
+        {formatTrackName(result.trackNumber)}
+      </span>
       <span className='font-f1-italic text-label-muted'>
         {result.duration != null ? formatTime(result.duration, true) : '—'}
       </span>
@@ -26,7 +31,11 @@ function renderResult(result: PlayerTopResult) {
   )
 }
 
-export default function PlayerCard({ summary, isSelf = false, className }: PlayerCardProps) {
+export default function PlayerCard({
+  summary,
+  isSelf = false,
+  className,
+}: PlayerCardProps) {
   const { user, topResults, averagePosition, totalTracks } = summary
   const headline = (user.shortName ?? getUserFullName(user)) || user.email
   const subtitle = getUserFullName(user)
@@ -37,19 +46,23 @@ export default function PlayerCard({ summary, isSelf = false, className }: Playe
       to={`/players/${user.id}`}
       className={twMerge(
         'group flex flex-col gap-4 rounded-2xl border border-white/10 bg-white/5 p-6 transition hover:border-white/20 hover:bg-white/10',
-        isSelf ? 'border-accent/60 ring-2 ring-accent/30' : '',
+        isSelf ? 'border-accent/60 ring-accent/30 ring-2' : '',
         className
       )}
     >
       <div className='flex items-start justify-between gap-4'>
         <div className='flex flex-col gap-1'>
-          <h2 className='font-f1-black text-2xl uppercase text-white'>{headline}</h2>
+          <h2 className='font-f1-black text-2xl uppercase text-white'>
+            {headline}
+          </h2>
           {subtitle && subtitle !== headline && (
-            <p className='text-label-muted text-xs uppercase tracking-wider'>{subtitle}</p>
+            <p className='text-label-muted text-xs uppercase tracking-wider'>
+              {subtitle}
+            </p>
           )}
         </div>
 
-        <div className='text-right text-xs uppercase tracking-widest text-label-secondary'>
+        <div className='text-label-secondary text-right text-xs uppercase tracking-widest'>
           <span className='block text-[0.6rem]'>Avg pos</span>
           <span className='font-f1-bold text-lg text-white'>
             {averagePosition != null ? averagePosition.toFixed(2) : '—'}
@@ -67,7 +80,7 @@ export default function PlayerCard({ summary, isSelf = false, className }: Playe
           {Array.from({ length: placeholders }).map((_, index) => (
             <li
               key={`placeholder-${index}`}
-              className='flex items-center justify-between gap-3 rounded-xl border border-dashed border-white/10 px-3 py-2 text-sm text-label-muted/60'
+              className='text-label-muted/60 flex items-center justify-between gap-3 rounded-xl border border-dashed border-white/10 px-3 py-2 text-sm'
             >
               <span>#—</span>
               <span>Awaiting result</span>

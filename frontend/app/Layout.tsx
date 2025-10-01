@@ -1,16 +1,9 @@
-import {
-  Home,
-  Map,
-  Plus,
-  Shield,
-  Users,
-  type LucideIcon,
-} from 'lucide-react'
+import { Home, Map, Plus, Shield, Users, type LucideIcon } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import LapTimeInput from './components/LapTimeInput'
 import { Button } from './components/Button'
+import LapTimeInput from './components/LapTimeInput'
 
 type MobileNavItem =
   | { key: string; label: string; icon: LucideIcon; to: string }
@@ -124,7 +117,6 @@ export default function Layout() {
               Register laptime
             </Button>
           )}
-
         </div>
       </header>
 
@@ -136,7 +128,7 @@ export default function Layout() {
               type='button'
               variant='tertiary'
               size='md'
-              className='mt-3 w-full text-label-muted normal-case'
+              className='text-label-muted mt-3 w-full normal-case'
               onClick={() => setShowTimeInput(false)}
             >
               Cancel
@@ -145,11 +137,11 @@ export default function Layout() {
         </div>
       )}
 
-      <main className='z-0 pb-18 sm:pb-0' ref={containerRef}>
+      <main className='pb-18 z-0 sm:pb-0' ref={containerRef}>
         <Outlet />
       </main>
 
-      <nav className='border-t-stroke fixed bottom-0 left-0 right-0 z-50 h-18 border-t bg-black/70 backdrop-blur-xl sm:hidden'>
+      <nav className='border-t-stroke h-18 fixed bottom-0 left-0 right-0 z-50 border-t bg-black/70 backdrop-blur-xl sm:hidden'>
         <div className='font-f1 flex h-full items-center gap-2 px-2 text-xs uppercase tracking-wider'>
           {mobileNavButtons.map(item => {
             const Icon = item.icon
@@ -179,7 +171,7 @@ export default function Layout() {
                 variant='tertiary'
                 size='sm'
                 onClick={item.action}
-                className='flex h-full flex-1 flex-col items-center justify-center gap-1 rounded-xl py-2 text-label-muted transition hover:bg-white/10 hover:text-white hover:no-underline'
+                className='text-label-muted flex h-full flex-1 flex-col items-center justify-center gap-1 rounded-xl py-2 transition hover:bg-white/10 hover:text-white hover:no-underline'
               >
                 <Icon size={18} />
                 <span>{item.label}</span>
