@@ -9,6 +9,7 @@ import type {
 import { WS_IMPORT_CSV } from '../../../common/utils/constants'
 import { useConnection } from '../../contexts/ConnectionContext'
 import FileDrop, { type FileDropSelection } from '../components/FileDrop'
+import { Button } from '../components/Button'
 
 export default function Admin() {
   const { socket } = useConnection()
@@ -117,14 +118,16 @@ export default function Admin() {
                 hint="Matches files in '/data/*.csv'"
               />
 
-              <button
+              <Button
                 type='button'
+                variant='primary'
+                size='sm'
                 onClick={() => handleImport(table)}
-                disabled={!file}
-                className='to-accent-secondary from-accent font-f1 shadow-accent/60 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-tr px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50'
+                state={!file || isImporting ? 'disabled' : 'default'}
+                className='w-full text-xs sm:w-auto'
               >
                 Import CSV
-              </button>
+              </Button>
             </section>
           )
         })}

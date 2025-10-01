@@ -3,6 +3,7 @@ import { twMerge } from 'tailwind-merge'
 import type { LeaderboardEntry } from '../../../common/models/timeEntry'
 import { getUserFullName } from '../../../common/models/user'
 import { formatTime } from '../../../common/utils/time'
+import { Button } from './Button'
 
 type TableRowProps = React.DetailedHTMLProps<
   React.HTMLAttributes<HTMLTableRowElement>,
@@ -68,16 +69,18 @@ function GapPart({
       }
     >
       {isPlaceholder ? (
-        <button
+        <Button
           type='button'
-          disabled={!onToggle}
+          variant='tertiary'
+          size='sm'
+          state={!onToggle ? 'disabled' : 'default'}
           onClick={onToggle}
-          className='text-label-muted/50 rounded-md px-2 py-1 transition enabled:hover:cursor-pointer enabled:hover:bg-white/10 enabled:hover:text-white enabled:hover:outline-none enabled:hover:ring-1 enabled:hover:ring-white/30'
+          className='rounded-md px-2 py-1 normal-case text-label-muted/50 hover:bg-white/10 hover:text-white hover:no-underline'
           aria-label='Toggle gap display'
           title='Toggle gap display'
         >
           {label}
-        </button>
+        </Button>
       ) : (
         <p className='px-2'>{label}</p>
       )}

@@ -6,6 +6,7 @@ import {
   type DragEventHandler,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { Button } from './Button'
 
 export type FileDropSelection = {
   file: File
@@ -105,10 +106,12 @@ export default function FileDrop({
 
   return (
     <>
-      <button
+      <Button
         type='button'
+        variant='secondary'
+        size='lg'
         className={twMerge(
-          'focus-visible:ring-accent/60 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-white/15 bg-white/5 px-4 py-10 text-center transition hover:border-white/30 hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent',
+          'flex-col gap-2 rounded-2xl border-dashed border-white/15 px-4 py-10 text-center normal-case hover:border-white/30 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent',
           dragging ? 'border-accent/60 bg-white/10 text-white' : '',
           className
         )}
@@ -132,7 +135,7 @@ export default function FileDrop({
             <span className='text-label-muted text-xs'>Reading file…</span>
           )}
         </div>
-      </button>
+      </Button>
       <input
         ref={inputRef}
         type='file'

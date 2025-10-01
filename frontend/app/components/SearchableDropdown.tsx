@@ -7,6 +7,7 @@ import {
   type SetStateAction,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { Button } from './Button'
 
 export type LookupItem = {
   id: string
@@ -86,12 +87,16 @@ export default function SearchableDropdown({
 
   return (
     <div ref={containerRef} className={twMerge('relative w-full', className)}>
-      <button
+      <Button
         ref={triggerRef}
         type='button'
+        variant='secondary'
+        size='md'
         onClick={() => setOpen(o => !o)}
+        aria-expanded={open}
+        aria-haspopup='listbox'
         className={twMerge(
-          'w-full justify-between rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-left outline-none transition hover:cursor-pointer hover:border-white/15 hover:bg-white/10',
+          'w-full justify-between rounded-lg px-4 py-2 text-left normal-case',
           !selected && 'text-label-muted'
         )}
       >
@@ -107,7 +112,7 @@ export default function SearchableDropdown({
           {selected ? selected.label : placeholder}
           <ChevronsUpDown className='text-label-muted ml-auto size-5' />
         </span>
-      </button>
+      </Button>
       {open && (
         <div className='bg-background/75 absolute left-0 right-0 z-10 mt-2 rounded-lg border border-white/10 p-0 shadow-lg backdrop-blur-xl'>
           <div className='flex items-center gap-2 border-b border-white/10 px-2'>
@@ -131,18 +136,21 @@ export default function SearchableDropdown({
             <ul className='max-h-64 overflow-y-auto overflow-x-hidden p-1'>
               {results.map(item => (
                 <li key={item.id} className='list-none'>
-                  <button
+                  <Button
                     type='button'
+                    variant='tertiary'
+                    size='sm'
+                    state={selected?.id === item.id ? 'selected' : 'default'}
                     className={twMerge(
-                      'focus-visible:ring-accent/60 relative flex w-full select-none items-center rounded-sm px-2 py-1.5 text-left outline-none transition hover:cursor-pointer focus-visible:ring-2',
+                      'relative w-full select-none justify-start rounded-sm px-2 py-1.5 text-left normal-case text-slate-100 no-underline hover:no-underline',
                       selected?.id === item.id
-                        ? 'bg-accent hover:brightness-110'
+                        ? 'bg-accent text-black hover:brightness-110'
                         : 'hover:bg-white/10'
                     )}
                     onClick={() => onSelect(item)}
                   >
                     <span className='block w-full truncate'>{item.label}</span>
-                  </button>
+                  </Button>
                 </li>
               ))}
             </ul>

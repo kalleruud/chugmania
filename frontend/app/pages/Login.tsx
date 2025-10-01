@@ -10,6 +10,7 @@ import {
 import { useNavigate } from 'react-router-dom'
 import { twMerge } from 'tailwind-merge'
 import { useAuth } from '../../contexts/AuthContext'
+import { Button } from '../components/Button'
 
 function Field({
   Icon,
@@ -156,22 +157,26 @@ export default function Login() {
           </p>
         )}
 
-        <button
+        <Button
           type='submit'
-          className='to-accent-secondary from-accent shadow-accent/60 w-full cursor-pointer rounded-lg bg-gradient-to-br py-2 font-semibold uppercase tracking-wider shadow-[0_10px_30px_-10px_rgba(var(--color-accent),0.6)] transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none'
+          variant='primary'
+          size='md'
+          className='w-full'
         >
           {isRegistering ? 'Sign up' : 'Sign in'}
-        </button>
+        </Button>
 
-        <button
+        <Button
           type='button'
+          variant='tertiary'
+          size='sm'
           onClick={() => setIsRegistering(!isRegistering)}
-          className='text-accent/90 hover:text-accent text-xs underline-offset-4 transition hover:cursor-pointer hover:underline'
+          className='text-xs normal-case'
         >
           {isRegistering
             ? 'Already racing? Sign in'
             : 'New driver? Create an account'}
-        </button>
+        </Button>
       </form>
     </div>
   )

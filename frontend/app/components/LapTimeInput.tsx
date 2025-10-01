@@ -26,6 +26,7 @@ import { formattedTimeToMs } from '../../../common/utils/time'
 import { formatTrackName } from '../../../common/utils/track'
 import { useAuth } from '../../contexts/AuthContext'
 import { useConnection } from '../../contexts/ConnectionContext'
+import { Button } from './Button'
 import SearchableDropdown, { type LookupItem } from './SearchableDropdown'
 
 const cache: {
@@ -289,13 +290,15 @@ export default function LapTimeInput({
         />
       </div>
 
-      <button
+      <Button
         type='submit'
-        disabled={!isInputValid()}
-        className='to-accent-secondary font-f1 from-accent shadow-accent/60 w-full cursor-pointer rounded-lg bg-gradient-to-br py-2 font-semibold uppercase tracking-wider shadow-[0_10px_30px_-10px_rgba(var(--color-accent),0.6)] transition valid:active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none'
+        variant='primary'
+        size='md'
+        state={!isInputValid() ? 'disabled' : 'default'}
+        className='w-full'
       >
         Submit
-      </button>
+      </Button>
     </form>
   )
 }

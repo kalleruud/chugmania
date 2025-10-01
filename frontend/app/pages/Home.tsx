@@ -1,6 +1,7 @@
 import { LogIn, LogOut, Map } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
+import { Button } from '../components/Button'
 
 export default function Home() {
   const navigate = useNavigate()
@@ -29,43 +30,51 @@ export default function Home() {
         <div className='mt-6 grid gap-3 sm:grid-cols-2'>
           {isLoggedIn ? (
             <>
-              <button
+              <Button
                 type='button'
+                variant='secondary'
+                size='md'
                 onClick={logout}
-                className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold uppercase tracking-wider text-slate-100 shadow-lg transition hover:border-white/20 hover:bg-white/10 active:scale-[0.99]'
+                className='w-full'
               >
                 <LogOut size={18} />
                 Sign out
-              </button>
+              </Button>
 
-              <button
+              <Button
                 type='button'
+                variant='primary'
+                size='md'
                 onClick={goToTracks}
-                className='to-accent-secondary from-accent shadow-accent/60 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-br px-4 py-3 text-sm font-semibold uppercase tracking-wider text-black shadow-[0_10px_30px_-10px_rgba(var(--color-accent),0.6)] transition hover:opacity-95 active:scale-[0.99]'
+                className='w-full'
               >
                 <Map size={18} />
                 View tracks
-              </button>
+              </Button>
             </>
           ) : (
             <>
-              <button
+              <Button
                 type='button'
+                variant='primary'
+                size='md'
                 onClick={goToLogin}
-                className='to-accent-secondary from-accent shadow-accent/60 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-br px-4 py-3 text-sm font-semibold uppercase tracking-wider text-black shadow-[0_10px_30px_-10px_rgba(var(--color-accent),0.6)] transition hover:opacity-95 active:scale-[0.99]'
+                className='w-full'
               >
                 <LogIn size={18} />
                 Sign in
-              </button>
+              </Button>
 
-              <button
+              <Button
                 type='button'
+                variant='secondary'
+                size='md'
                 onClick={goToTracks}
-                className='inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold uppercase tracking-wider text-slate-100 shadow-lg transition hover:border-white/20 hover:bg-white/10 active:scale-[0.99]'
+                className='w-full'
               >
                 <Map size={18} />
                 Browse tracks
-              </button>
+              </Button>
             </>
           )}
         </div>

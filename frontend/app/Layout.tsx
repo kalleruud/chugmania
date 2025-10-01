@@ -10,6 +10,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import LapTimeInput from './components/LapTimeInput'
+import { Button } from './components/Button'
 
 type MobileNavItem =
   | { key: string; label: string; icon: LucideIcon; to: string }
@@ -112,13 +113,16 @@ export default function Layout() {
           </nav>
 
           {isLoggedIn && (
-            <button
+            <Button
+              type='button'
+              variant='secondary'
+              size='sm'
               onClick={() => setShowTimeInput(true)}
-              className='inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-slate-100 shadow-sm transition hover:cursor-pointer hover:border-white/20 hover:bg-white/10'
+              className='rounded-lg px-3 py-1.5 text-xs shadow-sm'
             >
               <Plus size={14} />
               Register laptime
-            </button>
+            </Button>
           )}
 
         </div>
@@ -128,12 +132,15 @@ export default function Layout() {
         <div className='z-100 backdrop-blur-xs fixed inset-0 left-0 top-0 flex h-dvh w-full items-center justify-center bg-black/50'>
           <div className='bg-background-secondary rounded-2xl border border-white/10 p-8 shadow-2xl'>
             <LapTimeInput onSubmit={() => setShowTimeInput(false)} />
-            <button
-              className='text-label-muted hover:text-accent mt-3 w-full hover:cursor-pointer'
+            <Button
+              type='button'
+              variant='tertiary'
+              size='md'
+              className='mt-3 w-full text-label-muted normal-case'
               onClick={() => setShowTimeInput(false)}
             >
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -166,15 +173,17 @@ export default function Layout() {
               )
 
             return (
-              <button
+              <Button
                 key={item.key}
                 type='button'
+                variant='tertiary'
+                size='sm'
                 onClick={item.action}
-                className='text-label-muted flex flex-col items-center justify-center gap-1 rounded-xl py-2 transition hover:bg-white/10 hover:text-white'
+                className='flex h-full flex-1 flex-col items-center justify-center gap-1 rounded-xl py-2 text-label-muted transition hover:bg-white/10 hover:text-white hover:no-underline'
               >
                 <Icon size={18} />
                 <span>{item.label}</span>
-              </button>
+              </Button>
             )
           })}
         </div>

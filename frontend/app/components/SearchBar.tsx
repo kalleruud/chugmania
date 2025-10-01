@@ -1,5 +1,6 @@
 import { Search, X } from 'lucide-react'
 import { useRef } from 'react'
+import { Button } from './Button'
 
 type Props = {
   value: string
@@ -30,14 +31,16 @@ export default function SearchBar({
         aria-label='Search'
       />
       {!!value && (
-        <button
+        <Button
           type='button'
+          variant='tertiary'
+          size='sm'
           onClick={() => onChange('')}
-          className='text-label-muted rounded-xl transition hover:cursor-pointer hover:text-white'
+          className='rounded-xl p-1 text-label-muted normal-case hover:text-white'
           aria-label='Clear search'
         >
           <X size={18} />
-        </button>
+        </Button>
       )}
     </div>
   )
