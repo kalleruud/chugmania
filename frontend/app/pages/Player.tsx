@@ -137,7 +137,7 @@ export default function Player() {
                 amount: lap.entry.amount,
                 comment: lap.entry.comment ?? null,
                 createdAt: new Date(lap.entry.createdAt),
-                updatedAt: new Date(lap.entry.updatedAt),
+                updatedAt: new Date(lap.entry.updatedAt ?? lap.entry.createdAt),
                 deletedAt: lap.entry.deletedAt
                   ? new Date(lap.entry.deletedAt)
                   : null,
@@ -178,7 +178,7 @@ export default function Player() {
                 <table className='flex w-full flex-col gap-2'>
                   <tbody className='flex flex-col gap-2'>
                     {trackGroup.laps.map((lap, index) => {
-                      const entry = leaderboardEntries[index]!
+                      const entry = leaderboardEntries[index]
                       const isBest =
                         lap.position != null && lap.position === bestPosition
 
