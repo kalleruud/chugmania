@@ -10,7 +10,7 @@ export type TagProps = DetailedHTMLProps<
 }
 
 const base =
-  'rounded-2xl border border-white/10 px-2.5 py-1 text-xs uppercase transition'
+  'rounded-2xl font-f1 border border-white/10 px-2.5 py-1 text-xs uppercase transition'
 
 const focused = 'bg-white/10 border-white/20'
 const focusedColor = 'bg-accent/10 border-accent/50'
