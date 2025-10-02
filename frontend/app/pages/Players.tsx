@@ -1,3 +1,4 @@
+import { TriangleAlert } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type { PlayerSummary } from '../../../common/models/playerSummary'
 import {
@@ -38,13 +39,14 @@ export default function Players() {
 
   if (!players.length)
     return (
-      <div className='flex-1 p-6'>
-        <p className='text-label-muted text-sm'>No players registered yet.</p>
+      <div className='font-f1 text-label-muted flex h-screen flex-col items-center justify-center gap-2'>
+        <TriangleAlert className='text-warning size-16' />
+        <p className='text-sm'>No players registered yet.</p>
       </div>
     )
 
   return (
-    <div className='min-w-0 flex-1 space-y-8 p-4'>
+    <div className='p-safe-or-4 flex-1 space-y-8'>
       <div className='grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-4'>
         {players.map(summary => (
           <PlayerCard

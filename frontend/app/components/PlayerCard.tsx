@@ -1,35 +1,17 @@
 import { Link } from 'react-router-dom'
 import { twMerge } from 'tailwind-merge'
-import type {
-  PlayerSummary,
-  PlayerTopResult,
-} from '../../../common/models/playerSummary'
+import type { PlayerSummary } from '../../../common/models/playerSummary'
+import type { LeaderboardEntry } from '../../../common/models/timeEntry'
 import { getUserFullName } from '../../../common/models/user'
-import { formatTime } from '../../../common/utils/time'
 import { formatTrackName } from '../../../common/utils/track'
+import TimeEntryRow from './TimeEntryRow'
+import TrackTag from './TrackTag'
 
 type PlayerCardProps = Readonly<{
   summary: PlayerSummary
   isSelf?: boolean
   className?: string
 }>
-
-function renderResult(result: PlayerTopResult) {
-  return (
-    <li
-      key={`${result.trackId}-${result.position}`}
-      className='flex items-center justify-between gap-3 rounded-xl border border-white/5 bg-white/5 px-3 py-2 text-sm'
-    >
-      <span className='font-f1-bold text-white'>#{result.position}</span>
-      <span className='font-f1 text-label-secondary'>
-        {formatTrackName(result.trackNumber)}
-      </span>
-      <span className='font-f1-italic text-label-muted'>
-        {result.duration != null ? formatTime(result.duration, true) : '—'}
-      </span>
-    </li>
-  )
-}
 
 export default function PlayerCard({
   summary,
@@ -40,6 +22,20 @@ export default function PlayerCard({
   const headline = (user.shortName ?? getUserFullName(user)) || user.email
   const subtitle = getUserFullName(user)
   const placeholders = Math.max(0, 3 - topResults.length)
+
+  const leaderboardEntries: LeaderboardEntry[] = topResults.map(result => ({
+    id: `${user.id}-${result.trackId}-${result.position}`,
+    duration: result.duration ?? null,
+    amount: 0,
+    comment: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    deletedAt: null,
+    user,
+    gap: {
+      position: result.position ?? undefined,
+    },
+  }))
 
   return (
     <Link
@@ -74,20 +70,57 @@ export default function PlayerCard({
 
       <div className='border-b border-white/10' />
 
-      {topResults.length ? (
-        <ul className='flex flex-col gap-2'>
-          {topResults.map(renderResult)}
+      {leaderboardEntries.length ? (
+        <div className='flex flex-col gap-3'>
+          {leaderboardEntries.map((entry, index) => {
+            const result = topResults[index]!
+
+            return (
+              <div
+                key={entry.id}
+                className='space-y-2 rounded-xl border border-white/10 bg-black/30 p-3'
+              >
+                <div className='text-label-secondary flex items-center justify-between gap-2 text-xs uppercase tracking-[0.25em]'>
+                  <span className='font-f1 text-sm text-white'>
+                    {formatTrackName(result.trackNumber)}
+                  </span>
+                  <div className='text-label-muted flex gap-2 text-[0.6rem] uppercase tracking-[0.3em]'>
+                    <span>#{result.position ?? '—'}</span>
+                    <TrackTag trackLevel={result.trackLevel}>
+                      {result.trackLevel}
+                    </TrackTag>
+                    <TrackTag trackType={result.trackType}>
+                      {result.trackType}
+                    </TrackTag>
+                  </div>
+                </div>
+
+                <table className='flex w-full flex-col'>
+                  <tbody className='flex flex-col'>
+                    <TimeEntryRow
+                      lapTime={entry}
+                      position={result.position ?? undefined}
+                      showGap={false}
+                      showDate={false}
+                      className='rounded-lg border border-white/10 bg-white/5 px-3 py-2'
+                    />
+                  </tbody>
+                </table>
+              </div>
+            )
+          })}
+
           {Array.from({ length: placeholders }).map((_, index) => (
-            <li
+            <div
               key={`placeholder-${index}`}
               className='text-label-muted/60 flex items-center justify-between gap-3 rounded-xl border border-dashed border-white/10 px-3 py-2 text-sm'
             >
               <span>#—</span>
               <span>Awaiting result</span>
               <span>—</span>
-            </li>
+            </div>
           ))}
-        </ul>
+        </div>
       ) : (
         <p className='text-label-muted text-sm'>No leaderboard entries yet.</p>
       )}

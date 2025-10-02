@@ -137,11 +137,11 @@ export default function Layout() {
         </div>
       )}
 
-      <main className='pb-18 z-0 sm:pb-0' ref={containerRef}>
+      <main className='z-0' ref={containerRef}>
         <Outlet />
       </main>
 
-      <nav className='border-t-stroke h-18 fixed bottom-0 left-0 right-0 z-50 border-t bg-black/70 backdrop-blur-xl sm:hidden'>
+      <nav className='border-t-stroke pb-safe fixed bottom-0 left-0 right-0 z-50 border-t bg-black/70 pt-2 backdrop-blur-xl sm:hidden'>
         <div className='font-f1 flex h-full items-center gap-2 px-2 text-xs uppercase tracking-wider'>
           {mobileNavButtons.map(item => {
             const Icon = item.icon
@@ -181,7 +181,7 @@ export default function Layout() {
         </div>
       </nav>
 
-      <div className='main-background fixed left-0 top-0 -z-10 h-full w-full' />
+      <div className='main-background fixed inset-0 top-0 -z-10 h-screen' />
     </>
   )
 }
