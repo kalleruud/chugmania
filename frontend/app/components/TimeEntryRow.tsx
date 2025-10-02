@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type { LeaderboardEntry } from '../../../common/models/timeEntry'
-import { getUserFullName } from '../../../common/models/user'
 import { formatTime } from '../../../common/utils/time'
 import { formatLapTimestamp } from '../utils/date'
 import { Button } from './Button'
@@ -149,8 +148,7 @@ export default function TimeEntryRow({
         lapTime.user.shortName ??
         (lapTime.user.lastName ?? lapTime.user.firstName).slice(0, 3)
       )
-    if (width <= 600) return lapTime.user.lastName ?? lapTime.user.firstName
-    return getUserFullName(lapTime.user)
+    return lapTime.user.lastName ?? lapTime.user.firstName
   }, [width])
 
   return (
