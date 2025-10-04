@@ -256,7 +256,7 @@ export default function LapTimeInput({
                     u =>
                       ({
                         id: u.id,
-                        label: u.lastName ?? u.firstName,
+                        label: u.shortName ?? u.lastName ?? u.firstName,
                       }) satisfies LookupItem
                   ) ?? []
                 }
