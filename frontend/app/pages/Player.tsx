@@ -123,14 +123,23 @@ export default function Player() {
       ) : (
         <div className='flex flex-col gap-6'>
           {detail.tracks.map(trackGroup => {
-            const bestPosition = trackGroup.laps
-              .map(lap => lap.position ?? Number.POSITIVE_INFINITY)
-              .reduce(
-                (best, position) => Math.min(best, position),
-                Number.POSITIVE_INFINITY
-              )
+            const sortedLaps = [...trackGroup.laps].sort((a, b) => {
+              const aPos = a.position ?? Number.POSITIVE_INFINITY
+              const bPos = b.position ?? Number.POSITIVE_INFINITY
+              if (aPos === bPos)
+                return (
+                  (a.entry.duration ?? Number.POSITIVE_INFINITY) -
+                  (b.entry.duration ?? Number.POSITIVE_INFINITY)
+                )
+              return aPos - bPos
+            })
 
-            const leaderboardEntries: LeaderboardEntry[] = trackGroup.laps.map(
+            const bestPosition = sortedLaps.reduce((best, lap) => {
+              const position = lap.position ?? Number.POSITIVE_INFINITY
+              return Math.min(best, position)
+            }, Number.POSITIVE_INFINITY)
+
+            const leaderboardEntries: LeaderboardEntry[] = sortedLaps.map(
               lap => ({
                 id: lap.entry.id,
                 duration: lap.entry.duration,
@@ -160,8 +169,7 @@ export default function Player() {
                     </h2>
                     <p className='text-label-secondary text-xs uppercase tracking-widest'>
                       Total entries:{' '}
-                      {trackGroup.laps[0]?.totalEntries ??
-                        trackGroup.laps.length}
+                      {sortedLaps[0]?.totalEntries ?? trackGroup.laps.length}
                     </p>
                   </div>
 
@@ -177,7 +185,7 @@ export default function Player() {
 
                 <table className='flex w-full flex-col gap-2'>
                   <tbody className='flex flex-col gap-2'>
-                    {trackGroup.laps.map((lap, index) => {
+                    {sortedLaps.map((lap, index) => {
                       const entry = leaderboardEntries[index]
                       const isBest =
                         lap.position != null && lap.position === bestPosition
