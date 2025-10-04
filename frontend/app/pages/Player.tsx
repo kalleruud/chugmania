@@ -121,7 +121,7 @@ export default function Player() {
       {detail.tracks.length === 0 ? (
         <p className='text-label-muted text-sm'>No lap times recorded yet.</p>
       ) : (
-        <div className='flex flex-col gap-6'>
+        <div className='flex flex-col gap-4'>
           {detail.tracks.map(trackGroup => {
             const sortedLaps = [...trackGroup.laps].sort((a, b) => {
               const aPos = a.position ?? Number.POSITIVE_INFINITY
@@ -160,9 +160,9 @@ export default function Player() {
             return (
               <section
                 key={trackGroup.track.id}
-                className='rounded-2xl border border-white/10 bg-white/5 p-5 shadow-[0_10px_40px_-30px_rgba(0,0,0,0.9)]'
+                className='rounded-2xl border border-white/10 bg-white/5 p-4 shadow-[0_10px_40px_-30px_rgba(0,0,0,0.9)] sm:p-5'
               >
-                <header className='flex flex-wrap items-center justify-between gap-3 pb-4'>
+                <header className='flex flex-wrap items-center justify-between gap-3 pb-3 sm:pb-4'>
                   <div>
                     <h2 className='font-f1 text-2xl uppercase text-white'>
                       {formatTrackName(trackGroup.track.number)}
@@ -183,8 +183,8 @@ export default function Player() {
                   </div>
                 </header>
 
-                <table className='flex w-full flex-col gap-2'>
-                  <tbody className='flex flex-col gap-2'>
+                <table className='flex w-full flex-col'>
+                  <tbody className='flex flex-col divide-y divide-white/10'>
                     {sortedLaps.map((lap, index) => {
                       const entry = leaderboardEntries[index]
                       const isBest =
@@ -195,8 +195,10 @@ export default function Player() {
                           key={entry.id}
                           lapTime={entry}
                           position={lap.position ?? undefined}
-                          className={`rounded-xl border border-white/10 bg-black/40 px-4 py-3 ${
-                            isBest ? 'border-accent/50' : ''
+                          className={`px-3 py-2 transition-colors ${
+                            isBest
+                              ? 'rounded-md bg-accent/15 text-white'
+                              : 'hover:bg-white/10'
                           }`}
                           showGap={false}
                           showDate={true}
