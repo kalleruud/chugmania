@@ -12,9 +12,14 @@ export default function LeaderboardView({
   entries,
   compact = false,
   className,
+  highlightedUserId,
   ...rest
 }: Readonly<
-  TableProps & { entries: Leaderboard['entries']; compact?: boolean }
+  TableProps & {
+    entries: Leaderboard['entries']
+    compact?: boolean
+    highlightedUserId?: string
+  }
 >) {
   const [gapType, setGapType] = useState<GapType>('interval')
 
@@ -41,6 +46,7 @@ export default function LeaderboardView({
               lapTime={t}
               gapType={gapType}
               className={compact ? '' : 'py-1'}
+              highlighted={highlightedUserId === t.user.id}
               onToggleGapType={() =>
                 setGapType(prev => (prev === 'leader' ? 'interval' : 'leader'))
               }

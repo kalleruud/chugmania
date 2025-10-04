@@ -106,6 +106,7 @@ export default function TimeEntryRow({
   showGap = true,
   showDate = false,
   dateValue,
+  highlighted = false,
   ...rest
 }: Readonly<
   TableRowProps & {
@@ -116,6 +117,7 @@ export default function TimeEntryRow({
     showGap?: boolean
     showDate?: boolean
     dateValue?: Date | string
+    highlighted?: boolean
   }
 >) {
   const containerRef = useRef<HTMLTableRowElement | null>(null)
@@ -154,7 +156,11 @@ export default function TimeEntryRow({
   return (
     <tr
       ref={containerRef}
-      className={twMerge('flex items-center gap-2', className)}
+      className={twMerge(
+        'flex items-center gap-2',
+        highlighted ? 'rounded-md bg-accent/10 ring-1 ring-accent/40' : '',
+        className
+      )}
       title={
         lapTime.comment ??
         `${name} - ${lapTime.duration ? formatTime(lapTime.duration) : 'DNF'} - ${formatLapTimestamp(lapTime.createdAt)}`

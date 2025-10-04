@@ -134,11 +134,6 @@ export default function Player() {
               return aPos - bPos
             })
 
-            const bestPosition = sortedLaps.reduce((best, lap) => {
-              const position = lap.position ?? Number.POSITIVE_INFINITY
-              return Math.min(best, position)
-            }, Number.POSITIVE_INFINITY)
-
             const leaderboardEntries: LeaderboardEntry[] = sortedLaps.map(
               lap => ({
                 id: lap.entry.id,
@@ -187,19 +182,12 @@ export default function Player() {
                   <tbody className='flex flex-col divide-y divide-white/10'>
                     {sortedLaps.map((lap, index) => {
                       const entry = leaderboardEntries[index]
-                      const isBest =
-                        lap.position != null && lap.position === bestPosition
-
                       return (
                         <TimeEntryRow
                           key={entry.id}
                           lapTime={entry}
                           position={lap.position ?? undefined}
-                          className={`px-3 py-2 transition-colors ${
-                            isBest
-                              ? 'rounded-md bg-accent/15 text-white'
-                              : 'hover:bg-white/10'
-                          }`}
+                          className='px-3 py-2 transition-colors hover:bg-white/10'
                           showGap={false}
                           showDate={true}
                           dateValue={entry.createdAt}
