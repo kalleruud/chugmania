@@ -9,7 +9,7 @@ import { WS_GET_PLAYER_SUMMARIES } from '../../../common/utils/constants'
 import { useAuth } from '../../contexts/AuthContext'
 import { useConnection } from '../../contexts/ConnectionContext'
 import LoadingView from '../components/Loading'
-import PlayerCard from '../components/PlayerCard'
+import PlayerRow from '../components/PlayerRow'
 
 export default function Players() {
   const { socket } = useConnection()
@@ -46,15 +46,36 @@ export default function Players() {
     )
 
   return (
-    <div className='p-safe-or-4 flex-1 space-y-8'>
-      <div className='grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-4'>
-        {players.map(summary => (
-          <PlayerCard
-            key={summary.user.id}
-            summary={summary}
-            isSelf={summary.user.id === user?.id}
-          />
-        ))}
+    <div className='p-safe-or-4 flex justify-center'>
+      <div className='flex w-full max-w-4xl flex-col gap-6'>
+        <header className='space-y-2'>
+          <p className='text-label-muted text-xs uppercase tracking-[0.35em]'>
+            Chugmania standings
+          </p>
+          <h1 className='font-f1-black text-4xl uppercase text-white sm:text-5xl'>
+            Drivers leaderboard
+          </h1>
+          <p className='text-label-secondary text-sm'>
+            Ranked by average position across all submitted tracks.
+          </p>
+        </header>
+
+        <section className='rounded-3xl border border-white/10 bg-black/40 p-2 sm:p-3'>
+          <div className='text-label-muted flex items-center justify-between px-3 py-2 text-xs uppercase tracking-[0.35em] sm:px-4'>
+            <span className='w-12'>#</span>
+            <span className='flex-1'>Player</span>
+          </div>
+          <div className='divide-y divide-white/10'>
+            {players.map((summary, index) => (
+              <PlayerRow
+                key={summary.user.id}
+                summary={summary}
+                rank={index + 1}
+                isSelf={summary.user.id === user?.id}
+              />
+            ))}
+          </div>
+        </section>
       </div>
     </div>
   )
