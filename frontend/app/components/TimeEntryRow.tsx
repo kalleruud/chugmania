@@ -158,7 +158,7 @@ export default function TimeEntryRow({
       ref={containerRef}
       className={twMerge(
         'flex items-center gap-2',
-        highlighted ? 'rounded-md bg-accent/10 ring-1 ring-accent/40' : '',
+        highlighted ? 'bg-accent/10 ring-accent/40 rounded-md ring-1' : '',
         className
       )}
       title={

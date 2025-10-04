@@ -60,7 +60,7 @@ export default function Players() {
           </p>
         </header>
 
-        <section className='rounded-lg font-f1 border border-white/10 bg-black/40 p-2 sm:p-3'>
+        <section className='font-f1 rounded-lg border border-white/10 bg-black/40 p-2 sm:p-3'>
           <div className='text-label-muted flex items-center gap-4 px-3 py-2 text-xs uppercase tracking-[0.35em] sm:px-4'>
             <span className='w-12'>#</span>
             <span className='flex-1'>Player</span>
