@@ -157,11 +157,9 @@ export default function Player() {
                 key={trackGroup.track.id}
                 className='rounded-2xl border border-white/10 bg-white/5 p-4 shadow-[0_10px_40px_-30px_rgba(0,0,0,0.9)] sm:p-5'
               >
-                <header className='flex flex-wrap items-center justify-between gap-3 pb-3 sm:pb-4'>
-                  <div>
-                    <h2 className='font-f1 text-2xl uppercase text-white'>
-                      {formatTrackName(trackGroup.track.number)}
-                    </h2>
+                <header className='flex flex-wrap items-baseline justify-between pb-4 sm:pb-4'>
+                  <div className='flex flex-col gap-2'>
+                    <h1>{formatTrackName(trackGroup.track.number)}</h1>
                     <p className='text-label-secondary text-xs uppercase tracking-widest'>
                       Total entries:{' '}
                       {sortedLaps[0]?.totalEntries ?? trackGroup.laps.length}
@@ -187,7 +185,7 @@ export default function Player() {
                           key={entry.id}
                           lapTime={entry}
                           position={lap.position ?? undefined}
-                          className='px-3 py-2 transition-colors hover:bg-white/10'
+                          className='py-2'
                           showGap={false}
                           showDate={true}
                           dateValue={entry.createdAt}
