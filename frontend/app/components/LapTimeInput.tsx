@@ -273,7 +273,7 @@ export default function LapTimeInput({
                     t =>
                       ({
                         id: t.id,
-                        label: formatTrackName(t.number),
+                        label: `${formatTrackName(t.number)} - ${t.type}:${t.level}`,
                       }) satisfies LookupItem
                   ) ?? []
                 }
@@ -294,7 +294,8 @@ export default function LapTimeInput({
         type='submit'
         variant='primary'
         size='md'
-        state={!isInputValid() ? 'disabled' : 'default'}
+        disabled={!isInputValid()}
+        state={'default'}
         className='w-full'
       >
         Submit
