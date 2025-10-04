@@ -8,10 +8,16 @@ type PlayerRowProps = Readonly<{
   rank: number
 }>
 
-export default function PlayerRow({ summary, isSelf = false, rank }: PlayerRowProps) {
+export default function PlayerRow({
+  summary,
+  isSelf = false,
+  rank,
+}: PlayerRowProps) {
   const { user, averagePosition } = summary
-  const name = user.lastName ?? user.shortName ?? getUserFullName(user) ?? user.email
-  const averageLabel = averagePosition != null ? averagePosition.toFixed(2) : '—'
+  const name =
+    user.lastName ?? user.shortName ?? getUserFullName(user) ?? user.email
+  const averageLabel =
+    averagePosition != null ? averagePosition.toFixed(2) : '—'
 
   return (
     <Link
@@ -21,7 +27,9 @@ export default function PlayerRow({ summary, isSelf = false, rank }: PlayerRowPr
       }`}
       aria-label={`View profile for ${name}`}
     >
-      <span className='text-label-muted w-12 text-xs sm:text-sm'>#{rank}</span>
+      <span className='text-label-muted font-kh-interface w-12 sm:text-sm'>
+        {rank}
+      </span>
       <span className='flex-1 truncate text-white'>{name}</span>
       <span className='text-label-muted w-16 text-right text-xs sm:text-sm'>
         {averageLabel}
