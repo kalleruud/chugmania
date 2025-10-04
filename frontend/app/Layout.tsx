@@ -102,15 +102,9 @@ export default function Layout() {
                   <h5>{button.label}</h5>
                 </NavLink>
               ) : (
-                <button
-                  key={button.to}
-                  onClick={button.action}
-                  className={
-                    'text-label-muted relative rounded-md px-3 py-1.5 no-underline transition hover:text-white'
-                  }
-                >
-                  <h5>{button.label}</h5>
-                </button>
+                <Button key={button.to} onClick={button.action} size='sm'>
+                  {button.label}
+                </Button>
               )
             )}
           </nav>
