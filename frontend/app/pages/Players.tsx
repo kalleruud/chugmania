@@ -61,9 +61,10 @@ export default function Players() {
         </header>
 
         <section className='rounded-lg border border-white/10 bg-black/40 p-2 sm:p-3'>
-          <div className='text-label-muted flex items-center justify-between px-3 py-2 text-xs uppercase tracking-[0.35em] sm:px-4'>
+          <div className='text-label-muted flex items-center gap-4 px-3 py-2 text-xs uppercase tracking-[0.35em] sm:px-4'>
             <span className='w-12'>#</span>
             <span className='flex-1'>Player</span>
+            <span className='w-16 text-right'>Avg pos</span>
           </div>
           <div className='divide-y divide-white/10'>
             {players.map((summary, index) => (
