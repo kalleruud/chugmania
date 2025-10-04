@@ -14,11 +14,14 @@ export default function LoadingView({
 }: Readonly<LoadingViewProps>) {
   return (
     <div
-      className={twMerge('flex items-center justify-center pt-48', className)}
+      className={twMerge(
+        'flex h-screen touch-none flex-col items-center justify-center gap-2',
+        className
+      )}
       {...rest}
     >
       <Spinner size={48} className='text-accent' />
-      {label && <p>{label}</p>}
+      {label && <p className='font-f1 text-label-muted'>{label}</p>}
     </div>
   )
 }

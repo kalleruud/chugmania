@@ -36,7 +36,7 @@ export default function SearchBar({
           variant='tertiary'
           size='sm'
           onClick={() => onChange('')}
-          className='rounded-xl p-1 text-label-muted normal-case hover:text-white'
+          className='text-label-muted rounded-xl p-1 normal-case hover:text-white'
           aria-label='Clear search'
         >
           <X size={18} />

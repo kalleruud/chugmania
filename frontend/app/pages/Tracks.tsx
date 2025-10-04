@@ -33,7 +33,7 @@ export default function Tracks() {
   if (loading) return <LoadingView />
 
   return (
-    <div className='min-w-0 flex-1 space-y-8 p-4'>
+    <div className='p-safe-or-4 flex-1'>
       <div className='grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] gap-4'>
         {summaries.map(t => (
           <TrackCard key={t.track.id} leaderboard={t} />

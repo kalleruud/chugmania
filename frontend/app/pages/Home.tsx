@@ -13,7 +13,7 @@ export default function Home() {
   const signedInLabel = user?.shortName ?? user?.firstName ?? user?.email
 
   return (
-    <div className='mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 pb-24 pt-6 sm:px-6 sm:pb-12 sm:pt-10'>
+    <div className='p-safe-or-4 grid h-screen place-items-center'>
       <section className='rounded-3xl border border-white/10 bg-black/60 p-6 text-center shadow-[0_25px_60px_-40px_rgba(0,0,0,0.8)] backdrop-blur-xl sm:p-10'>
         <p className='text-label-secondary text-xs uppercase tracking-[0.35em]'>
           Trackmania Turbo Lap Tracker

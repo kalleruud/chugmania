@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type { LeaderboardEntry } from '../../../common/models/timeEntry'
-import { getUserFullName } from '../../../common/models/user'
 import { formatTime } from '../../../common/utils/time'
+import { formatLapTimestamp } from '../utils/date'
 import { Button } from './Button'
 
 type TableRowProps = React.DetailedHTMLProps<
@@ -47,6 +47,15 @@ function TimePart({ duration }: Readonly<{ duration?: number | null }>) {
   )
 }
 
+function DatePart({ timestamp }: Readonly<{ timestamp?: Date | string }>) {
+  if (!timestamp) return null
+  return (
+    <td className='text-label-muted text-xs uppercase tabular-nums tracking-widest'>
+      {formatLapTimestamp(timestamp)}
+    </td>
+  )
+}
+
 function GapPart({
   gap,
   gapType = 'leader',
@@ -73,9 +82,9 @@ function GapPart({
           type='button'
           variant='tertiary'
           size='sm'
-          state={!onToggle ? 'disabled' : 'default'}
+          state={!onToggle ? 'default' : undefined}
           onClick={onToggle}
-          className='rounded-md px-2 py-1 normal-case text-label-muted/50 hover:bg-white/10 hover:text-white hover:no-underline'
+          className='text-label-muted/50 rounded-md px-2 py-1 normal-case hover:bg-white/10 hover:text-white hover:no-underline'
           aria-label='Toggle gap display'
           title='Toggle gap display'
         >
@@ -94,13 +103,21 @@ export default function TimeEntryRow({
   gapType = 'leader',
   className,
   onToggleGapType,
+  showGap = true,
+  showDate = false,
+  dateValue,
+  highlighted = false,
   ...rest
 }: Readonly<
   TableRowProps & {
     position?: number
     lapTime: LeaderboardEntry
     gapType?: GapType
-    onToggleGapType: () => void
+    onToggleGapType?: () => void
+    showGap?: boolean
+    showDate?: boolean
+    dateValue?: Date | string
+    highlighted?: boolean
   }
 >) {
   const containerRef = useRef<HTMLTableRowElement | null>(null)
@@ -122,10 +139,10 @@ export default function TimeEntryRow({
   const show = useMemo(() => {
     return {
       time: width >= 0, // always
-      gap: width >= 270,
-      comment: width >= 700,
+      gap: showGap && width >= 270,
+      date: showDate && width >= 700,
     }
-  }, [width])
+  }, [width, showGap, showDate])
 
   const name = useMemo(() => {
     if (width <= 400)
@@ -133,23 +150,28 @@ export default function TimeEntryRow({
         lapTime.user.shortName ??
         (lapTime.user.lastName ?? lapTime.user.firstName).slice(0, 3)
       )
-    if (width <= 600) return lapTime.user.lastName ?? lapTime.user.firstName
-    return getUserFullName(lapTime.user)
+    return lapTime.user.lastName ?? lapTime.user.firstName
   }, [width])
 
   return (
     <tr
       ref={containerRef}
-      className={twMerge('flex items-center gap-2', className)}
+      className={twMerge(
+        'flex items-center gap-2',
+        highlighted ? 'bg-accent/10 ring-accent/40 rounded-md ring-1' : '',
+        className
+      )}
       title={
         lapTime.comment ??
-        `${name} - ${lapTime.duration ? formatTime(lapTime.duration) : 'DNF'} - ${lapTime.createdAt.toLocaleString()}`
+        `${name} - ${lapTime.duration ? formatTime(lapTime.duration) : 'DNF'} - ${formatLapTimestamp(lapTime.createdAt)}`
       }
       role='row'
       {...rest}
     >
       <PositionBadgePart position={position} />
       <NameCellPart name={name} hasComment={!!lapTime.comment} />
+
+      {show.date && <DatePart timestamp={dateValue ?? lapTime.createdAt} />}
 
       {show.gap && (
         <GapPart

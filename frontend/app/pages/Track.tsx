@@ -9,6 +9,7 @@ import type { LeaderboardEntry } from '../../../common/models/timeEntry'
 import type { Track } from '../../../common/models/track'
 import { WS_GET_LEADERBOARD } from '../../../common/utils/constants'
 import { formatTrackName } from '../../../common/utils/track'
+import { useAuth } from '../../contexts/AuthContext'
 import { useConnection } from '../../contexts/ConnectionContext'
 import LeaderboardView from '../components/Leaderboard'
 import Spinner from '../components/Spinner'
@@ -17,6 +18,7 @@ import TrackTag from '../components/TrackTag'
 export default function Track() {
   const { id } = useParams()
   const { socket } = useConnection()
+  const { user } = useAuth()
   const [entries, setEntries] = useState<LeaderboardEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [track, setTrack] = useState<Track | null>(null)
@@ -66,7 +68,11 @@ export default function Track() {
       </header>
 
       <section className='w-full px-6 sm:max-w-2xl'>
-        <LeaderboardView entries={entries} className='divide-stroke divide-y' />
+        <LeaderboardView
+          entries={entries}
+          className='divide-stroke divide-y'
+          highlightedUserId={user?.id}
+        />
       </section>
     </div>
   )

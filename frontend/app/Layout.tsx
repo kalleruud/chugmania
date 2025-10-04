@@ -3,18 +3,23 @@ import {
   Map,
   Plus,
   Shield,
+  Timer,
   Users,
   type LucideIcon,
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import LapTimeInput from './components/LapTimeInput'
 import { Button } from './components/Button'
+import LapTimeInput from './components/LapTimeInput'
 
-type MobileNavItem =
-  | { key: string; label: string; icon: LucideIcon; to: string }
-  | { key: string; label: string; icon: LucideIcon; action: () => void }
+type MobileNavItem = {
+  label: string
+  icon?: LucideIcon
+  to?: string
+  action?: () => void
+  hide?: boolean
+}
 
 export default function Layout() {
   const { isLoggedIn, user } = useAuth()
@@ -23,41 +28,27 @@ export default function Layout() {
   const containerRef = useRef<HTMLTableRowElement | null>(null)
   const [width, setWidth] = useState(0)
 
-  const navButtons = [
-    { to: '/tracks', label: 'Tracks' },
-    { to: '/players', label: 'Players' },
-  ]
-
-  if (user?.role === 'admin') navButtons.push({ to: '/admin', label: 'Admin' })
-
   const mobileNavButtons: MobileNavItem[] = [
-    { key: 'home', label: 'Home', icon: Home, to: '/' },
-    { key: 'tracks', label: 'Tracks', icon: Map, to: '/tracks' },
-  ]
-
-  if (isLoggedIn) {
-    mobileNavButtons.push({
-      key: 'add',
+    { label: 'Home', icon: Home, to: '/' },
+    { label: 'Tracks', icon: Map, to: '/tracks' },
+    {
       label: 'Add time',
-      icon: Plus,
+      icon: Timer,
       action: () => setShowTimeInput(true),
-    })
-  }
-
-  if (user?.role === 'admin')
-    mobileNavButtons.push({
-      key: 'admin',
+      hide: !isLoggedIn,
+    },
+    {
+      label: 'Players',
+      icon: Users,
+      to: '/players',
+    },
+    {
       label: 'Admin',
       icon: Shield,
       to: '/admin',
-    })
-
-  mobileNavButtons.push({
-    key: 'players',
-    label: 'Players',
-    icon: Users,
-    to: '/players',
-  })
+      hide: user?.role !== 'admin',
+    },
+  ]
 
   useEffect(() => {
     if (showTimeInput) document.body.style.overflow = 'hidden'
@@ -97,19 +88,27 @@ export default function Layout() {
           </NavLink>
 
           <nav className='font-f1 mr-auto flex text-sm'>
-            {navButtons.map(button => (
-              <NavLink
-                key={button.to}
-                to={button.to}
-                className={({ isActive }) =>
-                  isActive
-                    ? 'relative rounded-md px-3 py-1.5 text-white no-underline transition'
-                    : 'text-label-muted relative rounded-md px-3 py-1.5 no-underline transition hover:text-white'
-                }
-              >
-                <h5>{button.label}</h5>
-              </NavLink>
-            ))}
+            {mobileNavButtons
+              .filter(button => button.hide !== true)
+              .map(button =>
+                button.to ? (
+                  <NavLink
+                    key={button.label}
+                    to={button.to}
+                    className={({ isActive }) =>
+                      isActive
+                        ? 'relative rounded-md px-3 py-1.5 text-white no-underline transition'
+                        : 'text-label-muted relative rounded-md px-3 py-1.5 no-underline transition hover:text-white'
+                    }
+                  >
+                    <h5>{button.label}</h5>
+                  </NavLink>
+                ) : (
+                  <Button key={button.label} onClick={button.action} size='sm'>
+                    {button.label}
+                  </Button>
+                )
+              )}
           </nav>
 
           {isLoggedIn && (
@@ -124,7 +123,6 @@ export default function Layout() {
               Register laptime
             </Button>
           )}
-
         </div>
       </header>
 
@@ -136,7 +134,7 @@ export default function Layout() {
               type='button'
               variant='tertiary'
               size='md'
-              className='mt-3 w-full text-label-muted normal-case'
+              className='text-label-muted mt-3 w-full normal-case'
               onClick={() => setShowTimeInput(false)}
             >
               Cancel
@@ -145,51 +143,49 @@ export default function Layout() {
         </div>
       )}
 
-      <main className='z-0 pb-18 sm:pb-0' ref={containerRef}>
+      <main className='z-0' ref={containerRef}>
         <Outlet />
       </main>
 
-      <nav className='border-t-stroke fixed bottom-0 left-0 right-0 z-50 h-18 border-t bg-black/70 backdrop-blur-xl sm:hidden'>
-        <div className='font-f1 flex h-full items-center gap-2 px-2 text-xs uppercase tracking-wider'>
-          {mobileNavButtons.map(item => {
-            const Icon = item.icon
+      <nav className='border-t-stroke pb-safe-or-4 fixed bottom-0 left-0 right-0 z-50 border-t bg-black/70 pt-4 backdrop-blur-xl sm:hidden'>
+        <div className='font-f1 flex items-center px-2'>
+          {mobileNavButtons
+            .filter(i => i.hide !== true)
+            .map(item => {
+              const Icon = item.icon
 
-            if ('to' in item)
+              if (item.to)
+                return (
+                  <NavLink
+                    key={item.label}
+                    to={item.to}
+                    className={({ isActive }) =>
+                      `flex w-full items-center justify-center transition hover:text-white ${
+                        isActive ? 'text-white' : 'text-label-muted'
+                      }`
+                    }
+                  >
+                    {Icon && <Icon className='size-6' />}
+                    <span className='sr-only'>{item.label}</span>
+                  </NavLink>
+                )
+
               return (
-                <NavLink
-                  key={item.key}
-                  to={item.to}
-                  className={({ isActive }) =>
-                    `flex w-full flex-col items-center justify-center gap-1 rounded-xl py-2 transition ${
-                      isActive
-                        ? 'bg-white/10 text-white'
-                        : 'text-label-muted hover:text-white'
-                    }`
-                  }
+                <Button
+                  key={item.label}
+                  type='button'
+                  onClick={item.action}
+                  className='w-full items-center justify-center transition'
                 >
-                  <Icon size={18} />
-                  <span>{item.label}</span>
-                </NavLink>
+                  {Icon && <Icon className='size-6' />}
+                  <span className='sr-only'>{item.label}</span>
+                </Button>
               )
-
-            return (
-              <Button
-                key={item.key}
-                type='button'
-                variant='tertiary'
-                size='sm'
-                onClick={item.action}
-                className='flex h-full flex-1 flex-col items-center justify-center gap-1 rounded-xl py-2 text-label-muted transition hover:bg-white/10 hover:text-white hover:no-underline'
-              >
-                <Icon size={18} />
-                <span>{item.label}</span>
-              </Button>
-            )
-          })}
+            })}
         </div>
       </nav>
 
-      <div className='main-background fixed left-0 top-0 -z-10 h-full w-full' />
+      <div className='main-background fixed inset-0 top-0 -z-10 h-screen' />
     </>
   )
 }

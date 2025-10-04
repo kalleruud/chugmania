@@ -8,8 +8,8 @@ import type {
 } from '../../../common/models/responses'
 import { WS_IMPORT_CSV } from '../../../common/utils/constants'
 import { useConnection } from '../../contexts/ConnectionContext'
-import FileDrop, { type FileDropSelection } from '../components/FileDrop'
 import { Button } from '../components/Button'
+import FileDrop, { type FileDropSelection } from '../components/FileDrop'
 
 export default function Admin() {
   const { socket } = useConnection()

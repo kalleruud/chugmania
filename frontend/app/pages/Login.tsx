@@ -157,12 +157,7 @@ export default function Login() {
           </p>
         )}
 
-        <Button
-          type='submit'
-          variant='primary'
-          size='md'
-          className='w-full'
-        >
+        <Button type='submit' variant='primary' size='md' className='w-full'>
           {isRegistering ? 'Sign up' : 'Sign in'}
         </Button>
 

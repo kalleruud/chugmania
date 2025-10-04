@@ -6,6 +6,7 @@ import Layout from './app/Layout'
 import Admin from './app/pages/Admin'
 import Home from './app/pages/Home'
 import Login from './app/pages/Login'
+import Player from './app/pages/Player'
 import Players from './app/pages/Players'
 import Track from './app/pages/Track'
 import Tracks from './app/pages/Tracks'
@@ -25,6 +26,7 @@ createRoot(document.getElementById('root')!).render(
               <Route path='tracks' element={<Tracks />} />
               <Route path='tracks/:id' element={<Track />} />
               <Route path='players' element={<Players />} />
+              <Route path='players/:id' element={<Player />} />
               <Route path='login' element={<Login />} />
               <Route path='admin' element={<Admin />} />
             </Route>
