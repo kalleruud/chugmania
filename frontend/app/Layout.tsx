@@ -88,25 +88,27 @@ export default function Layout() {
           </NavLink>
 
           <nav className='font-f1 mr-auto flex text-sm'>
-            {mobileNavButtons.map(button =>
-              button.to ? (
-                <NavLink
-                  key={button.to}
-                  to={button.to}
-                  className={({ isActive }) =>
-                    isActive
-                      ? 'relative rounded-md px-3 py-1.5 text-white no-underline transition'
-                      : 'text-label-muted relative rounded-md px-3 py-1.5 no-underline transition hover:text-white'
-                  }
-                >
-                  <h5>{button.label}</h5>
-                </NavLink>
-              ) : (
-                <Button key={button.to} onClick={button.action} size='sm'>
-                  {button.label}
-                </Button>
-              )
-            )}
+            {mobileNavButtons
+              .filter(button => button.hide !== true)
+              .map(button =>
+                button.to ? (
+                  <NavLink
+                    key={button.label}
+                    to={button.to}
+                    className={({ isActive }) =>
+                      isActive
+                        ? 'relative rounded-md px-3 py-1.5 text-white no-underline transition'
+                        : 'text-label-muted relative rounded-md px-3 py-1.5 no-underline transition hover:text-white'
+                    }
+                  >
+                    <h5>{button.label}</h5>
+                  </NavLink>
+                ) : (
+                  <Button key={button.label} onClick={button.action} size='sm'>
+                    {button.label}
+                  </Button>
+                )
+              )}
           </nav>
 
           {isLoggedIn && (
