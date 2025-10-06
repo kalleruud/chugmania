@@ -1,4 +1,4 @@
-import type { TrackLevel, TrackType } from './track'
+import type { TrackLevel, TrackType } from '../../backend/database/schema'
 import type { UserInfo } from './user'
 
 export type PlayerTopResult = {
