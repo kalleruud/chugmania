@@ -4,7 +4,7 @@ import { twMerge } from 'tailwind-merge'
 
 type ButtonVariant = 'primary' | 'secondary' | 'tertiary'
 type ButtonSize = 'sm' | 'md' | 'lg'
-type ButtonState = 'default' | 'unselected' | 'selected'
+type ButtonState = 'default' | 'unselected' | 'selected' | 'disabled'
 
 export type ButtonProps = {
   variant?: ButtonVariant
@@ -36,6 +36,7 @@ const stateStyles: Record<ButtonState, string> = {
   default: '',
   unselected: 'saturate-0',
   selected: 'ring-2 ring-accent/60',
+  disabled: 'saturate-0',
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
