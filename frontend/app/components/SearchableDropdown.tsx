@@ -146,7 +146,7 @@ export default function SearchableDropdown({
                     className={twMerge(
                       'relative w-full select-none justify-start rounded-sm px-2 py-1.5 text-left normal-case text-slate-100 no-underline hover:no-underline',
                       selected?.id === item.id
-                        ? 'bg-accent text-black hover:brightness-110'
+                        ? 'bg-accent text-black hover:text-black hover:brightness-110'
                         : 'hover:bg-white/10'
                     )}
                     onClick={() => onSelect(item)}
