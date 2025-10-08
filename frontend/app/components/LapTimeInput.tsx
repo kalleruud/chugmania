@@ -155,14 +155,14 @@ export default function LapTimeInput({
   }, [socket])
 
   function getMs() {
-    const tenMinutes = digits[0] !== '' ? Number.parseInt(digits[0]) * 10 : 0
-    const minutes = digits[1] !== '' ? Number.parseInt(digits[1]) : 0
+    const tenMinutes = digits[0] === '' ? 0 : Number.parseInt(digits[0]) * 10
+    const minutes = digits[1] === '' ? 0 : Number.parseInt(digits[1])
 
-    const tenSeconds = digits[2] !== '' ? Number.parseInt(digits[2]) * 10 : 0
-    const seconds = digits[3] !== '' ? Number.parseInt(digits[3]) : 0
+    const tenSeconds = digits[2] === '' ? 0 : Number.parseInt(digits[2]) * 10
+    const seconds = digits[3] === '' ? 0 : Number.parseInt(digits[3])
 
-    const tenHundredths = digits[5] !== '' ? Number.parseInt(digits[5]) * 10 : 0
-    const hundredths = digits[4] !== '' ? Number.parseInt(digits[4]) : 0
+    const tenHundredths = digits[5] === '' ? 0 : Number.parseInt(digits[5]) * 10
+    const hundredths = digits[4] === '' ? 0 : Number.parseInt(digits[4])
 
     return formattedTimeToMs(
       tenMinutes + minutes,
