@@ -31,7 +31,7 @@ export default function Track() {
       (r: GetLeaderboardsResponse | ErrorResponse) => {
         if (!r.success) {
           console.error(r.message)
-          window.alert(r.message)
+          globalThis.alert(r.message)
           setLoading(false)
           return
         }

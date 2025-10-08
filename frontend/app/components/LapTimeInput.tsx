@@ -130,7 +130,7 @@ export default function LapTimeInput({
       (r: GetUsersResponse | ErrorResponse) => {
         if (!r.success) {
           console.error(r.message)
-          return window.alert(r.message)
+          return globalThis.alert(r.message)
         }
 
         setUsers(r.users)
@@ -146,7 +146,7 @@ export default function LapTimeInput({
       (r: GetTracksResponse | ErrorResponse) => {
         if (!r.success) {
           console.error(r.message)
-          return window.alert(r.message)
+          return globalThis.alert(r.message)
         }
 
         setTracks(r.tracks)
@@ -198,7 +198,7 @@ export default function LapTimeInput({
       (r: BackendResponse) => {
         if (!r.success) {
           console.error(r.message)
-          return window.alert(r.message)
+          return globalThis.alert(r.message)
         }
         clearDigits()
       }

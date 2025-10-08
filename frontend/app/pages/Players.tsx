@@ -24,7 +24,7 @@ export default function Players() {
       (response: GetPlayerSummariesResponse | ErrorResponse) => {
         if (!response.success) {
           console.error(response.message)
-          window.alert(response.message)
+          globalThis.alert(response.message)
           setLoading(false)
           return
         }
