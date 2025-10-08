@@ -11,7 +11,7 @@ import { formatTrackName } from '../../../common/utils/track'
 import { useAuth } from '../../contexts/AuthContext'
 import { useConnection } from '../../contexts/ConnectionContext'
 import { Button } from '../components/Button'
-import LoadingView from '../components/Loading'
+import LoadingView from '../components/LoadingView'
 import TimeEntryRow from '../components/TimeEntryRow'
 import TrackTag from '../components/TrackTag'
 

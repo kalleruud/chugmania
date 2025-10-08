@@ -8,7 +8,7 @@ import {
 import { WS_GET_PLAYER_SUMMARIES } from '../../../common/utils/constants'
 import { useAuth } from '../../contexts/AuthContext'
 import { useConnection } from '../../contexts/ConnectionContext'
-import LoadingView from '../components/Loading'
+import LoadingView from '../components/LoadingView'
 import PlayerRow from '../components/PlayerRow'
 
 export default function Players() {

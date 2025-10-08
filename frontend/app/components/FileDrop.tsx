@@ -124,12 +124,7 @@ export default function FileDrop({
         <Upload className='text-label-muted size-8' />
         <div className='flex flex-col gap-1 text-sm'>
           <span className='text-label-secondary'>{label}</span>
-          {hint && <span className='text-label-muted text-xs'>{hint}</span>}
-          {selectedFileName && (
-            <span className='text-label-secondary text-xs'>
-              Selected: <span className='text-white'>{selectedFileName}</span>
-            </span>
-          )}
+          {hint && <span className='text-label-muted text-xs'>{selectedFileName ?? hint}</span>}
           {error && <span className='text-xs text-red-400'>{error}</span>}
           {loading && (
             <span className='text-label-muted text-xs'>Reading file…</span>

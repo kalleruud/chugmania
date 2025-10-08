@@ -6,7 +6,7 @@ import {
 } from '../../../common/models/responses'
 import { WS_GET_LEADERBOARD_SUMMARIES } from '../../../common/utils/constants'
 import { useConnection } from '../../contexts/ConnectionContext'
-import LoadingView from '../components/Loading'
+import LoadingView from '../components/LoadingView'
 import TrackCard from '../components/TrackCard'
 
 export default function Tracks() {

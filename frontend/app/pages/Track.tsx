@@ -12,7 +12,7 @@ import { formatTrackName } from '../../../common/utils/track'
 import { useAuth } from '../../contexts/AuthContext'
 import { useConnection } from '../../contexts/ConnectionContext'
 import LeaderboardView from '../components/Leaderboard'
-import Spinner from '../components/Spinner'
+import LoadingView from '../components/LoadingView'
 import TrackTag from '../components/TrackTag'
 
 export default function Track() {
@@ -43,12 +43,7 @@ export default function Track() {
     )
   }, [id, socket])
 
-  if (loading)
-    return (
-      <div className='mt-24 flex w-full items-center justify-center'>
-        <Spinner />
-      </div>
-    )
+  if (loading) return <LoadingView label='Loading leaderboard…' />
 
   if (!track) throw Error("Couldn't get track")
 

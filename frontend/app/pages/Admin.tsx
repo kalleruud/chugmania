@@ -10,6 +10,7 @@ import { WS_IMPORT_CSV } from '../../../common/utils/constants'
 import { useConnection } from '../../contexts/ConnectionContext'
 import { Button } from '../components/Button'
 import FileDrop, { type FileDropSelection } from '../components/FileDrop'
+import Spinner from '../components/Spinner'
 
 export default function Admin() {
   const { socket } = useConnection()
@@ -77,7 +78,7 @@ export default function Admin() {
   if (isImporting) return 'Importing...'
 
   return (
-    <div className='mx-auto flex w-full max-w-5xl flex-col gap-6'>
+    <div className='mx-auto flex w-full max-w-5xl flex-col gap-6 p-4'>
       <header className='border-stroke bg-background-secondary flex w-full flex-col gap-3 rounded-3xl border p-6 shadow-lg'>
         <div className='flex items-center gap-3'>
           <span className='bg-accent/20 text-accent inline-flex size-10 items-center justify-center rounded-2xl'>
@@ -115,7 +116,7 @@ export default function Admin() {
                 accept='.csv'
                 onSelect={file => handleFileChange(table, file)}
                 label='Drop CSV here or click to select'
-                hint="Matches files in '/data/*.csv'"
+                hint={'Accepts *.csv-files'}
               />
 
               <Button
@@ -123,10 +124,14 @@ export default function Admin() {
                 variant='primary'
                 size='sm'
                 onClick={() => handleImport(table)}
-                className='w-full text-xs sm:w-auto'
                 disabled={!file}
+                className='h-8 w-full sm:w-auto'
               >
-                Import CSV
+                {isImporting ? (
+                  <Spinner className='text-label p-3' />
+                ) : (
+                  'Import CSV'
+                )}
               </Button>
             </section>
           )
