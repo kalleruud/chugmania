@@ -22,8 +22,8 @@ const socket = io('/', {
 const setToken: ConnectionContextType['setToken'] = token => {
   // @ts-expect-error
   socket.auth.token = token
-  if (!token) localStorage.removeItem(AUTH_KEY)
-  else localStorage.setItem(AUTH_KEY, token)
+  if (token) localStorage.setItem(AUTH_KEY, token)
+  else localStorage.removeItem(AUTH_KEY)
   socket.disconnect().connect()
 }
 
