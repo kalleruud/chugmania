@@ -123,8 +123,8 @@ export default function Admin() {
                 variant='primary'
                 size='sm'
                 onClick={() => handleImport(table)}
-                state={!file || isImporting ? 'disabled' : 'default'}
                 className='w-full text-xs sm:w-auto'
+                disabled={!file}
               >
                 Import CSV
               </Button>
