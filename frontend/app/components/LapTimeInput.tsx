@@ -34,7 +34,7 @@ const cache: {
   user: LookupItem | undefined
   track: LookupItem | undefined
 } = {
-  time: Array(6).fill(''),
+  time: new Array(6).fill(''),
   user: undefined,
   track: undefined,
 }
@@ -80,7 +80,7 @@ export default function LapTimeInput({
   }, [])
 
   const clearDigits = useCallback(() => {
-    const empty = Array(6).fill('')
+    const empty = new Array(6).fill('')
     cache.time = empty
     setDigits(empty)
   }, [])
