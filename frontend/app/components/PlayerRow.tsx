@@ -17,7 +17,7 @@ export default function PlayerRow({
   const name =
     user.lastName ?? user.shortName ?? getUserFullName(user) ?? user.email
   const averageLabel =
-    averagePosition != null ? averagePosition.toFixed(2) : '—'
+    averagePosition == null ? '-' : averagePosition.toFixed(2)
 
   return (
     <Link
