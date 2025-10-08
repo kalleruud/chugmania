@@ -40,11 +40,11 @@ export default class PlayerManager {
     const userRows = await db.select().from(users)
     const playerMap = new Map<string, PlayerAccumulator>()
 
-    userRows.forEach(row => {
+    for (const row of userRows) {
       const { passwordHash: _passwordHash, ...rest } = row
       const userInfo: UserInfo = { ...rest, passwordHash: undefined }
       playerMap.set(row.id, { user: userInfo, results: [] })
-    })
+    }
 
     const lapRows = await db
       .select({
@@ -97,10 +97,10 @@ export default class PlayerManager {
     }
 
     for (const group of trackGroups) {
-      group.entries.forEach((entry, index) => {
-        if (entry.duration == null) return
+      for (const [index, entry] of group.entries.entries()) {
+        if (entry.duration == null) break
         const player = playerMap.get(entry.userId)
-        if (!player) return
+        if (!player) break
 
         player.results.push({
           trackId: group.trackId,
@@ -110,7 +110,7 @@ export default class PlayerManager {
           position: index + 1,
           duration: entry.duration,
         })
-      })
+      }
     }
 
     const players: PlayerSummary[] = Array.from(playerMap.values()).map(
