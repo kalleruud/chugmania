@@ -32,7 +32,7 @@ export default class AuthManager {
   }
 
   private static verify(token: string | undefined): Result<UserInfo> {
-    if (!token) return { data: null, error: Error('No JWT token provided') }
+    if (!token) return { data: null, error: new Error('No JWT token provided') }
     const { data: user, error } = tryCatch(jwt.verify(token, SECRET))
     if (error) return { data: null, error }
     return { data: user as UserInfo, error: null }
@@ -59,7 +59,7 @@ export default class AuthManager {
     if (!userExists) {
       const message = `User with email '${user.email}' doesn't exist`
       console.warn(new Date().toISOString(), message)
-      return { data: null, error: Error(message) }
+      return { data: null, error: new Error(message) }
     }
 
     return { data: user, error: null }
