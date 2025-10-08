@@ -45,7 +45,7 @@ export default function Track() {
 
   if (loading) return <LoadingView label='Loading leaderboard…' />
 
-  if (!track) throw Error("Couldn't get track")
+  if (!track) throw new Error("Couldn't get track")
 
   return (
     <div className='grid w-full items-start gap-4 sm:flex sm:justify-center sm:pt-4'>

@@ -27,7 +27,7 @@ export default class TimeEntryManager {
     request: unknown
   ): Promise<BackendResponse> {
     if (!isPostLapTimeRequest(request))
-      throw Error('Invalid post lap time request')
+      throw new Error('Invalid post lap time request')
 
     const { data: user, error } = await AuthManager.checkAuth(s)
     if (error)

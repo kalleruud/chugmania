@@ -183,8 +183,8 @@ export default function LapTimeInput({
     e.preventDefault()
     const uid = userId ?? selectedUser?.id
     const tid = trackId ?? selectedTrack?.id
-    if (!uid) throw Error('No user selected')
-    if (!tid) throw Error('No track selected')
+    if (!uid) throw new Error('No user selected')
+    if (!tid) throw new Error('No track selected')
 
     socket.emit(
       WS_POST_LAPTIME,

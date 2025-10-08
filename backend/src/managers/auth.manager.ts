@@ -19,7 +19,7 @@ import { users } from '../../database/schema'
 import UserManager from './user.manager'
 
 const SECRET: jwt.Secret = process.env.SECRET!
-if (!SECRET) throw Error("Missing environment variable 'SECRET'")
+if (!SECRET) throw new Error("Missing environment variable 'SECRET'")
 
 export default class AuthManager {
   private static readonly JWT_OPTIONS: jwt.SignOptions = {
@@ -70,7 +70,7 @@ export default class AuthManager {
     request: unknown
   ): Promise<BackendResponse> {
     if (!isRegisterRequest(request))
-      throw Error('Failed to register: email or password not provided.')
+      throw new Error('Failed to register: email or password not provided.')
 
     const adminExists = await UserManager.adminExists()
     const { password, ...insertUser } = request
@@ -105,7 +105,7 @@ export default class AuthManager {
     request: unknown
   ): Promise<BackendResponse> {
     if (!isLoginRequest(request))
-      throw Error('Failed to log in: email or password not provided.')
+      throw new Error('Failed to log in: email or password not provided.')
 
     const { email, password } = request
     const { data, error } = await tryCatchAsync(UserManager.getUser(email))

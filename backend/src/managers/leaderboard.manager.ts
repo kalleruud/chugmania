@@ -122,7 +122,7 @@ export default class LeaderboardManager {
     request: unknown
   ): Promise<BackendResponse> {
     if (!isGetLeaderboardRequest(request)) {
-      throw Error('Failed to fetch leaderboard')
+      throw new Error('Failed to fetch leaderboard')
     }
 
     console.debug(
