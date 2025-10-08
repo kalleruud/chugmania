@@ -47,7 +47,7 @@ export default class TrackManager {
     )
 
     if (error) throw error
-    if (data.length === 0) throw Error('Found no leaderboards')
+    if (data.length === 0) throw new Error('Found no leaderboards')
     return { success: true, tracks: data } satisfies GetTracksResponse
   }
 }

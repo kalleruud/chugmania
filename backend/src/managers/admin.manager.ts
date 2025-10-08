@@ -32,7 +32,7 @@ export default class AdminManager {
     request: unknown
   ): Promise<BackendResponse> {
     if (!isImportCsvRequest(request))
-      throw Error('Invalid CSV import request payload')
+      throw new Error('Invalid CSV import request payload')
 
     const { data: user, error } = await AuthManager.checkAuth(socket)
     if (error)
@@ -66,7 +66,7 @@ export default class AdminManager {
         task = AdminManager.import(timeEntries, request.content)
         break
       default:
-        throw Error(`Invalid table: '${request.table}'`)
+        throw new Error(`Invalid table: '${request.table}'`)
     }
 
     const { data, error: importError } = await tryCatchAsync(task)

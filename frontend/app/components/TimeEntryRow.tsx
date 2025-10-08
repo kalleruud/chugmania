@@ -82,7 +82,7 @@ function GapPart({
           type='button'
           variant='tertiary'
           size='sm'
-          state={!onToggle ? 'default' : undefined}
+          state={onToggle ? undefined : 'default'}
           onClick={onToggle}
           className='text-label-muted/50 rounded-md px-2 py-1 normal-case hover:bg-white/10 hover:text-white hover:no-underline'
           aria-label='Toggle gap display'

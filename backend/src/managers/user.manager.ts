@@ -17,7 +17,7 @@ export default class UserManager {
     )
 
     if (error) throw error
-    if (!user) throw Error(`Couldn't find user with email ${email}`)
+    if (!user) throw new Error(`Couldn't find user with email ${email}`)
 
     return user
   }

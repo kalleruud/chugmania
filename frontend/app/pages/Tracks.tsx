@@ -21,7 +21,7 @@ export default function Tracks() {
       (d: GetLeaderboardsResponse | ErrorResponse) => {
         if (!d.success) {
           console.error(d.message)
-          return window.alert(d.message)
+          return globalThis.alert(d.message)
         }
 
         setSummaries(d.leaderboards)

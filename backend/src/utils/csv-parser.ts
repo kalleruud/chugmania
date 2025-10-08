@@ -28,7 +28,8 @@ export default class CsvParser {
     const val = value?.replaceAll('"', '').trim()
     if (val === '' || val === undefined) return { key, value: null }
 
-    if (key.endsWith('At')) return { key, value: new Date(parseFloat(val)) }
+    if (key.endsWith('At'))
+      return { key, value: new Date(Number.parseFloat(val)) }
 
     if (key === 'password')
       return { key: 'passwordHash', value: await AuthManager.hash(val) }

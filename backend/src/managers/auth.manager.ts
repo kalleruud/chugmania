@@ -19,7 +19,7 @@ import { users } from '../../database/schema'
 import UserManager from './user.manager'
 
 const SECRET: jwt.Secret = process.env.SECRET!
-if (!SECRET) throw Error("Missing environment variable 'SECRET'")
+if (!SECRET) throw new Error("Missing environment variable 'SECRET'")
 
 export default class AuthManager {
   private static readonly JWT_OPTIONS: jwt.SignOptions = {
@@ -32,7 +32,7 @@ export default class AuthManager {
   }
 
   private static verify(token: string | undefined): Result<UserInfo> {
-    if (!token) return { data: null, error: Error('No JWT token provided') }
+    if (!token) return { data: null, error: new Error('No JWT token provided') }
     const { data: user, error } = tryCatch(jwt.verify(token, SECRET))
     if (error) return { data: null, error }
     return { data: user as UserInfo, error: null }
@@ -59,7 +59,7 @@ export default class AuthManager {
     if (!userExists) {
       const message = `User with email '${user.email}' doesn't exist`
       console.warn(new Date().toISOString(), message)
-      return { data: null, error: Error(message) }
+      return { data: null, error: new Error(message) }
     }
 
     return { data: user, error: null }
@@ -70,7 +70,7 @@ export default class AuthManager {
     request: unknown
   ): Promise<BackendResponse> {
     if (!isRegisterRequest(request))
-      throw Error('Failed to register: email or password not provided.')
+      throw new Error('Failed to register: email or password not provided.')
 
     const adminExists = await UserManager.adminExists()
     const { password, ...insertUser } = request
@@ -105,7 +105,7 @@ export default class AuthManager {
     request: unknown
   ): Promise<BackendResponse> {
     if (!isLoginRequest(request))
-      throw Error('Failed to log in: email or password not provided.')
+      throw new Error('Failed to log in: email or password not provided.')
 
     const { email, password } = request
     const { data, error } = await tryCatchAsync(UserManager.getUser(email))

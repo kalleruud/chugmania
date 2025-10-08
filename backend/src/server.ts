@@ -7,7 +7,7 @@ import {
 } from '../../common/utils/constants'
 import ConnectionManager from './managers/connection.manager'
 
-const PORT = process.env.PORT ? parseInt(process.env.PORT) : 6996
+const PORT = process.env.PORT ? Number.parseInt(process.env.PORT) : 6996
 const app = express()
 
 const server = ViteExpress.listen(app, PORT)
