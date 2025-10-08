@@ -230,7 +230,7 @@ export default function LapTimeInput({
               onFocus={e => e.currentTarget.select()}
               onClick={e => e.currentTarget.select()}
               className={
-                'focus:ring-accent/60 focus:border-accent font-f1-bold h-16 w-12 rounded-lg border border-white/10 bg-white/5 text-center text-2xl tabular-nums caret-transparent transition selection:bg-transparent invalid:border-red-500/30 invalid:bg-red-500/30 focus:ring-2'
+                'focus:ring-accent/60 focus:border-accent font-f1-bold h-16 w-16 rounded-lg border border-white/10 bg-white/5 text-center text-2xl tabular-nums caret-transparent transition selection:bg-transparent invalid:border-red-500/30 invalid:bg-red-500/30 focus:ring-2'
               }
               inputMode='numeric'
               pattern={i === 0 || i === 2 ? '[0-5]' : '[0-9]'}
@@ -295,7 +295,6 @@ export default function LapTimeInput({
         variant='primary'
         size='md'
         disabled={!isInputValid()}
-        state={'default'}
         className='w-full'
       >
         Submit

@@ -34,7 +34,7 @@ const tertiarySizeStyles: Record<ButtonSize, string> = {
 
 const stateStyles: Record<ButtonState, string> = {
   default: '',
-  unselected: 'saturate-0',
+  unselected: 'opacity-70 hover:opacity-100',
   selected: 'ring-2 ring-accent/60',
 }
 

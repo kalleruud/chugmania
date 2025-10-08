@@ -108,10 +108,12 @@ export default function SearchableDropdown({
             value={selected?.id ?? ''}
           />
         ) : null}
-        <span className='flex items-center gap-2'>
-          {selected ? selected.label : placeholder}
-          <ChevronsUpDown className='text-label-muted ml-auto size-5' />
+        <span className='flex w-full items-center gap-2'>
+          <span className='truncate'>
+            {selected ? selected.label : placeholder}
+          </span>
         </span>
+        <ChevronsUpDown className='text-label-muted size-5 shrink-0' />
       </Button>
       {open && (
         <div className='bg-background/75 absolute left-0 right-0 z-10 mt-2 rounded-lg border border-white/10 p-0 shadow-lg backdrop-blur-xl'>
