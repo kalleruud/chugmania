@@ -21,17 +21,6 @@ type FileDropProps = {
   onSelect: (file: FileDropSelection | undefined) => void
 }
 
-const readFile = (file: File): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => {
-      const result = reader.result
-      resolve(typeof result === 'string' ? result : '')
-    }
-    reader.onerror = () => reject(Error(reader.error?.message))
-    reader.readAsText(file)
-  })
-
 export default function FileDrop({
   accept = '',
   className = '',
@@ -63,7 +52,7 @@ export default function FileDrop({
       setLoading(true)
       setError(undefined)
       setSelectedFileName(file.name)
-      const content = await readFile(file)
+      const content = await file.text()
       if (pendingIdRef.current === requestId) {
         onSelect({ file, content })
       }
