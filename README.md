@@ -13,8 +13,10 @@ Full-stack Trackmania Turbo companion app for recording and exploring lap times.
 
 1. `npm install`
 2. Copy `.env.example` to `.env` and fill in overrides (see `Security & Config`).
-3. `npm start`
-   - Serves the API, WebSocket, and web app on `http://localhost:6996` via Vite Express.
+3. For local development run `npm run dev`.
+   - Boots Vite Express with hot reload on `http://localhost:6996`.
+4. When you need the production bundle run `npm run build` followed by `npm start`.
+   - `npm start` applies pending database migrations (`npm run db:migrate`) and serves the prebuilt backend/frontend from `dist/`.
 
 The SQLite database lives at `data/db.sqlite`. The app creates the parent directory automatically if it is missing.
 
@@ -27,7 +29,8 @@ The SQLite database lives at `data/db.sqlite`. The app creates the parent direct
 
 ## Useful Scripts
 
-- `npm run prod` – run the prebuilt backend (`dist/server/server.js`) with `NODE_ENV=production`.
+- `npm start` – run pending migrations and boot the prebuilt backend/frontend.
+- `npm run prod` – run the prebuilt backend (`dist/server/server.js`) without reapplying migrations.
 - `npm run build` – build both the frontend bundle and the backend runtime (outputs to `dist/` and `dist/server/`).
 - `npm run build:frontend` – build the Vite bundle only.
 - `npm run build:backend` – bundle the backend/server with tsup.
@@ -52,4 +55,5 @@ The SQLite database lives at `data/db.sqlite`. The app creates the parent direct
 
 - The provided `Dockerfile` builds a production image that seeds the SQLite database at `/app/data/db.sqlite`.
 - Build with `docker build -t chugmania .` and run with `docker run -p 6996:6996 chugmania`.
+- The container entrypoint uses `npm start`, so migrations run on boot before the server starts.
 - Mount `/app/data` as a volume if you need the database to persist across container restarts.

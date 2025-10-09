@@ -140,7 +140,8 @@ Always keep AGENTS.md and README.md updated!
 ## Build, Test, and Development Commands
 
 - Install dependencies once with `npm install` at the repository root.
-- `npm start`: Runs the combined Express + Vite dev server (API/WebSocket/frontend on `6996`).
+- `npm run dev`: Runs Vite Express in development mode with hot reload on `6996`.
+- `npm start`: Runs pending migrations and then boots the prebuilt backend/frontend bundle.
 - `npm run prod`: Runs the prebuilt backend (`dist/server/server.js`) with `NODE_ENV=production`.
 - `npm run build`: Builds both the frontend bundle and backend runtime (`dist/` + `dist/server/`).
 - `npm run build:frontend`: Builds only the Vite bundle.
