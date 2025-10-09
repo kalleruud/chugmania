@@ -8,5 +8,6 @@
   "trailingComma": "es5",
   "useTabs": false,
   "tailwindStylesheet": "./src/styles/App.css",
+  "bracketSameLine": true,
   "plugins": ["prettier-plugin-organize-imports", "prettier-plugin-tailwindcss"]
 }

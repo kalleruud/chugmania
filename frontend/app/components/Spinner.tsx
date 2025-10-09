@@ -14,8 +14,7 @@ export default function Spinner(
       viewBox='0 0 24 24'
       preserveAspectRatio='xMidYMid meet'
       stroke='currentColor'
-      {...rest}
-    >
+      {...rest}>
       <style>
         {
           '@keyframes spinner_zKoa{to{transform:rotate(360deg)}}@keyframes spinner_YpZS{0%{stroke-dasharray:0 150;stroke-dashoffset:0}47.5%{stroke-dasharray:42 150;stroke-dashoffset:-16}95%,to{stroke-dasharray:42 150;stroke-dashoffset:-59}}'
@@ -25,8 +24,7 @@ export default function Spinner(
         style={{
           transformOrigin: 'center',
           animation: 'spinner_zKoa 2s linear infinite',
-        }}
-      >
+        }}>
         <circle
           cx={12}
           cy={12}

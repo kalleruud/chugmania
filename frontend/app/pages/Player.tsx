@@ -66,8 +66,7 @@ export default function Player() {
           variant='tertiary'
           size='sm'
           onClick={() => navigate(-1)}
-          className='text-accent mx-auto'
-        >
+          className='text-accent mx-auto'>
           Go back
         </Button>
       </div>
@@ -155,8 +154,7 @@ export default function Player() {
             return (
               <section
                 key={trackGroup.track.id}
-                className='rounded-2xl border border-white/10 bg-white/5 p-4 shadow-[0_10px_40px_-30px_rgba(0,0,0,0.9)] sm:p-5'
-              >
+                className='rounded-2xl border border-white/10 bg-white/5 p-4 shadow-[0_10px_40px_-30px_rgba(0,0,0,0.9)] sm:p-5'>
                 <header className='flex flex-wrap items-baseline justify-between pb-4 sm:pb-4'>
                   <div className='flex flex-col gap-2'>
                     <h1>{formatTrackName(trackGroup.track.number)}</h1>

@@ -19,8 +19,7 @@ export default function SearchBar({
 
   return (
     <div
-      className={`focus-within:ring-accent/60 focus-within:border-accent flex w-full items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 outline-none transition focus-within:ring-2 ${className}`}
-    >
+      className={`focus-within:ring-accent/60 focus-within:border-accent flex w-full items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 outline-none transition focus-within:ring-2 ${className}`}>
       <Search className='text-label-muted size-5' aria-hidden='true' />
       <input
         ref={inputRef}
@@ -37,8 +36,7 @@ export default function SearchBar({
           size='sm'
           onClick={() => onChange('')}
           className='text-label-muted rounded-xl p-1 normal-case hover:text-white'
-          aria-label='Clear search'
-        >
+          aria-label='Clear search'>
           <X size={18} />
         </Button>
       )}

@@ -98,8 +98,7 @@ export default function SearchableDropdown({
         className={twMerge(
           'w-full justify-between rounded-lg px-4 py-2 text-left normal-case',
           !selected && 'text-label-muted'
-        )}
-      >
+        )}>
         {name ? (
           <input
             type='hidden'
@@ -149,8 +148,7 @@ export default function SearchableDropdown({
                         ? 'bg-accent text-black hover:text-black hover:brightness-110'
                         : 'hover:bg-white/10'
                     )}
-                    onClick={() => onSelect(item)}
-                  >
+                    onClick={() => onSelect(item)}>
                     <span className='block w-full truncate'>{item.label}</span>
                   </Button>
                 </li>

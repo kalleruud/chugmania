@@ -19,8 +19,7 @@ function PositionBadgePart({ position }: Readonly<{ position?: number }>) {
         'font-kh-interface flex size-8 items-center justify-center rounded uppercase',
         position === 1 ? 'bg-accent' : 'text-label-muted'
       )}
-      aria-label={`#${position}`}
-    >
+      aria-label={`#${position}`}>
       <span>{position}</span>
     </td>
   )
@@ -75,8 +74,7 @@ function GapPart({
     <td
       className={
         'font-f1-italic text-label-muted flex items-center text-sm uppercase tabular-nums'
-      }
-    >
+      }>
       {isPlaceholder ? (
         <Button
           type='button'
@@ -86,8 +84,7 @@ function GapPart({
           onClick={onToggle}
           className='text-label-muted/50 rounded-md px-2 py-1 normal-case hover:bg-white/10 hover:text-white hover:no-underline'
           aria-label='Toggle gap display'
-          title='Toggle gap display'
-        >
+          title='Toggle gap display'>
           {label}
         </Button>
       ) : (
@@ -166,8 +163,7 @@ export default function TimeEntryRow({
         `${name} - ${lapTime.duration ? formatTime(lapTime.duration) : 'DNF'} - ${formatLapTimestamp(lapTime.createdAt)}`
       }
       role='row'
-      {...rest}
-    >
+      {...rest}>
       <PositionBadgePart position={position} />
       <NameCellPart name={name} hasComment={!!lapTime.comment} />
 

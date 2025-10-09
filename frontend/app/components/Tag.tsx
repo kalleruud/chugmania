@@ -54,8 +54,7 @@ export default function Tag({
       aria-pressed={!!selected}
       disabled={typeof onClick !== 'function'}
       onClick={handleClick}
-      {...rest}
-    >
+      {...rest}>
       {children}
     </button>
   )

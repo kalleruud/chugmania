@@ -75,8 +75,7 @@ export default function Login() {
     <div className='font-f1 flex h-dvh w-full items-center justify-center sm:items-baseline'>
       <form
         onSubmit={handleSubmit}
-        className='grid w-full max-w-md items-start gap-4 p-6'
-      >
+        className='grid w-full max-w-md items-start gap-4 p-6'>
         <div className='text-center'>
           <h1 className='text-accent text-2xl font-extrabold uppercase tracking-wider'>
             {isRegistering ? 'Sign Up' : 'Sign In'}
@@ -166,8 +165,7 @@ export default function Login() {
           variant='tertiary'
           size='sm'
           onClick={() => setIsRegistering(!isRegistering)}
-          className='text-xs normal-case'
-        >
+          className='text-xs normal-case'>
           {isRegistering
             ? 'Already racing? Sign in'
             : 'New driver? Create an account'}

@@ -1,12 +1,25 @@
-FROM node:alpine
+FROM node:alpine AS builder
 WORKDIR /app
 
-EXPOSE 6996
+COPY package*.json .
+RUN npm install
 
 COPY . .
-
-RUN npm ci
 RUN npm run build
+
+FROM node:alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+
+COPY package*.json .
+RUN npm install --omit=dev
+
+COPY --from=builder /app/dist ./dist
+COPY drizzle.config.ts .
+COPY drizzle ./drizzle
 RUN mkdir -p data && chown -R node:node data
+
+VOLUME ["/app/data"]
+EXPOSE 6996
 
 ENTRYPOINT ["npm", "start"]

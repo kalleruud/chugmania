@@ -67,8 +67,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           stateStyles[state]
         )}
         disabled={isDisabled}
-        {...rest}
-      >
+        {...rest}>
         {children}
       </button>
     )

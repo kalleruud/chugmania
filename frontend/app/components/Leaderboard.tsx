@@ -29,8 +29,7 @@ export default function LeaderboardView({
         className={twMerge(
           'text-label-muted font-f1-italic flex size-full items-center justify-center p-4 text-sm',
           className
-        )}
-      >
+        )}>
         No entries available
       </div>
     )
