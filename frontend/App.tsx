@@ -16,8 +16,7 @@ import { ConnectionProvider } from './contexts/ConnectionContext'
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter
-      future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
-    >
+      future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <ConnectionProvider>
         <AuthProvider>
           <Routes>

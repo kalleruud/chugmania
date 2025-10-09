@@ -25,8 +25,7 @@ export default function PlayerRow({
       className={`flex items-center gap-4 rounded-xl border border-transparent px-3 py-2 text-sm uppercase transition-colors hover:border-white/20 hover:bg-white/5 sm:px-4 ${
         isSelf ? 'border-accent/40 bg-accent/10' : ''
       }`}
-      aria-label={`View profile for ${name}`}
-    >
+      aria-label={`View profile for ${name}`}>
       <span className='text-label-muted font-kh-interface w-12 sm:text-sm'>
         {rank}
       </span>

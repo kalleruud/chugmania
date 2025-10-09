@@ -214,8 +214,7 @@ export default function LapTimeInput({
   return (
     <form
       className={twMerge('flex flex-col gap-6', className)}
-      onSubmit={handleSubmit}
-    >
+      onSubmit={handleSubmit}>
       <div className='flex items-center justify-center gap-1'>
         {digits.map((d, i) => (
           <span key={DIGIT_KEYS[i]} className='flex items-center gap-1'>
@@ -295,8 +294,7 @@ export default function LapTimeInput({
         variant='primary'
         size='md'
         disabled={!isInputValid()}
-        className='w-full'
-      >
+        className='w-full'>
         Submit
       </Button>
     </form>

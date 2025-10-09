@@ -18,8 +18,7 @@ export default function LoadingView({
         'flex h-screen touch-none flex-col items-center justify-center gap-2',
         className
       )}
-      {...rest}
-    >
+      {...rest}>
       <Spinner size={48} className='text-accent' />
       {label && <p className='font-f1 text-label-muted'>{label}</p>}
     </div>

@@ -80,8 +80,7 @@ export default function Layout() {
         <div className='border-stroke flex w-full max-w-5xl flex-wrap items-center justify-between gap-4 rounded-3xl border bg-black/30 p-4 backdrop-blur-xl'>
           <NavLink
             to='/'
-            className='flex items-baseline text-white no-underline'
-          >
+            className='flex items-baseline text-white no-underline'>
             <span className='font-f1-black text-accent text-4xl uppercase'>
               {title}
             </span>
@@ -99,8 +98,7 @@ export default function Layout() {
                       isActive
                         ? 'relative rounded-md px-3 py-1.5 text-white no-underline transition'
                         : 'text-label-muted relative rounded-md px-3 py-1.5 no-underline transition hover:text-white'
-                    }
-                  >
+                    }>
                     <h5>{button.label}</h5>
                   </NavLink>
                 ) : (
@@ -117,8 +115,7 @@ export default function Layout() {
               variant='secondary'
               size='sm'
               onClick={() => setShowTimeInput(true)}
-              className='rounded-lg px-3 py-1.5 text-xs shadow-sm'
-            >
+              className='rounded-lg px-3 py-1.5 text-xs shadow-sm'>
               <Plus size={14} />
               Register laptime
             </Button>
@@ -135,8 +132,7 @@ export default function Layout() {
               variant='tertiary'
               size='md'
               className='text-label-muted mt-3 w-full normal-case'
-              onClick={() => setShowTimeInput(false)}
-            >
+              onClick={() => setShowTimeInput(false)}>
               Cancel
             </Button>
           </div>
@@ -163,8 +159,7 @@ export default function Layout() {
                       `flex w-full items-center justify-center transition hover:text-white ${
                         isActive ? 'text-white' : 'text-label-muted'
                       }`
-                    }
-                  >
+                    }>
                     {Icon && <Icon className='size-6' />}
                     <span className='sr-only'>{item.label}</span>
                   </NavLink>
@@ -175,8 +170,7 @@ export default function Layout() {
                   key={item.label}
                   type='button'
                   onClick={item.action}
-                  className='w-full items-center justify-center transition'
-                >
+                  className='w-full items-center justify-center transition'>
                   {Icon && <Icon className='size-6' />}
                   <span className='sr-only'>{item.label}</span>
                 </Button>

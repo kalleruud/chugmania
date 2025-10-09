@@ -103,8 +103,7 @@ export default function Admin() {
           return (
             <section
               key={table}
-              className='border-stroke bg-background-secondary flex flex-col gap-4 rounded-3xl border p-6 shadow-lg'
-            >
+              className='border-stroke bg-background-secondary flex flex-col gap-4 rounded-3xl border p-6 shadow-lg'>
               <div className='flex flex-col gap-1'>
                 <h2 className='font-f1 text-lg font-semibold uppercase tracking-wider text-white'>
                   {title}
@@ -125,8 +124,7 @@ export default function Admin() {
                 size='sm'
                 onClick={() => handleImport(table)}
                 disabled={!file}
-                className='h-8 w-full sm:w-auto'
-              >
+                className='h-8 w-full sm:w-auto'>
                 {isImporting ? (
                   <Spinner className='text-label p-3' />
                 ) : (

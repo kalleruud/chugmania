@@ -25,8 +25,7 @@ export default function TrackCard({
         isCustom ? 'bg-amber-950/30 hover:bg-amber-950/40' : '',
         className
       )}
-      {...rest}
-    >
+      {...rest}>
       <div className='flex items-center justify-between gap-2'>
         <h1 className={isCustom ? 'text-amber-600' : undefined}>
           {formatTrackName(track.number)}

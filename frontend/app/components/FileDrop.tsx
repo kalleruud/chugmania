@@ -108,8 +108,7 @@ export default function FileDrop({
         onDragEnter={handleDragOver}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-      >
+        onDrop={handleDrop}>
         <Upload className='text-label-muted size-8' />
         <div className='flex flex-col gap-1 text-sm'>
           <span className='text-label-secondary'>{label}</span>

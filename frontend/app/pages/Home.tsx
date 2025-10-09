@@ -35,8 +35,7 @@ export default function Home() {
                 variant='secondary'
                 size='md'
                 onClick={logout}
-                className='w-full'
-              >
+                className='w-full'>
                 <LogOut size={18} />
                 Sign out
               </Button>
@@ -46,8 +45,7 @@ export default function Home() {
                 variant='primary'
                 size='md'
                 onClick={goToTracks}
-                className='w-full'
-              >
+                className='w-full'>
                 <Map size={18} />
                 View tracks
               </Button>
@@ -59,8 +57,7 @@ export default function Home() {
                 variant='primary'
                 size='md'
                 onClick={goToLogin}
-                className='w-full'
-              >
+                className='w-full'>
                 <LogIn size={18} />
                 Sign in
               </Button>
@@ -70,8 +67,7 @@ export default function Home() {
                 variant='secondary'
                 size='md'
                 onClick={goToTracks}
-                className='w-full'
-              >
+                className='w-full'>
                 <Map size={18} />
                 Browse tracks
               </Button>

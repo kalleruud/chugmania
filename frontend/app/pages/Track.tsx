@@ -51,8 +51,7 @@ export default function Track() {
     <div className='grid w-full items-start gap-4 sm:flex sm:justify-center sm:pt-4'>
       <header
         className='bg-background/50 sticky top-0 flex min-w-48 items-center justify-between gap-8 border-b border-white/10 p-4 backdrop-blur-2xl sm:grid sm:border-transparent sm:bg-transparent sm:backdrop-blur-none'
-        style={{ top: 'env(safe-area-inset-top, 0px)' }}
-      >
+        style={{ top: 'env(safe-area-inset-top, 0px)' }}>
         <h1 className={track.level === 'custom' ? 'text-amber-600' : undefined}>
           {formatTrackName(track.number)}
         </h1>
