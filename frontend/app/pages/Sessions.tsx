@@ -31,7 +31,7 @@ const dateFormatter = new Intl.DateTimeFormat(undefined, {
 function getAttendeeLabel(attendee: SessionWithSignups['signups'][number]) {
   return (
     attendee.user.shortName ??
-    getUserFullName(attendee.user).replaceAll(/\s+/g, ' ')
+    getUserFullName(attendee.user).replace(/\s+/g, ' ')
   )
 }
 
@@ -105,49 +105,7 @@ export default function Sessions() {
       return
     }
 
-    const webcalUrl = httpUrl.replaceAll(/^https?:\/\//, 'webcal://')
-    let handled = false
-
-    const markHandled = () => {
-      handled = true
-      window.removeEventListener('blur', markHandled)
-      window.removeEventListener('pagehide', markHandled)
-    }
-
-    window.addEventListener('blur', markHandled, { once: true })
-    window.addEventListener('pagehide', markHandled, { once: true })
-
-    const anchor = document.createElement('a')
-    anchor.href = webcalUrl
-    anchor.rel = 'noreferrer noopener'
-    anchor.style.position = 'absolute'
-    anchor.style.left = '-9999px'
-    anchor.style.height = '0'
-    anchor.style.width = '0'
-    document.body.appendChild(anchor)
-    anchor.click()
-    document.body.removeChild(anchor)
-
-    window.setTimeout(() => {
-      if (handled) return
-
-      const copyMessage = `Copy this URL and add it to your calendar manually:\n${httpUrl}`
-
-      if (navigator.clipboard?.writeText) {
-        navigator.clipboard
-          .writeText(httpUrl)
-          .then(() => {
-            globalThis.alert(
-              'Calendar subscription link copied to clipboard.\nPaste it into your calendar app.'
-            )
-          })
-          .catch(() => {
-            globalThis.prompt(copyMessage, httpUrl)
-          })
-      } else {
-        globalThis.prompt(copyMessage, httpUrl)
-      }
-    }, 1500)
+    window.location.href = httpUrl.replace(/^https?:\/\//, 'webcal://')
   }
 
   function handleSubscribeToCalendar() {
