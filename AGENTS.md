@@ -4,6 +4,7 @@
 
 - Stick to existing conventions, always look for existing approaches before implementing something new.
 - ALWAYS implement the simplest solution, don't introduce unnecessary complexity unless told to.
+- When changing the database schema, add matching Drizzle migrations so existing installs stay in sync by running `npm db:gen`
 
 ## Project Description & Goals
 
