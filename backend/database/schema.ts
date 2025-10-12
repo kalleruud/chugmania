@@ -68,9 +68,7 @@ export const sessionSignups = sqliteTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
   },
-  table => ({
-    pk: primaryKey({ columns: [table.sessionId, table.userId] }),
-  })
+  table => [primaryKey({ columns: [table.sessionId, table.userId] })]
 )
 
 export const timeEntries = sqliteTable('time_entries', {
