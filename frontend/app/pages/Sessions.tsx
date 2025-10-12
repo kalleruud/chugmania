@@ -367,6 +367,7 @@ export default function Sessions() {
       )}
 
       <section className='space-y-4'>
+        <h2 className='text-2xl font-semibold'>Upcoming sessions</h2>
         {upcomingSessions.length === 0 ? (
           <div className='text-label-muted rounded-2xl border border-dashed border-white/10 bg-white/5 p-6 text-center'>
             No upcoming sessions yet. Check back later!
