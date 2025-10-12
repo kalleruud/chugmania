@@ -101,7 +101,7 @@ export default class SessionManager {
 
     console.debug(new Date().toISOString(), socket.id, 'Created session', name)
 
-    void SessionManager.broadcastSessions(socket)
+    SessionManager.broadcastSessions(socket)
 
     return { success: true }
   }
@@ -147,7 +147,7 @@ export default class SessionManager {
       session.id
     )
 
-    void SessionManager.broadcastSessions(socket)
+    SessionManager.broadcastSessions(socket)
 
     return { success: true }
   }
@@ -197,7 +197,7 @@ export default class SessionManager {
       session.id
     )
 
-    void SessionManager.broadcastSessions(socket)
+    SessionManager.broadcastSessions(socket)
 
     return { success: true }
   }
