@@ -15,5 +15,6 @@ export const WS_GET_SESSIONS = 'get_sessions'
 export const WS_CREATE_SESSION = 'create_session'
 export const WS_JOIN_SESSION = 'join_session'
 export const WS_LEAVE_SESSION = 'leave_session'
+export const WS_SESSIONS_UPDATED = 'sessions_updated'
 
 export const AUTH_KEY = 'auth'

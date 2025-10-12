@@ -17,6 +17,7 @@ import {
   WS_GET_SESSIONS,
   WS_JOIN_SESSION,
   WS_LEAVE_SESSION,
+  WS_SESSIONS_UPDATED,
 } from '../../../common/utils/constants'
 import { useAuth } from '../../contexts/AuthContext'
 import { useConnection } from '../../contexts/ConnectionContext'
@@ -103,6 +104,18 @@ export default function Sessions() {
 
   useEffect(() => {
     refreshSessions(true)
+  }, [socket])
+
+  useEffect(() => {
+    const handleSessionsUpdated = (response: GetSessionsResponse) => {
+      if (!response?.success) return
+      setSessions(response.sessions)
+    }
+
+    socket.on(WS_SESSIONS_UPDATED, handleSessionsUpdated)
+    return () => {
+      socket.off(WS_SESSIONS_UPDATED, handleSessionsUpdated)
+    }
   }, [socket])
 
   const upcomingSessions = useMemo(

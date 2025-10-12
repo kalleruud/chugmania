@@ -9,6 +9,7 @@ import type {
   GetSessionsResponse,
 } from '../../../common/models/responses'
 import type { SessionWithSignups } from '../../../common/models/session'
+import { WS_SESSIONS_UPDATED } from '../../../common/utils/constants'
 import db from '../../database/database'
 import { sessionSignups, sessions, users } from '../../database/schema'
 import AuthManager from './auth.manager'
@@ -100,6 +101,8 @@ export default class SessionManager {
 
     console.debug(new Date().toISOString(), socket.id, 'Created session', name)
 
+    void SessionManager.broadcastSessions(socket)
+
     return { success: true }
   }
 
@@ -143,6 +146,8 @@ export default class SessionManager {
       'Signed up for session',
       session.id
     )
+
+    void SessionManager.broadcastSessions(socket)
 
     return { success: true }
   }
@@ -192,6 +197,36 @@ export default class SessionManager {
       session.id
     )
 
+    void SessionManager.broadcastSessions(socket)
+
     return { success: true }
+  }
+
+  private static async broadcastSessions(socket: Socket) {
+    try {
+      const payload: GetSessionsResponse = {
+        success: true,
+        sessions: await SessionManager.getSessions(),
+      }
+
+      const namespace = socket.nsp
+      const clients = Array.from(namespace.sockets.values())
+
+      await Promise.all(
+        clients.map(async client => {
+          if (!client.handshake.auth?.token) return
+          const { data } = await AuthManager.checkAuth(client)
+          if (!data) return
+          client.emit(WS_SESSIONS_UPDATED, payload)
+        })
+      )
+    } catch (error) {
+      console.error(
+        new Date().toISOString(),
+        socket.id,
+        'Failed to broadcast sessions',
+        error
+      )
+    }
   }
 }
