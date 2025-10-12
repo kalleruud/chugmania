@@ -83,8 +83,7 @@ export default function Sessions() {
 
   const canManageSessions = user?.role === 'admin' || user?.role === 'moderator'
 
-  const refreshSessions = (showLoader = false) => {
-    if (showLoader) setLoading(true)
+  useEffect(() => {
     socket.emit(
       WS_GET_SESSIONS,
       undefined,
@@ -100,11 +99,7 @@ export default function Sessions() {
         setLoading(false)
       }
     )
-  }
-
-  useEffect(() => {
-    refreshSessions(true)
-  }, [socket])
+  }, [])
 
   useEffect(() => {
     const handleSessionsUpdated = (response: GetSessionsResponse) => {
@@ -150,7 +145,6 @@ export default function Sessions() {
         }
 
         setForm({ name: '', date: '', location: '', description: '' })
-        refreshSessions()
       }
     )
   }
@@ -165,8 +159,6 @@ export default function Sessions() {
         console.error(response.message)
         return globalThis.alert(response.message)
       }
-
-      refreshSessions()
     })
   }
 
@@ -182,8 +174,6 @@ export default function Sessions() {
           console.error(response.message)
           return globalThis.alert(response.message)
         }
-
-        refreshSessions()
       }
     )
   }
@@ -291,7 +281,7 @@ export default function Sessions() {
   if (loading) return <LoadingView />
 
   return (
-    <div className='p-safe-or-4 flex-1 space-y-10'>
+    <div className='px-safe-or-4 pt-safe-or-8 flex-1 space-y-10 pb-24'>
       <header className='flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
         <div className='space-y-2 sm:max-w-2xl'>
           <h1 className='text-3xl font-semibold'>Sessions</h1>
@@ -377,15 +367,6 @@ export default function Sessions() {
       )}
 
       <section className='space-y-4'>
-        <div className='flex items-center justify-between'>
-          <h2 className='text-2xl font-semibold'>Upcoming sessions</h2>
-          <Button
-            type='button'
-            variant='tertiary'
-            onClick={() => refreshSessions()}>
-            Refresh
-          </Button>
-        </div>
         {upcomingSessions.length === 0 ? (
           <div className='text-label-muted rounded-2xl border border-dashed border-white/10 bg-white/5 p-6 text-center'>
             No upcoming sessions yet. Check back later!
