@@ -28,11 +28,27 @@ const dateFormatter = new Intl.DateTimeFormat(undefined, {
   timeStyle: 'short',
 })
 
+function openCalendarLink(path: string, mode: 'subscribe' | 'download') {
+  const httpUrl = `${globalThis.location.origin}${path}`
+
+  if (mode === 'download') {
+    globalThis.location.href = httpUrl
+    return
+  }
+
+  globalThis.location.href = httpUrl.replace(/^https?:\/\//, 'webcal://')
+}
+
+function handleSubscribeToCalendar() {
+  openCalendarLink('/api/sessions/calendar.ics', 'subscribe')
+}
+
+function handleAddToCalendar(session: SessionWithSignups) {
+  openCalendarLink(`/api/sessions/${session.id}/calendar.ics`, 'download')
+}
+
 function getAttendeeLabel(attendee: SessionWithSignups['signups'][number]) {
-  return (
-    attendee.user.shortName ??
-    getUserFullName(attendee.user).replace(/\s+/g, ' ')
-  )
+  return attendee.user.shortName ?? getUserFullName(attendee.user)
 }
 
 function hasSessionPassed(session: SessionWithSignups) {
@@ -96,25 +112,6 @@ export default function Sessions() {
     () => sessions.filter(session => hasSessionPassed(session)),
     [sessions]
   )
-
-  function openCalendarLink(path: string, mode: 'subscribe' | 'download') {
-    const httpUrl = `${window.location.origin}${path}`
-
-    if (mode === 'download') {
-      window.location.href = httpUrl
-      return
-    }
-
-    window.location.href = httpUrl.replace(/^https?:\/\//, 'webcal://')
-  }
-
-  function handleSubscribeToCalendar() {
-    openCalendarLink('/api/sessions/calendar.ics', 'subscribe')
-  }
-
-  function handleAddToCalendar(session: SessionWithSignups) {
-    openCalendarLink(`/api/sessions/${session.id}/calendar.ics`, 'download')
-  }
 
   function handleCreateSession(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -193,7 +190,7 @@ export default function Sessions() {
     return (
       <div
         key={session.id}
-        className='border-stroke flex flex-col gap-4 rounded-2xl border bg-white/5 p-6 backdrop-blur-sm transition hover:border-white/15 hover:bg-white/10'>
+        className='border-stroke flex flex-col gap-4 rounded-2xl border bg-white/5 p-6 backdrop-blur-sm'>
         <div className='flex flex-col justify-between gap-4 sm:flex-row sm:items-start'>
           <div className='flex flex-col gap-1'>
             <h2 className='text-xl font-semibold'>{session.name}</h2>
@@ -257,11 +254,8 @@ export default function Sessions() {
               Add to calendar
             </Button>
           )}
-          {!isLoggedIn ? (
-            <span className='text-label-muted text-sm'>
-              Sign in to manage your attendance.
-            </span>
-          ) : isSignedUp ? (
+
+          {isLoggedIn && isSignedUp && (
             <Button
               type='button'
               variant='secondary'
@@ -269,7 +263,9 @@ export default function Sessions() {
               onClick={() => handleLeave(session.id)}>
               Cancel attendance
             </Button>
-          ) : (
+          )}
+
+          {isLoggedIn && !isSignedUp && (
             <Button
               type='button'
               onClick={() => handleJoin(session.id)}
