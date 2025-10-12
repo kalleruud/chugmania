@@ -99,9 +99,9 @@ function createSessionsCalendar(
   host: string | undefined,
   calendarName: string
 ) {
-  const baseUrl = !host
-    ? (process.env.ORIGIN ?? 'http://localhost:' + PORT)
-    : `${protocol}://${host}`
+  const baseUrl = host
+    ? `${protocol}://${host}`
+    : (process.env.ORIGIN ?? 'http://localhost:' + PORT)
 
   const events = sessionList.map(session =>
     createSessionEvent(session, baseUrl, calendarName)
