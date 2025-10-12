@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { asc, eq, isNull } from 'drizzle-orm'
 import express from 'express'
 import { Server } from 'socket.io'
 import ViteExpress from 'vite-express'
@@ -13,31 +13,67 @@ import ConnectionManager from './managers/connection.manager'
 const PORT = process.env.PORT ? Number.parseInt(process.env.PORT) : 6996
 const app = express()
 
-app.get('/api/sessions/:id/calendar.ics', async (req, res) => {
-  const sessionId = req.params.id
-  if (!sessionId) {
-    res.status(400).send('Session id is required')
-    return
-  }
+app.get('/api/sessions/calendar.ics', async (req, res) => {
+  try {
+    const sessionRows = await db
+      .select()
+      .from(sessions)
+      .where(isNull(sessions.deletedAt))
+      .orderBy(asc(sessions.date), asc(sessions.createdAt))
 
-  const session = await db.query.sessions.findFirst({
-    where: eq(sessions.id, sessionId),
-  })
-
-  if (!session || session.deletedAt) {
-    res.status(404).send('Session not found')
-    return
-  }
-
-  const calendar = createSessionCalendar(session, req.protocol, req.get('host'))
-  res
-    .type('text/calendar; charset=utf-8')
-    .setHeader(
-      'Content-Disposition',
-      `inline; filename="session-${session.id}.ics"`
+    const calendar = createSessionsCalendar(
+      sessionRows,
+      req.protocol,
+      req.get('host'),
+      'Chugmania Sessions'
     )
-    .setHeader('Cache-Control', 'no-store')
-    .send(calendar)
+
+    res
+      .type('text/calendar; charset=utf-8')
+      .setHeader('Content-Disposition', 'inline; filename="sessions.ics"')
+      .setHeader('Cache-Control', 'no-store')
+      .send(calendar)
+  } catch (error) {
+    logError('Failed to create sessions calendar', error)
+    res.status(500).send('Failed to load sessions calendar')
+  }
+})
+
+app.get('/api/sessions/:id/calendar.ics', async (req, res) => {
+  try {
+    const sessionId = req.params.id
+    if (!sessionId) {
+      res.status(400).send('Session id is required')
+      return
+    }
+
+    const session = await db.query.sessions.findFirst({
+      where: eq(sessions.id, sessionId),
+    })
+
+    if (!session || session.deletedAt) {
+      res.status(404).send('Session not found')
+      return
+    }
+
+    const calendar = createSessionsCalendar(
+      [session],
+      req.protocol,
+      req.get('host'),
+      session.name
+    )
+    res
+      .type('text/calendar; charset=utf-8')
+      .setHeader(
+        'Content-Disposition',
+        `inline; filename="session-${session.id}.ics"`
+      )
+      .setHeader('Cache-Control', 'no-store')
+      .send(calendar)
+  } catch (error) {
+    logError('Failed to create session calendar', error)
+    res.status(500).send('Failed to load session calendar')
+  }
 })
 
 const server = ViteExpress.listen(app, PORT)
@@ -69,33 +105,51 @@ function formatICSDate(date: Date) {
     .replace(/\.\d{3}Z$/, 'Z')
 }
 
-function createSessionCalendar(
-  session: typeof sessions.$inferSelect,
+function createSessionsCalendar(
+  sessionList: (typeof sessions.$inferSelect)[],
   protocol: string,
-  host: string | undefined
+  host: string | undefined,
+  calendarName: string
 ) {
-  const start = new Date(session.date)
-  const end = new Date(start.getTime() + 2 * 60 * 60 * 1000)
-  const updatedAt = session.updatedAt ?? session.createdAt
-  const sequence =
-    session.updatedAt &&
-    session.updatedAt.getTime() !== session.createdAt.getTime()
-      ? Math.floor(session.updatedAt.getTime() / 1000)
-      : 0
   const baseUrl =
     host !== undefined
       ? `${protocol}://${host}`
       : (process.env.ORIGIN ?? 'http://localhost:' + PORT)
-  const url = `${baseUrl}/sessions`
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
     'PRODID:-//Chugmania//Sessions//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
+    `X-WR-CALNAME:${escapeICSText(calendarName)}`,
+    ...sessionList.flatMap(session => createSessionEvent(session, baseUrl)),
+    'END:VCALENDAR',
+    '',
+  ]
+
+  return lines.join('\r\n')
+}
+
+function createSessionEvent(
+  session: typeof sessions.$inferSelect,
+  baseUrl: string
+) {
+  const start = new Date(session.date)
+  const end = new Date(start)
+  end.setHours(23, 59, 0, 0)
+  const updatedAt = session.updatedAt ?? session.createdAt
+  const sequence =
+    session.updatedAt &&
+    session.updatedAt.getTime() !== session.createdAt.getTime()
+      ? Math.floor(session.updatedAt.getTime() / 1000)
+      : 0
+  const url = `${baseUrl}/sessions`
+
+  return [
     'BEGIN:VEVENT',
     `UID:${session.id}@chugmania`,
     `DTSTAMP:${formatICSDate(updatedAt)}`,
+    `LAST-MODIFIED:${formatICSDate(updatedAt)}`,
     `DTSTART:${formatICSDate(start)}`,
     `DTEND:${formatICSDate(end)}`,
     `SEQUENCE:${sequence}`,
@@ -104,13 +158,20 @@ function createSessionCalendar(
       ? `LOCATION:${escapeICSText(session.location)}`
       : undefined,
     `DESCRIPTION:${escapeICSText(
-      'Automatically generated by Chugmania. Join the session in the app for more details.'
+      session.location
+        ? `${session.name} @ ${session.location}. Automatically generated by Chugmania.`
+        : `${session.name}. Automatically generated by Chugmania.`
     )}`,
     `URL:${escapeICSText(url)}`,
     'END:VEVENT',
-    'END:VCALENDAR',
-    '',
   ].filter(Boolean)
+}
 
-  return lines.join('\r\n')
+function logError(context: string, error: unknown) {
+  const timestamp = new Date().toISOString()
+  if (error instanceof Error) {
+    console.error(timestamp, context, error.message, error.stack)
+  } else {
+    console.error(timestamp, context, error)
+  }
 }

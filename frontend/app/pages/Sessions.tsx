@@ -82,11 +82,65 @@ export default function Sessions() {
     [sessions]
   )
 
+  function openCalendarLink(path: string, mode: 'subscribe' | 'download') {
+    const httpUrl = `${window.location.origin}${path}`
+
+    if (mode === 'download') {
+      window.location.href = httpUrl
+      return
+    }
+
+    const webcalUrl = httpUrl.replace(/^https?:\/\//, 'webcal://')
+    let handled = false
+
+    const markHandled = () => {
+      handled = true
+      window.removeEventListener('blur', markHandled)
+      window.removeEventListener('pagehide', markHandled)
+    }
+
+    window.addEventListener('blur', markHandled, { once: true })
+    window.addEventListener('pagehide', markHandled, { once: true })
+
+    const anchor = document.createElement('a')
+    anchor.href = webcalUrl
+    anchor.rel = 'noreferrer noopener'
+    anchor.style.position = 'absolute'
+    anchor.style.left = '-9999px'
+    anchor.style.height = '0'
+    anchor.style.width = '0'
+    document.body.appendChild(anchor)
+    anchor.click()
+    document.body.removeChild(anchor)
+
+    window.setTimeout(() => {
+      if (handled) return
+
+      const copyMessage = `Copy this URL and add it to your calendar manually:\n${httpUrl}`
+
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard
+          .writeText(httpUrl)
+          .then(() => {
+            globalThis.alert(
+              'Calendar subscription link copied to clipboard.\nPaste it into your calendar app.'
+            )
+          })
+          .catch(() => {
+            globalThis.prompt(copyMessage, httpUrl)
+          })
+      } else {
+        globalThis.prompt(copyMessage, httpUrl)
+      }
+    }, 1500)
+  }
+
+  function handleSubscribeToCalendar() {
+    openCalendarLink('/api/sessions/calendar.ics', 'subscribe')
+  }
+
   function handleAddToCalendar(session: SessionWithSignups) {
-    const baseUrl = `${window.location.origin}/api/sessions/${session.id}/calendar.ics`
-    const webcalUrl = baseUrl.replace(/^https?:\/\//, 'webcal://')
-    const opened = window.open(webcalUrl, '_blank')
-    if (!opened) window.location.href = baseUrl
+    openCalendarLink(`/api/sessions/${session.id}/calendar.ics`, 'download')
   }
 
   function handleCreateSession(e: FormEvent<HTMLFormElement>) {
@@ -253,13 +307,24 @@ export default function Sessions() {
 
   return (
     <div className='p-safe-or-4 flex-1 space-y-10'>
-      <header className='space-y-2'>
-        <h1 className='text-3xl font-semibold'>Sessions</h1>
-        <p className='text-label-muted max-w-2xl text-sm'>
-          Join upcoming Trackmania gatherings and keep track of who is
-          attending. Moderators and admins can create new sessions, and everyone
-          can register their participation before the event kicks off.
-        </p>
+      <header className='flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
+        <div className='space-y-2 sm:max-w-2xl'>
+          <h1 className='text-3xl font-semibold'>Sessions</h1>
+          <p className='text-label-muted text-sm'>
+            Join upcoming Trackmania gatherings and keep track of who is
+            attending. Moderators and admins can create new sessions, and
+            everyone can register their participation before the event kicks
+            off.
+          </p>
+        </div>
+        <Button
+          type='button'
+          variant='secondary'
+          className='w-full sm:w-auto'
+          onClick={handleSubscribeToCalendar}>
+          <CalendarPlus size={16} />
+          Subscribe via calendar
+        </Button>
       </header>
 
       {canManageSessions && (
