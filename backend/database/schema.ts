@@ -52,6 +52,7 @@ export const sessions = sqliteTable('sessions', {
   ...id,
   ...metadata,
   name: text().notNull(),
+  description: text(),
   date: integer('date', { mode: 'timestamp_ms' }).notNull(),
   location: text(),
 })
