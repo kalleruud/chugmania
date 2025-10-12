@@ -1,6 +1,7 @@
 import type { Leaderboard } from './leaderboard'
 import type { PlayerDetail } from './playerDetail'
 import type { PlayerSummary } from './playerSummary'
+import type { SessionWithSignups } from './session'
 import type { Track } from './track'
 import type { UserInfo } from './user'
 
@@ -12,6 +13,7 @@ export type BackendResponse =
   | GetUsersResponse
   | GetPlayerSummariesResponse
   | GetPlayerDetailsResponse
+  | GetSessionsResponse
   | LoginResponse
   | SuccessResponse
 
@@ -59,4 +61,9 @@ export type GetPlayerSummariesResponse = {
 export type GetPlayerDetailsResponse = {
   success: true
   player: PlayerDetail
+}
+
+export type GetSessionsResponse = {
+  success: true
+  sessions: SessionWithSignups[]
 }

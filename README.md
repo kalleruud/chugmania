@@ -27,6 +27,13 @@ The SQLite database lives at `data/db.sqlite`. The app creates the parent direct
   - Users: `email,firstName,lastName,id,shortName,password`
 - Successful imports report how many rows were inserted, updated, or skipped so you can verify the outcome.
 
+## Sessions
+
+- Visit `/sessions` to browse upcoming and past meetups.
+- Admins and moderators can create new sessions with a name, date, and optional location.
+- Signed-in users can sign up or cancel their attendance before a session happens.
+- Lap times can optionally be linked to a session when they are registered.
+
 ## Useful Scripts
 
 - `npm start` – run pending migrations and boot the prebuilt backend/frontend.

@@ -1,5 +1,11 @@
 import { randomUUID } from 'crypto'
-import { blob, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import {
+  blob,
+  integer,
+  primaryKey,
+  sqliteTable,
+  text,
+} from 'drizzle-orm/sqlite-core'
 
 const common = {
   id: text().primaryKey().$defaultFn(randomUUID),
@@ -37,6 +43,31 @@ export const tracks = sqliteTable('tracks', {
   type: text().$type<TrackType>().notNull(),
 })
 
+export const sessions = sqliteTable('sessions', {
+  ...common,
+  name: text().notNull(),
+  date: integer('date', { mode: 'timestamp_ms' }).notNull(),
+  location: text(),
+})
+
+export const sessionSignups = sqliteTable(
+  'session_signups',
+  {
+    sessionId: text('session_id')
+      .notNull()
+      .references(() => sessions.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  table => ({
+    pk: primaryKey({ columns: [table.sessionId, table.userId] }),
+  })
+)
+
 export const timeEntries = sqliteTable('time_entries', {
   ...common,
   user: text()
@@ -45,6 +76,7 @@ export const timeEntries = sqliteTable('time_entries', {
   track: text()
     .notNull()
     .references(() => tracks.id),
+  sessionId: text('session_id').references(() => sessions.id),
   duration: integer('duration_ms'),
   amount: integer('amount_l').notNull().default(0.5),
   comment: text(),

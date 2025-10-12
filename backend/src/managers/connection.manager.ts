@@ -4,14 +4,18 @@ import type {
   ErrorResponse,
 } from '../../../common/models/responses'
 import {
+  WS_CREATE_SESSION,
   WS_GET_LEADERBOARD,
   WS_GET_LEADERBOARD_SUMMARIES,
   WS_GET_PLAYER_DETAILS,
   WS_GET_PLAYER_SUMMARIES,
+  WS_GET_SESSIONS,
   WS_GET_TRACKS,
   WS_GET_USER_DATA,
   WS_GET_USERS,
   WS_IMPORT_CSV,
+  WS_JOIN_SESSION,
+  WS_LEAVE_SESSION,
   WS_LOGIN_NAME,
   WS_POST_LAPTIME,
   WS_REGISTER_NAME,
@@ -20,6 +24,7 @@ import AdminManager from './admin.manager'
 import AuthManager from './auth.manager'
 import LeaderboardManager from './leaderboard.manager'
 import PlayerManager from './player.manager'
+import SessionManager from './session.manager'
 import TimeEntryManager from './timeEntry.manager'
 import TrackManager from './track.manager'
 import UserManager from './user.manager'
@@ -63,6 +68,16 @@ export default class ConnectionManager {
 
     // Setup time entry handling
     ConnectionManager.setup(s, WS_POST_LAPTIME, TimeEntryManager.onPostLapTime)
+
+    // Setup session handling
+    ConnectionManager.setup(s, WS_GET_SESSIONS, SessionManager.onGetSessions)
+    ConnectionManager.setup(
+      s,
+      WS_CREATE_SESSION,
+      SessionManager.onCreateSession
+    )
+    ConnectionManager.setup(s, WS_JOIN_SESSION, SessionManager.onJoinSession)
+    ConnectionManager.setup(s, WS_LEAVE_SESSION, SessionManager.onLeaveSession)
 
     // Setup admin utilities
     ConnectionManager.setup(s, WS_IMPORT_CSV, AdminManager.onImportCsv)

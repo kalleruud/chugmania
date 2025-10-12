@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type DetailedHTMLProps,
@@ -12,12 +13,15 @@ import type { PostLapTimeRequest } from '../../../common/models/requests'
 import type {
   BackendResponse,
   ErrorResponse,
+  GetSessionsResponse,
   GetTracksResponse,
   GetUsersResponse,
 } from '../../../common/models/responses'
+import type { SessionWithSignups } from '../../../common/models/session'
 import type { Track } from '../../../common/models/track'
 import { type UserInfo } from '../../../common/models/user'
 import {
+  WS_GET_SESSIONS,
   WS_GET_TRACKS,
   WS_GET_USERS,
   WS_POST_LAPTIME,
@@ -33,10 +37,12 @@ const cache: {
   time: string[]
   user: LookupItem | undefined
   track: LookupItem | undefined
+  session: LookupItem | undefined
 } = {
   time: new Array(6).fill(''),
   user: undefined,
   track: undefined,
+  session: undefined,
 }
 
 type LapTimeInputProps = DetailedHTMLProps<
@@ -63,10 +69,22 @@ export default function LapTimeInput({
   const [digits, setDigits] = useState(cache.time)
   const [selectedUser, setSelectedUser] = useState(cache.user ?? loggedInLookup)
   const [selectedTrack, setSelectedTrack] = useState(cache.track)
+  const [selectedSession, setSelectedSession] = useState(cache.session)
   const [comment, setComment] = useState('')
 
   const [users, setUsers] = useState<UserInfo[] | undefined>(undefined)
   const [tracks, setTracks] = useState<Track[] | undefined>(undefined)
+  const [sessions, setSessions] = useState<SessionWithSignups[] | undefined>(
+    undefined
+  )
+  const dateFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat(undefined, {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      }),
+    []
+  )
 
   const DIGIT = /^\d$/
 
@@ -92,6 +110,10 @@ export default function LapTimeInput({
   useEffect(() => {
     cache.track = selectedTrack
   }, [selectedTrack])
+
+  useEffect(() => {
+    cache.session = selectedSession
+  }, [selectedSession])
 
   function setFocus(i: number) {
     inputs.current[i]?.focus()
@@ -154,6 +176,21 @@ export default function LapTimeInput({
     )
   }, [socket])
 
+  useEffect(() => {
+    socket.emit(
+      WS_GET_SESSIONS,
+      undefined,
+      (r: GetSessionsResponse | ErrorResponse) => {
+        if (!r.success) {
+          console.error(r.message)
+          return globalThis.alert(r.message)
+        }
+
+        setSessions(r.sessions)
+      }
+    )
+  }, [socket])
+
   function getMs() {
     const tenMinutes = digits[0] === '' ? 0 : Number.parseInt(digits[0]) * 10
     const minutes = digits[1] === '' ? 0 : Number.parseInt(digits[1])
@@ -192,6 +229,7 @@ export default function LapTimeInput({
         duration: getMs(),
         user: uid,
         track: tid,
+        sessionId: selectedSession?.id,
         comment: comment.trim() === '' ? undefined : comment.trim(),
         amount: 0.5,
       } satisfies PostLapTimeRequest,
@@ -286,6 +324,26 @@ export default function LapTimeInput({
           onChange={e => setComment(e.target.value)}
           placeholder='Comment'
           className='focus:ring-accent/60 focus:border-accent rounded-lg border border-white/10 bg-white/5 px-4 py-2 outline-none transition focus:ring-2'
+        />
+        <SearchableDropdown
+          placeholder='Link to session (optional)'
+          selected={selectedSession}
+          setSelected={setSelectedSession}
+          items={
+            sessions?.map(session => {
+              const date = new Date(session.date)
+              const subtitle = dateFormatter.format(date)
+              const location = session.location ? ` • ${session.location}` : ''
+              const isUpcoming = date.getTime() >= Date.now()
+              return {
+                id: session.id,
+                label: `${session.name} — ${subtitle}${location}`,
+                featured: isUpcoming,
+              } satisfies LookupItem
+            }) ?? []
+          }
+          className='mt-2'
+          emptyLabel='No sessions found'
         />
       </div>
 
