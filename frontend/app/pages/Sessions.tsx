@@ -1,4 +1,9 @@
-import { CalendarClock, MapPin, Users as UsersIcon } from 'lucide-react'
+import {
+  CalendarClock,
+  CalendarPlus,
+  MapPin,
+  Users as UsersIcon,
+} from 'lucide-react'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import type {
   BackendResponse,
@@ -76,6 +81,13 @@ export default function Sessions() {
     () => sessions.filter(session => hasSessionPassed(session)),
     [sessions]
   )
+
+  function handleAddToCalendar(session: SessionWithSignups) {
+    const baseUrl = `${window.location.origin}/api/sessions/${session.id}/calendar.ics`
+    const webcalUrl = baseUrl.replace(/^https?:\/\//, 'webcal://')
+    const opened = window.open(webcalUrl, '_blank')
+    if (!opened) window.location.href = baseUrl
+  }
 
   function handleCreateSession(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -203,6 +215,15 @@ export default function Sessions() {
         </div>
 
         <div className='flex flex-wrap gap-2'>
+          {!isPast && (
+            <Button
+              type='button'
+              variant='secondary'
+              onClick={() => handleAddToCalendar(session)}>
+              <CalendarPlus size={16} />
+              Add to calendar
+            </Button>
+          )}
           {!isLoggedIn ? (
             <span className='text-label-muted text-sm'>
               Sign in to manage your attendance.

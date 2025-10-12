@@ -32,6 +32,7 @@ The SQLite database lives at `data/db.sqlite`. The app creates the parent direct
 - Visit `/sessions` to browse upcoming and past meetups.
 - Admins and moderators can create new sessions with a name, date, and optional location.
 - Signed-in users can sign up or cancel their attendance before a session happens.
+- Each session offers an `.ics` calendar feed so you can add it to your calendar and stay in sync with updates.
 - Lap times can optionally be linked to a session when they are registered.
 
 ## Useful Scripts
