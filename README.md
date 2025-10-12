@@ -31,6 +31,7 @@ The SQLite database lives at `data/db.sqlite`. The app creates the parent direct
 
 - Visit `/sessions` to browse upcoming and past meetups.
 - Admins and moderators can create new sessions with a name, date, and optional location.
+- Sessions can include an optional description that appears on the page and inside the calendar export.
 - Signed-in users can sign up or cancel their attendance before a session happens.
 - Subscribe to all sessions with the Webcal feed (`/api/sessions/calendar.ics`) or download individual session invites from the page.
 - Lap times can optionally be linked to a session when they are registered.

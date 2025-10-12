@@ -83,13 +83,20 @@ export type CreateSessionRequest = {
   name: string
   date: string
   location?: string
+  description?: string
 }
 
 export function isCreateSessionRequest(
   data: any
 ): data is CreateSessionRequest {
   if (typeof data !== 'object' || data === null) return false
-  return typeof data.name === 'string' && typeof data.date === 'string'
+  const hasName = typeof data.name === 'string'
+  const hasDate = typeof data.date === 'string'
+  const hasLocation =
+    data.location === undefined || typeof data.location === 'string'
+  const hasDescription =
+    data.description === undefined || typeof data.description === 'string'
+  return hasName && hasDate && hasLocation && hasDescription
 }
 
 export type SessionSignupRequest = {

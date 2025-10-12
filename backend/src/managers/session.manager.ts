@@ -89,11 +89,13 @@ export default class SessionManager {
       }
 
     const location = request.location?.trim()
+    const description = request.description?.trim()
 
     await db.insert(sessions).values({
       name,
       date,
       location,
+      description,
     })
 
     console.debug(new Date().toISOString(), socket.id, 'Created session', name)
