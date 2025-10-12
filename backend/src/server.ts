@@ -92,10 +92,10 @@ io.on(WS_CONNECT_NAME, s =>
 
 function escapeICSText(value: string) {
   return value
-    .replaceAll(/\\/g, '\\\\')
-    .replaceAll(/\n/g, '\\n')
-    .replaceAll(/,/g, '\\,')
-    .replaceAll(/;/g, '\\;')
+    .replaceAll(/\\/g, String.raw`\\`)
+    .replaceAll(/\n/g, String.raw`\\n`)
+    .replaceAll(/,/g, String.raw`\\,`)
+    .replaceAll(/;/g, String.raw`\\;`)
 }
 
 function formatICSDate(date: Date) {
