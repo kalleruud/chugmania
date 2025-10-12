@@ -93,7 +93,7 @@ export default class SessionManager {
     await db.insert(sessions).values({
       name,
       date,
-      location: location ? location : undefined,
+      location,
     })
 
     console.debug(new Date().toISOString(), socket.id, 'Created session', name)
