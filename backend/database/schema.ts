@@ -1,4 +1,3 @@
-import { randomUUID } from 'crypto'
 import {
   blob,
   integer,
@@ -6,6 +5,7 @@ import {
   sqliteTable,
   text,
 } from 'drizzle-orm/sqlite-core'
+import { randomUUID } from 'node:crypto'
 
 const id = {
   id: text().primaryKey().$defaultFn(randomUUID),

@@ -31,7 +31,7 @@ const dateFormatter = new Intl.DateTimeFormat(undefined, {
 function getAttendeeLabel(attendee: SessionWithSignups['signups'][number]) {
   return (
     attendee.user.shortName ??
-    getUserFullName(attendee.user).replace(/\s+/g, ' ')
+    getUserFullName(attendee.user).replaceAll(/\s+/g, ' ')
   )
 }
 
@@ -105,7 +105,7 @@ export default function Sessions() {
       return
     }
 
-    const webcalUrl = httpUrl.replace(/^https?:\/\//, 'webcal://')
+    const webcalUrl = httpUrl.replaceAll(/^https?:\/\//, 'webcal://')
     let handled = false
 
     const markHandled = () => {

@@ -92,17 +92,17 @@ io.on(WS_CONNECT_NAME, s =>
 
 function escapeICSText(value: string) {
   return value
-    .replace(/\\/g, '\\\\')
-    .replace(/\n/g, '\\n')
-    .replace(/,/g, '\\,')
-    .replace(/;/g, '\\;')
+    .replaceAll(/\\/g, '\\\\')
+    .replaceAll(/\n/g, '\\n')
+    .replaceAll(/,/g, '\\,')
+    .replaceAll(/;/g, '\\;')
 }
 
 function formatICSDate(date: Date) {
   return date
     .toISOString()
-    .replace(/[-:]/g, '')
-    .replace(/\.\d{3}Z$/, 'Z')
+    .replaceAll(/[-:]/g, '')
+    .replaceAll(/\.\d{3}Z$/, 'Z')
 }
 
 function createSessionsCalendar(

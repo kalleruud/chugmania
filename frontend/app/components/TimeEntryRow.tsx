@@ -38,7 +38,7 @@ function NameCellPart({
 }
 
 function TimePart({ duration }: Readonly<{ duration?: number | null }>) {
-  const label = duration ? formatTime(duration).replace(/^0/, '') : 'DNF'
+  const label = duration ? formatTime(duration).replaceAll(/^0/, '') : 'DNF'
   return (
     <td className={`font-f1-italic items-center uppercase tabular-nums`}>
       {label}
