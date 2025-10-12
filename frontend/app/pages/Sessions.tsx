@@ -22,6 +22,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useConnection } from '../../contexts/ConnectionContext'
 import { Button } from '../components/Button'
 import LoadingView from '../components/LoadingView'
+import Tag from '../components/Tag'
 
 const dateFormatter = new Intl.DateTimeFormat(undefined, {
   dateStyle: 'full',
@@ -205,14 +206,10 @@ export default function Sessions() {
                   {session.location}
                 </span>
               )}
-              <span
-                className={
-                  isPast
-                    ? 'text-label-muted rounded-full bg-white/10 px-3 py-1 text-xs uppercase'
-                    : 'bg-accent rounded-full px-3 py-1 text-xs uppercase text-black'
-                }>
+              <Tag variation='colored' selected={!isPast}>
+                {' '}
                 {isPast ? 'Completed' : 'Upcoming'}
-              </span>
+              </Tag>
             </div>
           </div>
           <div className='text-label-muted flex items-center gap-2 text-sm'>
