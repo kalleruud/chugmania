@@ -5,7 +5,7 @@ export function formatTime(ms: number, truncate: boolean = false): string {
 
   const formatted = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(hundredths).padStart(2, '0')}`
 
-  if (truncate) return formatted.replaceAll(/^00:/, '').replaceAll(/^0/, '')
+  if (truncate) return formatted.replace(/^00:/, '').replace(/^0/, '')
   return formatted
 }
 
