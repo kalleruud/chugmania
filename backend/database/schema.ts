@@ -7,8 +7,11 @@ import {
   text,
 } from 'drizzle-orm/sqlite-core'
 
-const common = {
+const id = {
   id: text().primaryKey().$defaultFn(randomUUID),
+}
+
+const metadata = {
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).$onUpdateFn(
     () => new Date()
   ),
@@ -21,7 +24,8 @@ const common = {
 export type UserRole = 'admin' | 'moderator' | 'user'
 
 export const users = sqliteTable('users', {
-  ...common,
+  ...id,
+  ...metadata,
   email: text().notNull().unique(),
   firstName: text('first_name').notNull(),
   lastName: text('last_name'),
@@ -37,14 +41,16 @@ export type TrackLevel = 'white' | 'green' | 'blue' | 'red' | 'black' | 'custom'
 export type TrackType = 'drift' | 'valley' | 'lagoon' | 'stadium'
 
 export const tracks = sqliteTable('tracks', {
-  ...common,
+  ...id,
+  ...metadata,
   number: integer().notNull(),
   level: text().$type<TrackLevel>().notNull(),
   type: text().$type<TrackType>().notNull(),
 })
 
 export const sessions = sqliteTable('sessions', {
-  ...common,
+  ...id,
+  ...metadata,
   name: text().notNull(),
   date: integer('date', { mode: 'timestamp_ms' }).notNull(),
   location: text(),
@@ -53,15 +59,13 @@ export const sessions = sqliteTable('sessions', {
 export const sessionSignups = sqliteTable(
   'session_signups',
   {
+    ...metadata,
     sessionId: text('session_id')
       .notNull()
       .references(() => sessions.id, { onDelete: 'cascade' }),
     userId: text('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    createdAt: integer('created_at', { mode: 'timestamp_ms' })
-      .notNull()
-      .$defaultFn(() => new Date()),
   },
   table => ({
     pk: primaryKey({ columns: [table.sessionId, table.userId] }),
@@ -69,7 +73,8 @@ export const sessionSignups = sqliteTable(
 )
 
 export const timeEntries = sqliteTable('time_entries', {
-  ...common,
+  ...id,
+  ...metadata,
   user: text()
     .notNull()
     .references(() => users.id),
