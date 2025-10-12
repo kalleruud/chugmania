@@ -249,16 +249,17 @@ export default function Sessions() {
             <Button
               type='button'
               variant='secondary'
+              size='sm'
               onClick={() => handleAddToCalendar(session)}>
               <CalendarPlus size={16} />
-              Add to calendar
             </Button>
           )}
 
           {isLoggedIn && isSignedUp && (
             <Button
               type='button'
-              variant='secondary'
+              variant='tertiary'
+              size='sm'
               disabled={isPast || activeSessionId === session.id}
               onClick={() => handleLeave(session.id)}>
               Cancel attendance
@@ -268,6 +269,7 @@ export default function Sessions() {
           {isLoggedIn && !isSignedUp && (
             <Button
               type='button'
+              size='sm'
               onClick={() => handleJoin(session.id)}
               disabled={isPast || activeSessionId === session.id}>
               Sign up
