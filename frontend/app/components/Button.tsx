@@ -28,8 +28,8 @@ const sizeStyles: Record<ButtonSize, string> = {
 
 const stateStyles: Record<ButtonState, string> = {
   default: '',
-  unselected: 'opacity-70 hover:opacity-100',
-  selected: 'ring-2 ring-accent/60',
+  unselected: 'opacity-50',
+  selected: '',
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -46,6 +46,12 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     ref
   ) => {
     const isDisabled = disabled === true || rest['aria-disabled'] === 'true'
+    const effectiveVariant =
+      state === 'selected'
+        ? 'primary'
+        : state === 'unselected'
+          ? 'secondary'
+          : variant
 
     return (
       <button
@@ -53,7 +59,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         className={twMerge(
           'font-f1 flex cursor-pointer items-center justify-center gap-2 rounded-xl uppercase tracking-wider transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none disabled:saturate-0',
           sizeStyles[size],
-          variantStyles[variant],
+          variantStyles[effectiveVariant],
           className,
           stateStyles[state]
         )}
