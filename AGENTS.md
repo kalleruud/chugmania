@@ -21,7 +21,7 @@
 
 - Match existing patterns before introducing new ones
 - Implement the simplest solution; avoid unnecessary abstractions
-- Reuse existing components (Button, SearchableDropdown, etc.) instead of creating new ones
+- Reuse existing components (Button, SearchableDropdown, etc.)
 - Use Tailwind CSS utilities; follow Formula 1 inspired dark-mode design system
 - Backend changes emit Socket.IO events to all clients; unexpected updates show toasts
 - After schema changes, run `npm run db:gen` to generate Drizzle migrations
@@ -34,5 +34,5 @@
 
 ## Tools
 
-- When you need to search docs, use `context7` tools.
+- When needing to search docs, use `context7` tools.
 - If you are unsure how to do something, use `gh_grep` to search code examples from github.

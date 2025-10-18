@@ -1,68 +1,79 @@
 # Chugmania
 
-Full-stack Trackmania Turbo companion app for recording and exploring lap times. The backend (Express + Socket.IO + Drizzle/SQLite) and frontend (React + Vite) live in this single package and run together via Vite Express.
+Chugmania is a full-stack Trackmania Turbo companion for logging lap times, sharing leaderboards, planning meetups, and coordinating local sessions. The backend (Express + Socket.IO + Drizzle/SQLite) and the frontend (React + Vite) are bundled together and run via a single Vite Express server.
 
-## Project Layout
+## Features
 
-- `backend/`: Server code, Socket.IO handlers, database access, and seeds.
-- `frontend/`: React UI, components, and styles.
-- `common/`: Shared TypeScript models/utilities consumed by both sides.
-- `data/`: Development SQLite database (`/data/db.sqlite` at runtime). The directory is created on demand.
+- Record lap times with optional session/context metadata and real-time Socket.IO updates
+- Browse aggregated leaderboards, player profiles, and track stats from the shared SQLite database
+- Plan meetups through the sessions module, including calendar exports and attendance tracking
+- Bulk-import users, tracks, and lap times through CSV uploads for quick seeding
+
+## Tech Stack
+
+- **Backend:** Node.js, Express 5, Socket.IO, Drizzle ORM (SQLite)
+- **Frontend:** React 19, Vite, Tailwind Merge utilities, Lucide icons
+- **Tooling:** TypeScript (strict), tsup bundling, Prettier with organize-imports and Tailwind plugins
 
 ## Getting Started
 
-1. `npm install`
-2. Copy `.env.example` to `.env` and fill in overrides (see `Security & Config`).
-3. For local development run `npm run dev`.
-   - Boots Vite Express with hot reload on `http://localhost:6996`.
-4. When you need the production bundle run `npm run build` followed by `npm start`.
-   - `npm start` applies pending database migrations (`npm run db:migrate`) and serves the prebuilt backend/frontend from `dist/`.
+1. Install dependencies with `npm install`.
+2. Copy `.env.example` to `.env` and populate required secrets (see **Configuration**).
+3. Launch the dev server via `npm run dev`; visit `http://localhost:6996` for the app and API.
+4. The first boot creates `data/db.sqlite`. Commit no database files—Drizzle migrations handle schema.
 
-The SQLite database lives at `data/db.sqlite`. The app creates the parent directory automatically if it is missing.
+## Scripts
 
-## Admin CSV Imports
+| Command                         | Description                                               |
+| ------------------------------- | --------------------------------------------------------- |
+| `npm run dev`                   | Boot backend + frontend with hot reload (port 6996).      |
+| `npm run build`                 | Produce production bundles in `dist/` and `dist/server/`. |
+| `npm run build:frontend`        | Build the Vite client only.                               |
+| `npm run build:backend`         | Bundle the Express server via tsup.                       |
+| `npm run start`                 | Apply migrations then serve the built app.                |
+| `npm run prod`                  | Serve the built backend without running migrations.       |
+| `npm run check`                 | Run `drizzle-kit check`, TypeScript, and Prettier.        |
+| `npm run db:gen`                | Emit SQL migrations after schema edits.                   |
+| `npm run db:migrate`            | Apply pending Drizzle migrations.                         |
+| `npm run db:push` / `db:studio` | Push schema OR open the Drizzle Studio UI.                |
 
-- Signed-in admins can open `/admin` to bulk import data from CSV files.
-- Each upload must match the columns used in `data/users.csv`, `data/tracks.csv`, or `data/timeEntry.csv`.
-  - Users: `email,firstName,lastName,id,shortName,password`
-- Successful imports report how many rows were inserted, updated, or skipped so you can verify the outcome.
+### Testing
 
-## Sessions
+Formal test suites are still pending. Author backend specs as `*.spec.ts` or frontend tests as `*.test.tsx`, then execute single files manually with `tsx path/to/spec.ts`.
 
-- Visit `/sessions` to browse upcoming and past meetups.
-- Admins and moderators can create new sessions with a name, date, and optional location.
-- Sessions can include an optional description that appears on the page and inside the calendar export.
-- Signed-in users can sign up or cancel their attendance before a session happens.
-- Subscribe to all sessions with the Webcal feed (`/api/sessions/calendar.ics`) or download individual session invites from the page.
-- Lap times can optionally be linked to a session when they are registered.
+## Project Layout
 
-## Useful Scripts
+```
+backend/   Express server, Socket.IO, database layer, managers
+common/    Shared TypeScript models and utilities
+frontend/  React app components, pages, contexts, and styling
+data/      Local SQLite database (created automatically, ignored by Git)
+```
 
-- `npm start` – run pending migrations and boot the prebuilt backend/frontend.
-- `npm run prod` – run the prebuilt backend (`dist/server/server.js`) without reapplying migrations.
-- `npm run build` – build both the frontend bundle and the backend runtime (outputs to `dist/` and `dist/server/`).
-- `npm run build:frontend` – build the Vite bundle only.
-- `npm run build:backend` – bundle the backend/server with tsup.
-- `npm run check` – type-check the entire project and verify Prettier formatting.
-- `npm run db:gen` / `db:migrate` / `db:push` / `db:studio` – Drizzle schema tooling.
+Key backend flows live under `backend/src/managers/`, while shared DTOs reside in `common/models/`. Frontend routes sit in `frontend/app/pages/` and reuse reusable UI from `frontend/app/components/`.
 
-## Coding Style
+## CSV Imports
 
-- Prettier: 2 spaces, single quotes, no semicolons, trailing commas.
-- TypeScript across the stack; add explicit types on public boundaries.
-- Backend managers use `name.manager.ts`; React components/contexts use `PascalCase.tsx`.
-- Imports: reference shared code via `../../../../common/*` and backend database modules via `@database/*` aliases.
+Admins can visit `/admin` to upload CSV files matching the sample schemas in `data/*.csv`. Each upload reports inserted, updated, and skipped rows to confirm the data outcome. Ensure the column order mirrors the template files (e.g., `email,firstName,lastName,id,shortName,password` for users).
 
-## Security & Config
+## Sessions Module
 
-- Required in production: `SECRET` (JWT signing key) and `ORIGIN` (allowed frontend origin for CORS).
-- Optional override: `TOKEN_EXPIRY_H` (default `1`).
-- Keep `.env` out of source control; copy from `.env.example` for local development.
-- SQLite files are ignored by Git; use the Drizzle commands above to manage schema changes.
+The `/sessions` route shows upcoming and past events. Authorized users may create, edit, or cancel sessions with optional locations and descriptions. Attendees can RSVP; ICS feeds are available via `/api/sessions/calendar.ics`, and individual invites can be downloaded per session.
+
+## Configuration
+
+- `SECRET` (required): JWT signing key; use a strong random value.
+- `ORIGIN` (required in production): Allowed frontend origin for CORS.
+- `TOKEN_EXPIRY_H` (optional): Override default 1-hour auth token expiry.
+- `.env.example` also exposes `PRIVATE_KEY` for local defaults—never commit secrets.
 
 ## Docker
 
-- The provided `Dockerfile` builds a production image that seeds the SQLite database at `/app/data/db.sqlite`.
-- Build with `docker build -t chugmania .` and run with `docker run -p 6996:6996 chugmania`.
-- The container entrypoint uses `npm start`, so migrations run on boot before the server starts.
-- Mount `/app/data` as a volume if you need the database to persist across container restarts.
+- Build: `docker build -t chugmania .`
+- Run: `docker run -p 6996:6996 chugmania`
+- The entrypoint executes `npm start`, so migrations apply automatically before serving.
+- Mount `/app/data` as a volume to persist the SQLite database across restarts.
+
+## Contributing
+
+Follow the coding conventions from `AGENTS.md`: Prettier formatting (2 spaces, single quotes, no semicolons), organize imports, explicit TypeScript types, and the shared `Result<T>` error-handling pattern. Reuse existing components and respect the Formula 1-inspired Tailwind design system to keep UI consistent.
