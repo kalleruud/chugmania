@@ -25,7 +25,7 @@ export default class CsvParser {
   }
 
   private static async normalize(key: string, value: string | undefined) {
-    const val = value?.replaceAll('"', '').trim()
+    const val = value?.replace('"', '').trim()
     if (val === '' || val === undefined) return { key, value: null }
 
     if (key.endsWith('At'))

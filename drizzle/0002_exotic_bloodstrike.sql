@@ -1,0 +1,1 @@
+ALTER TABLE `session_signups` ADD `response` text NOT NULL;

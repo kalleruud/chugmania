@@ -77,6 +77,7 @@ export default class LeaderboardManager {
         createdAt: r.entry.createdAt,
         updatedAt: r.entry.updatedAt,
         deletedAt: r.entry.deletedAt,
+        session: r.entry.session,
         user: userInfo,
         gap,
       }

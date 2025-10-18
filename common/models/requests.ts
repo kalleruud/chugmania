@@ -1,4 +1,5 @@
 import * as schema from '../../backend/database/schema'
+import type { Session } from './session'
 import type { CreateTimeEntry } from './timeEntry'
 import type { Track } from './track'
 import { type UserInfo } from './user'
@@ -44,7 +45,7 @@ export function isGetLeaderboardRequest(
 export type PostLapTimeRequest = CreateTimeEntry
 
 export function isPostLapTimeRequest(data: any): data is PostLapTimeRequest {
-  if (typeof data !== 'object') return false
+  if (typeof data !== 'object' || data === null) return false
   return data.duration && data.user && data.track
 }
 
@@ -56,6 +57,15 @@ export type ImportCsvRequest = {
 export function isImportCsvRequest(data: any): data is ImportCsvRequest {
   if (typeof data !== 'object' || data === null) return false
   return data.table && data.content
+}
+
+export type ExportCsvRequest = {
+  table: keyof typeof schema
+}
+
+export function isExportCsvRequest(data: any): data is ExportCsvRequest {
+  if (typeof data !== 'object' || data === null) return false
+  return data.table && typeof data.table === 'string'
 }
 
 export type GetTrackRequest = {
@@ -76,4 +86,73 @@ export function isGetPlayerDetailsRequest(
 ): data is GetPlayerDetailsRequest {
   if (typeof data !== 'object' || data === null) return false
   return typeof data.playerId === 'string'
+}
+
+export type CreateSessionRequest = {
+  name: string
+  date: string
+  location?: string
+  description?: string
+}
+
+export function isCreateSessionRequest(
+  data: any
+): data is CreateSessionRequest {
+  if (typeof data !== 'object' || data === null) return false
+  const hasName = typeof data.name === 'string'
+  const hasDate = typeof data.date === 'string'
+  const hasLocation =
+    data.location === undefined || typeof data.location === 'string'
+  const hasDescription =
+    data.description === undefined || typeof data.description === 'string'
+  return hasName && hasDate && hasLocation && hasDescription
+}
+
+export type UpdateSessionRequest = {
+  id: Session['id']
+  name?: string
+  date?: string
+  location?: string
+  description?: string
+}
+
+export function isUpdateSessionRequest(
+  data: any
+): data is UpdateSessionRequest {
+  if (typeof data !== 'object' || data === null) return false
+  const hasId = typeof data.id === 'string'
+  const hasName = data.name === undefined || typeof data.name === 'string'
+  const hasDate = data.date === undefined || typeof data.date === 'string'
+  const hasLocation =
+    data.location === undefined || typeof data.location === 'string'
+  const hasDescription =
+    data.description === undefined || typeof data.description === 'string'
+  return hasId && hasName && hasDate && hasLocation && hasDescription
+}
+
+export type DeleteSessionRequest = {
+  id: Session['id']
+}
+
+export function isDeleteSessionRequest(
+  data: any
+): data is DeleteSessionRequest {
+  if (typeof data !== 'object' || data === null) return false
+  return typeof data.id === 'string'
+}
+
+export type SessionSignupRequest = {
+  session: Session['id']
+  response?: 'yes' | 'no' | 'maybe'
+}
+
+export function isSessionSignupRequest(
+  data: any
+): data is SessionSignupRequest {
+  if (typeof data !== 'object' || data === null) return false
+  const hasSession = typeof data.session === 'string'
+  const hasResponse =
+    data.response === undefined ||
+    ['yes', 'no', 'maybe'].includes(data.response)
+  return hasSession && hasResponse
 }

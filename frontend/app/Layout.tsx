@@ -1,4 +1,5 @@
 import {
+  CalendarDays,
   Home,
   Map,
   Plus,
@@ -31,6 +32,7 @@ export default function Layout() {
   const mobileNavButtons: MobileNavItem[] = [
     { label: 'Home', icon: Home, to: '/' },
     { label: 'Tracks', icon: Map, to: '/tracks' },
+    { label: 'Sessions', icon: CalendarDays, to: '/sessions' },
     {
       label: 'Add time',
       icon: Timer,
