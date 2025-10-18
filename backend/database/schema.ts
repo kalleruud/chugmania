@@ -53,7 +53,7 @@ export const sessions = sqliteTable('sessions', {
   ...metadata,
   name: text().notNull(),
   description: text(),
-  date: integer('date', { mode: 'timestamp_ms' }).notNull(),
+  date: integer({ mode: 'timestamp_ms' }).notNull(),
   location: text(),
 })
 
@@ -61,14 +61,14 @@ export const sessionSignups = sqliteTable(
   'session_signups',
   {
     ...metadata,
-    sessionId: text('session_id')
+    session: text()
       .notNull()
       .references(() => sessions.id, { onDelete: 'cascade' }),
-    userId: text('user_id')
+    user: text()
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
   },
-  table => [primaryKey({ columns: [table.sessionId, table.userId] })]
+  table => [primaryKey({ columns: [table.session, table.user] })]
 )
 
 export const timeEntries = sqliteTable('time_entries', {
@@ -80,7 +80,7 @@ export const timeEntries = sqliteTable('time_entries', {
   track: text()
     .notNull()
     .references(() => tracks.id),
-  sessionId: text('session_id').references(() => sessions.id),
+  session: text().references(() => sessions.id),
   duration: integer('duration_ms'),
   amount: integer('amount_l').notNull().default(0.5),
   comment: text(),
