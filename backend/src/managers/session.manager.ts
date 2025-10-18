@@ -26,6 +26,7 @@ export default class SessionManager {
       .select({
         session: sessionSignups.session,
         joinedAt: sessionSignups.createdAt,
+        response: sessionSignups.response,
         user: users,
       })
       .from(sessionSignups)
@@ -38,6 +39,7 @@ export default class SessionManager {
       entry.push({
         user: UserManager.toUserInfo(row.user).userInfo,
         joinedAt: row.joinedAt,
+        response: row.response,
       })
       grouped.set(row.session, entry)
     }
@@ -135,15 +137,19 @@ export default class SessionManager {
         message: 'Cannot sign up for a session that has already happened.',
       }
 
+    const response = request.response ?? 'yes'
     await db
       .insert(sessionSignups)
-      .values({ session: session.id, user: user.id })
-      .onConflictDoNothing()
+      .values({ session: session.id, user: user.id, response })
+      .onConflictDoUpdate({
+        target: [sessionSignups.session, sessionSignups.user],
+        set: { response },
+      })
 
     console.debug(
       new Date().toISOString(),
       socket.id,
-      'Signed up for session',
+      `Signed up for session with response: ${response}`,
       session.id
     )
 

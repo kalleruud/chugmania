@@ -15,6 +15,13 @@
       "when": 1760370948538,
       "tag": "0001_cultured_the_renegades",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1760808183025,
+      "tag": "0002_exotic_bloodstrike",
+      "breakpoints": true
     }
   ]
 }

@@ -1,9 +1,12 @@
 import {
   CalendarClock,
   CalendarPlus,
+  Check,
+  HelpCircle,
   LogIn,
   MapPin,
   Users as UsersIcon,
+  X,
 } from 'lucide-react'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -152,17 +155,24 @@ export default function Sessions() {
     )
   }
 
-  function handleJoin(sessionId: string) {
+  function handleJoin(
+    sessionId: string,
+    rsvpResponse: 'yes' | 'no' | 'maybe' = 'yes'
+  ) {
     if (!isLoggedIn)
       return globalThis.alert('Please sign in to join a session.')
     setActiveSessionId(sessionId)
-    socket.emit(WS_JOIN_SESSION, { sessionId }, (response: BackendResponse) => {
-      setActiveSessionId(null)
-      if (!response.success) {
-        console.error(response.message)
-        return globalThis.alert(response.message)
+    socket.emit(
+      WS_JOIN_SESSION,
+      { session: sessionId, response: rsvpResponse },
+      (response: BackendResponse) => {
+        setActiveSessionId(null)
+        if (!response.success) {
+          console.error(response.message)
+          return globalThis.alert(response.message)
+        }
       }
-    })
+    )
   }
 
   function handleLeave(sessionId: string) {
@@ -170,7 +180,7 @@ export default function Sessions() {
     setActiveSessionId(sessionId)
     socket.emit(
       WS_LEAVE_SESSION,
-      { sessionId },
+      { session: sessionId },
       (response: BackendResponse) => {
         setActiveSessionId(null)
         if (!response.success) {
@@ -187,12 +197,19 @@ export default function Sessions() {
     const attendeeNames = session.signups.map(getAttendeeLabel)
     const isSignedUp =
       !!user && session.signups.some(s => s.user.id === user.id)
+    const userResponse =
+      user && session.signups.find(s => s.user.id === user.id)?.response
     const visibleAttendees = attendeeNames.slice(0, 6)
     const remainingAttendees = Math.max(
       0,
       attendeeNames.length - visibleAttendees.length
     )
     const description = getSessionDescription(session)
+    const rsvpCounts = {
+      yes: session.signups.filter(s => s.response === 'yes').length,
+      no: session.signups.filter(s => s.response === 'no').length,
+      maybe: session.signups.filter(s => s.response === 'maybe').length,
+    }
 
     return (
       <div
@@ -247,47 +264,120 @@ export default function Sessions() {
 
         <p className='text-label-muted text-xs'>{description}</p>
 
-        <div className='flex flex-wrap gap-2'>
-          {!isPast && (
-            <Button
-              type='button'
-              variant='secondary'
-              size='sm'
-              onClick={() => handleAddToCalendar(session)}>
-              <CalendarPlus size={16} />
-            </Button>
-          )}
+        <div className='flex flex-col gap-2'>
+          <div className='text-label-muted flex flex-wrap gap-3 text-xs'>
+            {rsvpCounts.yes > 0 && (
+              <span className='flex items-center gap-1'>
+                <Check size={14} />
+                {rsvpCounts.yes} yes
+              </span>
+            )}
+            {rsvpCounts.maybe > 0 && (
+              <span className='flex items-center gap-1'>
+                <HelpCircle size={14} />
+                {rsvpCounts.maybe} maybe
+              </span>
+            )}
+            {rsvpCounts.no > 0 && (
+              <span className='flex items-center gap-1'>
+                <X size={14} />
+                {rsvpCounts.no} no
+              </span>
+            )}
+          </div>
 
-          {isLoggedIn && isSignedUp && (
-            <Button
-              type='button'
-              variant='tertiary'
-              size='sm'
-              disabled={isPast || activeSessionId === session.id}
-              onClick={() => handleLeave(session.id)}>
-              Cancel attendance
-            </Button>
-          )}
+          <div className='flex flex-wrap gap-2'>
+            {!isPast && (
+              <Button
+                type='button'
+                variant='secondary'
+                size='sm'
+                onClick={() => handleAddToCalendar(session)}>
+                <CalendarPlus size={16} />
+              </Button>
+            )}
 
-          {isLoggedIn && !isSignedUp && (
-            <Button
-              type='button'
-              size='sm'
-              onClick={() => handleJoin(session.id)}
-              disabled={isPast || activeSessionId === session.id}>
-              Join
-            </Button>
-          )}
+            {isLoggedIn && isSignedUp && !isPast && (
+              <>
+                <Button
+                  type='button'
+                  size='sm'
+                  state={userResponse === 'yes' ? 'selected' : 'unselected'}
+                  disabled={activeSessionId === session.id}
+                  onClick={() => handleJoin(session.id, 'yes')}>
+                  <Check size={16} />
+                  Yes
+                </Button>
+                <Button
+                  type='button'
+                  size='sm'
+                  state={userResponse === 'maybe' ? 'selected' : 'unselected'}
+                  disabled={activeSessionId === session.id}
+                  onClick={() => handleJoin(session.id, 'maybe')}>
+                  <HelpCircle size={16} />
+                  Maybe
+                </Button>
+                <Button
+                  type='button'
+                  size='sm'
+                  state={userResponse === 'no' ? 'selected' : 'unselected'}
+                  disabled={activeSessionId === session.id}
+                  onClick={() => handleJoin(session.id, 'no')}>
+                  <X size={16} />
+                  No
+                </Button>
+                <Button
+                  type='button'
+                  variant='tertiary'
+                  size='sm'
+                  disabled={activeSessionId === session.id}
+                  onClick={() => handleLeave(session.id)}>
+                  Cancel
+                </Button>
+              </>
+            )}
 
-          {!isLoggedIn && !isPast && (
-            <Button
-              type='button'
-              size='sm'
-              onClick={() => navigate(`/login?redirect=/sessions`)}>
-              <LogIn size={16} />
-              Sign in to join session
-            </Button>
-          )}
+            {isLoggedIn && !isSignedUp && !isPast && (
+              <>
+                <Button
+                  type='button'
+                  size='sm'
+                  disabled={activeSessionId === session.id}
+                  onClick={() => handleJoin(session.id, 'yes')}>
+                  <Check size={16} />
+                  Yes
+                </Button>
+                <Button
+                  type='button'
+                  size='sm'
+                  variant='secondary'
+                  disabled={activeSessionId === session.id}
+                  onClick={() => handleJoin(session.id, 'maybe')}>
+                  <HelpCircle size={16} />
+                  Maybe
+                </Button>
+                <Button
+                  type='button'
+                  size='sm'
+                  variant='secondary'
+                  disabled={activeSessionId === session.id}
+                  onClick={() => handleJoin(session.id, 'no')}>
+                  <X size={16} />
+                  No
+                </Button>
+              </>
+            )}
+
+            {!isLoggedIn && !isPast && (
+              <Button
+                type='button'
+                size='sm'
+                onClick={() => navigate(`/login?redirect=/sessions`)}>
+                <LogIn size={16} />
+                Sign in to join session
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     )

@@ -110,11 +110,16 @@ export function isCreateSessionRequest(
 
 export type SessionSignupRequest = {
   session: Session['id']
+  response?: 'yes' | 'no' | 'maybe'
 }
 
 export function isSessionSignupRequest(
   data: any
 ): data is SessionSignupRequest {
   if (typeof data !== 'object' || data === null) return false
-  return typeof data.session === 'string'
+  const hasSession = typeof data.session === 'string'
+  const hasResponse =
+    data.response === undefined ||
+    ['yes', 'no', 'maybe'].includes(data.response)
+  return hasSession && hasResponse
 }

@@ -10,5 +10,6 @@ export type SessionWithSignups = Session & {
   signups: {
     user: UserInfo
     joinedAt: SessionSignup['createdAt']
+    response: SessionSignup['response']
   }[]
 }

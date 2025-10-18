@@ -22,6 +22,7 @@ const metadata = {
 }
 
 export type UserRole = 'admin' | 'moderator' | 'user'
+export type SessionResponse = 'yes' | 'no' | 'maybe'
 
 export const users = sqliteTable('users', {
   ...id,
@@ -67,6 +68,10 @@ export const sessionSignups = sqliteTable(
     user: text()
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
+    response: text()
+      .$type<SessionResponse>()
+      .notNull()
+      .$default(() => 'yes'),
   },
   table => [primaryKey({ columns: [table.session, table.user] })]
 )
