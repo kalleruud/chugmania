@@ -16,6 +16,7 @@ export type BackendResponse =
   | GetSessionsResponse
   | LoginResponse
   | SuccessResponse
+  | ExportCsvResponse
 
 export type ErrorResponse = {
   success: false
@@ -66,4 +67,9 @@ export type GetPlayerDetailsResponse = {
 export type GetSessionsResponse = {
   success: true
   sessions: SessionWithSignups[]
+}
+
+export type ExportCsvResponse = {
+  success: true
+  csv: string
 }

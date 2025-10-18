@@ -1,12 +1,16 @@
-import { ShieldCheck } from 'lucide-react'
+import { Download, ShieldCheck, Upload } from 'lucide-react'
 import { useState } from 'react'
 
-import type { ImportCsvRequest } from '../../../common/models/requests'
+import type {
+  ExportCsvRequest,
+  ImportCsvRequest,
+} from '../../../common/models/requests'
 import type {
   ErrorResponse,
+  ExportCsvResponse,
   SuccessResponse,
 } from '../../../common/models/responses'
-import { WS_IMPORT_CSV } from '../../../common/utils/constants'
+import { WS_EXPORT_CSV, WS_IMPORT_CSV } from '../../../common/utils/constants'
 import { useConnection } from '../../contexts/ConnectionContext'
 import { Button } from '../components/Button'
 import FileDrop, { type FileDropSelection } from '../components/FileDrop'
@@ -39,6 +43,11 @@ export default function Admin() {
       title: 'Lap Times',
       description: 'Bulk import historical lap times with comments.',
     },
+    {
+      table: 'sessions',
+      title: 'Sessions',
+      description: 'Bulk import or export session meetups and events.',
+    },
   ]
 
   const handleFileChange = (
@@ -66,6 +75,38 @@ export default function Admin() {
           if (!response.success) {
             alert(response.message)
           }
+          setIsImporting(false)
+        }
+      )
+    } catch (err) {
+      alert(err)
+      setIsImporting(false)
+    }
+  }
+
+  const handleExport = (table: ExportCsvRequest['table']) => {
+    try {
+      setIsImporting(true)
+      socket.emit(
+        WS_EXPORT_CSV,
+        { table } satisfies ExportCsvRequest,
+        (response: ExportCsvResponse | ErrorResponse) => {
+          if (!response.success) {
+            alert(response.message)
+            setIsImporting(false)
+            return
+          }
+
+          const element = document.createElement('a')
+          element.setAttribute(
+            'href',
+            'data:text/csv;charset=utf-8,' + encodeURIComponent(response.csv)
+          )
+          element.setAttribute('download', `${table}.csv`)
+          element.style.display = 'none'
+          document.body.appendChild(element)
+          element.click()
+          document.body.removeChild(element)
           setIsImporting(false)
         }
       )
@@ -118,19 +159,37 @@ export default function Admin() {
                 hint={'Accepts *.csv-files'}
               />
 
-              <Button
-                type='button'
-                variant='primary'
-                size='sm'
-                onClick={() => handleImport(table)}
-                disabled={!file}
-                className='h-8 w-full sm:w-auto'>
-                {isImporting ? (
-                  <Spinner className='text-label p-3' />
-                ) : (
-                  'Import CSV'
-                )}
-              </Button>
+              <div className='flex gap-2'>
+                <Button
+                  type='button'
+                  variant='primary'
+                  size='sm'
+                  onClick={() => handleImport(table)}
+                  disabled={!file || isImporting}
+                  className='h-8 flex-1'>
+                  {isImporting ? (
+                    <Spinner className='text-label p-3' />
+                  ) : (
+                    <>
+                      <Upload size={16} />
+                      Import
+                    </>
+                  )}
+                </Button>
+
+                <Button
+                  type='button'
+                  variant='secondary'
+                  size='sm'
+                  onClick={() =>
+                    handleExport(table as ExportCsvRequest['table'])
+                  }
+                  disabled={isImporting}
+                  className='h-8 flex-1'>
+                  <Download size={16} />
+                  Export
+                </Button>
+              </div>
             </section>
           )
         })}

@@ -59,6 +59,15 @@ export function isImportCsvRequest(data: any): data is ImportCsvRequest {
   return data.table && data.content
 }
 
+export type ExportCsvRequest = {
+  table: keyof typeof schema
+}
+
+export function isExportCsvRequest(data: any): data is ExportCsvRequest {
+  if (typeof data !== 'object' || data === null) return false
+  return data.table && typeof data.table === 'string'
+}
+
 export type GetTrackRequest = {
   trackId: Track['id']
 }

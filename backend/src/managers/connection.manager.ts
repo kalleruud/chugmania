@@ -5,6 +5,7 @@ import type {
 } from '../../../common/models/responses'
 import {
   WS_CREATE_SESSION,
+  WS_EXPORT_CSV,
   WS_GET_LEADERBOARD,
   WS_GET_LEADERBOARD_SUMMARIES,
   WS_GET_PLAYER_DETAILS,
@@ -81,6 +82,7 @@ export default class ConnectionManager {
 
     // Setup admin utilities
     ConnectionManager.setup(s, WS_IMPORT_CSV, AdminManager.onImportCsv)
+    ConnectionManager.setup(s, WS_EXPORT_CSV, AdminManager.onExportCsv)
   }
 
   static async disconnect(socket: Socket) {
