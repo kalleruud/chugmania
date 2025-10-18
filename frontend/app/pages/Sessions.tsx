@@ -2,9 +2,11 @@ import {
   CalendarClock,
   CalendarPlus,
   Check,
+  Edit,
   HelpCircle,
   LogIn,
   MapPin,
+  Trash2,
   X,
 } from 'lucide-react'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
@@ -17,10 +19,12 @@ import type {
 import type { SessionWithSignups } from '../../../common/models/session'
 import {
   WS_CREATE_SESSION,
+  WS_DELETE_SESSION,
   WS_GET_SESSIONS,
   WS_JOIN_SESSION,
   WS_LEAVE_SESSION,
   WS_SESSIONS_UPDATED,
+  WS_UPDATE_SESSION,
 } from '../../../common/utils/constants'
 import { useAuth } from '../../contexts/AuthContext'
 import { useConnection } from '../../contexts/ConnectionContext'
@@ -74,12 +78,21 @@ export default function Sessions() {
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null)
+  const [editingSessionId, setEditingSessionId] = useState<string | null>(null)
   const [form, setForm] = useState({
     name: '',
     date: '',
     location: '',
     description: '',
   })
+  const [editForm, setEditForm] = useState({
+    name: '',
+    date: '',
+    location: '',
+    description: '',
+  })
+  const [updating, setUpdating] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   const canManageSessions = user?.role === 'admin' || user?.role === 'moderator'
 
@@ -191,6 +204,66 @@ export default function Sessions() {
     )
   }
 
+  function handleEditSession(session: SessionWithSignups) {
+    const date = new Date(session.date)
+    const isoDate = date.toISOString().slice(0, 16)
+    setEditForm({
+      name: session.name,
+      date: isoDate,
+      location: session.location || '',
+      description: session.description || '',
+    })
+    setEditingSessionId(session.id)
+  }
+
+  function handleUpdateSession() {
+    if (!editForm.name.trim() || !editForm.date || !editingSessionId) return
+
+    setUpdating(true)
+    socket.emit(
+      WS_UPDATE_SESSION,
+      {
+        id: editingSessionId,
+        name: editForm.name.trim(),
+        date: new Date(editForm.date).toISOString(),
+        location: editForm.location.trim()
+          ? editForm.location.trim()
+          : undefined,
+        description: editForm.description.trim()
+          ? editForm.description.trim()
+          : undefined,
+      },
+      (response: BackendResponse) => {
+        setUpdating(false)
+        if (!response.success) {
+          console.error(response.message)
+          return globalThis.alert(response.message)
+        }
+        setEditingSessionId(null)
+        setEditForm({ name: '', date: '', location: '', description: '' })
+      }
+    )
+  }
+
+  function handleDeleteSession(sessionId: string) {
+    if (!globalThis.confirm('Are you sure you want to delete this session?')) {
+      return
+    }
+
+    setDeleting(true)
+    socket.emit(
+      WS_DELETE_SESSION,
+      { id: sessionId },
+      (response: BackendResponse) => {
+        setDeleting(false)
+        if (!response.success) {
+          console.error(response.message)
+          return globalThis.alert(response.message)
+        }
+      }
+    )
+  }
+
   function renderSession(session: SessionWithSignups) {
     const date = new Date(session.date)
     const isPast = hasSessionPassed(session)
@@ -222,9 +295,33 @@ export default function Sessions() {
                 </div>
               )}
             </div>
-            <Tag variation='colored' selected={!isPast}>
-              {isPast ? 'Completed' : 'Upcoming'}
-            </Tag>
+            <div className='flex items-center gap-2'>
+              {canManageSessions && (
+                <>
+                  <Button
+                    type='button'
+                    variant='secondary'
+                    size='sm'
+                    disabled={activeSessionId === session.id}
+                    onClick={() => handleEditSession(session)}
+                    aria-label='Edit session'>
+                    <Edit size={16} />
+                  </Button>
+                  <Button
+                    type='button'
+                    variant='secondary'
+                    size='sm'
+                    disabled={activeSessionId === session.id || deleting}
+                    onClick={() => handleDeleteSession(session.id)}
+                    aria-label='Delete session'>
+                    <Trash2 size={16} />
+                  </Button>
+                </>
+              )}
+              <Tag variation='colored' selected={!isPast}>
+                {isPast ? 'Completed' : 'Upcoming'}
+              </Tag>
+            </div>
           </div>
         </div>
 
@@ -478,6 +575,88 @@ export default function Sessions() {
           </div>
         )}
       </section>
+
+      {editingSessionId && (
+        <div className='fixed inset-0 flex items-center justify-center bg-black/50 p-4'>
+          <div className='border-stroke w-full max-w-2xl rounded-2xl border bg-white/5 backdrop-blur-sm'>
+            <div className='border-b border-white/10 px-6 py-4'>
+              <h2 className='text-lg font-semibold'>Edit session</h2>
+            </div>
+            <form
+              className='grid gap-4 p-6 sm:grid-cols-2'
+              onSubmit={e => {
+                e.preventDefault()
+                handleUpdateSession()
+              }}>
+              <label className='flex flex-col gap-2 text-sm'>
+                <span className='text-label-muted'>Session name</span>
+                <input
+                  required
+                  type='text'
+                  value={editForm.name}
+                  onChange={e =>
+                    setEditForm(prev => ({ ...prev, name: e.target.value }))
+                  }
+                  placeholder='Trackmania Turbo LAN'
+                  className='focus:ring-accent/60 focus:border-accent rounded-lg border border-white/10 bg-white/5 px-4 py-2 outline-none transition focus:ring-2'
+                />
+              </label>
+              <label className='flex flex-col gap-2 text-sm'>
+                <span className='text-label-muted'>Date & time</span>
+                <input
+                  required
+                  type='datetime-local'
+                  value={editForm.date}
+                  onChange={e =>
+                    setEditForm(prev => ({ ...prev, date: e.target.value }))
+                  }
+                  className='focus:ring-accent/60 focus:border-accent rounded-lg border border-white/10 bg-white/5 px-4 py-2 outline-none transition focus:ring-2'
+                />
+              </label>
+              <label className='flex flex-col gap-2 text-sm sm:col-span-2'>
+                <span className='text-label-muted'>Location (optional)</span>
+                <input
+                  type='text'
+                  value={editForm.location}
+                  onChange={e =>
+                    setEditForm(prev => ({ ...prev, location: e.target.value }))
+                  }
+                  placeholder='Oslo, Norway'
+                  className='focus:ring-accent/60 focus:border-accent rounded-lg border border-white/10 bg-white/5 px-4 py-2 outline-none transition focus:ring-2'
+                />
+              </label>
+              <label className='flex flex-col gap-2 text-sm sm:col-span-2'>
+                <span className='text-label-muted'>Description (optional)</span>
+                <textarea
+                  value={editForm.description}
+                  onChange={e =>
+                    setEditForm(prev => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
+                  }
+                  placeholder='Share a short agenda or helpful notes'
+                  rows={3}
+                  className='focus:ring-accent/60 focus:border-accent rounded-lg border border-white/10 bg-white/5 px-4 py-2 outline-none transition focus:ring-2'
+                />
+              </label>
+              <div className='flex gap-2 sm:col-span-2'>
+                <Button type='submit' disabled={updating} className='flex-1'>
+                  {updating ? 'Saving…' : 'Save changes'}
+                </Button>
+                <Button
+                  type='button'
+                  variant='secondary'
+                  disabled={updating}
+                  onClick={() => setEditingSessionId(null)}
+                  className='flex-1'>
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

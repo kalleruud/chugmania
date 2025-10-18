@@ -108,6 +108,39 @@ export function isCreateSessionRequest(
   return hasName && hasDate && hasLocation && hasDescription
 }
 
+export type UpdateSessionRequest = {
+  id: Session['id']
+  name?: string
+  date?: string
+  location?: string
+  description?: string
+}
+
+export function isUpdateSessionRequest(
+  data: any
+): data is UpdateSessionRequest {
+  if (typeof data !== 'object' || data === null) return false
+  const hasId = typeof data.id === 'string'
+  const hasName = data.name === undefined || typeof data.name === 'string'
+  const hasDate = data.date === undefined || typeof data.date === 'string'
+  const hasLocation =
+    data.location === undefined || typeof data.location === 'string'
+  const hasDescription =
+    data.description === undefined || typeof data.description === 'string'
+  return hasId && hasName && hasDate && hasLocation && hasDescription
+}
+
+export type DeleteSessionRequest = {
+  id: Session['id']
+}
+
+export function isDeleteSessionRequest(
+  data: any
+): data is DeleteSessionRequest {
+  if (typeof data !== 'object' || data === null) return false
+  return typeof data.id === 'string'
+}
+
 export type SessionSignupRequest = {
   session: Session['id']
   response?: 'yes' | 'no' | 'maybe'

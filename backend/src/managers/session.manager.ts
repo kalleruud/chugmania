@@ -2,7 +2,9 @@ import { and, asc, eq } from 'drizzle-orm'
 import type { Socket } from 'socket.io'
 import {
   isCreateSessionRequest,
+  isDeleteSessionRequest,
   isSessionSignupRequest,
+  isUpdateSessionRequest,
 } from '../../../common/models/requests'
 import type {
   BackendResponse,
@@ -102,6 +104,121 @@ export default class SessionManager {
     })
 
     console.debug(new Date().toISOString(), socket.id, 'Created session', name)
+
+    SessionManager.broadcastSessions(socket)
+
+    return { success: true }
+  }
+
+  static async onUpdateSession(
+    socket: Socket,
+    request: unknown
+  ): Promise<BackendResponse> {
+    if (!isUpdateSessionRequest(request))
+      throw new Error('Invalid update session request')
+
+    const { data: user, error } = await AuthManager.checkAuth(socket)
+    if (error)
+      return {
+        success: false,
+        message: error.message,
+      }
+
+    if (user.role === 'user')
+      return {
+        success: false,
+        message: `Role '${user.role}' is not allowed to update sessions.`,
+      }
+
+    const session = await db.query.sessions.findFirst({
+      where: eq(sessions.id, request.id),
+    })
+    if (!session)
+      return {
+        success: false,
+        message: 'Session not found.',
+      }
+
+    const updates: Record<string, any> = {}
+    if (request.name !== undefined) {
+      const name = request.name.trim()
+      if (!name)
+        return {
+          success: false,
+          message: 'Session name cannot be empty.',
+        }
+      updates.name = name
+    }
+    if (request.date !== undefined) {
+      const date = new Date(request.date)
+      if (Number.isNaN(date.getTime()))
+        return {
+          success: false,
+          message: 'Session date is invalid.',
+        }
+      updates.date = date
+    }
+    if (request.location !== undefined) {
+      updates.location = request.location.trim() || null
+    }
+    if (request.description !== undefined) {
+      updates.description = request.description.trim() || null
+    }
+
+    if (Object.keys(updates).length > 0) {
+      await db.update(sessions).set(updates).where(eq(sessions.id, session.id))
+    }
+
+    console.debug(
+      new Date().toISOString(),
+      socket.id,
+      'Updated session',
+      session.id,
+      updates
+    )
+
+    SessionManager.broadcastSessions(socket)
+
+    return { success: true }
+  }
+
+  static async onDeleteSession(
+    socket: Socket,
+    request: unknown
+  ): Promise<BackendResponse> {
+    if (!isDeleteSessionRequest(request))
+      throw new Error('Invalid delete session request')
+
+    const { data: user, error } = await AuthManager.checkAuth(socket)
+    if (error)
+      return {
+        success: false,
+        message: error.message,
+      }
+
+    if (user.role === 'user')
+      return {
+        success: false,
+        message: `Role '${user.role}' is not allowed to delete sessions.`,
+      }
+
+    const session = await db.query.sessions.findFirst({
+      where: eq(sessions.id, request.id),
+    })
+    if (!session)
+      return {
+        success: false,
+        message: 'Session not found.',
+      }
+
+    await db.delete(sessions).where(eq(sessions.id, session.id))
+
+    console.debug(
+      new Date().toISOString(),
+      socket.id,
+      'Deleted session',
+      session.id
+    )
 
     SessionManager.broadcastSessions(socket)
 

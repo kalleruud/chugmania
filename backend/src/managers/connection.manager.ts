@@ -5,6 +5,7 @@ import type {
 } from '../../../common/models/responses'
 import {
   WS_CREATE_SESSION,
+  WS_DELETE_SESSION,
   WS_EXPORT_CSV,
   WS_GET_LEADERBOARD,
   WS_GET_LEADERBOARD_SUMMARIES,
@@ -20,6 +21,7 @@ import {
   WS_LOGIN_NAME,
   WS_POST_LAPTIME,
   WS_REGISTER_NAME,
+  WS_UPDATE_SESSION,
 } from '../../../common/utils/constants'
 import AdminManager from './admin.manager'
 import AuthManager from './auth.manager'
@@ -76,6 +78,16 @@ export default class ConnectionManager {
       s,
       WS_CREATE_SESSION,
       SessionManager.onCreateSession
+    )
+    ConnectionManager.setup(
+      s,
+      WS_UPDATE_SESSION,
+      SessionManager.onUpdateSession
+    )
+    ConnectionManager.setup(
+      s,
+      WS_DELETE_SESSION,
+      SessionManager.onDeleteSession
     )
     ConnectionManager.setup(s, WS_JOIN_SESSION, SessionManager.onJoinSession)
     ConnectionManager.setup(s, WS_LEAVE_SESSION, SessionManager.onLeaveSession)
