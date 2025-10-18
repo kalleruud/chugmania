@@ -181,9 +181,7 @@ export default function Admin() {
                   type='button'
                   variant='secondary'
                   size='sm'
-                  onClick={() =>
-                    handleExport(table as ExportCsvRequest['table'])
-                  }
+                  onClick={() => handleExport(table)}
                   disabled={isImporting}
                   className='h-8 flex-1'>
                   <Download size={16} />

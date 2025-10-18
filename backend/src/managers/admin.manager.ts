@@ -157,7 +157,7 @@ export default class AdminManager {
           if (value === null || value === undefined) return ''
           if (value instanceof Date) return String(value.getTime())
           if (typeof value === 'string' && value.includes(','))
-            return `"${value.replace(/"/g, '""')}"`
+            return `"${value.replaceAll(/"/, '""')}"`
           return String(value)
         })
         .join(',')
