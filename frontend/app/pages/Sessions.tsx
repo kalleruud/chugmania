@@ -1,10 +1,12 @@
 import {
   CalendarClock,
   CalendarPlus,
+  LogIn,
   MapPin,
   Users as UsersIcon,
 } from 'lucide-react'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
 import type {
   BackendResponse,
   ErrorResponse,
@@ -70,6 +72,7 @@ function getSessionDescription(session: SessionWithSignups) {
 export default function Sessions() {
   const { socket } = useConnection()
   const { user, isLoggedIn } = useAuth()
+  const navigate = useNavigate()
   const [sessions, setSessions] = useState<SessionWithSignups[]>([])
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
@@ -272,7 +275,17 @@ export default function Sessions() {
               size='sm'
               onClick={() => handleJoin(session.id)}
               disabled={isPast || activeSessionId === session.id}>
-              Sign up
+              Join
+            </Button>
+          )}
+
+          {!isLoggedIn && !isPast && (
+            <Button
+              type='button'
+              size='sm'
+              onClick={() => navigate(`/login?redirect=/sessions`)}>
+              <LogIn size={16} />
+              Sign in to join session
             </Button>
           )}
         </div>
