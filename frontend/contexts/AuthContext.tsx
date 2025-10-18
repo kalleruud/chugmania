@@ -1,5 +1,6 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -31,6 +32,8 @@ type AuthContextType = {
   login: (request: LoginRequest) => void
   register: (request: RegisterRequest) => void
   logout: () => void
+  refreshUser: (user: UserInfo, token?: string) => void
+  requiresEmailUpdate: boolean
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
@@ -41,6 +44,16 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [userInfo, setUserInfo] = useState<AuthContextType['user']>(undefined)
   const [errorMessage, setErrorMessage] =
     useState<AuthContextType['errorMessage']>(undefined)
+  const [requiresEmailUpdate, setRequiresEmailUpdate] = useState(false)
+
+  const refreshUser: AuthContextType['refreshUser'] = useCallback(
+    (user, token) => {
+      setUserInfo(user)
+      if (token) setToken(token)
+      setRequiresEmailUpdate(user.email.toLowerCase().endsWith('@chugmania.no'))
+    },
+    [setToken]
+  )
 
   function handleResponse(response: ErrorResponse | LoginResponse) {
     if (!response.success) {
@@ -50,8 +63,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     }
 
     setErrorMessage(undefined)
-    setUserInfo(response.userInfo)
-    setToken(response.token)
+    refreshUser(response.userInfo, response.token)
   }
 
   const login: AuthContextType['login'] = r => {
@@ -65,6 +77,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const logout = () => {
     setToken(undefined)
     setUserInfo(undefined)
+    setRequiresEmailUpdate(false)
     navigate('/login')
   }
 
@@ -82,8 +95,10 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
         login,
         register,
         logout,
+        refreshUser,
+        requiresEmailUpdate,
       }) satisfies AuthContextType,
-    [userInfo, errorMessage]
+    [userInfo, errorMessage, requiresEmailUpdate, refreshUser]
   )
 
   return <AuthContext.Provider value={context}>{children}</AuthContext.Provider>

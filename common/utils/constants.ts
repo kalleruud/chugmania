@@ -11,5 +11,6 @@ export const WS_GET_PLAYER_SUMMARIES = 'get_player_summaries'
 export const WS_GET_PLAYER_DETAILS = 'get_player_details'
 export const WS_POST_LAPTIME = 'post_laptime'
 export const WS_IMPORT_CSV = 'import_csv'
+export const WS_UPDATE_USER = 'update_user'
 
 export const AUTH_KEY = 'auth'

@@ -77,3 +77,37 @@ export function isGetPlayerDetailsRequest(
   if (typeof data !== 'object' || data === null) return false
   return typeof data.playerId === 'string'
 }
+
+export type UpdateUserRequest = {
+  userId: UserInfo['id']
+  email?: UserInfo['email']
+  firstName?: UserInfo['firstName']
+  lastName?: UserInfo['lastName']
+  shortName?: UserInfo['shortName']
+  password?: string
+}
+
+export function isUpdateUserRequest(data: any): data is UpdateUserRequest {
+  if (typeof data !== 'object' || data === null) return false
+  if (typeof data.userId !== 'string') return false
+
+  if (data.email !== undefined && typeof data.email !== 'string') return false
+
+  if (data.firstName !== undefined && typeof data.firstName !== 'string')
+    return false
+
+  if (data.lastName !== undefined && typeof data.lastName !== 'string')
+    return false
+
+  if (
+    data.shortName !== undefined &&
+    data.shortName !== null &&
+    typeof data.shortName !== 'string'
+  )
+    return false
+
+  if (data.password !== undefined && typeof data.password !== 'string')
+    return false
+
+  return true
+}

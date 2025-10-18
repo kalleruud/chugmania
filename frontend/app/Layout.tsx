@@ -8,7 +8,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { Button } from './components/Button'
 import LapTimeInput from './components/LapTimeInput'
@@ -22,7 +22,9 @@ type MobileNavItem = {
 }
 
 export default function Layout() {
-  const { isLoggedIn, user } = useAuth()
+  const { isLoggedIn, user, requiresEmailUpdate } = useAuth()
+  const navigate = useNavigate()
+  const location = useLocation()
   const [showTimeInput, setShowTimeInput] = useState(false)
 
   const containerRef = useRef<HTMLTableRowElement | null>(null)
@@ -58,6 +60,12 @@ export default function Layout() {
       document.body.style.overflow = ''
     }
   }, [showTimeInput])
+
+  useEffect(() => {
+    if (!user || !requiresEmailUpdate) return
+    const target = `/players/${user.id}`
+    if (location.pathname !== target) navigate(target, { replace: true })
+  }, [user, requiresEmailUpdate, location.pathname, navigate])
 
   useEffect(() => {
     if (!containerRef.current) return

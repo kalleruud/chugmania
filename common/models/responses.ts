@@ -13,6 +13,7 @@ export type BackendResponse =
   | GetPlayerSummariesResponse
   | GetPlayerDetailsResponse
   | LoginResponse
+  | UpdateUserResponse
   | SuccessResponse
 
 export type ErrorResponse = {
@@ -59,4 +60,10 @@ export type GetPlayerSummariesResponse = {
 export type GetPlayerDetailsResponse = {
   success: true
   player: PlayerDetail
+}
+
+export type UpdateUserResponse = {
+  success: true
+  userInfo: UserInfo
+  token?: string
 }

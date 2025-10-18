@@ -3,11 +3,13 @@ import type { Socket } from 'socket.io'
 import {
   isLoginRequest,
   isRegisterRequest,
+  isUpdateUserRequest,
 } from '../../../common/models/requests'
 import type {
   BackendResponse,
   ErrorResponse,
   LoginResponse,
+  UpdateUserResponse,
 } from '../../../common/models/responses'
 import { type User, type UserInfo } from '../../../common/models/user'
 import {
@@ -159,5 +161,54 @@ export default class AuthManager {
       token: s.handshake.auth.token,
       userInfo: user,
     } satisfies LoginResponse
+  }
+
+  static async onUpdateUser(
+    socket: Socket,
+    request: unknown
+  ): Promise<BackendResponse> {
+    const { data: actor, error } = await AuthManager.checkAuth(socket)
+    if (error)
+      return { success: false, message: error.message } satisfies ErrorResponse
+
+    if (!isUpdateUserRequest(request))
+      throw new Error('Invalid update user request')
+
+    const isSelf = actor.id === request.userId
+    const isAdmin = actor.role === 'admin'
+
+    if (!isSelf && !isAdmin)
+      return {
+        success: false,
+        message: 'Insufficient permissions',
+      } satisfies ErrorResponse
+
+    const updates: Partial<typeof users.$inferInsert> = {}
+
+    if (request.email !== undefined) updates.email = request.email
+    if (request.firstName !== undefined) updates.firstName = request.firstName
+    if (request.lastName !== undefined) updates.lastName = request.lastName
+    if ('shortName' in request) updates.shortName = request.shortName ?? null
+
+    if (request.password)
+      updates.passwordHash = await AuthManager.hash(request.password)
+
+    const { data: updated, error: updateError } = await tryCatchAsync(
+      UserManager.updateUser(request.userId, updates)
+    )
+
+    if (updateError)
+      return {
+        success: false,
+        message: updateError.message,
+      } satisfies ErrorResponse
+
+    const { userInfo } = UserManager.toUserInfo(updated)
+
+    const response: UpdateUserResponse = { success: true, userInfo }
+
+    if (isSelf) response.token = AuthManager.sign(userInfo)
+
+    return response
   }
 }
