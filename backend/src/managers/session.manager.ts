@@ -24,22 +24,22 @@ export default class SessionManager {
 
     const signupRows = await db
       .select({
-        sessionId: sessionSignups.sessionId,
+        session: sessionSignups.session,
         joinedAt: sessionSignups.createdAt,
         user: users,
       })
       .from(sessionSignups)
-      .innerJoin(users, eq(sessionSignups.userId, users.id))
+      .innerJoin(users, eq(sessionSignups.user, users.id))
       .orderBy(asc(sessionSignups.createdAt))
 
     const grouped = new Map<string, SessionWithSignups['signups']>()
     for (const row of signupRows) {
-      const entry = grouped.get(row.sessionId) ?? []
+      const entry = grouped.get(row.session) ?? []
       entry.push({
         user: UserManager.toUserInfo(row.user).userInfo,
         joinedAt: row.joinedAt,
       })
-      grouped.set(row.sessionId, entry)
+      grouped.set(row.session, entry)
     }
 
     return sessionRows.map(session => ({
@@ -121,7 +121,7 @@ export default class SessionManager {
       }
 
     const session = await db.query.sessions.findFirst({
-      where: eq(sessions.id, request.sessionId),
+      where: eq(sessions.id, request.session),
     })
     if (!session)
       return {
@@ -137,7 +137,7 @@ export default class SessionManager {
 
     await db
       .insert(sessionSignups)
-      .values({ sessionId: session.id, userId: user.id })
+      .values({ session: session.id, user: user.id })
       .onConflictDoNothing()
 
     console.debug(
@@ -167,7 +167,7 @@ export default class SessionManager {
       }
 
     const session = await db.query.sessions.findFirst({
-      where: eq(sessions.id, request.sessionId),
+      where: eq(sessions.id, request.session),
     })
     if (!session)
       return {
@@ -185,8 +185,8 @@ export default class SessionManager {
       .delete(sessionSignups)
       .where(
         and(
-          eq(sessionSignups.sessionId, session.id),
-          eq(sessionSignups.userId, user.id)
+          eq(sessionSignups.session, session.id),
+          eq(sessionSignups.user, user.id)
         )
       )
 

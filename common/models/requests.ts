@@ -100,12 +100,12 @@ export function isCreateSessionRequest(
 }
 
 export type SessionSignupRequest = {
-  sessionId: Session['id']
+  session: Session['id']
 }
 
 export function isSessionSignupRequest(
   data: any
 ): data is SessionSignupRequest {
   if (typeof data !== 'object' || data === null) return false
-  return typeof data.sessionId === 'string'
+  return typeof data.session === 'string'
 }

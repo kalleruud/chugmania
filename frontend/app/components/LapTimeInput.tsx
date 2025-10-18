@@ -229,7 +229,7 @@ export default function LapTimeInput({
         duration: getMs(),
         user: uid,
         track: tid,
-        sessionId: selectedSession?.id,
+        session: selectedSession?.id,
         comment: comment.trim() === '' ? undefined : comment.trim(),
         amount: 0.5,
       } satisfies PostLapTimeRequest,
