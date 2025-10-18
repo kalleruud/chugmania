@@ -23,8 +23,15 @@
 - Implement the simplest solution; avoid unnecessary abstractions
 - Reuse existing components (Button, SearchableDropdown, etc.)
 - Use Tailwind CSS utilities; follow Formula 1 inspired dark-mode design system
-- Backend changes emit Socket.IO events to all clients; unexpected updates show toasts
 - After schema changes, run `npm run db:gen` to generate Drizzle migrations
+
+## Reactive Contract
+
+- Treat the backend as reactive-first: every create/update/delete for tracks, users, lap times, sessions, and session signups must emit Socket.IO change events using the same DTOs as request responses.
+- When adding endpoints, expose a shared fetch helper so the payload used for `emit` matches the payload returned via explicit fetch.
+- Frontend listeners should refresh state through the same data-loading path they use on initial load.
+- Surface change notifications via the shared toast framework; keep toasts reusable for future features like achievements and status alerts.
+- Unexpected updates must still notify users; keep emissions role-aware so clients only receive data they can view.
 
 ## Project Structure
 
