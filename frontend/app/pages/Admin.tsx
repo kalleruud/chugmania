@@ -106,7 +106,7 @@ export default function Admin() {
           element.style.display = 'none'
           document.body.appendChild(element)
           element.click()
-          document.body.removeChild(element)
+          element.remove()
           setIsImporting(false)
         }
       )
@@ -119,7 +119,7 @@ export default function Admin() {
   if (isImporting) return 'Importing...'
 
   return (
-    <div className='mx-auto flex w-full max-w-5xl flex-col gap-6 p-4'>
+    <div className='mx-auto flex w-full max-w-5xl flex-col gap-6 p-4 pb-24'>
       <header className='border-stroke bg-background-secondary flex w-full flex-col gap-3 rounded-3xl border p-6 shadow-lg'>
         <div className='flex items-center gap-3'>
           <span className='bg-accent/20 text-accent inline-flex size-10 items-center justify-center rounded-2xl'>
