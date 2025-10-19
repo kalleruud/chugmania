@@ -40,6 +40,7 @@ export default function Sessions() {
   const [form, setForm] = useState<SessionFormData>(emptyForm)
   const [editForm, setEditForm] = useState<SessionFormData>(emptyForm)
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null)
+  const [showCreateForm, setShowCreateForm] = useState(false)
   const [loadingState, setLoadingState] = useState({
     creating: false,
     updating: false,
@@ -263,16 +264,43 @@ export default function Sessions() {
       </header>
 
       {canManageSessions && (
-        <section className='border-stroke rounded-2xl border bg-white/5 p-6 backdrop-blur-sm'>
-          <h2 className='text-lg font-semibold'>Create a session</h2>
-          <SessionForm
-            data={form}
-            onChange={setForm}
-            onSubmit={handleCreateSession}
-            loading={loadingState.creating}
-            submitLabel='Create session'
-          />
-        </section>
+        <>
+          {!showCreateForm ? (
+            <Button
+              type='button'
+              onClick={() => setShowCreateForm(true)}
+              className='w-full sm:w-auto'>
+              <CalendarPlus size={16} />
+              Create session
+            </Button>
+          ) : (
+            <section className='border-stroke rounded-2xl border bg-white/5 p-6 backdrop-blur-sm'>
+              <div className='mb-4 flex items-center justify-between'>
+                <h2 className='text-lg font-semibold'>Create a session</h2>
+                <Button
+                  type='button'
+                  variant='secondary'
+                  size='sm'
+                  onClick={() => {
+                    setShowCreateForm(false)
+                    setForm(emptyForm)
+                  }}>
+                  Cancel
+                </Button>
+              </div>
+              <SessionForm
+                data={form}
+                onChange={setForm}
+                onSubmit={e => {
+                  handleCreateSession(e)
+                  setShowCreateForm(false)
+                }}
+                loading={loadingState.creating}
+                submitLabel='Create session'
+              />
+            </section>
+          )}
+        </>
       )}
 
       <section className='space-y-4'>
