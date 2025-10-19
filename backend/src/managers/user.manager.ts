@@ -39,6 +39,41 @@ export default class UserManager {
     return user[0]!
   }
 
+  static async getUserById(id: User['id']) {
+    const { data: user, error } = await tryCatchAsync(
+      db.query.users.findFirst({ where: eq(users.id, id) })
+    )
+
+    if (error) throw error
+    if (!user) throw new Error(`Couldn't find user with id ${id}`)
+
+    return user
+  }
+
+  static async updateUser(
+    id: User['id'],
+    updates: Partial<typeof users.$inferInsert>
+  ) {
+    const entries = Object.entries(updates).filter(
+      ([, value]) => value !== undefined
+    )
+
+    if (entries.length === 0) return UserManager.getUserById(id)
+
+    const { data, error } = await tryCatchAsync(
+      db
+        .update(users)
+        .set(Object.fromEntries(entries))
+        .where(eq(users.id, id))
+        .returning()
+    )
+
+    if (error) throw error
+    if (!data?.[0]) throw new Error(`Couldn't find user with id ${id}`)
+
+    return data[0]!
+  }
+
   static toUserInfo(user: User) {
     const userInfo: UserInfo = { ...user, passwordHash: undefined }
     return { passwordHash: user.passwordHash, userInfo }

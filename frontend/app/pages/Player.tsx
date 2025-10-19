@@ -1,12 +1,17 @@
-import { useEffect, useMemo, useState } from 'react'
+import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import type { PlayerDetail } from '../../../common/models/playerDetail'
+import type { UpdateUserRequest } from '../../../common/models/requests'
 import {
   type ErrorResponse,
   type GetPlayerDetailsResponse,
+  type UpdateUserResponse,
 } from '../../../common/models/responses'
 import type { LeaderboardEntry } from '../../../common/models/timeEntry'
-import { WS_GET_PLAYER_DETAILS } from '../../../common/utils/constants'
+import {
+  WS_GET_PLAYER_DETAILS,
+  WS_UPDATE_USER,
+} from '../../../common/utils/constants'
 import { formatTrackName } from '../../../common/utils/track'
 import { useAuth } from '../../contexts/AuthContext'
 import { useConnection } from '../../contexts/ConnectionContext'
@@ -19,11 +24,23 @@ export default function Player() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { socket } = useConnection()
-  const { user } = useAuth()
+  const { user, refreshUser, requiresEmailUpdate } = useAuth()
 
   const [detail, setDetail] = useState<PlayerDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [formValues, setFormValues] = useState({
+    email: '',
+    firstName: '',
+    lastName: '',
+    shortName: '',
+    password: '',
+  })
+  const [formStatus, setFormStatus] = useState<{
+    type: 'error' | 'success'
+    message: string
+  } | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
     if (!id) {
@@ -48,6 +65,17 @@ export default function Player() {
       }
     )
   }, [id, socket])
+
+  useEffect(() => {
+    if (!detail) return
+    setFormValues({
+      email: detail.user.email,
+      firstName: detail.user.firstName ?? '',
+      lastName: detail.user.lastName ?? '',
+      shortName: detail.user.shortName ?? '',
+      password: '',
+    })
+  }, [detail])
 
   const totalLaps = useMemo(
     () =>
@@ -80,6 +108,77 @@ export default function Player() {
     )
 
   const isSelf = user?.id === detail.user.id
+  const canEdit = isSelf || user?.role === 'admin'
+  const mustUpdateEmail = isSelf && requiresEmailUpdate
+
+  const handleInputChange =
+    (field: keyof typeof formValues) =>
+    (event: ChangeEvent<HTMLInputElement>) => {
+      setFormValues(prev => ({ ...prev, [field]: event.target.value }))
+      setFormStatus(null)
+    }
+
+  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (!detail) return
+
+    const trimmedEmail = formValues.email.trim()
+    const trimmedFirst = formValues.firstName.trim()
+    const trimmedLast = formValues.lastName.trim()
+    const trimmedShort = formValues.shortName.trim()
+
+    const payload: UpdateUserRequest = { userId: detail.user.id }
+
+    if (trimmedEmail && trimmedEmail !== detail.user.email)
+      payload.email = trimmedEmail
+
+    if (trimmedFirst !== (detail.user.firstName ?? ''))
+      payload.firstName = trimmedFirst
+
+    if (trimmedLast !== (detail.user.lastName ?? ''))
+      payload.lastName = trimmedLast
+
+    const currentShort = detail.user.shortName ?? ''
+    if (trimmedShort !== currentShort)
+      payload.shortName = trimmedShort === '' ? null : trimmedShort
+
+    if (formValues.password) payload.password = formValues.password
+
+    if (Object.keys(payload).length === 1) {
+      setFormStatus({ type: 'error', message: 'No changes to update.' })
+      return
+    }
+
+    setIsSubmitting(true)
+    setFormStatus(null)
+
+    socket.emit(
+      WS_UPDATE_USER,
+      payload,
+      (response: UpdateUserResponse | ErrorResponse) => {
+        setIsSubmitting(false)
+        if (!response.success) {
+          setFormStatus({ type: 'error', message: response.message })
+          return
+        }
+
+        setDetail(prev =>
+          prev
+            ? {
+                ...prev,
+                user: response.userInfo,
+              }
+            : prev
+        )
+        setFormValues(prev => ({
+          ...prev,
+          password: '',
+        }))
+        if (isSelf) refreshUser(response.userInfo, response.token)
+        setFormStatus({ type: 'success', message: 'Details updated.' })
+      }
+    )
+  }
 
   return (
     <div className='mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 pb-20 pt-6 sm:px-6 sm:pt-10'>
@@ -115,7 +214,83 @@ export default function Player() {
             This is your profile
           </p>
         )}
+        {mustUpdateEmail && (
+          <p className='text-warning mt-4 text-xs uppercase tracking-widest'>
+            Please update your email before continuing.
+          </p>
+        )}
       </section>
+
+      {canEdit && (
+        <section className='rounded-3xl border border-white/10 bg-black/60 p-6 shadow-[0_20px_80px_-60px_rgba(0,0,0,0.9)] backdrop-blur-xl sm:p-10'>
+          <h2 className='font-f1-bold text-white'>Edit details</h2>
+          <form className='mt-4 grid gap-4 sm:grid-cols-2' onSubmit={onSubmit}>
+            <label className='text-label-muted flex flex-col gap-2 text-xs uppercase tracking-widest'>
+              Email
+              <input
+                className='bg-background-secondary rounded-lg border border-white/10 px-3 py-2 text-base text-white'
+                type='email'
+                value={formValues.email}
+                onChange={handleInputChange('email')}
+                required
+              />
+            </label>
+            <label className='text-label-muted flex flex-col gap-2 text-xs uppercase tracking-widest'>
+              First name
+              <input
+                className='bg-background-secondary rounded-lg border border-white/10 px-3 py-2 text-base text-white'
+                value={formValues.firstName}
+                onChange={handleInputChange('firstName')}
+              />
+            </label>
+            <label className='text-label-muted flex flex-col gap-2 text-xs uppercase tracking-widest'>
+              Last name
+              <input
+                className='bg-background-secondary rounded-lg border border-white/10 px-3 py-2 text-base text-white'
+                value={formValues.lastName}
+                onChange={handleInputChange('lastName')}
+              />
+            </label>
+            <label className='text-label-muted flex flex-col gap-2 text-xs uppercase tracking-widest'>
+              Short name
+              <input
+                className='bg-background-secondary rounded-lg border border-white/10 px-3 py-2 text-base text-white'
+                value={formValues.shortName}
+                onChange={handleInputChange('shortName')}
+              />
+            </label>
+            <label className='text-label-muted flex flex-col gap-2 text-xs uppercase tracking-widest sm:col-span-2'>
+              Password
+              <input
+                className='bg-background-secondary rounded-lg border border-white/10 px-3 py-2 text-base text-white'
+                type='password'
+                value={formValues.password}
+                onChange={handleInputChange('password')}
+                placeholder='Leave blank to keep current password'
+              />
+            </label>
+
+            {formStatus && (
+              <p
+                className={`text-sm sm:col-span-2 ${
+                  formStatus.type === 'error' ? 'text-warning' : 'text-accent'
+                }`}>
+                {formStatus.message}
+              </p>
+            )}
+
+            <div className='flex justify-end gap-2 sm:col-span-2'>
+              <Button
+                type='submit'
+                size='sm'
+                disabled={isSubmitting}
+                className='uppercase tracking-widest'>
+                {isSubmitting ? 'Saving…' : 'Save changes'}
+              </Button>
+            </div>
+          </form>
+        </section>
+      )}
 
       {detail.tracks.length === 0 ? (
         <p className='text-label-muted text-sm'>No lap times recorded yet.</p>

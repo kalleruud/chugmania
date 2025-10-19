@@ -22,6 +22,7 @@ import {
   WS_LOGIN_NAME,
   WS_POST_LAPTIME,
   WS_REGISTER_NAME,
+  WS_UPDATE_USER,
   WS_UPDATE_SESSION,
 } from '../../../common/utils/constants'
 import AdminManager from './admin.manager'
@@ -41,6 +42,7 @@ export default class ConnectionManager {
     ConnectionManager.setup(s, WS_LOGIN_NAME, AuthManager.onLogin)
     ConnectionManager.setup(s, WS_REGISTER_NAME, AuthManager.onRegister)
     ConnectionManager.setup(s, WS_GET_USER_DATA, AuthManager.onGetUserData)
+    ConnectionManager.setup(s, WS_UPDATE_USER, AuthManager.onUpdateUser)
     ConnectionManager.setup(s, WS_GET_USERS, UserManager.onGetUsers)
 
     // Setup leaderboard handling
