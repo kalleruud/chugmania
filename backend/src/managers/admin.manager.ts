@@ -1,14 +1,18 @@
 import type { Socket } from 'socket.io'
-import { isImportCsvRequest } from '../../../common/models/requests'
+import {
+  isExportCsvRequest,
+  isImportCsvRequest,
+} from '../../../common/models/requests'
 import type {
   BackendResponse,
   ErrorResponse,
+  ExportCsvResponse,
   SuccessResponse,
 } from '../../../common/models/responses'
 import { tryCatchAsync } from '../../../common/utils/try-catch'
 import db from '../../database/database'
 import * as schema from '../../database/schema'
-import { timeEntries, tracks, users } from '../../database/schema'
+import { sessions, timeEntries, tracks, users } from '../../database/schema'
 import CsvParser from '../utils/csv-parser'
 import AuthManager from './auth.manager'
 
@@ -34,18 +38,8 @@ export default class AdminManager {
     if (!isImportCsvRequest(request))
       throw new Error('Invalid CSV import request payload')
 
-    const { data: user, error } = await AuthManager.checkAuth(socket)
-    if (error)
-      return {
-        success: false,
-        message: error.message,
-      } satisfies BackendResponse
-
-    if (user.role !== 'admin')
-      return {
-        success: false,
-        message: 'Only admins can import CSV data.',
-      }
+    const { error } = await AuthManager.checkAuth(socket, ['admin'])
+    if (error) return error
 
     console.debug(
       new Date().toISOString(),
@@ -65,6 +59,9 @@ export default class AdminManager {
       case 'timeEntries':
         task = AdminManager.import(timeEntries, request.content)
         break
+      case 'sessions':
+        task = AdminManager.import(sessions, request.content)
+        break
       default:
         throw new Error(`Invalid table: '${request.table}'`)
     }
@@ -80,5 +77,78 @@ export default class AdminManager {
       success: true,
       message: `Imported ${data.imported}/${data.total} ${request.table}`,
     } satisfies SuccessResponse
+  }
+
+  static async onExportCsv(
+    socket: Socket,
+    request: unknown
+  ): Promise<BackendResponse> {
+    if (!isExportCsvRequest(request))
+      throw new Error('Invalid CSV export request payload')
+
+    const { error } = await AuthManager.checkAuth(socket, ['admin'])
+    if (error) return error
+
+    console.debug(
+      new Date().toISOString(),
+      socket.id,
+      'Exporting CSV table:',
+      request.table
+    )
+
+    let records: object[] = []
+    switch (request.table) {
+      case 'users':
+        records = await db.query.users.findMany()
+        break
+      case 'tracks':
+        records = await db.query.tracks.findMany()
+        break
+      case 'timeEntries':
+        records = await db.query.timeEntries.findMany()
+        break
+      case 'sessions':
+        records = await db.query.sessions.findMany()
+        break
+      default:
+        throw new Error(`Invalid table: '${request.table}'`)
+    }
+
+    const csv = AdminManager.objectsToCsv(records)
+    if (csv === null)
+      return {
+        success: false,
+        message: 'No data to export',
+      } satisfies ErrorResponse
+
+    return {
+      success: true,
+      csv,
+    } satisfies ExportCsvResponse
+  }
+
+  private static objectsToCsv<T extends Record<string, any>>(
+    objects: T[]
+  ): string | null {
+    if (objects.length === 0) {
+      console.warn('No objects to convert to CSV')
+      return null
+    }
+
+    const headers = Object.keys(objects[0]!)
+    const rows = objects.map(obj =>
+      headers
+        .map(header => {
+          const value = obj[header]
+          if (value === null || value === undefined) return ''
+          if (value instanceof Date) return String(value.getTime())
+          if (typeof value === 'string' && value.includes(','))
+            return `"${value.replaceAll(/"/, '""')}"`
+          return String(value)
+        })
+        .join(',')
+    )
+
+    return [headers.join(','), ...rows].join('\n')
   }
 }

@@ -17,7 +17,7 @@ const variantStyles: Record<ButtonVariant, string> = {
     'to-accent-secondary font-bold from-accent shadow-accent/60 bg-gradient-to-br shadow-[0_10px_30px_-10px_rgba(var(--color-accent),0.6)] hover:brightness-110',
   secondary:
     'border border-white/10 font-bold bg-white/5 hover:border-white/20 hover:bg-white/10',
-  tertiary: 'text-label-muted hover:text-accent px-0 py-0',
+  tertiary: 'text-label-muted hover:text-accent p-0',
 }
 
 const sizeStyles: Record<ButtonSize, string> = {
@@ -26,16 +26,10 @@ const sizeStyles: Record<ButtonSize, string> = {
   lg: 'px-5 py-4 text-base',
 }
 
-const tertiarySizeStyles: Record<ButtonSize, string> = {
-  sm: 'text-xs',
-  md: 'text-sm',
-  lg: 'text-base',
-}
-
 const stateStyles: Record<ButtonState, string> = {
   default: '',
-  unselected: 'opacity-70 hover:opacity-100',
-  selected: 'ring-2 ring-accent/60',
+  unselected: 'opacity-50',
+  selected: '',
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -53,16 +47,21 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ) => {
     const isDisabled = disabled === true || rest['aria-disabled'] === 'true'
 
-    const appliedSize =
-      variant === 'tertiary' ? tertiarySizeStyles[size] : sizeStyles[size]
+    const getEffectiveVariant = (): ButtonVariant => {
+      if (state === 'selected') return 'primary'
+      if (state === 'unselected') return 'secondary'
+      return variant
+    }
+
+    const effectiveVariant = getEffectiveVariant()
 
     return (
       <button
         ref={ref}
         className={twMerge(
           'font-f1 flex cursor-pointer items-center justify-center gap-2 rounded-xl uppercase tracking-wider transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none disabled:saturate-0',
-          variantStyles[variant],
-          appliedSize,
+          sizeStyles[size],
+          variantStyles[effectiveVariant],
           className,
           stateStyles[state]
         )}

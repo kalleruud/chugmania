@@ -71,7 +71,7 @@ export default function FileDrop({
   }
 
   const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
-    void handleFiles(event.target.files)
+    handleFiles(event.target.files)
     // Allow selecting the same file again
     event.target.value = ''
   }
@@ -90,7 +90,7 @@ export default function FileDrop({
   const handleDrop: DragEventHandler<HTMLButtonElement> = event => {
     event.preventDefault()
     setDragging(false)
-    void handleFiles(event.dataTransfer.files)
+    handleFiles(event.dataTransfer.files)
   }
 
   return (
