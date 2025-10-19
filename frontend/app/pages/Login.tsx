@@ -7,7 +7,7 @@ import {
   type FormEvent,
   type InputHTMLAttributes,
 } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { twMerge } from 'tailwind-merge'
 import { useAuth } from '../../contexts/AuthContext'
 import { Button } from '../components/Button'
@@ -41,6 +41,7 @@ function Field({
 export default function Login() {
   const { login, register, errorMessage, isLoggedIn } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [email, setEmail] = useState('')
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -68,8 +69,10 @@ export default function Login() {
   }
 
   useEffect(() => {
-    if (isLoggedIn) return navigate('/')
-  }, [isLoggedIn])
+    if (!isLoggedIn) return
+    const redirectTo = searchParams.get('redirect') ?? '/'
+    navigate(redirectTo)
+  }, [isLoggedIn, searchParams, navigate])
 
   return (
     <div className='font-f1 flex h-dvh w-full items-center justify-center sm:items-baseline'>
