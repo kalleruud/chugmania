@@ -8,7 +8,7 @@ import {
   WS_DISCONNECT_NAME,
 } from '../../common/utils/constants'
 import db from '../database/database'
-import { sessions } from '../database/schema'
+import { sessionSignups, sessions, users } from '../database/schema'
 import ConnectionManager from './managers/connection.manager'
 
 const PORT = process.env.PORT ? Number.parseInt(process.env.PORT) : 6996
@@ -22,8 +22,32 @@ app.get('/api/sessions/calendar.ics', async (req, res) => {
       .where(isNull(sessions.deletedAt))
       .orderBy(asc(sessions.date), asc(sessions.createdAt))
 
+    const signupRows = await db
+      .select({
+        sessionId: sessionSignups.session,
+        userEmail: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
+      })
+      .from(sessionSignups)
+      .innerJoin(users, eq(sessionSignups.user, users.id))
+
+    const signupsBySession = new Map<
+      string,
+      Array<{ email: string; name: string }>
+    >()
+    for (const signup of signupRows) {
+      const attendees = signupsBySession.get(signup.sessionId) ?? []
+      attendees.push({
+        email: signup.userEmail,
+        name: `${signup.firstName} ${signup.lastName ?? ''}`.trim(),
+      })
+      signupsBySession.set(signup.sessionId, attendees)
+    }
+
     const calendar = createSessionsCalendar(
       sessionRows,
+      signupsBySession,
       req.protocol,
       req.get('host'),
       'Chugmania Sessions'
@@ -57,8 +81,31 @@ app.get('/api/sessions/:id/calendar.ics', async (req, res) => {
       return
     }
 
+    const signupRows = await db
+      .select({
+        sessionId: sessionSignups.session,
+        userEmail: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
+      })
+      .from(sessionSignups)
+      .where(eq(sessionSignups.session, sessionId))
+      .innerJoin(users, eq(sessionSignups.user, users.id))
+
+    const attendees = signupRows.map(signup => ({
+      email: signup.userEmail,
+      name: `${signup.firstName} ${signup.lastName ?? ''}`.trim(),
+    }))
+
+    const signupsBySession = new Map<
+      string,
+      Array<{ email: string; name: string }>
+    >()
+    signupsBySession.set(sessionId, attendees)
+
     const calendar = createSessionsCalendar(
       [session],
+      signupsBySession,
       req.protocol,
       req.get('host'),
       session.name
@@ -95,6 +142,7 @@ const PRODUCT_ID = '-//Chugmania//Sessions//EN'
 
 function createSessionsCalendar(
   sessionList: (typeof sessions.$inferSelect)[],
+  signupsBySession: Map<string, Array<{ email: string; name: string }>>,
   protocol: string,
   host: string | undefined,
   calendarName: string
@@ -104,7 +152,12 @@ function createSessionsCalendar(
     : (process.env.ORIGIN ?? 'http://localhost:' + PORT)
 
   const events = sessionList.map(session =>
-    createSessionEvent(session, baseUrl, calendarName)
+    createSessionEvent(
+      session,
+      signupsBySession.get(session.id) ?? [],
+      baseUrl,
+      calendarName
+    )
   )
 
   const { error, value } = createEvents(events, {
@@ -119,6 +172,7 @@ function createSessionsCalendar(
 
 function createSessionEvent(
   session: typeof sessions.$inferSelect,
+  attendees: Array<{ email: string; name: string }>,
   baseUrl: string,
   calendarName: string
 ): EventAttributes {
@@ -129,6 +183,12 @@ function createSessionEvent(
   const createdAt = session.createdAt ?? start
   const updatedAt = session.updatedAt ?? createdAt
   const descriptionText = session.description?.trim()
+
+  const eventAttendees = attendees.map(attendee => ({
+    name: attendee.name,
+    email: attendee.email,
+    rsvp: true,
+  }))
 
   return {
     title: session.name,
@@ -147,6 +207,7 @@ function createSessionEvent(
     endOutputType: 'utc',
     created: toUtcArray(createdAt),
     lastModified: toUtcArray(updatedAt),
+    attendees: eventAttendees,
   }
 }
 
