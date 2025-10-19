@@ -46,12 +46,14 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     ref
   ) => {
     const isDisabled = disabled === true || rest['aria-disabled'] === 'true'
-    const effectiveVariant =
-      state === 'selected'
-        ? 'primary'
-        : state === 'unselected'
-          ? 'secondary'
-          : variant
+
+    const getEffectiveVariant = (): ButtonVariant => {
+      if (state === 'selected') return 'primary'
+      if (state === 'unselected') return 'secondary'
+      return variant
+    }
+
+    const effectiveVariant = getEffectiveVariant()
 
     return (
       <button
