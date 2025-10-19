@@ -26,7 +26,7 @@ export function SessionForm({
   submitLabel,
   isModal = false,
   onCancel,
-}: SessionFormProps) {
+}: Readonly<SessionFormProps>) {
   const handleChange = (key: keyof SessionFormData, value: string) => {
     onChange({ ...data, [key]: value })
   }

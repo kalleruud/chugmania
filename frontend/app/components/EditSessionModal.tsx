@@ -18,7 +18,7 @@ export function EditSessionModal({
   onClose,
   onChange,
   onSubmit,
-}: EditSessionModalProps) {
+}: Readonly<EditSessionModalProps>) {
   if (!isOpen) return null
 
   return (

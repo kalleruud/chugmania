@@ -265,15 +265,7 @@ export default function Sessions() {
 
       {canManageSessions && (
         <>
-          {!showCreateForm ? (
-            <Button
-              type='button'
-              onClick={() => setShowCreateForm(true)}
-              className='w-full sm:w-auto'>
-              <CalendarPlus size={16} />
-              Create session
-            </Button>
-          ) : (
+          {showCreateForm ? (
             <section className='border-stroke rounded-2xl border bg-white/5 p-6 backdrop-blur-sm'>
               <div className='mb-4 flex items-center justify-between'>
                 <h2 className='text-lg font-semibold'>Create a session</h2>
@@ -299,6 +291,14 @@ export default function Sessions() {
                 submitLabel='Create session'
               />
             </section>
+          ) : (
+            <Button
+              type='button'
+              onClick={() => setShowCreateForm(true)}
+              className='w-full sm:w-auto'>
+              <CalendarPlus size={16} />
+              Create session
+            </Button>
           )}
         </>
       )}

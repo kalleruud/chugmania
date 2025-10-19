@@ -48,7 +48,7 @@ export function SessionCard({
   onLeave,
   onAddCalendar,
   loading,
-}: SessionCardProps) {
+}: Readonly<SessionCardProps>) {
   const navigate = useNavigate()
   const date = new Date(session.date)
   const isSignedUp = userResponse !== undefined
