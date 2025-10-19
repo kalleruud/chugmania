@@ -23,6 +23,7 @@ const metadata = {
 
 export type UserRole = 'admin' | 'moderator' | 'user'
 export type SessionResponse = 'yes' | 'no' | 'maybe'
+export type SessionStatus = 'confirmed' | 'tentative' | 'cancelled'
 
 export const users = sqliteTable('users', {
   ...id,
@@ -56,6 +57,10 @@ export const sessions = sqliteTable('sessions', {
   description: text(),
   date: integer({ mode: 'timestamp_ms' }).notNull(),
   location: text(),
+  status: text()
+    .$type<SessionStatus>()
+    .notNull()
+    .$default(() => 'confirmed'),
 })
 
 export const sessionSignups = sqliteTable(

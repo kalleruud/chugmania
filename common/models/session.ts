@@ -1,5 +1,5 @@
 import { sessionSignups, sessions } from '../../backend/database/schema'
-import { UserInfo } from './user'
+import { type UserInfo } from './user'
 
 export type Session = typeof sessions.$inferSelect
 export type CreateSession = typeof sessions.$inferInsert

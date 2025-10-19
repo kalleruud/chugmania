@@ -23,21 +23,10 @@ import UserManager from './user.manager'
 
 export default class SessionManager {
   public static async getSessions(): Promise<SessionWithSignups[]> {
-    const { data: sessionRows, error } = await tryCatchAsync(
-      db
-        .select()
-        .from(sessions)
-        .orderBy(asc(sessions.date), asc(sessions.createdAt))
-    )
-
-    if (error) {
-      console.error(
-        new Date().toISOString(),
-        'SessionManager.getSessions - Failed to get sessions',
-        error
-      )
-      return []
-    }
+    const sessionRows = await db
+      .select()
+      .from(sessions)
+      .orderBy(asc(sessions.date), asc(sessions.createdAt))
 
     if (!sessionRows || sessionRows.length === 0) {
       console.debug(
@@ -55,23 +44,12 @@ export default class SessionManager {
     )
   }
 
-  static async getSession(
+  public static async getSession(
     sessionId: string
   ): Promise<SessionWithSignups | null> {
-    const { data: session, error } = await tryCatchAsync(
-      db.query.sessions.findFirst({
-        where: eq(sessions.id, sessionId),
-      })
-    )
-
-    if (error) {
-      console.error(
-        new Date().toISOString(),
-        'SessionManager.getSession - Failed to get session',
-        error
-      )
-      return null
-    }
+    const session = await db.query.sessions.findFirst({
+      where: eq(sessions.id, sessionId),
+    })
 
     if (!session) {
       console.warn(
@@ -91,32 +69,21 @@ export default class SessionManager {
   private static async getSessionSignups(
     sessionId: string
   ): Promise<SessionSignup[]> {
-    const { data: signupRows, error } = await tryCatchAsync(
-      db
-        .select({
-          createdAt: sessionSignups.createdAt,
-          updatedAt: sessionSignups.updatedAt,
-          deletedAt: sessionSignups.deletedAt,
-          response: sessionSignups.response,
-          session: sessionSignups.session,
-          user: users,
-        })
-        .from(sessionSignups)
-        .innerJoin(users, eq(sessionSignups.user, users.id))
-        .where(
-          and(eq(sessionSignups.session, sessionId), isNull(users.deletedAt))
-        )
-        .orderBy(asc(sessionSignups.createdAt))
-    )
-
-    if (error) {
-      console.error(
-        new Date().toISOString(),
-        `SessionManager.getSessionSignups - Failed to get session signups for session '${sessionId}'`,
-        error
+    const signupRows = await db
+      .select({
+        createdAt: sessionSignups.createdAt,
+        updatedAt: sessionSignups.updatedAt,
+        deletedAt: sessionSignups.deletedAt,
+        response: sessionSignups.response,
+        session: sessionSignups.session,
+        user: users,
+      })
+      .from(sessionSignups)
+      .innerJoin(users, eq(sessionSignups.user, users.id))
+      .where(
+        and(eq(sessionSignups.session, sessionId), isNull(users.deletedAt))
       )
-      return []
-    }
+      .orderBy(asc(sessionSignups.createdAt))
 
     if (!signupRows || signupRows.length === 0) {
       console.debug(
@@ -318,6 +285,69 @@ export default class SessionManager {
       new Date().toISOString(),
       socket.id,
       'Deleted session',
+      session.id
+    )
+
+    SessionManager.broadcastSessions(socket)
+
+    return { success: true }
+  }
+
+  static async onCancelSession(
+    socket: Socket,
+    request: unknown
+  ): Promise<BackendResponse> {
+    if (!isDeleteSessionRequest(request))
+      throw new Error('Invalid cancel session request')
+
+    const { data: user, error } = await AuthManager.checkAuth(socket)
+    if (error)
+      return {
+        success: false,
+        message: error.message,
+      }
+
+    if (user.role === 'user')
+      return {
+        success: false,
+        message: `Role '${user.role}' is not allowed to cancel sessions.`,
+      }
+
+    const session = await db.query.sessions.findFirst({
+      where: eq(sessions.id, request.id),
+    })
+
+    if (!session)
+      return {
+        success: false,
+        message: 'Session not found.',
+      }
+
+    const { data: _, error: cancelError } = await tryCatchAsync(
+      db
+        .update(sessions)
+        .set({ status: 'cancelled' })
+        .where(eq(sessions.id, session.id))
+    )
+
+    if (cancelError) {
+      console.error(
+        new Date().toISOString(),
+        socket.id,
+        'Failed to cancel session',
+        session.id,
+        cancelError
+      )
+      return {
+        success: false,
+        message: 'Failed to cancel session.',
+      }
+    }
+
+    console.debug(
+      new Date().toISOString(),
+      socket.id,
+      'Cancelled session',
       session.id
     )
 

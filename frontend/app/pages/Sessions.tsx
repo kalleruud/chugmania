@@ -1,4 +1,5 @@
 import {
+  Ban,
   CalendarClock,
   CalendarPlus,
   Check,
@@ -18,6 +19,7 @@ import type {
 } from '../../../common/models/responses'
 import type { SessionWithSignups } from '../../../common/models/session'
 import {
+  WS_CANCEL_SESSION,
   WS_CREATE_SESSION,
   WS_DELETE_SESSION,
   WS_GET_SESSIONS,
@@ -93,6 +95,7 @@ export default function Sessions() {
   })
   const [updating, setUpdating] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [canceling, setCanceling] = useState(false)
 
   const canManageSessions = user?.role === 'admin' || user?.role === 'moderator'
 
@@ -264,6 +267,29 @@ export default function Sessions() {
     )
   }
 
+  function handleCancelSession(sessionId: string) {
+    if (
+      !globalThis.confirm(
+        'Are you sure you want to cancel this session? Participants will be notified.'
+      )
+    ) {
+      return
+    }
+
+    setCanceling(true)
+    socket.emit(
+      WS_CANCEL_SESSION,
+      { id: sessionId },
+      (response: BackendResponse) => {
+        setCanceling(false)
+        if (!response.success) {
+          console.error(response.message)
+          return globalThis.alert(response.message)
+        }
+      }
+    )
+  }
+
   function renderSession(session: SessionWithSignups) {
     const date = new Date(session.date)
     const isPast = hasSessionPassed(session)
@@ -278,10 +304,17 @@ export default function Sessions() {
       maybe: session.signups.filter(s => s.response === 'maybe').length,
     }
 
+    const statusClasses = {
+      confirmed: 'border-stroke bg-white/5 backdrop-blur-sm',
+      tentative:
+        'border-dashed border-yellow-500/30 bg-yellow-500/5 opacity-75 backdrop-blur-sm',
+      cancelled: 'border-stroke bg-red-500/5 opacity-50 backdrop-blur-sm',
+    }
+
     return (
       <div
         key={session.id}
-        className='border-stroke flex flex-col overflow-hidden rounded-2xl border bg-white/5 backdrop-blur-sm'>
+        className={`border-stroke flex flex-col overflow-hidden rounded-2xl border ${statusClasses[session.status] || statusClasses.confirmed}`}>
         <div className='border-b border-white/10 bg-white/10 px-6 py-4'>
           <div className='flex items-start justify-between gap-3'>
             <div className='flex-1'>
@@ -307,6 +340,17 @@ export default function Sessions() {
                     aria-label='Edit session'>
                     <Edit size={16} />
                   </Button>
+                  {session.status !== 'cancelled' && (
+                    <Button
+                      type='button'
+                      variant='secondary'
+                      size='sm'
+                      disabled={activeSessionId === session.id || canceling}
+                      onClick={() => handleCancelSession(session.id)}
+                      aria-label='Cancel session'>
+                      <Ban size={16} />
+                    </Button>
+                  )}
                   <Button
                     type='button'
                     variant='secondary'
@@ -318,8 +362,16 @@ export default function Sessions() {
                   </Button>
                 </>
               )}
-              <Tag variation='colored' selected={!isPast}>
-                {isPast ? 'Completed' : 'Upcoming'}
+              <Tag
+                variation='colored'
+                selected={session.status === 'confirmed' && !isPast}>
+                {session.status === 'cancelled'
+                  ? 'Cancelled'
+                  : session.status === 'tentative'
+                    ? 'Tentative'
+                    : isPast
+                      ? 'Completed'
+                      : 'Upcoming'}
               </Tag>
             </div>
           </div>

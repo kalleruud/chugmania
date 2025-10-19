@@ -66,6 +66,18 @@ export default class CalendarManager {
     const updatedAt = session.updatedAt ?? createdAt
     const descriptionText = session.description?.trim()
 
+    let status: EventAttributes['status']
+    switch (session.status) {
+      case 'cancelled':
+        status = 'CANCELLED'
+        break
+      case 'tentative':
+        status = 'TENTATIVE'
+        break
+      default:
+        status = 'CONFIRMED'
+    }
+
     return {
       title: session.name,
       description: descriptionText,
@@ -79,6 +91,7 @@ export default class CalendarManager {
       transp: 'OPAQUE',
       busyStatus: 'BUSY',
       categories: ['Chugmania', 'Session'],
+      status,
       start: CalendarManager.toUtcArray(start),
       startInputType: 'utc',
       startOutputType: 'utc',

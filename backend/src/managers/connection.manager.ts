@@ -4,6 +4,7 @@ import type {
   ErrorResponse,
 } from '../../../common/models/responses'
 import {
+  WS_CANCEL_SESSION,
   WS_CREATE_SESSION,
   WS_DELETE_SESSION,
   WS_EXPORT_CSV,
@@ -88,6 +89,11 @@ export default class ConnectionManager {
       s,
       WS_DELETE_SESSION,
       SessionManager.onDeleteSession
+    )
+    ConnectionManager.setup(
+      s,
+      WS_CANCEL_SESSION,
+      SessionManager.onCancelSession
     )
     ConnectionManager.setup(s, WS_JOIN_SESSION, SessionManager.onJoinSession)
     ConnectionManager.setup(s, WS_LEAVE_SESSION, SessionManager.onLeaveSession)

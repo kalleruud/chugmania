@@ -141,6 +141,17 @@ export function isDeleteSessionRequest(
   return typeof data.id === 'string'
 }
 
+export type CancelSessionRequest = {
+  id: Session['id']
+}
+
+export function isCancelSessionRequest(
+  data: any
+): data is CancelSessionRequest {
+  if (typeof data !== 'object' || data === null) return false
+  return typeof data.id === 'string'
+}
+
 export type SessionSignupRequest = {
   session: Session['id']
   response?: 'yes' | 'no' | 'maybe'
