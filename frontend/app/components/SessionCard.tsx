@@ -58,14 +58,13 @@ export function SessionCard({
     maybe: session.signups.filter(s => s.response === 'maybe').length,
   }
 
-  const statusLabel =
-    session.status === 'cancelled'
-      ? 'Cancelled'
-      : session.status === 'tentative'
-        ? 'Tentative'
-        : isPast
-          ? 'Completed'
-          : 'Upcoming'
+  const getStatusLabel = (): string => {
+    if (session.status === 'cancelled') return 'Cancelled'
+    if (session.status === 'tentative') return 'Tentative'
+    return isPast ? 'Completed' : 'Upcoming'
+  }
+
+  const statusLabel = getStatusLabel()
 
   const statusClasses = {
     confirmed: 'border-stroke bg-white/5 backdrop-blur-sm',
@@ -73,6 +72,16 @@ export function SessionCard({
       'border-dashed border-yellow-500/30 bg-yellow-500/5 opacity-75 backdrop-blur-sm',
     cancelled: 'border-stroke bg-red-500/5 opacity-50 backdrop-blur-sm',
   }
+
+  const handleRsvpClick = (response: 'yes' | 'no' | 'maybe'): void => {
+    if (userResponse === response) onLeave()
+    else onJoin(response)
+  }
+
+  const getRsvpState = (
+    response: 'yes' | 'no' | 'maybe'
+  ): 'selected' | 'unselected' =>
+    userResponse === response ? 'selected' : 'unselected'
 
   return (
     <div
@@ -173,36 +182,30 @@ export function SessionCard({
                 <Button
                   type='button'
                   size='sm'
-                  state={userResponse === 'yes' ? 'selected' : 'unselected'}
+                  state={getRsvpState('yes')}
                   disabled={loading}
                   className='flex-1'
-                  onClick={() =>
-                    userResponse === 'yes' ? onLeave() : onJoin('yes')
-                  }>
+                  onClick={() => handleRsvpClick('yes')}>
                   <Check size={16} />
                   Yes
                 </Button>
                 <Button
                   type='button'
                   size='sm'
-                  state={userResponse === 'maybe' ? 'selected' : 'unselected'}
+                  state={getRsvpState('maybe')}
                   disabled={loading}
                   className='flex-1'
-                  onClick={() =>
-                    userResponse === 'maybe' ? onLeave() : onJoin('maybe')
-                  }>
+                  onClick={() => handleRsvpClick('maybe')}>
                   <HelpCircle size={16} />
                   Maybe
                 </Button>
                 <Button
                   type='button'
                   size='sm'
-                  state={userResponse === 'no' ? 'selected' : 'unselected'}
+                  state={getRsvpState('no')}
                   disabled={loading}
                   className='flex-1'
-                  onClick={() =>
-                    userResponse === 'no' ? onLeave() : onJoin('no')
-                  }>
+                  onClick={() => handleRsvpClick('no')}>
                   <X size={16} />
                   No
                 </Button>
