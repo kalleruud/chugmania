@@ -577,8 +577,8 @@ export default function Sessions() {
       </section>
 
       {editingSessionId && (
-        <div className='fixed inset-0 flex items-center justify-center bg-black/50 p-4'>
-          <div className='border-stroke w-full max-w-2xl rounded-2xl border bg-white/5 backdrop-blur-sm'>
+        <div className='fixed inset-0 flex items-center justify-center bg-black/50 p-1'>
+          <div className='border-stroke w-full max-w-2xl rounded-2xl border bg-black/50 backdrop-blur-sm'>
             <div className='border-b border-white/10 px-6 py-4'>
               <h2 className='text-lg font-semibold'>Edit session</h2>
             </div>
