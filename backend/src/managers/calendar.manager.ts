@@ -13,7 +13,7 @@ import SessionManager from './session.manager'
 export default class CalendarManager {
   public static readonly PRODUCT_ID = 'chugmania/sessions'
 
-  public static async getAllSessionsCalendar(baseUrl: string): Promise<string> {
+  public static async getAllSessionsCalendar(baseUrl: URL): Promise<string> {
     return CalendarManager.createIcsCalendar(
       await SessionManager.getSessions(),
       baseUrl,
@@ -22,7 +22,7 @@ export default class CalendarManager {
   }
 
   public static async getSessionCalendar(
-    baseUrl: string,
+    baseUrl: URL,
     sessionId: string
   ): Promise<string> {
     const session = await SessionManager.getSession(sessionId)
@@ -36,7 +36,7 @@ export default class CalendarManager {
 
   private static createIcsCalendar(
     sessionList: SessionWithSignups[],
-    baseUrl: string,
+    baseUrl: URL,
     calendarName: string
   ): string {
     const events = sessionList.map(session =>
@@ -55,15 +55,9 @@ export default class CalendarManager {
 
   private static createSessionEvent(
     session: SessionWithSignups,
-    baseUrl: string,
+    baseUrl: URL,
     calendarName: string
   ): EventAttributes {
-    const start = new Date(session.date)
-    const end = new Date(start)
-    end.setUTCHours(23, 59, 0, 0)
-
-    const createdAt = session.createdAt ?? start
-    const updatedAt = session.updatedAt ?? createdAt
     const descriptionText = session.description?.trim()
 
     let status: EventAttributes['status']
@@ -78,13 +72,15 @@ export default class CalendarManager {
         status = 'CONFIRMED'
     }
 
+    baseUrl.pathname = `sessions`
+
     return {
       title: session.name,
       description: descriptionText,
       location: session.location ?? undefined,
-      url: `${baseUrl}/sessions`,
+      url: baseUrl.toString(),
       uid: `${session.id}@chugmania`,
-      sequence: updatedAt.getTime() > createdAt.getTime() ? 1 : 0,
+      sequence: session.updatedAt?.getTime() ?? session.createdAt.getTime(),
       productId: CalendarManager.PRODUCT_ID,
       calName: calendarName,
       classification: 'PRIVATE',
@@ -92,14 +88,14 @@ export default class CalendarManager {
       busyStatus: 'BUSY',
       categories: ['Chugmania', 'Session'],
       status,
-      start: CalendarManager.toUtcArray(start),
+      start: CalendarManager.toUtcArray(session.date),
       startInputType: 'utc',
       startOutputType: 'utc',
-      end: CalendarManager.toUtcArray(end),
-      endInputType: 'utc',
-      endOutputType: 'utc',
-      created: CalendarManager.toUtcArray(createdAt),
-      lastModified: CalendarManager.toUtcArray(updatedAt),
+      duration: { hours: 4 },
+      created: CalendarManager.toUtcArray(session.createdAt),
+      lastModified: session.updatedAt
+        ? CalendarManager.toUtcArray(session.updatedAt)
+        : undefined,
       attendees: session.signups.map(this.createEventAttendee),
     } satisfies EventAttributes
   }

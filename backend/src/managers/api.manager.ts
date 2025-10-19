@@ -8,9 +8,7 @@ export default class ApiManager {
     res: Response
   ) {
     try {
-      const calendar = await CalendarManager.getAllSessionsCalendar(
-        baseUrl.toString()
-      )
+      const calendar = await CalendarManager.getAllSessionsCalendar(baseUrl)
 
       res
         .type('text/calendar; charset=utf-8')
@@ -40,8 +38,8 @@ export default class ApiManager {
       }
 
       const calendar = await CalendarManager.getSessionCalendar(
-        sessionId,
-        baseUrl.toString()
+        baseUrl,
+        sessionId
       )
 
       res
