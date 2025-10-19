@@ -106,33 +106,15 @@ export default class ConnectionManager {
     event: string,
     handler: (s: Socket, request?: unknown) => Promise<BackendResponse>
   ) {
-    s.on(event, async (arg, callback) => {
-      try {
-        const response = await handler(s, arg)
-        callback(response)
-      } catch (error) {
-        ConnectionManager.logError(s, event, error)
-        const message = error instanceof Error ? error.message : 'Unknown error'
-        callback({
-          success: false,
-          message,
-        } satisfies ErrorResponse)
-      }
-    })
-  }
-
-  private static logError(socket: Socket, event: string, error: unknown) {
-    const timestamp = new Date().toISOString()
-    if (error instanceof Error) {
-      console.error(
-        timestamp,
-        socket.id,
-        event,
-        error.message,
-        error.stack ?? ''
-      )
-    } else {
-      console.error(timestamp, socket.id, event, error)
-    }
+    s.on(event, async (arg, callback) =>
+      handler(s, arg)
+        .catch(err =>
+          callback({
+            success: false,
+            message: err.message,
+          } satisfies ErrorResponse)
+        )
+        .then(callback)
+    )
   }
 }
