@@ -50,16 +50,45 @@ export default class AuthManager {
     return Buffer.from(await crypto.subtle.digest('SHA-512', encoder.encode(s)))
   }
 
-  static async checkAuth(socket: Socket): Promise<Result<UserInfo>> {
+  static async checkAuth(
+    socket: Socket,
+    allowedRoles?: UserInfo['role'][]
+  ): Promise<Result<UserInfo, ErrorResponse>> {
     const result = AuthManager.verify(socket.handshake.auth.token)
-    if (result.error) return result
-    const { data: user } = result
+    if (result.error)
+      return {
+        data: null,
+        error: {
+          success: false,
+          message: result.error.message,
+        },
+      }
+
+    const user = result.data
 
     const userExists = await UserManager.userExists(user.email)
     if (!userExists) {
       const message = `User with email '${user.email}' doesn't exist`
       console.warn(new Date().toISOString(), message)
-      return { data: null, error: new Error(message) }
+      return {
+        data: null,
+        error: {
+          success: false,
+          message,
+        },
+      }
+    }
+
+    if (allowedRoles && !allowedRoles.includes(user.role)) {
+      const message = `Role '${user.role}' is not allowed to perform this action.`
+      console.warn(new Date().toISOString(), message)
+      return {
+        data: null,
+        error: {
+          success: false,
+          message,
+        },
+      }
     }
 
     return { data: user, error: null }
@@ -149,11 +178,7 @@ export default class AuthManager {
 
   static async onGetUserData(s: Socket): Promise<BackendResponse> {
     const { data: user, error } = await AuthManager.checkAuth(s)
-    if (error)
-      return {
-        success: false,
-        message: error.message,
-      } satisfies BackendResponse
+    if (error) return error
     return {
       success: true,
       token: s.handshake.auth.token,

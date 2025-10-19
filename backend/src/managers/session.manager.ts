@@ -113,18 +113,11 @@ export default class SessionManager {
     if (!isCreateSessionRequest(request))
       throw new Error('Invalid create session request')
 
-    const { data: user, error } = await AuthManager.checkAuth(socket)
-    if (error)
-      return {
-        success: false,
-        message: error.message,
-      }
-
-    if (user.role === 'user')
-      return {
-        success: false,
-        message: `Role '${user.role}' is not allowed to create sessions.`,
-      }
+    const { error } = await AuthManager.checkAuth(socket, [
+      'admin',
+      'moderator',
+    ])
+    if (error) return error
 
     const name = request.name.trim()
     if (!name)
@@ -164,18 +157,11 @@ export default class SessionManager {
     if (!isUpdateSessionRequest(request))
       throw new Error('Invalid update session request')
 
-    const { data: user, error } = await AuthManager.checkAuth(socket)
-    if (error)
-      return {
-        success: false,
-        message: error.message,
-      }
-
-    if (user.role === 'user')
-      return {
-        success: false,
-        message: `Role '${user.role}' is not allowed to update sessions.`,
-      }
+    const { error } = await AuthManager.checkAuth(socket, [
+      'admin',
+      'moderator',
+    ])
+    if (error) return error
 
     const session = await db.query.sessions.findFirst({
       where: eq(sessions.id, request.id),
@@ -237,18 +223,8 @@ export default class SessionManager {
     if (!isDeleteSessionRequest(request))
       throw new Error('Invalid delete session request')
 
-    const { data: user, error } = await AuthManager.checkAuth(socket)
-    if (error)
-      return {
-        success: false,
-        message: error.message,
-      }
-
-    if (user.role !== 'admin')
-      return {
-        success: false,
-        message: `Role '${user.role}' is not allowed to delete sessions.`,
-      }
+    const { error } = await AuthManager.checkAuth(socket, ['admin'])
+    if (error) return error
 
     const session = await db.query.sessions.findFirst({
       where: eq(sessions.id, request.id),
@@ -260,7 +236,7 @@ export default class SessionManager {
         message: 'Session not found.',
       }
 
-    const { data: _, error: deleteError } = await tryCatchAsync(
+    const { error: deleteError } = await tryCatchAsync(
       db
         .update(sessions)
         .set({ deletedAt: new Date() })
@@ -300,18 +276,11 @@ export default class SessionManager {
     if (!isDeleteSessionRequest(request))
       throw new Error('Invalid cancel session request')
 
-    const { data: user, error } = await AuthManager.checkAuth(socket)
-    if (error)
-      return {
-        success: false,
-        message: error.message,
-      }
-
-    if (user.role === 'user')
-      return {
-        success: false,
-        message: `Role '${user.role}' is not allowed to cancel sessions.`,
-      }
+    const { error } = await AuthManager.checkAuth(socket, [
+      'admin',
+      'moderator',
+    ])
+    if (error) return error
 
     const session = await db.query.sessions.findFirst({
       where: eq(sessions.id, request.id),
@@ -323,7 +292,7 @@ export default class SessionManager {
         message: 'Session not found.',
       }
 
-    const { data: _, error: cancelError } = await tryCatchAsync(
+    const { error: cancelError } = await tryCatchAsync(
       db
         .update(sessions)
         .set({ status: 'cancelled' })
@@ -364,11 +333,7 @@ export default class SessionManager {
       throw new Error('Invalid session signup request')
 
     const { data: user, error } = await AuthManager.checkAuth(socket)
-    if (error)
-      return {
-        success: false,
-        message: error.message,
-      }
+    if (error) return error
 
     const session = await db.query.sessions.findFirst({
       where: eq(sessions.id, request.session),
@@ -414,11 +379,7 @@ export default class SessionManager {
       throw new Error('Invalid cancel session request')
 
     const { data: user, error } = await AuthManager.checkAuth(socket)
-    if (error)
-      return {
-        success: false,
-        message: error.message,
-      }
+    if (error) return error
 
     const session = await db.query.sessions.findFirst({
       where: eq(sessions.id, request.session),

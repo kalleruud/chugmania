@@ -38,18 +38,8 @@ export default class AdminManager {
     if (!isImportCsvRequest(request))
       throw new Error('Invalid CSV import request payload')
 
-    const { data: user, error } = await AuthManager.checkAuth(socket)
-    if (error)
-      return {
-        success: false,
-        message: error.message,
-      } satisfies BackendResponse
-
-    if (user.role !== 'admin')
-      return {
-        success: false,
-        message: 'Only admins can import CSV data.',
-      }
+    const { error } = await AuthManager.checkAuth(socket, ['admin'])
+    if (error) return error
 
     console.debug(
       new Date().toISOString(),
@@ -96,18 +86,8 @@ export default class AdminManager {
     if (!isExportCsvRequest(request))
       throw new Error('Invalid CSV export request payload')
 
-    const { data: user, error } = await AuthManager.checkAuth(socket)
-    if (error)
-      return {
-        success: false,
-        message: error.message,
-      } satisfies BackendResponse
-
-    if (user.role !== 'admin')
-      return {
-        success: false,
-        message: 'Only admins can export CSV data.',
-      }
+    const { error } = await AuthManager.checkAuth(socket, ['admin'])
+    if (error) return error
 
     console.debug(
       new Date().toISOString(),
