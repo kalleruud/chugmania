@@ -2,19 +2,14 @@ import type { Request, Response } from 'express'
 import CalendarManager from './calendar.manager'
 
 export default class ApiManager {
-  static async handleGetAllSessionsCalendar(req: Request, res: Response) {
+  static async handleGetAllSessionsCalendar(
+    baseUrl: URL,
+    req: Request,
+    res: Response
+  ) {
     try {
-      const protocol = req.protocol
-      const host = req.get('host')
-      const port = process.env.PORT ? Number.parseInt(process.env.PORT) : 6996
-      const baseUrl = host
-        ? `${protocol}://${host}`
-        : (process.env.ORIGIN ?? `http://localhost:${port}`)
-
       const calendar = await CalendarManager.getAllSessionsCalendar(
-        protocol,
-        host,
-        baseUrl
+        baseUrl.toString()
       )
 
       res
@@ -32,7 +27,11 @@ export default class ApiManager {
     }
   }
 
-  static async handleGetSessionCalendar(req: Request, res: Response) {
+  static async handleGetSessionCalendar(
+    baseUrl: URL,
+    req: Request,
+    res: Response
+  ) {
     try {
       const sessionId = req.params.id
       if (!sessionId) {
@@ -40,18 +39,9 @@ export default class ApiManager {
         return
       }
 
-      const protocol = req.protocol
-      const host = req.get('host')
-      const port = process.env.PORT ? Number.parseInt(process.env.PORT) : 6996
-      const baseUrl = host
-        ? `${protocol}://${host}`
-        : (process.env.ORIGIN ?? `http://localhost:${port}`)
-
       const calendar = await CalendarManager.getSessionCalendar(
         sessionId,
-        protocol,
-        host,
-        baseUrl
+        baseUrl.toString()
       )
 
       res
@@ -83,11 +73,9 @@ export default class ApiManager {
     statusCode: number
   ) {
     const timestamp = new Date().toISOString()
-    if (error instanceof Error) {
+    if (error instanceof Error)
       console.error(timestamp, context, error.message, error.stack)
-    } else {
-      console.error(timestamp, context, error)
-    }
+    else console.error(timestamp, context, error)
     res.status(statusCode).send(context)
   }
 }
