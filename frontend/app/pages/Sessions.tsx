@@ -4,7 +4,10 @@ import type {
   BackendResponse,
   GetSessionsResponse,
 } from '../../../common/models/responses'
-import type { SessionWithSignups } from '../../../common/models/session'
+import type {
+  SessionSignup,
+  SessionWithSignups,
+} from '../../../common/models/session'
 import {
   WS_CANCEL_SESSION,
   WS_CREATE_SESSION,
@@ -125,7 +128,10 @@ export default function Sessions() {
     )
   }
 
-  const handleJoin = (sessionId: string, response: 'yes' | 'no' | 'maybe') => {
+  const handleJoin = (
+    sessionId: string,
+    response: SessionSignup['response']
+  ) => {
     if (!isLoggedIn) {
       globalThis.alert('Sign in to join.')
       return

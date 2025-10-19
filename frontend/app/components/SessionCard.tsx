@@ -11,7 +11,10 @@ import {
   X,
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import type { SessionWithSignups } from '../../../common/models/session'
+import type {
+  SessionSignup,
+  SessionWithSignups,
+} from '../../../common/models/session'
 import { Button } from './Button'
 import Tag from './Tag'
 
@@ -25,11 +28,11 @@ interface SessionCardProps {
   canManage: boolean
   isLoggedIn: boolean
   isPast: boolean
-  userResponse?: 'yes' | 'no' | 'maybe'
+  userResponse?: SessionSignup['response']
   onEdit: () => void
   onDelete: () => void
   onCancel: () => void
-  onJoin: (response: 'yes' | 'no' | 'maybe') => void
+  onJoin: (response: SessionSignup['response']) => void
   onLeave: () => void
   onAddCalendar: () => void
   loading: boolean
@@ -73,13 +76,13 @@ export function SessionCard({
     cancelled: 'border-stroke bg-red-500/5 opacity-50 backdrop-blur-sm',
   }
 
-  const handleRsvpClick = (response: 'yes' | 'no' | 'maybe'): void => {
+  const handleRsvpClick = (response: SessionSignup['response']): void => {
     if (userResponse === response) onLeave()
     else onJoin(response)
   }
 
   const getRsvpState = (
-    response: 'yes' | 'no' | 'maybe'
+    response: SessionSignup['response']
   ): 'selected' | 'unselected' =>
     userResponse === response ? 'selected' : 'unselected'
 

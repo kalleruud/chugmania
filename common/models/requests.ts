@@ -1,5 +1,5 @@
 import * as schema from '../../backend/database/schema'
-import type { Session } from './session'
+import type { Session, SessionSignup } from './session'
 import type { CreateTimeEntry } from './timeEntry'
 import type { Track } from './track'
 import { type UserInfo } from './user'
@@ -154,7 +154,7 @@ export function isCancelSessionRequest(
 
 export type SessionSignupRequest = {
   session: Session['id']
-  response?: 'yes' | 'no' | 'maybe'
+  response?: SessionSignup['response']
 }
 
 export function isSessionSignupRequest(
