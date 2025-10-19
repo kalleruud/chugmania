@@ -12,6 +12,9 @@
 
 - Prettier: 2 spaces, single quotes, no semicolons, trailing commas, organize imports plugin
 - TypeScript strict mode: explicit types at boundaries, no implicit any
+- Avoid `any`-type; use explicit types instead
+- Avoid `as const` assertions; rely on type inference or explicit type annotations
+- Avoid nested ternary operations; extract to helper functions or variables for readability
 - Naming: `name.manager.ts` (backend), `PascalCase.tsx` (React), camelCase vars/funcs
 - Imports: use relative paths `../../../../common/*` for shared code
 - Error handling: use `Result<T>` pattern from `common/utils/try-catch.ts` with `{ data, error }` structure
