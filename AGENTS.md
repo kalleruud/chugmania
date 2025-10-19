@@ -130,6 +130,12 @@ The code is simple and minimal, and very easily readable. Modular components are
 Refactoring is encouraged!
 Always keep AGENTS.md and README.md updated!
 
+### Documentation Workflow
+
+- Keep `/docs` content in sync with functional changes: refresh relevant markdown files (README, AGENTS, docs/\*) whenever behavior changes.
+- Update `common/docs/manifest.ts` when adding or removing documentation so the in-app `/docs` route remains accurate.
+- Before opening a PR, verify the `/docs` page renders the latest content without build warnings.
+
 ## Project Structure & Module Organization
 
 - `backend/`: Node.js + TypeScript Socket.IO server. Database in `backend/database/` (Drizzle + SQLite). Runtime data in `backend/data/`. Entry at `src/server.ts`.

@@ -4,6 +4,7 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import './App.css'
 import Layout from './app/Layout'
 import Admin from './app/pages/Admin'
+import Docs from './app/pages/Docs'
 import Home from './app/pages/Home'
 import Login from './app/pages/Login'
 import Player from './app/pages/Player'
@@ -26,6 +27,8 @@ createRoot(document.getElementById('root')!).render(
               <Route path='tracks/:id' element={<Track />} />
               <Route path='players' element={<Players />} />
               <Route path='players/:id' element={<Player />} />
+              <Route path='docs' element={<Docs />} />
+              <Route path='docs/:slug' element={<Docs />} />
               <Route path='login' element={<Login />} />
               <Route path='admin' element={<Admin />} />
             </Route>
