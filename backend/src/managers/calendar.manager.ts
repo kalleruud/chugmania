@@ -1,121 +1,50 @@
-import { eq } from 'drizzle-orm'
-import { createEvents, type EventAttributes } from 'ics'
-import db from '../../database/database'
-import { sessionSignups, sessions, users } from '../../database/schema'
-
-const PRODUCT_ID = '-//Chugmania//Sessions//EN'
+import {
+  Attendee,
+  createEvents,
+  ParticipationStatus,
+  type EventAttributes,
+} from 'ics'
+import {
+  SessionSignup,
+  SessionWithSignups,
+} from '../../../common/models/session'
+import SessionManager from './session.manager'
 
 export default class CalendarManager {
-  static async getAllSessionsCalendar(
-    protocol: string,
-    host: string | undefined,
-    baseUrl: string
-  ): Promise<string> {
-    const sessionRows = await db
-      .select()
-      .from(sessions)
-      .orderBy(sessions.date, sessions.createdAt)
+  public static readonly PRODUCT_ID = 'chugmania/sessions'
 
-    const signupsBySession = await CalendarManager.getSignupsBySession()
-
+  public static async getAllSessionsCalendar(baseUrl: string): Promise<string> {
     return CalendarManager.createIcsCalendar(
-      sessionRows,
-      signupsBySession,
+      await SessionManager.getSessions(),
       baseUrl,
       'Chugmania Sessions'
     )
   }
 
-  static async getSessionCalendar(
-    sessionId: string,
-    protocol: string,
-    host: string | undefined,
-    baseUrl: string
+  public static async getSessionCalendar(
+    baseUrl: string,
+    sessionId: string
   ): Promise<string> {
-    const session = await db.query.sessions.findFirst({
-      where: eq(sessions.id, sessionId),
-    })
+    const session = await SessionManager.getSession(sessionId)
 
     if (!session) {
       throw new Error('Session not found')
     }
 
-    const signupRows = await db
-      .select({
-        sessionId: sessionSignups.session,
-        userEmail: users.email,
-        firstName: users.firstName,
-        lastName: users.lastName,
-      })
-      .from(sessionSignups)
-      .where(eq(sessionSignups.session, sessionId))
-      .innerJoin(users, eq(sessionSignups.user, users.id))
-
-    const attendees = signupRows.map(signup => ({
-      email: signup.userEmail,
-      name: `${signup.firstName} ${signup.lastName ?? ''}`.trim(),
-    }))
-
-    const signupsBySession = new Map<
-      string,
-      Array<{ email: string; name: string }>
-    >()
-    signupsBySession.set(sessionId, attendees)
-
-    return CalendarManager.createIcsCalendar(
-      [session],
-      signupsBySession,
-      baseUrl,
-      session.name
-    )
-  }
-
-  private static async getSignupsBySession(): Promise<
-    Map<string, Array<{ email: string; name: string }>>
-  > {
-    const signupRows = await db
-      .select({
-        sessionId: sessionSignups.session,
-        userEmail: users.email,
-        firstName: users.firstName,
-        lastName: users.lastName,
-      })
-      .from(sessionSignups)
-      .innerJoin(users, eq(sessionSignups.user, users.id))
-
-    const signupsBySession = new Map<
-      string,
-      Array<{ email: string; name: string }>
-    >()
-    for (const signup of signupRows) {
-      const attendees = signupsBySession.get(signup.sessionId) ?? []
-      attendees.push({
-        email: signup.userEmail,
-        name: `${signup.firstName} ${signup.lastName ?? ''}`.trim(),
-      })
-      signupsBySession.set(signup.sessionId, attendees)
-    }
-
-    return signupsBySession
+    return CalendarManager.createIcsCalendar([session], baseUrl, session.name)
   }
 
   private static createIcsCalendar(
-    sessionList: (typeof sessions.$inferSelect)[],
-    signupsBySession: Map<string, Array<{ email: string; name: string }>>,
+    sessionList: SessionWithSignups[],
     baseUrl: string,
     calendarName: string
   ): string {
     const events = sessionList.map(session =>
-      CalendarManager.createSessionEvent(
-        session,
-        signupsBySession.get(session.id) ?? [],
-        baseUrl,
-        calendarName
-      )
+      CalendarManager.createSessionEvent(session, baseUrl, calendarName)
     )
 
     const { error, value } = createEvents(events, {
-      productId: PRODUCT_ID,
+      productId: CalendarManager.PRODUCT_ID,
       calName: calendarName,
     })
 
@@ -125,8 +54,7 @@ export default class CalendarManager {
   }
 
   private static createSessionEvent(
-    session: typeof sessions.$inferSelect,
-    attendees: Array<{ email: string; name: string }>,
+    session: SessionWithSignups,
     baseUrl: string,
     calendarName: string
   ): EventAttributes {
@@ -138,12 +66,6 @@ export default class CalendarManager {
     const updatedAt = session.updatedAt ?? createdAt
     const descriptionText = session.description?.trim()
 
-    const eventAttendees = attendees.map(attendee => ({
-      name: attendee.name,
-      email: attendee.email,
-      rsvp: true,
-    }))
-
     return {
       title: session.name,
       description: descriptionText,
@@ -151,8 +73,12 @@ export default class CalendarManager {
       url: `${baseUrl}/sessions`,
       uid: `${session.id}@chugmania`,
       sequence: updatedAt.getTime() > createdAt.getTime() ? 1 : 0,
-      productId: PRODUCT_ID,
+      productId: CalendarManager.PRODUCT_ID,
       calName: calendarName,
+      classification: 'PRIVATE',
+      transp: 'OPAQUE',
+      busyStatus: 'BUSY',
+      categories: ['Chugmania', 'Session'],
       start: CalendarManager.toUtcArray(start),
       startInputType: 'utc',
       startOutputType: 'utc',
@@ -161,8 +87,34 @@ export default class CalendarManager {
       endOutputType: 'utc',
       created: CalendarManager.toUtcArray(createdAt),
       lastModified: CalendarManager.toUtcArray(updatedAt),
-      attendees: eventAttendees,
+      attendees: session.signups.map(this.createEventAttendee),
+    } satisfies EventAttributes
+  }
+
+  private static createEventAttendee(signup: SessionSignup) {
+    let partstat: ParticipationStatus
+    switch (signup.response) {
+      case 'yes':
+        partstat = 'ACCEPTED'
+        break
+      case 'no':
+        partstat = 'DECLINED'
+        break
+      case 'maybe':
+        partstat = 'TENTATIVE'
+        break
+      default:
+        partstat = 'NEEDS-ACTION'
     }
+
+    return {
+      name: `${signup.user.firstName} ${signup.user.lastName}`,
+      email: signup.user.email,
+      rsvp: true,
+      partstat: partstat,
+      role: 'OPT-PARTICIPANT',
+      cutype: 'INDIVIDUAL',
+    } satisfies Attendee
   }
 
   private static toUtcArray(date: Date) {

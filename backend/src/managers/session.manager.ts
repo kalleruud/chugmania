@@ -1,4 +1,4 @@
-import { and, asc, eq } from 'drizzle-orm'
+import { and, asc, eq, isNull } from 'drizzle-orm'
 import type { Socket } from 'socket.io'
 import {
   isCreateSessionRequest,
@@ -10,45 +10,125 @@ import type {
   BackendResponse,
   GetSessionsResponse,
 } from '../../../common/models/responses'
-import type { SessionWithSignups } from '../../../common/models/session'
+import type {
+  SessionSignup,
+  SessionWithSignups,
+} from '../../../common/models/session'
 import { WS_SESSIONS_UPDATED } from '../../../common/utils/constants'
+import { tryCatchAsync } from '../../../common/utils/try-catch'
 import db from '../../database/database'
 import { sessionSignups, sessions, users } from '../../database/schema'
 import AuthManager from './auth.manager'
 import UserManager from './user.manager'
 
 export default class SessionManager {
-  private static async getSessions(): Promise<SessionWithSignups[]> {
-    const sessionRows = await db
-      .select()
-      .from(sessions)
-      .orderBy(asc(sessions.date), asc(sessions.createdAt))
+  public static async getSessions(): Promise<SessionWithSignups[]> {
+    const { data: sessionRows, error } = await tryCatchAsync(
+      db
+        .select()
+        .from(sessions)
+        .orderBy(asc(sessions.date), asc(sessions.createdAt))
+    )
 
-    const signupRows = await db
-      .select({
-        session: sessionSignups.session,
-        joinedAt: sessionSignups.createdAt,
-        response: sessionSignups.response,
-        user: users,
-      })
-      .from(sessionSignups)
-      .innerJoin(users, eq(sessionSignups.user, users.id))
-      .orderBy(asc(sessionSignups.createdAt))
-
-    const grouped = new Map<string, SessionWithSignups['signups']>()
-    for (const row of signupRows) {
-      const entry = grouped.get(row.session) ?? []
-      entry.push({
-        user: UserManager.toUserInfo(row.user).userInfo,
-        joinedAt: row.joinedAt,
-        response: row.response,
-      })
-      grouped.set(row.session, entry)
+    if (error) {
+      console.error(
+        new Date().toISOString(),
+        'SessionManager.getSessions - Failed to get sessions',
+        error
+      )
+      return []
     }
 
-    return sessionRows.map(session => ({
+    if (!sessionRows || sessionRows.length === 0) {
+      console.debug(
+        new Date().toISOString(),
+        'SessionManager.getSessions - No sessions found'
+      )
+      return []
+    }
+
+    return Promise.all(
+      sessionRows.map(async session => ({
+        ...session,
+        signups: await SessionManager.getSessionSignups(session.id),
+      }))
+    )
+  }
+
+  static async getSession(
+    sessionId: string
+  ): Promise<SessionWithSignups | null> {
+    const { data: session, error } = await tryCatchAsync(
+      db.query.sessions.findFirst({
+        where: eq(sessions.id, sessionId),
+      })
+    )
+
+    if (error) {
+      console.error(
+        new Date().toISOString(),
+        'SessionManager.getSession - Failed to get session',
+        error
+      )
+      return null
+    }
+
+    if (!session) {
+      console.warn(
+        new Date().toISOString(),
+        `SessionManager.getSession - Session not found ${sessionId}`,
+        sessionId
+      )
+      return null
+    }
+
+    return {
       ...session,
-      signups: grouped.get(session.id) ?? [],
+      signups: await SessionManager.getSessionSignups(session.id),
+    }
+  }
+
+  private static async getSessionSignups(
+    sessionId: string
+  ): Promise<SessionSignup[]> {
+    const { data: signupRows, error } = await tryCatchAsync(
+      db
+        .select({
+          createdAt: sessionSignups.createdAt,
+          updatedAt: sessionSignups.updatedAt,
+          deletedAt: sessionSignups.deletedAt,
+          response: sessionSignups.response,
+          session: sessionSignups.session,
+          user: users,
+        })
+        .from(sessionSignups)
+        .innerJoin(users, eq(sessionSignups.user, users.id))
+        .where(
+          and(eq(sessionSignups.session, sessionId), isNull(users.deletedAt))
+        )
+        .orderBy(asc(sessionSignups.createdAt))
+    )
+
+    if (error) {
+      console.error(
+        new Date().toISOString(),
+        `SessionManager.getSessionSignups - Failed to get session signups for session '${sessionId}'`,
+        error
+      )
+      return []
+    }
+
+    if (!signupRows || signupRows.length === 0) {
+      console.debug(
+        new Date().toISOString(),
+        `SessionManager.getSessionSignups - No signups found for session '${sessionId}'`
+      )
+      return []
+    }
+
+    return signupRows.map(row => ({
+      ...row,
+      user: UserManager.toUserInfo(row.user).userInfo,
     }))
   }
 
@@ -149,6 +229,7 @@ export default class SessionManager {
         }
       updates.name = name
     }
+
     if (request.date !== undefined) {
       const date = new Date(request.date)
       if (Number.isNaN(date.getTime()))
@@ -196,7 +277,7 @@ export default class SessionManager {
         message: error.message,
       }
 
-    if (user.role === 'user')
+    if (user.role !== 'admin')
       return {
         success: false,
         message: `Role '${user.role}' is not allowed to delete sessions.`,
@@ -205,13 +286,33 @@ export default class SessionManager {
     const session = await db.query.sessions.findFirst({
       where: eq(sessions.id, request.id),
     })
+
     if (!session)
       return {
         success: false,
         message: 'Session not found.',
       }
 
-    await db.delete(sessions).where(eq(sessions.id, session.id))
+    const { data: _, error: deleteError } = await tryCatchAsync(
+      db
+        .update(sessions)
+        .set({ deletedAt: new Date() })
+        .where(eq(sessions.id, session.id))
+    )
+
+    if (deleteError) {
+      console.error(
+        new Date().toISOString(),
+        socket.id,
+        'Failed to delete session',
+        session.id,
+        deleteError
+      )
+      return {
+        success: false,
+        message: 'Failed to delete session.',
+      }
+    }
 
     console.debug(
       new Date().toISOString(),
@@ -292,6 +393,7 @@ export default class SessionManager {
     const session = await db.query.sessions.findFirst({
       where: eq(sessions.id, request.session),
     })
+
     if (!session)
       return {
         success: false,
