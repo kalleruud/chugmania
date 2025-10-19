@@ -75,12 +75,12 @@ export default class CalendarManager {
     baseUrl.pathname = `sessions`
 
     return {
-      title: session.name,
+      title: '🍺 ' + session.name,
       description: descriptionText,
       location: session.location ?? undefined,
       url: baseUrl.toString(),
       uid: `${session.id}@chugmania`,
-      sequence: session.updatedAt?.getTime() ?? session.createdAt.getTime(),
+      sequence: this.toSequence(session.updatedAt ?? session.createdAt),
       productId: CalendarManager.PRODUCT_ID,
       calName: calendarName,
       classification: 'PRIVATE',
@@ -124,6 +124,17 @@ export default class CalendarManager {
       role: 'OPT-PARTICIPANT',
       cutype: 'INDIVIDUAL',
     } satisfies Attendee
+  }
+
+  private static toSequence(date: Date) {
+    return (
+      date.getUTCFullYear() +
+      date.getUTCMonth() +
+      date.getUTCDate() +
+      date.getUTCHours() +
+      date.getUTCMinutes() +
+      date.getUTCSeconds()
+    )
   }
 
   private static toUtcArray(date: Date) {
