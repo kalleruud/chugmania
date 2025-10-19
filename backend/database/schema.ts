@@ -73,10 +73,7 @@ export const sessionSignups = sqliteTable(
     user: text()
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    response: text()
-      .$type<SessionResponse>()
-      .notNull()
-      .$default(() => 'yes'),
+    response: text().$type<SessionResponse>().notNull(),
   },
   table => [primaryKey({ columns: [table.session, table.user] })]
 )

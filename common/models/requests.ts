@@ -101,11 +101,7 @@ export function isCreateSessionRequest(
   if (typeof data !== 'object' || data === null) return false
   const hasName = typeof data.name === 'string'
   const hasDate = typeof data.date === 'string'
-  const hasLocation =
-    data.location === undefined || typeof data.location === 'string'
-  const hasDescription =
-    data.description === undefined || typeof data.description === 'string'
-  return hasName && hasDate && hasLocation && hasDescription
+  return hasName && hasDate
 }
 
 export type UpdateSessionRequest = {
@@ -120,14 +116,7 @@ export function isUpdateSessionRequest(
   data: any
 ): data is UpdateSessionRequest {
   if (typeof data !== 'object' || data === null) return false
-  const hasId = typeof data.id === 'string'
-  const hasName = data.name === undefined || typeof data.name === 'string'
-  const hasDate = data.date === undefined || typeof data.date === 'string'
-  const hasLocation =
-    data.location === undefined || typeof data.location === 'string'
-  const hasDescription =
-    data.description === undefined || typeof data.description === 'string'
-  return hasId && hasName && hasDate && hasLocation && hasDescription
+  return typeof data.id === 'string'
 }
 
 export type DeleteSessionRequest = {
@@ -154,16 +143,17 @@ export function isCancelSessionRequest(
 
 export type SessionSignupRequest = {
   session: Session['id']
-  response?: SessionSignup['response']
+  response: SessionSignup['response']
 }
 
 export function isSessionSignupRequest(
   data: any
 ): data is SessionSignupRequest {
   if (typeof data !== 'object' || data === null) return false
-  const hasSession = typeof data.session === 'string'
-  const hasResponse =
-    data.response === undefined ||
-    ['yes', 'no', 'maybe'].includes(data.response)
-  return hasSession && hasResponse
+  const isSessionIdValid = typeof data.session === 'string'
+  const isResponseValid =
+    data.response === 'yes' ||
+    data.response === 'no' ||
+    data.response === 'maybe'
+  return isSessionIdValid && isResponseValid
 }

@@ -12,7 +12,7 @@ import type {
 import { tryCatchAsync } from '../../../common/utils/try-catch'
 import db from '../../database/database'
 import * as schema from '../../database/schema'
-import { timeEntries, tracks, users } from '../../database/schema'
+import { sessions, timeEntries, tracks, users } from '../../database/schema'
 import CsvParser from '../utils/csv-parser'
 import AuthManager from './auth.manager'
 
@@ -60,7 +60,7 @@ export default class AdminManager {
         task = AdminManager.import(timeEntries, request.content)
         break
       case 'sessions':
-        task = AdminManager.import(schema.sessions, request.content)
+        task = AdminManager.import(sessions, request.content)
         break
       default:
         throw new Error(`Invalid table: '${request.table}'`)
@@ -96,11 +96,7 @@ export default class AdminManager {
       request.table
     )
 
-    const validTables = ['users', 'tracks', 'timeEntries', 'sessions'] as const
-    if (!validTables.includes(request.table as any))
-      throw new Error(`Invalid export table: '${request.table}'`)
-
-    let records: any[] = []
+    let records: object[] = []
     switch (request.table) {
       case 'users':
         records = await db.query.users.findMany()
@@ -114,9 +110,16 @@ export default class AdminManager {
       case 'sessions':
         records = await db.query.sessions.findMany()
         break
+      default:
+        throw new Error(`Invalid table: '${request.table}'`)
     }
 
     const csv = AdminManager.objectsToCsv(records)
+    if (csv === null)
+      return {
+        success: false,
+        message: 'No data to export',
+      } satisfies ErrorResponse
 
     return {
       success: true,
@@ -126,8 +129,11 @@ export default class AdminManager {
 
   private static objectsToCsv<T extends Record<string, any>>(
     objects: T[]
-  ): string {
-    if (objects.length === 0) return ''
+  ): string | null {
+    if (objects.length === 0) {
+      console.warn('No objects to convert to CSV')
+      return null
+    }
 
     const headers = Object.keys(objects[0]!)
     const rows = objects.map(obj =>

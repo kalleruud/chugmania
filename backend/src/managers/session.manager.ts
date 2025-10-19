@@ -350,19 +350,22 @@ export default class SessionManager {
         message: 'Cannot sign up for a session that has already happened.',
       }
 
-    const response = request.response ?? 'yes'
     await db
       .insert(sessionSignups)
-      .values({ session: session.id, user: user.id, response })
+      .values({
+        session: session.id,
+        user: user.id,
+        response: request.response,
+      })
       .onConflictDoUpdate({
         target: [sessionSignups.session, sessionSignups.user],
-        set: { response },
+        set: { response: request.response },
       })
 
     console.debug(
       new Date().toISOString(),
       socket.id,
-      `Signed up for session with response: ${response}`,
+      `Signed up for session with response: ${request.response}`,
       session.id
     )
 
