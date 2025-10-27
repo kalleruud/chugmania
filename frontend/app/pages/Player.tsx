@@ -1,4 +1,4 @@
-import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import type { PlayerDetail } from '../../../common/models/playerDetail'
 import type { UpdateUserRequest } from '../../../common/models/requests'
@@ -19,6 +19,7 @@ import { Button } from '../components/Button'
 import LoadingView from '../components/LoadingView'
 import TimeEntryRow from '../components/TimeEntryRow'
 import TrackTag from '../components/TrackTag'
+import UserForm from '../components/UserForm'
 
 export default function Player() {
   const { id } = useParams<{ id: string }>()
@@ -111,21 +112,14 @@ export default function Player() {
   const canEdit = isSelf || user?.role === 'admin'
   const mustUpdateEmail = isSelf && requiresEmailUpdate
 
-  const handleInputChange =
-    (field: keyof typeof formValues) =>
-    (event: ChangeEvent<HTMLInputElement>) => {
-      setFormValues(prev => ({ ...prev, [field]: event.target.value }))
-      setFormStatus(null)
-    }
-
-  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const onSubmit = (event: FormEvent) => {
     event.preventDefault()
     if (!detail) return
 
     const trimmedEmail = formValues.email.trim()
     const trimmedFirst = formValues.firstName.trim()
     const trimmedLast = formValues.lastName.trim()
-    const trimmedShort = formValues.shortName.trim()
+    const trimmedShort = formValues.shortName.trim().toUpperCase()
 
     const payload: UpdateUserRequest = { userId: detail.user.id }
 
@@ -224,71 +218,45 @@ export default function Player() {
       {canEdit && (
         <section className='rounded-3xl border border-white/10 bg-black/60 p-6 shadow-[0_20px_80px_-60px_rgba(0,0,0,0.9)] backdrop-blur-xl sm:p-10'>
           <h2 className='font-f1-bold text-white'>Edit details</h2>
-          <form className='mt-4 grid gap-4 sm:grid-cols-2' onSubmit={onSubmit}>
-            <label className='text-label-muted flex flex-col gap-2 text-xs uppercase tracking-widest'>
-              Email
-              <input
-                className='bg-background-secondary rounded-lg border border-white/10 px-3 py-2 text-base text-white'
-                type='email'
-                value={formValues.email}
-                onChange={handleInputChange('email')}
-                required
-              />
-            </label>
-            <label className='text-label-muted flex flex-col gap-2 text-xs uppercase tracking-widest'>
-              First name
-              <input
-                className='bg-background-secondary rounded-lg border border-white/10 px-3 py-2 text-base text-white'
-                value={formValues.firstName}
-                onChange={handleInputChange('firstName')}
-              />
-            </label>
-            <label className='text-label-muted flex flex-col gap-2 text-xs uppercase tracking-widest'>
-              Last name
-              <input
-                className='bg-background-secondary rounded-lg border border-white/10 px-3 py-2 text-base text-white'
-                value={formValues.lastName}
-                onChange={handleInputChange('lastName')}
-              />
-            </label>
-            <label className='text-label-muted flex flex-col gap-2 text-xs uppercase tracking-widest'>
-              Short name
-              <input
-                className='bg-background-secondary rounded-lg border border-white/10 px-3 py-2 text-base text-white'
-                value={formValues.shortName}
-                onChange={handleInputChange('shortName')}
-              />
-            </label>
-            <label className='text-label-muted flex flex-col gap-2 text-xs uppercase tracking-widest sm:col-span-2'>
-              Password
-              <input
-                className='bg-background-secondary rounded-lg border border-white/10 px-3 py-2 text-base text-white'
-                type='password'
-                value={formValues.password}
-                onChange={handleInputChange('password')}
-                placeholder='Leave blank to keep current password'
-              />
-            </label>
-
-            {formStatus && (
-              <p
-                className={`text-sm sm:col-span-2 ${
-                  formStatus.type === 'error' ? 'text-warning' : 'text-accent'
-                }`}>
-                {formStatus.message}
-              </p>
-            )}
-
-            <div className='flex justify-end gap-2 sm:col-span-2'>
-              <Button
-                type='submit'
-                size='sm'
-                disabled={isSubmitting}
-                className='uppercase tracking-widest'>
-                {isSubmitting ? 'Saving…' : 'Save changes'}
-              </Button>
-            </div>
-          </form>
+          <div className='mt-4'>
+            <UserForm
+              mode='edit'
+              email={formValues.email}
+              firstName={formValues.firstName}
+              lastName={formValues.lastName}
+              shortName={formValues.shortName}
+              password={formValues.password}
+              onEmailChange={email => {
+                setFormValues(prev => ({ ...prev, email }))
+                setFormStatus(null)
+              }}
+              onFirstNameChange={firstName => {
+                setFormValues(prev => ({ ...prev, firstName }))
+                setFormStatus(null)
+              }}
+              onLastNameChange={lastName => {
+                setFormValues(prev => ({ ...prev, lastName }))
+                setFormStatus(null)
+              }}
+              onShortNameChange={shortName => {
+                setFormValues(prev => ({ ...prev, shortName }))
+                setFormStatus(null)
+              }}
+              onPasswordChange={password => {
+                setFormValues(prev => ({ ...prev, password }))
+                setFormStatus(null)
+              }}
+              onSubmit={onSubmit}
+              errorMessage={
+                formStatus?.type === 'error' ? formStatus.message : null
+              }
+              successMessage={
+                formStatus?.type === 'success' ? formStatus.message : null
+              }
+              isSubmitting={isSubmitting}
+              submitLabel={isSubmitting ? 'Saving…' : 'Save changes'}
+            />
+          </div>
         </section>
       )}
 
@@ -320,6 +288,7 @@ export default function Player() {
                   ? new Date(lap.entry.deletedAt)
                   : null,
                 user: detail.user,
+                session: null,
                 gap: {
                   position: lap.position ?? undefined,
                 },

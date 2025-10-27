@@ -22,8 +22,8 @@ import {
   WS_LOGIN_NAME,
   WS_POST_LAPTIME,
   WS_REGISTER_NAME,
-  WS_UPDATE_USER,
   WS_UPDATE_SESSION,
+  WS_UPDATE_USER,
 } from '../../../common/utils/constants'
 import AdminManager from './admin.manager'
 import AuthManager from './auth.manager'
