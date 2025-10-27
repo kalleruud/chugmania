@@ -14,11 +14,11 @@ export function isLoginRequest(data: any): data is LoginRequest {
   return data.email && data.password && !isRegisterRequest(data)
 }
 
-export type RegisterRequest = LoginRequest & {
-  firstName: UserInfo['firstName']
-  lastName: UserInfo['lastName']
-  shortName: UserInfo['shortName']
-}
+export type RegisterRequest = Omit<
+  UserInfo,
+  'id' | 'role' | 'updatedAt' | 'createdAt' | 'deletedAt'
+> &
+  LoginRequest
 
 export function isRegisterRequest(data: any): data is RegisterRequest {
   if (typeof data !== 'object') return false
@@ -158,13 +158,9 @@ export function isSessionSignupRequest(
   return isSessionIdValid && isResponseValid
 }
 
-export type UpdateUserRequest = {
-  userId: UserInfo['id']
-  email?: UserInfo['email']
-  firstName?: UserInfo['firstName']
-  lastName?: UserInfo['lastName']
-  shortName?: UserInfo['shortName']
-  password?: string
+export type UpdateUserRequest = RegisterRequest & {
+  id: UserInfo['id']
+  newPassword?: RegisterRequest['password']
 }
 
 export function isUpdateUserRequest(data: any): data is UpdateUserRequest {
@@ -178,5 +174,9 @@ export function isUpdateUserRequest(data: any): data is UpdateUserRequest {
     data.shortName !== undefined ||
     data.password !== undefined
 
-  return typeof data.userId === 'string' && hasUpdate
+  return (
+    data.passwordHash === undefined &&
+    typeof data.userId === 'string' &&
+    hasUpdate
+  )
 }
