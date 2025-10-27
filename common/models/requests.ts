@@ -168,26 +168,15 @@ export type UpdateUserRequest = {
 }
 
 export function isUpdateUserRequest(data: any): data is UpdateUserRequest {
-  if (typeof data !== 'object' || data === null) return false
-  if (typeof data.userId !== 'string') return false
-
-  if (data.email !== undefined && typeof data.email !== 'string') return false
-
-  if (data.firstName !== undefined && typeof data.firstName !== 'string')
+  if (typeof data !== 'object' || data === null || data === undefined) {
     return false
+  }
+  const hasUpdate =
+    data.email !== undefined ||
+    data.firstName !== undefined ||
+    data.lastName !== undefined ||
+    data.shortName !== undefined ||
+    data.password !== undefined
 
-  if (data.lastName !== undefined && typeof data.lastName !== 'string')
-    return false
-
-  if (
-    data.shortName !== undefined &&
-    data.shortName !== null &&
-    typeof data.shortName !== 'string'
-  )
-    return false
-
-  if (data.password !== undefined && typeof data.password !== 'string')
-    return false
-
-  return true
+  return typeof data.userId === 'string' && hasUpdate
 }
