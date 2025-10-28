@@ -6,31 +6,40 @@ import {
   type InputHTMLAttributes,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { useAuth } from '../../contexts/AuthContext'
 import { Button } from './Button'
 
 function Field({
   Icon,
   name,
   className,
+  required,
   ...props
 }: { Icon?: ComponentType<LucideProps> } & DetailedHTMLProps<
   InputHTMLAttributes<HTMLInputElement>,
   HTMLInputElement
 >) {
   return (
-    <label className='focus-within:ring-accent/60 focus-within:border-accent flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 transition focus-within:ring-2'>
-      <span className='sr-only'>{name}</span>
+    <div className='grid gap-1'>
+      <div className='flex gap-0.5'>
+        <h3 className='text-label-muted text-sm'>{name}</h3>
+        {required && <h3 className='text-accent text-sm'>*</h3>}
+      </div>
+      <label className='focus-within:ring-accent/60 focus-within:border-accent flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 transition focus-within:ring-2'>
+        <span className='sr-only'>{name}</span>
 
-      {Icon && <Icon className='text-label-muted size-4' />}
-      <input
-        name={name}
-        className={twMerge(
-          'placeholder:text-label-muted/50 w-full outline-none transition focus:ring-transparent',
-          className
-        )}
-        {...props}
-      />
-    </label>
+        {Icon && <Icon className='text-label-muted size-4' />}
+        <input
+          name={name}
+          required={required}
+          className={twMerge(
+            'placeholder:text-label-muted/50 w-full outline-none transition focus:ring-transparent',
+            className
+          )}
+          {...props}
+        />
+      </label>
+    </div>
   )
 }
 
@@ -43,11 +52,13 @@ interface UserFormProps {
   lastName: string
   shortName: string
   password: string
+  newPassword?: string
   onEmailChange: (value: string) => void
   onFirstNameChange: (value: string) => void
   onLastNameChange: (value: string) => void
   onShortNameChange: (value: string) => void
   onPasswordChange: (value: string) => void
+  onNewPasswordChange?: (value: string) => void
   onSubmit: (e: FormEvent) => void
   errorMessage?: string | null
   successMessage?: string | null
@@ -63,24 +74,26 @@ export default function UserForm({
   lastName,
   shortName,
   password,
+  newPassword = '',
   onEmailChange,
   onFirstNameChange,
   onLastNameChange,
   onShortNameChange,
   onPasswordChange,
+  onNewPasswordChange,
   onSubmit,
   errorMessage,
   successMessage,
   isSubmitting = false,
   submitLabel,
-  showRequiredPassword = false,
 }: Readonly<UserFormProps>) {
+  const { user } = useAuth()
+
   const isRegistering = mode === 'register'
   const isEditing = mode === 'edit'
   const isLogin = mode === 'login'
 
-  const passwordRequired = isRegistering || isLogin || showRequiredPassword
-  const passwordMinLength = isEditing ? 0 : 8
+  const passwordLabel = isEditing ? 'Current password' : 'Password'
 
   let defaultSubmitLabel: string
   if (isLogin) {
@@ -116,7 +129,7 @@ export default function UserForm({
                 maxLength={24}
                 minLength={2}
                 onChange={e => onFirstNameChange(e.target.value)}
-                required={isRegistering}
+                required={true}
               />
 
               <Field
@@ -127,7 +140,7 @@ export default function UserForm({
                 maxLength={24}
                 minLength={2}
                 onChange={e => onLastNameChange(e.target.value)}
-                required={isRegistering}
+                required={true}
               />
             </div>
 
@@ -140,24 +153,37 @@ export default function UserForm({
               placeholder='NOR'
               value={shortName}
               onChange={e => onShortNameChange(e.target.value.toUpperCase())}
-              required={isRegistering}
+              required={true}
             />
           </>
         )}
 
-        <Field
-          name='Password'
-          Icon={Lock}
-          type='password'
-          value={password}
-          maxLength={32}
-          minLength={passwordMinLength}
-          placeholder={
-            isEditing ? '••••••••' : 'Leave blank to keep current password'
-          }
-          required={passwordRequired}
-          onChange={e => onPasswordChange(e.target.value)}
-        />
+        {!(isEditing && user?.role === 'admin') && (
+          <Field
+            name={passwordLabel}
+            Icon={Lock}
+            type='password'
+            value={password}
+            maxLength={32}
+            minLength={8}
+            placeholder='••••••••'
+            required={true}
+            onChange={e => onPasswordChange(e.target.value)}
+          />
+        )}
+
+        {isEditing && (
+          <Field
+            name='New password'
+            Icon={Lock}
+            type='password'
+            value={newPassword}
+            maxLength={32}
+            minLength={8}
+            placeholder='••••••••'
+            onChange={e => onNewPasswordChange?.(e.target.value)}
+          />
+        )}
       </div>
 
       {errorMessage && (

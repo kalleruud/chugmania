@@ -20,6 +20,8 @@ const io = new Server(server, {
   },
 })
 
+ConnectionManager.init(io)
+
 io.on(WS_CONNECT_NAME, s =>
   ConnectionManager.connect(s).then(() => {
     s.on(WS_DISCONNECT_NAME, () => ConnectionManager.disconnect(s))

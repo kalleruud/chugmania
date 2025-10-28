@@ -84,7 +84,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   useEffect(() => {
     if (!userInfo && localStorage.getItem(AUTH_KEY))
       socket.emit(WS_GET_USER_DATA, undefined, handleResponse)
-  }, [])
+  }, [socket])
 
   const context = useMemo(
     () =>

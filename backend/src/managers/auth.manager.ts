@@ -12,12 +12,14 @@ import type {
   UpdateUserResponse,
 } from '../../../common/models/responses'
 import { type User, type UserInfo } from '../../../common/models/user'
+import { WS_UPDATE_USER } from '../../../common/utils/constants'
 import {
   tryCatch,
   tryCatchAsync,
   type Result,
 } from '../../../common/utils/try-catch'
 import { users } from '../../database/schema'
+import ConnectionManager from './connection.manager'
 import UserManager from './user.manager'
 
 const SECRET: jwt.Secret = process.env.SECRET!
@@ -194,46 +196,60 @@ export default class AuthManager {
   ): Promise<BackendResponse> {
     const { data: actor, error } = await AuthManager.checkAuth(socket)
     if (error)
-      return { success: false, message: error.message } satisfies ErrorResponse
+      return {
+        success: false,
+        message: error.message,
+      } satisfies ErrorResponse
 
-    if (!isUpdateUserRequest(request))
-      throw new Error('Invalid update user request')
+    if (!isUpdateUserRequest(request)) {
+      return {
+        success: false,
+        message: 'Invalid update user request',
+      } satisfies ErrorResponse
+    }
 
-    const isSelf = actor.id === request.userId
+    const isSelf = actor.id === request.id
     const isAdmin = actor.role === 'admin'
 
-    if (!isSelf && !isAdmin)
+    if (!isSelf && !isAdmin) {
       return {
         success: false,
-        message: 'Insufficient permissions',
+        message: 'You do not have permission to update this user.',
       } satisfies ErrorResponse
+    }
 
-    const updates: Partial<typeof users.$inferInsert> = {}
-
-    if (request.email !== undefined) updates.email = request.email
-    if (request.firstName !== undefined) updates.firstName = request.firstName
-    if (request.lastName !== undefined) updates.lastName = request.lastName
-    if ('shortName' in request) updates.shortName = request.shortName ?? null
-
-    if (request.password)
-      updates.passwordHash = await AuthManager.hash(request.password)
-
-    const { data: updated, error: updateError } = await tryCatchAsync(
-      UserManager.updateUser(request.userId, updates)
+    const targetUser = await UserManager.getUserById(request.id)
+    const passwordValid = await AuthManager.isPasswordValid(
+      request.password,
+      targetUser.passwordHash
     )
 
-    if (updateError)
+    if (!passwordValid) {
       return {
         success: false,
-        message: updateError.message,
+        message: 'Provided password is incorrect.',
       } satisfies ErrorResponse
+    }
 
-    const { userInfo } = UserManager.toUserInfo(updated)
+    const updates: Partial<typeof users.$inferInsert> = request
 
-    const response: UpdateUserResponse = { success: true, userInfo }
+    if (request.newPassword) {
+      updates.passwordHash = await AuthManager.hash(request.newPassword)
+    }
 
-    if (isSelf) response.token = AuthManager.sign(userInfo)
+    const updatedUser = await UserManager.updateUser(request.id, updates)
+    const { userInfo } = UserManager.toUserInfo(updatedUser)
+    ConnectionManager.emit(WS_UPDATE_USER, updatedUser)
 
-    return response
+    let token: string | undefined = undefined
+    if (isSelf) {
+      token = AuthManager.sign(userInfo)
+    }
+
+    return {
+      success: true,
+      userInfo,
+      token,
+    } satisfies UpdateUserResponse
   }
 }

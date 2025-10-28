@@ -15,7 +15,6 @@ export type BackendResponse =
   | GetPlayerDetailsResponse
   | GetSessionsResponse
   | LoginResponse
-  | UpdateUserResponse
   | SuccessResponse
   | ExportCsvResponse
 
@@ -27,6 +26,7 @@ export type ErrorResponse = {
 export type SuccessResponse = {
   success: true
   message?: string
+  token?: string
 }
 
 export type LoginResponse = {

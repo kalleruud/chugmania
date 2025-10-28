@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import type { PlayerDetail } from '../../../common/models/playerDetail'
-import type { UpdateUserRequest } from '../../../common/models/requests'
+import { type UpdateUserRequest } from '../../../common/models/requests'
 import {
   type ErrorResponse,
   type GetPlayerDetailsResponse,
@@ -24,7 +24,7 @@ import UserForm from '../components/UserForm'
 export default function Player() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { socket } = useConnection()
+  const { socket, setToken } = useConnection()
   const { user, refreshUser, requiresEmailUpdate } = useAuth()
 
   const [detail, setDetail] = useState<PlayerDetail | null>(null)
@@ -36,7 +36,9 @@ export default function Player() {
     lastName: '',
     shortName: '',
     password: '',
+    newPassword: '',
   })
+
   const [formStatus, setFormStatus] = useState<{
     type: 'error' | 'success'
     message: string
@@ -75,6 +77,7 @@ export default function Player() {
       lastName: detail.user.lastName ?? '',
       shortName: detail.user.shortName ?? '',
       password: '',
+      newPassword: '',
     })
   }, [detail])
 
@@ -116,59 +119,45 @@ export default function Player() {
     event.preventDefault()
     if (!detail) return
 
-    const trimmedEmail = formValues.email.trim()
-    const trimmedFirst = formValues.firstName.trim()
-    const trimmedLast = formValues.lastName.trim()
-    const trimmedShort = formValues.shortName.trim().toUpperCase()
-
-    const payload: UpdateUserRequest = { userId: detail.user.id }
-
-    if (trimmedEmail && trimmedEmail !== detail.user.email)
-      payload.email = trimmedEmail
-
-    if (trimmedFirst !== (detail.user.firstName ?? ''))
-      payload.firstName = trimmedFirst
-
-    if (trimmedLast !== (detail.user.lastName ?? ''))
-      payload.lastName = trimmedLast
-
-    const currentShort = detail.user.shortName ?? ''
-    if (trimmedShort !== currentShort)
-      payload.shortName = trimmedShort === '' ? null : trimmedShort
-
-    if (formValues.password) payload.password = formValues.password
-
-    if (Object.keys(payload).length === 1) {
-      setFormStatus({ type: 'error', message: 'No changes to update.' })
+    if (!formValues.password) {
+      setFormStatus({
+        type: 'error',
+        message: 'Current password is required to make changes.',
+      })
       return
     }
+
+    const request: UpdateUserRequest = {
+      type: 'UpdateUserRequest',
+      id: detail.user.id,
+      email: formValues.email.trim(),
+      firstName: formValues.firstName.trim(),
+      lastName: formValues.lastName.trim(),
+      shortName: formValues.shortName.trim().toUpperCase(),
+      password: formValues.password,
+      passwordHash: undefined,
+    }
+
+    if (formValues.newPassword) request.newPassword = formValues.newPassword
 
     setIsSubmitting(true)
     setFormStatus(null)
 
     socket.emit(
       WS_UPDATE_USER,
-      payload,
+      request,
       (response: UpdateUserResponse | ErrorResponse) => {
         setIsSubmitting(false)
         if (!response.success) {
           setFormStatus({ type: 'error', message: response.message })
           return
         }
-
-        setDetail(prev =>
-          prev
-            ? {
-                ...prev,
-                user: response.userInfo,
-              }
-            : prev
-        )
-        setFormValues(prev => ({
-          ...prev,
-          password: '',
-        }))
-        if (isSelf) refreshUser(response.userInfo, response.token)
+        if (response.token) setToken(response.token)
+        refreshUser(response.userInfo)
+        setDetail({
+          user: response.userInfo,
+          tracks: detail.tracks,
+        } satisfies PlayerDetail)
         setFormStatus({ type: 'success', message: 'Details updated.' })
       }
     )
@@ -226,6 +215,7 @@ export default function Player() {
               lastName={formValues.lastName}
               shortName={formValues.shortName}
               password={formValues.password}
+              newPassword={formValues.newPassword}
               onEmailChange={email => {
                 setFormValues(prev => ({ ...prev, email }))
                 setFormStatus(null)
@@ -244,6 +234,10 @@ export default function Player() {
               }}
               onPasswordChange={password => {
                 setFormValues(prev => ({ ...prev, password }))
+                setFormStatus(null)
+              }}
+              onNewPasswordChange={newPassword => {
+                setFormValues(prev => ({ ...prev, newPassword }))
                 setFormStatus(null)
               }}
               onSubmit={onSubmit}

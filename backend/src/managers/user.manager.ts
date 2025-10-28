@@ -53,7 +53,7 @@ export default class UserManager {
   static async updateUser(
     id: User['id'],
     updates: Partial<typeof users.$inferInsert>
-  ) {
+  ): Promise<User> {
     const entries = Object.entries(updates).filter(
       ([, value]) => value !== undefined
     )

@@ -1,4 +1,4 @@
-import type { Socket } from 'socket.io'
+import { type Server, type Socket } from 'socket.io'
 import type {
   BackendResponse,
   ErrorResponse,
@@ -35,6 +35,12 @@ import TrackManager from './track.manager'
 import UserManager from './user.manager'
 
 export default class ConnectionManager {
+  private static io: Server | undefined = undefined
+
+  static init(io: Server) {
+    ConnectionManager.io = io
+  }
+
   static async connect(s: Socket) {
     console.debug(new Date().toISOString(), s.id, 'Connected')
 
@@ -124,5 +130,13 @@ export default class ConnectionManager {
         )
         .then(callback)
     )
+  }
+
+  static emit(event: string, payload: unknown) {
+    if (!ConnectionManager.io) {
+      console.error('Connection manager not initialized')
+      return
+    }
+    ConnectionManager.io.emit(event, payload)
   }
 }
