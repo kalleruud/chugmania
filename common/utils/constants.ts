@@ -20,5 +20,6 @@ export const WS_CANCEL_SESSION = 'cancel_session'
 export const WS_JOIN_SESSION = 'join_session'
 export const WS_LEAVE_SESSION = 'leave_session'
 export const WS_SESSIONS_UPDATED = 'sessions_updated'
+export const WS_UPDATE_USER = 'update_user'
 
 export const AUTH_KEY = 'auth'

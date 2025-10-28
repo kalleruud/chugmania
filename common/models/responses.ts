@@ -26,6 +26,7 @@ export type ErrorResponse = {
 export type SuccessResponse = {
   success: true
   message?: string
+  token?: string
 }
 
 export type LoginResponse = {
@@ -72,4 +73,10 @@ export type GetSessionsResponse = {
 export type ExportCsvResponse = {
   success: true
   csv: string
+}
+
+export type UpdateUserResponse = {
+  success: true
+  userInfo: UserInfo
+  token?: string
 }

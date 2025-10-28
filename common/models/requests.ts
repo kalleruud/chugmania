@@ -14,14 +14,14 @@ export function isLoginRequest(data: any): data is LoginRequest {
   return data.email && data.password && !isRegisterRequest(data)
 }
 
-export type RegisterRequest = LoginRequest & {
-  firstName: UserInfo['firstName']
-  lastName: UserInfo['lastName']
-  shortName: UserInfo['shortName']
-}
+export type RegisterRequest = Omit<
+  UserInfo,
+  'id' | 'role' | 'updatedAt' | 'createdAt' | 'deletedAt'
+> &
+  LoginRequest
 
 export function isRegisterRequest(data: any): data is RegisterRequest {
-  if (typeof data !== 'object') return false
+  if (typeof data !== 'object' || data !== null) return false
   return (
     typeof data.email === 'string' &&
     typeof data.password === 'string' &&
@@ -156,4 +156,15 @@ export function isSessionSignupRequest(
     data.response === 'no' ||
     data.response === 'maybe'
   return isSessionIdValid && isResponseValid
+}
+
+export type UpdateUserRequest = RegisterRequest & {
+  type: 'UpdateUserRequest'
+  id: UserInfo['id']
+  newPassword?: RegisterRequest['password']
+}
+
+export function isUpdateUserRequest(data: any): data is UpdateUserRequest {
+  if (typeof data !== 'object' || data === null) return false
+  return data.type === 'UpdateUserRequest'
 }

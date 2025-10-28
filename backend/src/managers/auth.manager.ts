@@ -3,19 +3,23 @@ import type { Socket } from 'socket.io'
 import {
   isLoginRequest,
   isRegisterRequest,
+  isUpdateUserRequest,
 } from '../../../common/models/requests'
 import type {
   BackendResponse,
   ErrorResponse,
   LoginResponse,
+  UpdateUserResponse,
 } from '../../../common/models/responses'
 import { type User, type UserInfo } from '../../../common/models/user'
+import { WS_UPDATE_USER } from '../../../common/utils/constants'
 import {
   tryCatch,
   tryCatchAsync,
   type Result,
 } from '../../../common/utils/try-catch'
 import { users } from '../../database/schema'
+import ConnectionManager from './connection.manager'
 import UserManager from './user.manager'
 
 const SECRET: jwt.Secret = process.env.SECRET!
@@ -184,5 +188,68 @@ export default class AuthManager {
       token: s.handshake.auth.token,
       userInfo: user,
     } satisfies LoginResponse
+  }
+
+  static async onUpdateUser(
+    socket: Socket,
+    request: unknown
+  ): Promise<BackendResponse> {
+    const { data: actor, error } = await AuthManager.checkAuth(socket)
+    if (error)
+      return {
+        success: false,
+        message: error.message,
+      } satisfies ErrorResponse
+
+    if (!isUpdateUserRequest(request)) {
+      return {
+        success: false,
+        message: 'Invalid update user request',
+      } satisfies ErrorResponse
+    }
+
+    const isSelf = actor.id === request.id
+    const isAdmin = actor.role === 'admin'
+
+    if (!isSelf && !isAdmin) {
+      return {
+        success: false,
+        message: 'You do not have permission to update this user.',
+      } satisfies ErrorResponse
+    }
+
+    const targetUser = await UserManager.getUserById(request.id)
+    const passwordValid = await AuthManager.isPasswordValid(
+      request.password,
+      targetUser.passwordHash
+    )
+
+    if (!passwordValid) {
+      return {
+        success: false,
+        message: 'Provided password is incorrect.',
+      } satisfies ErrorResponse
+    }
+
+    const updates: Partial<typeof users.$inferInsert> = request
+
+    if (request.newPassword) {
+      updates.passwordHash = await AuthManager.hash(request.newPassword)
+    }
+
+    const updatedUser = await UserManager.updateUser(request.id, updates)
+    const { userInfo } = UserManager.toUserInfo(updatedUser)
+    ConnectionManager.emit(WS_UPDATE_USER, updatedUser)
+
+    let token: string | undefined = undefined
+    if (isSelf) {
+      token = AuthManager.sign(userInfo)
+    }
+
+    return {
+      success: true,
+      userInfo,
+      token,
+    } satisfies UpdateUserResponse
   }
 }

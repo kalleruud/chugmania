@@ -1,4 +1,4 @@
-import type { Socket } from 'socket.io'
+import { type Server, type Socket } from 'socket.io'
 import type {
   BackendResponse,
   ErrorResponse,
@@ -23,6 +23,7 @@ import {
   WS_POST_LAPTIME,
   WS_REGISTER_NAME,
   WS_UPDATE_SESSION,
+  WS_UPDATE_USER,
 } from '../../../common/utils/constants'
 import AdminManager from './admin.manager'
 import AuthManager from './auth.manager'
@@ -34,6 +35,12 @@ import TrackManager from './track.manager'
 import UserManager from './user.manager'
 
 export default class ConnectionManager {
+  private static io: Server | undefined = undefined
+
+  static init(io: Server) {
+    ConnectionManager.io = io
+  }
+
   static async connect(s: Socket) {
     console.debug(new Date().toISOString(), s.id, 'Connected')
 
@@ -41,6 +48,7 @@ export default class ConnectionManager {
     ConnectionManager.setup(s, WS_LOGIN_NAME, AuthManager.onLogin)
     ConnectionManager.setup(s, WS_REGISTER_NAME, AuthManager.onRegister)
     ConnectionManager.setup(s, WS_GET_USER_DATA, AuthManager.onGetUserData)
+    ConnectionManager.setup(s, WS_UPDATE_USER, AuthManager.onUpdateUser)
     ConnectionManager.setup(s, WS_GET_USERS, UserManager.onGetUsers)
 
     // Setup leaderboard handling
@@ -122,5 +130,13 @@ export default class ConnectionManager {
         )
         .then(callback)
     )
+  }
+
+  static emit(event: string, payload: unknown) {
+    if (!ConnectionManager.io) {
+      console.error('Connection manager not initialized')
+      return
+    }
+    ConnectionManager.io.emit(event, payload)
   }
 }

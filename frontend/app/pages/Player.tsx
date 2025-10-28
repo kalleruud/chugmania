@@ -1,12 +1,17 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import type { PlayerDetail } from '../../../common/models/playerDetail'
+import { type UpdateUserRequest } from '../../../common/models/requests'
 import {
   type ErrorResponse,
   type GetPlayerDetailsResponse,
+  type UpdateUserResponse,
 } from '../../../common/models/responses'
 import type { LeaderboardEntry } from '../../../common/models/timeEntry'
-import { WS_GET_PLAYER_DETAILS } from '../../../common/utils/constants'
+import {
+  WS_GET_PLAYER_DETAILS,
+  WS_UPDATE_USER,
+} from '../../../common/utils/constants'
 import { formatTrackName } from '../../../common/utils/track'
 import { useAuth } from '../../contexts/AuthContext'
 import { useConnection } from '../../contexts/ConnectionContext'
@@ -14,16 +19,31 @@ import { Button } from '../components/Button'
 import LoadingView from '../components/LoadingView'
 import TimeEntryRow from '../components/TimeEntryRow'
 import TrackTag from '../components/TrackTag'
+import UserForm from '../components/UserForm'
 
 export default function Player() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { socket } = useConnection()
-  const { user } = useAuth()
+  const { socket, setToken } = useConnection()
+  const { user, refreshUser, requiresEmailUpdate } = useAuth()
 
   const [detail, setDetail] = useState<PlayerDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [formValues, setFormValues] = useState({
+    email: '',
+    firstName: '',
+    lastName: '',
+    shortName: '',
+    password: '',
+    newPassword: '',
+  })
+
+  const [formStatus, setFormStatus] = useState<{
+    type: 'error' | 'success'
+    message: string
+  } | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
     if (!id) {
@@ -48,6 +68,18 @@ export default function Player() {
       }
     )
   }, [id, socket])
+
+  useEffect(() => {
+    if (!detail) return
+    setFormValues({
+      email: detail.user.email,
+      firstName: detail.user.firstName ?? '',
+      lastName: detail.user.lastName ?? '',
+      shortName: detail.user.shortName ?? '',
+      password: '',
+      newPassword: '',
+    })
+  }, [detail])
 
   const totalLaps = useMemo(
     () =>
@@ -80,6 +112,56 @@ export default function Player() {
     )
 
   const isSelf = user?.id === detail.user.id
+  const canEdit = isSelf || user?.role === 'admin'
+  const mustUpdateEmail = isSelf && requiresEmailUpdate
+
+  const onSubmit = (event: FormEvent) => {
+    event.preventDefault()
+    if (!detail) return
+
+    if (!formValues.password) {
+      setFormStatus({
+        type: 'error',
+        message: 'Current password is required to make changes.',
+      })
+      return
+    }
+
+    const request: UpdateUserRequest = {
+      type: 'UpdateUserRequest',
+      id: detail.user.id,
+      email: formValues.email.trim(),
+      firstName: formValues.firstName.trim(),
+      lastName: formValues.lastName.trim(),
+      shortName: formValues.shortName.trim().toUpperCase(),
+      password: formValues.password,
+      passwordHash: undefined,
+    }
+
+    if (formValues.newPassword) request.newPassword = formValues.newPassword
+
+    setIsSubmitting(true)
+    setFormStatus(null)
+
+    socket.emit(
+      WS_UPDATE_USER,
+      request,
+      (response: UpdateUserResponse | ErrorResponse) => {
+        setIsSubmitting(false)
+        if (!response.success) {
+          setFormStatus({ type: 'error', message: response.message })
+          return
+        }
+        if (response.token) setToken(response.token)
+        refreshUser(response.userInfo)
+        setDetail({
+          user: response.userInfo,
+          tracks: detail.tracks,
+        } satisfies PlayerDetail)
+        setFormStatus({ type: 'success', message: 'Details updated.' })
+      }
+    )
+  }
 
   return (
     <div className='mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 pb-20 pt-6 sm:px-6 sm:pt-10'>
@@ -115,7 +197,62 @@ export default function Player() {
             This is your profile
           </p>
         )}
+        {mustUpdateEmail && (
+          <p className='text-warning mt-4 text-xs uppercase tracking-widest'>
+            Please update your email before continuing.
+          </p>
+        )}
       </section>
+
+      {canEdit && (
+        <section className='rounded-3xl border border-white/10 bg-black/60 p-6 shadow-[0_20px_80px_-60px_rgba(0,0,0,0.9)] backdrop-blur-xl sm:p-10'>
+          <h2 className='font-f1-bold text-white'>Edit details</h2>
+          <div className='mt-4'>
+            <UserForm
+              mode='edit'
+              email={formValues.email}
+              firstName={formValues.firstName}
+              lastName={formValues.lastName}
+              shortName={formValues.shortName}
+              password={formValues.password}
+              newPassword={formValues.newPassword}
+              onEmailChange={email => {
+                setFormValues(prev => ({ ...prev, email }))
+                setFormStatus(null)
+              }}
+              onFirstNameChange={firstName => {
+                setFormValues(prev => ({ ...prev, firstName }))
+                setFormStatus(null)
+              }}
+              onLastNameChange={lastName => {
+                setFormValues(prev => ({ ...prev, lastName }))
+                setFormStatus(null)
+              }}
+              onShortNameChange={shortName => {
+                setFormValues(prev => ({ ...prev, shortName }))
+                setFormStatus(null)
+              }}
+              onPasswordChange={password => {
+                setFormValues(prev => ({ ...prev, password }))
+                setFormStatus(null)
+              }}
+              onNewPasswordChange={newPassword => {
+                setFormValues(prev => ({ ...prev, newPassword }))
+                setFormStatus(null)
+              }}
+              onSubmit={onSubmit}
+              errorMessage={
+                formStatus?.type === 'error' ? formStatus.message : null
+              }
+              successMessage={
+                formStatus?.type === 'success' ? formStatus.message : null
+              }
+              isSubmitting={isSubmitting}
+              submitLabel={isSubmitting ? 'Saving…' : 'Save changes'}
+            />
+          </div>
+        </section>
+      )}
 
       {detail.tracks.length === 0 ? (
         <p className='text-label-muted text-sm'>No lap times recorded yet.</p>
@@ -145,6 +282,7 @@ export default function Player() {
                   ? new Date(lap.entry.deletedAt)
                   : null,
                 user: detail.user,
+                session: null,
                 gap: {
                   position: lap.position ?? undefined,
                 },
