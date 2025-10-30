@@ -7,6 +7,7 @@ import {
 } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useAuth } from '../../contexts/AuthContext'
+import { useTranslation } from '../../locales/useTranslation'
 import { Button } from './Button'
 
 function Field({
@@ -88,31 +89,34 @@ export default function UserForm({
   submitLabel,
 }: Readonly<UserFormProps>) {
   const { user } = useAuth()
+  const { t } = useTranslation()
 
   const isRegistering = mode === 'register'
   const isEditing = mode === 'edit'
   const isLogin = mode === 'login'
 
-  const passwordLabel = isEditing ? 'Current password' : 'Password'
+  const passwordLabel = isEditing
+    ? t('components.userForm.currentPasswordLabel')
+    : t('components.userForm.passwordLabel')
 
   let defaultSubmitLabel: string
   if (isLogin) {
-    defaultSubmitLabel = 'Sign in'
+    defaultSubmitLabel = t('components.userForm.submitLabelSignIn')
   } else if (isRegistering) {
-    defaultSubmitLabel = 'Sign up'
+    defaultSubmitLabel = t('components.userForm.submitLabelSignUp')
   } else {
-    defaultSubmitLabel = 'Save changes'
+    defaultSubmitLabel = t('components.userForm.submitLabelSaveChanges')
   }
 
   return (
     <form onSubmit={onSubmit} className='grid gap-4'>
       <div className='grid gap-3'>
         <Field
-          name='Email'
+          name={t('components.userForm.emailLabel')}
           Icon={AtSign}
           type='email'
           value={email}
-          placeholder='you@example.com'
+          placeholder={t('components.userForm.emailPlaceholder')}
           required={true}
           onChange={e => onEmailChange(e.target.value)}
         />
@@ -121,11 +125,11 @@ export default function UserForm({
           <>
             <div className='flex gap-2'>
               <Field
-                name='First name'
+                name={t('components.userForm.firstNameLabel')}
                 Icon={User}
                 type='text'
                 value={firstName}
-                placeholder='Ola'
+                placeholder={t('components.userForm.firstNamePlaceholder')}
                 maxLength={24}
                 minLength={2}
                 onChange={e => onFirstNameChange(e.target.value)}
@@ -133,10 +137,10 @@ export default function UserForm({
               />
 
               <Field
-                name='Last name'
+                name={t('components.userForm.lastNameLabel')}
                 type='text'
                 value={lastName}
-                placeholder='Normann'
+                placeholder={t('components.userForm.lastNamePlaceholder')}
                 maxLength={24}
                 minLength={2}
                 onChange={e => onLastNameChange(e.target.value)}
@@ -145,12 +149,12 @@ export default function UserForm({
             </div>
 
             <Field
-              name='Short name'
+              name={t('components.userForm.shortNameLabel')}
               type='text'
               Icon={Type}
               maxLength={3}
               minLength={3}
-              placeholder='NOR'
+              placeholder={t('components.userForm.shortNamePlaceholder')}
               value={shortName}
               onChange={e => onShortNameChange(e.target.value.toUpperCase())}
               required={true}
@@ -166,7 +170,7 @@ export default function UserForm({
             value={password}
             maxLength={32}
             minLength={8}
-            placeholder='••••••••'
+            placeholder={t('components.userForm.passwordPlaceholder')}
             required={true}
             onChange={e => onPasswordChange(e.target.value)}
           />
@@ -174,13 +178,13 @@ export default function UserForm({
 
         {isEditing && (
           <Field
-            name='New password'
+            name={t('components.userForm.newPasswordLabel')}
             Icon={Lock}
             type='password'
             value={newPassword}
             maxLength={32}
             minLength={8}
-            placeholder='••••••••'
+            placeholder={t('components.userForm.passwordPlaceholder')}
             onChange={e => onNewPasswordChange?.(e.target.value)}
           />
         )}
@@ -205,7 +209,7 @@ export default function UserForm({
         className={isEditing ? '' : 'w-full'}
         disabled={isSubmitting}>
         {isSubmitting && isEditing
-          ? 'Saving…'
+          ? t('components.userForm.loadingState')
           : (submitLabel ?? defaultSubmitLabel)}
       </Button>
     </form>

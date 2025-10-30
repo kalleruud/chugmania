@@ -1,4 +1,5 @@
 import type { Socket } from 'socket.io'
+import { t } from '../../../common/locales/translateServer'
 import {
   isExportCsvRequest,
   isImportCsvRequest,
@@ -36,7 +37,7 @@ export default class AdminManager {
     request: unknown
   ): Promise<BackendResponse> {
     if (!isImportCsvRequest(request))
-      throw new Error('Invalid CSV import request payload')
+      throw new Error(t('messages.admin.invalidCsvPayload'))
 
     const { error } = await AuthManager.checkAuth(socket, ['admin'])
     if (error) return error
@@ -63,7 +64,9 @@ export default class AdminManager {
         task = AdminManager.import(sessions, request.content)
         break
       default:
-        throw new Error(`Invalid table: '${request.table}'`)
+        throw new Error(
+          t('messages.admin.invalidTable', { table: request.table })
+        )
     }
 
     const { data, error: importError } = await tryCatchAsync(task)
@@ -75,7 +78,11 @@ export default class AdminManager {
 
     return {
       success: true,
-      message: `Imported ${data.imported}/${data.total} ${request.table}`,
+      message: t('messages.admin.importedSuccessfully', {
+        imported: data.imported,
+        total: data.total,
+        table: request.table,
+      }),
     } satisfies SuccessResponse
   }
 
@@ -84,7 +91,7 @@ export default class AdminManager {
     request: unknown
   ): Promise<BackendResponse> {
     if (!isExportCsvRequest(request))
-      throw new Error('Invalid CSV export request payload')
+      throw new Error(t('messages.admin.invalidExportPayload'))
 
     const { error } = await AuthManager.checkAuth(socket, ['admin'])
     if (error) return error
@@ -111,14 +118,16 @@ export default class AdminManager {
         records = await db.query.sessions.findMany()
         break
       default:
-        throw new Error(`Invalid table: '${request.table}'`)
+        throw new Error(
+          t('messages.admin.invalidTable', { table: request.table })
+        )
     }
 
     const csv = AdminManager.objectsToCsv(records)
     if (csv === null)
       return {
         success: false,
-        message: 'No data to export',
+        message: t('messages.admin.noDataToExport'),
       } satisfies ErrorResponse
 
     return {

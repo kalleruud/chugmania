@@ -1,4 +1,5 @@
 import type { FormEvent } from 'react'
+import { useTranslation } from '../../locales/useTranslation'
 import { Button } from './Button'
 
 export interface SessionFormData {
@@ -27,6 +28,7 @@ export function SessionForm({
   isModal = false,
   onCancel,
 }: Readonly<SessionFormProps>) {
+  const { t } = useTranslation()
   const handleChange = (key: keyof SessionFormData, value: string) => {
     onChange({ ...data, [key]: value })
   }
@@ -38,18 +40,22 @@ export function SessionForm({
   return (
     <form className={formClass} onSubmit={onSubmit}>
       <label className='flex flex-col gap-2 text-sm'>
-        <span className='text-label-muted'>Session name</span>
+        <span className='text-label-muted'>
+          {t('components.sessionForm.sessionNameLabel')}
+        </span>
         <input
           required
           type='text'
           value={data.name}
           onChange={e => handleChange('name', e.target.value)}
-          placeholder='Trackmania Turbo LAN'
+          placeholder={t('components.sessionForm.sessionNamePlaceholder')}
           className='focus:ring-accent/60 focus:border-accent rounded-lg border border-white/10 bg-white/5 px-4 py-2 outline-none transition focus:ring-2'
         />
       </label>
       <label className='flex flex-col gap-2 text-sm'>
-        <span className='text-label-muted'>Date & time</span>
+        <span className='text-label-muted'>
+          {t('components.sessionForm.dateTimeLabel')}
+        </span>
         <input
           required
           type='datetime-local'
@@ -59,21 +65,25 @@ export function SessionForm({
         />
       </label>
       <label className='flex flex-col gap-2 text-sm sm:col-span-2'>
-        <span className='text-label-muted'>Location (optional)</span>
+        <span className='text-label-muted'>
+          {t('components.sessionForm.locationLabel')}
+        </span>
         <input
           type='text'
           value={data.location}
           onChange={e => handleChange('location', e.target.value)}
-          placeholder='Oslo, Norway'
+          placeholder={t('components.sessionForm.locationPlaceholder')}
           className='focus:ring-accent/60 focus:border-accent rounded-lg border border-white/10 bg-white/5 px-4 py-2 outline-none transition focus:ring-2'
         />
       </label>
       <label className='flex flex-col gap-2 text-sm sm:col-span-2'>
-        <span className='text-label-muted'>Description (optional)</span>
+        <span className='text-label-muted'>
+          {t('components.sessionForm.descriptionLabel')}
+        </span>
         <textarea
           value={data.description}
           onChange={e => handleChange('description', e.target.value)}
-          placeholder='Share a short agenda or helpful notes'
+          placeholder={t('components.sessionForm.descriptionPlaceholder')}
           rows={3}
           className='focus:ring-accent/60 focus:border-accent rounded-lg border border-white/10 bg-white/5 px-4 py-2 outline-none transition focus:ring-2'
         />
@@ -83,7 +93,7 @@ export function SessionForm({
           type='submit'
           disabled={loading}
           className={isModal ? 'flex-1' : ''}>
-          {loading ? 'Loading…' : submitLabel}
+          {loading ? t('components.sessionForm.loadingState') : submitLabel}
         </Button>
         {isModal && onCancel && (
           <Button
@@ -92,7 +102,7 @@ export function SessionForm({
             disabled={loading}
             onClick={onCancel}
             className='flex-1'>
-            Cancel
+            {t('components.sessionForm.cancelButton')}
           </Button>
         )}
       </div>

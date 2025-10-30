@@ -1,12 +1,14 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
+import { useTranslation } from '../../locales/useTranslation'
 import { Button } from '../components/Button'
 import UserForm from '../components/UserForm'
 
 const ALLOW_REGISTERING = false
 
 export default function Login() {
+  const { t } = useTranslation()
   const { login, register, errorMessage, isLoggedIn } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -47,10 +49,12 @@ export default function Login() {
       <div className='grid w-full max-w-md items-start gap-4 p-6'>
         <div className='text-center'>
           <h1 className='text-accent text-2xl font-extrabold uppercase tracking-wider'>
-            {isRegistering ? 'Sign Up' : 'Sign In'}
+            {isRegistering
+              ? t('pages.login.signUpHeading')
+              : t('pages.login.signInHeading')}
           </h1>
           <p className='text-label-secondary text-xs'>
-            Fuel your session and hit the track
+            {t('pages.login.subtitle')}
           </p>
         </div>
 
@@ -78,8 +82,8 @@ export default function Login() {
             onClick={() => setIsRegistering(!isRegistering)}
             className='text-xs normal-case'>
             {isRegistering
-              ? 'Already racing? Sign in'
-              : 'New driver? Create an account'}
+              ? t('pages.login.toggleToSignIn')
+              : t('pages.login.toggleToSignUp')}
           </Button>
         )}
       </div>

@@ -7,6 +7,7 @@ import {
   type SetStateAction,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { useTranslation } from '../../locales/useTranslation'
 import { Button } from './Button'
 
 export type LookupItem = {
@@ -36,6 +37,7 @@ export default function SearchableDropdown({
   name,
   required = false,
 }: Props) {
+  const { t } = useTranslation()
   const triggerRef = useRef<HTMLButtonElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [open, setOpen] = useState(false)
@@ -122,7 +124,7 @@ export default function SearchableDropdown({
               type='text'
               inputMode='search'
               className='placeholder:text-label-muted flex h-11 w-full rounded-lg bg-transparent py-3 outline-none focus:ring-0'
-              placeholder='Search...'
+              placeholder={t('components.searchableDropdown.placeholder')}
               maxLength={64}
               value={search}
               onChange={e => setSearch(e.target.value)}
@@ -131,7 +133,7 @@ export default function SearchableDropdown({
           </div>
           {results.length === 0 ? (
             <div className='text-label-muted py-6 text-center'>
-              {emptyLabel ?? 'No results'}
+              {emptyLabel ?? t('components.searchableDropdown.noResults')}
             </div>
           ) : (
             <ul className='max-h-64 overflow-y-auto overflow-x-hidden p-1'>

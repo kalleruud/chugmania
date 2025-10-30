@@ -8,10 +8,12 @@ import {
 import { WS_GET_PLAYER_SUMMARIES } from '../../../common/utils/constants'
 import { useAuth } from '../../contexts/AuthContext'
 import { useConnection } from '../../contexts/ConnectionContext'
+import { useTranslation } from '../../locales/useTranslation'
 import LoadingView from '../components/LoadingView'
 import PlayerRow from '../components/PlayerRow'
 
 export default function Players() {
+  const { t } = useTranslation()
   const { socket } = useConnection()
   const { user } = useAuth()
   const [players, setPlayers] = useState<PlayerSummary[]>([])
@@ -41,7 +43,7 @@ export default function Players() {
     return (
       <div className='font-f1 text-label-muted flex h-screen flex-col items-center justify-center gap-2'>
         <TriangleAlert className='text-warning size-16' />
-        <p className='text-sm'>No players registered yet.</p>
+        <p className='text-sm'>{t('pages.players.noPlayersYet')}</p>
       </div>
     )
 
@@ -50,21 +52,23 @@ export default function Players() {
       <div className='flex w-full max-w-4xl flex-col gap-6'>
         <header className='space-y-2'>
           <p className='text-label-muted text-xs uppercase tracking-[0.35em]'>
-            Chugmania standings
+            {t('pages.players.subtitle')}
           </p>
           <h1 className='font-f1-black text-4xl uppercase text-white sm:text-5xl'>
-            Drivers leaderboard
+            {t('pages.players.heading')}
           </h1>
           <p className='text-label-secondary text-sm'>
-            Ranked by average position across all submitted tracks.
+            {t('pages.players.description')}
           </p>
         </header>
 
         <section className='font-f1 rounded-lg border border-white/10 bg-black/40 p-2 sm:p-3'>
           <div className='text-label-muted flex items-center gap-4 px-3 py-2 text-xs uppercase tracking-[0.35em] sm:px-4'>
-            <span className='w-12'>#</span>
-            <span className='flex-1'>Player</span>
-            <span className='w-16 text-right'>Avg pos</span>
+            <span className='w-12'>{t('pages.players.columnRank')}</span>
+            <span className='flex-1'>{t('pages.players.columnPlayer')}</span>
+            <span className='w-16 text-right'>
+              {t('pages.players.columnAvgPosition')}
+            </span>
           </div>
           <div className='divide-y divide-white/10'>
             {players.map((summary, index) => (

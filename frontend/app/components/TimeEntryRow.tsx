@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type { LeaderboardEntry } from '../../../common/models/timeEntry'
 import { formatTime } from '../../../common/utils/time'
+import { useTranslation } from '../../locales/useTranslation'
 import { formatLapTimestamp } from '../utils/date'
 import { Button } from './Button'
 
@@ -38,7 +39,10 @@ function NameCellPart({
 }
 
 function TimePart({ duration }: Readonly<{ duration?: number | null }>) {
-  const label = duration ? formatTime(duration).replace(/^0/, '') : 'DNF'
+  const { t } = useTranslation()
+  const label = duration
+    ? formatTime(duration).replace(/^0/, '')
+    : t('components.timeEntryRow.dnfLabel')
   return (
     <td className={`font-f1-italic items-center uppercase tabular-nums`}>
       {label}
@@ -64,11 +68,14 @@ function GapPart({
   gapType?: GapType
   onToggle?: () => void
 }>) {
+  const { t } = useTranslation()
   const duration = gapType === 'leader' ? gap?.leader : gap?.previous
   const isPlaceholder = !duration
-  const label = isPlaceholder
-    ? gapType.toUpperCase()
-    : '+' + formatTime(duration, true)
+  const gapTypeLabel =
+    gapType === 'leader'
+      ? t('components.timeEntryRow.gapType.leader')
+      : t('components.timeEntryRow.gapType.interval')
+  const label = isPlaceholder ? gapTypeLabel : '+' + formatTime(duration, true)
 
   return (
     <td
@@ -83,8 +90,8 @@ function GapPart({
           state={onToggle ? undefined : 'default'}
           onClick={onToggle}
           className='text-label-muted/50 rounded-md px-2 py-1 normal-case hover:bg-white/10 hover:text-white hover:no-underline'
-          aria-label='Toggle gap display'
-          title='Toggle gap display'>
+          aria-label={t('components.timeEntryRow.toggleGapDisplayTitle')}
+          title={t('components.timeEntryRow.toggleGapDisplayTitle')}>
           {label}
         </Button>
       ) : (

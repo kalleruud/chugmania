@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken'
 import type { Socket } from 'socket.io'
+import { t } from '../../../common/locales/translateServer'
 import {
   isLoginRequest,
   isRegisterRequest,
@@ -23,7 +24,7 @@ import ConnectionManager from './connection.manager'
 import UserManager from './user.manager'
 
 const SECRET: jwt.Secret = process.env.SECRET!
-if (!SECRET) throw new Error("Missing environment variable 'SECRET'")
+if (!SECRET) throw new Error(t('messages.auth.secretNotConfigured'))
 
 type TokenData = UserInfo & { iat: number; exp: number }
 
@@ -38,7 +39,8 @@ export default class AuthManager {
   }
 
   private static verify(token: string | undefined): Result<TokenData> {
-    if (!token) return { data: null, error: new Error('No JWT token provided') }
+    if (!token)
+      return { data: null, error: new Error(t('messages.auth.noJwtToken')) }
     const { data: user, error } = tryCatch(jwt.verify(token, SECRET))
     if (error) return { data: null, error }
     return {
@@ -77,7 +79,7 @@ export default class AuthManager {
 
     const userExists = await UserManager.userExists(user.email)
     if (!userExists) {
-      const message = `User with email '${user.email}' doesn't exist`
+      const message = t('messages.auth.userDoesNotExist')
       console.warn(new Date().toISOString(), message)
       return {
         data: null,
@@ -89,7 +91,7 @@ export default class AuthManager {
     }
 
     if (allowedRoles && !allowedRoles.includes(user.role)) {
-      const message = `Role '${user.role}' is not allowed to perform this action.`
+      const message = t('messages.auth.roleNotAllowed')
       console.warn(new Date().toISOString(), message)
       return {
         data: null,
@@ -108,7 +110,7 @@ export default class AuthManager {
     request: unknown
   ): Promise<BackendResponse> {
     if (!isRegisterRequest(request))
-      throw new Error('Failed to register: email or password not provided.')
+      throw new Error(t('messages.validation.missingEmailOrPassword'))
 
     const adminExists = await UserManager.adminExists()
     const { password, ...insertUser } = request
@@ -143,7 +145,7 @@ export default class AuthManager {
     request: unknown
   ): Promise<BackendResponse> {
     if (!isLoginRequest(request))
-      throw new Error('Failed to log in: email or password not provided.')
+      throw new Error(t('messages.validation.missingEmailOrPassword'))
 
     const { email, password } = request
     const { data, error } = await tryCatchAsync(UserManager.getUser(email))
@@ -157,10 +159,14 @@ export default class AuthManager {
     }
 
     if (!data) {
-      console.error(new Date().toISOString(), socket.id, 'User not found')
+      console.error(
+        new Date().toISOString(),
+        socket.id,
+        t('messages.auth.emailNotFound')
+      )
       return {
         success: false,
-        message: 'User not found',
+        message: t('messages.auth.emailNotFound'),
       } satisfies ErrorResponse
     }
 
@@ -181,7 +187,7 @@ export default class AuthManager {
         } satisfies LoginResponse)
       : ({
           success: false,
-          message: 'Incorrect password',
+          message: t('messages.auth.incorrectPassword'),
         } satisfies ErrorResponse)
   }
 
@@ -219,7 +225,7 @@ export default class AuthManager {
     if (!isSelf && !isAdmin) {
       return {
         success: false,
-        message: 'You do not have permission to update this user.',
+        message: t('messages.auth.notPermittedToUpdateUser'),
       } satisfies ErrorResponse
     }
 
@@ -232,7 +238,7 @@ export default class AuthManager {
     if (!passwordValid && !isAdmin) {
       return {
         success: false,
-        message: 'Provided password is incorrect.',
+        message: t('messages.auth.incorrectCurrentPassword'),
       } satisfies ErrorResponse
     }
 

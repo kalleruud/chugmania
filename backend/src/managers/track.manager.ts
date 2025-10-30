@@ -1,4 +1,5 @@
 import { asc, eq } from 'drizzle-orm'
+import { t } from '../../../common/locales/translateServer'
 import type {
   BackendResponse,
   GetTracksResponse,
@@ -47,7 +48,7 @@ export default class TrackManager {
     )
 
     if (error) throw error
-    if (data.length === 0) throw new Error('Found no leaderboards')
+    if (data.length === 0) throw new Error(t('messages.track.noLeaderboards'))
     return { success: true, tracks: data } satisfies GetTracksResponse
   }
 }

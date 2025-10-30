@@ -6,6 +6,7 @@ import {
   type DragEventHandler,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { useTranslation } from '../../locales/useTranslation'
 import { Button } from './Button'
 
 export type FileDropSelection = {
@@ -19,6 +20,8 @@ type FileDropProps = {
   label?: string
   hint?: string
   onSelect: (file: FileDropSelection | undefined) => void
+  labelKey?: string
+  hintKey?: string
 }
 
 export default function FileDrop({
@@ -28,6 +31,7 @@ export default function FileDrop({
   hint,
   onSelect,
 }: Readonly<FileDropProps>) {
+  const { t } = useTranslation()
   const inputRef = useRef<HTMLInputElement>(null)
   const pendingIdRef = useRef(0)
   const [dragging, setDragging] = useState(false)
@@ -57,7 +61,10 @@ export default function FileDrop({
         onSelect({ file, content })
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to read file'
+      const message =
+        err instanceof Error
+          ? err.message
+          : t('components.fileDrop.errorMessage')
       if (pendingIdRef.current === requestId) {
         setError(message)
         setSelectedFileName(undefined)
@@ -119,7 +126,9 @@ export default function FileDrop({
           )}
           {error && <span className='text-xs text-red-400'>{error}</span>}
           {loading && (
-            <span className='text-label-muted text-xs'>Reading file…</span>
+            <span className='text-label-muted text-xs'>
+              {t('components.fileDrop.readingFile')}
+            </span>
           )}
         </div>
       </Button>

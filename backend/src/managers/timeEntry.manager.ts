@@ -1,4 +1,5 @@
 import type { Socket } from 'socket.io'
+import { t } from '../../../common/locales/translateServer'
 import { isPostLapTimeRequest } from '../../../common/models/requests'
 import type {
   BackendResponse,
@@ -27,7 +28,7 @@ export default class TimeEntryManager {
     request: unknown
   ): Promise<BackendResponse> {
     if (!isPostLapTimeRequest(request))
-      throw new Error('Invalid post lap time request')
+      throw new Error(t('messages.timeEntry.invalidPostRequest'))
 
     const { data: user, error } = await AuthManager.checkAuth(s)
     if (error)
@@ -41,7 +42,7 @@ export default class TimeEntryManager {
     if (!isModerator && !isPostingOwnTime)
       return {
         success: false,
-        message: `Role '${user.role}' is not allowed to post lap times for others.`,
+        message: t('messages.timeEntry.roleNotAllowedToPostForOthers'),
       }
 
     await db.insert(timeEntries).values(request)

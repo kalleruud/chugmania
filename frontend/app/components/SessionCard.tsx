@@ -15,6 +15,7 @@ import type {
   SessionSignup,
   SessionWithSignups,
 } from '../../../common/models/session'
+import { useTranslation } from '../../locales/useTranslation'
 import { Button } from './Button'
 import Tag from './Tag'
 
@@ -52,6 +53,7 @@ export function SessionCard({
   onAddCalendar,
   loading,
 }: Readonly<SessionCardProps>) {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const date = new Date(session.date)
   const isSignedUp = userResponse !== undefined
@@ -62,9 +64,13 @@ export function SessionCard({
   }
 
   const getStatusLabel = (): string => {
-    if (session.status === 'cancelled') return 'Cancelled'
-    if (session.status === 'tentative') return 'Tentative'
-    return isPast ? 'Completed' : 'Upcoming'
+    if (session.status === 'cancelled')
+      return t('components.sessionCard.status.cancelled')
+    if (session.status === 'tentative')
+      return t('components.sessionCard.status.tentative')
+    return isPast
+      ? t('components.sessionCard.status.completed')
+      : t('components.sessionCard.status.upcoming')
   }
 
   const statusLabel = getStatusLabel()
@@ -206,7 +212,7 @@ export function SessionCard({
                     handleRsvpClick('yes')
                   }}>
                   <Check size={16} />
-                  Yes
+                  {t('components.sessionCard.rsvpButtons.yes')}
                 </Button>
                 <Button
                   type='button'
@@ -219,7 +225,7 @@ export function SessionCard({
                     handleRsvpClick('maybe')
                   }}>
                   <HelpCircle size={16} />
-                  Maybe
+                  {t('components.sessionCard.rsvpButtons.maybe')}
                 </Button>
                 <Button
                   type='button'
@@ -232,7 +238,7 @@ export function SessionCard({
                     handleRsvpClick('no')
                   }}>
                   <X size={16} />
-                  No
+                  {t('components.sessionCard.rsvpButtons.no')}
                 </Button>
               </>
             )}
@@ -250,7 +256,7 @@ export function SessionCard({
                     onJoin('yes')
                   }}>
                   <Check size={16} />
-                  Yes
+                  {t('components.sessionCard.rsvpButtons.yes')}
                 </Button>
                 <Button
                   type='button'
@@ -263,7 +269,7 @@ export function SessionCard({
                     onJoin('maybe')
                   }}>
                   <HelpCircle size={16} />
-                  Maybe
+                  {t('components.sessionCard.rsvpButtons.maybe')}
                 </Button>
                 <Button
                   type='button'
@@ -276,7 +282,7 @@ export function SessionCard({
                     onJoin('no')
                   }}>
                   <X size={16} />
-                  No
+                  {t('components.sessionCard.rsvpButtons.no')}
                 </Button>
               </>
             )}
@@ -291,7 +297,7 @@ export function SessionCard({
                   navigate(`/login?redirect=/sessions`)
                 }}>
                 <LogIn size={16} />
-                Sign in to join
+                {t('components.sessionCard.rsvpButtons.signInToJoin')}
               </Button>
             )}
 
