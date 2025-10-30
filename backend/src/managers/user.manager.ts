@@ -1,4 +1,5 @@
 import { eq } from 'drizzle-orm'
+import { randomUUID } from 'node:crypto'
 import type {
   BackendResponse,
   GetUsersResponse,
@@ -23,8 +24,14 @@ export default class UserManager {
   }
 
   static async createUser(userData: typeof users.$inferInsert) {
+    const id = userData.id ?? randomUUID()
+    const insertData: typeof users.$inferInsert = {
+      ...userData,
+      id,
+      createdBy: userData.createdBy ?? id,
+    }
     const { data: user, error } = await tryCatchAsync(
-      db.insert(users).values(userData).returning()
+      db.insert(users).values(insertData).returning()
     )
 
     if (error) {

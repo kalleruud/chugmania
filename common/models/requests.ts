@@ -16,7 +16,13 @@ export function isLoginRequest(data: any): data is LoginRequest {
 
 export type RegisterRequest = Omit<
   UserInfo,
-  'id' | 'role' | 'updatedAt' | 'createdAt' | 'deletedAt' | 'passwordHash'
+  | 'id'
+  | 'role'
+  | 'updatedAt'
+  | 'createdAt'
+  | 'deletedAt'
+  | 'passwordHash'
+  | 'createdBy'
 > &
   LoginRequest
 
@@ -42,7 +48,7 @@ export function isGetLeaderboardRequest(
   return data.trackId
 }
 
-export type PostLapTimeRequest = CreateTimeEntry
+export type PostLapTimeRequest = Omit<CreateTimeEntry, 'createdBy'>
 
 export function isPostLapTimeRequest(data: any): data is PostLapTimeRequest {
   if (typeof data !== 'object' || data === null) return false

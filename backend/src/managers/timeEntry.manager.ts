@@ -44,7 +44,10 @@ export default class TimeEntryManager {
         message: `Role '${user.role}' is not allowed to post lap times for others.`,
       }
 
-    await db.insert(timeEntries).values(request)
+    await db.insert(timeEntries).values({
+      ...request,
+      createdBy: user.id,
+    })
 
     console.debug(
       new Date().toISOString(),

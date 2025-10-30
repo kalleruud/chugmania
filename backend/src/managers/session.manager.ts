@@ -75,6 +75,7 @@ export default class SessionManager {
         createdAt: sessionSignups.createdAt,
         updatedAt: sessionSignups.updatedAt,
         deletedAt: sessionSignups.deletedAt,
+        createdBy: sessionSignups.createdBy,
         response: sessionSignups.response,
         session: sessionSignups.session,
         user: users,
@@ -114,7 +115,7 @@ export default class SessionManager {
     if (!isCreateSessionRequest(request))
       throw new Error('Invalid create session request')
 
-    const { error } = await AuthManager.checkAuth(socket, [
+    const { data: actor, error } = await AuthManager.checkAuth(socket, [
       'admin',
       'moderator',
     ])
@@ -142,6 +143,7 @@ export default class SessionManager {
       date,
       location,
       description,
+      createdBy: actor.id,
     })
 
     console.debug(new Date().toISOString(), socket.id, 'Created session', name)
@@ -357,6 +359,7 @@ export default class SessionManager {
         session: session.id,
         user: user.id,
         response: request.response,
+        createdBy: user.id,
       })
       .onConflictDoUpdate({
         target: [sessionSignups.session, sessionSignups.user],

@@ -19,16 +19,21 @@ import AuthManager from './auth.manager'
 export default class AdminManager {
   private static async import(
     into: (typeof schema)[keyof typeof schema],
-    data: string
+    data: string,
+    creatorId: string
   ) {
     const values = await CsvParser.parse<typeof into.$inferInsert>(data)
+    const normalizedValues = values.map(value => ({
+      ...value,
+      createdBy: value.createdBy ?? creatorId,
+    }))
     const inserts = await db
       .insert(into)
-      .values(values)
+      .values(normalizedValues)
       .onConflictDoNothing()
       .returning()
 
-    return { imported: inserts.length, total: values.length }
+    return { imported: inserts.length, total: normalizedValues.length }
   }
 
   static async onImportCsv(
@@ -38,7 +43,9 @@ export default class AdminManager {
     if (!isImportCsvRequest(request))
       throw new Error('Invalid CSV import request payload')
 
-    const { error } = await AuthManager.checkAuth(socket, ['admin'])
+    const { data: actor, error } = await AuthManager.checkAuth(socket, [
+      'admin',
+    ])
     if (error) return error
 
     console.debug(
@@ -51,16 +58,16 @@ export default class AdminManager {
     let task: ReturnType<typeof AdminManager.import> | undefined = undefined
     switch (request.table) {
       case 'users':
-        task = AdminManager.import(users, request.content)
+        task = AdminManager.import(users, request.content, actor.id)
         break
       case 'tracks':
-        task = AdminManager.import(tracks, request.content)
+        task = AdminManager.import(tracks, request.content, actor.id)
         break
       case 'timeEntries':
-        task = AdminManager.import(timeEntries, request.content)
+        task = AdminManager.import(timeEntries, request.content, actor.id)
         break
       case 'sessions':
-        task = AdminManager.import(sessions, request.content)
+        task = AdminManager.import(sessions, request.content, actor.id)
         break
       default:
         throw new Error(`Invalid table: '${request.table}'`)

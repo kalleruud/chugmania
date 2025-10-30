@@ -19,6 +19,7 @@ const metadata = {
     .notNull()
     .$defaultFn(() => new Date()),
   deletedAt: integer('deleted_at', { mode: 'timestamp_ms' }),
+  createdBy: text('created_by').references(() => users.id),
 }
 
 export type UserRole = 'admin' | 'moderator' | 'user'
@@ -27,7 +28,13 @@ export type SessionStatus = 'confirmed' | 'tentative' | 'cancelled'
 
 export const users = sqliteTable('users', {
   ...id,
-  ...metadata,
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).$onUpdateFn(
+    () => new Date()
+  ),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  deletedAt: integer('deleted_at', { mode: 'timestamp_ms' }),
   email: text().notNull().unique(),
   firstName: text('first_name').notNull(),
   lastName: text('last_name'),

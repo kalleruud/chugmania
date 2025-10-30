@@ -74,6 +74,7 @@ export default class LeaderboardManager {
         duration: r.entry.duration,
         amount: r.entry.amount,
         comment: r.entry.comment,
+        createdBy: r.entry.createdBy,
         createdAt: r.entry.createdAt,
         updatedAt: r.entry.updatedAt,
         deletedAt: r.entry.deletedAt,
