@@ -1,6 +1,7 @@
 import {
   CalendarDays,
   Home,
+  LogOut,
   Map,
   Shield,
   Timer,
@@ -19,10 +20,11 @@ type MobileNavItem = {
   to?: string
   action?: () => void
   hide?: boolean
+  variant?: 'primary' | 'secondary' | 'tertiary'
 }
 
 export default function Layout() {
-  const { isLoggedIn, user, requiresEmailUpdate } = useAuth()
+  const { isLoggedIn, user, requiresEmailUpdate, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [showTimeInput, setShowTimeInput] = useState(false)
@@ -50,6 +52,13 @@ export default function Layout() {
       icon: Shield,
       to: '/admin',
       hide: user?.role !== 'admin',
+    },
+    {
+      label: 'Sign out',
+      icon: LogOut,
+      action: logout,
+      hide: !isLoggedIn,
+      variant: 'secondary',
     },
   ]
 
@@ -111,7 +120,11 @@ export default function Layout() {
                     <h5>{button.label}</h5>
                   </NavLink>
                 ) : (
-                  <Button key={button.label} onClick={button.action} size='sm'>
+                  <Button
+                    key={button.label}
+                    onClick={button.action}
+                    size='sm'
+                    variant={button.variant}>
                     {button.label}
                   </Button>
                 )
@@ -167,6 +180,7 @@ export default function Layout() {
                   key={item.label}
                   type='button'
                   onClick={item.action}
+                  variant={item.variant}
                   className='w-full items-center justify-center transition'>
                   {Icon && <Icon className='size-6' />}
                   <span className='sr-only'>{item.label}</span>
