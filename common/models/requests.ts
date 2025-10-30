@@ -16,7 +16,7 @@ export function isLoginRequest(data: any): data is LoginRequest {
 
 export type RegisterRequest = Omit<
   UserInfo,
-  'id' | 'role' | 'updatedAt' | 'createdAt' | 'deletedAt'
+  'id' | 'role' | 'updatedAt' | 'createdAt' | 'deletedAt' | 'passwordHash'
 > &
   LoginRequest
 
