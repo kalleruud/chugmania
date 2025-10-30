@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useMemo, useState, type JSX } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import type { CancelSessionRequest } from '../../../common/models/requests'
 import type {
   BackendResponse,
   GetSessionsResponse,
@@ -114,7 +115,9 @@ export default function Session() {
     }
 
     socket.on(WS_SESSIONS_UPDATED, handleUpdate)
-    return () => socket.off(WS_SESSIONS_UPDATED, handleUpdate)
+    return () => {
+      socket.off(WS_SESSIONS_UPDATED, handleUpdate)
+    }
   }, [id, socket])
 
   const userSignup = useMemo(() => {
@@ -166,7 +169,19 @@ export default function Session() {
     if (!session) return
 
     setRsvpLoading(true)
-    emit(WS_LEAVE_SESSION, { session: session.id }, () => setRsvpLoading(false))
+    emit(
+      WS_LEAVE_SESSION,
+      { id: session.id } satisfies CancelSessionRequest,
+      () => setRsvpLoading(false)
+    )
+  }
+
+  const handleRsvpClick = (response: SessionSignup['response']) => {
+    if (userSignup?.response === response) {
+      handleLeave()
+      return
+    }
+    handleJoin(response)
   }
 
   const renderSignupName = (signup: SessionSignup): string => {
@@ -353,7 +368,7 @@ export default function Session() {
                     userSignup?.response === 'yes' ? 'selected' : 'unselected'
                   }
                   disabled={rsvpLoading}
-                  onClick={() => handleJoin('yes')}>
+                  onClick={() => handleRsvpClick('yes')}>
                   <Check size={16} />
                   Yes
                 </Button>
@@ -364,7 +379,7 @@ export default function Session() {
                     userSignup?.response === 'maybe' ? 'selected' : 'unselected'
                   }
                   disabled={rsvpLoading}
-                  onClick={() => handleJoin('maybe')}>
+                  onClick={() => handleRsvpClick('maybe')}>
                   <HelpCircle size={16} />
                   Maybe
                 </Button>
@@ -375,16 +390,9 @@ export default function Session() {
                     userSignup?.response === 'no' ? 'selected' : 'unselected'
                   }
                   disabled={rsvpLoading}
-                  onClick={() => handleJoin('no')}>
+                  onClick={() => handleRsvpClick('no')}>
                   <X size={16} />
                   No
-                </Button>
-                <Button
-                  type='button'
-                  variant='tertiary'
-                  disabled={rsvpLoading}
-                  onClick={handleLeave}>
-                  Leave session
                 </Button>
               </>
             )}
@@ -396,7 +404,7 @@ export default function Session() {
                   size='sm'
                   variant='secondary'
                   disabled={rsvpLoading}
-                  onClick={() => handleJoin('yes')}>
+                  onClick={() => handleRsvpClick('yes')}>
                   <Check size={16} />
                   Yes
                 </Button>
@@ -405,7 +413,7 @@ export default function Session() {
                   size='sm'
                   variant='secondary'
                   disabled={rsvpLoading}
-                  onClick={() => handleJoin('maybe')}>
+                  onClick={() => handleRsvpClick('maybe')}>
                   <HelpCircle size={16} />
                   Maybe
                 </Button>
@@ -414,7 +422,7 @@ export default function Session() {
                   size='sm'
                   variant='secondary'
                   disabled={rsvpLoading}
-                  onClick={() => handleJoin('no')}>
+                  onClick={() => handleRsvpClick('no')}>
                   <X size={16} />
                   No
                 </Button>

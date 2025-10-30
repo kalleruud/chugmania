@@ -1,5 +1,6 @@
 import { CalendarPlus } from 'lucide-react'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import type { CancelSessionRequest } from '../../../common/models/requests'
 import type {
   BackendResponse,
   GetSessionsResponse,
@@ -153,11 +154,15 @@ export default function Sessions() {
     rsvp.add(sessionId)
     setLoadingState(p => ({ ...p, rsvp }))
 
-    emit(WS_LEAVE_SESSION, { session: sessionId }, () => {
-      const rsvp = new Set(loadingState.rsvp)
-      rsvp.delete(sessionId)
-      setLoadingState(p => ({ ...p, rsvp }))
-    })
+    emit(
+      WS_LEAVE_SESSION,
+      { id: sessionId } satisfies CancelSessionRequest,
+      () => {
+        const rsvp = new Set(loadingState.rsvp)
+        rsvp.delete(sessionId)
+        setLoadingState(p => ({ ...p, rsvp }))
+      }
+    )
   }
 
   const handleEditClick = (s: SessionWithSignups) => {

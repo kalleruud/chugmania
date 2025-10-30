@@ -1,6 +1,7 @@
 import { and, asc, eq, isNull } from 'drizzle-orm'
 import type { Socket } from 'socket.io'
 import {
+  isCancelSessionRequest,
   isCreateSessionRequest,
   isDeleteSessionRequest,
   isSessionSignupRequest,
@@ -378,14 +379,14 @@ export default class SessionManager {
     socket: Socket,
     request: unknown
   ): Promise<BackendResponse> {
-    if (!isSessionSignupRequest(request))
+    if (!isCancelSessionRequest(request))
       throw new Error('Invalid cancel session request')
 
     const { data: user, error } = await AuthManager.checkAuth(socket)
     if (error) return error
 
     const session = await db.query.sessions.findFirst({
-      where: eq(sessions.id, request.session),
+      where: eq(sessions.id, request.id),
     })
 
     if (!session)
