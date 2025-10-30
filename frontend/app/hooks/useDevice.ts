@@ -12,7 +12,7 @@ export function useDevice(): DeviceType {
 
     checkDevice()
 
-    const mediaQuery = window.matchMedia('(max-width: 639px)')
+    const mediaQuery = globalThis.matchMedia('(max-width: 639px)')
     const handleChange = (e: MediaQueryListEvent) => {
       setDevice(e.matches ? 'mobile' : 'desktop')
     }
