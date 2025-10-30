@@ -1,4 +1,4 @@
-import { noLocale } from './no'
+import { no } from './no'
 
 type NestedKeyOf<T> = T extends object
   ? {
@@ -10,7 +10,7 @@ type NestedKeyOf<T> = T extends object
     }[keyof T]
   : never
 
-type TranslationKey = NestedKeyOf<typeof noLocale>
+type TranslationKey = NestedKeyOf<typeof no>
 
 function getNestedValue(obj: Record<string, unknown>, path: string): unknown {
   const keys = path.split('.')
@@ -31,7 +31,7 @@ export function t(
   key: TranslationKey,
   params?: Record<string, string | number>
 ): string {
-  const value = getNestedValue(noLocale, key)
+  const value = getNestedValue(no, key)
 
   if (typeof value !== 'string') {
     console.warn(`Translation key not found or is not a string: ${key}`)
