@@ -120,23 +120,6 @@ export const no = {
   },
 
   components: {
-    button: {
-      submit: 'Send inn',
-      save: 'Lagre endringer',
-      cancel: 'Avbryt',
-      signIn: 'Logg inn',
-      signOut: 'Logg ut',
-      signUp: 'Opprett konto',
-      goBack: 'Tilbake',
-      viewTracks: 'Se baner',
-      browseTracks: 'Utforsk baner',
-      rsvpYes: 'Ja',
-      rsvpMaybe: 'Kanskje',
-      rsvpNo: 'Nei',
-      createSession: 'Opprett sesjon',
-      subscribeViaCalendar: 'Abonner via kalender',
-    },
-
     fileDrop: {
       defaultLabel: 'Slipp fil her eller klikk for å velge',
       errorMessage: 'Klarte ikke å lese fil',
@@ -149,7 +132,6 @@ export const no = {
       commentPlaceholder: 'Kommentar',
       sessionLinkPlaceholder: 'Lenke til sesjon (valgfritt)',
       noSessionsFound: 'Ingen sesjoner funnet',
-      submitButton: 'Send inn',
       errorNoUserSelected: 'Ingen sjåfør valgt',
       errorNoTrackSelected: 'Ingen bane valgt',
       timeSeparator: ':',
@@ -175,12 +157,10 @@ export const no = {
       descriptionLabel: 'Beskrivelse (valgfritt)',
       descriptionPlaceholder: 'Del en kort agenda eller nyttige notater',
       loadingState: 'Laster inn…',
-      cancelButton: 'Avbryt',
     },
 
     editSessionModal: {
       title: 'Rediger sesjon',
-      submitLabel: 'Lagre endringer',
     },
 
     sessionCard: {
@@ -190,12 +170,7 @@ export const no = {
         completed: 'Fullført',
         upcoming: 'Kommende',
       },
-      rsvpButtons: {
-        yes: 'Ja',
-        maybe: 'Kanskje',
-        no: 'Nei',
-        signInToJoin: 'Logg inn for å delta',
-      },
+      signInToJoin: 'Logg inn for å delta',
     },
 
     timeEntryRow: {
@@ -220,10 +195,6 @@ export const no = {
       currentPasswordLabel: 'Gjeldende passord',
       newPasswordLabel: 'Nytt passord',
       passwordPlaceholder: '••••••••',
-      submitLabelSignIn: 'Logg inn',
-      submitLabelSignUp: 'Opprett konto',
-      submitLabelSaveChanges: 'Lagre endringer',
-      loadingState: 'Lagrer…',
     },
   },
 
@@ -239,45 +210,33 @@ export const no = {
       invalidInput: 'Ugyldig inndata',
       networkError: 'Nettverksfeil',
       unknownError: 'Ukjent feil',
+      permissionDenied: 'Du har ikke tillatelse til denne handlingen',
     },
 
     validation: {
+      required: '{{field}} er påkrevd',
+      invalid: '{{field}} er ugyldig',
+      tooShort: '{{field}} må være minst {{min}} tegn',
       emailRequired: 'E-post er påkrevd',
       emailInvalid: 'E-posten er ugyldig',
       passwordRequired: 'Passord er påkrevd',
       passwordTooShort: 'Passord må være minst 6 tegn',
-      firstNameRequired: 'Fornavn er påkrevd',
-      lastNameRequired: 'Etternavn er påkrevd',
-      shortNameRequired: 'Kortnavn er påkrevd',
-      sessionNameRequired: 'Sesjonsnavn er påkrevd',
+      notSelected: '{{item}} ikke valgt',
       sessionDateInvalid: 'Sesjonsdato er ugyldig',
-      userNotSelected: 'Sjåfør ikke valgt',
-      trackNotSelected: 'Bane ikke valgt',
+      alreadyHappened: '{{action}} etter at sesjonen har funnet sted',
     },
 
     success: {
-      created: 'Opprettet',
-      updated: 'Oppdatert',
-      deleted: 'Slettet',
+      generic: '{{action}} fullført',
+      imported: 'Importerte {{imported}}/{{total}} {{table}} med suksess',
       saved: 'Lagret',
-      imported: 'Importert',
-      exported: 'Eksportert',
-      detailsUpdated: 'Detaljer oppdatert.',
-      sessionCreated: 'Sesjon opprettet',
-      sessionUpdated: 'Sesjon oppdatert',
-      sessionDeleted: 'Sesjon slettet',
-      sessionCancelled: 'Sesjon avbrutt',
-      signedUpForSession: 'Du har påmeldt deg sesjonen',
-      cancelledSessionSignup: 'Du har avmeldt deg sesjonen',
+      sessionJoined: 'Du har påmeldt deg sesjonen',
     },
 
     info: {
       thisIsYourProfile: 'Dette er profilen din',
       noDataAvailable: 'Ingen data tilgjengelig',
       sessionPassed: 'Denne sesjonen har allerede funnet sted',
-      cannotSignUp: 'Kan ikke påmeldes en sesjon som allerede har funnet sted',
-      cannotCancel:
-        'Kan ikke avmelde seg en sesjon som allerede har funnet sted',
     },
 
     auth: {
@@ -285,7 +244,7 @@ export const no = {
       incorrectPassword: 'Feil passord',
       userDoesNotExist: 'Bruker finnes ikke',
       missingEmailOrPassword: 'E-post eller passord mangler',
-      roleNotAllowed: 'Rollen din tillater ikke denne handlingen',
+      roleNotAllowed: 'Rollen din {{role}} tillater ikke denne handlingen',
       notPermittedToUpdateUser:
         'Du har ikke tillatelse til å oppdatere denne brukeren',
       incorrectCurrentPassword: 'Gjeldende passord er feil',
@@ -296,11 +255,8 @@ export const no = {
     admin: {
       invalidCsvPayload: 'Ugyldig CSV-importforespørsel',
       invalidTable: 'Ugyldig tabell: {{table}}',
-      importedSuccessfully:
-        'Importerte {{imported}}/{{total}} {{table}} med suksess',
       invalidExportPayload: 'Ugyldig CSV-eksportforespørsel',
       noDataToExport: 'Ingen data å eksportere',
-      noObjectsToConvert: 'Ingen objekter å konvertere til CSV',
     },
 
     track: {
@@ -309,8 +265,8 @@ export const no = {
 
     timeEntry: {
       invalidPostRequest: 'Ugyldig postforespørsel for rundetid',
-      roleNotAllowedToPostForOthers:
-        'Rollen din tillater ikke å poste rundetider for andre',
+      roleNotAllowed:
+        'Rollen din {{role}} tillater ikke å poste rundetider for andre',
     },
 
     session: {
@@ -319,11 +275,8 @@ export const no = {
       invalidDeleteRequest: 'Ugyldig slettingsforespørsel for sesjon',
       invalidCancelRequest: 'Ugyldig avbruddsforespørsel for sesjon',
       invalidSignupRequest: 'Ugyldig påmeldingsforespørsel for sesjon',
-      sessionNameCannotBeEmpty: 'Sesjonsnavn kan ikke være tomt',
-      sessionNotFound: 'Sesjon ikke funnet.',
-      sessionDateInvalid: 'Sesjonsdato er ugyldig.',
-      failedToDeleteSession: 'Klarte ikke å slette sesjon.',
-      failedToCancelSession: 'Klarte ikke å avbryte sesjon.',
+      notFound: 'Sesjon ikke funnet.',
+      failedToProcess: 'Klarte ikke å {{action}} sesjon.',
     },
   },
 

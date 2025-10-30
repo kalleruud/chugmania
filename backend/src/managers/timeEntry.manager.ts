@@ -42,7 +42,7 @@ export default class TimeEntryManager {
     if (!isModerator && !isPostingOwnTime)
       return {
         success: false,
-        message: t('messages.timeEntry.roleNotAllowedToPostForOthers'),
+        message: t('messages.timeEntry.roleNotAllowed', { role: user.role }),
       }
 
     await db.insert(timeEntries).values(request)
