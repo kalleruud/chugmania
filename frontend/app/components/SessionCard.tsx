@@ -81,14 +81,18 @@ export function SessionCard({
     else onJoin(response)
   }
 
+  const navigateToDetails = () => navigate(`/sessions/${session.id}`)
+
   const getRsvpState = (
     response: SessionSignup['response']
   ): 'selected' | 'unselected' =>
     userResponse === response ? 'selected' : 'unselected'
 
   return (
-    <div
-      className={`border-stroke flex flex-col overflow-hidden rounded-2xl border ${statusClasses[session.status] || statusClasses.confirmed}`}>
+    <button
+      tabIndex={0}
+      onClick={navigateToDetails}
+      className={`border-stroke hover:border-accent/60 focus-visible:border-accent/60 focus-visible:ring-accent/40 flex cursor-pointer flex-col overflow-hidden rounded-2xl border transition hover:bg-white/10 focus:outline-none focus-visible:ring-2 ${statusClasses[session.status] || statusClasses.confirmed}`}>
       <div className='border-b border-white/10 bg-white/10 px-6 py-4'>
         <div className='flex items-start justify-between gap-3'>
           <div className='flex-1'>
@@ -108,7 +112,10 @@ export function SessionCard({
                   variant='secondary'
                   size='sm'
                   disabled={loading}
-                  onClick={onEdit}
+                  onClick={event => {
+                    event.stopPropagation()
+                    onEdit()
+                  }}
                   aria-label='Edit session'>
                   <Edit size={16} />
                 </Button>
@@ -118,7 +125,10 @@ export function SessionCard({
                     variant='secondary'
                     size='sm'
                     disabled={loading}
-                    onClick={onCancel}
+                    onClick={event => {
+                      event.stopPropagation()
+                      onCancel()
+                    }}
                     aria-label='Cancel session'>
                     <Ban size={16} />
                   </Button>
@@ -128,7 +138,10 @@ export function SessionCard({
                   variant='secondary'
                   size='sm'
                   disabled={loading}
-                  onClick={onDelete}
+                  onClick={event => {
+                    event.stopPropagation()
+                    onDelete()
+                  }}
                   aria-label='Delete session'>
                   <Trash2 size={16} />
                 </Button>
@@ -188,7 +201,10 @@ export function SessionCard({
                   state={getRsvpState('yes')}
                   disabled={loading}
                   className='flex-1'
-                  onClick={() => handleRsvpClick('yes')}>
+                  onClick={event => {
+                    event.stopPropagation()
+                    handleRsvpClick('yes')
+                  }}>
                   <Check size={16} />
                   Yes
                 </Button>
@@ -198,7 +214,10 @@ export function SessionCard({
                   state={getRsvpState('maybe')}
                   disabled={loading}
                   className='flex-1'
-                  onClick={() => handleRsvpClick('maybe')}>
+                  onClick={event => {
+                    event.stopPropagation()
+                    handleRsvpClick('maybe')
+                  }}>
                   <HelpCircle size={16} />
                   Maybe
                 </Button>
@@ -208,7 +227,10 @@ export function SessionCard({
                   state={getRsvpState('no')}
                   disabled={loading}
                   className='flex-1'
-                  onClick={() => handleRsvpClick('no')}>
+                  onClick={event => {
+                    event.stopPropagation()
+                    handleRsvpClick('no')
+                  }}>
                   <X size={16} />
                   No
                 </Button>
@@ -223,7 +245,10 @@ export function SessionCard({
                   variant='secondary'
                   disabled={loading}
                   className='flex-1'
-                  onClick={() => onJoin('yes')}>
+                  onClick={event => {
+                    event.stopPropagation()
+                    onJoin('yes')
+                  }}>
                   <Check size={16} />
                   Yes
                 </Button>
@@ -233,7 +258,10 @@ export function SessionCard({
                   variant='secondary'
                   disabled={loading}
                   className='flex-1'
-                  onClick={() => onJoin('maybe')}>
+                  onClick={event => {
+                    event.stopPropagation()
+                    onJoin('maybe')
+                  }}>
                   <HelpCircle size={16} />
                   Maybe
                 </Button>
@@ -243,7 +271,10 @@ export function SessionCard({
                   variant='secondary'
                   disabled={loading}
                   className='flex-1'
-                  onClick={() => onJoin('no')}>
+                  onClick={event => {
+                    event.stopPropagation()
+                    onJoin('no')
+                  }}>
                   <X size={16} />
                   No
                 </Button>
@@ -255,7 +286,10 @@ export function SessionCard({
                 type='button'
                 size='sm'
                 className='flex-1'
-                onClick={() => navigate(`/login?redirect=/sessions`)}>
+                onClick={event => {
+                  event.stopPropagation()
+                  navigate(`/login?redirect=/sessions`)
+                }}>
                 <LogIn size={16} />
                 Sign in to join
               </Button>
@@ -267,13 +301,16 @@ export function SessionCard({
                 variant='secondary'
                 size='sm'
                 disabled={loading}
-                onClick={onAddCalendar}>
+                onClick={event => {
+                  event.stopPropagation()
+                  onAddCalendar()
+                }}>
                 <CalendarPlus size={16} />
               </Button>
             )}
           </div>
         )}
       </div>
-    </div>
+    </button>
   )
 }

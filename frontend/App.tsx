@@ -8,6 +8,7 @@ import Home from './app/pages/Home'
 import Login from './app/pages/Login'
 import Player from './app/pages/Player'
 import Players from './app/pages/Players'
+import Session from './app/pages/Session'
 import Sessions from './app/pages/Sessions'
 import Track from './app/pages/Track'
 import Tracks from './app/pages/Tracks'
@@ -28,6 +29,7 @@ createRoot(document.getElementById('root')!).render(
               <Route path='players' element={<Players />} />
               <Route path='players/:id' element={<Player />} />
               <Route path='sessions' element={<Sessions />} />
+              <Route path='sessions/:id' element={<Session />} />
               <Route path='login' element={<Login />} />
               <Route path='admin' element={<Admin />} />
             </Route>
