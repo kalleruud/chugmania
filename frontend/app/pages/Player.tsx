@@ -119,14 +119,6 @@ export default function Player() {
     event.preventDefault()
     if (!detail) return
 
-    if (!formValues.password) {
-      setFormStatus({
-        type: 'error',
-        message: 'Current password is required to make changes.',
-      })
-      return
-    }
-
     const request: UpdateUserRequest = {
       type: 'UpdateUserRequest',
       id: detail.user.id,
@@ -152,8 +144,8 @@ export default function Player() {
           setFormStatus({ type: 'error', message: response.message })
           return
         }
-        if (response.token) setToken(response.token)
-        refreshUser(response.userInfo)
+        setToken(response.token)
+        if (response.userInfo.id === user?.id) refreshUser(response.userInfo)
         setDetail({
           user: response.userInfo,
           tracks: detail.tracks,

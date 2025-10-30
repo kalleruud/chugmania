@@ -78,5 +78,5 @@ export type ExportCsvResponse = {
 export type UpdateUserResponse = {
   success: true
   userInfo: UserInfo
-  token?: string
+  token: string
 }

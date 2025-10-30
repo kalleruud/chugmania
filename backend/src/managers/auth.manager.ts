@@ -25,6 +25,8 @@ import UserManager from './user.manager'
 const SECRET: jwt.Secret = process.env.SECRET!
 if (!SECRET) throw new Error("Missing environment variable 'SECRET'")
 
+type TokenData = UserInfo & { iat: number; exp: number }
+
 export default class AuthManager {
   private static readonly JWT_OPTIONS: jwt.SignOptions = {
     algorithm: 'HS512',
@@ -35,11 +37,14 @@ export default class AuthManager {
     return jwt.sign(user, SECRET, AuthManager.JWT_OPTIONS)
   }
 
-  private static verify(token: string | undefined): Result<UserInfo> {
+  private static verify(token: string | undefined): Result<TokenData> {
     if (!token) return { data: null, error: new Error('No JWT token provided') }
     const { data: user, error } = tryCatch(jwt.verify(token, SECRET))
     if (error) return { data: null, error }
-    return { data: user as UserInfo, error: null }
+    return {
+      data: user as TokenData,
+      error: null,
+    }
   }
 
   private static async isPasswordValid(
@@ -58,17 +63,17 @@ export default class AuthManager {
     socket: Socket,
     allowedRoles?: UserInfo['role'][]
   ): Promise<Result<UserInfo, ErrorResponse>> {
-    const result = AuthManager.verify(socket.handshake.auth.token)
-    if (result.error)
+    const { data, error } = AuthManager.verify(socket.handshake.auth.token)
+    if (error)
       return {
         data: null,
         error: {
           success: false,
-          message: result.error.message,
+          message: error.message,
         },
       }
 
-    const user = result.data
+    const { iat, exp, ...user } = data
 
     const userExists = await UserManager.userExists(user.email)
     if (!userExists) {
@@ -198,7 +203,7 @@ export default class AuthManager {
     if (error)
       return {
         success: false,
-        message: error.message,
+        message: 'Checking auth failed: ' + error.message,
       } satisfies ErrorResponse
 
     if (!isUpdateUserRequest(request)) {
@@ -224,7 +229,7 @@ export default class AuthManager {
       targetUser.passwordHash
     )
 
-    if (!passwordValid) {
+    if (!passwordValid && !isAdmin) {
       return {
         success: false,
         message: 'Provided password is incorrect.',
@@ -241,15 +246,10 @@ export default class AuthManager {
     const { userInfo } = UserManager.toUserInfo(updatedUser)
     ConnectionManager.emit(WS_UPDATE_USER, updatedUser)
 
-    let token: string | undefined = undefined
-    if (isSelf) {
-      token = AuthManager.sign(userInfo)
-    }
-
     return {
       success: true,
       userInfo,
-      token,
+      token: AuthManager.sign(isSelf ? userInfo : actor),
     } satisfies UpdateUserResponse
   }
 }
