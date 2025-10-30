@@ -2,7 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import './App.css'
-import Layout from './app/Layout'
+import ResponsiveLayout from './app/layouts/ResponsiveLayout'
 import Admin from './app/pages/Admin'
 import Home from './app/pages/Home'
 import Login from './app/pages/Login'
@@ -22,7 +22,7 @@ createRoot(document.getElementById('root')!).render(
       <ConnectionProvider>
         <AuthProvider>
           <Routes>
-            <Route element={<Layout />}>
+            <Route element={<ResponsiveLayout />}>
               <Route index element={<Home />} />
               <Route path='tracks' element={<Tracks />} />
               <Route path='tracks/:id' element={<Track />} />
