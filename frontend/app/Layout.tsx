@@ -2,7 +2,6 @@ import {
   CalendarDays,
   Home,
   Map,
-  Plus,
   Shield,
   Timer,
   Users,
@@ -118,18 +117,6 @@ export default function Layout() {
                 )
               )}
           </nav>
-
-          {isLoggedIn && (
-            <Button
-              type='button'
-              variant='secondary'
-              size='sm'
-              onClick={() => setShowTimeInput(true)}
-              className='rounded-lg px-3 py-1.5 text-xs shadow-sm'>
-              <Plus size={14} />
-              Register laptime
-            </Button>
-          )}
         </div>
       </header>
 
