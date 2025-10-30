@@ -2,30 +2,34 @@
 
 ## Overview
 
-Chugmania uses a centralized translation system for all user-facing strings. All text is organized in a single Norwegian locale file (`common/locales/no.ts`) with corresponding utility functions for both frontend and backend.
+Chugmania uses a centralized translation system with a single source of truth. All user-facing strings are in Norwegian (Norsk) and organized in one file: `common/locales/no.ts`. This file is shared by both the frontend and backend, ensuring consistency across the entire application.
 
 ## File Structure
 
 ```
 common/locales/
-├── no.ts                    # Norwegian (Norsk) translation strings
+├── no.ts                    # Norwegian (Norsk) - Single source of truth for all translations
 ├── translateServer.ts       # Backend translation utility function
-└── index.ts                # Exports for frontend (if needed)
+└── index.ts                # Exports for frontend
 
 frontend/locales/
-├── no.ts                    # Frontend re-export of strings with frontend-specific grouping
-├── useTranslation.ts        # Frontend translation React hook
+├── useTranslation.ts        # Frontend translation React hook (imports from common)
 └── index.ts                # Frontend exports
 ```
+
+The `common/locales/no.ts` file is the single source of truth for all translations and is used by:
+
+- **Backend**: `backend/src/managers/` use `t()` function from `common/locales/translateServer.ts`
+- **Frontend**: `frontend/app/` use `useTranslation()` hook that imports from `common/locales/no.ts`
 
 ## Adding New Strings
 
 ### 1. Add String to Translation File
 
-First, add your new string to the appropriate group in `common/locales/no.ts`:
+Add your new string to the appropriate group in `common/locales/no.ts` (the single source of truth):
 
 ```typescript
-export const noLocale = {
+export const no = {
   messages: {
     error: {
       // Add new error here
