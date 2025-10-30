@@ -70,7 +70,7 @@ export function myManager() {
 
 ## String Organization
 
-Strings are organized by category and feature for maintainability:
+Strings are organized by category and feature for maintainability. The system uses template parameters to reduce duplication:
 
 ```typescript
 export const noLocale = {
@@ -82,19 +82,27 @@ export const noLocale = {
 
   messages: {
     error: {
-      // Error messages
+      // Generic error messages
     },
     validation: {
-      // Validation error messages
+      // Validation messages with template support for fields
+      required: '{{field}} er påkrevd',
+      invalid: '{{field}} er ugyldig',
+      tooShort: '{{field}} må være minst {{min}} tegn',
+      notSelected: '{{item}} ikke valgt',
+      alreadyHappened: '{{action}} etter at sesjonen har funnet sted',
     },
     success: {
-      // Success messages
+      // Success messages - uses generic template where possible
+      generic: '{{action}} fullført',
+      imported: 'Importerte {{imported}}/{{total}} {{table}} med suksess',
     },
     info: {
       // Informational messages
     },
     auth: {
       // Authentication-related messages
+      roleNotAllowed: 'Rollen din {{role}} tillater ikke denne handlingen',
     },
     admin: {
       // Admin panel messages
@@ -104,13 +112,27 @@ export const noLocale = {
     },
     timeEntry: {
       // Time entry messages
+      roleNotAllowed:
+        'Rollen din {{role}} tillater ikke å poste rundetider for andre',
     },
     session: {
       // Session messages
+      failedToProcess: 'Klarte ikke å {{action}} sesjon.',
     },
   },
 }
 ```
+
+## Template Parameters
+
+The system uses template parameters to reduce string duplication:
+
+- **{{field}}** - Used in validation messages (e.g., "E-post", "Passord")
+- **{{item}}** - Used for items not selected (e.g., "Sjåfør", "Bane")
+- **{{action}}** - Used for operations (e.g., "Opprett", "Oppdater", "Slett")
+- **{{role}}** - Used for permission-related messages
+- **{{min}}** - Used for length constraints
+- **{{imported}}, {{total}}, {{table}}** - Used for import statistics
 
 ## Translation Function Reference
 
@@ -177,6 +199,8 @@ Both the frontend hook and backend function provide **full type safety**:
 5. **Avoid abbreviations**: Spell out words fully for clarity
 6. **Use lowercase**: Start with lowercase unless it's a proper noun
 7. **Include context**: Make sure the string is clear in context
+8. **Use templates for similar messages**: Before adding a new string, check if an existing template with parameters can be used (e.g., use `validation.required` with `{{field}}` parameter instead of creating new keys like `emailRequired`, `nameRequired`, etc.)
+9. **Consolidate where possible**: Use generic templates like `success.generic` with `{{action}}` parameter instead of specific keys like `created`, `updated`, `deleted`
 
 ## Common Patterns
 
@@ -224,6 +248,49 @@ This system is designed to be extendable:
 - **Dynamic locale switching**: Implement locale context provider
 - **Lazy loading**: Load locales on demand for performance
 - **Backend translations**: Backend errors are now centralized and can be serialized to frontend
+
+## Consolidation Strategy
+
+The translation system uses template parameters to minimize redundancy:
+
+### Before (Unconsolidated)
+
+```typescript
+messages: {
+  validation: {
+    emailRequired: 'E-post er påkrevd',
+    passwordRequired: 'Passord er påkrevd',
+    firstNameRequired: 'Fornavn er påkrevd',
+    sessionNameRequired: 'Sesjonsnavn er påkrevd',
+    // ... 8 similar keys for different fields
+  },
+  success: {
+    created: 'Opprettet',
+    updated: 'Oppdatert',
+    deleted: 'Slettet',
+    sessionCreated: 'Sesjon opprettet',
+    sessionUpdated: 'Sesjon oppdatert',
+    // ... 9 similar keys for different actions
+  },
+}
+```
+
+### After (Consolidated)
+
+```typescript
+messages: {
+  validation: {
+    required: '{{field}} er påkrevd', // Reusable template
+    notSelected: '{{item}} ikke valgt', // Reusable template
+  },
+  success: {
+    generic: '{{action}} fullført', // Reusable template
+    sessionJoined: 'Du har påmeldt deg sesjonen', // Specific when needed
+  },
+}
+```
+
+**Result**: ~36% reduction in message keys while maintaining clarity and specificity where needed.
 
 ## Type Definition Reference
 
