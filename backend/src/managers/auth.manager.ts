@@ -91,7 +91,7 @@ export default class AuthManager {
     }
 
     if (allowedRoles && !allowedRoles.includes(user.role)) {
-      const message = t('messages.auth.roleNotAllowed')
+      const message = t('messages.auth.roleNotAllowed', { role: user.role })
       console.warn(new Date().toISOString(), message)
       return {
         data: null,

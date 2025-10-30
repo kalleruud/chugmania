@@ -180,7 +180,7 @@ export default class SessionManager {
       if (!name)
         return {
           success: false,
-          message: t('messages.validation.sessionNameCannotBeEmpty'),
+          message: t('messages.validation.sessionNameRequired'),
         }
       updates.name = name
     }
@@ -255,7 +255,7 @@ export default class SessionManager {
       )
       return {
         success: false,
-        message: t('messages.session.failedToDeleteSession'),
+        message: t('messages.session.failedToProcess', { action: 'slette' }),
       }
     }
 
@@ -311,7 +311,7 @@ export default class SessionManager {
       )
       return {
         success: false,
-        message: t('messages.session.failedToCancelSession'),
+        message: t('messages.session.failedToProcess', { action: 'avbryte' }),
       }
     }
 
@@ -349,7 +349,9 @@ export default class SessionManager {
     if (session.date.getTime() < Date.now())
       return {
         success: false,
-        message: t('messages.info.cannotSignUp'),
+        message: t('messages.validation.alreadyHappened', {
+          action: 'Påmelding',
+        }),
       }
 
     await db
@@ -399,7 +401,9 @@ export default class SessionManager {
     if (session.date.getTime() <= Date.now())
       return {
         success: false,
-        message: t('messages.info.cannotCancel'),
+        message: t('messages.validation.alreadyHappened', {
+          action: 'Avmelding',
+        }),
       }
 
     await db

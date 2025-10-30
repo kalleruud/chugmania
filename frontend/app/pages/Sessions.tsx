@@ -136,7 +136,7 @@ export default function Sessions() {
     response: SessionSignup['response']
   ) => {
     if (!isLoggedIn) {
-      globalThis.alert(t('messages.info.cannotSignUp'))
+      globalThis.alert(t('messages.error.unauthorized'))
       return
     }
 
