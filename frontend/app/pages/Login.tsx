@@ -4,6 +4,8 @@ import { useAuth } from '../../contexts/AuthContext'
 import { Button } from '../components/Button'
 import UserForm from '../components/UserForm'
 
+const ALLOW_REGISTERING = false
+
 export default function Login() {
   const { login, register, errorMessage, isLoggedIn } = useAuth()
   const navigate = useNavigate()
@@ -68,16 +70,18 @@ export default function Login() {
           errorMessage={errorMessage}
         />
 
-        <Button
-          type='button'
-          variant='tertiary'
-          size='sm'
-          onClick={() => setIsRegistering(!isRegistering)}
-          className='text-xs normal-case'>
-          {isRegistering
-            ? 'Already racing? Sign in'
-            : 'New driver? Create an account'}
-        </Button>
+        {ALLOW_REGISTERING && (
+          <Button
+            type='button'
+            variant='tertiary'
+            size='sm'
+            onClick={() => setIsRegistering(!isRegistering)}
+            className='text-xs normal-case'>
+            {isRegistering
+              ? 'Already racing? Sign in'
+              : 'New driver? Create an account'}
+          </Button>
+        )}
       </div>
     </div>
   )
