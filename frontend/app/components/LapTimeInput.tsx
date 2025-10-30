@@ -30,6 +30,7 @@ import { formattedTimeToMs } from '../../../common/utils/time'
 import { formatTrackName } from '../../../common/utils/track'
 import { useAuth } from '../../contexts/AuthContext'
 import { useConnection } from '../../contexts/ConnectionContext'
+import { useTranslation } from '../../locales/useTranslation'
 import { Button } from './Button'
 import SearchableDropdown, { type LookupItem } from './SearchableDropdown'
 
@@ -56,6 +57,7 @@ export default function LapTimeInput({
   className,
   onSubmit,
 }: Readonly<LapTimeInputProps>) {
+  const { t } = useTranslation()
   const { socket } = useConnection()
   const { user: loggedInUser } = useAuth()
   const loggedInLookup = loggedInUser
@@ -220,8 +222,8 @@ export default function LapTimeInput({
     e.preventDefault()
     const uid = userId ?? selectedUser?.id
     const tid = trackId ?? selectedTrack?.id
-    if (!uid) throw new Error('No user selected')
-    if (!tid) throw new Error('No track selected')
+    if (!uid) throw new Error(t('components.lapTimeInput.errorNoUserSelected'))
+    if (!tid) throw new Error(t('components.lapTimeInput.errorNoTrackSelected'))
 
     socket.emit(
       WS_POST_LAPTIME,
@@ -262,7 +264,7 @@ export default function LapTimeInput({
               }}
               value={d}
               onChange={e => console.debug('Input:', e.target.value)}
-              placeholder='0'
+              placeholder={t('components.lapTimeInput.minuteZeroPlaceholder')}
               onKeyDown={e => handleKeyDown(i, e)}
               onFocus={e => e.currentTarget.select()}
               onClick={e => e.currentTarget.select()}
@@ -273,8 +275,16 @@ export default function LapTimeInput({
               pattern={i === 0 || i === 2 ? '[0-5]' : '[0-9]'}
               maxLength={1}
             />
-            {i === 1 && <span className='font-f1 text-2xl'>:</span>}
-            {i === 3 && <span className='font-f1 text-2xl'>.</span>}
+            {i === 1 && (
+              <span className='font-f1 text-2xl'>
+                {t('components.lapTimeInput.timeSeparator')}
+              </span>
+            )}
+            {i === 3 && (
+              <span className='font-f1 text-2xl'>
+                {t('components.lapTimeInput.decimalSeparator')}
+              </span>
+            )}
           </span>
         ))}
       </div>
@@ -285,7 +295,7 @@ export default function LapTimeInput({
             {!userId && loggedInUser.role !== 'user' && (
               <SearchableDropdown
                 required={true}
-                placeholder='Select user'
+                placeholder={t('components.lapTimeInput.selectUser')}
                 selected={selectedUser}
                 setSelected={setSelectedUser}
                 items={
@@ -302,7 +312,7 @@ export default function LapTimeInput({
             {!trackId && (
               <SearchableDropdown
                 required={true}
-                placeholder='Select track'
+                placeholder={t('components.lapTimeInput.selectTrack')}
                 selected={selectedTrack}
                 setSelected={setSelectedTrack}
                 items={
@@ -322,11 +332,11 @@ export default function LapTimeInput({
         <input
           value={comment}
           onChange={e => setComment(e.target.value)}
-          placeholder='Comment'
+          placeholder={t('components.lapTimeInput.commentPlaceholder')}
           className='focus:ring-accent/60 focus:border-accent rounded-lg border border-white/10 bg-white/5 px-4 py-2 outline-none transition focus:ring-2'
         />
         <SearchableDropdown
-          placeholder='Link to session (optional)'
+          placeholder={t('components.lapTimeInput.sessionLinkPlaceholder')}
           selected={selectedSession}
           setSelected={setSelectedSession}
           items={
@@ -343,7 +353,7 @@ export default function LapTimeInput({
             }) ?? []
           }
           className='mt-2'
-          emptyLabel='No sessions found'
+          emptyLabel={t('components.lapTimeInput.noSessionsFound')}
         />
       </div>
 
@@ -353,7 +363,7 @@ export default function LapTimeInput({
         size='md'
         disabled={!isInputValid()}
         className='w-full'>
-        Submit
+        {t('components.lapTimeInput.submitButton')}
       </Button>
     </form>
   )

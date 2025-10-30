@@ -1,5 +1,6 @@
 import { and, asc, eq, isNull } from 'drizzle-orm'
 import type { Socket } from 'socket.io'
+import { t } from '../../../common/locales/translateServer'
 import {
   isCancelSessionRequest,
   isCreateSessionRequest,
@@ -112,7 +113,7 @@ export default class SessionManager {
     request: unknown
   ): Promise<BackendResponse> {
     if (!isCreateSessionRequest(request))
-      throw new Error('Invalid create session request')
+      throw new Error(t('messages.session.invalidCreateRequest'))
 
     const { error } = await AuthManager.checkAuth(socket, [
       'admin',
@@ -124,14 +125,14 @@ export default class SessionManager {
     if (!name)
       return {
         success: false,
-        message: 'Session name is required.',
+        message: t('messages.validation.sessionNameRequired'),
       }
 
     const date = new Date(request.date)
     if (Number.isNaN(date.getTime()))
       return {
         success: false,
-        message: 'Session date is invalid.',
+        message: t('messages.validation.sessionDateInvalid'),
       }
 
     const location = request.location?.trim()
@@ -156,7 +157,7 @@ export default class SessionManager {
     request: unknown
   ): Promise<BackendResponse> {
     if (!isUpdateSessionRequest(request))
-      throw new Error('Invalid update session request')
+      throw new Error(t('messages.session.invalidUpdateRequest'))
 
     const { error } = await AuthManager.checkAuth(socket, [
       'admin',
@@ -170,7 +171,7 @@ export default class SessionManager {
     if (!session)
       return {
         success: false,
-        message: 'Session not found.',
+        message: t('messages.session.sessionNotFound'),
       }
 
     const updates: Record<string, any> = {}
@@ -179,7 +180,7 @@ export default class SessionManager {
       if (!name)
         return {
           success: false,
-          message: 'Session name cannot be empty.',
+          message: t('messages.validation.sessionNameCannotBeEmpty'),
         }
       updates.name = name
     }
@@ -189,7 +190,7 @@ export default class SessionManager {
       if (Number.isNaN(date.getTime()))
         return {
           success: false,
-          message: 'Session date is invalid.',
+          message: t('messages.validation.sessionDateInvalid'),
         }
       updates.date = date
     }
@@ -222,7 +223,7 @@ export default class SessionManager {
     request: unknown
   ): Promise<BackendResponse> {
     if (!isDeleteSessionRequest(request))
-      throw new Error('Invalid delete session request')
+      throw new Error(t('messages.session.invalidDeleteRequest'))
 
     const { error } = await AuthManager.checkAuth(socket, ['admin'])
     if (error) return error
@@ -234,7 +235,7 @@ export default class SessionManager {
     if (!session)
       return {
         success: false,
-        message: 'Session not found.',
+        message: t('messages.session.sessionNotFound'),
       }
 
     const { error: deleteError } = await tryCatchAsync(
@@ -254,7 +255,7 @@ export default class SessionManager {
       )
       return {
         success: false,
-        message: 'Failed to delete session.',
+        message: t('messages.session.failedToDeleteSession'),
       }
     }
 
@@ -275,7 +276,7 @@ export default class SessionManager {
     request: unknown
   ): Promise<BackendResponse> {
     if (!isDeleteSessionRequest(request))
-      throw new Error('Invalid cancel session request')
+      throw new Error(t('messages.session.invalidCancelRequest'))
 
     const { error } = await AuthManager.checkAuth(socket, [
       'admin',
@@ -290,7 +291,7 @@ export default class SessionManager {
     if (!session)
       return {
         success: false,
-        message: 'Session not found.',
+        message: t('messages.session.sessionNotFound'),
       }
 
     const { error: cancelError } = await tryCatchAsync(
@@ -310,7 +311,7 @@ export default class SessionManager {
       )
       return {
         success: false,
-        message: 'Failed to cancel session.',
+        message: t('messages.session.failedToCancelSession'),
       }
     }
 
@@ -331,7 +332,7 @@ export default class SessionManager {
     request: unknown
   ): Promise<BackendResponse> {
     if (!isSessionSignupRequest(request))
-      throw new Error('Invalid session signup request')
+      throw new Error(t('messages.session.invalidSignupRequest'))
 
     const { data: user, error } = await AuthManager.checkAuth(socket)
     if (error) return error
@@ -342,13 +343,13 @@ export default class SessionManager {
     if (!session)
       return {
         success: false,
-        message: 'Session not found.',
+        message: t('messages.session.sessionNotFound'),
       }
 
     if (session.date.getTime() < Date.now())
       return {
         success: false,
-        message: 'Cannot sign up for a session that has already happened.',
+        message: t('messages.info.cannotSignUp'),
       }
 
     await db
@@ -380,7 +381,7 @@ export default class SessionManager {
     request: unknown
   ): Promise<BackendResponse> {
     if (!isCancelSessionRequest(request))
-      throw new Error('Invalid cancel session request')
+      throw new Error(t('messages.session.invalidCancelRequest'))
 
     const { data: user, error } = await AuthManager.checkAuth(socket)
     if (error) return error
@@ -392,13 +393,13 @@ export default class SessionManager {
     if (!session)
       return {
         success: false,
-        message: 'Session not found.',
+        message: t('messages.session.sessionNotFound'),
       }
 
     if (session.date.getTime() <= Date.now())
       return {
         success: false,
-        message: 'Cannot cancel after the session has happened.',
+        message: t('messages.info.cannotCancel'),
       }
 
     await db

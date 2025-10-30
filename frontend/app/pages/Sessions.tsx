@@ -21,6 +21,7 @@ import {
 } from '../../../common/utils/constants'
 import { useAuth } from '../../contexts/AuthContext'
 import { useConnection } from '../../contexts/ConnectionContext'
+import { useTranslation } from '../../locales/useTranslation'
 import { Button } from '../components/Button'
 import { EditSessionModal } from '../components/EditSessionModal'
 import LoadingView from '../components/LoadingView'
@@ -37,6 +38,7 @@ const emptyForm: SessionFormData = {
 const pad = (n: number): string => String(n).padStart(2, '0')
 
 export default function Sessions() {
+  const { t } = useTranslation()
   const { socket } = useConnection()
   const { user, isLoggedIn } = useAuth()
   const [sessions, setSessions] = useState<SessionWithSignups[]>([])
@@ -134,7 +136,7 @@ export default function Sessions() {
     response: SessionSignup['response']
   ) => {
     if (!isLoggedIn) {
-      globalThis.alert('Sign in to join.')
+      globalThis.alert(t('messages.info.cannotSignUp'))
       return
     }
 
@@ -200,7 +202,7 @@ export default function Sessions() {
   }
 
   const handleDelete = (id: string) => {
-    if (!globalThis.confirm('Delete this session?')) return
+    if (!globalThis.confirm(t('pages.sessions.deleteConfirmation'))) return
     setLoadingState(p => ({ ...p, deleting: true }))
     emit(WS_DELETE_SESSION, { id }, () =>
       setLoadingState(p => ({ ...p, deleting: false }))
@@ -208,7 +210,7 @@ export default function Sessions() {
   }
 
   const handleCancel = (id: string) => {
-    if (!globalThis.confirm('Cancel this session?')) return
+    if (!globalThis.confirm(t('pages.sessions.cancelConfirmation'))) return
     setLoadingState(p => ({ ...p, canceling: true }))
     emit(WS_CANCEL_SESSION, { id }, () =>
       setLoadingState(p => ({ ...p, canceling: false }))
@@ -218,7 +220,7 @@ export default function Sessions() {
   const renderSessions = (list: SessionWithSignups[]) =>
     list.length === 0 ? (
       <div className='text-label-muted rounded-2xl border border-dashed border-white/10 bg-white/5 p-6 text-center'>
-        No sessions yet.
+        {t('pages.sessions.noSessionsYet')}
       </div>
     ) : (
       <div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
@@ -256,10 +258,11 @@ export default function Sessions() {
     <div className='px-safe-or-4 pt-safe-or-8 flex-1 space-y-10 pb-24'>
       <header className='flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
         <div className='space-y-2 sm:max-w-2xl'>
-          <h1 className='text-3xl font-semibold'>Sessions</h1>
+          <h1 className='text-3xl font-semibold'>
+            {t('pages.sessions.heading')}
+          </h1>
           <p className='text-label-muted text-sm'>
-            Join upcoming Trackmania gatherings. Moderators and admins create
-            sessions; everyone can RSVP.
+            {t('pages.sessions.description')}
           </p>
         </div>
         <Button
@@ -270,7 +273,7 @@ export default function Sessions() {
             openCalendar('/api/sessions/calendar.ics', 'subscribe')
           }>
           <CalendarPlus size={16} />
-          Subscribe via calendar
+          {t('pages.sessions.subscribeViaCalendar')}
         </Button>
       </header>
 
@@ -279,7 +282,9 @@ export default function Sessions() {
           {showCreateForm ? (
             <section className='border-stroke rounded-2xl border bg-white/5 p-6 backdrop-blur-sm'>
               <div className='mb-4 flex items-center justify-between'>
-                <h2 className='text-lg font-semibold'>Create a session</h2>
+                <h2 className='text-lg font-semibold'>
+                  {t('pages.sessions.createSessionSection')}
+                </h2>
                 <Button
                   type='button'
                   variant='secondary'
@@ -288,7 +293,7 @@ export default function Sessions() {
                     setShowCreateForm(false)
                     setForm(emptyForm)
                   }}>
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
               </div>
               <SessionForm
@@ -299,7 +304,7 @@ export default function Sessions() {
                   setShowCreateForm(false)
                 }}
                 loading={loadingState.creating}
-                submitLabel='Create session'
+                submitLabel={t('pages.sessions.createSessionButton')}
               />
             </section>
           ) : (
@@ -308,19 +313,23 @@ export default function Sessions() {
               onClick={() => setShowCreateForm(true)}
               className='w-full sm:w-auto'>
               <CalendarPlus size={16} />
-              Create session
+              {t('pages.sessions.createSessionButton')}
             </Button>
           )}
         </>
       )}
 
       <section className='space-y-4'>
-        <h2 className='text-2xl font-semibold'>Upcoming sessions</h2>
+        <h2 className='text-2xl font-semibold'>
+          {t('pages.sessions.upcomingSessions')}
+        </h2>
         {renderSessions(upcomingSessions)}
       </section>
 
       <section className='space-y-4'>
-        <h2 className='text-2xl font-semibold'>Past sessions</h2>
+        <h2 className='text-2xl font-semibold'>
+          {t('pages.sessions.pastSessions')}
+        </h2>
         {renderSessions(pastSessions)}
       </section>
 

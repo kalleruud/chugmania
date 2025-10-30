@@ -1,4 +1,5 @@
 import type { FormEvent } from 'react'
+import { useTranslation } from '../../locales/useTranslation'
 import type { SessionFormData } from './SessionForm'
 import { SessionForm } from './SessionForm'
 
@@ -19,20 +20,23 @@ export function EditSessionModal({
   onChange,
   onSubmit,
 }: Readonly<EditSessionModalProps>) {
+  const { t } = useTranslation()
   if (!isOpen) return null
 
   return (
     <div className='fixed inset-0 flex items-center justify-center bg-black/50 p-1'>
       <div className='border-stroke w-full max-w-2xl rounded-2xl border bg-black/50 backdrop-blur-sm'>
         <div className='border-b border-white/10 px-6 py-4'>
-          <h2 className='text-lg font-semibold'>Edit session</h2>
+          <h2 className='text-lg font-semibold'>
+            {t('components.editSessionModal.title')}
+          </h2>
         </div>
         <SessionForm
           data={data}
           onChange={onChange}
           onSubmit={onSubmit}
           loading={loading}
-          submitLabel='Save changes'
+          submitLabel={t('components.editSessionModal.submitLabel')}
           isModal
           onCancel={onClose}
         />

@@ -12,11 +12,13 @@ import type {
 } from '../../../common/models/responses'
 import { WS_EXPORT_CSV, WS_IMPORT_CSV } from '../../../common/utils/constants'
 import { useConnection } from '../../contexts/ConnectionContext'
+import { useTranslation } from '../../locales/useTranslation'
 import { Button } from '../components/Button'
 import FileDrop, { type FileDropSelection } from '../components/FileDrop'
 import Spinner from '../components/Spinner'
 
 export default function Admin() {
+  const { t } = useTranslation()
   const { socket } = useConnection()
   const [isImporting, setIsImporting] = useState(false)
   const [files, setFiles] = useState<
@@ -30,23 +32,23 @@ export default function Admin() {
   }[] = [
     {
       table: 'users',
-      title: 'Users',
-      description: 'Create or update drivers, roles, and tags.',
+      title: t('pages.admin.datasets.users.title'),
+      description: t('pages.admin.datasets.users.description'),
     },
     {
       table: 'tracks',
-      title: 'Tracks',
-      description: 'Manage the official track list and attributes.',
+      title: t('pages.admin.datasets.tracks.title'),
+      description: t('pages.admin.datasets.tracks.description'),
     },
     {
       table: 'timeEntries',
-      title: 'Lap Times',
-      description: 'Bulk import historical lap times with comments.',
+      title: t('pages.admin.datasets.lapTimes.title'),
+      description: t('pages.admin.datasets.lapTimes.description'),
     },
     {
       table: 'sessions',
-      title: 'Sessions',
-      description: 'Bulk import or export session meetups and events.',
+      title: t('pages.admin.datasets.sessions.title'),
+      description: t('pages.admin.datasets.sessions.description'),
     },
   ]
 
@@ -116,7 +118,7 @@ export default function Admin() {
     }
   }
 
-  if (isImporting) return 'Importing...'
+  if (isImporting) return t('pages.admin.importing')
 
   return (
     <div className='mx-auto flex w-full max-w-5xl flex-col gap-6 p-4 pb-24'>
@@ -127,11 +129,10 @@ export default function Admin() {
           </span>
           <div>
             <h1 className='font-f1 text-2xl font-semibold uppercase tracking-wider text-white'>
-              Admin Control
+              {t('pages.admin.heading')}
             </h1>
             <p className='text-label-secondary text-sm'>
-              Import curated CSV exports from the data folder to hydrate the
-              database.
+              {t('pages.admin.description')}
             </p>
           </div>
         </div>
@@ -155,8 +156,8 @@ export default function Admin() {
               <FileDrop
                 accept='.csv'
                 onSelect={file => handleFileChange(table, file)}
-                label='Drop CSV here or click to select'
-                hint={'Accepts *.csv-files'}
+                label={t('pages.admin.fileDropLabel')}
+                hint={t('pages.admin.fileDropHint')}
               />
 
               <div className='flex gap-2'>
@@ -172,7 +173,7 @@ export default function Admin() {
                   ) : (
                     <>
                       <Upload size={16} />
-                      Import
+                      {t('common.import')}
                     </>
                   )}
                 </Button>
@@ -185,7 +186,7 @@ export default function Admin() {
                   disabled={isImporting}
                   className='h-8 flex-1'>
                   <Download size={16} />
-                  Export
+                  {t('common.export')}
                 </Button>
               </div>
             </section>

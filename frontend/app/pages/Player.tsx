@@ -15,6 +15,7 @@ import {
 import { formatTrackName } from '../../../common/utils/track'
 import { useAuth } from '../../contexts/AuthContext'
 import { useConnection } from '../../contexts/ConnectionContext'
+import { useTranslation } from '../../locales/useTranslation'
 import { Button } from '../components/Button'
 import LoadingView from '../components/LoadingView'
 import TimeEntryRow from '../components/TimeEntryRow'
@@ -22,6 +23,7 @@ import TrackTag from '../components/TrackTag'
 import UserForm from '../components/UserForm'
 
 export default function Player() {
+  const { t } = useTranslation()
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { socket, setToken } = useConnection()
@@ -47,7 +49,7 @@ export default function Player() {
 
   useEffect(() => {
     if (!id) {
-      setErrorMessage('Missing player identifier')
+      setErrorMessage(t('pages.player.missingPlayerIdentifier'))
       setLoading(false)
       return
     }
@@ -67,7 +69,7 @@ export default function Player() {
         setLoading(false)
       }
     )
-  }, [id, socket])
+  }, [id, socket, t])
 
   useEffect(() => {
     if (!detail) return
@@ -99,7 +101,7 @@ export default function Player() {
           size='sm'
           onClick={() => navigate(-1)}
           className='text-accent mx-auto'>
-          Go back
+          {t('common.goBack')}
         </Button>
       </div>
     )
@@ -107,7 +109,9 @@ export default function Player() {
   if (!detail)
     return (
       <div className='mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-12 text-center sm:px-0'>
-        <p className='text-label-muted text-sm'>Player data unavailable.</p>
+        <p className='text-label-muted text-sm'>
+          {t('pages.player.dataUnavailable')}
+        </p>
       </div>
     )
 
@@ -127,7 +131,6 @@ export default function Player() {
       lastName: formValues.lastName.trim(),
       shortName: formValues.shortName.trim().toUpperCase(),
       password: formValues.password,
-      passwordHash: undefined,
     }
 
     if (formValues.newPassword) request.newPassword = formValues.newPassword
@@ -150,7 +153,10 @@ export default function Player() {
           user: response.userInfo,
           tracks: detail.tracks,
         } satisfies PlayerDetail)
-        setFormStatus({ type: 'success', message: 'Details updated.' })
+        setFormStatus({
+          type: 'success',
+          message: t('pages.player.detailsUpdated'),
+        })
       }
     )
   }
@@ -170,13 +176,17 @@ export default function Player() {
 
           <div className='text-label-muted flex gap-6 text-xs uppercase tracking-widest'>
             <div className='text-right'>
-              <span className='block text-[0.6rem]'>Tracks</span>
+              <span className='block text-[0.6rem]'>
+                {t('pages.player.statsLabel.tracks')}
+              </span>
               <span className='font-f1-bold text-xl text-white'>
                 {detail.tracks.length}
               </span>
             </div>
             <div className='text-right'>
-              <span className='block text-[0.6rem]'>Lap times</span>
+              <span className='block text-[0.6rem]'>
+                {t('pages.player.statsLabel.lapTimes')}
+              </span>
               <span className='font-f1-bold text-xl text-white'>
                 {totalLaps}
               </span>
@@ -186,19 +196,21 @@ export default function Player() {
 
         {isSelf && (
           <p className='text-accent/80 mt-3 text-xs uppercase tracking-widest'>
-            This is your profile
+            {t('pages.player.thisIsYourProfile')}
           </p>
         )}
         {mustUpdateEmail && (
           <p className='text-warning mt-4 text-xs uppercase tracking-widest'>
-            Please update your email before continuing.
+            {t('pages.player.updateEmailWarning')}
           </p>
         )}
       </section>
 
       {canEdit && (
         <section className='rounded-3xl border border-white/10 bg-black/60 p-6 shadow-[0_20px_80px_-60px_rgba(0,0,0,0.9)] backdrop-blur-xl sm:p-10'>
-          <h2 className='font-f1-bold text-white'>Edit details</h2>
+          <h2 className='font-f1-bold text-white'>
+            {t('pages.player.editDetails')}
+          </h2>
           <div className='mt-4'>
             <UserForm
               mode='edit'
@@ -240,14 +252,15 @@ export default function Player() {
                 formStatus?.type === 'success' ? formStatus.message : null
               }
               isSubmitting={isSubmitting}
-              submitLabel={isSubmitting ? 'Saving…' : 'Save changes'}
             />
           </div>
         </section>
       )}
 
       {detail.tracks.length === 0 ? (
-        <p className='text-label-muted text-sm'>No lap times recorded yet.</p>
+        <p className='text-label-muted text-sm'>
+          {t('pages.player.noLapTimesRecorded')}
+        </p>
       ) : (
         <div className='flex flex-col gap-4'>
           {detail.tracks.map(trackGroup => {
@@ -289,7 +302,7 @@ export default function Player() {
                   <div className='flex flex-col gap-2'>
                     <h1>{formatTrackName(trackGroup.track.number)}</h1>
                     <p className='text-label-secondary text-xs uppercase tracking-widest'>
-                      Total entries:{' '}
+                      {t('pages.player.statsLabel.totalEntries')}{' '}
                       {sortedLaps[0]?.totalEntries ?? trackGroup.laps.length}
                     </p>
                   </div>

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type { Leaderboard } from '../../../common/models/leaderboard'
+import { useTranslation } from '../../locales/useTranslation'
 import TimeEntryRow, { type GapType } from './TimeEntryRow'
 
 type TableProps = React.DetailedHTMLProps<
@@ -21,6 +22,7 @@ export default function LeaderboardView({
     highlightedUserId?: string
   }
 >) {
+  const { t } = useTranslation()
   const [gapType, setGapType] = useState<GapType>('interval')
 
   if (!entries.length) {
@@ -30,7 +32,7 @@ export default function LeaderboardView({
           'text-label-muted font-f1-italic flex size-full items-center justify-center p-4 text-sm',
           className
         )}>
-        No entries available
+        {t('components.leaderboard.noEntriesAvailable')}
       </div>
     )
   }
