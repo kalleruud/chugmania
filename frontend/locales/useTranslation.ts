@@ -1,4 +1,4 @@
-import { no } from './no'
+import { no } from '../../common/locales/no'
 
 type NestedKeyOf<T> = T extends object
   ? {
