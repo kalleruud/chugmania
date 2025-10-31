@@ -279,9 +279,9 @@ export default function Session() {
           const createdAt = new Date(lap.entry.createdAt)
           const comment = lap.entry.comment?.trim()
           const amountLabel =
-            lap.entry.amount != null
-              ? `${amountFormatter.format(lap.entry.amount)} L`
-              : '—'
+            lap.entry.amount == null
+              ? '—'
+              : `${amountFormatter.format(lap.entry.amount)} L`
           const durationLabel = lap.entry.duration
             ? formatTime(lap.entry.duration).replace(/^0/, '')
             : 'DNF'
