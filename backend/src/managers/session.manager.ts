@@ -12,13 +12,20 @@ import type {
   GetSessionsResponse,
 } from '../../../common/models/responses'
 import type {
+  SessionLapTime,
   SessionSignup,
   SessionWithSignups,
 } from '../../../common/models/session'
 import { WS_SESSIONS_UPDATED } from '../../../common/utils/constants'
 import { tryCatchAsync } from '../../../common/utils/try-catch'
 import db from '../../database/database'
-import { sessionSignups, sessions, users } from '../../database/schema'
+import {
+  sessionSignups,
+  sessions,
+  timeEntries,
+  tracks,
+  users,
+} from '../../database/schema'
 import AuthManager from './auth.manager'
 import UserManager from './user.manager'
 
@@ -41,6 +48,7 @@ export default class SessionManager {
       sessionRows.map(async session => ({
         ...session,
         signups: await SessionManager.getSessionSignups(session.id),
+        lapTimes: await SessionManager.getSessionLapTimes(session.id),
       }))
     )
   }
@@ -64,6 +72,7 @@ export default class SessionManager {
     return {
       ...session,
       signups: await SessionManager.getSessionSignups(session.id),
+      lapTimes: await SessionManager.getSessionLapTimes(session.id),
     }
   }
 
@@ -97,6 +106,34 @@ export default class SessionManager {
     return signupRows.map(row => ({
       ...row,
       user: UserManager.toUserInfo(row.user).userInfo,
+    }))
+  }
+
+  private static async getSessionLapTimes(
+    sessionId: string
+  ): Promise<SessionLapTime[]> {
+    const lapRows = await db
+      .select()
+      .from(timeEntries)
+      .innerJoin(users, eq(timeEntries.user, users.id))
+      .innerJoin(tracks, eq(timeEntries.track, tracks.id))
+      .where(
+        and(
+          eq(timeEntries.session, sessionId),
+          isNull(timeEntries.deletedAt),
+          isNull(users.deletedAt)
+        )
+      )
+      .orderBy(asc(timeEntries.createdAt))
+
+    if (!lapRows || lapRows.length === 0) {
+      return []
+    }
+
+    return lapRows.map(row => ({
+      entry: row.time_entries,
+      track: row.tracks,
+      user: UserManager.toUserInfo(row.users).userInfo,
     }))
   }
 

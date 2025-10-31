@@ -19,18 +19,21 @@ import type {
   SessionSignup,
   SessionWithSignups,
 } from '../../../common/models/session'
-import { getUserFullName } from '../../../common/models/user'
+import { getUserFullName, type UserInfo } from '../../../common/models/user'
 import {
   WS_GET_SESSIONS,
   WS_JOIN_SESSION,
   WS_LEAVE_SESSION,
   WS_SESSIONS_UPDATED,
 } from '../../../common/utils/constants'
+import { formatTime } from '../../../common/utils/time'
+import { formatTrackName } from '../../../common/utils/track'
 import { useAuth } from '../../contexts/AuthContext'
 import { useConnection } from '../../contexts/ConnectionContext'
 import { Button } from '../components/Button'
 import LoadingView from '../components/LoadingView'
 import Tag from '../components/Tag'
+import { formatLapTimestamp } from '../utils/date'
 
 type SignupGroupKey = SessionSignup['response']
 
@@ -68,6 +71,11 @@ const signupGroups: Record<
     icon: <X size={16} className='text-red-400' />,
   },
 }
+
+const amountFormatter = new Intl.NumberFormat(undefined, {
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2,
+})
 
 export default function Session() {
   const { id } = useParams()
@@ -184,14 +192,14 @@ export default function Session() {
     handleJoin(response)
   }
 
-  const renderSignupName = (signup: SessionSignup): string => {
-    const shortName = signup.user.shortName?.trim()
+  const renderUserName = (userInfo: UserInfo): string => {
+    const shortName = userInfo.shortName?.trim()
     if (shortName) return shortName
 
-    const fullName = getUserFullName(signup.user)
+    const fullName = getUserFullName(userInfo)
     if (fullName) return fullName
 
-    return signup.user.email
+    return userInfo.email
   }
 
   const renderSignupGroups = () => {
@@ -234,7 +242,7 @@ export default function Session() {
                       <Users size={16} className='text-label-muted shrink-0' />
                       <div className='flex-1'>
                         <p className='text-sm font-medium leading-tight'>
-                          {renderSignupName(entry)}
+                          {renderUserName(entry.user)}
                         </p>
                         <p className='text-label-muted text-xs'>
                           {entry.user.email}
@@ -245,6 +253,94 @@ export default function Session() {
                 )}
               </div>
             </section>
+          )
+        })}
+      </div>
+    )
+  }
+
+  const renderLapTimes = () => {
+    if (!session || session.lapTimes.length === 0)
+      return (
+        <div className='text-label-muted border-stroke rounded-2xl border border-dashed bg-white/5 p-6 text-center'>
+          No lap times recorded for this session yet.
+        </div>
+      )
+
+    const sortedLapTimes = [...session.lapTimes].sort((a, b) => {
+      const aTime = new Date(a.entry.createdAt).getTime()
+      const bTime = new Date(b.entry.createdAt).getTime()
+      return bTime - aTime
+    })
+
+    return (
+      <div className='space-y-3'>
+        {sortedLapTimes.map(lap => {
+          const createdAt = new Date(lap.entry.createdAt)
+          const comment = lap.entry.comment?.trim()
+          const amountLabel =
+            lap.entry.amount != null
+              ? `${amountFormatter.format(lap.entry.amount)} L`
+              : '—'
+          const durationLabel = lap.entry.duration
+            ? formatTime(lap.entry.duration).replace(/^0/, '')
+            : 'DNF'
+
+          return (
+            <article
+              key={lap.entry.id}
+              className='border-stroke flex flex-col gap-4 rounded-2xl border bg-black/30 p-4 backdrop-blur-sm sm:p-5'>
+              <div className='flex flex-col gap-4 lg:flex-row lg:items-start'>
+                <div className='min-w-[180px] flex-1'>
+                  <p className='text-sm font-semibold leading-tight'>
+                    {renderUserName(lap.user)}
+                  </p>
+                  <p className='text-label-muted text-xs'>{lap.user.email}</p>
+                </div>
+
+                <div className='min-w-[180px] flex-1'>
+                  <p className='font-medium'>
+                    {formatTrackName(lap.track.number)}
+                  </p>
+                  <p className='text-label-muted text-xs uppercase tracking-widest'>
+                    {lap.track.type} · {lap.track.level}
+                  </p>
+                </div>
+
+                <div className='flex min-w-[80px] flex-col items-end text-right'>
+                  <span className='text-label-muted text-xs uppercase tracking-widest'>
+                    Amount
+                  </span>
+                  <span className='font-semibold tabular-nums'>
+                    {amountLabel}
+                  </span>
+                </div>
+
+                <div className='flex min-w-[100px] flex-col items-end text-right'>
+                  <span className='text-label-muted text-xs uppercase tracking-widest'>
+                    Lap time
+                  </span>
+                  <span className='font-f1-italic tabular-nums'>
+                    {durationLabel}
+                  </span>
+                </div>
+
+                <div className='min-w-[160px] flex-1 lg:text-right'>
+                  <span className='text-label-muted block text-xs uppercase tracking-widest'>
+                    Logged
+                  </span>
+                  <span className='text-label-muted text-xs'>
+                    {formatLapTimestamp(createdAt)}
+                  </span>
+                </div>
+              </div>
+
+              {comment && (
+                <p className='text-label-muted border-t border-white/10 pt-3 text-sm italic leading-relaxed'>
+                  {comment}
+                </p>
+              )}
+            </article>
           )
         })}
       </div>
@@ -464,6 +560,16 @@ export default function Session() {
           </Button>
         </div>
         {renderSignupGroups()}
+      </section>
+
+      <section className='space-y-4'>
+        <div>
+          <h2 className='text-lg font-semibold'>Lap times</h2>
+          <p className='text-label-muted text-sm'>
+            Every lap time logged during this session.
+          </p>
+        </div>
+        {renderLapTimes()}
       </section>
     </div>
   )
