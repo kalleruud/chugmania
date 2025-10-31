@@ -1,5 +1,5 @@
 import { asc, eq } from 'drizzle-orm'
-import { t } from '../../../common/locales/translateServer'
+import { t } from '../../../common/locales'
 import type {
   BackendResponse,
   GetTracksResponse,

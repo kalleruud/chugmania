@@ -6,8 +6,8 @@ import {
   type InputHTMLAttributes,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { useTranslation } from '../../../common/locales'
 import { useAuth } from '../../contexts/AuthContext'
-import { useTranslation } from '../../locales/useTranslation'
 import { Button } from './Button'
 
 function Field({

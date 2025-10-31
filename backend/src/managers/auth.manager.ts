@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken'
 import type { Socket } from 'socket.io'
-import { t } from '../../../common/locales/translateServer'
+import { t } from '../../../common/locales'
 import {
   isLoginRequest,
   isRegisterRequest,

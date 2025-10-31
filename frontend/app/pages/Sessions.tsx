@@ -1,5 +1,6 @@
 import { CalendarPlus } from 'lucide-react'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useTranslation } from '../../../common/locales'
 import type { CancelSessionRequest } from '../../../common/models/requests'
 import type {
   BackendResponse,
@@ -21,7 +22,6 @@ import {
 } from '../../../common/utils/constants'
 import { useAuth } from '../../contexts/AuthContext'
 import { useConnection } from '../../contexts/ConnectionContext'
-import { useTranslation } from '../../locales/useTranslation'
 import { Button } from '../components/Button'
 import { EditSessionModal } from '../components/EditSessionModal'
 import LoadingView from '../components/LoadingView'

@@ -9,6 +9,7 @@ import {
   type KeyboardEvent,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { useTranslation } from '../../../common/locales'
 import type { PostLapTimeRequest } from '../../../common/models/requests'
 import type {
   BackendResponse,
@@ -30,7 +31,6 @@ import { formattedTimeToMs } from '../../../common/utils/time'
 import { formatTrackName } from '../../../common/utils/track'
 import { useAuth } from '../../contexts/AuthContext'
 import { useConnection } from '../../contexts/ConnectionContext'
-import { useTranslation } from '../../locales/useTranslation'
 import { Button } from './Button'
 import SearchableDropdown, { type LookupItem } from './SearchableDropdown'
 

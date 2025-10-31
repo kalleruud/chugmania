@@ -1,5 +1,5 @@
 import type { FormEvent } from 'react'
-import { useTranslation } from '../../locales/useTranslation'
+import { useTranslation } from '../../../common/locales'
 import { Button } from './Button'
 
 export interface SessionFormData {

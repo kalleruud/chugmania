@@ -6,7 +6,7 @@ import {
   type DragEventHandler,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { useTranslation } from '../../locales/useTranslation'
+import { useTranslation } from '../../../common/locales'
 import { Button } from './Button'
 
 export type FileDropSelection = {

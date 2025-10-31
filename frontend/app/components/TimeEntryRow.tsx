@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { useTranslation } from '../../../common/locales'
 import type { LeaderboardEntry } from '../../../common/models/timeEntry'
 import { formatTime } from '../../../common/utils/time'
-import { useTranslation } from '../../locales/useTranslation'
 import { formatLapTimestamp } from '../utils/date'
 import { Button } from './Button'
 

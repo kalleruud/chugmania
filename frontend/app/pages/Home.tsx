@@ -1,7 +1,7 @@
 import { LogIn, LogOut, Map } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from '../../../common/locales'
 import { useAuth } from '../../contexts/AuthContext'
-import { useTranslation } from '../../locales/useTranslation'
 import { Button } from '../components/Button'
 
 export default function Home() {

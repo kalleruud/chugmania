@@ -1,6 +1,6 @@
 import { and, asc, eq, isNull } from 'drizzle-orm'
 import type { Socket } from 'socket.io'
-import { t } from '../../../common/locales/translateServer'
+import { t } from '../../../common/locales'
 import {
   isCancelSessionRequest,
   isCreateSessionRequest,

@@ -1,6 +1,7 @@
 import { Download, ShieldCheck, Upload } from 'lucide-react'
 import { useState } from 'react'
 
+import { useTranslation } from '../../../common/locales'
 import type {
   ExportCsvRequest,
   ImportCsvRequest,
@@ -12,7 +13,6 @@ import type {
 } from '../../../common/models/responses'
 import { WS_EXPORT_CSV, WS_IMPORT_CSV } from '../../../common/utils/constants'
 import { useConnection } from '../../contexts/ConnectionContext'
-import { useTranslation } from '../../locales/useTranslation'
 import { Button } from '../components/Button'
 import FileDrop, { type FileDropSelection } from '../components/FileDrop'
 import Spinner from '../components/Spinner'

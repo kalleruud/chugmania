@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { useTranslation } from '../../../common/locales'
 import type { Leaderboard } from '../../../common/models/leaderboard'
-import { useTranslation } from '../../locales/useTranslation'
 import TimeEntryRow, { type GapType } from './TimeEntryRow'
 
 type TableProps = React.DetailedHTMLProps<

@@ -1,5 +1,5 @@
 import type { FormEvent } from 'react'
-import { useTranslation } from '../../locales/useTranslation'
+import { useTranslation } from '../../../common/locales'
 import type { SessionFormData } from './SessionForm'
 import { SessionForm } from './SessionForm'
 

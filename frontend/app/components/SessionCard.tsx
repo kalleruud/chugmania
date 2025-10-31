@@ -11,11 +11,11 @@ import {
   X,
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from '../../../common/locales'
 import type {
   SessionSignup,
   SessionWithSignups,
 } from '../../../common/models/session'
-import { useTranslation } from '../../locales/useTranslation'
 import { Button } from './Button'
 import Tag from './Tag'
 

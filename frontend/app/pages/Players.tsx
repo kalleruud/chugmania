@@ -1,5 +1,6 @@
 import { TriangleAlert } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { useTranslation } from '../../../common/locales'
 import type { PlayerSummary } from '../../../common/models/playerSummary'
 import {
   type ErrorResponse,
@@ -8,7 +9,6 @@ import {
 import { WS_GET_PLAYER_SUMMARIES } from '../../../common/utils/constants'
 import { useAuth } from '../../contexts/AuthContext'
 import { useConnection } from '../../contexts/ConnectionContext'
-import { useTranslation } from '../../locales/useTranslation'
 import LoadingView from '../components/LoadingView'
 import PlayerRow from '../components/PlayerRow'
 

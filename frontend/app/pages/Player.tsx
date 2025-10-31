@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { useTranslation } from '../../../common/locales'
 import type { PlayerDetail } from '../../../common/models/playerDetail'
 import { type UpdateUserRequest } from '../../../common/models/requests'
 import {
@@ -15,7 +16,6 @@ import {
 import { formatTrackName } from '../../../common/utils/track'
 import { useAuth } from '../../contexts/AuthContext'
 import { useConnection } from '../../contexts/ConnectionContext'
-import { useTranslation } from '../../locales/useTranslation'
 import { Button } from '../components/Button'
 import LoadingView from '../components/LoadingView'
 import TimeEntryRow from '../components/TimeEntryRow'
