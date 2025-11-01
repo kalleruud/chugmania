@@ -101,7 +101,10 @@ export default function EditLapTimeModal({
     if (tracks && currentTrackId) {
       const track = tracks.find(t => t.id === currentTrackId)
       if (track) {
-        setSelectedTrack({ id: track.id, label: track.number.toString() })
+        setSelectedTrack({
+          id: track.id,
+          label: `${formatTrackName(track.number)} - ${track.type}:${track.level}`,
+        })
       }
     }
 
