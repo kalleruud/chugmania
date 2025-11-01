@@ -220,8 +220,13 @@ export default function Session() {
     handleJoin(response)
   }
 
-  const handleEditLapTime = (lapTime: LeaderboardEntry) => {
+  const [editingLapTimeTrackId, setEditingLapTimeTrackId] = useState<
+    string | null
+  >(null)
+
+  const handleEditLapTime = (lapTime: LeaderboardEntry, trackId: string) => {
     setEditingLapTime(lapTime)
+    setEditingLapTimeTrackId(trackId)
   }
 
   const handleEditLapTimeSubmit = (data: {
@@ -391,7 +396,9 @@ export default function Session() {
                         showDate={true}
                         dateValue={entry.createdAt}
                         canEdit={canEdit}
-                        onEdit={() => handleEditLapTime(entry)}
+                        onEdit={() =>
+                          handleEditLapTime(entry, trackGroup.track.id)
+                        }
                       />
                     )
                   })}
@@ -634,10 +641,14 @@ export default function Session() {
           isOpen={!!editingLapTime}
           lapTime={editingLapTime}
           loading={editingLapTimeLoading}
-          onClose={() => setEditingLapTime(null)}
+          onClose={() => {
+            setEditingLapTime(null)
+            setEditingLapTimeTrackId(null)
+          }}
           onSubmit={handleEditLapTimeSubmit}
           tracks={tracks.length > 0 ? tracks : undefined}
           sessions={[session]}
+          currentTrackId={editingLapTimeTrackId ?? undefined}
           currentSessionId={session.id}
         />
       )}
