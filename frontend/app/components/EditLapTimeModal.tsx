@@ -186,8 +186,8 @@ export default function EditLapTimeModal({
   if (!isOpen) return null
 
   return (
-    <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4'>
-      <div className='border-stroke w-full max-w-md rounded-2xl border bg-black/50 backdrop-blur-sm'>
+    <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4'>
+      <div className='border-stroke w-full max-w-md rounded-2xl border bg-gradient-to-b from-slate-950 to-slate-900 backdrop-blur-xl'>
         <div className='border-b border-white/10 px-6 py-4'>
           <h2 className='text-lg font-semibold'>Edit lap time</h2>
           <p className='text-label-muted text-sm'>
