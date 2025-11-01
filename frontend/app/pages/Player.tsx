@@ -174,6 +174,8 @@ export default function Player() {
     amount?: number
     comment?: string | null
     createdAt?: string
+    track?: string
+    session?: string | null
   }) => {
     if (!editingLapTime) return
 

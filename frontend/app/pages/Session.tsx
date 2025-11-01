@@ -227,6 +227,8 @@ export default function Session() {
     amount?: number
     comment?: string | null
     createdAt?: string
+    track?: string
+    session?: string | null
   }) => {
     if (!editingLapTime || !session) return
 
