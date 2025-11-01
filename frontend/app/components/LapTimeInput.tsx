@@ -198,8 +198,8 @@ export default function LapTimeInput({
     const tenSeconds = digits[2] === '' ? 0 : Number.parseInt(digits[2]) * 10
     const seconds = digits[3] === '' ? 0 : Number.parseInt(digits[3])
 
-    const tenHundredths = digits[5] === '' ? 0 : Number.parseInt(digits[5]) * 10
-    const hundredths = digits[4] === '' ? 0 : Number.parseInt(digits[4])
+    const tenHundredths = digits[4] === '' ? 0 : Number.parseInt(digits[4]) * 10
+    const hundredths = digits[5] === '' ? 0 : Number.parseInt(digits[5])
 
     return formattedTimeToMs(
       tenMinutes + minutes,
