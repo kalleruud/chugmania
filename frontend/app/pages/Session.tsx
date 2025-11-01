@@ -135,6 +135,14 @@ export default function Session() {
     }
   }, [id, socket])
 
+  useEffect(() => {
+    socket.emit(WS_GET_TRACKS, undefined, (r: GetTracksResponse) => {
+      if (r.success) {
+        setTracks(r.tracks)
+      }
+    })
+  }, [socket])
+
   const userSignup = useMemo(() => {
     if (!session || !user) return undefined
     return session.signups.find(s => s.user.id === user.id)
