@@ -13,12 +13,16 @@ export default function LeaderboardView({
   compact = false,
   className,
   highlightedUserId,
+  onEditLapTime,
+  canEditLapTime,
   ...rest
 }: Readonly<
   TableProps & {
     entries: Leaderboard['entries']
     compact?: boolean
     highlightedUserId?: string
+    onEditLapTime?: (entry: Leaderboard['entries'][0]) => void
+    canEditLapTime?: (entry: Leaderboard['entries'][0]) => boolean
   }
 >) {
   const [gapType, setGapType] = useState<GapType>('interval')
@@ -49,6 +53,8 @@ export default function LeaderboardView({
               onToggleGapType={() =>
                 setGapType(prev => (prev === 'leader' ? 'interval' : 'leader'))
               }
+              canEdit={canEditLapTime?.(t) ?? false}
+              onEdit={() => onEditLapTime?.(t)}
             />
           ))}
         </tbody>

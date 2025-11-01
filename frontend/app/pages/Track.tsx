@@ -22,6 +22,10 @@ export default function Track() {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [track, setTrack] = useState<Track | null>(null)
+  const [editingLapTime, setEditingLapTime] = useState<LeaderboardEntry | null>(
+    null
+  )
+  const [editingLapTimeLoading, setEditingLapTimeLoading] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -42,6 +46,48 @@ export default function Track() {
       }
     )
   }, [id, socket])
+
+  const handleEditLapTime = (lapTime: LeaderboardEntry) => {
+    setEditingLapTime(lapTime)
+  }
+
+  const handleEditLapTimeSubmit = (data: {
+    duration?: number | null
+    amount?: number
+    comment?: string | null
+    createdAt?: string
+  }) => {
+    if (!editingLapTime || !id) return
+
+    setEditingLapTimeLoading(true)
+    const request: EditLapTimeRequest = {
+      id: editingLapTime.id,
+      ...data,
+    }
+
+    socket.emit(WS_EDIT_LAPTIME, request, (response: BackendResponse) => {
+      setEditingLapTimeLoading(false)
+      if (!response.success) {
+        console.error(response.message)
+        globalThis.alert(response.message)
+        return
+      }
+
+      // Refresh leaderboard
+      socket.emit(
+        WS_GET_LEADERBOARD,
+        { trackId: id } satisfies GetLeaderboardRequest,
+        (r: GetLeaderboardsResponse | ErrorResponse) => {
+          if (r.success) {
+            const lb = r.leaderboards[0]
+            setEntries(lb.entries)
+            setTrack(lb.track)
+          }
+        }
+      )
+      setEditingLapTime(null)
+    })
+  }
 
   if (loading) return <LoadingView label='Loading leaderboard…' />
 
@@ -66,8 +112,24 @@ export default function Track() {
           entries={entries}
           className='divide-stroke divide-y'
           highlightedUserId={user?.id}
+          canEditLapTime={entry =>
+            user?.role === 'admin' ||
+            user?.role === 'moderator' ||
+            user?.id === entry.user.id
+          }
+          onEditLapTime={handleEditLapTime}
         />
       </section>
+
+      {editingLapTime && (
+        <EditLapTimeModal
+          isOpen={!!editingLapTime}
+          lapTime={editingLapTime}
+          loading={editingLapTimeLoading}
+          onClose={() => setEditingLapTime(null)}
+          onSubmit={handleEditLapTimeSubmit}
+        />
+      )}
     </div>
   )
 }
