@@ -23,6 +23,7 @@ import type {
   SessionWithSignups,
 } from '../../../common/models/session'
 import type { LeaderboardEntry } from '../../../common/models/timeEntry'
+import type { Track } from '../../../common/models/track'
 import { getUserFullName, type UserInfo } from '../../../common/models/user'
 import {
   WS_EDIT_LAPTIME,
