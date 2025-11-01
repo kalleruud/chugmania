@@ -17,6 +17,7 @@ import type {
 import type {
   BackendResponse,
   GetSessionsResponse,
+  GetTracksResponse,
 } from '../../../common/models/responses'
 import type {
   SessionSignup,
@@ -28,6 +29,7 @@ import { getUserFullName, type UserInfo } from '../../../common/models/user'
 import {
   WS_EDIT_LAPTIME,
   WS_GET_SESSIONS,
+  WS_GET_TRACKS,
   WS_JOIN_SESSION,
   WS_LEAVE_SESSION,
   WS_SESSIONS_UPDATED,
