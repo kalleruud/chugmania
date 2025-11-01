@@ -150,6 +150,27 @@ export default function Session() {
     )
   }, [session])
 
+  const lapsByTrack = useMemo(() => {
+    if (!session) return []
+    const grouped = new Map<string, typeof session.lapTimes>()
+    session.lapTimes.forEach(lap => {
+      const trackId = lap.track.id
+      if (!grouped.has(trackId)) {
+        grouped.set(trackId, [])
+      }
+      grouped.get(trackId)!.push(lap)
+    })
+    return Array.from(grouped.entries()).map(([, laps]) => ({
+      track: laps[0].track,
+      laps: laps.sort((a, b) => {
+        // Sort by duration: fastest (smallest) first, DNF (null) last
+        const aDuration = a.entry.duration ?? Number.POSITIVE_INFINITY
+        const bDuration = b.entry.duration ?? Number.POSITIVE_INFINITY
+        return aDuration - bDuration
+      }),
+    }))
+  }, [session])
+
   const openCalendar = (path: string, mode: 'subscribe' | 'download'): void => {
     const url = `${globalThis.location.origin}${path}`
     globalThis.location.href =
@@ -262,27 +283,6 @@ export default function Session() {
           No lap times recorded for this session yet.
         </div>
       )
-
-    // Group lap times by track
-    const lapsByTrack = useMemo(() => {
-      const grouped = new Map<string, typeof session.lapTimes>()
-      session.lapTimes.forEach(lap => {
-        const trackId = lap.track.id
-        if (!grouped.has(trackId)) {
-          grouped.set(trackId, [])
-        }
-        grouped.get(trackId)!.push(lap)
-      })
-      return Array.from(grouped.entries()).map(([, laps]) => ({
-        track: laps[0].track,
-        laps: laps.sort((a, b) => {
-          // Sort by duration: fastest (smallest) first, DNF (null) last
-          const aDuration = a.entry.duration ?? Number.POSITIVE_INFINITY
-          const bDuration = b.entry.duration ?? Number.POSITIVE_INFINITY
-          return aDuration - bDuration
-        }),
-      }))
-    }, [session.lapTimes])
 
     return (
       <div className='flex flex-col gap-4'>
