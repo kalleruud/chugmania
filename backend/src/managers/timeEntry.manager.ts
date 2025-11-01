@@ -1,5 +1,9 @@
+import { eq } from 'drizzle-orm'
 import type { Socket } from 'socket.io'
-import { isPostLapTimeRequest } from '../../../common/models/requests'
+import {
+  isEditLapTimeRequest,
+  isPostLapTimeRequest,
+} from '../../../common/models/requests'
 import type {
   BackendResponse,
   SuccessResponse,
