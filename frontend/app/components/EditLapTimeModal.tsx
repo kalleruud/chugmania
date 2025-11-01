@@ -189,9 +189,21 @@ export default function EditLapTimeModal({
       isTimeModified ||
       Number(amount) !== lapTime.amount ||
       comment !== (lapTime.comment ?? '') ||
-      createdAtStr !== new Date(lapTime.createdAt).toISOString().slice(0, 19)
+      createdAtStr !== new Date(lapTime.createdAt).toISOString().slice(0, 19) ||
+      (selectedTrack?.id && selectedTrack.id !== currentTrackId) ||
+      selectedSession?.id !== currentSessionId
     )
-  }, [isTimeModified, amount, comment, createdAtStr, lapTime])
+  }, [
+    isTimeModified,
+    amount,
+    comment,
+    createdAtStr,
+    lapTime,
+    selectedTrack,
+    selectedSession,
+    currentTrackId,
+    currentSessionId,
+  ])
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()

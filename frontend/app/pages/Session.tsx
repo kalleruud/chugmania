@@ -88,6 +88,7 @@ export default function Session() {
   const { socket } = useConnection()
   const { isLoggedIn, user } = useAuth()
   const [session, setSession] = useState<SessionWithSignups | null>(null)
+  const [allSessions, setAllSessions] = useState<SessionWithSignups[]>([])
   const [loading, setLoading] = useState(true)
   const [rsvpLoading, setRsvpLoading] = useState(false)
   const [tracks, setTracks] = useState<Track[]>([])
@@ -115,6 +116,7 @@ export default function Session() {
 
     socket.emit(WS_GET_SESSIONS, undefined, (r: BackendResponse) => {
       if (r?.success && 'sessions' in r) {
+        setAllSessions(r.sessions)
         const match = r.sessions.find(s => s.id === id) ?? null
         setSession(match)
       } else if (!r.success) {
@@ -128,6 +130,7 @@ export default function Session() {
   useEffect(() => {
     const handleUpdate = (r: GetSessionsResponse) => {
       if (!r?.success || !id) return
+      setAllSessions(r.sessions)
       const updated = r.sessions.find(s => s.id === id)
       if (updated) setSession(updated)
     }
@@ -689,7 +692,7 @@ export default function Session() {
           }}
           onSubmit={handleEditLapTimeSubmit}
           tracks={tracks.length > 0 ? tracks : undefined}
-          sessions={[session]}
+          sessions={allSessions.length > 0 ? allSessions : [session]}
           currentTrackId={editingLapTimeTrackId ?? undefined}
           currentSessionId={session.id}
         />
