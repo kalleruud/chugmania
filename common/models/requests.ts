@@ -49,6 +49,19 @@ export function isPostLapTimeRequest(data: any): data is PostLapTimeRequest {
   return data.duration && data.user && data.track
 }
 
+export type EditLapTimeRequest = {
+  id: string
+  duration?: number | null
+  amount?: number
+  comment?: string | null
+  createdAt?: string
+}
+
+export function isEditLapTimeRequest(data: any): data is EditLapTimeRequest {
+  if (typeof data !== 'object' || data === null) return false
+  return typeof data.id === 'string'
+}
+
 export type ImportCsvRequest = {
   table: keyof typeof schema
   content: string

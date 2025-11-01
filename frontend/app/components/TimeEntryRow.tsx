@@ -1,3 +1,4 @@
+import { Edit } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type { LeaderboardEntry } from '../../../common/models/timeEntry'
@@ -104,6 +105,8 @@ export default function TimeEntryRow({
   showDate = false,
   dateValue,
   highlighted = false,
+  onEdit,
+  canEdit = false,
   ...rest
 }: Readonly<
   TableRowProps & {
@@ -115,6 +118,8 @@ export default function TimeEntryRow({
     showDate?: boolean
     dateValue?: Date | string
     highlighted?: boolean
+    onEdit?: () => void
+    canEdit?: boolean
   }
 >) {
   const containerRef = useRef<HTMLTableRowElement | null>(null)
@@ -177,6 +182,21 @@ export default function TimeEntryRow({
         />
       )}
       {show.time && <TimePart duration={lapTime.duration} />}
+
+      {canEdit && (
+        <td className='ml-auto pl-2'>
+          <Button
+            type='button'
+            variant='tertiary'
+            size='sm'
+            onClick={onEdit}
+            className='rounded-md p-2 hover:bg-white/10'
+            title='Edit lap time'
+            aria-label='Edit lap time'>
+            <Edit size={16} />
+          </Button>
+        </td>
+      )}
     </tr>
   )
 }

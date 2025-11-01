@@ -45,6 +45,11 @@ export default function Player() {
   } | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  const [editingLapTime, setEditingLapTime] = useState<LeaderboardEntry | null>(
+    null
+  )
+  const [editingLapTimeLoading, setEditingLapTimeLoading] = useState(false)
+
   useEffect(() => {
     if (!id) {
       setErrorMessage('Missing player identifier')
@@ -127,7 +132,6 @@ export default function Player() {
       lastName: formValues.lastName.trim(),
       shortName: formValues.shortName.trim().toUpperCase(),
       password: formValues.password,
-      passwordHash: undefined,
     }
 
     if (formValues.newPassword) request.newPassword = formValues.newPassword
@@ -153,6 +157,46 @@ export default function Player() {
         setFormStatus({ type: 'success', message: 'Details updated.' })
       }
     )
+  }
+
+  const handleEditLapTime = (lapTime: LeaderboardEntry) => {
+    setEditingLapTime(lapTime)
+  }
+
+  const handleEditLapTimeSubmit = (data: {
+    duration?: number | null
+    amount?: number
+    comment?: string | null
+    createdAt?: string
+  }) => {
+    if (!editingLapTime) return
+
+    setEditingLapTimeLoading(true)
+    const request: EditLapTimeRequest = {
+      id: editingLapTime.id,
+      ...data,
+    }
+
+    socket.emit(WS_EDIT_LAPTIME, request, (response: BackendResponse) => {
+      setEditingLapTimeLoading(false)
+      if (!response.success) {
+        console.error(response.message)
+        globalThis.alert(response.message)
+        return
+      }
+
+      // Refresh player details to get updated lap times
+      socket.emit(
+        WS_GET_PLAYER_DETAILS,
+        { playerId: id },
+        (response: GetPlayerDetailsResponse | ErrorResponse) => {
+          if (response.success) {
+            setDetail(response.player)
+          }
+        }
+      )
+      setEditingLapTime(null)
+    })
   }
 
   return (
@@ -308,6 +352,10 @@ export default function Player() {
                   <tbody className='flex flex-col divide-y divide-white/10'>
                     {sortedLaps.map((lap, index) => {
                       const entry = leaderboardEntries[index]
+                      const canEditThisLap =
+                        user?.role === 'admin' ||
+                        user?.role === 'moderator' ||
+                        (isSelf && detail.user.id === entry.user.id)
                       return (
                         <TimeEntryRow
                           key={entry.id}
@@ -317,6 +365,8 @@ export default function Player() {
                           showGap={false}
                           showDate={true}
                           dateValue={entry.createdAt}
+                          canEdit={canEditThisLap}
+                          onEdit={() => handleEditLapTime(entry)}
                         />
                       )
                     })}
@@ -326,6 +376,16 @@ export default function Player() {
             )
           })}
         </div>
+      )}
+
+      {editingLapTime && (
+        <EditLapTimeModal
+          isOpen={!!editingLapTime}
+          lapTime={editingLapTime}
+          loading={editingLapTimeLoading}
+          onClose={() => setEditingLapTime(null)}
+          onSubmit={handleEditLapTimeSubmit}
+        />
       )}
     </div>
   )

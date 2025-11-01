@@ -80,6 +80,7 @@ export default class ConnectionManager {
 
     // Setup time entry handling
     ConnectionManager.setup(s, WS_POST_LAPTIME, TimeEntryManager.onPostLapTime)
+    ConnectionManager.setup(s, WS_EDIT_LAPTIME, TimeEntryManager.onEditLapTime)
 
     // Setup session handling
     ConnectionManager.setup(s, WS_GET_SESSIONS, SessionManager.onGetSessions)

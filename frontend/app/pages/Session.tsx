@@ -81,6 +81,10 @@ export default function Session() {
   const [session, setSession] = useState<SessionWithSignups | null>(null)
   const [loading, setLoading] = useState(true)
   const [rsvpLoading, setRsvpLoading] = useState(false)
+  const [editingLapTime, setEditingLapTime] = useState<LeaderboardEntry | null>(
+    null
+  )
+  const [editingLapTimeLoading, setEditingLapTimeLoading] = useState(false)
 
   const emit = (
     event: string,
@@ -209,6 +213,37 @@ export default function Session() {
     handleJoin(response)
   }
 
+  const handleEditLapTime = (lapTime: LeaderboardEntry) => {
+    setEditingLapTime(lapTime)
+  }
+
+  const handleEditLapTimeSubmit = (data: {
+    duration?: number | null
+    amount?: number
+    comment?: string | null
+    createdAt?: string
+  }) => {
+    if (!editingLapTime || !session) return
+
+    setEditingLapTimeLoading(true)
+    const request: EditLapTimeRequest = {
+      id: editingLapTime.id,
+      ...data,
+    }
+
+    emit(WS_EDIT_LAPTIME, request, () => {
+      setEditingLapTimeLoading(false)
+      // Re-fetch sessions to get updated lap times
+      socket.emit(WS_GET_SESSIONS, undefined, (r: BackendResponse) => {
+        if (r?.success && 'sessions' in r) {
+          const updated = r.sessions.find(s => s.id === session.id)
+          if (updated) setSession(updated)
+        }
+      })
+      setEditingLapTime(null)
+    })
+  }
+
   const renderUserName = (userInfo: UserInfo): string => {
     const shortName = userInfo.shortName?.trim()
     if (shortName) return shortName
@@ -334,6 +369,11 @@ export default function Session() {
                 <tbody className='flex flex-col divide-y divide-white/10'>
                   {trackGroup.laps.map((_, index) => {
                     const entry = leaderboardEntries[index]
+                    const canEdit =
+                      isLoggedIn &&
+                      (user?.role === 'admin' ||
+                        user?.role === 'moderator' ||
+                        user?.id === entry.user.id)
                     return (
                       <TimeEntryRow
                         key={entry.id}
@@ -343,6 +383,8 @@ export default function Session() {
                         showGap={false}
                         showDate={true}
                         dateValue={entry.createdAt}
+                        canEdit={canEdit}
+                        onEdit={() => handleEditLapTime(entry)}
                       />
                     )
                   })}
@@ -579,6 +621,16 @@ export default function Session() {
         </div>
         {renderLapTimes()}
       </section>
+
+      {editingLapTime && (
+        <EditLapTimeModal
+          isOpen={!!editingLapTime}
+          lapTime={editingLapTime}
+          loading={editingLapTimeLoading}
+          onClose={() => setEditingLapTime(null)}
+          onSubmit={handleEditLapTimeSubmit}
+        />
+      )}
     </div>
   )
 }
