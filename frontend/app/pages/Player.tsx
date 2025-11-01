@@ -1,14 +1,19 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import type { PlayerDetail } from '../../../common/models/playerDetail'
-import { type UpdateUserRequest } from '../../../common/models/requests'
 import {
+  type EditLapTimeRequest,
+  type UpdateUserRequest,
+} from '../../../common/models/requests'
+import {
+  type BackendResponse,
   type ErrorResponse,
   type GetPlayerDetailsResponse,
   type UpdateUserResponse,
 } from '../../../common/models/responses'
 import type { LeaderboardEntry } from '../../../common/models/timeEntry'
 import {
+  WS_EDIT_LAPTIME,
   WS_GET_PLAYER_DETAILS,
   WS_UPDATE_USER,
 } from '../../../common/utils/constants'
@@ -16,6 +21,7 @@ import { formatTrackName } from '../../../common/utils/track'
 import { useAuth } from '../../contexts/AuthContext'
 import { useConnection } from '../../contexts/ConnectionContext'
 import { Button } from '../components/Button'
+import EditLapTimeModal from '../components/EditLapTimeModal'
 import LoadingView from '../components/LoadingView'
 import TimeEntryRow from '../components/TimeEntryRow'
 import TrackTag from '../components/TrackTag'

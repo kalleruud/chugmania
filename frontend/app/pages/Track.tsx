@@ -1,16 +1,24 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import type { GetLeaderboardRequest } from '../../../common/models/requests'
+import type {
+  EditLapTimeRequest,
+  GetLeaderboardRequest,
+} from '../../../common/models/requests'
 import {
+  type BackendResponse,
   type ErrorResponse,
   type GetLeaderboardsResponse,
 } from '../../../common/models/responses'
 import type { LeaderboardEntry } from '../../../common/models/timeEntry'
 import type { Track } from '../../../common/models/track'
-import { WS_GET_LEADERBOARD } from '../../../common/utils/constants'
+import {
+  WS_EDIT_LAPTIME,
+  WS_GET_LEADERBOARD,
+} from '../../../common/utils/constants'
 import { formatTrackName } from '../../../common/utils/track'
 import { useAuth } from '../../contexts/AuthContext'
 import { useConnection } from '../../contexts/ConnectionContext'
+import EditLapTimeModal from '../components/EditLapTimeModal'
 import LeaderboardView from '../components/Leaderboard'
 import LoadingView from '../components/LoadingView'
 import TrackTag from '../components/TrackTag'
