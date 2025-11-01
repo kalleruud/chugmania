@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import { useTranslation } from '../../../common/locales'
 import type { GetLeaderboardRequest } from '../../../common/models/requests'
 import {
   type ErrorResponse,
@@ -16,6 +17,7 @@ import LoadingView from '../components/LoadingView'
 import TrackTag from '../components/TrackTag'
 
 export default function Track() {
+  const { t } = useTranslation()
   const { id } = useParams()
   const { socket } = useConnection()
   const { user } = useAuth()
@@ -43,9 +45,10 @@ export default function Track() {
     )
   }, [id, socket])
 
-  if (loading) return <LoadingView label='Loading leaderboard…' />
+  if (loading)
+    return <LoadingView label={t('pages.track.loadingLeaderboard')} />
 
-  if (!track) throw new Error("Couldn't get track")
+  if (!track) throw new Error(t('pages.track.errorCouldntGetTrack'))
 
   return (
     <div className='grid w-full items-start gap-4 sm:flex sm:justify-center sm:pt-4'>
