@@ -338,7 +338,7 @@ export default function Session() {
                       <TimeEntryRow
                         key={entry.id}
                         lapTime={entry}
-                        position={undefined}
+                        position={index + 1}
                         className='py-2'
                         showGap={false}
                         showDate={true}
