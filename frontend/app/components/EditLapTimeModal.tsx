@@ -1,17 +1,26 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import type { SessionWithSignups } from '../../../common/models/session'
 import type { LeaderboardEntry } from '../../../common/models/timeEntry'
+import type { Track } from '../../../common/models/track'
 import { Button } from './Button'
+import SearchableDropdown, { type LookupItem } from './SearchableDropdown'
 
 interface EditLapTimeModalProps {
   isOpen: boolean
   lapTime: LeaderboardEntry
   loading: boolean
   onClose: () => void
+  tracks?: Track[]
+  sessions?: SessionWithSignups[]
+  currentTrackId?: string
+  currentSessionId?: string | null
   onSubmit: (data: {
     duration?: number | null
     amount?: number
     comment?: string | null
     createdAt?: string
+    track?: string
+    session?: string | null
   }) => void
 }
 
@@ -29,6 +38,10 @@ export default function EditLapTimeModal({
   lapTime,
   loading,
   onClose,
+  tracks,
+  sessions,
+  currentTrackId,
+  currentSessionId,
   onSubmit,
 }: Readonly<EditLapTimeModalProps>) {
   const inputs = useRef<HTMLInputElement[]>([])
@@ -37,6 +50,10 @@ export default function EditLapTimeModal({
   const [amount, setAmount] = useState('0.5')
   const [comment, setComment] = useState('')
   const [createdAtStr, setCreatedAtStr] = useState('')
+  const [selectedTrack, setSelectedTrack] = useState<LookupItem | undefined>()
+  const [selectedSession, setSelectedSession] = useState<
+    LookupItem | undefined
+  >()
 
   const DIGIT = /^\d$/
 
@@ -78,7 +95,25 @@ export default function EditLapTimeModal({
     const date = new Date(lapTime.createdAt)
     const isoString = date.toISOString().slice(0, 19)
     setCreatedAtStr(isoString)
-  }, [isOpen, lapTime])
+
+    // Initialize track
+    if (tracks && currentTrackId) {
+      const track = tracks.find(t => t.id === currentTrackId)
+      if (track) {
+        setSelectedTrack({ id: track.id, label: track.number.toString() })
+      }
+    }
+
+    // Initialize session
+    if (currentSessionId && sessions) {
+      const session = sessions.find(s => s.id === currentSessionId)
+      if (session) {
+        setSelectedSession({ id: session.id, label: session.name })
+      }
+    } else {
+      setSelectedSession(undefined)
+    }
+  }, [isOpen, lapTime, tracks, sessions, currentTrackId, currentSessionId])
 
   const setDigitAt = (i: number, val: string) => {
     setDigits(prev => {
@@ -156,13 +191,15 @@ export default function EditLapTimeModal({
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    if (!isModified) return
+    if (!isModified && !selectedTrack && !selectedSession) return
 
     const updateData: {
       duration?: number | null
       amount?: number
       comment?: string | null
       createdAt?: string
+      track?: string
+      session?: string | null
     } = {}
 
     if (isTimeModified) {
@@ -178,6 +215,12 @@ export default function EditLapTimeModal({
       createdAtStr !== new Date(lapTime.createdAt).toISOString().slice(0, 19)
     ) {
       updateData.createdAt = new Date(createdAtStr).toISOString()
+    }
+    if (selectedTrack?.id && selectedTrack.id !== currentTrackId) {
+      updateData.track = selectedTrack.id
+    }
+    if (selectedSession?.id !== currentSessionId) {
+      updateData.session = selectedSession?.id ?? null
     }
 
     onSubmit(updateData)
@@ -263,6 +306,42 @@ export default function EditLapTimeModal({
               className='focus:ring-accent/60 focus:border-accent w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 outline-none transition focus:ring-2'
             />
           </div>
+
+          {/* Track */}
+          {tracks && tracks.length > 0 && (
+            <div className='space-y-2'>
+              <label className='text-sm font-medium'>Track</label>
+              <SearchableDropdown
+                placeholder='Select track'
+                selected={selectedTrack}
+                setSelected={setSelectedTrack}
+                items={
+                  tracks.map(t => ({
+                    id: t.id,
+                    label: `${formatTrackName(t.number)} - ${t.type}:${t.level}`,
+                  })) ?? []
+                }
+              />
+            </div>
+          )}
+
+          {/* Session */}
+          {sessions && sessions.length > 0 && (
+            <div className='space-y-2'>
+              <label className='text-sm font-medium'>Session (optional)</label>
+              <SearchableDropdown
+                placeholder='Link to session'
+                selected={selectedSession}
+                setSelected={setSelectedSession}
+                items={
+                  sessions.map(s => ({
+                    id: s.id,
+                    label: s.name,
+                  })) ?? []
+                }
+              />
+            </div>
+          )}
 
           {/* Created Date */}
           <div className='space-y-2'>

@@ -64,6 +64,8 @@ export default function Track() {
     amount?: number
     comment?: string | null
     createdAt?: string
+    track?: string
+    session?: string | null
   }) => {
     if (!editingLapTime || !id) return
 
@@ -129,13 +131,15 @@ export default function Track() {
         />
       </section>
 
-      {editingLapTime && (
+      {editingLapTime && track && (
         <EditLapTimeModal
           isOpen={!!editingLapTime}
           lapTime={editingLapTime}
           loading={editingLapTimeLoading}
           onClose={() => setEditingLapTime(null)}
           onSubmit={handleEditLapTimeSubmit}
+          tracks={[track]}
+          currentTrackId={track.id}
         />
       )}
     </div>

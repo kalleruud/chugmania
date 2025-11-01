@@ -55,6 +55,8 @@ export type EditLapTimeRequest = {
   amount?: number
   comment?: string | null
   createdAt?: string
+  track?: Track['id']
+  session?: Session['id'] | null
 }
 
 export function isEditLapTimeRequest(data: any): data is EditLapTimeRequest {

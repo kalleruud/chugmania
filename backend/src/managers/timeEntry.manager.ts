@@ -102,6 +102,8 @@ export default class TimeEntryManager {
     if (request.comment !== undefined) updateData.comment = request.comment
     if (request.createdAt !== undefined)
       updateData.createdAt = new Date(request.createdAt)
+    if (request.track !== undefined) updateData.track = request.track
+    if (request.session !== undefined) updateData.session = request.session
 
     // Never update deletedAt or updatedAt manually, but do update the updatedAt timestamp
     updateData.updatedAt = new Date()
