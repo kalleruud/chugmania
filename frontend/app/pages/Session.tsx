@@ -39,6 +39,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useConnection } from '../../contexts/ConnectionContext'
 import { Button } from '../components/Button'
 import EditLapTimeModal from '../components/EditLapTimeModal'
+import LapTimeInput from '../components/LapTimeInput'
 import LoadingView from '../components/LoadingView'
 import Tag from '../components/Tag'
 import TimeEntryRow from '../components/TimeEntryRow'
@@ -635,6 +636,37 @@ export default function Session() {
         </div>
         {renderSignupGroups()}
       </section>
+
+      {isLoggedIn && user?.role !== 'user' && (
+        <section className='space-y-4'>
+          <div>
+            <h2 className='text-lg font-semibold'>Record lap times</h2>
+            <p className='text-label-muted text-sm'>
+              {isPast
+                ? 'Log past lap times from this completed session.'
+                : 'Record your fastest laps from this session.'}
+            </p>
+          </div>
+          <div className='border-stroke bg-background/30 rounded-2xl border p-6 backdrop-blur-sm'>
+            <LapTimeInput
+              sessionId={session.id}
+              onSubmit={() => {
+                // Re-fetch sessions to get updated lap times
+                socket.emit(
+                  WS_GET_SESSIONS,
+                  undefined,
+                  (r: BackendResponse) => {
+                    if (r?.success && 'sessions' in r) {
+                      const updated = r.sessions.find(s => s.id === session.id)
+                      if (updated) setSession(updated)
+                    }
+                  }
+                )
+              }}
+            />
+          </div>
+        </section>
+      )}
 
       <section className='space-y-4'>
         <div>

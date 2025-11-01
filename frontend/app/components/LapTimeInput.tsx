@@ -48,11 +48,16 @@ const cache: {
 type LapTimeInputProps = DetailedHTMLProps<
   React.FormHTMLAttributes<HTMLFormElement>,
   HTMLFormElement
-> & { trackId?: Track['id']; userId?: Track['id'] }
+> & {
+  trackId?: Track['id']
+  userId?: Track['id']
+  sessionId?: SessionWithSignups['id']
+}
 
 export default function LapTimeInput({
   trackId,
   userId,
+  sessionId,
   className,
   onSubmit,
 }: Readonly<LapTimeInputProps>) {
@@ -187,9 +192,22 @@ export default function LapTimeInput({
         }
 
         setSessions(r.sessions)
+        // Pre-select session if sessionId is provided
+        if (sessionId && !selectedSession) {
+          const session = r.sessions.find(s => s.id === sessionId)
+          if (session) {
+            const date = new Date(session.date)
+            const subtitle = dateFormatter.format(date)
+            const location = session.location ? ` • ${session.location}` : ''
+            setSelectedSession({
+              id: session.id,
+              label: `${session.name} — ${subtitle}${location}`,
+            } satisfies LookupItem)
+          }
+        }
       }
     )
-  }, [socket])
+  }, [socket, sessionId, selectedSession, dateFormatter])
 
   function getMs() {
     const tenMinutes = digits[0] === '' ? 0 : Number.parseInt(digits[0]) * 10
