@@ -86,6 +86,7 @@ export default function Session() {
   const [session, setSession] = useState<SessionWithSignups | null>(null)
   const [loading, setLoading] = useState(true)
   const [rsvpLoading, setRsvpLoading] = useState(false)
+  const [tracks, setTracks] = useState<Track[]>([])
   const [editingLapTime, setEditingLapTime] = useState<LeaderboardEntry | null>(
     null
   )
@@ -354,9 +355,7 @@ export default function Session() {
               className='rounded-2xl border border-white/10 bg-white/5 p-4 shadow-[0_10px_40px_-30px_rgba(0,0,0,0.9)] sm:p-5'>
               <header className='flex flex-wrap items-baseline justify-between pb-4 sm:pb-4'>
                 <div className='flex flex-col gap-2'>
-                  <h3 className='text-lg font-semibold'>
-                    {formatTrackName(trackGroup.track.number)}
-                  </h3>
+                  <h1>{formatTrackName(trackGroup.track.number)}</h1>
                   <p className='text-label-secondary text-xs uppercase tracking-widest'>
                     Total entries: {trackGroup.laps.length}
                   </p>
@@ -629,13 +628,16 @@ export default function Session() {
         {renderLapTimes()}
       </section>
 
-      {editingLapTime && (
+      {editingLapTime && session && (
         <EditLapTimeModal
           isOpen={!!editingLapTime}
           lapTime={editingLapTime}
           loading={editingLapTimeLoading}
           onClose={() => setEditingLapTime(null)}
           onSubmit={handleEditLapTimeSubmit}
+          tracks={tracks.length > 0 ? tracks : undefined}
+          sessions={[session]}
+          currentSessionId={session.id}
         />
       )}
     </div>
