@@ -8,12 +8,14 @@ import {
   type BackendResponse,
   type ErrorResponse,
   type GetLeaderboardsResponse,
+  type GetTracksResponse,
 } from '../../../common/models/responses'
 import type { LeaderboardEntry } from '../../../common/models/timeEntry'
 import type { Track } from '../../../common/models/track'
 import {
   WS_EDIT_LAPTIME,
   WS_GET_LEADERBOARD,
+  WS_GET_TRACKS,
 } from '../../../common/utils/constants'
 import { formatTrackName } from '../../../common/utils/track'
 import { useAuth } from '../../contexts/AuthContext'
@@ -30,6 +32,7 @@ export default function Track() {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [track, setTrack] = useState<Track | null>(null)
+  const [allTracks, setAllTracks] = useState<Track[]>([])
   const [editingLapTime, setEditingLapTime] = useState<LeaderboardEntry | null>(
     null
   )
@@ -54,6 +57,18 @@ export default function Track() {
       }
     )
   }, [id, socket])
+
+  useEffect(() => {
+    socket.emit(
+      WS_GET_TRACKS,
+      undefined,
+      (r: GetTracksResponse | ErrorResponse) => {
+        if (r.success) {
+          setAllTracks(r.tracks)
+        }
+      }
+    )
+  }, [socket])
 
   const handleEditLapTime = (lapTime: LeaderboardEntry) => {
     setEditingLapTime(lapTime)
@@ -138,7 +153,7 @@ export default function Track() {
           loading={editingLapTimeLoading}
           onClose={() => setEditingLapTime(null)}
           onSubmit={handleEditLapTimeSubmit}
-          tracks={[track]}
+          tracks={allTracks.length > 0 ? allTracks : [track]}
           currentTrackId={track.id}
         />
       )}
