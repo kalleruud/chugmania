@@ -10,7 +10,10 @@ import {
 } from 'lucide-react'
 import { useEffect, useMemo, useState, type JSX } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import type { CancelSessionRequest } from '../../../common/models/requests'
+import type {
+  CancelSessionRequest,
+  EditLapTimeRequest,
+} from '../../../common/models/requests'
 import type {
   BackendResponse,
   GetSessionsResponse,
@@ -22,6 +25,7 @@ import type {
 import type { LeaderboardEntry } from '../../../common/models/timeEntry'
 import { getUserFullName, type UserInfo } from '../../../common/models/user'
 import {
+  WS_EDIT_LAPTIME,
   WS_GET_SESSIONS,
   WS_JOIN_SESSION,
   WS_LEAVE_SESSION,
@@ -31,6 +35,7 @@ import { formatTrackName } from '../../../common/utils/track'
 import { useAuth } from '../../contexts/AuthContext'
 import { useConnection } from '../../contexts/ConnectionContext'
 import { Button } from '../components/Button'
+import EditLapTimeModal from '../components/EditLapTimeModal'
 import LoadingView from '../components/LoadingView'
 import Tag from '../components/Tag'
 import TimeEntryRow from '../components/TimeEntryRow'

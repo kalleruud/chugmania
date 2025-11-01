@@ -172,17 +172,6 @@ export default function TimeEntryRow({
       <PositionBadgePart position={position} />
       <NameCellPart name={name} hasComment={!!lapTime.comment} />
 
-      {show.date && <DatePart timestamp={dateValue ?? lapTime.createdAt} />}
-
-      {show.gap && (
-        <GapPart
-          gap={lapTime.gap}
-          gapType={gapType}
-          onToggle={onToggleGapType}
-        />
-      )}
-      {show.time && <TimePart duration={lapTime.duration} />}
-
       {canEdit && (
         <td className='ml-auto pl-2'>
           <Button
@@ -197,6 +186,17 @@ export default function TimeEntryRow({
           </Button>
         </td>
       )}
+
+      {show.date && <DatePart timestamp={dateValue ?? lapTime.createdAt} />}
+
+      {show.gap && (
+        <GapPart
+          gap={lapTime.gap}
+          gapType={gapType}
+          onToggle={onToggleGapType}
+        />
+      )}
+      {show.time && <TimePart duration={lapTime.duration} />}
     </tr>
   )
 }
