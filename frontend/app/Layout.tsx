@@ -1,16 +1,16 @@
-import {
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
-import { AlertDialog } from '@radix-ui/react-alert-dialog'
-import { Plus } from 'lucide-react'
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { useEffect, useRef, useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import LapTimeInput from './components/LapTimeInput'
@@ -50,6 +50,45 @@ export default function Layout() {
       </main>
 
       <nav className='fixed bottom-0 right-0 m-12'>
+        <Dialog>
+          <form>
+            <DialogTrigger asChild>
+              <Button variant='outline'>Open Dialog</Button>
+            </DialogTrigger>
+            <DialogContent className='sm:max-w-[425px]'>
+              <DialogHeader>
+                <DialogTitle>Edit profile</DialogTitle>
+                <DialogDescription>
+                  Make changes to your profile here. Click save when you&apos;re
+                  done.
+                </DialogDescription>
+              </DialogHeader>
+              <div className='grid gap-4'>
+                <div className='grid gap-3'>
+                  <Label htmlFor='name-1'>Name</Label>
+                  <Input id='name-1' name='name' defaultValue='Pedro Duarte' />
+                </div>
+                <div className='grid gap-3'>
+                  <Label htmlFor='username-1'>Username</Label>
+                  <Input
+                    id='username-1'
+                    name='username'
+                    defaultValue='@peduarte'
+                  />
+                </div>
+              </div>{' '}
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button variant='outline'>Cancel</Button>
+                </DialogClose>
+                <Button type='submit'>Save changes</Button>
+              </DialogFooter>
+            </DialogContent>
+          </form>
+        </Dialog>
+      </nav>
+
+      {/* <nav className='fixed bottom-0 right-0 m-12'>
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button className='z-50 rounded-full' size='icon-2xl'>
@@ -75,7 +114,7 @@ export default function Layout() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </nav>
+      </nav> */}
     </>
   )
 }
