@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
 import type { PopoverContentProps } from '@radix-ui/react-popover'
+import { Spinner } from './ui/spinner'
 
 type ComboboxProps = {
   placeholder: string
@@ -90,7 +91,7 @@ export default function Combobox({
 
   function onSelect(item: ComboboxLookupItem) {
     if (item.id === selected?.id) setSelected(undefined)
-    else setSelected(items.find(i => i.id === item.id))
+    else setSelected(items?.find(i => i.id === item.id))
     closeAndFocusTrigger()
   }
 
@@ -136,7 +137,11 @@ export default function Combobox({
             className={'w-full justify-between gap-2'}>
             <Row item={selected} placeholder={placeholder} />
             <input type='hidden' value={selected?.id} {...inputProps} />
-            <ChevronsUpDown className='text-muted-foreground flex-none' />
+            {isLoading ? (
+              <Spinner />
+            ) : (
+              <ChevronsUpDown className='text-muted-foreground flex-none' />
+            )}
           </Button>
         </PopoverTrigger>
         {!isLoading && (
