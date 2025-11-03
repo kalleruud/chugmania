@@ -42,13 +42,13 @@ export default function LeaderboardView({
   return (
     <div className={'flex w-full'} {...rest}>
       <table className='flex w-full table-auto'>
-        <tbody className={twMerge('flex w-full flex-col gap-1', className)}>
+        <tbody className={twMerge('flex w-full flex-col', className)}>
           {entries.map(t => (
             <TimeEntryRow
+              className={twMerge(compact ? 'py-0.5' : 'py-1.5')}
               key={t.id}
               lapTime={t}
               gapType={gapType}
-              className={compact ? '' : 'py-1'}
               highlighted={highlightedUserId === t.user}
               onToggleGapType={() =>
                 setGapType(prev => (prev === 'leader' ? 'interval' : 'leader'))

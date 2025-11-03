@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type { LeaderboardEntry } from '../../../common/models/timeEntry'
 import { formatTime } from '../../../common/utils/time'
+import { useAuth } from '../../contexts/AuthContext'
 import { useData } from '../../contexts/DataContext'
 import { formatLapTimestamp } from '../utils/date'
 import { Button } from './Button'
@@ -105,7 +106,6 @@ export default function TimeEntryRow({
   showGap = true,
   showDate = false,
   dateValue,
-  highlighted = false,
   onEdit,
   canEdit = false,
   ...rest
@@ -125,6 +125,7 @@ export default function TimeEntryRow({
 >) {
   const containerRef = useRef<HTMLTableRowElement | null>(null)
   const [width, setWidth] = useState(0)
+  const { user: loggedInUser } = useAuth()
   const { users } = useData()
   const userInfo = users ? users[lapTime.user] : null
 
@@ -163,8 +164,10 @@ export default function TimeEntryRow({
     <tr
       ref={containerRef}
       className={twMerge(
-        'flex items-center gap-2',
-        highlighted ? 'bg-accent/10 ring-accent/40 rounded-md ring-1' : '',
+        'flex cursor-pointer items-center gap-2 rounded-md px-4 transition-colors hover:bg-white/5',
+        loggedInUser && loggedInUser?.id === userInfo?.id
+          ? 'bg-accent/10 ring-accent/40 ring-1'
+          : '',
         className
       )}
       title={

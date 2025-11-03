@@ -14,22 +14,18 @@ import type {
   BackendResponse,
   ErrorResponse,
   GetSessionsResponse,
-  GetTracksResponse,
-  GetUsersResponse,
 } from '../../../common/models/responses'
 import type { SessionWithSignups } from '../../../common/models/session'
 import type { Track } from '../../../common/models/track'
-import { type UserInfo } from '../../../common/models/user'
 import {
   WS_GET_SESSIONS,
-  WS_GET_TRACKS,
-  WS_GET_USERS,
   WS_POST_LAPTIME,
 } from '../../../common/utils/constants'
 import { formattedTimeToMs } from '../../../common/utils/time'
 import { formatTrackName } from '../../../common/utils/track'
 import { useAuth } from '../../contexts/AuthContext'
 import { useConnection } from '../../contexts/ConnectionContext'
+import { useData } from '../../contexts/DataContext'
 import { Button } from './Button'
 import SearchableDropdown, { type LookupItem } from './SearchableDropdown'
 
@@ -63,6 +59,8 @@ export default function LapTimeInput({
 }: Readonly<LapTimeInputProps>) {
   const { socket } = useConnection()
   const { user: loggedInUser } = useAuth()
+  const { users, tracks } = useData()
+
   const loggedInLookup = loggedInUser
     ? ({
         id: loggedInUser.id,
@@ -77,8 +75,6 @@ export default function LapTimeInput({
   const [selectedSession, setSelectedSession] = useState(cache.session)
   const [comment, setComment] = useState('')
 
-  const [users, setUsers] = useState<UserInfo[] | undefined>(undefined)
-  const [tracks, setTracks] = useState<Track[] | undefined>(undefined)
   const [sessions, setSessions] = useState<SessionWithSignups[] | undefined>(
     undefined
   )
@@ -148,38 +144,6 @@ export default function LapTimeInput({
         }
     }
   }
-
-  useEffect(() => {
-    if (userId) return
-    socket.emit(
-      WS_GET_USERS,
-      undefined,
-      (r: GetUsersResponse | ErrorResponse) => {
-        if (!r.success) {
-          console.error(r.message)
-          return globalThis.alert(r.message)
-        }
-
-        setUsers(r.users)
-      }
-    )
-  }, [socket])
-
-  useEffect(() => {
-    if (trackId) return
-    socket.emit(
-      WS_GET_TRACKS,
-      undefined,
-      (r: GetTracksResponse | ErrorResponse) => {
-        if (!r.success) {
-          console.error(r.message)
-          return globalThis.alert(r.message)
-        }
-
-        setTracks(r.tracks)
-      }
-    )
-  }, [socket])
 
   useEffect(() => {
     socket.emit(
@@ -307,7 +271,7 @@ export default function LapTimeInput({
                 selected={selectedUser}
                 setSelected={setSelectedUser}
                 items={
-                  users?.map(
+                  Object.values(users ?? []).map(
                     u =>
                       ({
                         id: u.id,
@@ -324,7 +288,7 @@ export default function LapTimeInput({
                 selected={selectedTrack}
                 setSelected={setSelectedTrack}
                 items={
-                  tracks?.map(
+                  Object.values(tracks ?? []).map(
                     t =>
                       ({
                         id: t.id,

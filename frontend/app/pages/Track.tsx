@@ -15,10 +15,18 @@ export default function Track() {
   const { entries } = leaderboards?.[id] ?? { entries: [] }
   const track = tracks?.[id]
 
-  if (!track) throw new Error("Couldn't get track")
-
-  if (leaderboards === undefined) {
+  if (leaderboards === undefined || tracks === undefined) {
     return <LoadingView label='Loading leaderboard…' />
+  }
+
+  if (!track) {
+    return (
+      <div className='flex h-full w-full items-center justify-center'>
+        <p className='text-center text-lg text-red-500'>
+          Track &quot;{id}&quot; not found.
+        </p>
+      </div>
+    )
   }
 
   return (
@@ -35,12 +43,8 @@ export default function Track() {
         </div>
       </header>
 
-      <section className='w-full px-6 sm:max-w-2xl'>
-        <LeaderboardView
-          entries={entries}
-          className='divide-stroke divide-y'
-          highlightedUserId={user?.id}
-        />
+      <section className='w-full px-2 sm:max-w-2xl'>
+        <LeaderboardView entries={entries} highlightedUserId={user?.id} />
       </section>
     </div>
   )
