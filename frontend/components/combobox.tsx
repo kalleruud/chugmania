@@ -56,7 +56,7 @@ function Row({
       <p
         className={cn(
           'text-muted-foreground block truncate text-right',
-          item.id === selected?.id && 'text-black'
+          item.id === selected?.id && 'text-primary-foreground'
         )}>
         {item.sublabel}
       </p>
