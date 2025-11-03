@@ -34,16 +34,12 @@ import {
   WS_LEAVE_SESSION,
   WS_SESSIONS_UPDATED,
 } from '../../../common/utils/constants'
-import { formatTrackName } from '../../../common/utils/track'
 import { useAuth } from '../../contexts/AuthContext'
 import { useConnection } from '../../contexts/ConnectionContext'
 import { Button } from '../components/Button'
 import EditLapTimeModal from '../components/EditLapTimeModal'
-import LapTimeInput from '../components/LapTimeInput'
 import LoadingView from '../components/LoadingView'
 import Tag from '../components/Tag'
-import TimeEntryRow from '../components/TimeEntryRow'
-import TrackTag from '../components/TrackTag'
 
 type SignupGroupKey = SessionSignup['response']
 
@@ -339,92 +335,6 @@ export default function Session() {
     )
   }
 
-  const renderLapTimes = () => {
-    if (!session || session.lapTimes.length === 0)
-      return (
-        <div className='text-label-muted border-stroke rounded-2xl border border-dashed bg-white/5 p-6 text-center'>
-          No lap times recorded for this session yet.
-        </div>
-      )
-
-    return (
-      <div className='flex flex-col gap-4'>
-        {lapsByTrack.map(trackGroup => {
-          const leaderboardEntries: LeaderboardEntry[] = trackGroup.laps.map(
-            lap => ({
-              id: lap.entry.id,
-              duration: lap.entry.duration,
-              amount: lap.entry.amount,
-              comment: lap.entry.comment ?? null,
-              createdAt: new Date(lap.entry.createdAt),
-              updatedAt: new Date(lap.entry.updatedAt ?? lap.entry.createdAt),
-              deletedAt: lap.entry.deletedAt
-                ? new Date(lap.entry.deletedAt)
-                : null,
-              user: lap.user,
-              session: null,
-              gap: {
-                position: undefined,
-              },
-            })
-          )
-
-          return (
-            <section
-              key={trackGroup.track.id}
-              className='rounded-2xl border border-white/10 bg-white/5 p-4 shadow-[0_10px_40px_-30px_rgba(0,0,0,0.9)] sm:p-5'>
-              <header className='flex flex-wrap items-baseline justify-between pb-4 sm:pb-4'>
-                <div className='flex flex-col gap-2'>
-                  <h1>{formatTrackName(trackGroup.track.number)}</h1>
-                  <p className='text-label-secondary text-xs uppercase tracking-widest'>
-                    Total entries: {trackGroup.laps.length}
-                  </p>
-                </div>
-
-                <div className='flex gap-2'>
-                  <TrackTag trackLevel={trackGroup.track.level}>
-                    {trackGroup.track.level}
-                  </TrackTag>
-                  <TrackTag trackType={trackGroup.track.type}>
-                    {trackGroup.track.type}
-                  </TrackTag>
-                </div>
-              </header>
-
-              <table className='flex w-full flex-col'>
-                <tbody className='flex flex-col divide-y divide-white/10'>
-                  {trackGroup.laps.map((_, index) => {
-                    const entry = leaderboardEntries[index]
-                    const canEdit =
-                      isLoggedIn &&
-                      (user?.role === 'admin' ||
-                        user?.role === 'moderator' ||
-                        user?.id === entry.user.id)
-                    return (
-                      <TimeEntryRow
-                        key={entry.id}
-                        lapTime={entry}
-                        position={index + 1}
-                        className='py-2'
-                        showGap={false}
-                        showDate={true}
-                        dateValue={entry.createdAt}
-                        canEdit={canEdit}
-                        onEdit={() =>
-                          handleEditLapTime(entry, trackGroup.track.id)
-                        }
-                      />
-                    )
-                  })}
-                </tbody>
-              </table>
-            </section>
-          )
-        })}
-      </div>
-    )
-  }
-
   if (loading) return <LoadingView label='Loading session…' />
 
   if (!session)
@@ -638,47 +548,6 @@ export default function Session() {
           </Button>
         </div>
         {renderSignupGroups()}
-      </section>
-
-      {isLoggedIn && user?.role !== 'user' && (
-        <section className='space-y-4'>
-          <div>
-            <h2 className='text-lg font-semibold'>Record lap times</h2>
-            <p className='text-label-muted text-sm'>
-              {isPast
-                ? 'Log past lap times from this completed session.'
-                : 'Record your fastest laps from this session.'}
-            </p>
-          </div>
-          <div className='border-stroke bg-background/30 rounded-2xl border p-6 backdrop-blur-sm'>
-            <LapTimeInput
-              sessionId={session.id}
-              onSubmit={() => {
-                // Re-fetch sessions to get updated lap times
-                socket.emit(
-                  WS_GET_SESSIONS,
-                  undefined,
-                  (r: BackendResponse) => {
-                    if (r?.success && 'sessions' in r) {
-                      const updated = r.sessions.find(s => s.id === session.id)
-                      if (updated) setSession(updated)
-                    }
-                  }
-                )
-              }}
-            />
-          </div>
-        </section>
-      )}
-
-      <section className='space-y-4'>
-        <div>
-          <h2 className='text-lg font-semibold'>Lap times</h2>
-          <p className='text-label-muted text-sm'>
-            Every lap time logged during this session.
-          </p>
-        </div>
-        {renderLapTimes()}
       </section>
 
       {editingLapTime && session && (

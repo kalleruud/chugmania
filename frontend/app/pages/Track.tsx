@@ -1,122 +1,25 @@
-import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import type {
-  EditLapTimeRequest,
-  GetLeaderboardRequest,
-} from '../../../common/models/requests'
-import {
-  type BackendResponse,
-  type ErrorResponse,
-  type GetLeaderboardsResponse,
-  type GetTracksResponse,
-} from '../../../common/models/responses'
-import type { LeaderboardEntry } from '../../../common/models/timeEntry'
-import type { Track } from '../../../common/models/track'
-import {
-  WS_EDIT_LAPTIME,
-  WS_GET_LEADERBOARD,
-  WS_GET_TRACKS,
-} from '../../../common/utils/constants'
 import { formatTrackName } from '../../../common/utils/track'
 import { useAuth } from '../../contexts/AuthContext'
-import { useConnection } from '../../contexts/ConnectionContext'
-import EditLapTimeModal from '../components/EditLapTimeModal'
+import { useData } from '../../contexts/DataContext'
 import LeaderboardView from '../components/Leaderboard'
 import LoadingView from '../components/LoadingView'
 import TrackTag from '../components/TrackTag'
 
 export default function Track() {
   const { id } = useParams()
-  const { socket } = useConnection()
   const { user } = useAuth()
-  const [entries, setEntries] = useState<LeaderboardEntry[]>([])
-  const [loading, setLoading] = useState(true)
-  const [track, setTrack] = useState<Track | null>(null)
-  const [allTracks, setAllTracks] = useState<Track[]>([])
-  const [editingLapTime, setEditingLapTime] = useState<LeaderboardEntry | null>(
-    null
-  )
-  const [editingLapTimeLoading, setEditingLapTimeLoading] = useState(false)
+  const { leaderboards, tracks } = useData()
+  if (!id) throw new Error('No track ID provided')
 
-  useEffect(() => {
-    if (!id) return
-    socket.emit(
-      WS_GET_LEADERBOARD,
-      { trackId: id } satisfies GetLeaderboardRequest,
-      (r: GetLeaderboardsResponse | ErrorResponse) => {
-        if (!r.success) {
-          console.error(r.message)
-          globalThis.alert(r.message)
-          setLoading(false)
-          return
-        }
-        const lb = r.leaderboards[0]
-        setEntries(lb.entries)
-        setTrack(lb.track)
-        setLoading(false)
-      }
-    )
-  }, [id, socket])
-
-  useEffect(() => {
-    socket.emit(
-      WS_GET_TRACKS,
-      undefined,
-      (r: GetTracksResponse | ErrorResponse) => {
-        if (r.success) {
-          setAllTracks(r.tracks)
-        }
-      }
-    )
-  }, [socket])
-
-  const handleEditLapTime = (lapTime: LeaderboardEntry) => {
-    setEditingLapTime(lapTime)
-  }
-
-  const handleEditLapTimeSubmit = (data: {
-    duration?: number | null
-    amount?: number
-    comment?: string | null
-    createdAt?: string
-    track?: string
-    session?: string | null
-  }) => {
-    if (!editingLapTime || !id) return
-
-    setEditingLapTimeLoading(true)
-    const request: EditLapTimeRequest = {
-      id: editingLapTime.id,
-      ...data,
-    }
-
-    socket.emit(WS_EDIT_LAPTIME, request, (response: BackendResponse) => {
-      setEditingLapTimeLoading(false)
-      if (!response.success) {
-        console.error(response.message)
-        globalThis.alert(response.message)
-        return
-      }
-
-      // Refresh leaderboard
-      socket.emit(
-        WS_GET_LEADERBOARD,
-        { trackId: id } satisfies GetLeaderboardRequest,
-        (r: GetLeaderboardsResponse | ErrorResponse) => {
-          if (r.success) {
-            const lb = r.leaderboards[0]
-            setEntries(lb.entries)
-            setTrack(lb.track)
-          }
-        }
-      )
-      setEditingLapTime(null)
-    })
-  }
-
-  if (loading) return <LoadingView label='Loading leaderboard…' />
+  const { entries } = leaderboards?.[id] ?? { entries: [] }
+  const track = tracks?.[id]
 
   if (!track) throw new Error("Couldn't get track")
+
+  if (leaderboards === undefined) {
+    return <LoadingView label='Loading leaderboard…' />
+  }
 
   return (
     <div className='grid w-full items-start gap-4 sm:flex sm:justify-center sm:pt-4'>
@@ -137,26 +40,8 @@ export default function Track() {
           entries={entries}
           className='divide-stroke divide-y'
           highlightedUserId={user?.id}
-          canEditLapTime={entry =>
-            user?.role === 'admin' ||
-            user?.role === 'moderator' ||
-            user?.id === entry.user.id
-          }
-          onEditLapTime={handleEditLapTime}
         />
       </section>
-
-      {editingLapTime && track && (
-        <EditLapTimeModal
-          isOpen={!!editingLapTime}
-          lapTime={editingLapTime}
-          loading={editingLapTimeLoading}
-          onClose={() => setEditingLapTime(null)}
-          onSubmit={handleEditLapTimeSubmit}
-          tracks={allTracks.length > 0 ? allTracks : [track]}
-          currentTrackId={track.id}
-        />
-      )}
     </div>
   )
 }

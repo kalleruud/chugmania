@@ -1,20 +1,20 @@
 import { type Server, type Socket } from 'socket.io'
+import { WS_BROADCAST_LEADERBOARDS } from '../../../common/models/leaderboard'
 import type {
   BackendResponse,
   ErrorResponse,
 } from '../../../common/models/responses'
+import { WS_BROADCAST_TRACKS } from '../../../common/models/track'
+import { WS_BROADCAST_USERS } from '../../../common/models/user'
 import {
   WS_CANCEL_SESSION,
   WS_CREATE_SESSION,
   WS_DELETE_SESSION,
   WS_EDIT_LAPTIME,
   WS_EXPORT_CSV,
-  WS_GET_LEADERBOARD,
-  WS_GET_LEADERBOARD_SUMMARIES,
   WS_GET_PLAYER_DETAILS,
   WS_GET_PLAYER_SUMMARIES,
   WS_GET_SESSIONS,
-  WS_GET_TRACKS,
   WS_GET_USER_DATA,
   WS_GET_USERS,
   WS_IMPORT_CSV,
@@ -45,24 +45,23 @@ export default class ConnectionManager {
   static async connect(s: Socket) {
     console.debug(new Date().toISOString(), s.id, 'Connected')
 
+    // Send data
+    const tracks = await TrackManager.onEmitTracks()
+    const leaderboards = await LeaderboardManager.onEmitLeaderboards(
+      tracks.map(t => t.id)
+    )
+    const users = await UserManager.onEmitUsers()
+
+    ConnectionManager.emit(WS_BROADCAST_LEADERBOARDS, leaderboards)
+    ConnectionManager.emit(WS_BROADCAST_TRACKS, tracks)
+    ConnectionManager.emit(WS_BROADCAST_USERS, users)
+
     // Setup user handling
     ConnectionManager.setup(s, WS_LOGIN_NAME, AuthManager.onLogin)
     ConnectionManager.setup(s, WS_REGISTER_NAME, AuthManager.onRegister)
     ConnectionManager.setup(s, WS_GET_USER_DATA, AuthManager.onGetUserData)
     ConnectionManager.setup(s, WS_UPDATE_USER, AuthManager.onUpdateUser)
     ConnectionManager.setup(s, WS_GET_USERS, UserManager.onGetUsers)
-
-    // Setup leaderboard handling
-    ConnectionManager.setup(
-      s,
-      WS_GET_LEADERBOARD,
-      LeaderboardManager.onGetLeaderboard
-    )
-    ConnectionManager.setup(
-      s,
-      WS_GET_LEADERBOARD_SUMMARIES,
-      LeaderboardManager.onGetLeaderboardSummaries
-    )
 
     ConnectionManager.setup(
       s,
@@ -75,9 +74,6 @@ export default class ConnectionManager {
       WS_GET_PLAYER_DETAILS,
       PlayerManager.onGetPlayerDetails
     )
-
-    // Setup track handling
-    ConnectionManager.setup(s, WS_GET_TRACKS, TrackManager.onGetTracks)
 
     // Setup time entry handling
     ConnectionManager.setup(s, WS_POST_LAPTIME, TimeEntryManager.onPostLapTime)

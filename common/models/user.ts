@@ -1,5 +1,8 @@
 import { users } from '../../backend/database/schema'
 
+export const WS_BROADCAST_USERS = 'UserBroadcast'
+export type UserBroadcast = UserInfo[]
+
 export type User = typeof users.$inferSelect
 export type CreateUser = typeof users.$inferInsert
 export type UserInfo = Omit<User, 'passwordHash'> & { passwordHash: undefined }

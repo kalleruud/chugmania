@@ -1,5 +1,4 @@
 import { timeEntries } from '../../backend/database/schema'
-import type { UserInfo } from './user'
 
 export type TimeEntry = typeof timeEntries.$inferSelect
 export type CreateTimeEntry = typeof timeEntries.$inferInsert
@@ -17,7 +16,6 @@ export type LeaderboardEntryGap =
       leader?: never
     }
 
-export type LeaderboardEntry = Omit<TimeEntry, 'user' | 'track'> & {
-  user: UserInfo
+export type LeaderboardEntry = Omit<TimeEntry, 'track'> & {
   gap: LeaderboardEntryGap
 }

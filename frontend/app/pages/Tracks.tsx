@@ -1,43 +1,24 @@
-import { useEffect, useState } from 'react'
-import type { Leaderboard } from '../../../common/models/leaderboard'
-import {
-  type ErrorResponse,
-  type GetLeaderboardsResponse,
-} from '../../../common/models/responses'
-import { WS_GET_LEADERBOARD_SUMMARIES } from '../../../common/utils/constants'
-import { useConnection } from '../../contexts/ConnectionContext'
+import { useData } from '../../contexts/DataContext'
 import LoadingView from '../components/LoadingView'
 import TrackCard from '../components/TrackCard'
 
 export default function Tracks() {
-  const [summaries, setSummaries] = useState<Leaderboard[]>([])
-  const [loading, setLoading] = useState(true)
-  const { socket } = useConnection()
+  const { leaderboards, tracks } = useData()
 
-  useEffect(() => {
-    socket.emit(
-      WS_GET_LEADERBOARD_SUMMARIES,
-      undefined,
-      (d: GetLeaderboardsResponse | ErrorResponse) => {
-        if (!d.success) {
-          console.error(d.message)
-          return globalThis.alert(d.message)
-        }
-
-        setSummaries(d.leaderboards)
-        setLoading(false)
-      }
-    )
-  }, [socket])
-
-  if (loading) return <LoadingView />
+  if (leaderboards === undefined || tracks === undefined) return <LoadingView />
 
   return (
     <div className='p-safe-or-4 flex-1'>
       <div className='grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] gap-4'>
-        {summaries.map(t => (
-          <TrackCard key={t.track.id} leaderboard={t} />
-        ))}
+        {Object.values(tracks)
+          .filter(track => track.id in leaderboards)
+          .map(track => (
+            <TrackCard
+              key={track.id}
+              track={track}
+              leaderboard={leaderboards[track.id] ?? []}
+            />
+          ))}
       </div>
     </div>
   )

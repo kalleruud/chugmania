@@ -49,7 +49,7 @@ export default function LeaderboardView({
               lapTime={t}
               gapType={gapType}
               className={compact ? '' : 'py-1'}
-              highlighted={highlightedUserId === t.user.id}
+              highlighted={highlightedUserId === t.user}
               onToggleGapType={() =>
                 setGapType(prev => (prev === 'leader' ? 'interval' : 'leader'))
               }

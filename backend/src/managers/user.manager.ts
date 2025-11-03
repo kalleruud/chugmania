@@ -115,4 +115,10 @@ export default class UserManager {
     const userInfos = data.map(r => UserManager.toUserInfo(r).userInfo)
     return { success: true, users: userInfos } satisfies GetUsersResponse
   }
+
+  static async onEmitUsers(): Promise<UserInfo[]> {
+    const { data, error } = await tryCatchAsync(db.select().from(users))
+    if (error) throw error
+    return data.map(r => UserManager.toUserInfo(r).userInfo)
+  }
 }

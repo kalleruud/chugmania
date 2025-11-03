@@ -14,6 +14,7 @@ import Track from './app/pages/Track'
 import Tracks from './app/pages/Tracks'
 import { AuthProvider } from './contexts/AuthContext'
 import { ConnectionProvider } from './contexts/ConnectionContext'
+import { DataProvider } from './contexts/DataContext'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -21,19 +22,21 @@ createRoot(document.getElementById('root')!).render(
       future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <ConnectionProvider>
         <AuthProvider>
-          <Routes>
-            <Route element={<Layout />}>
-              <Route index element={<Home />} />
-              <Route path='tracks' element={<Tracks />} />
-              <Route path='tracks/:id' element={<Track />} />
-              <Route path='players' element={<Players />} />
-              <Route path='players/:id' element={<Player />} />
-              <Route path='sessions' element={<Sessions />} />
-              <Route path='sessions/:id' element={<Session />} />
-              <Route path='login' element={<Login />} />
-              <Route path='admin' element={<Admin />} />
-            </Route>
-          </Routes>
+          <DataProvider>
+            <Routes>
+              <Route element={<Layout />}>
+                <Route index element={<Home />} />
+                <Route path='tracks' element={<Tracks />} />
+                <Route path='tracks/:id' element={<Track />} />
+                <Route path='players' element={<Players />} />
+                <Route path='players/:id' element={<Player />} />
+                <Route path='sessions' element={<Sessions />} />
+                <Route path='sessions/:id' element={<Session />} />
+                <Route path='login' element={<Login />} />
+                <Route path='admin' element={<Admin />} />
+              </Route>
+            </Routes>
+          </DataProvider>
         </AuthProvider>
       </ConnectionProvider>
     </BrowserRouter>

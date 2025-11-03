@@ -1,22 +1,16 @@
-import { asc, desc, eq, sql } from 'drizzle-orm'
-import type { Socket } from 'socket.io'
-import type { Leaderboard } from '../../../common/models/leaderboard'
-import { isGetLeaderboardRequest } from '../../../common/models/requests'
+import { and, asc, desc, eq, isNull, sql } from 'drizzle-orm'
 import type {
-  BackendResponse,
-  GetLeaderboardsResponse,
-} from '../../../common/models/responses'
+  Leaderboard,
+  LeaderboardBroadcast,
+} from '../../../common/models/leaderboard'
 import type { LeaderboardEntryGap } from '../../../common/models/timeEntry'
 import type { Track } from '../../../common/models/track'
 import db from '../../database/database'
 import { timeEntries, tracks, users } from '../../database/schema'
-import TrackManager from './track.manager'
 
 export default class LeaderboardManager {
   private static async getLeaderboard(
-    trackId: Track['id'],
-    offset = 0,
-    limit = 100
+    trackId: Track['id']
   ): Promise<Leaderboard> {
     const track = await db.query.tracks.findFirst({
       where: eq(tracks.id, trackId),
@@ -27,14 +21,18 @@ export default class LeaderboardManager {
       .select()
       .from(timeEntries)
       .innerJoin(users, eq(users.id, timeEntries.user))
-      .where(eq(timeEntries.track, trackId))
+      .where(
+        and(
+          eq(timeEntries.track, trackId),
+          isNull(timeEntries.deletedAt),
+          isNull(users.deletedAt)
+        )
+      )
       .orderBy(
         asc(sql`CASE WHEN ${timeEntries.duration} IS NULL THEN 1 ELSE 0 END`),
         asc(timeEntries.duration),
         desc(timeEntries.createdAt)
       )
-
-    const totalEntries = rows.length
 
     // Keep best (lowest duration) per user, rows already sorted asc by duration
     const seen = new Set<string>()
@@ -49,7 +47,7 @@ export default class LeaderboardManager {
 
     // Compute gaps against previous and leader
     const leaderDuration = best[0]?.entry.duration
-    const withGaps = best.map((r, i, arr) => {
+    const entries = best.map((r, i, arr) => {
       const prev = i > 0 ? arr[i - 1]!.entry.duration : null
       const next = i < arr.length - 1 ? arr[i + 1]!.entry.duration : null
 
@@ -68,7 +66,6 @@ export default class LeaderboardManager {
       if (r.entry.duration && next !== null)
         gap.next = roundToHundredth(next - r.entry.duration)
 
-      const userInfo = { ...r.user, passwordHash: undefined }
       return {
         id: r.entry.id,
         duration: r.entry.duration,
@@ -78,63 +75,24 @@ export default class LeaderboardManager {
         updatedAt: r.entry.updatedAt,
         deletedAt: r.entry.deletedAt,
         session: r.entry.session,
-        user: userInfo,
+        user: r.user.id,
         gap,
-      }
+      } satisfies Leaderboard['entries'][0]
     })
 
-    const entries = withGaps.slice(offset, offset + limit)
-
     return {
-      track,
-      totalEntries,
+      id: trackId,
       entries,
     }
   }
 
-  private static async getLeaderboardSummaries(
-    offset = 0,
-    limit = 100
-  ): Promise<Leaderboard[]> {
-    const trackRows = await TrackManager.getTrackIdsWithLapTimes(offset, limit)
-
-    return Promise.all(
-      trackRows.map(id => LeaderboardManager.getLeaderboard(id, 0, 3))
-    )
-  }
-
-  static async onGetLeaderboardSummaries(
-    socket: Socket
-  ): Promise<GetLeaderboardsResponse> {
-    console.debug(
-      new Date().toISOString(),
-      socket.id,
-      'Received getLeaderboardSummaries request'
-    )
-
-    return {
-      success: true,
-      leaderboards: await LeaderboardManager.getLeaderboardSummaries(0, 1000),
-    }
-  }
-
-  static async onGetLeaderboard(
-    socket: Socket,
-    request: unknown
-  ): Promise<BackendResponse> {
-    if (!isGetLeaderboardRequest(request)) {
-      throw new Error('Failed to fetch leaderboard')
-    }
-
-    console.debug(
-      new Date().toISOString(),
-      socket.id,
-      'Received getLeaderboard request'
-    )
-
-    return {
-      success: true,
-      leaderboards: [await LeaderboardManager.getLeaderboard(request.trackId)],
-    } satisfies GetLeaderboardsResponse
+  static async onEmitLeaderboards(
+    trackIds: Track['id'][]
+  ): Promise<LeaderboardBroadcast> {
+    return (
+      await Promise.all(
+        trackIds.map(id => LeaderboardManager.getLeaderboard(id))
+      )
+    ).filter(lb => lb.entries.length > 0)
   }
 }

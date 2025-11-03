@@ -1,20 +1,22 @@
 import { Link, type LinkProps } from 'react-router-dom'
 import { twMerge } from 'tailwind-merge'
 import type { Leaderboard } from '../../../common/models/leaderboard'
+import type { Track } from '../../../common/models/track'
 import { formatTrackName } from '../../../common/utils/track'
 import LeaderboardView from './Leaderboard'
 import TrackTag from './TrackTag'
 
 export type TrackCardProps = Readonly<
-  Omit<LinkProps, 'to'> & { leaderboard: Leaderboard }
+  Omit<LinkProps, 'to'> & { leaderboard: Leaderboard; track: Track }
 >
 
 export default function TrackCard({
+  track,
   leaderboard,
   className,
   ...rest
 }: Readonly<TrackCardProps>) {
-  const { track, entries } = leaderboard
+  const { entries } = leaderboard
   const isCustom = track.level === 'custom'
 
   return (
@@ -40,7 +42,7 @@ export default function TrackCard({
       <div className='border-b border-white/10' />
 
       <LeaderboardView
-        entries={entries}
+        entries={entries.slice(0, 3)}
         className='pointer-events-none'
         compact
       />

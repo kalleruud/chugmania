@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type { LeaderboardEntry } from '../../../common/models/timeEntry'
 import { formatTime } from '../../../common/utils/time'
+import { useData } from '../../contexts/DataContext'
 import { formatLapTimestamp } from '../utils/date'
 import { Button } from './Button'
 
@@ -124,6 +125,8 @@ export default function TimeEntryRow({
 >) {
   const containerRef = useRef<HTMLTableRowElement | null>(null)
   const [width, setWidth] = useState(0)
+  const { users } = useData()
+  const userInfo = users ? users[lapTime.user] : null
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -149,10 +152,11 @@ export default function TimeEntryRow({
   const name = useMemo(() => {
     if (width <= 400)
       return (
-        lapTime.user.shortName ??
-        (lapTime.user.lastName ?? lapTime.user.firstName).slice(0, 3)
+        userInfo?.shortName ??
+        (userInfo?.lastName ?? userInfo?.firstName)?.slice(0, 3) ??
+        'N/A'
       )
-    return lapTime.user.lastName ?? lapTime.user.firstName
+    return userInfo?.lastName ?? userInfo?.firstName ?? 'N/A'
   }, [width])
 
   return (
