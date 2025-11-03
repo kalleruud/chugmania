@@ -1,4 +1,6 @@
-import { Button } from '@/components/ui/button'
+import Combobox, { type ComboboxLookupItem } from '@/components/combobox'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import {
   useCallback,
   useEffect,
@@ -27,7 +29,7 @@ import { formatTrackName } from '../../../common/utils/track'
 import { useAuth } from '../../contexts/AuthContext'
 import { useConnection } from '../../contexts/ConnectionContext'
 import { useData } from '../../contexts/DataContext'
-import SearchableDropdown, { type LookupItem } from './SearchableDropdown'
+import { type LookupItem } from './SearchableDropdown'
 
 const cache: {
   time: string[]
@@ -61,6 +63,9 @@ export default function LapTimeInput({
   const { user: loggedInUser } = useAuth()
   const { users, tracks } = useData()
 
+  const [open, setOpen] = useState(false)
+  const [value, setValue] = useState('')
+
   const loggedInLookup = loggedInUser
     ? ({
         id: loggedInUser.id,
@@ -80,9 +85,8 @@ export default function LapTimeInput({
   )
   const dateFormatter = useMemo(
     () =>
-      new Intl.DateTimeFormat(undefined, {
+      new Intl.DateTimeFormat('nb-NO', {
         dateStyle: 'medium',
-        timeStyle: 'short',
       }),
     []
   )
@@ -262,7 +266,7 @@ export default function LapTimeInput({
       </div>
 
       <div className='flex flex-col gap-2'>
-        {(!userId || !trackId) && (
+        {/* {(!userId || !trackId) && (
           <div className='flex gap-2'>
             {!userId && loggedInUser.role !== 'user' && (
               <SearchableDropdown
@@ -299,37 +303,81 @@ export default function LapTimeInput({
               />
             )}
           </div>
-        )}
+        )} */}
 
-        {/* <input
-          value={comment}
-          onChange={e => setComment(e.target.value)}
-          placeholder='Comment'
-          className='focus:ring-accent/60 focus:border-accent rounded-lg border border-white/10 bg-white/5 px-4 py-2 outline-none transition focus:ring-2'
-        /> */}
+        <div className='flex gap-2'>
+          <Combobox
+            className='w-full'
+            required={true}
+            placeholder='Velg bruker'
+            selected={selectedUser}
+            setSelected={setSelectedUser}
+            align='start'
+            items={
+              Object.values(users ?? []).map(
+                u =>
+                  ({
+                    id: u.id,
+                    label: u.firstName,
+                    sublabel: u.shortName ?? u.lastName ?? undefined,
+                    tags: [
+                      u.firstName,
+                      u.lastName ?? '',
+                      u.shortName ?? '',
+                      u.email ?? '',
+                    ].filter(Boolean),
+                  }) satisfies ComboboxLookupItem
+              ) ?? []
+            }
+          />
 
-        
+          <Combobox
+            className='w-full'
+            required={true}
+            placeholder='Velg bane'
+            selected={selectedTrack}
+            setSelected={setSelectedTrack}
+            align='end'
+            items={Object.values(tracks ?? []).map(
+              track =>
+                ({
+                  id: track.id,
+                  label: formatTrackName(track.number),
+                  sublabel: `${track.level} • ${track.type}`,
+                  tags: [track.level, track.type, track.number.toString()],
+                }) satisfies ComboboxLookupItem
+            )}
+          />
+        </div>
 
-        {/* <SearchableDropdown
-          placeholder='Link to session (optional)'
-          selected={selectedSession}
-          setSelected={setSelectedSession}
+        <Label htmlFor='laptime-session'>Comment</Label>
+        <Combobox
+          className='w-full'
+          required={true}
+          placeholder='Velg session'
+          selected={selectedTrack}
+          setSelected={setSelectedTrack}
           items={
             sessions?.map(session => {
               const date = new Date(session.date)
-              const subtitle = dateFormatter.format(date)
-              const location = session.location ? ` • ${session.location}` : ''
-              const isUpcoming = date.getTime() >= Date.now()
+
               return {
                 id: session.id,
-                label: `${session.name} — ${subtitle}${location}`,
-                featured: isUpcoming,
-              } satisfies LookupItem
+                label: session.name,
+                sublabel: dateFormatter.format(date),
+                tags: [session.name, session.location ?? ''],
+              } satisfies ComboboxLookupItem
             }) ?? []
           }
-          className='mt-2'
-          emptyLabel='No sessions found'
-        /> */}
+        />
+
+        <Label htmlFor='laptime-comment'>Comment</Label>
+        <Textarea
+          id='laptime-comment'
+          name='Comment'
+          className='text-sm'
+          placeholder='Absolutt krise'
+        />
       </div>
 
       {/* <Button type='submit' disabled={!isInputValid()} className='w-full'>

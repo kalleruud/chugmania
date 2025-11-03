@@ -8,8 +8,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Plus } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Outlet } from 'react-router-dom'
@@ -49,46 +47,33 @@ export default function Layout() {
         <Outlet />
       </main>
 
-      <nav className='fixed bottom-0 right-0 m-12'>
-        <Dialog>
-          <form>
-            <DialogTrigger asChild>
-              <Button className='z-50 rounded-full' size='icon-2xl'>
-                <Plus className='size-6' />
-              </Button>
-            </DialogTrigger>
-            <DialogContent className='sm:max-w-[425px]'>
-              <DialogHeader>
-                <DialogTitle>
-                  <h2>Registrer tid</h2>
-                </DialogTitle>
-              </DialogHeader>
-              <div className='grid gap-4'>
-                <LapTimeInput />
-                <div className='grid gap-3'>
-                  <Label htmlFor='name-1'>Name</Label>
-                  <Input id='name-1' name='name' defaultValue='Pedro Duarte' />
-                </div>
-                <div className='grid gap-3'>
-                  <Label htmlFor='username-1'>Username</Label>
-                  <Input
-                    id='username-1'
-                    name='username'
-                    defaultValue='@peduarte'
-                    placeholder='username'
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <DialogClose asChild>
-                  <Button variant='outline'>Nah</Button>
-                </DialogClose>
-                <Button type='submit'>Yeet</Button>
-              </DialogFooter>
-            </DialogContent>
-          </form>
-        </Dialog>
-      </nav>
+      <Dialog>
+        <form>
+          <DialogTrigger asChild>
+            <Button
+              className='fixed bottom-0 right-0 z-50 m-12 rounded-full'
+              size='icon-2xl'>
+              <Plus className='size-6' />
+            </Button>
+          </DialogTrigger>
+          <DialogContent className='sm:max-w-[425px]'>
+            <DialogHeader>
+              <DialogTitle>
+                <h2>Registrer tid</h2>
+              </DialogTitle>
+            </DialogHeader>
+
+            <LapTimeInput />
+
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant='outline'>Nah</Button>
+              </DialogClose>
+              <Button type='submit'>Yeet</Button>
+            </DialogFooter>
+          </DialogContent>
+        </form>
+      </Dialog>
 
       {/* <nav className='fixed bottom-0 right-0 m-12'>
         <AlertDialog>
