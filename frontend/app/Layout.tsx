@@ -3,7 +3,6 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -11,6 +10,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Plus } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import LapTimeInput from './components/LapTimeInput'
@@ -53,17 +53,18 @@ export default function Layout() {
         <Dialog>
           <form>
             <DialogTrigger asChild>
-              <Button variant='outline'>Open Dialog</Button>
+              <Button className='z-50 rounded-full' size='icon-2xl'>
+                <Plus className='size-6' />
+              </Button>
             </DialogTrigger>
             <DialogContent className='sm:max-w-[425px]'>
               <DialogHeader>
-                <DialogTitle>Edit profile</DialogTitle>
-                <DialogDescription>
-                  Make changes to your profile here. Click save when you&apos;re
-                  done.
-                </DialogDescription>
+                <DialogTitle>
+                  <h2>Registrer tid</h2>
+                </DialogTitle>
               </DialogHeader>
               <div className='grid gap-4'>
+                <LapTimeInput />
                 <div className='grid gap-3'>
                   <Label htmlFor='name-1'>Name</Label>
                   <Input id='name-1' name='name' defaultValue='Pedro Duarte' />
@@ -79,9 +80,9 @@ export default function Layout() {
               </div>{' '}
               <DialogFooter>
                 <DialogClose asChild>
-                  <Button variant='outline'>Cancel</Button>
+                  <Button variant='outline'>Nah</Button>
                 </DialogClose>
-                <Button type='submit'>Save changes</Button>
+                <Button type='submit'>Yeet</Button>
               </DialogFooter>
             </DialogContent>
           </form>
