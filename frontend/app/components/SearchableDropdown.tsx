@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button'
 import { ChevronsUpDown, Search } from 'lucide-react'
 import {
   useEffect,
@@ -7,7 +8,6 @@ import {
   type SetStateAction,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { Button } from './Button'
 
 export type LookupItem = {
   id: string
@@ -91,7 +91,6 @@ export default function SearchableDropdown({
         ref={triggerRef}
         type='button'
         variant='secondary'
-        size='md'
         onClick={() => setOpen(o => !o)}
         aria-expanded={open}
         aria-haspopup='listbox'
@@ -139,9 +138,7 @@ export default function SearchableDropdown({
                 <li key={item.id} className='list-none'>
                   <Button
                     type='button'
-                    variant='tertiary'
                     size='sm'
-                    state={selected?.id === item.id ? 'selected' : 'default'}
                     className={twMerge(
                       'relative w-full select-none justify-start rounded-sm px-2 py-1.5 text-left normal-case text-slate-100 no-underline hover:no-underline',
                       selected?.id === item.id

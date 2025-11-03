@@ -21,7 +21,7 @@ import {
 } from '../../../common/utils/constants'
 import { useAuth } from '../../contexts/AuthContext'
 import { useConnection } from '../../contexts/ConnectionContext'
-import { Button } from '../components/Button'
+
 import { EditSessionModal } from '../components/EditSessionModal'
 import LoadingView from '../components/LoadingView'
 import { SessionCard } from '../components/SessionCard'

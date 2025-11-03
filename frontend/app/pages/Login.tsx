@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
-import { Button } from '../components/Button'
+
 import UserForm from '../components/UserForm'
 
 const ALLOW_REGISTERING = false

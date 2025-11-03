@@ -15,7 +15,7 @@ import type {
   SessionSignup,
   SessionWithSignups,
 } from '../../../common/models/session'
-import { Button } from './Button'
+
 import Tag from './Tag'
 
 const dateFormatter = new Intl.DateTimeFormat(undefined, {

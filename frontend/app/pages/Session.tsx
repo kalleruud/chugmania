@@ -36,7 +36,7 @@ import {
 } from '../../../common/utils/constants'
 import { useAuth } from '../../contexts/AuthContext'
 import { useConnection } from '../../contexts/ConnectionContext'
-import { Button } from '../components/Button'
+
 import EditLapTimeModal from '../components/EditLapTimeModal'
 import LoadingView from '../components/LoadingView'
 import Tag from '../components/Tag'

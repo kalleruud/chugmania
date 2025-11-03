@@ -6,7 +6,7 @@ import {
   type DragEventHandler,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { Button } from './Button'
+
 
 export type FileDropSelection = {
   file: File

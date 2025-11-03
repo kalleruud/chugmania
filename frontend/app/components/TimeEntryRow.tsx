@@ -6,7 +6,6 @@ import { formatTime } from '../../../common/utils/time'
 import { useAuth } from '../../contexts/AuthContext'
 import { useData } from '../../contexts/DataContext'
 import { formatLapTimestamp } from '../utils/date'
-import { Button } from './Button'
 
 type TableRowProps = React.DetailedHTMLProps<
   React.HTMLAttributes<HTMLTableRowElement>,

@@ -1,7 +1,18 @@
-import { Timer } from 'lucide-react'
+import {
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
+import { Button } from '@/components/ui/button'
+import { AlertDialog } from '@radix-ui/react-alert-dialog'
+import { Plus } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Outlet } from 'react-router-dom'
-import { Button } from './components/Button'
 import LapTimeInput from './components/LapTimeInput'
 
 export default function Layout() {
@@ -26,9 +37,7 @@ export default function Layout() {
             <LapTimeInput onSubmit={() => setShowTimeInput(false)} />
             <Button
               type='button'
-              variant='tertiary'
-              size='md'
-              className='text-label-muted mt-3 w-full normal-case'
+              className='mt-3 w-full normal-case'
               onClick={() => setShowTimeInput(false)}>
               Cancel
             </Button>
@@ -40,12 +49,32 @@ export default function Layout() {
         <Outlet />
       </main>
 
-      <nav>
-        <Button
-          className='fixed bottom-0 right-0 z-50 m-12 rounded-full pb-4 pt-4 backdrop-blur-xl sm:hidden'
-          onClick={() => setShowTimeInput(true)}>
-          <Timer />
-        </Button>
+      <nav className='fixed bottom-0 right-0 m-12'>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button className='z-50 rounded-full' size='icon-2xl'>
+              <Plus className='size-6' />
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                <h2>Registrer tid</h2>
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete your
+                account and remove your data from our servers.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+
+            <LapTimeInput />
+
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction>Continue</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </nav>
     </>
   )

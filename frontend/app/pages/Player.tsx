@@ -20,7 +20,6 @@ import {
 import { formatTrackName } from '../../../common/utils/track'
 import { useAuth } from '../../contexts/AuthContext'
 import { useConnection } from '../../contexts/ConnectionContext'
-import { Button } from '../components/Button'
 import EditLapTimeModal from '../components/EditLapTimeModal'
 import LoadingView from '../components/LoadingView'
 import TimeEntryRow from '../components/TimeEntryRow'
