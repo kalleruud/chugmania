@@ -13,16 +13,16 @@ import type { PopoverContentProps } from '@radix-ui/react-popover'
 type ComboboxProps = {
   placeholder: string
   emptyLabel?: string
-  items: ComboboxLookupItem[]
+  items: ComboboxLookupItem[] | undefined
   selected?: ComboboxLookupItem
   setSelected: (
     value: React.SetStateAction<ComboboxLookupItem | undefined>
   ) => void
-  className?: string
-  name?: string
-  required?: boolean
   align?: PopoverContentProps['align']
-}
+} & React.DetailedHTMLProps<
+  React.InputHTMLAttributes<HTMLInputElement>,
+  HTMLInputElement
+>
 
 export type ComboboxLookupItem = {
   id: string
@@ -71,6 +71,7 @@ export default function Combobox({
   setSelected,
   className,
   align,
+  ...inputProps
 }: Readonly<ComboboxProps>) {
   const [open, setOpen] = React.useState(false)
   const [search, setSearch] = React.useState('')
@@ -81,9 +82,11 @@ export default function Combobox({
   const results = React.useMemo(() => {
     const term = search.trim().toLowerCase()
     if (term.length > 0)
-      return items.filter(i => i.tags?.join(',').toLowerCase().includes(term))
-    return items.slice(0, 25)
+      return items?.filter(i => i.tags?.join(',').toLowerCase().includes(term))
+    return items
   }, [items, search])
+
+  const isLoading = results === undefined
 
   function onSelect(item: ComboboxLookupItem) {
     if (item.id === selected?.id) setSelected(undefined)
@@ -109,7 +112,7 @@ export default function Combobox({
     function onDocKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape') setOpen(false)
       if (e.key === 'Enter' && open) {
-        const first = results[0]
+        const first = results?.[0]
         if (first) onSelect(first)
       }
     }
@@ -126,54 +129,55 @@ export default function Combobox({
       <Popover open={open} onOpenChange={setOpen} modal={true}>
         <PopoverTrigger asChild>
           <Button
+            disabled={isLoading}
             ref={triggerRef}
             variant='outline'
             aria-expanded={open}
             className={'w-full justify-between gap-2'}>
-            <Row
-              item={items.find(item => item.id === selected?.id)}
-              placeholder={placeholder}
-            />
+            <Row item={selected} placeholder={placeholder} />
+            <input type='hidden' value={selected?.id} {...inputProps} />
             <ChevronsUpDown className='text-muted-foreground flex-none' />
           </Button>
         </PopoverTrigger>
-        <PopoverContent
-          className='bg-popover/90 w-[200px] p-0 backdrop-blur-xl'
-          align={align}>
-          <div className='flex items-center gap-2 border-b px-2'>
-            <Search className='text-label-muted size-5' />
-            <input
-              type='text'
-              inputMode='search'
-              className='placeholder:text-label-muted flex w-full py-2 focus:ring-0'
-              placeholder='Søk...'
-              maxLength={64}
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              autoFocus
-            />
-          </div>
-          {results.length === 0 ? (
-            <div className='text-label-muted py-6 text-center'>
-              {emptyLabel ?? 'No results'}
+        {!isLoading && (
+          <PopoverContent
+            className='bg-popover/90 w-[200px] p-0 backdrop-blur-xl'
+            align={align}>
+            <div className='flex items-center gap-2 border-b px-2'>
+              <Search className='text-label-muted size-5' />
+              <input
+                type='text'
+                inputMode='search'
+                className='placeholder:text-label-muted flex w-full py-2 focus:ring-0'
+                placeholder='Søk...'
+                maxLength={64}
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                autoFocus
+              />
             </div>
-          ) : (
-            <ul className='max-h-64 w-full overflow-y-auto overflow-x-hidden p-1'>
-              {results.map(item => (
-                <li key={item.id} className='list-none'>
-                  <Button
-                    type='button'
-                    variant={item.id === selected?.id ? 'default' : 'ghost'}
-                    size='sm'
-                    className={'flex w-full justify-between'}
-                    onClick={() => onSelect(item)}>
-                    <Row item={item} selected={selected} />
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </PopoverContent>
+            {results.length === 0 ? (
+              <div className='text-label-muted py-6 text-center'>
+                {emptyLabel ?? 'No results'}
+              </div>
+            ) : (
+              <ul className='max-h-64 w-full overflow-y-auto overflow-x-hidden p-1'>
+                {results.map(item => (
+                  <li key={item.id} className='list-none'>
+                    <Button
+                      type='button'
+                      variant={item.id === selected?.id ? 'default' : 'ghost'}
+                      size='sm'
+                      className={'flex w-full justify-between'}
+                      onClick={() => onSelect(item)}>
+                      <Row item={item} selected={selected} />
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </PopoverContent>
+        )}
       </Popover>
     </div>
   )

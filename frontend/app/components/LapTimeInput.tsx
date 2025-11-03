@@ -1,4 +1,5 @@
 import Combobox, { type ComboboxLookupItem } from '@/components/combobox'
+import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import {
@@ -253,7 +254,7 @@ export default function LapTimeInput({
               onFocus={e => e.currentTarget.select()}
               onClick={e => e.currentTarget.select()}
               className={
-                'focus:ring-accent/60 focus:border-accent font-f1-bold h-16 w-12 rounded-lg border border-white/10 bg-white/5 text-center text-2xl tabular-nums caret-transparent transition selection:bg-transparent invalid:border-red-500/30 invalid:bg-red-500/30 focus:ring-2'
+                'focus:ring-primary/60 focus:border-primary font-f1-bold border-border h-16 w-12 rounded-lg border bg-white/5 text-center text-2xl tabular-nums caret-transparent transition selection:bg-transparent invalid:border-red-500/30 invalid:bg-red-500/30 focus:ring-2'
               }
               inputMode='numeric'
               pattern={i === 0 || i === 2 ? '[0-5]' : '[0-9]'}
@@ -355,8 +356,8 @@ export default function LapTimeInput({
           className='w-full'
           required={true}
           placeholder='Velg session'
-          selected={selectedTrack}
-          setSelected={setSelectedTrack}
+          selected={selectedSession}
+          setSelected={setSelectedSession}
           items={
             sessions?.map(session => {
               const date = new Date(session.date)
@@ -380,9 +381,9 @@ export default function LapTimeInput({
         />
       </div>
 
-      {/* <Button type='submit' disabled={!isInputValid()} className='w-full'>
-        Submit
-      </Button> */}
+      <Button type='submit' disabled={!isInputValid()}>
+        Yeeeeeet
+      </Button>
     </form>
   )
 }
