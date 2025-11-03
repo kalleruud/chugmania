@@ -75,9 +75,10 @@ export default function Layout() {
                     id='username-1'
                     name='username'
                     defaultValue='@peduarte'
+                    placeholder='username'
                   />
                 </div>
-              </div>{' '}
+              </div>
               <DialogFooter>
                 <DialogClose asChild>
                   <Button variant='outline'>Nah</Button>

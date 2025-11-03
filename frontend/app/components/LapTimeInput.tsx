@@ -301,13 +301,16 @@ export default function LapTimeInput({
           </div>
         )}
 
-        <input
+        {/* <input
           value={comment}
           onChange={e => setComment(e.target.value)}
           placeholder='Comment'
           className='focus:ring-accent/60 focus:border-accent rounded-lg border border-white/10 bg-white/5 px-4 py-2 outline-none transition focus:ring-2'
-        />
-        <SearchableDropdown
+        /> */}
+
+        
+
+        {/* <SearchableDropdown
           placeholder='Link to session (optional)'
           selected={selectedSession}
           setSelected={setSelectedSession}
@@ -326,12 +329,12 @@ export default function LapTimeInput({
           }
           className='mt-2'
           emptyLabel='No sessions found'
-        />
+        /> */}
       </div>
 
-      <Button type='submit' disabled={!isInputValid()} className='w-full'>
+      {/* <Button type='submit' disabled={!isInputValid()} className='w-full'>
         Submit
-      </Button>
+      </Button> */}
     </form>
   )
 }

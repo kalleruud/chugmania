@@ -34,7 +34,7 @@
   }
 
   button {
-    @apply hover:cursor-pointer disabled:hover:cursor-not-allowed;
+    @apply hover:cursor-pointer;
   }
 }
 
