@@ -29,7 +29,7 @@ import UserForm from '../components/UserForm'
 export default function Player() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { socket, setToken } = useConnection()
+  const { socket, refreshToken: setToken } = useConnection()
   const { user, refreshUser, requiresEmailUpdate } = useAuth()
 
   const [detail, setDetail] = useState<PlayerDetail | null>(null)

@@ -13,10 +13,10 @@ import {
   type KeyboardEvent,
 } from 'react'
 import { useParams } from 'react-router-dom'
+import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
 import type { PostLapTimeRequest } from '../../../common/models/requests'
 import type {
-  BackendResponse,
   ErrorResponse,
   GetSessionsResponse,
 } from '../../../common/models/responses'
@@ -30,7 +30,7 @@ import {
 import { formattedTimeToMs } from '../../../common/utils/time'
 import { formatTrackName } from '../../../common/utils/track'
 import { useAuth } from '../../contexts/AuthContext'
-import { useConnection } from '../../contexts/ConnectionContext'
+import { emitAsync, useConnection } from '../../contexts/ConnectionContext'
 import { useData } from '../../contexts/DataContext'
 
 const cache: {
@@ -243,9 +243,8 @@ export default function LapTimeInput({
     if (!uid) throw new Error('No user selected')
     if (!tid) throw new Error('No track selected')
 
-    socket.emit(
-      WS_POST_LAPTIME,
-      {
+    toast.promise(
+      emitAsync(socket, WS_POST_LAPTIME, {
         duration: getMs(),
         user: uid,
         track: tid,
@@ -255,13 +254,13 @@ export default function LapTimeInput({
             ? undefined
             : commentRef.current?.value.trim(),
         amount: 0.5,
-      } satisfies PostLapTimeRequest,
-      (r: BackendResponse) => {
-        if (!r.success) {
-          console.error(r.message)
-          return globalThis.alert(r.message)
-        }
+      } satisfies PostLapTimeRequest).then(() => {
         clearDigits()
+      }),
+      {
+        loading: 'Posting laptime...',
+        success: 'Laptime posted successfully!',
+        error: (err: Error) => err.message,
       }
     )
     onSubmit?.(e)

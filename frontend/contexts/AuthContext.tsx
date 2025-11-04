@@ -39,7 +39,7 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | null>(null)
 
 export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
-  const { socket, setToken } = useConnection()
+  const { socket, refreshToken: setToken } = useConnection()
   const navigate = useNavigate()
   const [userInfo, setUserInfo] = useState<AuthContextType['user']>(undefined)
   const [errorMessage, setErrorMessage] =

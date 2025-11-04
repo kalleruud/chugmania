@@ -7,19 +7,20 @@ import {
   type ReactNode,
 } from 'react'
 import { io, Socket } from 'socket.io-client'
+import type { BackendResponse } from '../../common/models/responses'
 import { AUTH_KEY } from '../../common/utils/constants'
 
 type ConnectionContextType = {
   socket: Socket
   isConnected: boolean
-  setToken: (token: string | undefined) => void
+  refreshToken: typeof refreshToken
 }
 
 const socket = io('/', {
   auth: { token: localStorage.getItem(AUTH_KEY) },
 })
 
-const setToken: ConnectionContextType['setToken'] = token => {
+function refreshToken(token: string | undefined): void {
   // @ts-expect-error
   socket.auth.token = token
   if (token) localStorage.setItem(AUTH_KEY, token)
@@ -27,20 +28,43 @@ const setToken: ConnectionContextType['setToken'] = token => {
   socket.disconnect().connect()
 }
 
-const ConnectionContext = createContext<ConnectionContextType>({
-  isConnected: socket.connected,
-  socket: socket,
-  setToken,
-})
+const ConnectionContext = createContext<ConnectionContextType | undefined>(
+  undefined
+)
+
+/**
+ * Emits a socket event and returns a promise that resolves or rejects based on the response
+ * @param socket - Socket.IO socket instance
+ * @param event - Event name to emit
+ * @param data - Data to send with the event
+ * @returns Promise that resolves with the response or rejects with an error
+ */
+export function emitAsync<T extends BackendResponse>(
+  socket: Socket,
+  event: string,
+  data?: unknown
+): Promise<T> {
+  return new Promise((resolve, reject) => {
+    socket.emit(event, data, (response: T) => {
+      if (!response.success) {
+        reject(
+          new Error(
+            (response as { message?: string }).message || 'Unknown error'
+          )
+        )
+        return
+      }
+      resolve(response)
+    })
+  })
+}
 
 export function ConnectionProvider({
   children,
 }: Readonly<{ children: ReactNode }>) {
-  const [isConnected, setIsConnected] = useState(socket.connected)
-  const context = useMemo(
-    () => ({ isConnected, socket, setToken }),
-    [isConnected]
-  )
+  const [isConnected, setIsConnected] = useState<
+    ConnectionContextType['isConnected']
+  >(socket.connected)
 
   useEffect(() => {
     socket.on('connect', () => {
@@ -64,6 +88,15 @@ export function ConnectionProvider({
       socket.off('connect_error')
     }
   }, [])
+
+  const context = useMemo<ConnectionContextType>(
+    () => ({
+      socket,
+      isConnected,
+      refreshToken,
+    }),
+    [socket, isConnected]
+  )
 
   return (
     <ConnectionContext.Provider value={context}>
