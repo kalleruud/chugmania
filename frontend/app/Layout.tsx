@@ -8,11 +8,15 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import { Spinner } from '@/components/ui/spinner'
+import { useAuth } from '@/contexts/AuthContext'
 import { Plus } from 'lucide-react'
 import { Outlet } from 'react-router-dom'
 import LapTimeInput from './components/LapTimeInput'
 
 export default function Layout() {
+  const { isLoggedIn, isLoading } = useAuth()
+
   return (
     <>
       <main className='z-0'>
@@ -23,9 +27,10 @@ export default function Layout() {
         <form>
           <DialogTrigger asChild>
             <Button
+              disabled={!isLoggedIn || isLoading}
               className='fixed bottom-0 right-0 z-50 m-12 rounded-full'
               size='icon-2xl'>
-              <Plus className='size-6' />
+              {isLoading ? <Spinner /> : <Plus className='size-8' />}
             </Button>
           </DialogTrigger>
           <DialogContent className='sm:max-w-[425px]'>

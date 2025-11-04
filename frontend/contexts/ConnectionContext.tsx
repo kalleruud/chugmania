@@ -7,6 +7,7 @@ import {
   type ReactNode,
 } from 'react'
 import { io, Socket } from 'socket.io-client'
+import { toast } from 'sonner'
 import type { BackendResponse } from '../../common/models/responses'
 import { AUTH_KEY } from '../../common/utils/constants'
 
@@ -42,18 +43,16 @@ const ConnectionContext = createContext<ConnectionContextType | undefined>(
 export function emitAsync<T extends BackendResponse>(
   socket: Socket,
   event: string,
-  data?: unknown
+  data: unknown,
+  handler: (response: T) => void
 ): Promise<T> {
   return new Promise((resolve, reject) => {
     socket.emit(event, data, (response: T) => {
       if (!response.success) {
-        reject(
-          new Error(
-            (response as { message?: string }).message || 'Unknown error'
-          )
-        )
-        return
+        handler(response)
+        return reject(new Error(response.message || 'Unknown error'))
       }
+      handler(response)
       resolve(response)
     })
   })
@@ -80,6 +79,7 @@ export function ConnectionProvider({
     socket.on('connect_error', err => {
       console.error('Connection error:', err.message)
       setIsConnected(socket.connected)
+      toast.error('Failed to connect to the backend: ' + err.message)
     })
 
     return () => {

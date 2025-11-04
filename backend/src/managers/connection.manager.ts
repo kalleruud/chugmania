@@ -48,10 +48,13 @@ export default class ConnectionManager {
     // Send data
     ConnectionManager.emit(
       WS_BROADCAST_LEADERBOARDS,
-      LeaderboardManager.onEmitLeaderboards()
+      await LeaderboardManager.onEmitLeaderboards()
     )
-    ConnectionManager.emit(WS_BROADCAST_TRACKS, TrackManager.onEmitTracks())
-    ConnectionManager.emit(WS_BROADCAST_USERS, UserManager.onEmitUsers())
+    ConnectionManager.emit(
+      WS_BROADCAST_TRACKS,
+      await TrackManager.onEmitTracks()
+    )
+    ConnectionManager.emit(WS_BROADCAST_USERS, await UserManager.onEmitUsers())
 
     // Setup user handling
     ConnectionManager.setup(s, WS_LOGIN_NAME, AuthManager.onLogin)

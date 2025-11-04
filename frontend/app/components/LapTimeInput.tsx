@@ -232,33 +232,34 @@ export default function LapTimeInput({
     e.preventDefault()
     const uid = userId ?? selectedUser?.id
     const tid = trackId ?? selectedTrack?.id
-    if (!uid) throw new Error('No user selected')
-    if (!tid) throw new Error('No track selected')
+    if (!uid) {
+      toast.error('No user selected')
+      return
+    }
+    if (!tid) {
+      toast.error('No track selected')
+      return
+    }
 
-    toast.promise(
-      emitAsync(socket, WS_POST_LAPTIME, {
-        duration: getMs(),
-        user: uid,
-        track: tid,
-        session: selectedSession?.id,
-        comment:
-          commentRef.current?.value.trim() === ''
-            ? undefined
-            : commentRef.current?.value.trim(),
-        amount: 0.5,
-      } satisfies PostLapTimeRequest).then(() => {
-        clearDigits()
-      }),
-      {
-        loading: 'Posting laptime...',
-        success: 'Laptime posted successfully!',
-        error: (err: Error) => err.message,
-      }
-    )
+    const payload = {
+      duration: getMs(),
+      user: uid,
+      track: tid,
+      session: selectedSession?.id,
+      comment:
+        commentRef.current?.value.trim() === ''
+          ? undefined
+          : commentRef.current?.value.trim(),
+      amount: 0.5,
+    } satisfies PostLapTimeRequest
+
+    toast.promise(emitAsync(socket, WS_POST_LAPTIME, payload, clearDigits), {
+      loading: 'Posting laptime...',
+      success: 'Laptime posted successfully!',
+      error: (err: Error) => err.message,
+    })
     onSubmit?.(e)
   }
-
-  if (!loggedInUser) return undefined
 
   // Stable keys for each digit position to avoid using array index as key
   const DIGIT_KEYS = ['m10', 'm1', 's10', 's1', 'h1', 'h10'] as const
@@ -294,7 +295,7 @@ export default function LapTimeInput({
 
       <div className='flex flex-col gap-2'>
         <div className='flex gap-2'>
-          {!userId && loggedInUser.role !== 'user' && users && (
+          {!userId && loggedInUser?.role !== 'user' && users && (
             <Combobox
               className='w-full'
               required={true}

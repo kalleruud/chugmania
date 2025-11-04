@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
 import type {
   LoginRequest,
   RegisterRequest,
@@ -23,12 +24,12 @@ import {
   WS_LOGIN_NAME,
   WS_REGISTER_NAME,
 } from '../../common/utils/constants'
-import { useConnection } from './ConnectionContext'
+import { emitAsync, useConnection } from './ConnectionContext'
 
 type AuthContextType = {
   isLoggedIn: boolean
+  isLoading: boolean
   user: UserInfo | undefined
-  errorMessage: string | undefined
   login: (request: LoginRequest) => void
   register: (request: RegisterRequest) => void
   logout: () => void
@@ -41,9 +42,10 @@ const AuthContext = createContext<AuthContextType | null>(null)
 export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const { socket, refreshToken: setToken } = useConnection()
   const navigate = useNavigate()
-  const [userInfo, setUserInfo] = useState<AuthContextType['user']>(undefined)
-  const [errorMessage, setErrorMessage] =
-    useState<AuthContextType['errorMessage']>(undefined)
+  const [userInfo, setUserInfo] = useState<AuthContextType['user'] | undefined>(
+    undefined
+  )
+  const [isLoading, setIsLoading] = useState(false)
   const [requiresEmailUpdate, setRequiresEmailUpdate] = useState(false)
 
   const refreshUser: AuthContextType['refreshUser'] = useCallback(
@@ -56,21 +58,29 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   )
 
   function handleResponse(response: ErrorResponse | LoginResponse) {
-    if (!response.success) {
-      console.error(response.message)
-      logout()
-      return setErrorMessage(response.message)
-    }
+    try {
+      if (!response.success) {
+        console.error(response.message)
+        return logout()
+      }
 
-    setErrorMessage(undefined)
-    refreshUser(response.userInfo, response.token)
+      refreshUser(response.userInfo, response.token)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const login: AuthContextType['login'] = r => {
-    socket.emit(WS_LOGIN_NAME, r, handleResponse)
+    setIsLoading(true)
+    toast.promise(emitAsync(socket, WS_LOGIN_NAME, r, handleResponse), {
+      loading: 'Logger inn...',
+      success: 'Logget inn!',
+      error: e => `Innlogging feilet: ${e.message}`,
+    })
   }
 
   const register: AuthContextType['register'] = r => {
+    setIsLoading(true)
     socket.emit(WS_REGISTER_NAME, r, handleResponse)
   }
 
@@ -82,23 +92,32 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   }
 
   useEffect(() => {
-    if (!userInfo && localStorage.getItem(AUTH_KEY))
-      socket.emit(WS_GET_USER_DATA, undefined, handleResponse)
+    if (!userInfo && localStorage.getItem(AUTH_KEY)) {
+      setIsLoading(true)
+
+      toast.promise(
+        emitAsync(socket, WS_GET_USER_DATA, undefined, handleResponse),
+        {
+          loading: 'Logger inn...',
+          success: 'Logget inn!',
+          error: e => `Innlogging feilet: ${e.message}`,
+        }
+      )
+    }
   }, [socket])
 
-  const context = useMemo(
-    () =>
-      ({
-        isLoggedIn: !!userInfo,
-        errorMessage,
-        user: userInfo,
-        login,
-        register,
-        logout,
-        refreshUser,
-        requiresEmailUpdate,
-      }) satisfies AuthContextType,
-    [userInfo, errorMessage, requiresEmailUpdate, refreshUser]
+  const context = useMemo<AuthContextType>(
+    () => ({
+      isLoggedIn: !!userInfo,
+      isLoading,
+      user: userInfo,
+      login,
+      register,
+      logout,
+      refreshUser,
+      requiresEmailUpdate,
+    }),
+    [userInfo, requiresEmailUpdate, refreshUser]
   )
 
   return <AuthContext.Provider value={context}>{children}</AuthContext.Provider>
