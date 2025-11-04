@@ -46,15 +46,12 @@ export default class ConnectionManager {
     console.debug(new Date().toISOString(), s.id, 'Connected')
 
     // Send data
-    const tracks = await TrackManager.onEmitTracks()
-    const leaderboards = await LeaderboardManager.onEmitLeaderboards(
-      tracks.map(t => t.id)
+    ConnectionManager.emit(
+      WS_BROADCAST_LEADERBOARDS,
+      LeaderboardManager.onEmitLeaderboards()
     )
-    const users = await UserManager.onEmitUsers()
-
-    ConnectionManager.emit(WS_BROADCAST_LEADERBOARDS, leaderboards)
-    ConnectionManager.emit(WS_BROADCAST_TRACKS, tracks)
-    ConnectionManager.emit(WS_BROADCAST_USERS, users)
+    ConnectionManager.emit(WS_BROADCAST_TRACKS, TrackManager.onEmitTracks())
+    ConnectionManager.emit(WS_BROADCAST_USERS, UserManager.onEmitUsers())
 
     // Setup user handling
     ConnectionManager.setup(s, WS_LOGIN_NAME, AuthManager.onLogin)

@@ -7,6 +7,7 @@ import type { LeaderboardEntryGap } from '../../../common/models/timeEntry'
 import type { Track } from '../../../common/models/track'
 import db from '../../database/database'
 import { timeEntries, tracks, users } from '../../database/schema'
+import TrackManager from './track.manager'
 
 export default class LeaderboardManager {
   private static async getLeaderboard(
@@ -86,12 +87,11 @@ export default class LeaderboardManager {
     }
   }
 
-  static async onEmitLeaderboards(
-    trackIds: Track['id'][]
-  ): Promise<LeaderboardBroadcast> {
+  static async onEmitLeaderboards(): Promise<LeaderboardBroadcast> {
+    const tracks = await TrackManager.onEmitTracks()
     return (
       await Promise.all(
-        trackIds.map(id => LeaderboardManager.getLeaderboard(id))
+        tracks.map(track => LeaderboardManager.getLeaderboard(track.id))
       )
     ).filter(lb => lb.entries.length > 0)
   }
