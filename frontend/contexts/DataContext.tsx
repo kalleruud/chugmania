@@ -6,6 +6,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { toast } from 'sonner'
 import {
   WS_BROADCAST_LEADERBOARDS,
   type Leaderboard,
@@ -50,14 +51,17 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
   useEffect(() => {
     socket.on(WS_BROADCAST_TRACKS, (data: TrackBroadcast) => {
       setTracks(toIdMap(data))
+      toast.success('Tracks data updated')
     })
 
     socket.on(WS_BROADCAST_LEADERBOARDS, (data: LeaderboardBroadcast) => {
       setLeaderboards(toIdMap(data))
+      toast.success('Leaderboards data updated')
     })
 
     socket.on(WS_BROADCAST_USERS, (data: UserBroadcast) => {
       setUsers(toIdMap(data))
+      toast.success('Users data updated')
     })
 
     return () => {

@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import Layout from './app/Layout'
 import Home from './app/pages/Home'
+import { Toaster } from './components/ui/sonner'
 import { AuthProvider } from './contexts/AuthContext'
 import { ConnectionProvider } from './contexts/ConnectionContext'
 import { DataProvider } from './contexts/DataContext'
@@ -30,6 +31,7 @@ createRoot(document.getElementById('root')!).render(
                 <Route path='admin' element={<Admin />} /> */}
                 </Route>
               </Routes>
+              <Toaster />
             </DataProvider>
           </AuthProvider>
         </ConnectionProvider>
