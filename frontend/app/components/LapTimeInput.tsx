@@ -32,7 +32,6 @@ import { formatTrackName } from '../../../common/utils/track'
 import { useAuth } from '../../contexts/AuthContext'
 import { useConnection } from '../../contexts/ConnectionContext'
 import { useData } from '../../contexts/DataContext'
-import { type LookupItem } from './SearchableDropdown'
 
 const cache: {
   time: string[]
@@ -208,13 +207,7 @@ export default function LapTimeInput({
         if (sessionId && !selectedSession) {
           const session = r.sessions.find(s => s.id === sessionId)
           if (session) {
-            const date = new Date(session.date)
-            const subtitle = dateFormatter.format(date)
-            const location = session.location ? ` • ${session.location}` : ''
-            setSelectedSession({
-              id: session.id,
-              label: `${session.name} — ${subtitle}${location}`,
-            } satisfies LookupItem)
+            setSelectedSession(sessionToLookupItem(session))
           }
         }
       }
@@ -286,7 +279,7 @@ export default function LapTimeInput({
     <form
       className={twMerge('flex flex-col gap-6', className)}
       onSubmit={handleSubmit}>
-      <div className='flex items-center justify-center gap-1'>
+      <div className='flex items-center justify-center gap-1 py-4'>
         {digits.map((d, i) => (
           <span key={DIGIT_KEYS[i]} className='flex items-center gap-1'>
             <input
