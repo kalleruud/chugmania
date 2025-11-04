@@ -134,7 +134,7 @@ export default function Combobox({
             ref={triggerRef}
             variant='outline'
             aria-expanded={open}
-            className={'w-full justify-between gap-2'}>
+            className='w-full justify-between gap-2'>
             <Row item={selected} placeholder={placeholder} />
             <input type='hidden' value={selected?.id} {...inputProps} />
             {isLoading ? (
@@ -148,7 +148,7 @@ export default function Combobox({
           <PopoverContent
             className='bg-popover/90 w-[200px] p-0 backdrop-blur-xl'
             align={align}>
-            <div className='flex items-center gap-2 border-b px-2'>
+            <div className='border-border flex items-center gap-2 border-b px-2'>
               <Search className='text-label-muted size-5' />
               <input
                 type='text'

@@ -64,9 +64,6 @@ export default function LapTimeInput({
   const { user: loggedInUser } = useAuth()
   const { users, tracks } = useData()
 
-  const [open, setOpen] = useState(false)
-  const [value, setValue] = useState('')
-
   const loggedInLookup = loggedInUser
     ? ({
         id: loggedInUser.id,
@@ -74,12 +71,12 @@ export default function LapTimeInput({
       } satisfies LookupItem)
     : undefined
   const inputs = useRef<HTMLInputElement[]>([])
+  const commentRef = useRef<HTMLTextAreaElement>(null)
 
   const [digits, setDigits] = useState(cache.time)
   const [selectedUser, setSelectedUser] = useState(cache.user ?? loggedInLookup)
   const [selectedTrack, setSelectedTrack] = useState(cache.track)
   const [selectedSession, setSelectedSession] = useState(cache.session)
-  const [comment, setComment] = useState('')
 
   const [sessions, setSessions] = useState<SessionWithSignups[] | undefined>(
     undefined
@@ -217,7 +214,10 @@ export default function LapTimeInput({
         user: uid,
         track: tid,
         session: selectedSession?.id,
-        comment: comment.trim() === '' ? undefined : comment.trim(),
+        comment:
+          commentRef.current?.value.trim() === ''
+            ? undefined
+            : commentRef.current?.value.trim(),
         amount: 0.5,
       } satisfies PostLapTimeRequest,
       (r: BackendResponse) => {
@@ -248,13 +248,12 @@ export default function LapTimeInput({
                 if (el) inputs.current[i] = el
               }}
               value={d}
-              onChange={e => console.debug('Input:', e.target.value)}
               placeholder='0'
               onKeyDown={e => handleKeyDown(i, e)}
               onFocus={e => e.currentTarget.select()}
               onClick={e => e.currentTarget.select()}
               className={
-                'focus:ring-primary/60 focus:border-primary font-f1-bold border-border h-16 w-12 rounded-lg border bg-white/5 text-center text-2xl tabular-nums caret-transparent transition selection:bg-transparent invalid:border-red-500/30 invalid:bg-red-500/30 focus:ring-2'
+                'focus:ring-ring focus:border-primary border-input bg-background dark:bg-input/30 font-f1-bold h-16 w-12 rounded-md border text-center text-2xl tabular-nums caret-transparent transition selection:bg-transparent invalid:border-red-500/30 invalid:bg-red-500/30'
               }
               inputMode='numeric'
               pattern={i === 0 || i === 2 ? '[0-5]' : '[0-9]'}
@@ -267,91 +266,55 @@ export default function LapTimeInput({
       </div>
 
       <div className='flex flex-col gap-2'>
-        {/* {(!userId || !trackId) && (
-          <div className='flex gap-2'>
-            {!userId && loggedInUser.role !== 'user' && (
-              <SearchableDropdown
-                required={true}
-                placeholder='Select user'
-                selected={selectedUser}
-                setSelected={setSelectedUser}
-                items={
-                  Object.values(users ?? []).map(
-                    u =>
-                      ({
-                        id: u.id,
-                        label: u.shortName ?? u.lastName ?? u.firstName,
-                      }) satisfies LookupItem
-                  ) ?? []
-                }
-              />
-            )}
-            {!trackId && (
-              <SearchableDropdown
-                required={true}
-                placeholder='Select track'
-                selected={selectedTrack}
-                setSelected={setSelectedTrack}
-                items={
-                  Object.values(tracks ?? []).map(
-                    t =>
-                      ({
-                        id: t.id,
-                        label: `${formatTrackName(t.number)} - ${t.type}:${t.level}`,
-                      }) satisfies LookupItem
-                  ) ?? []
-                }
-              />
-            )}
-          </div>
-        )} */}
-
         <div className='flex gap-2'>
-          <Combobox
-            className='w-full'
-            required={true}
-            placeholder='Velg bruker'
-            selected={selectedUser}
-            setSelected={setSelectedUser}
-            align='start'
-            items={
-              Object.values(users ?? []).map(
-                u =>
-                  ({
-                    id: u.id,
-                    label: u.firstName,
-                    sublabel: u.shortName ?? u.lastName ?? undefined,
-                    tags: [
-                      u.firstName,
-                      u.lastName ?? '',
-                      u.shortName ?? '',
-                      u.email ?? '',
-                    ].filter(Boolean),
-                  }) satisfies ComboboxLookupItem
-              ) ?? []
-            }
-          />
+          {!userId && loggedInUser.role !== 'user' && (
+            <Combobox
+              className='w-full'
+              required={true}
+              placeholder='Velg bruker'
+              selected={selectedUser}
+              setSelected={setSelectedUser}
+              align='start'
+              items={
+                Object.values(users ?? []).map(
+                  u =>
+                    ({
+                      id: u.id,
+                      label: u.firstName,
+                      sublabel: u.shortName ?? u.lastName ?? undefined,
+                      tags: [
+                        u.firstName,
+                        u.lastName ?? '',
+                        u.shortName ?? '',
+                        u.email ?? '',
+                      ].filter(Boolean),
+                    }) satisfies ComboboxLookupItem
+                ) ?? []
+              }
+            />
+          )}
 
-          <Combobox
-            className='w-full'
-            required={true}
-            placeholder='Velg bane'
-            selected={selectedTrack}
-            setSelected={setSelectedTrack}
-            align='end'
-            items={Object.values(tracks ?? []).map(
-              track =>
-                ({
-                  id: track.id,
-                  label: formatTrackName(track.number),
-                  sublabel: `${track.level} • ${track.type}`,
-                  tags: [track.level, track.type, track.number.toString()],
-                }) satisfies ComboboxLookupItem
-            )}
-          />
+          {!trackId && (
+            <Combobox
+              className='w-full'
+              required={true}
+              placeholder='Velg bane'
+              selected={selectedTrack}
+              setSelected={setSelectedTrack}
+              align='end'
+              items={Object.values(tracks ?? []).map(
+                track =>
+                  ({
+                    id: track.id,
+                    label: formatTrackName(track.number),
+                    sublabel: `${track.level} • ${track.type}`,
+                    tags: [track.level, track.type, track.number.toString()],
+                  }) satisfies ComboboxLookupItem
+              )}
+            />
+          )}
         </div>
 
-        <Label htmlFor='laptime-session'>Comment</Label>
         <Combobox
           className='w-full'
           required={true}
@@ -372,12 +335,13 @@ export default function LapTimeInput({
           }
         />
 
-        <Label htmlFor='laptime-comment'>Comment</Label>
+        <Label htmlFor='laptime-comment'>Kommentar</Label>
         <Textarea
+          ref={commentRef}
           id='laptime-comment'
           name='Comment'
           className='text-sm'
-          placeholder='Absolutt krise'
+          placeholder='Chugga som en vissen bestemor...'
         />
       </div>
 
