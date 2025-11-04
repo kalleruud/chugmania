@@ -12,6 +12,7 @@ import {
   type FormEvent,
   type KeyboardEvent,
 } from 'react'
+import { useParams } from 'react-router-dom'
 import { twMerge } from 'tailwind-merge'
 import type { PostLapTimeRequest } from '../../../common/models/requests'
 import type {
@@ -21,6 +22,7 @@ import type {
 } from '../../../common/models/responses'
 import type { SessionWithSignups } from '../../../common/models/session'
 import type { Track } from '../../../common/models/track'
+import type { UserInfo } from '../../../common/models/user'
 import {
   WS_GET_SESSIONS,
   WS_POST_LAPTIME,
@@ -34,9 +36,9 @@ import { type LookupItem } from './SearchableDropdown'
 
 const cache: {
   time: string[]
-  user: LookupItem | undefined
-  track: LookupItem | undefined
-  session: LookupItem | undefined
+  user: ComboboxLookupItem | undefined
+  track: ComboboxLookupItem | undefined
+  session: ComboboxLookupItem | undefined
 } = {
   time: new Array(6).fill(''),
   user: undefined,
@@ -53,6 +55,45 @@ type LapTimeInputProps = DetailedHTMLProps<
   sessionId?: SessionWithSignups['id']
 }
 
+const dateFormatter = new Intl.DateTimeFormat('nb-NO', {
+  dateStyle: 'medium',
+})
+
+function trackToLookupItem(track: Track): ComboboxLookupItem {
+  return {
+    id: track.id,
+    label: formatTrackName(track.number),
+    sublabel: `${track.level} • ${track.type}`,
+    tags: [track.level, track.type, track.number.toString()],
+  }
+}
+
+function sessionToLookupItem(session: SessionWithSignups): ComboboxLookupItem {
+  const subtitle = dateFormatter.format(new Date(session.date))
+  const location = session.location ? ` • ${session.location}` : ''
+
+  return {
+    id: session.id,
+    label: session.name,
+    sublabel: `${subtitle}${location}`,
+    tags: [session.name, session.location ?? ''],
+  }
+}
+
+function userToLookupItem(user: UserInfo): ComboboxLookupItem {
+  return {
+    id: user.id,
+    label: user.firstName,
+    sublabel: user.shortName ?? user.lastName ?? undefined,
+    tags: [
+      user.firstName,
+      user.lastName ?? '',
+      user.shortName ?? '',
+      user.email ?? '',
+    ].filter(Boolean),
+  }
+}
+
 export default function LapTimeInput({
   trackId,
   userId,
@@ -60,22 +101,23 @@ export default function LapTimeInput({
   className,
   onSubmit,
 }: Readonly<LapTimeInputProps>) {
+  const { paramId } = useParams()
   const { socket } = useConnection()
   const { user: loggedInUser } = useAuth()
   const { users, tracks } = useData()
 
-  const loggedInLookup = loggedInUser
-    ? ({
-        id: loggedInUser.id,
-        label: loggedInUser.lastName ?? loggedInUser.firstName,
-      } satisfies LookupItem)
-    : undefined
+  const loggedInLookup = loggedInUser && userToLookupItem(loggedInUser)
+  const paramTrack = paramId && tracks?.[paramId]
+
   const inputs = useRef<HTMLInputElement[]>([])
   const commentRef = useRef<HTMLTextAreaElement>(null)
 
   const [digits, setDigits] = useState(cache.time)
   const [selectedUser, setSelectedUser] = useState(cache.user ?? loggedInLookup)
-  const [selectedTrack, setSelectedTrack] = useState(cache.track)
+  const [selectedTrack, setSelectedTrack] = useState(
+    paramTrack ? trackToLookupItem(paramTrack) : cache.track
+  )
+
   const [selectedSession, setSelectedSession] = useState(cache.session)
 
   const [sessions, setSessions] = useState<SessionWithSignups[] | undefined>(
@@ -113,6 +155,10 @@ export default function LapTimeInput({
   useEffect(() => {
     cache.track = selectedTrack
   }, [selectedTrack])
+
+  useEffect(() => {
+    if (paramTrack) cache.track = trackToLookupItem(paramTrack)
+  }, [paramTrack])
 
   useEffect(() => {
     cache.session = selectedSession
@@ -267,7 +313,7 @@ export default function LapTimeInput({
 
       <div className='flex flex-col gap-2'>
         <div className='flex gap-2'>
-          {!userId && loggedInUser.role !== 'user' && (
+          {!userId && loggedInUser.role !== 'user' && users && (
             <Combobox
               className='w-full'
               required={true}
@@ -275,26 +321,11 @@ export default function LapTimeInput({
               selected={selectedUser}
               setSelected={setSelectedUser}
               align='start'
-              items={
-                Object.values(users ?? []).map(
-                  u =>
-                    ({
-                      id: u.id,
-                      label: u.firstName,
-                      sublabel: u.shortName ?? u.lastName ?? undefined,
-                      tags: [
-                        u.firstName,
-                        u.lastName ?? '',
-                        u.shortName ?? '',
-                        u.email ?? '',
-                      ].filter(Boolean),
-                    }) satisfies ComboboxLookupItem
-                ) ?? []
-              }
+              items={Object.values(users).map(userToLookupItem)}
             />
           )}
 
-          {!trackId && (
+          {!trackId && tracks && (
             <Combobox
               className='w-full'
               required={true}
@@ -302,38 +333,21 @@ export default function LapTimeInput({
               selected={selectedTrack}
               setSelected={setSelectedTrack}
               align='end'
-              items={Object.values(tracks ?? []).map(
-                track =>
-                  ({
-                    id: track.id,
-                    label: formatTrackName(track.number),
-                    sublabel: `${track.level} • ${track.type}`,
-                    tags: [track.level, track.type, track.number.toString()],
-                  }) satisfies ComboboxLookupItem
-              )}
+              items={Object.values(tracks).map(trackToLookupItem)}
             />
           )}
         </div>
 
-        <Combobox
-          className='w-full'
-          required={true}
-          placeholder='Velg session'
-          selected={selectedSession}
-          setSelected={setSelectedSession}
-          items={
-            sessions?.map(session => {
-              const date = new Date(session.date)
-
-              return {
-                id: session.id,
-                label: session.name,
-                sublabel: dateFormatter.format(date),
-                tags: [session.name, session.location ?? ''],
-              } satisfies ComboboxLookupItem
-            }) ?? []
-          }
-        />
+        {!sessionId && sessions && (
+          <Combobox
+            className='w-full'
+            required={true}
+            placeholder='Velg session'
+            selected={selectedSession}
+            setSelected={setSelectedSession}
+            items={sessions?.map(sessionToLookupItem)}
+          />
+        )}
 
         <Label htmlFor='laptime-comment'>Kommentar</Label>
         <Textarea
