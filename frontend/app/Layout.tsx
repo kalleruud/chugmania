@@ -41,7 +41,6 @@ export default function Layout() {
               <DialogClose asChild>
                 <Button variant='outline'>Nah</Button>
               </DialogClose>
-              {/* <Button type='submit'>Yeet</Button> */}
             </DialogFooter>
           </DialogContent>
         </form>

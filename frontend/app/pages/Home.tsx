@@ -11,6 +11,9 @@ export default function Home() {
   const signedInLabel = user?.shortName ?? user?.firstName ?? user?.email
 
   return (
-    <div className='flex h-dvh w-full flex-col items-center justify-center gap-6 p-4' />
+    <div className='flex w-full flex-col items-center justify-center'>
+      <h1 className='w-full text-center text-9xl'>Chug</h1>
+      <h1 className='w-full text-center text-8xl'>mania</h1>
+    </div>
   )
 }
