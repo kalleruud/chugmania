@@ -5,7 +5,6 @@ import { Textarea } from '@/components/ui/textarea'
 import {
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   useState,
   type DetailedHTMLProps,
@@ -118,13 +117,6 @@ export default function LapTimeInput({
 
   const [sessions, setSessions] = useState<SessionWithSignups[] | undefined>(
     undefined
-  )
-  const dateFormatter = useMemo(
-    () =>
-      new Intl.DateTimeFormat('nb-NO', {
-        dateStyle: 'medium',
-      }),
-    []
   )
 
   const DIGIT = /^\d$/
