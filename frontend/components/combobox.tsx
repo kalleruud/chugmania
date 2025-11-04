@@ -146,10 +146,10 @@ export default function Combobox({
         </PopoverTrigger>
         {!isLoading && (
           <PopoverContent
-            className='bg-popover/90 w-[200px] p-0 backdrop-blur-xl'
+            className='bg-popover/90 p-0 backdrop-blur-xl'
             align={align}>
             <div className='border-border flex items-center gap-2 border-b px-2'>
-              <Search className='text-label-muted size-5' />
+              <Search className='text-muted-foreground size-4' />
               <input
                 type='text'
                 inputMode='search'

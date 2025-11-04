@@ -68,13 +68,10 @@ function trackToLookupItem(track: Track): ComboboxLookupItem {
 }
 
 function sessionToLookupItem(session: SessionWithSignups): ComboboxLookupItem {
-  const subtitle = dateFormatter.format(new Date(session.date))
-  const location = session.location ? ` • ${session.location}` : ''
-
   return {
     id: session.id,
     label: session.name,
-    sublabel: `${subtitle}${location}`,
+    sublabel: dateFormatter.format(new Date(session.date)),
     tags: [session.name, session.location ?? ''],
   }
 }
