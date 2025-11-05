@@ -21,14 +21,14 @@ createRoot(document.getElementById('root')!).render(
               <Routes>
                 <Route element={<Layout />}>
                   <Route index element={<Home />} />
-                  {/* <Route path='tracks' element={<Tracks />} />
-                <Route path='tracks/:id' element={<Track />} />
-                <Route path='players' element={<Players />} />
-                <Route path='players/:id' element={<Player />} />
-                <Route path='sessions' element={<Sessions />} />
-                <Route path='sessions/:id' element={<Session />} />
-                <Route path='login' element={<Login />} />
-                <Route path='admin' element={<Admin />} /> */}
+                  {/* <Route path='tracks' element={<Tracks />} /> */}
+                  {/* <Route path='tracks/:id' element={<Track />} /> */}
+                  {/* <Route path='players' element={<Players />} /> */}
+                  {/* <Route path='players/:id' element={<Player />} /> */}
+                  {/* <Route path='sessions' element={<Sessions />} /> */}
+                  {/* <Route path='sessions/:id' element={<Session />} /> */}
+                  {/* <Route path='login' element={<Login />} /> */}
+                  {/* <Route path='admin' element={<Admin />} /> */}
                 </Route>
               </Routes>
               <Toaster />

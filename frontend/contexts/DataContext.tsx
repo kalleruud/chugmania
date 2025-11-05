@@ -31,7 +31,7 @@ type DataContextType = {
 
 const DataContext = createContext<DataContextType | undefined>(undefined)
 
-function toIdMap<T extends { id: string }>(entries: T[]): Record<string, T> {
+function toIdRecord<T extends { id: string }>(entries: T[]): Record<string, T> {
   const map: Record<string, T> = {}
   for (const entry of entries) {
     map[entry.id] = entry
@@ -49,15 +49,15 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
 
   useEffect(() => {
     socket.on(WS_BROADCAST_TRACKS, (data: TrackBroadcast) => {
-      setTracks(toIdMap(data))
+      setTracks(toIdRecord(data))
     })
 
     socket.on(WS_BROADCAST_LEADERBOARDS, (data: LeaderboardBroadcast) => {
-      setLeaderboards(toIdMap(data))
+      setLeaderboards(toIdRecord(data))
     })
 
     socket.on(WS_BROADCAST_USERS, (data: UserBroadcast) => {
-      setUsers(toIdMap(data))
+      setUsers(toIdRecord(data))
     })
 
     return () => {

@@ -23,10 +23,10 @@
   }
 
   h1 {
-    @apply text-primary font-f1 text-5xl font-black uppercase;
+    @apply font-f1 text-5xl font-black uppercase;
   }
   h2 {
-    @apply text-primary text-2xl font-black uppercase;
+    @apply text-3xl font-black;
   }
 
   body {
@@ -146,4 +146,9 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.396 0.141 25.723);
+}
+
+@theme {
+  --color-primary-background: oklch(21.098% 15% 28.698);
+  --color-secondary: oklch(41.098% 0.16466 28.698);
 }
