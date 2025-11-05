@@ -1,8 +1,10 @@
-import { Item, ItemActions, ItemContent, ItemDescription, ItemTitle } from '@/components/ui/item'
+import { Item, ItemActions, ItemContent, ItemTitle } from '@/components/ui/item'
+import { useData } from '@/contexts/DataContext'
+import { ChevronRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import type { Track } from '../../../common/models/track'
 import { formatTrackName } from '../../../common/utils/track'
-import { ChevronRight } from 'lucide-react'
+import { Badge } from '../ui/badge'
 
 type TrackItemProps = {
   track: Track
@@ -19,17 +21,29 @@ export function TrackItem(props: Readonly<TrackItemProps>) {
 }
 
 function TrackRow({ track }: Readonly<TrackItemProps>) {
+  const { leaderboards } = useData()
+  const lapCount = leaderboards?.[track.id].entries.length ?? 0
+  const maxLaps = Math.max(
+    ...Object.values(leaderboards ?? {}).map(l => l.entries.length)
+  )
+
   return (
     <Item key={track.id} className='w-full' asChild>
       <Link to={`/tracks/${track.id}`}>
         <ItemContent>
-          <ItemTitle>
-            <h2 className='font-kh-interface'>
-              {formatTrackName(track.number)}
-            </h2>
+          <ItemTitle className='font-kh-interface text-xl'>
+            <p className='text-primary'>#</p>
+            {formatTrackName(track.number)}
           </ItemTitle>
         </ItemContent>
-          <ItemDescription>{`${track.level} • ${track.type}`}</ItemDescription>
+        <div className='flex gap-1'>
+          <Badge variant='outline' className='text-muted-foreground'>
+            {track.level}
+          </Badge>
+          <Badge variant='outline' className='text-muted-foreground'>
+            {track.type}
+          </Badge>
+        </div>
         <ItemActions>
           <ChevronRight className='size-4' />
         </ItemActions>

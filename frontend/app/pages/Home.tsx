@@ -1,7 +1,6 @@
 import { TrackItem } from '@/components/track/TrackRow'
 import {
   Item,
-  ItemActions,
   ItemContent,
   ItemDescription,
   ItemMedia,
@@ -10,8 +9,7 @@ import {
 import { Spinner } from '@/components/ui/spinner'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
-import { ChevronRight, Map } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Map } from 'lucide-react'
 
 export default function Home() {
   const { tracks: td, leaderboards: ld } = useData()
@@ -27,26 +25,37 @@ export default function Home() {
   const tracks = Object.values(td).filter(t => t.id in ld)
 
   return (
-    <div className='flex w-full flex-col items-center justify-center'>
-      <Item className='w-full' asChild>
-        <Link to={`/tracks`}>
-          <ItemMedia variant='icon'>
-            <Map />
-          </ItemMedia>
-          <ItemContent>
-            <ItemTitle>{loc.no.tracks.title}</ItemTitle>
-            <ItemDescription>{loc.no.tracks.description}</ItemDescription>
-          </ItemContent>
-          <ItemActions>
-            <ChevronRight className='size-4' />
-          </ItemActions>
-        </Link>
+    <div className='flex flex-col p-2'>
+      <Item className='w-full'>
+        <ItemMedia variant='icon'>
+          <Map />
+        </ItemMedia>
+        <ItemContent>
+          <ItemTitle>{loc.no.tracks.title}</ItemTitle>
+          <ItemDescription>{loc.no.tracks.description}</ItemDescription>
+        </ItemContent>
       </Item>
 
-      <div className='flex w-full flex-col'>
-        {tracks.map(track => (
-          <TrackItem key={track.id} track={track} variant='row' />
-        ))}
+      <div className='bg-background-secondary flex w-full flex-col rounded-sm'>
+        {tracks
+          .filter(t => t.level !== 'custom')
+          .map(track => (
+            <TrackItem key={track.id} track={track} variant='row' />
+          ))}
+      </div>
+
+      <Item className='w-full pb-2'>
+        <ItemContent>
+          <ItemTitle>Custom</ItemTitle>
+        </ItemContent>
+      </Item>
+
+      <div className='bg-background-secondary flex w-full flex-col rounded-sm'>
+        {tracks
+          .filter(t => t.level === 'custom')
+          .map(track => (
+            <TrackItem key={track.id} track={track} variant='row' />
+          ))}
       </div>
     </div>
   )

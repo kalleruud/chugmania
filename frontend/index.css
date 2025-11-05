@@ -77,7 +77,7 @@
 }
 
 :root {
-  --radius: 0.65rem;
+  --radius: 0.5rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.141 0.005 285.823);
   --card: oklch(1 0 0);
@@ -151,4 +151,6 @@
 @theme {
   --color-primary-background: oklch(21.098% 15% 28.698);
   --color-secondary: oklch(41.098% 0.16466 28.698);
+
+  --color-background-secondary: oklch(18% 0 0);
 }
