@@ -1,4 +1,5 @@
 import { TrackItem } from '@/components/track/TrackRow'
+import { Empty } from '@/components/ui/empty'
 import {
   Item,
   ItemContent,
@@ -11,13 +12,14 @@ import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
 import { Map } from 'lucide-react'
 import type { Track } from '../../../common/models/track'
+import { getRandomItem } from '../utils/utils'
 
 function TrackRowList({ tracks }: Readonly<{ tracks: Track[] }>) {
   if (tracks.length === 0) {
     return (
-      <Item>
-        Empty
-      </Item>
+      <Empty className='border-input text-muted-foreground border text-sm'>
+        {getRandomItem(loc.no.noItems)}
+      </Empty>
     )
   }
   return (

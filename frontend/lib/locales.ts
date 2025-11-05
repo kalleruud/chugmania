@@ -22,6 +22,7 @@ const no = {
       stadium: 'Stadium',
     } satisfies Record<TrackType, string>,
   },
+  noItems: ['Finner ikke 🥵', 'Her var det tomt...', 'Har du gått feil?'],
 }
 
 const loc: Record<Locale, Localization> = {
