@@ -1,51 +1,69 @@
+import { TrackItem } from '@/components/track/TrackRow'
+import {
+  Item,
+  ItemContent,
+  ItemDescription,
+  ItemMedia,
+  ItemTitle,
+} from '@/components/ui/item'
+import { Spinner } from '@/components/ui/spinner'
+import { useData } from '@/contexts/DataContext'
+import loc from '@/lib/locales'
+import { Map } from 'lucide-react'
 import { useParams } from 'react-router-dom'
-import { formatTrackName } from '../../../common/utils/track'
-import { useAuth } from '../../contexts/AuthContext'
-import { useData } from '../../contexts/DataContext'
-import LeaderboardView from '../components/Leaderboard'
-import LoadingView from '../components/LoadingView'
-import TrackTag from '../components/TrackTag'
 
-export default function Track() {
+export default function TrackPage() {
   const { id } = useParams()
-  const { user } = useAuth()
-  const { leaderboards, tracks } = useData()
-  if (!id) throw new Error('No track ID provided')
+  const { tracks: td, leaderboards: ld } = useData()
 
-  const { entries } = leaderboards?.[id] ?? { entries: [] }
-  const track = tracks?.[id]
-
-  if (leaderboards === undefined || tracks === undefined) {
-    return <LoadingView label='Loading leaderboard…' />
-  }
-
-  if (!track) {
+  if (td === undefined || ld === undefined) {
     return (
-      <div className='flex h-full w-full items-center justify-center'>
-        <p className='text-center text-lg text-red-500'>
-          Track &quot;{id}&quot; not found.
-        </p>
+      <div className='items-center-safe justify-center-safe flex h-dvh w-full'>
+        <Spinner className='size-6' />
       </div>
     )
   }
 
-  return (
-    <div className='grid w-full items-start gap-4 sm:flex sm:justify-center sm:pt-4'>
-      <header
-        className='bg-background/50 sticky top-0 flex min-w-48 items-center justify-between gap-8 border-b border-white/10 p-4 backdrop-blur-2xl sm:grid sm:border-transparent sm:bg-transparent sm:backdrop-blur-none'
-        style={{ top: 'env(safe-area-inset-top, 0px)' }}>
-        <h1 className={track.level === 'custom' ? 'text-amber-600' : undefined}>
-          {formatTrackName(track.number)}
-        </h1>
-        <div className='flex gap-2'>
-          <TrackTag trackLevel={track.level}>{track.level}</TrackTag>
-          <TrackTag trackType={track.type}>{track.type}</TrackTag>
-        </div>
-      </header>
+  const tracks = Object.values(td).filter(t => t.id in ld)
 
-      <section className='w-full px-2 sm:max-w-2xl'>
-        <LeaderboardView entries={entries} highlightedUserId={user?.id} />
-      </section>
+  return (
+    <div className='flex flex-col p-2'>
+      <Item className='w-full'>
+        <ItemMedia variant='icon'>
+          <Map />
+        </ItemMedia>
+        <ItemContent>
+          <ItemTitle>
+            <h3>{loc.no.tracks.title}</h3>
+          </ItemTitle>
+          <ItemDescription>{loc.no.tracks.description}</ItemDescription>
+        </ItemContent>
+      </Item>
+
+      <div className='bg-background-secondary divide-primary flex w-full flex-col divide-y rounded-sm'>
+        {tracks
+          .filter(t => t.level !== 'custom')
+          .map(track => (
+            <TrackItem key={track.id} track={track} variant='row' />
+          ))}
+      </div>
+
+      <Item className='w-full pb-2'>
+        <ItemContent>
+          <ItemTitle>
+            <h3>{loc.no.tracks.level.custom}</h3>
+          </ItemTitle>
+          <ItemDescription>{loc.no.tracks.description}</ItemDescription>
+        </ItemContent>
+      </Item>
+
+      <div className='bg-background-secondary flex w-full flex-col rounded-sm'>
+        {tracks
+          .filter(t => t.level === 'custom')
+          .map(track => (
+            <TrackItem key={track.id} track={track} variant='row' />
+          ))}
+      </div>
     </div>
   )
 }

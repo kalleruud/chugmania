@@ -25,8 +25,13 @@
   h1 {
     @apply font-f1 text-5xl font-black uppercase;
   }
+
   h2 {
     @apply text-3xl font-black;
+  }
+
+  h3 {
+    @apply text-xl font-black;
   }
 
   body {
