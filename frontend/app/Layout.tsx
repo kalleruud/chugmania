@@ -28,7 +28,7 @@ export default function Layout() {
           <DialogTrigger asChild>
             <Button
               disabled={!isLoggedIn || isLoading}
-              className='fixed bottom-0 right-0 z-50 m-12 rounded-full'
+              className='disabled:bg-background-secondary/90 drop-shadow-black disabled:text-muted-foreground fixed bottom-0 right-0 z-50 m-12 rounded-full drop-shadow-2xl backdrop-blur-2xl disabled:border disabled:opacity-100'
               size='icon-2xl'>
               {isLoading ? <Spinner /> : <Plus className='size-8' />}
             </Button>

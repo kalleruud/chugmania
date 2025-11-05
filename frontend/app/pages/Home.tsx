@@ -36,7 +36,7 @@ export default function Home() {
         </ItemContent>
       </Item>
 
-      <div className='bg-background-secondary flex w-full flex-col rounded-sm'>
+      <div className='bg-background-secondary divide-primary flex w-full flex-col divide-y rounded-sm'>
         {tracks
           .filter(t => t.level !== 'custom')
           .map(track => (

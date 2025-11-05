@@ -1,5 +1,4 @@
 import { Item, ItemActions, ItemContent, ItemTitle } from '@/components/ui/item'
-import { useData } from '@/contexts/DataContext'
 import { ChevronRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import type { Track } from '../../../common/models/track'
@@ -21,12 +20,6 @@ export function TrackItem(props: Readonly<TrackItemProps>) {
 }
 
 function TrackRow({ track }: Readonly<TrackItemProps>) {
-  const { leaderboards } = useData()
-  const lapCount = leaderboards?.[track.id].entries.length ?? 0
-  const maxLaps = Math.max(
-    ...Object.values(leaderboards ?? {}).map(l => l.entries.length)
-  )
-
   return (
     <Item key={track.id} className='w-full' asChild>
       <Link to={`/tracks/${track.id}`}>
