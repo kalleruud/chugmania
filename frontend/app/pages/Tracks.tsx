@@ -6,13 +6,20 @@ import {
   ItemMedia,
   ItemTitle,
 } from '@/components/ui/item'
-import { Spinner } from '@/components/ui/spinner'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
 import { Map } from 'lucide-react'
 import type { Track } from '../../../common/models/track'
 
 function TrackRowList({ tracks }: Readonly<{ tracks: Track[] }>) {
+  if (tracks.length === 0) {
+    return (
+      <Item>
+        Empty
+      </Item>
+    )
+  }
   return (
     <div className='bg-background-secondary rounded-sm'>
       {tracks.map(track => (
@@ -27,8 +34,26 @@ export default function TrackPage() {
 
   if (td === undefined || ld === undefined) {
     return (
-      <div className='items-center-safe justify-center-safe flex h-dvh w-full'>
-        <Spinner className='size-6' />
+      <div className='flex flex-col p-2'>
+        <Item>
+          <ItemMedia>
+            <Skeleton className='size-8 rounded-sm' />
+          </ItemMedia>
+          <ItemContent>
+            <ItemTitle>
+              <Skeleton className='h-6 w-24 rounded-sm' />
+            </ItemTitle>
+            <ItemDescription>
+              <Skeleton className='h-4 w-64 rounded-sm' />
+            </ItemDescription>
+          </ItemContent>
+        </Item>
+
+        <div className='overflow-clip rounded-sm'>
+          <Skeleton className='divide-border h-16 w-full divide-y rounded-none' />
+          <Skeleton className='divide-border h-16 w-full divide-y rounded-none' />
+          <Skeleton className='divide-border h-16 w-full divide-y rounded-none' />
+        </div>
       </div>
     )
   }
