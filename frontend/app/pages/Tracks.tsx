@@ -81,9 +81,9 @@ export default function TrackPage() {
       <Item className='w-full pb-2'>
         <ItemContent>
           <ItemTitle>
-            <h3>{loc.no.tracks.level.custom}</h3>
+            <h4>{loc.no.tracks.level.custom}</h4>
           </ItemTitle>
-          <ItemDescription>{loc.no.tracks.description}</ItemDescription>
+          <ItemDescription>{loc.no.tracks.customDescription}</ItemDescription>
         </ItemContent>
       </Item>
 

@@ -7,6 +7,7 @@ const no = {
   tracks: {
     title: 'Baner',
     description: 'Oversikt over banetider per bane.',
+    customDescription: 'Baner vi har laget selv.',
     level: {
       custom: 'Custom',
       white: 'White',
