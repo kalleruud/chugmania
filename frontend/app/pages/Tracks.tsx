@@ -33,7 +33,12 @@ function TrackRowList({ tracks }: Readonly<{ tracks: Track[] }>) {
     <div className='bg-background-secondary rounded-sm'>
       {tracks.map(track => (
         <>
-          <TrackItem key={track.id} track={track} variant='row' />
+          <TrackItem
+            key={track.id}
+            track={track}
+            variant='row'
+            className='py-3 first:pt-4 last:pb-4'
+          />
           <div className='border-border/20 mx-8 border-b last:border-0' />
         </>
       ))}
