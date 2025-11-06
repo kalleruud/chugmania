@@ -25,7 +25,7 @@ function TrackRow({ track, className }: Readonly<TrackItemProps>) {
     <Item key={track.id} className={className} asChild>
       <Link to={`/tracks/${track.id}`}>
         <ItemContent>
-          <ItemTitle className='font-kh-interface text-xl'>
+          <ItemTitle className='font-kh-interface text-2xl'>
             <p className='text-primary'>#</p>
             {formatTrackName(track.number)}
           </ItemTitle>

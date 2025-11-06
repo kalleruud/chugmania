@@ -1,4 +1,4 @@
-import { TrackItem } from '@/components/track/TrackRow'
+import { TrackItem } from '@/components/track/TrackItem'
 import {
   Item,
   ItemContent,
