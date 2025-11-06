@@ -11,8 +11,15 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
 import { Map } from 'lucide-react'
+import type { DetailedHTMLProps, HTMLAttributes } from 'react'
+import { twMerge } from 'tailwind-merge'
 import type { Track } from '../../../common/models/track'
 import { getRandomItem } from '../utils/utils'
+
+type TracksPageProps = { isComponent: boolean } & DetailedHTMLProps<
+  HTMLAttributes<HTMLDivElement>,
+  HTMLDivElement
+>
 
 function TrackRowList({ tracks }: Readonly<{ tracks: Track[] }>) {
   if (tracks.length === 0) {
@@ -25,18 +32,21 @@ function TrackRowList({ tracks }: Readonly<{ tracks: Track[] }>) {
   return (
     <div className='bg-background-secondary rounded-sm'>
       {tracks.map(track => (
-        <TrackItem key={track.id} track={track} variant='row' />
+        <>
+          <TrackItem key={track.id} track={track} variant='row' />
+          <div className='border-border/20 mx-8 border-b last:border-0' />
+        </>
       ))}
     </div>
   )
 }
 
-export default function TrackPage() {
+export default function TracksPage({ className }: Readonly<TracksPageProps>) {
   const { tracks: td, leaderboards: ld } = useData()
 
   if (td === undefined || ld === undefined) {
     return (
-      <div className='flex flex-col p-2'>
+      <div className={twMerge('flex flex-col p-2', className)}>
         <Item>
           <ItemMedia>
             <Skeleton className='size-8 rounded-sm' />
@@ -63,7 +73,7 @@ export default function TrackPage() {
   const tracks = Object.values(td).filter(t => t.id in ld)
 
   return (
-    <div className='flex flex-col p-2'>
+    <div className={twMerge('flex flex-col p-2', className)}>
       <Item className='w-full'>
         <ItemMedia variant='icon'>
           <Map />

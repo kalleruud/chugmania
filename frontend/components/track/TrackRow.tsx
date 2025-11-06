@@ -8,6 +8,7 @@ import { Badge } from '../ui/badge'
 type TrackItemProps = {
   track: Track
   variant: 'row' | 'card'
+  className?: string
 }
 
 export function TrackItem(props: Readonly<TrackItemProps>) {
@@ -19,9 +20,9 @@ export function TrackItem(props: Readonly<TrackItemProps>) {
   }
 }
 
-function TrackRow({ track }: Readonly<TrackItemProps>) {
+function TrackRow({ track, className }: Readonly<TrackItemProps>) {
   return (
-    <Item key={track.id} className='w-full' asChild>
+    <Item key={track.id} className={className} asChild>
       <Link to={`/tracks/${track.id}`}>
         <ItemContent>
           <ItemTitle className='font-kh-interface text-xl'>
@@ -45,9 +46,9 @@ function TrackRow({ track }: Readonly<TrackItemProps>) {
   )
 }
 
-function TrackCard({ track }: Readonly<TrackItemProps>) {
+function TrackCard({ track, className }: Readonly<TrackItemProps>) {
   return (
-    <Item key={track.id} variant='muted' className='w-full'>
+    <Item key={track.id} variant='muted' className={className}>
       <ItemContent>
         <ItemTitle>{track.number}</ItemTitle>
       </ItemContent>

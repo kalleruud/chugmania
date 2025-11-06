@@ -1,9 +1,12 @@
-import TrackPage from './Tracks'
+import TracksPage from './Tracks'
 
 export default function Home() {
   return (
-    <div className='border-border flex flex-col rounded-sm border p-1'>
-      <TrackPage />
+    <div className='items-center-safe flex flex-col gap-8 p-2'>
+      <TracksPage
+        isComponent
+        className='border-border w-full max-w-2xl rounded-sm border'
+      />
     </div>
   )
 }
