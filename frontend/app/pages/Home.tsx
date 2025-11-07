@@ -1,4 +1,4 @@
-import TracksPage from './Tracks'
+import TracksPage from './TracksPage'
 
 export default function Home() {
   return (

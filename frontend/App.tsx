@@ -3,7 +3,8 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import Layout from './app/Layout'
 import Home from './app/pages/Home'
-import TracksPage from './app/pages/Tracks'
+import TrackPage from './app/pages/TrackPage'
+import TracksPage from './app/pages/TracksPage'
 import { Toaster } from './components/ui/sonner'
 import { AuthProvider } from './contexts/AuthContext'
 import { ConnectionProvider } from './contexts/ConnectionContext'
@@ -26,7 +27,7 @@ createRoot(document.getElementById('root')!).render(
                     path='tracks'
                     element={<TracksPage isComponent={false} />}
                   />
-                  {/* <Route path='tracks/:id' element={<Track />} /> */}
+                  <Route path='tracks/:id' element={<TrackPage />} />
                   {/* <Route path='players' element={<Players />} /> */}
                   {/* <Route path='players/:id' element={<Player />} /> */}
                   {/* <Route path='sessions' element={<Sessions />} /> */}
