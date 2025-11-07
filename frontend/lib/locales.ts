@@ -4,6 +4,16 @@ export type Localization = typeof no
 export type Locale = 'no'
 
 const no = {
+  error: {
+    title: 'Noe gikk galt 🥵',
+    descriptions: [
+      'Nå har du faen meg rota det til... Skjerpings!',
+      'Hvordan har du fått til dette da?',
+      'Du en er skuffelse for familien din og alle i verden hater deg.',
+      'Nå dreit du deg ut',
+      'Dumme faen',
+    ],
+  },
   tracks: {
     title: 'Baner',
     description: 'Oversikt over banetider per bane.',

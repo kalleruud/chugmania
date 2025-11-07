@@ -1,7 +1,9 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { ErrorBoundary } from 'react-error-boundary'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import Layout from './app/Layout'
+import { ErrorPage } from './app/pages/ErrorPage'
 import Home from './app/pages/Home'
 import TrackPage from './app/pages/TrackPage'
 import TracksPage from './app/pages/TracksPage'
@@ -21,20 +23,22 @@ createRoot(document.getElementById('root')!).render(
           <AuthProvider>
             <DataProvider>
               <Routes>
-                <Route element={<Layout />}>
-                  <Route index element={<Home />} />
-                  <Route
-                    path='tracks'
-                    element={<TracksPage isComponent={false} />}
-                  />
-                  <Route path='tracks/:id' element={<TrackPage />} />
-                  {/* <Route path='players' element={<Players />} /> */}
-                  {/* <Route path='players/:id' element={<Player />} /> */}
-                  {/* <Route path='sessions' element={<Sessions />} /> */}
-                  {/* <Route path='sessions/:id' element={<Session />} /> */}
-                  {/* <Route path='login' element={<Login />} /> */}
-                  {/* <Route path='admin' element={<Admin />} /> */}
-                </Route>
+                <ErrorBoundary FallbackComponent={ErrorPage}>
+                  <Route element={<Layout />}>
+                    <Route index element={<Home />} />
+                    <Route
+                      path='tracks'
+                      element={<TracksPage isComponent={false} />}
+                    />
+                    <Route path='tracks/:id' element={<TrackPage />} />
+                    {/* <Route path='players' element={<Players />} /> */}
+                    {/* <Route path='players/:id' element={<Player />} /> */}
+                    {/* <Route path='sessions' element={<Sessions />} /> */}
+                    {/* <Route path='sessions/:id' element={<Session />} /> */}
+                    {/* <Route path='login' element={<Login />} /> */}
+                    {/* <Route path='admin' element={<Admin />} /> */}
+                  </Route>
+                </ErrorBoundary>
               </Routes>
               <Toaster />
             </DataProvider>
