@@ -22,8 +22,8 @@ createRoot(document.getElementById('root')!).render(
         <ConnectionProvider>
           <AuthProvider>
             <DataProvider>
-              <Routes>
-                <ErrorBoundary FallbackComponent={ErrorPage}>
+              <ErrorBoundary FallbackComponent={ErrorPage}>
+                <Routes>
                   <Route element={<Layout />}>
                     <Route index element={<Home />} />
                     <Route
@@ -38,9 +38,9 @@ createRoot(document.getElementById('root')!).render(
                     {/* <Route path='login' element={<Login />} /> */}
                     {/* <Route path='admin' element={<Admin />} /> */}
                   </Route>
-                </ErrorBoundary>
-              </Routes>
-              <Toaster />
+                </Routes>
+                <Toaster />
+              </ErrorBoundary>
             </DataProvider>
           </AuthProvider>
         </ConnectionProvider>

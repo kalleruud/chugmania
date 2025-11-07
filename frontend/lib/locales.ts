@@ -13,6 +13,7 @@ const no = {
       'Nå dreit du deg ut',
       'Dumme faen',
     ],
+    retryAction: 'Gå tilbake',
   },
   tracks: {
     title: 'Baner',

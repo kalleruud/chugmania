@@ -32,15 +32,12 @@ function TrackRowList({ tracks }: Readonly<{ tracks: Track[] }>) {
   return (
     <div className='bg-background-secondary rounded-sm'>
       {tracks.map(track => (
-        <>
-          <TrackItem
-            key={track.id}
-            track={track}
-            variant='row'
-            className='py-3 first:pt-4 last:pb-4'
-          />
-          <div className='border-border/20 mx-8 border-b last:border-0' />
-        </>
+        <TrackItem
+          key={track.id}
+          track={track}
+          variant='row'
+          className='py-3 first:pt-4 last:pb-4'
+        />
       ))}
     </div>
   )
@@ -57,12 +54,8 @@ export default function TracksPage({ className }: Readonly<TracksPageProps>) {
             <Skeleton className='size-8 rounded-sm' />
           </ItemMedia>
           <ItemContent>
-            <ItemTitle>
-              <Skeleton className='h-6 w-24 rounded-sm' />
-            </ItemTitle>
-            <ItemDescription>
-              <Skeleton className='h-4 w-64 rounded-sm' />
-            </ItemDescription>
+            <Skeleton className='h-6 w-24 rounded-sm' />
+            <Skeleton className='h-4 w-64 rounded-sm' />
           </ItemContent>
         </Item>
 

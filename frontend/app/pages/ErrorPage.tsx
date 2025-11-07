@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button'
 import {
   Empty,
   EmptyContent,
@@ -7,14 +8,13 @@ import {
 } from '@/components/ui/empty'
 import loc from '@/lib/locales'
 import { type FallbackProps } from 'react-error-boundary'
+import { Link } from 'react-router-dom'
 import { getRandomItem } from '../utils/utils'
 
 export function ErrorPage({
   error,
   resetErrorBoundary,
 }: Readonly<FallbackProps>) {
-  // Call resetErrorBoundary() to reset the error boundary and retry the render.
-
   return (
     <Empty>
       <EmptyHeader>
@@ -23,7 +23,13 @@ export function ErrorPage({
           {error.message ?? getRandomItem(loc.no.error.descriptions)}
         </EmptyDescription>
       </EmptyHeader>
-      <EmptyContent></EmptyContent>
+      <EmptyContent>
+        <Button variant='outline' asChild>
+          <Link to='/' onClick={resetErrorBoundary}>
+            {loc.no.error.retryAction}
+          </Link>
+        </Button>
+      </EmptyContent>
     </Empty>
   )
 }

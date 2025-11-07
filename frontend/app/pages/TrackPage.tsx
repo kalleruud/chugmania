@@ -1,4 +1,3 @@
-import { Empty, EmptyHeader } from '@/components/ui/empty'
 import { Spinner } from '@/components/ui/spinner'
 import { useData } from '@/contexts/DataContext'
 import { useParams } from 'react-router-dom'
@@ -15,15 +14,11 @@ export default function TrackPage() {
     )
   }
 
-  if (id === undefined) {
-    return (
-      <Empty>
-        <EmptyHeader>Fant ikke</EmptyHeader>
-      </Empty>
-    )
-  }
+  if (id === undefined) throw new Error('Ingen id')
+  if (id in tracks) throw new Error('Banen med denne iden finnes ikke')
 
   const track = tracks[id]
+  const leaderboard = id in leaderboards ? leaderboards[id].entries : []
 
-  return null
+  return <h1>{track.number}</h1>
 }
