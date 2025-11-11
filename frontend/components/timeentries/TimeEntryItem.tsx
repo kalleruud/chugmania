@@ -55,9 +55,9 @@ function NameCellPart({
 function TimePart({ duration }: Readonly<{ duration?: number | null }>) {
   const label = duration ? formatTime(duration).replace(/^0/, '') : 'DNF'
   return (
-    <td className={`font-f1-italic items-center uppercase tabular-nums`}>
+    <div className={`font-f1-italic items-center uppercase tabular-nums`}>
       {label}
-    </td>
+    </div>
   )
 }
 
@@ -77,7 +77,7 @@ function GapPart({
     : '+' + formatTime(duration, true)
 
   return (
-    <td
+    <div
       className={
         'font-f1-italic text-muted-foreground flex w-24 items-center justify-end text-sm uppercase tabular-nums'
       }>
@@ -92,7 +92,7 @@ function GapPart({
       ) : (
         <p className='px-2'>{label}</p>
       )}
-    </td>
+    </div>
   )
 }
 
