@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import loc from '@/lib/locales'
+import { Plus, Trash2 } from 'lucide-react'
 import {
   useCallback,
   useEffect,
@@ -349,9 +350,16 @@ export default function LapTimeInput({
         />
       </div>
 
-      <Button type='submit' disabled={!isInputValid()}>
-        Yeeeeeet
-      </Button>
+      <div className='flex gap-2'>
+        <Button variant='destructive'>
+          <Trash2 />
+          {loc.no.delete}
+        </Button>
+        <Button type='submit' className='flex-1' disabled={!isInputValid()}>
+          <Plus />
+          {loc.no.timeEntryInput.submit}
+        </Button>
+      </div>
     </form>
   )
 }

@@ -2,7 +2,6 @@ import TimeEntryItem, {
   type GapType,
 } from '@/components/timeentries/TimeEntryItem'
 import { TrackItem } from '@/components/track/TrackItem'
-import { Button } from '@/components/ui/button'
 import { Empty } from '@/components/ui/empty'
 import { Spinner } from '@/components/ui/spinner'
 import { useData } from '@/contexts/DataContext'
@@ -11,15 +10,15 @@ import loc from '@/lib/locales'
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import type { LeaderboardEntry } from '../../../common/models/timeEntry'
-import { getRandomItem } from '../utils/utils'
 
 function RowItemList({ entries }: Readonly<{ entries: LeaderboardEntry[] }>) {
   const [gapType, setGapType] = useState<GapType>('leader')
+  const { open } = useTimeEntryDrawer()
 
   if (entries.length === 0) {
     return (
       <Empty className='border-input text-muted-foreground border text-sm'>
-        {getRandomItem(loc.no.noItems)}
+        {loc.no.noItems}
       </Empty>
     )
   }
@@ -29,6 +28,7 @@ function RowItemList({ entries }: Readonly<{ entries: LeaderboardEntry[] }>) {
         <TimeEntryItem
           key={entry.id}
           lapTime={entry}
+          onClick={() => open(entry)}
           className='p-4 py-3 first:pt-4 last:pb-4'
           gapType={gapType}
           onChangeGapType={() =>
@@ -43,7 +43,6 @@ function RowItemList({ entries }: Readonly<{ entries: LeaderboardEntry[] }>) {
 export default function TrackPage() {
   const { id } = useParams()
   const { tracks, leaderboards } = useData()
-  const { open } = useTimeEntryDrawer()
 
   if (tracks === undefined || leaderboards === undefined) {
     return (
@@ -63,9 +62,6 @@ export default function TrackPage() {
     <div className='flex flex-col p-2'>
       <TrackItem track={track} variant='row' />
       <RowItemList entries={leaderboard} />
-      <Button onClick={() => open({ track: track.id })}>
-        Register laptime
-      </Button>
     </div>
   )
 }

@@ -35,6 +35,10 @@ export default function TimeEntryDialogProvider({
     {}
   )
 
+  const localeStrings = editingTimeEntry
+    ? loc.no.timeEntryInput.edit
+    : loc.no.timeEntryInput.create
+
   function open(
     editingTimeEntry: Parameters<TimeEntryDialogContextType['open']>[0] = {}
   ) {
@@ -62,14 +66,12 @@ export default function TimeEntryDialogProvider({
         onOpenChange={open => setState(open ? 'open' : 'closed')}>
         <DrawerContent>
           <DrawerHeader className='text-left'>
-            <DrawerTitle>{loc.no.timeEntryInput.title}</DrawerTitle>
-            <DrawerDescription>
-              {loc.no.timeEntryInput.description}
-            </DrawerDescription>
+            <DrawerTitle>{localeStrings.title}</DrawerTitle>
+            <DrawerDescription>{localeStrings.description}</DrawerDescription>
           </DrawerHeader>
 
           <LapTimeInput
-            className='p-4'
+            className='pb-safe-offset-8 p-4'
             editingTimeEntry={editingTimeEntry}
             onSubmitSuccessful={close}
           />

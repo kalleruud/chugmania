@@ -1,3 +1,4 @@
+import { getRandomItem } from '@/app/utils/utils'
 import type { TrackLevel, TrackType } from '../../backend/database/schema'
 
 export type Localization = typeof no
@@ -5,9 +6,15 @@ export type Locale = 'no'
 
 const no = {
   timeEntryInput: {
-    title: 'Registrer tid',
-    description: 'Tiden din publiseres asap zulu.',
-    submit: ['Yeeeehaw', 'Jeg elsker øl!', 'Registrer'],
+    create: {
+      title: 'Registrer tid',
+      description: 'Tiden din publiseres asap zulu.',
+    },
+    edit: {
+      title: 'Rediger tid',
+      description: 'Du gjør nå endringer på en eksisterende tid.',
+    },
+    submit: getRandomItem(['Yeeeehaw', 'Jeg elsker øl!', 'Registrer']),
     noUser: 'Du må velge en bruker, idiot!',
     noTrack: 'Du må velge en bane, din bøtte!',
     request: {
@@ -15,15 +22,17 @@ const no = {
       success: (laptime: string) => `Rundetiden ble registrert: ${laptime}`,
     },
   },
-  cancel: [
+  cancel: getRandomItem([
     'Abort mission',
     'Avbryt',
     'Cap',
     'Føkk dette',
     'Nah',
-    'Ombestemte meg',
+    'Jeg ombestemte meg',
+    'Regretti spaghetti',
     'Vil ikke',
-  ],
+  ]),
+  delete: 'Slett',
   error: {
     title: 'Noe gikk galt 🥵',
     descriptions: [
@@ -56,7 +65,11 @@ const no = {
       stadium: 'Stadium',
     } satisfies Record<TrackType, string>,
   },
-  noItems: ['Finner ikke 🥵', 'Her var det tomt...', 'Har du gått feil?'],
+  noItems: getRandomItem([
+    'Finner ikke 🥵',
+    'Her var det tomt...',
+    'Har du gått feil?',
+  ]),
 }
 
 const loc: Record<Locale, Localization> = {
