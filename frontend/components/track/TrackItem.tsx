@@ -24,7 +24,7 @@ export function TrackItem(props: Readonly<TrackItemProps>) {
 function TrackRow({ track, className }: Readonly<TrackItemProps>) {
   return (
     <Item key={track.id} className={className} asChild>
-      <Link to={`/tracks/${track.id}`}>
+      <Link to={`tracks/${track.id}`}>
         <ItemContent>
           <ItemTitle className='font-kh-interface text-2xl'>
             <p className='text-primary'>#</p>
