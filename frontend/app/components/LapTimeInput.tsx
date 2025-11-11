@@ -15,7 +15,7 @@ import {
 } from 'react'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
-import type { PostLapTimeRequest } from '../../../common/models/requests'
+import { type PostLapTimeRequest } from '../../../common/models/requests'
 import type {
   BackendResponse,
   ErrorResponse,
@@ -57,6 +57,7 @@ type LapTimeInputProps = DetailedHTMLProps<
 > & {
   editingTimeEntry: Partial<TimeEntry>
   onSubmitSuccessful?: () => void
+  disabled?: boolean
 }
 
 const dateFormatter = new Intl.DateTimeFormat('nb-NO', {
@@ -99,6 +100,7 @@ export default function LapTimeInput({
   editingTimeEntry,
   onSubmitSuccessful,
   onSubmit,
+  disabled,
   className,
 }: Readonly<LapTimeInputProps>) {
   const { socket } = useConnection()
@@ -106,9 +108,7 @@ export default function LapTimeInput({
   const { users, tracks } = useData()
 
   const isCreating = !editingTimeEntry.id
-
   const loggedInLookup = find(loggedInUser?.id, users)
-
   const inputs = useRef<HTMLInputElement[]>([])
 
   const [digits, setDigits] = useState<(typeof cache)['time']>(
@@ -284,6 +284,7 @@ export default function LapTimeInput({
               ref={el => {
                 if (el) inputs.current[i] = el
               }}
+              disabled={disabled}
               value={d}
               placeholder='0'
               onKeyDown={e => handleKeyDown(i, e)}
@@ -308,6 +309,7 @@ export default function LapTimeInput({
             <Combobox
               className='w-full'
               required={true}
+              disabled={disabled}
               placeholder={loc.no.timeEntryInput.placeholder.user}
               selected={selectedUser}
               setSelected={setSelectedUser}
@@ -320,6 +322,7 @@ export default function LapTimeInput({
             <Combobox
               className='w-full'
               required={true}
+              disabled={disabled}
               placeholder={loc.no.timeEntryInput.placeholder.track}
               selected={selectedTrack}
               setSelected={setSelectedTrack}
@@ -333,6 +336,7 @@ export default function LapTimeInput({
           <Combobox
             className='w-full'
             required={false}
+            disabled={disabled}
             placeholder={loc.no.timeEntryInput.placeholder.session}
             selected={selectedSession}
             setSelected={setSelectedSession}
@@ -347,24 +351,27 @@ export default function LapTimeInput({
           id='laptime-comment'
           name='Comment'
           className='text-sm'
+          disabled={disabled}
           onChange={e => setComment(e.target.value)}
           value={comment}
           placeholder={loc.no.timeEntryInput.placeholder.comment}
         />
       </div>
 
-      <div className='flex gap-2'>
-        <Button variant='destructive'>
-          <Trash2 />
-          {loc.no.delete}
-        </Button>
-        <Button type='submit' className='flex-1' disabled={!isInputValid()}>
-          {isCreating ? <Plus /> : <Pencil />}
-          {isCreating
-            ? loc.no.timeEntryInput.submit
-            : loc.no.timeEntryInput.update}
-        </Button>
-      </div>
+      {!disabled && (
+        <div className='flex gap-2'>
+          <Button variant='destructive'>
+            <Trash2 />
+            {loc.no.delete}
+          </Button>
+          <Button type='submit' className='flex-1' disabled={!isInputValid()}>
+            {isCreating ? <Plus /> : <Pencil />}
+            {isCreating
+              ? loc.no.timeEntryInput.submit
+              : loc.no.timeEntryInput.update}
+          </Button>
+        </div>
+      )}
     </form>
   )
 }

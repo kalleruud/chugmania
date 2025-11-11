@@ -69,6 +69,8 @@ export default function Combobox({
   emptyLabel,
   items,
   selected,
+  disabled,
+  required,
   setSelected,
   className,
   align,
@@ -130,16 +132,15 @@ export default function Combobox({
       <Popover open={open} onOpenChange={setOpen} modal={true}>
         <PopoverTrigger asChild>
           <Button
-            disabled={isLoading}
+            disabled={disabled || isLoading}
             ref={triggerRef}
             variant='outline'
             aria-expanded={open}
             className='w-full justify-between gap-2'>
             <Row item={selected} placeholder={placeholder} />
             <input type='hidden' value={selected?.id} {...inputProps} />
-            {isLoading ? (
-              <Spinner />
-            ) : (
+            {isLoading && <Spinner />}
+            {!disabled && !isLoading && (
               <ChevronsUpDown className='text-muted-foreground flex-none' />
             )}
           </Button>

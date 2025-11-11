@@ -6,6 +6,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '@/components/ui/drawer'
+import { useAuth } from '@/contexts/AuthContext'
 import loc from '@/lib/locales'
 import {
   createContext,
@@ -34,10 +35,14 @@ export default function TimeEntryDialogProvider({
   const [editingTimeEntry, setEditingTimeEntry] = useState<Partial<TimeEntry>>(
     {}
   )
+  const { user: loggedInUser, isLoggedIn } = useAuth()
 
-  const localeStrings = editingTimeEntry
+  const localeStrings = editingTimeEntry.id
     ? loc.no.timeEntryInput.edit
     : loc.no.timeEntryInput.create
+
+  const isEditingSelf = isLoggedIn && loggedInUser?.id === editingTimeEntry.user
+  const canEdit = isEditingSelf || (isLoggedIn && loggedInUser?.role !== 'user')
 
   function open(
     editingTimeEntry: Parameters<TimeEntryDialogContextType['open']>[0] = {}
@@ -65,15 +70,18 @@ export default function TimeEntryDialogProvider({
         open={state === 'open'}
         onOpenChange={open => setState(open ? 'open' : 'closed')}>
         <DrawerContent>
-          <DrawerHeader className='text-left'>
-            <DrawerTitle>{localeStrings.title}</DrawerTitle>
-            <DrawerDescription>{localeStrings.description}</DrawerDescription>
-          </DrawerHeader>
+          {canEdit && (
+            <DrawerHeader className='text-left'>
+              <DrawerTitle>{localeStrings.title}</DrawerTitle>
+              <DrawerDescription>{localeStrings.description}</DrawerDescription>
+            </DrawerHeader>
+          )}
 
           <LapTimeInput
             className='pb-safe-offset-8 p-4'
             editingTimeEntry={editingTimeEntry}
             onSubmitSuccessful={close}
+            disabled={!canEdit}
           />
         </DrawerContent>
       </Drawer>
