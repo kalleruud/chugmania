@@ -10,8 +10,12 @@ import loc from '@/lib/locales'
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import type { LeaderboardEntry } from '../../../common/models/timeEntry'
+import type { Track } from '../../../common/models/track'
 
-function RowItemList({ entries }: Readonly<{ entries: LeaderboardEntry[] }>) {
+function RowItemList({
+  track,
+  entries,
+}: Readonly<{ track: Track; entries: LeaderboardEntry[] }>) {
   const [gapType, setGapType] = useState<GapType>('leader')
   const { open } = useTimeEntryDrawer()
 
@@ -28,7 +32,7 @@ function RowItemList({ entries }: Readonly<{ entries: LeaderboardEntry[] }>) {
         <TimeEntryItem
           key={entry.id}
           lapTime={entry}
-          onClick={() => open(entry)}
+          onClick={() => open({ track: track.id, ...entry })}
           className='p-4 py-3 first:pt-4 last:pb-4'
           gapType={gapType}
           onChangeGapType={() =>
@@ -61,7 +65,7 @@ export default function TrackPage() {
   return (
     <div className='flex flex-col p-2'>
       <TrackItem track={track} variant='row' />
-      <RowItemList entries={leaderboard} />
+      <RowItemList track={track} entries={leaderboard} />
     </div>
   )
 }

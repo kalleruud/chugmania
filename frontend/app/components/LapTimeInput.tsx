@@ -109,16 +109,22 @@ export default function LapTimeInput({
   const inputs = useRef<HTMLInputElement[]>([])
   const commentRef = useRef<HTMLTextAreaElement>(null)
 
-  const [digits, setDigits] = useState(cache.time)
-  const [selectedUser, setSelectedUser] = useState(cache.user ?? loggedInLookup)
-  const [selectedTrack, setSelectedTrack] = useState(
-    paramTrack ? trackToLookupItem(paramTrack) : cache.track
+  const [digits, setDigits] = useState<(typeof cache)['time']>(
+    toNumberInputList(editingTimeEntry.duration) ?? cache.time
   )
-
-  const [selectedSession, setSelectedSession] = useState(cache.session)
+  const [selectedUser, setSelectedUser] = useState(
+    find(editingTimeEntry.user, users) ?? cache.user ?? loggedInLookup
+  )
+  const [selectedTrack, setSelectedTrack] = useState(
+    find(editingTimeEntry.track, tracks) ?? cache.track
+  )
 
   const [sessions, setSessions] = useState<SessionWithSignups[] | undefined>(
     undefined
+  )
+
+  const [selectedSession, setSelectedSession] = useState(
+    find(editingTimeEntry.session, sessions) ?? cache.session
   )
 
   const DIGIT = /^\d$/
@@ -137,6 +143,17 @@ export default function LapTimeInput({
     cache.time = empty
     setDigits(empty)
   }, [])
+
+  function find<T extends Track | UserInfo | SessionWithSignups>(
+    id: string | null | undefined,
+    records: Record<string, T> | undefined
+  ): ComboboxLookupItem | undefined {
+    if (!id || !records || !(id in records)) return undefined
+    const item: any = records[id]
+    if (item.level) return trackToLookupItem(item)
+    if (item.email) return userToLookupItem(item)
+    if (item.status) return sessionToLookupItem(item)
+  }
 
   useEffect(() => {
     cache.user = selectedUser
@@ -224,6 +241,11 @@ export default function LapTimeInput({
     )
   }
 
+  function toNumberInputList(duration: number): (typeof cache)['time'] {
+    // TODO: Implement function
+    return
+  }
+
   function isInputValid(): boolean {
     return !!(getMs() > 0 && selectedTrack && selectedUser)
   }
@@ -308,7 +330,7 @@ export default function LapTimeInput({
             <Combobox
               className='w-full'
               required={true}
-              placeholder='Velg bruker'
+              placeholder={loc.no.timeEntryInput.placeholder.user}
               selected={selectedUser}
               setSelected={setSelectedUser}
               align='start'
@@ -320,7 +342,7 @@ export default function LapTimeInput({
             <Combobox
               className='w-full'
               required={true}
-              placeholder='Velg bane'
+              placeholder={loc.no.timeEntryInput.placeholder.track}
               selected={selectedTrack}
               setSelected={setSelectedTrack}
               align='end'
@@ -332,21 +354,23 @@ export default function LapTimeInput({
         {sessions && (
           <Combobox
             className='w-full'
-            required={true}
-            placeholder='Velg session'
+            required={false}
+            placeholder={loc.no.timeEntryInput.placeholder.session}
             selected={selectedSession}
             setSelected={setSelectedSession}
             items={sessions?.map(sessionToLookupItem)}
           />
         )}
 
-        <Label htmlFor='laptime-comment'>Kommentar</Label>
+        <Label htmlFor='laptime-comment'>
+          {loc.no.timeEntryInput.fieldName.comment}
+        </Label>
         <Textarea
           ref={commentRef}
           id='laptime-comment'
           name='Comment'
           className='text-sm'
-          placeholder='Chugga som en vissen bestemor...'
+          placeholder={loc.no.timeEntryInput.placeholder.comment}
         />
       </div>
 

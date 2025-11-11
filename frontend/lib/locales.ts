@@ -17,6 +17,15 @@ const no = {
     submit: getRandomItem(['Yeeeehaw', 'Jeg elsker øl!', 'Registrer']),
     noUser: 'Du må velge en bruker, idiot!',
     noTrack: 'Du må velge en bane, din bøtte!',
+    fieldName: {
+      comment: 'Kommentar',
+    },
+    placeholder: {
+      track: 'Velg bane',
+      user: 'Velg spiller',
+      session: 'Velg session',
+      comment: 'Chugga dårligere enn bestemoren min...',
+    },
     request: {
       loading: 'Publiserer rundetiden',
       success: (laptime: string) => `Rundetiden ble registrert: ${laptime}`,
