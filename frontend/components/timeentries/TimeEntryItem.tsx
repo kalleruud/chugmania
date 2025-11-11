@@ -10,7 +10,6 @@ import {
 import { twMerge } from 'tailwind-merge'
 import type { LeaderboardEntry } from '../../../common/models/timeEntry'
 import { formatTime } from '../../../common/utils/time'
-import { Button } from '../ui/button'
 
 type TimeEntryItemProps = {
   position?: number | null
@@ -64,7 +63,6 @@ function TimePart({ duration }: Readonly<{ duration?: number | null }>) {
 function GapPart({
   gap,
   gapType = 'leader',
-  onChangeGapType,
 }: Readonly<{
   gap?: LeaderboardEntry['gap']
   gapType?: GapType
@@ -81,17 +79,7 @@ function GapPart({
       className={
         'font-f1-italic text-muted-foreground flex w-24 items-center justify-end text-sm uppercase tabular-nums'
       }>
-      {isLeader ? (
-        <Button
-          variant='ghost'
-          size='sm'
-          onClick={onChangeGapType}
-          className='text-muted-foreground/50'>
-          {label}
-        </Button>
-      ) : (
-        <p className='px-2'>{label}</p>
-      )}
+      {label}
     </div>
   )
 }
@@ -153,7 +141,7 @@ function TimeEntryRow({
       ref={containerRef}
       {...rest}
       className={twMerge(
-        'aansition-colors flex cursor-pointer items-center gap-2 rounded-md hover:bg-white/5',
+        'aansition-colors flex cursor-pointer items-center gap-4 rounded-md hover:bg-white/5',
         loggedInUser && loggedInUser?.id === userInfo?.id
           ? 'bg-accent/10 ring-accent/40 ring-1'
           : '',
