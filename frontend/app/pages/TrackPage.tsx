@@ -1,14 +1,19 @@
-import TimeEntryItem from '@/components/timeentries/TimeEntryItem'
+import TimeEntryItem, {
+  type GapType,
+} from '@/components/timeentries/TimeEntryItem'
 import { TrackItem } from '@/components/track/TrackItem'
 import { Empty } from '@/components/ui/empty'
 import { Spinner } from '@/components/ui/spinner'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
+import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import type { LeaderboardEntry } from '../../../common/models/timeEntry'
 import { getRandomItem } from '../utils/utils'
 
 function RowItemList({ entries }: Readonly<{ entries: LeaderboardEntry[] }>) {
+  const [gapType, setGapType] = useState<GapType>('leader')
+
   if (entries.length === 0) {
     return (
       <Empty className='border-input text-muted-foreground border text-sm'>
@@ -23,6 +28,10 @@ function RowItemList({ entries }: Readonly<{ entries: LeaderboardEntry[] }>) {
           key={entry.id}
           lapTime={entry}
           className='p-4 py-3 first:pt-4 last:pb-4'
+          gapType={gapType}
+          onChangeGapType={() =>
+            setGapType(gapType === 'leader' ? 'interval' : 'leader')
+          }
         />
       ))}
     </div>

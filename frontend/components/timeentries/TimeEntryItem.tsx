@@ -1,4 +1,3 @@
-import { formatLapTimestamp } from '@/app/utils/date'
 import { useAuth } from '@/contexts/AuthContext'
 import { useData } from '@/contexts/DataContext'
 import {
@@ -17,6 +16,7 @@ type TimeEntryItemProps = {
   position?: number | null
   lapTime: LeaderboardEntry
   gapType?: GapType
+  onChangeGapType: () => void
 } & ComponentProps<'div'>
 
 export default function TimeEntryItem(props: Readonly<TimeEntryItemProps>) {
@@ -61,23 +61,14 @@ function TimePart({ duration }: Readonly<{ duration?: number | null }>) {
   )
 }
 
-function DatePart({ timestamp }: Readonly<{ timestamp?: Date | string }>) {
-  if (!timestamp) return null
-  return (
-    <td className='text-muted-foreground font-f1 text-xs uppercase tabular-nums tracking-widest'>
-      {formatLapTimestamp(timestamp)}
-    </td>
-  )
-}
-
 function GapPart({
   gap,
   gapType = 'leader',
-  onToggle,
+  onChangeGapType,
 }: Readonly<{
   gap?: LeaderboardEntry['gap']
   gapType?: GapType
-  onToggle?: () => void
+  onChangeGapType: () => void
 }>) {
   const duration = gapType === 'leader' ? gap?.leader : gap?.previous
   const isLeader = !duration
@@ -91,7 +82,11 @@ function GapPart({
         'font-f1-italic text-muted-foreground flex w-24 items-center justify-end text-sm uppercase tabular-nums'
       }>
       {isLeader ? (
-        <Button variant='ghost' size='sm' onClick={onToggle}>
+        <Button
+          variant='ghost'
+          size='sm'
+          onClick={onChangeGapType}
+          className='text-muted-foreground/50'>
           {label}
         </Button>
       ) : (
@@ -105,10 +100,11 @@ function TimeEntryRow({
   lapTime,
   position = lapTime.gap.position,
   gapType,
+  onChangeGapType,
   className,
   ...rest
 }: Readonly<TimeEntryItemProps>) {
-  const containerRef = useRef<HTMLTableRowElement | null>(null)
+  const containerRef = useRef<HTMLDivElement | null>(null)
   const [width, setWidth] = useState(0)
   const { user: loggedInUser } = useAuth()
   const { users } = useData()
@@ -161,24 +157,24 @@ function TimeEntryRow({
   return (
     <div
       ref={containerRef}
+      {...rest}
       className={twMerge(
-        'divansition-colors flex cursor-pointer items-center gap-2 rounded-md hover:bg-white/5',
+        'aansition-colors flex cursor-pointer items-center gap-2 rounded-md hover:bg-white/5',
         loggedInUser && loggedInUser?.id === userInfo?.id
           ? 'bg-accent/10 ring-accent/40 ring-1'
           : '',
         className
-      )}
-      title={
-        lapTime.comment ??
-        `${name} - ${lapTime.duration ? formatTime(lapTime.duration) : 'DNF'} - ${formatLapTimestamp(lapTime.createdAt)}`
-      }
-      {...rest}>
+      )}>
       {show.pos && <PositionBadgePart position={position} />}
       <NameCellPart name={name} hasComment={!!lapTime.comment} />
 
-      {show.date && <DatePart timestamp={lapTime.createdAt} />}
-
-      {show.gap && <GapPart gap={lapTime.gap} gapType={gapType} />}
+      {show.gap && (
+        <GapPart
+          gap={lapTime.gap}
+          gapType={gapType}
+          onChangeGapType={onChangeGapType}
+        />
+      )}
       {show.time && <TimePart duration={lapTime.duration} />}
     </div>
   )
