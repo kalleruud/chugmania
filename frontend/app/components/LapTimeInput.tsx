@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import loc from '@/lib/locales'
-import { Plus, Trash2 } from 'lucide-react'
+import { Pencil, Plus, Trash2 } from 'lucide-react'
 import {
   useCallback,
   useEffect,
@@ -29,7 +29,11 @@ import {
   WS_GET_SESSIONS,
   WS_POST_LAPTIME,
 } from '../../../common/utils/constants'
-import { formattedTimeToMs, formatTime } from '../../../common/utils/time'
+import {
+  durationToInputList,
+  formatTime,
+  inputListToMs,
+} from '../../../common/utils/time'
 import { formatTrackName } from '../../../common/utils/track'
 import { useAuth } from '../../contexts/AuthContext'
 import { emitAsync, useConnection } from '../../contexts/ConnectionContext'
@@ -101,16 +105,14 @@ export default function LapTimeInput({
   const { user: loggedInUser } = useAuth()
   const { users, tracks } = useData()
 
-  const loggedInLookup = loggedInUser && userToLookupItem(loggedInUser)
-  const paramTrack = editingTimeEntry.track
-    ? tracks?.[editingTimeEntry.track]
-    : undefined
+  const isCreating = !editingTimeEntry.id
+
+  const loggedInLookup = find(loggedInUser?.id, users)
 
   const inputs = useRef<HTMLInputElement[]>([])
-  const commentRef = useRef<HTMLTextAreaElement>(null)
 
   const [digits, setDigits] = useState<(typeof cache)['time']>(
-    toNumberInputList(editingTimeEntry.duration) ?? cache.time
+    durationToInputList(editingTimeEntry.duration) ?? cache.time
   )
   const [selectedUser, setSelectedUser] = useState(
     find(editingTimeEntry.user, users) ?? cache.user ?? loggedInLookup
@@ -123,9 +125,11 @@ export default function LapTimeInput({
     undefined
   )
 
-  const [selectedSession, setSelectedSession] = useState(
-    find(editingTimeEntry.session, sessions) ?? cache.session
-  )
+  const [comment, setComment] = useState(editingTimeEntry.comment ?? undefined)
+
+  const [selectedSession, setSelectedSession] = useState<
+    ComboboxLookupItem | undefined
+  >(cache.session)
 
   const DIGIT = /^\d$/
 
@@ -156,18 +160,17 @@ export default function LapTimeInput({
   }
 
   useEffect(() => {
+    if (!isCreating) return
     cache.user = selectedUser
   }, [selectedUser])
 
   useEffect(() => {
+    if (!isCreating) return
     cache.track = selectedTrack
   }, [selectedTrack])
 
   useEffect(() => {
-    if (paramTrack) cache.track = trackToLookupItem(paramTrack)
-  }, [paramTrack])
-
-  useEffect(() => {
+    if (!isCreating) return
     cache.session = selectedSession
   }, [selectedSession])
 
@@ -224,30 +227,8 @@ export default function LapTimeInput({
     )
   }, [socket, editingTimeEntry.session, selectedSession, dateFormatter])
 
-  function getMs() {
-    const tenMinutes = digits[0] === '' ? 0 : Number.parseInt(digits[0]) * 10
-    const minutes = digits[1] === '' ? 0 : Number.parseInt(digits[1])
-
-    const tenSeconds = digits[2] === '' ? 0 : Number.parseInt(digits[2]) * 10
-    const seconds = digits[3] === '' ? 0 : Number.parseInt(digits[3])
-
-    const tenHundredths = digits[4] === '' ? 0 : Number.parseInt(digits[4]) * 10
-    const hundredths = digits[5] === '' ? 0 : Number.parseInt(digits[5])
-
-    return formattedTimeToMs(
-      tenMinutes + minutes,
-      tenSeconds + seconds,
-      tenHundredths + hundredths
-    )
-  }
-
-  function toNumberInputList(duration: number): (typeof cache)['time'] {
-    // TODO: Implement function
-    return
-  }
-
   function isInputValid(): boolean {
-    return !!(getMs() > 0 && selectedTrack && selectedUser)
+    return !!(inputListToMs(digits) > 0 && selectedTrack && selectedUser)
   }
 
   function handleSubmitResponse(response: BackendResponse) {
@@ -269,14 +250,11 @@ export default function LapTimeInput({
 
     onSubmit?.(e)
     const payload = {
-      duration: getMs(),
+      duration: inputListToMs(digits),
       user: uid,
       track: tid,
       session: selectedSession?.id,
-      comment:
-        commentRef.current?.value.trim() === ''
-          ? undefined
-          : commentRef.current?.value.trim(),
+      comment: comment?.trim() === '' ? undefined : comment?.trim(),
       amount: 0.5,
     } satisfies PostLapTimeRequest
 
@@ -366,10 +344,11 @@ export default function LapTimeInput({
           {loc.no.timeEntryInput.fieldName.comment}
         </Label>
         <Textarea
-          ref={commentRef}
           id='laptime-comment'
           name='Comment'
           className='text-sm'
+          onChange={e => setComment(e.target.value)}
+          value={comment}
           placeholder={loc.no.timeEntryInput.placeholder.comment}
         />
       </div>
@@ -380,8 +359,10 @@ export default function LapTimeInput({
           {loc.no.delete}
         </Button>
         <Button type='submit' className='flex-1' disabled={!isInputValid()}>
-          <Plus />
-          {loc.no.timeEntryInput.submit}
+          {isCreating ? <Plus /> : <Pencil />}
+          {isCreating
+            ? loc.no.timeEntryInput.submit
+            : loc.no.timeEntryInput.update}
         </Button>
       </div>
     </form>

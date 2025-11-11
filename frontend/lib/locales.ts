@@ -15,6 +15,7 @@ const no = {
       description: 'Du gjør nå endringer på en eksisterende tid.',
     },
     submit: getRandomItem(['Yeeeehaw', 'Jeg elsker øl!', 'Registrer']),
+    update: 'Oppdater',
     noUser: 'Du må velge en bruker, idiot!',
     noTrack: 'Du må velge en bane, din bøtte!',
     fieldName: {
