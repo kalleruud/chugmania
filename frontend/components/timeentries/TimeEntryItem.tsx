@@ -1,0 +1,185 @@
+import { formatLapTimestamp } from '@/app/utils/date'
+import { useAuth } from '@/contexts/AuthContext'
+import { useData } from '@/contexts/DataContext'
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentProps,
+} from 'react'
+import { twMerge } from 'tailwind-merge'
+import type { LeaderboardEntry } from '../../../common/models/timeEntry'
+import { formatTime } from '../../../common/utils/time'
+import { Button } from '../ui/button'
+
+type TimeEntryItemProps = {
+  position?: number | null
+  lapTime: LeaderboardEntry
+  gapType?: GapType
+} & ComponentProps<'div'>
+
+export default function TimeEntryItem(props: Readonly<TimeEntryItemProps>) {
+  return <TimeEntryRow {...props} />
+}
+
+export type GapType = 'leader' | 'interval'
+
+function PositionBadgePart({
+  position,
+}: Readonly<{ position: TimeEntryItemProps['position'] }>) {
+  if (position === null) return null
+  return (
+    <div
+      className={twMerge(
+        'font-kh-interface text-primary flex w-6 items-center justify-center rounded-sm uppercase'
+      )}
+      aria-label={`#${position}`}>
+      <span>{position}</span>
+    </div>
+  )
+}
+
+function NameCellPart({
+  name,
+  hasComment = false,
+}: Readonly<{ name: string; hasComment: boolean } & ComponentProps<'div'>>) {
+  return (
+    <div className='font-f1-bold mr-auto truncate uppercase'>
+      {name}
+      {hasComment && <span className='text-label-muted'> *</span>}
+    </div>
+  )
+}
+
+function TimePart({ duration }: Readonly<{ duration?: number | null }>) {
+  const label = duration ? formatTime(duration).replace(/^0/, '') : 'DNF'
+  return (
+    <td className={`font-f1-italic items-center uppercase tabular-nums`}>
+      {label}
+    </td>
+  )
+}
+
+function DatePart({ timestamp }: Readonly<{ timestamp?: Date | string }>) {
+  if (!timestamp) return null
+  return (
+    <td className='text-muted-foreground font-f1 text-xs uppercase tabular-nums tracking-widest'>
+      {formatLapTimestamp(timestamp)}
+    </td>
+  )
+}
+
+function GapPart({
+  gap,
+  gapType = 'leader',
+  onToggle,
+}: Readonly<{
+  gap?: LeaderboardEntry['gap']
+  gapType?: GapType
+  onToggle?: () => void
+}>) {
+  const duration = gapType === 'leader' ? gap?.leader : gap?.previous
+  const isLeader = !duration
+  const label = isLeader
+    ? gapType.toUpperCase()
+    : '+' + formatTime(duration, true)
+
+  return (
+    <td
+      className={
+        'font-f1-italic text-muted-foreground flex w-24 items-center justify-end text-sm uppercase tabular-nums'
+      }>
+      {isLeader ? (
+        <Button variant='ghost' size='sm' onClick={onToggle}>
+          {label}
+        </Button>
+      ) : (
+        <p className='px-2'>{label}</p>
+      )}
+    </td>
+  )
+}
+
+function TimeEntryRow({
+  lapTime,
+  position = lapTime.gap.position,
+  gapType,
+  className,
+  ...rest
+}: Readonly<TimeEntryItemProps>) {
+  const containerRef = useRef<HTMLTableRowElement | null>(null)
+  const [width, setWidth] = useState(0)
+  const { user: loggedInUser } = useAuth()
+  const { users } = useData()
+  const userInfo = users ? users[lapTime.user] : null
+
+  const breakpoints = {
+    none: 0,
+    xxxxs: 180,
+    xxxs: 270,
+    xxs: 420,
+    xs: 560,
+    sm: 640,
+    md: 768,
+    lg: 1024,
+    xl: 1280,
+    xxl: 1536,
+  }
+
+  useEffect(() => {
+    if (!containerRef.current) return
+    const el = containerRef.current
+    const ro = new ResizeObserver(entries => {
+      const w = entries[0]?.contentRect.width
+      if (typeof w === 'number') setWidth(w)
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  const name = useMemo(() => {
+    if (width <= breakpoints.xxs)
+      return (
+        userInfo?.shortName ??
+        (userInfo?.lastName ?? userInfo?.firstName)?.slice(0, 3) ??
+        'N/A'
+      )
+    return userInfo?.lastName ?? userInfo?.firstName ?? 'N/A'
+  }, [width])
+
+  const show = useMemo(() => {
+    return {
+      time: width >= breakpoints.none,
+      pos: width >= breakpoints.xxxxs,
+      gap: width >= breakpoints.xxxs,
+      date: width >= breakpoints.sm,
+      comment: width >= breakpoints.md,
+    }
+  }, [width])
+
+  return (
+    <div
+      ref={containerRef}
+      className={twMerge(
+        'divansition-colors flex cursor-pointer items-center gap-2 rounded-md hover:bg-white/5',
+        loggedInUser && loggedInUser?.id === userInfo?.id
+          ? 'bg-accent/10 ring-accent/40 ring-1'
+          : '',
+        className
+      )}
+      title={
+        lapTime.comment ??
+        `${name} - ${lapTime.duration ? formatTime(lapTime.duration) : 'DNF'} - ${formatLapTimestamp(lapTime.createdAt)}`
+      }
+      {...rest}>
+      {show.pos && <PositionBadgePart position={position} />}
+      <NameCellPart name={name} hasComment={!!lapTime.comment} />
+
+      {show.date && <DatePart timestamp={lapTime.createdAt} />}
+
+      {show.gap && <GapPart gap={lapTime.gap} gapType={gapType} />}
+      {show.time && <TimePart duration={lapTime.duration} />}
+    </div>
+  )
+}

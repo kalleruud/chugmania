@@ -20,6 +20,7 @@
 
   * {
     @apply border-border;
+    font-variant-ligatures: none;
   }
 
   h1 {

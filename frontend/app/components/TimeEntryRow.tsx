@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type { LeaderboardEntry } from '../../../common/models/timeEntry'
 import { formatTime } from '../../../common/utils/time'
+import { Button } from '../../components/ui/button'
 import { useAuth } from '../../contexts/AuthContext'
 import { useData } from '../../contexts/DataContext'
 import { formatLapTimestamp } from '../utils/date'
@@ -80,9 +81,7 @@ function GapPart({
       {isPlaceholder ? (
         <Button
           type='button'
-          variant='tertiary'
           size='sm'
-          state={onToggle ? undefined : 'default'}
           onClick={onToggle}
           className='text-label-muted/50 rounded-md px-2 py-1 normal-case hover:bg-white/10 hover:text-white hover:no-underline'
           aria-label='Toggle gap display'
@@ -182,7 +181,6 @@ export default function TimeEntryRow({
         <td className='ml-auto pl-2'>
           <Button
             type='button'
-            variant='tertiary'
             size='sm'
             onClick={onEdit}
             className='rounded-md p-2 hover:bg-white/10'

@@ -9,6 +9,7 @@ type TrackItemProps = {
   track: Track
   variant: 'row' | 'card'
   className?: string
+  isLink?: boolean
 }
 
 export function TrackItem(props: Readonly<TrackItemProps>) {
