@@ -15,12 +15,11 @@ type TableRowProps = React.DetailedHTMLProps<
 
 export type GapType = 'leader' | 'interval'
 
-function PositionBadgePart({ position }: Readonly<{ position?: number }>) {
+function PositionBadgePart({ position }: Readonly<{ position: number }>) {
   return (
     <td
       className={twMerge(
-        'font-kh-interface flex size-8 items-center justify-center rounded uppercase',
-        position === 1 ? 'bg-accent' : 'text-label-muted'
+        'font-kh-interface flex size-8 items-center justify-center rounded uppercase'
       )}
       aria-label={`#${position}`}>
       <span>{position}</span>
@@ -174,7 +173,7 @@ export default function TimeEntryRow({
       }
       role='row'
       {...rest}>
-      <PositionBadgePart position={position} />
+      {position && <PositionBadgePart position={position} />}
       <NameCellPart name={name} hasComment={!!lapTime.comment} />
 
       {canEdit && (

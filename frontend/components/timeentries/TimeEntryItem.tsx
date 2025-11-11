@@ -47,7 +47,7 @@ function NameCellPart({
   return (
     <div className='font-f1-bold mr-auto truncate uppercase'>
       {name}
-      {hasComment && <span className='text-label-muted'> *</span>}
+      {hasComment && <span className='text-primary'> *</span>}
     </div>
   )
 }
@@ -112,15 +112,10 @@ function TimeEntryRow({
 
   const breakpoints = {
     none: 0,
-    xxxxs: 180,
-    xxxs: 270,
-    xxs: 420,
-    xs: 560,
-    sm: 640,
-    md: 768,
-    lg: 1024,
-    xl: 1280,
-    xxl: 1536,
+    sm: 180,
+    md: 270,
+    lg: 420,
+    xl: 640,
   }
 
   useEffect(() => {
@@ -135,7 +130,7 @@ function TimeEntryRow({
   }, [])
 
   const name = useMemo(() => {
-    if (width <= breakpoints.xxs)
+    if (width <= breakpoints.lg)
       return (
         userInfo?.shortName ??
         (userInfo?.lastName ?? userInfo?.firstName)?.slice(0, 3) ??
@@ -147,10 +142,9 @@ function TimeEntryRow({
   const show = useMemo(() => {
     return {
       time: width >= breakpoints.none,
-      pos: width >= breakpoints.xxxxs,
-      gap: width >= breakpoints.xxxs,
-      date: width >= breakpoints.sm,
-      comment: width >= breakpoints.md,
+      pos: width >= breakpoints.sm,
+      gap: width >= breakpoints.md,
+      date: width >= breakpoints.xl,
     }
   }, [width])
 
@@ -164,7 +158,8 @@ function TimeEntryRow({
           ? 'bg-accent/10 ring-accent/40 ring-1'
           : '',
         className
-      )}>
+      )}
+      title={lapTime.comment ?? undefined}>
       {show.pos && <PositionBadgePart position={position} />}
       <NameCellPart name={name} hasComment={!!lapTime.comment} />
 

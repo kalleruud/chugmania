@@ -2,6 +2,7 @@ import Combobox, { type ComboboxLookupItem } from '@/components/combobox'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import loc from '@/lib/locales'
 import {
   useCallback,
   useEffect,
@@ -11,22 +12,23 @@ import {
   type FormEvent,
   type KeyboardEvent,
 } from 'react'
-import { useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
 import type { PostLapTimeRequest } from '../../../common/models/requests'
 import type {
+  BackendResponse,
   ErrorResponse,
   GetSessionsResponse,
 } from '../../../common/models/responses'
 import type { SessionWithSignups } from '../../../common/models/session'
+import type { TimeEntry } from '../../../common/models/timeEntry'
 import type { Track } from '../../../common/models/track'
 import type { UserInfo } from '../../../common/models/user'
 import {
   WS_GET_SESSIONS,
   WS_POST_LAPTIME,
 } from '../../../common/utils/constants'
-import { formattedTimeToMs } from '../../../common/utils/time'
+import { formattedTimeToMs, formatTime } from '../../../common/utils/time'
 import { formatTrackName } from '../../../common/utils/track'
 import { useAuth } from '../../contexts/AuthContext'
 import { emitAsync, useConnection } from '../../contexts/ConnectionContext'
@@ -48,9 +50,8 @@ type LapTimeInputProps = DetailedHTMLProps<
   React.FormHTMLAttributes<HTMLFormElement>,
   HTMLFormElement
 > & {
-  trackId?: Track['id']
-  userId?: Track['id']
-  sessionId?: SessionWithSignups['id']
+  editingTimeEntry: Partial<TimeEntry>
+  onSubmitSuccessful?: () => void
 }
 
 const dateFormatter = new Intl.DateTimeFormat('nb-NO', {
@@ -90,19 +91,19 @@ function userToLookupItem(user: UserInfo): ComboboxLookupItem {
 }
 
 export default function LapTimeInput({
-  trackId,
-  userId,
-  sessionId,
-  className,
+  editingTimeEntry,
+  onSubmitSuccessful,
   onSubmit,
+  className,
 }: Readonly<LapTimeInputProps>) {
-  const { paramId } = useParams()
   const { socket } = useConnection()
   const { user: loggedInUser } = useAuth()
   const { users, tracks } = useData()
 
   const loggedInLookup = loggedInUser && userToLookupItem(loggedInUser)
-  const paramTrack = paramId && tracks?.[paramId]
+  const paramTrack = editingTimeEntry.track
+    ? tracks?.[editingTimeEntry.track]
+    : undefined
 
   const inputs = useRef<HTMLInputElement[]>([])
   const commentRef = useRef<HTMLTextAreaElement>(null)
@@ -193,15 +194,17 @@ export default function LapTimeInput({
 
         setSessions(r.sessions)
         // Pre-select session if sessionId is provided
-        if (sessionId && !selectedSession) {
-          const session = r.sessions.find(s => s.id === sessionId)
+        if (editingTimeEntry.session && !selectedSession) {
+          const session = r.sessions.find(
+            s => s.id === editingTimeEntry.session
+          )
           if (session) {
             setSelectedSession(sessionToLookupItem(session))
           }
         }
       }
     )
-  }, [socket, sessionId, selectedSession, dateFormatter])
+  }, [socket, editingTimeEntry.session, selectedSession, dateFormatter])
 
   function getMs() {
     const tenMinutes = digits[0] === '' ? 0 : Number.parseInt(digits[0]) * 10
@@ -221,26 +224,27 @@ export default function LapTimeInput({
   }
 
   function isInputValid(): boolean {
-    return !!(
-      getMs() > 0 &&
-      (trackId || selectedTrack) &&
-      (userId || selectedUser)
-    )
+    return !!(getMs() > 0 && selectedTrack && selectedUser)
+  }
+
+  function handleSubmitResponse(response: BackendResponse) {
+    if (!response.success) return
+    clearDigits()
+    onSubmitSuccessful?.()
   }
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    const uid = userId ?? selectedUser?.id
-    const tid = trackId ?? selectedTrack?.id
+    const uid = selectedUser?.id
+    const tid = selectedTrack?.id
     if (!uid) {
-      toast.error('No user selected')
-      return
+      return toast.error(loc.no.timeEntryInput.noUser)
     }
     if (!tid) {
-      toast.error('No track selected')
-      return
+      return toast.error(loc.no.timeEntryInput.noTrack)
     }
 
+    onSubmit?.(e)
     const payload = {
       duration: getMs(),
       user: uid,
@@ -253,12 +257,16 @@ export default function LapTimeInput({
       amount: 0.5,
     } satisfies PostLapTimeRequest
 
-    toast.promise(emitAsync(socket, WS_POST_LAPTIME, payload, clearDigits), {
-      loading: 'Posting laptime...',
-      success: 'Laptime posted successfully!',
-      error: (err: Error) => err.message,
-    })
-    onSubmit?.(e)
+    toast.promise(
+      emitAsync(socket, WS_POST_LAPTIME, payload, handleSubmitResponse),
+      {
+        loading: loc.no.timeEntryInput.request.loading,
+        success: loc.no.timeEntryInput.request.success(
+          formatTime(payload.duration)
+        ),
+        error: (err: Error) => err.message,
+      }
+    )
   }
 
   // Stable keys for each digit position to avoid using array index as key
@@ -295,7 +303,7 @@ export default function LapTimeInput({
 
       <div className='flex flex-col gap-2'>
         <div className='flex gap-2'>
-          {!userId && loggedInUser?.role !== 'user' && users && (
+          {loggedInUser?.role !== 'user' && users && (
             <Combobox
               className='w-full'
               required={true}
@@ -307,7 +315,7 @@ export default function LapTimeInput({
             />
           )}
 
-          {!trackId && tracks && (
+          {tracks && (
             <Combobox
               className='w-full'
               required={true}
@@ -320,7 +328,7 @@ export default function LapTimeInput({
           )}
         </div>
 
-        {!sessionId && sessions && (
+        {sessions && (
           <Combobox
             className='w-full'
             required={true}

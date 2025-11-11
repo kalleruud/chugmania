@@ -2,9 +2,11 @@ import TimeEntryItem, {
   type GapType,
 } from '@/components/timeentries/TimeEntryItem'
 import { TrackItem } from '@/components/track/TrackItem'
+import { Button } from '@/components/ui/button'
 import { Empty } from '@/components/ui/empty'
 import { Spinner } from '@/components/ui/spinner'
 import { useData } from '@/contexts/DataContext'
+import { useTimeEntryDrawer } from '@/hooks/TimeEntryDrawerProvider'
 import loc from '@/lib/locales'
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
@@ -41,6 +43,7 @@ function RowItemList({ entries }: Readonly<{ entries: LeaderboardEntry[] }>) {
 export default function TrackPage() {
   const { id } = useParams()
   const { tracks, leaderboards } = useData()
+  const { open } = useTimeEntryDrawer()
 
   if (tracks === undefined || leaderboards === undefined) {
     return (
@@ -60,6 +63,9 @@ export default function TrackPage() {
     <div className='flex flex-col p-2'>
       <TrackItem track={track} variant='row' />
       <RowItemList entries={leaderboard} />
+      <Button onClick={() => open({ track: track.id })}>
+        Register laptime
+      </Button>
     </div>
   )
 }

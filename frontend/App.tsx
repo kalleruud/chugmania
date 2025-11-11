@@ -12,6 +12,7 @@ import { AuthProvider } from './contexts/AuthContext'
 import { ConnectionProvider } from './contexts/ConnectionContext'
 import { DataProvider } from './contexts/DataContext'
 import { ThemeProvider } from './contexts/ThemeContext'
+import TimeEntryDialogProvider from './hooks/TimeEntryDrawerProvider'
 import './index.css'
 
 createRoot(document.getElementById('root')!).render(
@@ -23,23 +24,25 @@ createRoot(document.getElementById('root')!).render(
           <AuthProvider>
             <DataProvider>
               <ErrorBoundary FallbackComponent={ErrorPage}>
-                <Routes>
-                  <Route element={<Layout />}>
-                    <Route index element={<Home />} />
-                    <Route
-                      path='tracks'
-                      element={<TracksPage isComponent={false} />}
-                    />
-                    <Route path='tracks/:id' element={<TrackPage />} />
-                    {/* <Route path='players' element={<Players />} /> */}
-                    {/* <Route path='players/:id' element={<Player />} /> */}
-                    {/* <Route path='sessions' element={<Sessions />} /> */}
-                    {/* <Route path='sessions/:id' element={<Session />} /> */}
-                    {/* <Route path='login' element={<Login />} /> */}
-                    {/* <Route path='admin' element={<Admin />} /> */}
-                  </Route>
-                </Routes>
-                <Toaster />
+                <TimeEntryDialogProvider>
+                  <Routes>
+                    <Route element={<Layout />}>
+                      <Route index element={<Home />} />
+                      <Route
+                        path='tracks'
+                        element={<TracksPage isComponent={false} />}
+                      />
+                      <Route path='tracks/:id' element={<TrackPage />} />
+                      {/* <Route path='players' element={<Players />} /> */}
+                      {/* <Route path='players/:id' element={<Player />} /> */}
+                      {/* <Route path='sessions' element={<Sessions />} /> */}
+                      {/* <Route path='sessions/:id' element={<Session />} /> */}
+                      {/* <Route path='login' element={<Login />} /> */}
+                      {/* <Route path='admin' element={<Admin />} /> */}
+                    </Route>
+                  </Routes>
+                  <Toaster />
+                </TimeEntryDialogProvider>
               </ErrorBoundary>
             </DataProvider>
           </AuthProvider>

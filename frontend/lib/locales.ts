@@ -4,6 +4,26 @@ export type Localization = typeof no
 export type Locale = 'no'
 
 const no = {
+  timeEntryInput: {
+    title: 'Registrer tid',
+    description: 'Tiden din publiseres asap zulu.',
+    submit: ['Yeeeehaw', 'Jeg elsker øl!', 'Registrer'],
+    noUser: 'Du må velge en bruker, idiot!',
+    noTrack: 'Du må velge en bane, din bøtte!',
+    request: {
+      loading: 'Publiserer rundetiden',
+      success: (laptime: string) => `Rundetiden ble registrert: ${laptime}`,
+    },
+  },
+  cancel: [
+    'Abort mission',
+    'Avbryt',
+    'Cap',
+    'Føkk dette',
+    'Nah',
+    'Ombestemte meg',
+    'Vil ikke',
+  ],
   error: {
     title: 'Noe gikk galt 🥵',
     descriptions: [
@@ -12,6 +32,8 @@ const no = {
       'Du en er skuffelse for familien din og alle i verden hater deg.',
       'Nå dreit du deg ut',
       'Dumme faen',
+      'Nå tisset du på leggen',
+      'Straffeshot på deg!',
     ],
     retryAction: 'Gå tilbake',
   },
