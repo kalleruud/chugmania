@@ -64,7 +64,7 @@ export default function TrackPage() {
 
   return (
     <div className='flex flex-col p-2'>
-      <TrackItem track={track} variant='row' />
+      <TrackItem track={track} variant='card' />
       <RowItemList track={track} entries={leaderboard} />
     </div>
   )

@@ -1,6 +1,7 @@
 import { Item, ItemActions, ItemContent, ItemTitle } from '@/components/ui/item'
 import { ChevronRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { twMerge } from 'tailwind-merge'
 import type { Track } from '../../../common/models/track'
 import { formatTrackName } from '../../../common/utils/track'
 import { Badge } from '../ui/badge'
@@ -49,10 +50,20 @@ function TrackRow({ track, className }: Readonly<TrackItemProps>) {
 
 function TrackCard({ track, className }: Readonly<TrackItemProps>) {
   return (
-    <Item key={track.id} variant='muted' className={className}>
-      <ItemContent>
-        <ItemTitle>{track.number}</ItemTitle>
-      </ItemContent>
-    </Item>
+    <div key={track.id} className={twMerge('flex p-4', className)}>
+      <div className='font-kh-interface flex gap-2 text-6xl font-black'>
+        <p className='text-primary'>#</p>
+        {formatTrackName(track.number)}
+      </div>
+
+      <div className='flex flex-1 items-end justify-end gap-1'>
+        <Badge variant='outline' className='text-muted-foreground'>
+          {track.level}
+        </Badge>
+        <Badge variant='outline' className='text-muted-foreground'>
+          {track.type}
+        </Badge>
+      </div>
+    </div>
   )
 }
