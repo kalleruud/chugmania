@@ -26,7 +26,7 @@ function TrackRow({ track, className }: Readonly<TrackItemProps>) {
     <Item key={track.id} className={className} asChild>
       <a href={`tracks/${track.id}`}>
         <ItemContent>
-          <ItemTitle className='font-kh-interface text-2xl'>
+          <ItemTitle className='font-kh-interface text-2xl tabular-nums tracking-tight'>
             <p className='text-primary'>#</p>
             {formatTrackName(track.number)}
           </ItemTitle>
@@ -50,7 +50,7 @@ function TrackRow({ track, className }: Readonly<TrackItemProps>) {
 function TrackCard({ track, className }: Readonly<TrackItemProps>) {
   return (
     <div key={track.id} className={twMerge('flex p-4', className)}>
-      <div className='font-kh-interface flex gap-2 text-6xl font-black'>
+      <div className='font-kh-interface flex gap-2 text-6xl font-black tabular-nums tracking-tighter'>
         <p className='text-primary'>#</p>
         {formatTrackName(track.number)}
       </div>
