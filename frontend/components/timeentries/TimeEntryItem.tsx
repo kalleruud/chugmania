@@ -22,6 +22,14 @@ export default function TimeEntryItem(props: Readonly<TimeEntryItemProps>) {
   return <TimeEntryRow {...props} />
 }
 
+const breakpoints = {
+  none: 0,
+  sm: 180,
+  md: 270,
+  lg: 380,
+  xl: 640,
+}
+
 export type GapType = 'leader' | 'interval'
 
 function PositionBadgePart({
@@ -31,7 +39,7 @@ function PositionBadgePart({
   return (
     <div
       className={twMerge(
-        'font-kh-interface text-primary flex w-6 items-center justify-center rounded-sm uppercase'
+        'font-kh-interface text-primary flex w-6 flex-none items-center justify-center rounded-sm uppercase'
       )}
       aria-label={`#${position}`}>
       <span>{position}</span>
@@ -93,18 +101,10 @@ function TimeEntryRow({
   ...rest
 }: Readonly<TimeEntryItemProps>) {
   const containerRef = useRef<HTMLDivElement | null>(null)
-  const [width, setWidth] = useState(0)
+  const [width, setWidth] = useState(breakpoints.md)
   const { user: loggedInUser } = useAuth()
   const { users } = useData()
   const userInfo = users ? users[lapTime.user] : null
-
-  const breakpoints = {
-    none: 0,
-    sm: 180,
-    md: 270,
-    lg: 420,
-    xl: 640,
-  }
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -118,7 +118,7 @@ function TimeEntryRow({
   }, [])
 
   const name = useMemo(() => {
-    if (width <= breakpoints.lg)
+    if (width <= breakpoints.md)
       return (
         userInfo?.shortName ??
         (userInfo?.lastName ?? userInfo?.firstName)?.slice(0, 3) ??
@@ -131,7 +131,7 @@ function TimeEntryRow({
     return {
       time: width >= breakpoints.none,
       pos: width >= breakpoints.sm,
-      gap: width >= breakpoints.md,
+      gap: width >= breakpoints.lg,
       date: width >= breakpoints.xl,
     }
   }, [width])
