@@ -41,7 +41,7 @@ export default function TrackBadge({
     : typeClasses[trackType]
 
   return (
-    <Badge className={twMerge('font-f1', colorStyle, className)} {...rest}>
+    <Badge className={twMerge(colorStyle, className)} {...rest}>
       {trackLevel}
       {trackType}
     </Badge>

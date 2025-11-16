@@ -3,7 +3,7 @@ import { ChevronRight } from 'lucide-react'
 import { twMerge } from 'tailwind-merge'
 import type { Track } from '../../../common/models/track'
 import { formatTrackName } from '../../../common/utils/track'
-import { Badge } from '../ui/badge'
+import TrackBadge from './TrackBadge'
 
 type TrackItemProps = {
   track: Track
@@ -32,12 +32,12 @@ function TrackRow({ track, className }: Readonly<TrackItemProps>) {
           </ItemTitle>
         </ItemContent>
         <div className='flex gap-1'>
-          <Badge variant='outline' className='text-muted-foreground'>
+          <TrackBadge variant='outline' trackLevel={track.level}>
             {track.level}
-          </Badge>
-          <Badge variant='outline' className='text-muted-foreground'>
+          </TrackBadge>
+          <TrackBadge variant='outline' trackType={track.type}>
             {track.type}
-          </Badge>
+          </TrackBadge>
         </div>
         <ItemActions>
           <ChevronRight className='size-4' />
@@ -56,12 +56,12 @@ function TrackCard({ track, className }: Readonly<TrackItemProps>) {
       </div>
 
       <div className='flex flex-1 items-end justify-end gap-1'>
-        <Badge variant='outline' className='text-muted-foreground'>
+        <TrackBadge variant='outline' trackLevel={track.level}>
           {track.level}
-        </Badge>
-        <Badge variant='outline' className='text-muted-foreground'>
+        </TrackBadge>
+        <TrackBadge variant='outline' trackType={track.type}>
           {track.type}
-        </Badge>
+        </TrackBadge>
       </div>
     </div>
   )

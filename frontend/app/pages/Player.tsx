@@ -23,7 +23,7 @@ import { useConnection } from '../../contexts/ConnectionContext'
 import EditLapTimeModal from '../components/EditLapTimeModal'
 import LoadingView from '../components/LoadingView'
 import TimeEntryRow from '../components/TimeEntryRow'
-import TrackTag from '../components/TrackTag'
+import TrackBadge from '../components/TrackBadge'
 import UserForm from '../components/UserForm'
 
 export default function Player() {
@@ -346,12 +346,12 @@ export default function Player() {
                   </div>
 
                   <div className='flex gap-2'>
-                    <TrackTag trackLevel={trackGroup.track.level}>
+                    <TrackBadge trackLevel={trackGroup.track.level}>
                       {trackGroup.track.level}
-                    </TrackTag>
-                    <TrackTag trackType={trackGroup.track.type}>
+                    </TrackBadge>
+                    <TrackBadge trackType={trackGroup.track.type}>
                       {trackGroup.track.type}
-                    </TrackTag>
+                    </TrackBadge>
                   </div>
                 </header>
 
