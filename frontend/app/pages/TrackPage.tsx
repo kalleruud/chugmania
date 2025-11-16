@@ -3,6 +3,7 @@ import TimeEntryItem, {
 } from '@/components/timeentries/TimeEntryItem'
 import { TrackItem } from '@/components/track/TrackItem'
 import { Button } from '@/components/ui/button'
+import { ButtonGroup } from '@/components/ui/button-group'
 import { Empty } from '@/components/ui/empty'
 import { Spinner } from '@/components/ui/spinner'
 import { useData } from '@/contexts/DataContext'
@@ -29,16 +30,23 @@ function RowItemList({
   }
   return (
     <>
-      <div className='flex justify-between'>
-        <Button
-          variant='outline'
-          size='sm'
-          className='w-24'
-          onClick={() =>
-            setGapType(gapType === 'interval' ? 'leader' : 'interval')
-          }>
-          {gapType}
-        </Button>
+      <div className='flex w-full justify-center'>
+        <ButtonGroup>
+          <Button
+            className='rounded-l-full'
+            variant={gapType === 'leader' ? 'default' : 'outline'}
+            size='sm'
+            onClick={() => setGapType('leader')}>
+            {loc.no.timeEntry.gap.leader}
+          </Button>
+          <Button
+            className='rounded-r-full'
+            variant={gapType === 'interval' ? 'default' : 'outline'}
+            size='sm'
+            onClick={() => setGapType('interval')}>
+            {loc.no.timeEntry.gap.interval}
+          </Button>
+        </ButtonGroup>
       </div>
       <div className='bg-background-secondary flex flex-col rounded-sm'>
         {entries.map(entry => (
@@ -77,7 +85,7 @@ export default function TrackPage() {
   const leaderboard = id in leaderboards ? leaderboards[id].entries : []
 
   return (
-    <div className='flex flex-col gap-2 p-2'>
+    <div className='flex flex-col gap-4 p-2'>
       <TrackItem track={track} variant='card' className='pb-0' />
       <RowItemList track={track} entries={leaderboard} />
     </div>

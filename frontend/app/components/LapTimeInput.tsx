@@ -242,10 +242,10 @@ export default function LapTimeInput({
     const uid = selectedUser?.id
     const tid = selectedTrack?.id
     if (!uid) {
-      return toast.error(loc.no.timeEntryInput.noUser)
+      return toast.error(loc.no.timeEntry.input.noUser)
     }
     if (!tid) {
-      return toast.error(loc.no.timeEntryInput.noTrack)
+      return toast.error(loc.no.timeEntry.input.noTrack)
     }
 
     onSubmit?.(e)
@@ -261,8 +261,8 @@ export default function LapTimeInput({
     toast.promise(
       emitAsync(socket, WS_POST_LAPTIME, payload, handleSubmitResponse),
       {
-        loading: loc.no.timeEntryInput.request.loading,
-        success: loc.no.timeEntryInput.request.success(
+        loading: loc.no.timeEntry.input.request.loading,
+        success: loc.no.timeEntry.input.request.success(
           formatTime(payload.duration)
         ),
         error: (err: Error) => err.message,
@@ -310,7 +310,7 @@ export default function LapTimeInput({
               className='w-full'
               required={true}
               disabled={disabled}
-              placeholder={loc.no.timeEntryInput.placeholder.user}
+              placeholder={loc.no.timeEntry.input.placeholder.user}
               selected={selectedUser}
               setSelected={setSelectedUser}
               align='start'
@@ -323,7 +323,7 @@ export default function LapTimeInput({
               className='w-full'
               required={true}
               disabled={disabled}
-              placeholder={loc.no.timeEntryInput.placeholder.track}
+              placeholder={loc.no.timeEntry.input.placeholder.track}
               selected={selectedTrack}
               setSelected={setSelectedTrack}
               align='end'
@@ -337,7 +337,7 @@ export default function LapTimeInput({
             className='w-full'
             required={false}
             disabled={disabled}
-            placeholder={loc.no.timeEntryInput.placeholder.session}
+            placeholder={loc.no.timeEntry.input.placeholder.session}
             selected={selectedSession}
             setSelected={setSelectedSession}
             items={sessions?.map(sessionToLookupItem)}
@@ -345,7 +345,7 @@ export default function LapTimeInput({
         )}
 
         <Label htmlFor='laptime-comment'>
-          {loc.no.timeEntryInput.fieldName.comment}
+          {loc.no.timeEntry.input.fieldName.comment}
         </Label>
         <Textarea
           id='laptime-comment'
@@ -354,7 +354,7 @@ export default function LapTimeInput({
           disabled={disabled}
           onChange={e => setComment(e.target.value)}
           value={comment}
-          placeholder={loc.no.timeEntryInput.placeholder.comment}
+          placeholder={loc.no.timeEntry.input.placeholder.comment}
         />
       </div>
 
@@ -367,8 +367,8 @@ export default function LapTimeInput({
           <Button type='submit' className='flex-1' disabled={!isInputValid()}>
             {isCreating ? <Plus /> : <Pencil />}
             {isCreating
-              ? loc.no.timeEntryInput.submit
-              : loc.no.timeEntryInput.update}
+              ? loc.no.timeEntry.input.submit
+              : loc.no.timeEntry.input.update}
           </Button>
         </div>
       )}

@@ -1,35 +1,42 @@
 import { getRandomItem } from '@/app/utils/utils'
+import type { GapType } from '@/components/timeentries/TimeEntryItem'
 import type { TrackLevel, TrackType } from '../../backend/database/schema'
 
 export type Localization = typeof no
 export type Locale = 'no'
 
 const no = {
-  timeEntryInput: {
-    create: {
-      title: 'Registrer tid',
-      description: 'Tiden din publiseres asap zulu.',
-    },
-    edit: {
-      title: 'Rediger tid',
-      description: 'Du gjør nå endringer på en eksisterende tid.',
-    },
-    submit: getRandomItem(['Yeeeehaw', 'Jeg elsker øl!', 'Registrer']),
-    update: 'Oppdater',
-    noUser: 'Du må velge en bruker, idiot!',
-    noTrack: 'Du må velge en bane, din bøtte!',
-    fieldName: {
-      comment: 'Kommentar',
-    },
-    placeholder: {
-      track: 'Velg bane',
-      user: 'Velg spiller',
-      session: 'Velg session',
-      comment: 'Chugga dårligere enn bestemoren min...',
-    },
-    request: {
-      loading: 'Publiserer rundetiden',
-      success: (laptime: string) => `Rundetiden ble registrert: ${laptime}`,
+  timeEntry: {
+    gap: {
+      leader: 'Leader',
+      interval: 'Interval',
+    } satisfies Record<GapType, string>,
+    input: {
+      create: {
+        title: 'Registrer tid',
+        description: 'Tiden din publiseres asap zulu.',
+      },
+      edit: {
+        title: 'Rediger tid',
+        description: 'Du gjør nå endringer på en eksisterende tid.',
+      },
+      submit: getRandomItem(['Yeeeehaw', 'Jeg elsker øl!', 'Registrer']),
+      update: 'Oppdater',
+      noUser: 'Du må velge en bruker, idiot!',
+      noTrack: 'Du må velge en bane, din bøtte!',
+      fieldName: {
+        comment: 'Kommentar',
+      },
+      placeholder: {
+        track: 'Velg bane',
+        user: 'Velg spiller',
+        session: 'Velg session',
+        comment: 'Chugga dårligere enn bestemoren min...',
+      },
+      request: {
+        loading: 'Publiserer rundetiden',
+        success: (laptime: string) => `Rundetiden ble registrert: ${laptime}`,
+      },
     },
   },
   cancel: getRandomItem([

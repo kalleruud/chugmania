@@ -38,8 +38,8 @@ export default function TimeEntryDialogProvider({
   const { user: loggedInUser, isLoggedIn } = useAuth()
 
   const localeStrings = editingTimeEntry.id
-    ? loc.no.timeEntryInput.edit
-    : loc.no.timeEntryInput.create
+    ? loc.no.timeEntry.input.edit
+    : loc.no.timeEntry.input.create
 
   const isEditingSelf = isLoggedIn && loggedInUser?.id === editingTimeEntry.user
   const canEdit = isEditingSelf || (isLoggedIn && loggedInUser?.role !== 'user')
