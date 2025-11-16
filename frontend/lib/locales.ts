@@ -87,6 +87,7 @@ const no = {
     'Her var det tomt...',
     'Har du gått feil?',
   ]),
+  home: 'Hjem',
 }
 
 const loc: Record<Locale, Localization> = {

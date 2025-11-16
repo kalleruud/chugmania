@@ -1,4 +1,12 @@
 import { TrackItem } from '@/components/track/TrackItem'
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb'
 import { Empty } from '@/components/ui/empty'
 import {
   Item,
@@ -14,7 +22,6 @@ import { Map } from 'lucide-react'
 import type { DetailedHTMLProps, HTMLAttributes } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type { Track } from '../../../common/models/track'
-import { getRandomItem } from '../utils/utils'
 
 type TracksPageProps = { isComponent: boolean } & DetailedHTMLProps<
   HTMLAttributes<HTMLDivElement>,
@@ -25,7 +32,7 @@ function TrackRowList({ tracks }: Readonly<{ tracks: Track[] }>) {
   if (tracks.length === 0) {
     return (
       <Empty className='border-input text-muted-foreground border text-sm'>
-        {getRandomItem(loc.no.noItems)}
+        {loc.no.noItems}
       </Empty>
     )
   }
@@ -43,12 +50,31 @@ function TrackRowList({ tracks }: Readonly<{ tracks: Track[] }>) {
   )
 }
 
-export default function TracksPage({ className }: Readonly<TracksPageProps>) {
+export default function TracksPage(props: Readonly<TracksPageProps>) {
+  return (
+    <div className='p-safe-or-2'>
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href='/'>{loc.no.home}</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>{loc.no.tracks.title}</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+      <TracksList {...props} />
+    </div>
+  )
+}
+
+export function TracksList({ className }: Readonly<TracksPageProps>) {
   const { tracks: td, leaderboards: ld } = useData()
 
   if (td === undefined || ld === undefined) {
     return (
-      <div className={twMerge('flex flex-col p-2', className)}>
+      <div className={twMerge('flex flex-col', className)}>
         <Item>
           <ItemMedia>
             <Skeleton className='size-8 rounded-sm' />
@@ -71,7 +97,7 @@ export default function TracksPage({ className }: Readonly<TracksPageProps>) {
   const tracks = Object.values(td).filter(t => t.id in ld)
 
   return (
-    <div className={twMerge('flex flex-col p-2', className)}>
+    <div className={twMerge('flex flex-col', className)}>
       <Item className='w-full'>
         <ItemMedia variant='icon'>
           <Map />

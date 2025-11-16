@@ -2,6 +2,14 @@ import TimeEntryItem, {
   type GapType,
 } from '@/components/timeentries/TimeEntryItem'
 import { TrackItem } from '@/components/track/TrackItem'
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb'
 import { Button } from '@/components/ui/button'
 import { ButtonGroup } from '@/components/ui/button-group'
 import { Empty } from '@/components/ui/empty'
@@ -13,6 +21,7 @@ import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import type { LeaderboardEntry } from '../../../common/models/timeEntry'
 import type { Track } from '../../../common/models/track'
+import { formatTrackName } from '../../../common/utils/track'
 
 function RowItemList({
   track,
@@ -86,6 +95,25 @@ export default function TrackPage() {
 
   return (
     <div className='p-safe-or-2 flex flex-col gap-4'>
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href='/'>{loc.no.home}</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink href='/tracks'>
+              {loc.no.tracks.title}
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>
+              {'#' + formatTrackName(track.number)}
+            </BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
       <TrackItem track={track} variant='card' className='pb-0' />
       <RowItemList track={track} entries={leaderboard} />
     </div>

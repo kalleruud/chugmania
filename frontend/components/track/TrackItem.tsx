@@ -1,6 +1,5 @@
 import { Item, ItemActions, ItemContent, ItemTitle } from '@/components/ui/item'
 import { ChevronRight } from 'lucide-react'
-import { Link } from 'react-router-dom'
 import { twMerge } from 'tailwind-merge'
 import type { Track } from '../../../common/models/track'
 import { formatTrackName } from '../../../common/utils/track'
@@ -25,7 +24,7 @@ export function TrackItem(props: Readonly<TrackItemProps>) {
 function TrackRow({ track, className }: Readonly<TrackItemProps>) {
   return (
     <Item key={track.id} className={className} asChild>
-      <Link to={`tracks/${track.id}`}>
+      <a href={`tracks/${track.id}`}>
         <ItemContent>
           <ItemTitle className='font-kh-interface text-2xl'>
             <p className='text-primary'>#</p>
@@ -43,7 +42,7 @@ function TrackRow({ track, className }: Readonly<TrackItemProps>) {
         <ItemActions>
           <ChevronRight className='size-4' />
         </ItemActions>
-      </Link>
+      </a>
     </Item>
   )
 }
