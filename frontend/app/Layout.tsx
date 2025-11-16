@@ -11,7 +11,7 @@ export default function Layout() {
 
   return (
     <>
-      <main className='z-0'>
+      <main className='z-0 pb-28'>
         <Outlet />
       </main>
 
