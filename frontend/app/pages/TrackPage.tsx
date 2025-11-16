@@ -85,7 +85,7 @@ export default function TrackPage() {
   const leaderboard = id in leaderboards ? leaderboards[id].entries : []
 
   return (
-    <div className='flex flex-col gap-4 p-2'>
+    <div className='p-safe-or-2 flex flex-col gap-4'>
       <TrackItem track={track} variant='card' className='pb-0' />
       <RowItemList track={track} entries={leaderboard} />
     </div>
