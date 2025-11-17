@@ -56,7 +56,7 @@ export default function TracksPage(props: Readonly<TracksPageProps>) {
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
-            <BreadcrumbLink href='/'>{loc.no.home}</BreadcrumbLink>
+            <BreadcrumbLink to='/'>{loc.no.home}</BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>

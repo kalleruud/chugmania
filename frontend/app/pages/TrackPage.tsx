@@ -98,11 +98,11 @@ export default function TrackPage() {
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
-            <BreadcrumbLink href='/'>{loc.no.home}</BreadcrumbLink>
+            <BreadcrumbLink to='/'>{loc.no.home}</BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbLink href='/tracks'>
+            <BreadcrumbLink to='/tracks'>
               {loc.no.tracks.title}
             </BreadcrumbLink>
           </BreadcrumbItem>
