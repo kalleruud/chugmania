@@ -70,12 +70,10 @@ export default function TimeEntryDialogProvider({
         open={state === 'open'}
         onOpenChange={open => setState(open ? 'open' : 'closed')}>
         <DrawerContent>
-          {canEdit && (
-            <DrawerHeader className='text-left'>
-              <DrawerTitle>{localeStrings.title}</DrawerTitle>
-              <DrawerDescription>{localeStrings.description}</DrawerDescription>
-            </DrawerHeader>
-          )}
+          <DrawerHeader className='text-left'>
+            <DrawerTitle>{localeStrings.title}</DrawerTitle>
+            <DrawerDescription>{localeStrings.description}</DrawerDescription>
+          </DrawerHeader>
 
           <LapTimeInput
             className='pb-safe-offset-8 p-4'
