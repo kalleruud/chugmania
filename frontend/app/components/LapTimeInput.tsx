@@ -67,7 +67,7 @@ const dateFormatter = new Intl.DateTimeFormat('nb-NO', {
 function trackToLookupItem(track: Track): ComboboxLookupItem {
   return {
     id: track.id,
-    label: formatTrackName(track.number),
+    label: '#' + formatTrackName(track.number),
     sublabel: `${track.level} • ${track.type}`,
     tags: [track.level, track.type, track.number.toString()],
   }
@@ -85,14 +85,14 @@ function sessionToLookupItem(session: SessionWithSignups): ComboboxLookupItem {
 function userToLookupItem(user: UserInfo): ComboboxLookupItem {
   return {
     id: user.id,
-    label: user.firstName,
-    sublabel: user.shortName ?? user.lastName ?? undefined,
+    label: user.lastName ?? user.firstName,
+    sublabel: user.shortName ?? undefined,
     tags: [
       user.firstName,
       user.lastName ?? '',
       user.shortName ?? '',
       user.email ?? '',
-    ].filter(Boolean),
+    ],
   }
 }
 
