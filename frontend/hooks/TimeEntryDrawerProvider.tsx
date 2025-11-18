@@ -1,13 +1,28 @@
 import LapTimeInput from '@/app/components/LapTimeInput'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
+import { Button } from '@/components/ui/button'
+import {
   Drawer,
+  DrawerClose,
   DrawerContent,
   DrawerDescription,
+  DrawerFooter,
   DrawerHeader,
   DrawerTitle,
 } from '@/components/ui/drawer'
 import { useAuth } from '@/contexts/AuthContext'
 import loc from '@/lib/locales'
+import { Trash2 } from 'lucide-react'
 import {
   createContext,
   useContext,
@@ -76,11 +91,54 @@ export default function TimeEntryDialogProvider({
           </DrawerHeader>
 
           <LapTimeInput
-            className='pb-safe-offset-8 p-4'
+            id='laptimeInput'
+            className='px-4'
             editingTimeEntry={editingTimeEntry}
             onSubmitSuccessful={close}
             disabled={!canEdit}
           />
+
+          <DrawerFooter>
+            <Button type='submit' form='laptimeInput'>
+              {loc.no.timeEntry.input.submit}
+            </Button>
+            {editingTimeEntry?.id && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    type='button'
+                    variant='destructive'
+                    className='w-full'>
+                    <Trash2 />
+                    {loc.no.dialog.delete}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      {loc.no.dialog.confirmDelete.title}
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      {loc.no.dialog.confirmDelete.description}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>
+                      {loc.no.dialog.cancel}
+                    </AlertDialogCancel>
+                    <AlertDialogAction>
+                      {loc.no.dialog.continue}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+            <DrawerClose asChild>
+              <Button variant='outline' className='w-full'>
+                {loc.no.dialog.cancel}
+              </Button>
+            </DrawerClose>
+          </DrawerFooter>
         </DrawerContent>
       </Drawer>
       {children}

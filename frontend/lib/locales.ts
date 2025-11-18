@@ -53,17 +53,24 @@ const no = {
       },
     },
   },
-  cancel: getRandomItem([
-    'Abort mission',
-    'Avbryt',
-    'Cap',
-    'Føkk dette',
-    'Nah',
-    'Jeg ombestemte meg',
-    'Regretti spaghetti',
-    'Vil ikke',
-  ]),
-  delete: 'Slett',
+  dialog: {
+    confirmDelete: {
+      title: 'Bekreft sletting',
+      description: 'Er du heeelt sikker?',
+    },
+    cancel: getRandomItem([
+      'Abort mission',
+      'Avbryt',
+      'Cap',
+      'Føkk dette',
+      'Nah',
+      'Jeg ombestemte meg',
+      'Regretti spaghetti',
+      'Vil ikke',
+    ]),
+    continue: 'Kjør',
+    delete: 'Slett',
+  },
   error: {
     title: 'Noe gikk galt 🥵',
     descriptions: [

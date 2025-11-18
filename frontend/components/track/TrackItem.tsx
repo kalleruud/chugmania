@@ -32,7 +32,7 @@ function TrackRow({ track, className }: Readonly<TrackItemProps>) {
             {formatTrackName(track.number)}
           </ItemTitle>
         </ItemContent>
-        <div className='flex gap-1'>
+        <div className='flex gap-2'>
           <TrackBadge variant='outline' trackLevel={track.level}>
             {track.level}
           </TrackBadge>

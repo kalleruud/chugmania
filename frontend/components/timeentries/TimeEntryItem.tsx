@@ -142,9 +142,9 @@ function TimeEntryRow({
       {...rest}
       className={twMerge(
         'aansition-colors flex cursor-pointer items-center gap-4 rounded-md hover:bg-white/5',
-        loggedInUser && loggedInUser?.id === userInfo?.id
-          ? 'bg-accent/10 ring-accent/40 ring-1'
-          : '',
+        loggedInUser &&
+          loggedInUser?.id === userInfo?.id &&
+          'bg-accent hover:bg-foreground/15',
         className
       )}
       title={lapTime.comment ?? undefined}>

@@ -1,15 +1,13 @@
 import Combobox, { type ComboboxLookupItem } from '@/components/combobox'
-import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import loc from '@/lib/locales'
-import { Pencil, Plus, Trash2 } from 'lucide-react'
 import {
   useCallback,
   useEffect,
   useRef,
   useState,
-  type DetailedHTMLProps,
+  type ComponentProps,
   type FormEvent,
   type KeyboardEvent,
 } from 'react'
@@ -51,14 +49,11 @@ const cache: {
   session: undefined,
 }
 
-type LapTimeInputProps = DetailedHTMLProps<
-  React.FormHTMLAttributes<HTMLFormElement>,
-  HTMLFormElement
-> & {
+type LapTimeInputProps = {
   editingTimeEntry: Partial<TimeEntry>
   onSubmitSuccessful?: () => void
   disabled?: boolean
-}
+} & ComponentProps<'form'>
 
 const dateFormatter = new Intl.DateTimeFormat('nb-NO', {
   dateStyle: 'medium',
@@ -102,6 +97,7 @@ export default function LapTimeInput({
   onSubmit,
   disabled,
   className,
+  ...rest
 }: Readonly<LapTimeInputProps>) {
   const { socket } = useConnection()
   const { user: loggedInUser } = useAuth()
@@ -276,8 +272,9 @@ export default function LapTimeInput({
   return (
     <form
       className={twMerge('flex flex-col gap-6', className)}
-      onSubmit={handleSubmit}>
-      <div className='flex items-center justify-center gap-1 py-4'>
+      onSubmit={handleSubmit}
+      {...rest}>
+      <div className='flex items-center justify-center gap-1'>
         {digits.map((d, i) => (
           <span key={DIGIT_KEYS[i]} className='flex items-center gap-1'>
             <input
@@ -344,7 +341,7 @@ export default function LapTimeInput({
           />
         )}
 
-        <Label htmlFor='laptime-comment'>
+        <Label htmlFor='laptime-comment' className='pt-2'>
           {loc.no.timeEntry.input.fieldName.comment}
         </Label>
         <Textarea
@@ -357,21 +354,6 @@ export default function LapTimeInput({
           placeholder={loc.no.timeEntry.input.placeholder.comment}
         />
       </div>
-
-      {!disabled && (
-        <div className='flex gap-2'>
-          <Button variant='destructive'>
-            <Trash2 />
-            {loc.no.delete}
-          </Button>
-          <Button type='submit' className='flex-1' disabled={!isInputValid()}>
-            {isCreating ? <Plus /> : <Pencil />}
-            {isCreating
-              ? loc.no.timeEntry.input.submit
-              : loc.no.timeEntry.input.update}
-          </Button>
-        </div>
-      )}
     </form>
   )
 }
