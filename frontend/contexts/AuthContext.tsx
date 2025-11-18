@@ -88,7 +88,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     setToken(undefined)
     setUserInfo(undefined)
     setRequiresEmailUpdate(false)
-    navigate('/login')
+    navigate('/')
   }
 
   useEffect(() => {

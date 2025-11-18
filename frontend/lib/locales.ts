@@ -6,6 +6,11 @@ export type Localization = typeof no
 export type Locale = 'no'
 
 const no = {
+  login: {
+    title: 'Logg inn',
+    description: 'Logg inn for å registrere tider og meld deg på sessions.',
+    notLoggedIn: 'Du er ikke logget inn',
+  },
   timeEntry: {
     gap: {
       leader: 'Leader',
