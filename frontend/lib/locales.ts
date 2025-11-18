@@ -38,6 +38,7 @@ const no = {
       update: 'Oppdater',
       noUser: 'Du må velge en bruker, idiot!',
       noTrack: 'Du må velge en bane, din bøtte!',
+      noChanges: 'Du har ikke gjort noen endringer...',
       fieldName: {
         comment: 'Kommentar',
       },
@@ -49,7 +50,9 @@ const no = {
       },
       request: {
         loading: 'Publiserer rundetiden',
-        success: (laptime: string) => `Rundetiden ble registrert: ${laptime}`,
+        editSuccess: 'Rundetiden ble oppdatert',
+        createSuccess: (laptime: string) =>
+          `Rundetiden ble registrert: ${laptime}`,
       },
     },
   },

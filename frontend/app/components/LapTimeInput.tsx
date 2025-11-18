@@ -223,10 +223,6 @@ export default function LapTimeInput({
     )
   }, [socket, editingTimeEntry.session, selectedSession, dateFormatter])
 
-  function isInputValid(): boolean {
-    return !!(inputListToMs(digits) > 0 && selectedTrack && selectedUser)
-  }
-
   function handleSubmitResponse(response: BackendResponse) {
     if (!response.success) return
     clearDigits()
@@ -237,6 +233,7 @@ export default function LapTimeInput({
     e.preventDefault()
     const uid = selectedUser?.id
     const tid = selectedTrack?.id
+
     if (!uid) {
       return toast.error(loc.no.timeEntry.input.noUser)
     }
@@ -244,9 +241,21 @@ export default function LapTimeInput({
       return toast.error(loc.no.timeEntry.input.noTrack)
     }
 
+    const durationInput = inputListToMs(digits)
+    const hasChange =
+      uid !== editingTimeEntry.user ||
+      tid !== editingTimeEntry.track ||
+      durationInput !== (editingTimeEntry.duration ?? 0) ||
+      selectedSession?.id !== (editingTimeEntry.session ?? undefined) ||
+      comment !== (editingTimeEntry.comment ?? undefined)
+
+    if (!isCreating && !hasChange) {
+      return toast.error(loc.no.timeEntry.input.noChanges)
+    }
+
     onSubmit?.(e)
     const payload = {
-      duration: inputListToMs(digits),
+      duration: durationInput,
       user: uid,
       track: tid,
       session: selectedSession?.id,
@@ -258,9 +267,11 @@ export default function LapTimeInput({
       emitAsync(socket, WS_POST_LAPTIME, payload, handleSubmitResponse),
       {
         loading: loc.no.timeEntry.input.request.loading,
-        success: loc.no.timeEntry.input.request.success(
-          formatTime(payload.duration)
-        ),
+        success: isCreating
+          ? loc.no.timeEntry.input.request.createSuccess(
+              formatTime(payload.duration)
+            )
+          : loc.no.timeEntry.input.request.editSuccess,
         error: (err: Error) => err.message,
       }
     )

@@ -56,7 +56,10 @@ export default function TimeEntryDialogProvider({
     ? loc.no.timeEntry.input.edit
     : loc.no.timeEntry.input.create
 
-  const isEditingSelf = isLoggedIn && loggedInUser?.id === editingTimeEntry.user
+  const isEditing = !!editingTimeEntry?.id
+
+  const isEditingSelf =
+    isLoggedIn && isEditing && loggedInUser?.id === editingTimeEntry.user
   const canEdit = isEditingSelf || (isLoggedIn && loggedInUser?.role !== 'user')
 
   function open(
@@ -100,9 +103,11 @@ export default function TimeEntryDialogProvider({
 
           <DrawerFooter>
             <Button type='submit' form='laptimeInput'>
-              {loc.no.timeEntry.input.submit}
+              {isEditing
+                ? loc.no.timeEntry.input.update
+                : loc.no.timeEntry.input.submit}
             </Button>
-            {editingTimeEntry?.id && (
+            {isEditing && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button
