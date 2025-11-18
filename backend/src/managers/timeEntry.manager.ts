@@ -1,5 +1,6 @@
 import { eq } from 'drizzle-orm'
 import type { Socket } from 'socket.io'
+import { WS_BROADCAST_LEADERBOARDS } from '../../../common/models/leaderboard'
 import {
   isEditLapTimeRequest,
   isPostLapTimeRequest,
@@ -11,6 +12,8 @@ import type {
 import db from '../../database/database'
 import { timeEntries } from '../../database/schema'
 import AuthManager from './auth.manager'
+import ConnectionManager from './connection.manager'
+import LeaderboardManager from './leaderboard.manager'
 
 export default class TimeEntryManager {
   static readonly table = timeEntries
@@ -57,6 +60,11 @@ export default class TimeEntryManager {
       request.duration
     )
 
+    ConnectionManager.emit(
+      WS_BROADCAST_LEADERBOARDS,
+      await LeaderboardManager.onEmitLeaderboards()
+    )
+
     return {
       success: true,
     } satisfies SuccessResponse
@@ -68,6 +76,8 @@ export default class TimeEntryManager {
   ): Promise<BackendResponse> {
     if (!isEditLapTimeRequest(request))
       throw new Error('Invalid edit lap time request')
+
+    console.log(request)
 
     const { data: user, error } = await AuthManager.checkAuth(s)
     if (error) return error
@@ -102,6 +112,7 @@ export default class TimeEntryManager {
     if (request.comment !== undefined) updateData.comment = request.comment
     if (request.createdAt !== undefined)
       updateData.createdAt = new Date(request.createdAt)
+    if (request.deletedAt) updateData.deletedAt = new Date(request.deletedAt)
     if (request.track !== undefined) updateData.track = request.track
     if (request.session !== undefined) updateData.session = request.session
 
@@ -117,7 +128,13 @@ export default class TimeEntryManager {
       new Date().toISOString(),
       s.id,
       'Updated time entry',
+      updateData,
       request.id
+    )
+
+    ConnectionManager.emit(
+      WS_BROADCAST_LEADERBOARDS,
+      await LeaderboardManager.onEmitLeaderboards()
     )
 
     return {

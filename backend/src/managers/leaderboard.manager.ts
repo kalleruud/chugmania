@@ -68,14 +68,7 @@ export default class LeaderboardManager {
         gap.next = roundToHundredth(next - r.entry.duration)
 
       return {
-        id: r.entry.id,
-        duration: r.entry.duration,
-        amount: r.entry.amount,
-        comment: r.entry.comment,
-        createdAt: r.entry.createdAt,
-        updatedAt: r.entry.updatedAt,
-        deletedAt: r.entry.deletedAt,
-        session: r.entry.session,
+        ...r.entry,
         user: r.user.id,
         gap,
       } satisfies Leaderboard['entries'][0]

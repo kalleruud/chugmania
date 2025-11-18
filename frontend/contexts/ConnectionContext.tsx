@@ -44,15 +44,13 @@ export function emitAsync<T extends BackendResponse>(
   socket: Socket,
   event: string,
   data: unknown,
-  handler: (response: T) => void
+  handler?: (response: T) => void
 ): Promise<T> {
   return new Promise((resolve, reject) => {
     socket.emit(event, data, (response: T) => {
-      if (!response.success) {
-        handler(response)
+      handler?.(response)
+      if (!response.success)
         return reject(new Error(response.message || 'Unknown error'))
-      }
-      handler(response)
       resolve(response)
     })
   })

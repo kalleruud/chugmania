@@ -13,9 +13,11 @@ import {
 } from 'react'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
-import { type PostLapTimeRequest } from '../../../common/models/requests'
+import {
+  type EditLapTimeRequest,
+  type PostLapTimeRequest,
+} from '../../../common/models/requests'
 import type {
-  BackendResponse,
   ErrorResponse,
   GetSessionsResponse,
 } from '../../../common/models/responses'
@@ -24,6 +26,7 @@ import type { TimeEntry } from '../../../common/models/timeEntry'
 import type { Track } from '../../../common/models/track'
 import type { UserInfo } from '../../../common/models/user'
 import {
+  WS_EDIT_LAPTIME,
   WS_GET_SESSIONS,
   WS_POST_LAPTIME,
 } from '../../../common/utils/constants'
@@ -51,7 +54,6 @@ const cache: {
 
 type LapTimeInputProps = {
   editingTimeEntry: Partial<TimeEntry>
-  onSubmitSuccessful?: () => void
   disabled?: boolean
 } & ComponentProps<'form'>
 
@@ -93,7 +95,6 @@ function userToLookupItem(user: UserInfo): ComboboxLookupItem {
 
 export default function LapTimeInput({
   editingTimeEntry,
-  onSubmitSuccessful,
   onSubmit,
   disabled,
   className,
@@ -136,12 +137,6 @@ export default function LapTimeInput({
       return next
     })
     cache.time[i] = val
-  }, [])
-
-  const clearDigits = useCallback(() => {
-    const empty = new Array(6).fill('')
-    cache.time = empty
-    setDigits(empty)
   }, [])
 
   function find<T extends Track | UserInfo | SessionWithSignups>(
@@ -223,13 +218,41 @@ export default function LapTimeInput({
     )
   }, [socket, editingTimeEntry.session, selectedSession, dateFormatter])
 
-  function handleSubmitResponse(response: BackendResponse) {
-    if (!response.success) return
-    clearDigits()
-    onSubmitSuccessful?.()
+  function handleUpdate(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+
+    if (!editingTimeEntry?.id) {
+      return toast.error('Is not editing')
+    }
+
+    const durationInput = inputListToMs(digits)
+    const hasChange =
+      selectedUser?.id !== editingTimeEntry.user ||
+      selectedTrack?.id !== editingTimeEntry.track ||
+      durationInput !== (editingTimeEntry.duration ?? 0) ||
+      selectedSession?.id !== (editingTimeEntry.session ?? undefined) ||
+      comment !== (editingTimeEntry.comment ?? undefined)
+
+    if (!hasChange) {
+      return toast.error(loc.no.timeEntry.input.noChanges)
+    }
+
+    const payload = {
+      id: editingTimeEntry.id,
+      duration: durationInput,
+      // user: selectedUser?.id,
+      track: selectedTrack?.id,
+      session: selectedSession?.id,
+      comment: comment?.trim() === '' ? null : comment?.trim(),
+    } satisfies EditLapTimeRequest
+
+    toast.promise(
+      emitAsync(socket, WS_EDIT_LAPTIME, payload),
+      loc.no.timeEntry.input.editRequest
+    )
   }
 
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  function handleCreate(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const uid = selectedUser?.id
     const tid = selectedTrack?.id
@@ -242,39 +265,21 @@ export default function LapTimeInput({
     }
 
     const durationInput = inputListToMs(digits)
-    const hasChange =
-      uid !== editingTimeEntry.user ||
-      tid !== editingTimeEntry.track ||
-      durationInput !== (editingTimeEntry.duration ?? 0) ||
-      selectedSession?.id !== (editingTimeEntry.session ?? undefined) ||
-      comment !== (editingTimeEntry.comment ?? undefined)
 
-    if (!isCreating && !hasChange) {
-      return toast.error(loc.no.timeEntry.input.noChanges)
-    }
-
-    onSubmit?.(e)
     const payload = {
       duration: durationInput,
       user: uid,
       track: tid,
       session: selectedSession?.id,
       comment: comment?.trim() === '' ? undefined : comment?.trim(),
-      amount: 0.5,
     } satisfies PostLapTimeRequest
 
-    toast.promise(
-      emitAsync(socket, WS_POST_LAPTIME, payload, handleSubmitResponse),
-      {
-        loading: loc.no.timeEntry.input.request.loading,
-        success: isCreating
-          ? loc.no.timeEntry.input.request.createSuccess(
-              formatTime(payload.duration)
-            )
-          : loc.no.timeEntry.input.request.editSuccess,
-        error: (err: Error) => err.message,
-      }
-    )
+    toast.promise(emitAsync(socket, WS_POST_LAPTIME, payload), {
+      ...loc.no.timeEntry.input.createRequest,
+      success: loc.no.timeEntry.input.createRequest.success(
+        formatTime(payload.duration)
+      ),
+    })
   }
 
   // Stable keys for each digit position to avoid using array index as key
@@ -283,7 +288,7 @@ export default function LapTimeInput({
   return (
     <form
       className={twMerge('flex flex-col gap-6', className)}
-      onSubmit={handleSubmit}
+      onSubmit={onSubmit ?? (isCreating ? handleCreate : handleUpdate)}
       {...rest}>
       <div className='flex items-center justify-center gap-1'>
         {digits.map((d, i) => (

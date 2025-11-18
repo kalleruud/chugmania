@@ -21,6 +21,7 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer'
 import { useAuth } from '@/contexts/AuthContext'
+import { emitAsync, useConnection } from '@/contexts/ConnectionContext'
 import loc from '@/lib/locales'
 import { Trash2 } from 'lucide-react'
 import {
@@ -30,7 +31,10 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { toast } from 'sonner'
+import type { EditLapTimeRequest } from '../../common/models/requests'
 import type { TimeEntry } from '../../common/models/timeEntry'
+import { WS_EDIT_LAPTIME } from '../../common/utils/constants'
 
 type TimeEntryDialogContextType = {
   state: 'open' | 'closed'
@@ -51,6 +55,7 @@ export default function TimeEntryDialogProvider({
     {}
   )
   const { user: loggedInUser, isLoggedIn } = useAuth()
+  const { socket } = useConnection()
 
   const localeStrings = editingTimeEntry.id
     ? loc.no.timeEntry.input.edit
@@ -71,6 +76,24 @@ export default function TimeEntryDialogProvider({
 
   function close() {
     setState('closed')
+  }
+
+  function handleDelete() {
+    if (!editingTimeEntry?.id) {
+      return toast.error('Not editing...')
+    }
+    toast.promise(
+      emitAsync(
+        socket,
+        WS_EDIT_LAPTIME,
+        {
+          id: editingTimeEntry?.id,
+          deletedAt: new Date(),
+        } satisfies EditLapTimeRequest,
+        close
+      ),
+      loc.no.timeEntry.input.deleteRequest
+    )
   }
 
   const context = useMemo<TimeEntryDialogContextType>(
@@ -97,12 +120,11 @@ export default function TimeEntryDialogProvider({
             id='laptimeInput'
             className='px-4'
             editingTimeEntry={editingTimeEntry}
-            onSubmitSuccessful={close}
             disabled={!canEdit}
           />
 
           <DrawerFooter>
-            <Button type='submit' form='laptimeInput'>
+            <Button type='submit' form='laptimeInput' onClick={close}>
               {isEditing
                 ? loc.no.timeEntry.input.update
                 : loc.no.timeEntry.input.submit}
@@ -131,7 +153,7 @@ export default function TimeEntryDialogProvider({
                     <AlertDialogCancel>
                       {loc.no.dialog.cancel}
                     </AlertDialogCancel>
-                    <AlertDialogAction>
+                    <AlertDialogAction onClick={handleDelete}>
                       {loc.no.dialog.continue}
                     </AlertDialogAction>
                   </AlertDialogFooter>

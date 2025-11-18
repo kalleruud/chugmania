@@ -54,7 +54,8 @@ export type EditLapTimeRequest = {
   duration?: number | null
   amount?: number
   comment?: string | null
-  createdAt?: string
+  createdAt?: Date
+  deletedAt?: Date
   track?: Track['id']
   session?: Session['id'] | null
 }

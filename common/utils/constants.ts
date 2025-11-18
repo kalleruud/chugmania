@@ -23,4 +23,6 @@ export const WS_LEAVE_SESSION = 'leave_session'
 export const WS_SESSIONS_UPDATED = 'sessions_updated'
 export const WS_UPDATE_USER = 'update_user'
 
+export const WS_DELETE_TIME_ENTRY = 'delete_time_entry'
+
 export const AUTH_KEY = 'auth'

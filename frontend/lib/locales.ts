@@ -20,42 +20,6 @@ const no = {
       missingLogin: 'Enten brukernavn eller passord mangler...',
     },
   },
-  timeEntry: {
-    gap: {
-      leader: 'Leader',
-      interval: 'Interval',
-    } satisfies Record<GapType, string>,
-    input: {
-      create: {
-        title: 'Registrer tid',
-        description: 'Tiden din publiseres asap zulu.',
-      },
-      edit: {
-        title: 'Rediger tid',
-        description: 'Du gjør nå endringer på en eksisterende tid.',
-      },
-      submit: getRandomItem(['Yeeeehaw', 'Jeg elsker øl!', 'Registrer']),
-      update: 'Oppdater',
-      noUser: 'Du må velge en bruker, idiot!',
-      noTrack: 'Du må velge en bane, din bøtte!',
-      noChanges: 'Du har ikke gjort noen endringer...',
-      fieldName: {
-        comment: 'Kommentar',
-      },
-      placeholder: {
-        track: 'Velg bane',
-        user: 'Velg spiller',
-        session: 'Velg session',
-        comment: 'Chugga dårligere enn bestemoren min...',
-      },
-      request: {
-        loading: 'Publiserer rundetiden',
-        editSuccess: 'Rundetiden ble oppdatert',
-        createSuccess: (laptime: string) =>
-          `Rundetiden ble registrert: ${laptime}`,
-      },
-    },
-  },
   dialog: {
     confirmDelete: {
       title: 'Bekreft sletting',
@@ -87,10 +51,58 @@ const no = {
     ],
     retryAction: 'Gå tilbake',
   },
+  timeEntry: {
+    receivedUpdate: 'Rundetidene ble oppdatert',
+    gap: {
+      leader: 'Leader',
+      interval: 'Interval',
+    } satisfies Record<GapType, string>,
+    input: {
+      create: {
+        title: 'Registrer tid',
+        description: 'Tiden din publiseres asap zulu.',
+      },
+      edit: {
+        title: 'Rediger tid',
+        description: 'Du gjør nå endringer på en eksisterende tid.',
+      },
+      submit: getRandomItem(['Yeeeehaw', 'Jeg elsker øl!', 'Registrer']),
+      update: 'Oppdater',
+      noUser: 'Du må velge en bruker, idiot!',
+      noTrack: 'Du må velge en bane, din bøtte!',
+      noChanges: 'Du har ikke gjort noen endringer...',
+      fieldName: {
+        comment: 'Kommentar',
+      },
+      placeholder: {
+        track: 'Velg bane',
+        user: 'Velg spiller',
+        session: 'Velg session',
+        comment: 'Chugga dårligere enn bestemoren min...',
+      },
+      createRequest: {
+        loading: 'Registrerer rundetiden',
+        success: (laptime: string) => `Rundetiden ble registrert: ${laptime}`,
+        error: (err: Error) =>
+          `Kunne ikke registrere rundetiden: ${err.message}`,
+      },
+      editRequest: {
+        loading: 'Endrer rundetiden',
+        success: 'Rundetiden ble endret',
+        error: (err: Error) => `Endring feilet: ${err.message}`,
+      },
+      deleteRequest: {
+        loading: 'Sletter rundetiden',
+        success: 'Rundetiden ble slettet',
+        error: (err: Error) => `Sletting feilet: ${err.message}`,
+      },
+    },
+  },
   tracks: {
     title: 'Baner',
     description: 'Oversikt over banetider per bane.',
     customDescription: 'Baner vi har laget selv.',
+    receivedUpdate: 'Banene ble oppdatert',
     level: {
       custom: 'Custom',
       white: 'White',
@@ -105,6 +117,11 @@ const no = {
       lagoon: 'Lagoon',
       stadium: 'Stadium',
     } satisfies Record<TrackType, string>,
+  },
+  users: {
+    title: 'Spillere',
+    description: 'Oversikt over alle Chugmania spillere, rangert etter evne',
+    receivedUpdate: 'Spillerne ble oppdatert',
   },
   noItems: getRandomItem([
     'Finner ikke 🥵',
