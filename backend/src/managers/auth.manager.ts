@@ -18,6 +18,7 @@ import {
   tryCatchAsync,
   type Result,
 } from '../../../common/utils/try-catch'
+import loc from '../../../frontend/lib/locales'
 import { users } from '../../database/schema'
 import ConnectionManager from './connection.manager'
 import UserManager from './user.manager'
@@ -27,7 +28,13 @@ if (!SECRET) throw new Error("Missing environment variable 'SECRET'")
 
 type TokenData = UserInfo & { iat: number; exp: number }
 
+function delay(time: number) {
+  return new Promise(resolve => setTimeout(resolve, time))
+}
+
 export default class AuthManager {
+  private static readonly LOGIN_DELAY = 1000
+
   private static readonly JWT_OPTIONS: jwt.SignOptions = {
     algorithm: 'HS512',
     expiresIn: '30DAYS',
@@ -142,25 +149,20 @@ export default class AuthManager {
     socket: Socket,
     request: unknown
   ): Promise<BackendResponse> {
-    if (!isLoginRequest(request))
-      throw new Error('Failed to log in: email or password not provided.')
+    if (!isLoginRequest(request)) {
+      await delay(AuthManager.LOGIN_DELAY)
+      throw new Error(loc.no.login.response.missingLogin)
+    }
 
     const { email, password } = request
     const { data, error } = await tryCatchAsync(UserManager.getUser(email))
 
     if (error) {
       console.error(new Date().toISOString(), socket.id, error.message)
+      await delay(AuthManager.LOGIN_DELAY)
       return {
         success: false,
-        message: error.message,
-      } satisfies ErrorResponse
-    }
-
-    if (!data) {
-      console.error(new Date().toISOString(), socket.id, 'User not found')
-      return {
-        success: false,
-        message: 'User not found',
+        message: loc.no.login.response.incorrectLogin,
       } satisfies ErrorResponse
     }
 
@@ -172,17 +174,25 @@ export default class AuthManager {
     )
 
     const { passwordHash, userInfo } = UserManager.toUserInfo(data)
+    const isPasswordValid = await AuthManager.isPasswordValid(
+      password,
+      passwordHash
+    )
 
-    return (await AuthManager.isPasswordValid(password, passwordHash))
-      ? ({
-          success: true,
-          token: AuthManager.sign(userInfo),
-          userInfo,
-        } satisfies LoginResponse)
-      : ({
-          success: false,
-          message: 'Incorrect password',
-        } satisfies ErrorResponse)
+    if (!isPasswordValid) {
+      console.error(new Date().toISOString(), socket.id, 'Incorrect password')
+      await delay(AuthManager.LOGIN_DELAY)
+      return {
+        success: false,
+        message: loc.no.login.response.incorrectLogin,
+      } satisfies ErrorResponse
+    }
+
+    return {
+      success: true,
+      token: AuthManager.sign(userInfo),
+      userInfo,
+    } satisfies LoginResponse
   }
 
   static async onGetUserData(s: Socket): Promise<BackendResponse> {

@@ -10,6 +10,15 @@ const no = {
     title: 'Logg inn',
     description: 'Logg inn for å registrere tider og meld deg på sessions.',
     notLoggedIn: 'Du er ikke logget inn',
+    request: {
+      loading: 'Logger inn...',
+      success: 'Logget inn!',
+      error: (e: Error) => `Innlogging feilet: ${e.message}`,
+    },
+    response: {
+      incorrectLogin: 'Brukernavn eller passord er feil, prøv igjen.',
+      missingLogin: 'Enten brukernavn eller passord mangler...',
+    },
   },
   timeEntry: {
     gap: {

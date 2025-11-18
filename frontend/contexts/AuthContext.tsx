@@ -1,3 +1,4 @@
+import loc from '@/lib/locales'
 import {
   createContext,
   useCallback,
@@ -7,7 +8,6 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import type {
   LoginRequest,
@@ -41,11 +41,10 @@ const AuthContext = createContext<AuthContextType | null>(null)
 
 export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const { socket, refreshToken: setToken } = useConnection()
-  const navigate = useNavigate()
   const [userInfo, setUserInfo] = useState<AuthContextType['user'] | undefined>(
     undefined
   )
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [requiresEmailUpdate, setRequiresEmailUpdate] = useState(false)
 
   const refreshUser: AuthContextType['refreshUser'] = useCallback(
@@ -72,11 +71,10 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
 
   const login: AuthContextType['login'] = r => {
     setIsLoading(true)
-    toast.promise(emitAsync(socket, WS_LOGIN_NAME, r, handleResponse), {
-      loading: 'Logger inn...',
-      success: 'Logget inn!',
-      error: e => `Innlogging feilet: ${e.message}`,
-    })
+    toast.promise(
+      emitAsync(socket, WS_LOGIN_NAME, r, handleResponse),
+      loc.no.login.request
+    )
   }
 
   const register: AuthContextType['register'] = r => {
@@ -88,21 +86,12 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     setToken(undefined)
     setUserInfo(undefined)
     setRequiresEmailUpdate(false)
-    navigate('/')
   }
 
   useEffect(() => {
     if (!userInfo && localStorage.getItem(AUTH_KEY)) {
       setIsLoading(true)
-
-      toast.promise(
-        emitAsync(socket, WS_GET_USER_DATA, undefined, handleResponse),
-        {
-          loading: 'Logger inn...',
-          success: 'Logget inn!',
-          error: e => `Innlogging feilet: ${e.message}`,
-        }
-      )
+      emitAsync(socket, WS_GET_USER_DATA, undefined, handleResponse)
     }
   }, [socket])
 

@@ -17,17 +17,11 @@ import {
 import { useAuth } from '@/contexts/AuthContext'
 import loc from '@/lib/locales'
 import { DialogClose, DialogTrigger } from '@radix-ui/react-dialog'
-import type { FormEvent } from 'react'
 import { Spinner } from '../ui/spinner'
 import UserForm from './UserForm'
 
 export default function LoginCard() {
-  const { isLoggedIn, isLoading, login } = useAuth()
-
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    console.log('Logging in')
-  }
+  const { isLoggedIn, isLoading } = useAuth()
 
   if (isLoggedIn) return undefined
 
@@ -49,27 +43,31 @@ export default function LoginCard() {
           <DialogTrigger asChild>
             <Button size='sm'>{loc.no.login.title}</Button>
           </DialogTrigger>
-          <form id='loginForm' onSubmit={handleSubmit}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>{loc.no.login.title}</DialogTitle>
-                <DialogDescription>
-                  {loc.no.login.description}
-                </DialogDescription>
-              </DialogHeader>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{loc.no.login.title}</DialogTitle>
+              <DialogDescription>{loc.no.login.description}</DialogDescription>
+            </DialogHeader>
 
-              <UserForm variant='login' className='py-2' />
+            <UserForm
+              id='loginForm'
+              variant='login'
+              className='py-2'
+              disabled={isLoading}
+            />
 
-              <DialogFooter>
-                <DialogClose asChild>
-                  <Button variant='outline'>{loc.no.cancel}</Button>
-                </DialogClose>
-                <Button type='submit' form='loginForm'>
-                  {loc.no.login.title}
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant='outline' disabled={isLoading}>
+                  {loc.no.cancel}
                 </Button>
-              </DialogFooter>
-            </DialogContent>
-          </form>
+              </DialogClose>
+              <Button type='submit' form='loginForm' disabled={isLoading}>
+                {isLoading && <Spinner />}
+                {isLoading ? loc.no.login.request.loading : loc.no.login.title}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
         </Dialog>
       </EmptyContent>
     </Empty>
