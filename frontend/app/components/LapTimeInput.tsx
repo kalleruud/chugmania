@@ -11,6 +11,7 @@ import {
   type FormEvent,
   type KeyboardEvent,
 } from 'react'
+import { useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
 import {
@@ -93,6 +94,12 @@ function userToLookupItem(user: UserInfo): ComboboxLookupItem {
   }
 }
 
+function getId(path: string) {
+  const id = path.split('/').at(-1)
+  // TODO: Verify that id is a guid, return undefined if not
+  return id
+}
+
 export default function LapTimeInput({
   editingTimeEntry,
   onSubmit,
@@ -103,6 +110,8 @@ export default function LapTimeInput({
   const { socket } = useConnection()
   const { user: loggedInUser } = useAuth()
   const { users, tracks } = useData()
+  const location = useLocation()
+  const paramId = getId(location.pathname)
 
   const isCreating = !editingTimeEntry.id
   const loggedInLookup = find(loggedInUser?.id, users)
@@ -112,10 +121,12 @@ export default function LapTimeInput({
     durationToInputList(editingTimeEntry.duration) ?? cache.time
   )
   const [selectedUser, setSelectedUser] = useState(
-    find(editingTimeEntry.user, users) ?? cache.user ?? loggedInLookup
+    find(editingTimeEntry.user ?? paramId, users) ??
+      cache.user ??
+      loggedInLookup
   )
   const [selectedTrack, setSelectedTrack] = useState(
-    find(editingTimeEntry.track, tracks) ?? cache.track
+    find(editingTimeEntry.track ?? paramId, tracks) ?? cache.track
   )
 
   const [sessions, setSessions] = useState<SessionWithSignups[] | undefined>(
