@@ -1,4 +1,4 @@
-import LapTimeInput from '@/app/components/LapTimeInput'
+import LapTimeInput from '@/components/timeentries/LapTimeInput'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -110,7 +110,7 @@ export default function TimeEntryDialogProvider({
       <Drawer
         open={state === 'open'}
         onOpenChange={open => setState(open ? 'open' : 'closed')}>
-        <DrawerContent>
+        <DrawerContent className='pb-safe'>
           <DrawerHeader className='text-left'>
             <DrawerTitle>{localeStrings.title}</DrawerTitle>
             <DrawerDescription>{localeStrings.description}</DrawerDescription>
@@ -124,12 +124,14 @@ export default function TimeEntryDialogProvider({
           />
 
           <DrawerFooter>
-            <Button type='submit' form='laptimeInput' onClick={close}>
-              {isEditing
-                ? loc.no.timeEntry.input.update
-                : loc.no.timeEntry.input.submit}
-            </Button>
-            {isEditing && (
+            {canEdit && (
+              <Button type='submit' form='laptimeInput' onClick={close}>
+                {isEditing
+                  ? loc.no.timeEntry.input.update
+                  : loc.no.timeEntry.input.submit}
+              </Button>
+            )}
+            {canEdit && isEditing && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button

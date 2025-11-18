@@ -97,7 +97,8 @@ function userToLookupItem(user: UserInfo): ComboboxLookupItem {
 function getId(path: string) {
   const id = path.split('/').at(-1)
   // Verify that id is a valid UUID (GUID) format, return undefined if not
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  const uuidRegex =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
   return id && uuidRegex.test(id) ? id : undefined
 }
 

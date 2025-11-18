@@ -1,4 +1,6 @@
+import { useAuth } from '@/contexts/AuthContext'
 import type { UserInfo } from '../../../common/models/user'
+import { Button } from '../ui/button'
 
 type UserItemProps = {
   user: UserInfo
@@ -19,5 +21,10 @@ function UserRow({ user }: Readonly<UserItemProps>) {
 }
 
 function UserCard({ user }: Readonly<UserItemProps>) {
-  return <div>{user.lastName}</div>
+  const { logout } = useAuth()
+  return (
+    <div className='flex items-center justify-between'>
+      Hei, {user.lastName} <Button onClick={logout}>Log out</Button>
+    </div>
+  )
 }

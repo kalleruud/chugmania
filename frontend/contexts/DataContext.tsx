@@ -1,4 +1,3 @@
-import loc from '@/lib/locales'
 import {
   createContext,
   useContext,
@@ -7,7 +6,6 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { toast } from 'sonner'
 import {
   WS_BROADCAST_LEADERBOARDS,
   type Leaderboard,
@@ -51,17 +49,14 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
 
   useEffect(() => {
     socket.on(WS_BROADCAST_TRACKS, (data: TrackBroadcast) => {
-      if (!tracks) toast.info(loc.no.tracks.receivedUpdate)
       setTracks(toIdRecord(data))
     })
 
     socket.on(WS_BROADCAST_LEADERBOARDS, (data: LeaderboardBroadcast) => {
-      if (!leaderboards) toast.info(loc.no.timeEntry.receivedUpdate)
       setLeaderboards(toIdRecord(data))
     })
 
     socket.on(WS_BROADCAST_USERS, (data: UserBroadcast) => {
-      if (!users) toast.info(loc.no.users.receivedUpdate)
       setUsers(toIdRecord(data))
     })
 

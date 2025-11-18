@@ -59,7 +59,7 @@ export default function LoginCard() {
             <DialogFooter>
               <DialogClose asChild>
                 <Button variant='outline' disabled={isLoading}>
-                  {loc.no.cancel}
+                  {loc.no.dialog.cancel}
                 </Button>
               </DialogClose>
               <Button type='submit' form='loginForm' disabled={isLoading}>
