@@ -6,18 +6,41 @@ export type Localization = typeof no
 export type Locale = 'no'
 
 const no = {
-  login: {
-    title: 'Logg inn',
-    description: 'Logg inn for å registrere tider og meld deg på sessions.',
-    notLoggedIn: 'Du er ikke logget inn',
-    request: {
-      loading: 'Logger inn...',
-      success: 'Logget inn!',
-      error: (e: Error) => `Innlogging feilet: ${e.message}`,
-    },
-    response: {
+  user: {
+    auth: {
       incorrectLogin: 'Brukernavn eller passord er feil, prøv igjen.',
       missingLogin: 'Enten brukernavn eller passord mangler...',
+    },
+    notLoggedIn: 'Du er ikke logget inn',
+    login: {
+      title: 'Logg inn',
+      description: 'Logg inn for å registrere tider og meld deg på sessions.',
+      request: {
+        loading: 'Logger inn...',
+        success: 'Logget inn!',
+        error: (e: Error) => `Innlogging feilet: ${e.message}`,
+      },
+    },
+    logout: {
+      title: 'Logg ut',
+    },
+    edit: {
+      title: 'Rediger bruker',
+      description: 'Gjør endringer til Chugmania brukeren.',
+      request: {
+        loading: 'Oppdaterer...',
+        success: 'Brukeren ble oppdatert!',
+        error: (e: Error) => `Oppdatering feilet: ${e.message}`,
+      },
+    },
+    form: {
+      email: 'E-post',
+      firstName: 'Fornavn',
+      lastName: 'Etternavn',
+      shortName: 'Kort navn',
+      password: 'Passord',
+      oldPassword: 'Gammelt passord',
+      newPassword: 'Nytt passord',
     },
   },
   dialog: {

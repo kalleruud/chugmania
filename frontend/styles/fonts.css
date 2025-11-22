@@ -4,7 +4,8 @@
 
 @font-face {
   font-family: 'Titillium Web';
-  src: url('/fonts/titillium-web/titillium-web-latin-200-normal.woff2')
+  src:
+    url('/fonts/titillium-web/titillium-web-latin-200-normal.woff2')
       format('woff2'),
     url('/fonts/titillium-web/titillium-web-latin-200-normal.woff')
       format('woff');
@@ -15,7 +16,8 @@
 
 @font-face {
   font-family: 'Titillium Web';
-  src: url('/fonts/titillium-web/titillium-web-latin-300-normal.woff2')
+  src:
+    url('/fonts/titillium-web/titillium-web-latin-300-normal.woff2')
       format('woff2'),
     url('/fonts/titillium-web/titillium-web-latin-300-normal.woff')
       format('woff');
@@ -26,7 +28,8 @@
 
 @font-face {
   font-family: 'Titillium Web';
-  src: url('/fonts/titillium-web/titillium-web-latin-400-normal.woff2')
+  src:
+    url('/fonts/titillium-web/titillium-web-latin-400-normal.woff2')
       format('woff2'),
     url('/fonts/titillium-web/titillium-web-latin-400-normal.woff')
       format('woff');
@@ -37,7 +40,8 @@
 
 @font-face {
   font-family: 'Titillium Web';
-  src: url('/fonts/titillium-web/titillium-web-latin-600-normal.woff2')
+  src:
+    url('/fonts/titillium-web/titillium-web-latin-600-normal.woff2')
       format('woff2'),
     url('/fonts/titillium-web/titillium-web-latin-600-normal.woff')
       format('woff');
@@ -48,7 +52,8 @@
 
 @font-face {
   font-family: 'Titillium Web';
-  src: url('/fonts/titillium-web/titillium-web-latin-700-normal.woff2')
+  src:
+    url('/fonts/titillium-web/titillium-web-latin-700-normal.woff2')
       format('woff2'),
     url('/fonts/titillium-web/titillium-web-latin-700-normal.woff')
       format('woff');
@@ -59,7 +64,8 @@
 
 @font-face {
   font-family: 'Titillium Web';
-  src: url('/fonts/titillium-web/titillium-web-latin-900-normal.woff2')
+  src:
+    url('/fonts/titillium-web/titillium-web-latin-900-normal.woff2')
       format('woff2'),
     url('/fonts/titillium-web/titillium-web-latin-900-normal.woff')
       format('woff');
@@ -165,7 +171,7 @@
   --font-f1: 'Formula1', 'Titillium Web', sans-serif;
   --font-f1-wide: 'Formula1', 'Titillium Web', sans-serif;
   --font-f1-digits: 'Formula1Wide', 'Titillium Web', sans-serif;
-  --font-northwell: 'Northwell', 'Titillium Web', sans-serif;
+  --font-northwell: 'Northwell Clean Alt', 'Titillium Web', sans-serif;
   --font-kh-interface: 'KH Interference', 'Titillium Web', sans-serif;
 }
 

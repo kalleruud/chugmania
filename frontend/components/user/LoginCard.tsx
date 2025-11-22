@@ -36,18 +36,20 @@ export default function LoginCard() {
   return (
     <Empty className='w-full border border-dashed'>
       <EmptyHeader>
-        <EmptyTitle>{loc.no.login.notLoggedIn}</EmptyTitle>
-        <EmptyDescription>{loc.no.login.description}</EmptyDescription>
+        <EmptyTitle>{loc.no.user.notLoggedIn}</EmptyTitle>
+        <EmptyDescription>{loc.no.user.login.description}</EmptyDescription>
       </EmptyHeader>
       <EmptyContent>
         <Dialog>
           <DialogTrigger asChild>
-            <Button size='sm'>{loc.no.login.title}</Button>
+            <Button size='sm'>{loc.no.user.login.title}</Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{loc.no.login.title}</DialogTitle>
-              <DialogDescription>{loc.no.login.description}</DialogDescription>
+              <DialogTitle>{loc.no.user.login.title}</DialogTitle>
+              <DialogDescription>
+                {loc.no.user.login.description}
+              </DialogDescription>
             </DialogHeader>
 
             <UserForm
@@ -65,7 +67,9 @@ export default function LoginCard() {
               </DialogClose>
               <Button type='submit' form='loginForm' disabled={isLoading}>
                 {isLoading && <Spinner />}
-                {isLoading ? loc.no.login.request.loading : loc.no.login.title}
+                {isLoading
+                  ? loc.no.user.login.request.loading
+                  : loc.no.user.login.title}
               </Button>
             </DialogFooter>
           </DialogContent>

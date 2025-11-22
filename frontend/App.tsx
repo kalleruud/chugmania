@@ -28,10 +28,7 @@ createRoot(document.getElementById('root')!).render(
                   <Routes>
                     <Route element={<Layout />}>
                       <Route index element={<Home />} />
-                      <Route
-                        path='tracks'
-                        element={<TracksPage isComponent={false} />}
-                      />
+                      <Route path='tracks' element={<TracksPage />} />
                       <Route path='tracks/:id' element={<TrackPage />} />
                       {/* <Route path='players' element={<Players />} /> */}
                       {/* <Route path='players/:id' element={<Player />} /> */}

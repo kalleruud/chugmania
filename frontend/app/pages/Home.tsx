@@ -10,12 +10,15 @@ export default function Home() {
     <div className='items-center-safe px-safe-or-2 py-safe-or-4 flex flex-col'>
       <div className='flex w-full max-w-2xl flex-col gap-8'>
         <h1 className='text-primary'>Chugmania</h1>
-        {isLoggedIn && user && <UserItem variant='card' user={user} />}
+        {isLoggedIn && user && (
+          <UserItem
+            className='bg-background rounded-sm border p-4'
+            variant='card'
+            user={user}
+          />
+        )}
         <LoginCard />
-        <TracksList
-          isComponent
-          className='border-border rounded-sm border p-2'
-        />
+        <TracksList className='bg-background rounded-sm border p-2' />
       </div>
     </div>
   )

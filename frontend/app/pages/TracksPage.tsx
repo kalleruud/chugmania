@@ -23,7 +23,7 @@ import type { DetailedHTMLProps, HTMLAttributes } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type { Track } from '../../../common/models/track'
 
-type TracksPageProps = { isComponent: boolean } & DetailedHTMLProps<
+type TracksPageProps = DetailedHTMLProps<
   HTMLAttributes<HTMLDivElement>,
   HTMLDivElement
 >
