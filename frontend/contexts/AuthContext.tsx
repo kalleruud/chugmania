@@ -76,7 +76,6 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
         setRequiresEmailUpdate(
           r.userInfo.email.toLowerCase().endsWith('@chugmania.no')
         )
-        toast.success('User data updated')
       } finally {
         setIsLoading(false)
       }

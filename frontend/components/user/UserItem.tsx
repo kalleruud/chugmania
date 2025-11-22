@@ -24,7 +24,7 @@ function UserCard({ user }: Readonly<UserItemProps>) {
   const { logout } = useAuth()
   return (
     <div className='flex items-center justify-between'>
-      Hei, {user.lastName} <Button onClick={logout}>Log out</Button>
+      Hei, {user.lastName} <Button onClick={logout}>Logg ut</Button>
     </div>
   )
 }
