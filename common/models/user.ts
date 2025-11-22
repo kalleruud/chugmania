@@ -1,6 +1,7 @@
 import { users } from '../../backend/database/schema'
 
 export const WS_BROADCAST_USERS = 'UserBroadcast'
+export const WS_BROADCAST_USER_DATA = 'UserDataBroadcast'
 export type UserBroadcast = UserInfo[]
 
 export type User = typeof users.$inferSelect

@@ -25,12 +25,13 @@ export default function LoginCard() {
 
   if (isLoggedIn) return undefined
 
-  if (isLoading)
+  if (isLoading) {
     return (
       <Empty className='w-full border border-dashed'>
         <Spinner />
       </Empty>
     )
+  }
 
   return (
     <Empty className='w-full border border-dashed'>

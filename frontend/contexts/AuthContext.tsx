@@ -1,7 +1,6 @@
 import loc from '@/lib/locales'
 import {
   createContext,
-  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -9,21 +8,13 @@ import {
   type ReactNode,
 } from 'react'
 import { toast } from 'sonner'
-import type {
-  LoginRequest,
-  RegisterRequest,
-} from '../../common/models/requests'
+import type { LoginRequest } from '../../common/models/requests'
 import {
   type ErrorResponse,
   type LoginResponse,
 } from '../../common/models/responses'
-import { type UserInfo } from '../../common/models/user'
-import {
-  AUTH_KEY,
-  WS_GET_USER_DATA,
-  WS_LOGIN_NAME,
-  WS_REGISTER_NAME,
-} from '../../common/utils/constants'
+import { WS_BROADCAST_USER_DATA, type UserInfo } from '../../common/models/user'
+import { WS_LOGIN_NAME } from '../../common/utils/constants'
 import { emitAsync, useConnection } from './ConnectionContext'
 
 type AuthContextType = {
@@ -31,9 +22,8 @@ type AuthContextType = {
   isLoading: boolean
   user: UserInfo | undefined
   login: (request: LoginRequest) => void
-  register: (request: RegisterRequest) => void
   logout: () => void
-  refreshUser: (user: UserInfo, token?: string) => void
+
   requiresEmailUpdate: boolean
 }
 
@@ -47,15 +37,6 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [isLoading, setIsLoading] = useState(true)
   const [requiresEmailUpdate, setRequiresEmailUpdate] = useState(false)
 
-  const refreshUser: AuthContextType['refreshUser'] = useCallback(
-    (user, token) => {
-      setUserInfo(user)
-      if (token) setToken(token)
-      setRequiresEmailUpdate(user.email.toLowerCase().endsWith('@chugmania.no'))
-    },
-    [setToken]
-  )
-
   function handleResponse(response: ErrorResponse | LoginResponse) {
     try {
       if (!response.success) {
@@ -63,7 +44,11 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
         return logout()
       }
 
-      refreshUser(response.userInfo, response.token)
+      setUserInfo(response.userInfo)
+      if (response.token) setToken(response.token)
+      setRequiresEmailUpdate(
+        response.userInfo.email.toLowerCase().endsWith('@chugmania.no')
+      )
     } finally {
       setIsLoading(false)
     }
@@ -77,11 +62,6 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     )
   }
 
-  const register: AuthContextType['register'] = r => {
-    setIsLoading(true)
-    socket.emit(WS_REGISTER_NAME, r, handleResponse)
-  }
-
   const logout = () => {
     setToken(undefined)
     setUserInfo(undefined)
@@ -89,11 +69,22 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   }
 
   useEffect(() => {
-    if (!userInfo && localStorage.getItem(AUTH_KEY)) {
-      setIsLoading(true)
-      emitAsync(socket, WS_GET_USER_DATA, undefined, handleResponse)
+    socket.on(WS_BROADCAST_USER_DATA, (r: LoginResponse) => {
+      try {
+        if (!r.success) return
+        setUserInfo(r.userInfo)
+        setRequiresEmailUpdate(
+          r.userInfo.email.toLowerCase().endsWith('@chugmania.no')
+        )
+        toast.success('User data updated')
+      } finally {
+        setIsLoading(false)
+      }
+    })
+    return () => {
+      socket.off(WS_BROADCAST_USER_DATA)
     }
-  }, [socket])
+  }, [])
 
   const context = useMemo<AuthContextType>(
     () => ({
@@ -101,12 +92,10 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
       isLoading,
       user: userInfo,
       login,
-      register,
       logout,
-      refreshUser,
       requiresEmailUpdate,
     }),
-    [userInfo, requiresEmailUpdate, refreshUser]
+    [userInfo, requiresEmailUpdate, isLoading]
   )
 
   return <AuthContext.Provider value={context}>{children}</AuthContext.Provider>

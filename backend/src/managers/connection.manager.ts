@@ -5,7 +5,10 @@ import type {
   ErrorResponse,
 } from '../../../common/models/responses'
 import { WS_BROADCAST_TRACKS } from '../../../common/models/track'
-import { WS_BROADCAST_USERS } from '../../../common/models/user'
+import {
+  WS_BROADCAST_USER_DATA,
+  WS_BROADCAST_USERS,
+} from '../../../common/models/user'
 import {
   WS_CANCEL_SESSION,
   WS_CREATE_SESSION,
@@ -46,15 +49,14 @@ export default class ConnectionManager {
     console.debug(new Date().toISOString(), s.id, 'Connected')
 
     // Send data
-    ConnectionManager.emit(
+    s.emit(
       WS_BROADCAST_LEADERBOARDS,
       await LeaderboardManager.onEmitLeaderboards()
     )
-    ConnectionManager.emit(
-      WS_BROADCAST_TRACKS,
-      await TrackManager.onEmitTracks()
-    )
-    ConnectionManager.emit(WS_BROADCAST_USERS, await UserManager.onEmitUsers())
+    s.emit(WS_BROADCAST_TRACKS, await TrackManager.onEmitTracks())
+    s.emit(WS_BROADCAST_USERS, await UserManager.onEmitUsers())
+
+    s.emit(WS_BROADCAST_USER_DATA, await AuthManager.onGetUserData(s))
 
     // Setup user handling
     ConnectionManager.setup(s, WS_LOGIN_NAME, AuthManager.onLogin)
