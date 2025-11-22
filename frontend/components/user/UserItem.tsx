@@ -14,7 +14,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '../ui/dialog'
-import { Spinner } from '../ui/spinner'
 import UserForm from './UserForm'
 
 type UserItemProps = {
@@ -78,12 +77,30 @@ function UserCard({ user, className, ...props }: Readonly<UserItemProps>) {
                   {loc.no.dialog.cancel}
                 </Button>
               </DialogClose>
-              <Button type='submit' form='editForm' disabled={isLoading}>
-                {isLoading && <Spinner />}
-                {isLoading
-                  ? loc.no.user.edit.request.loading
-                  : loc.no.user.edit.title}
-              </Button>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button>{loc.no.user.edit.title}</Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>{loc.no.user.edit.title}</DialogTitle>
+                    <DialogDescription>
+                      {/* TODO: Display changes */}
+                      {loc.no.dialog.continue}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <Button variant='outline' disabled={isLoading}>
+                        {loc.no.dialog.cancel}
+                      </Button>
+                    </DialogClose>
+                    <Button type='submit' form='editForm' disabled={isLoading}>
+                      {loc.no.dialog.continue}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </DialogFooter>
           </DialogContent>
         </Dialog>

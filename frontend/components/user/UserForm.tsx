@@ -55,7 +55,6 @@ export default function UserForm({
         id='email'
         name={loc.no.user.form.email}
         type='email'
-        autoFocus
         disabled={disabled && canEdit}
         required
         show
@@ -69,7 +68,6 @@ export default function UserForm({
           id='first_name'
           name={loc.no.user.form.firstName}
           type='text'
-          autoFocus
           disabled={disabled && canEdit}
           required
           show={variant === 'edit' || variant === 'register'}
@@ -82,7 +80,6 @@ export default function UserForm({
           id='last_name'
           name={loc.no.user.form.lastName}
           type='text'
-          autoFocus
           disabled={disabled && canEdit}
           required
           show={variant === 'edit' || variant === 'register'}
@@ -96,7 +93,6 @@ export default function UserForm({
         id='short_name'
         name={loc.no.user.form.shortName}
         type='text'
-        autoFocus
         disabled={disabled && canEdit}
         minLength={3}
         maxLength={3}
@@ -119,7 +115,7 @@ export default function UserForm({
         minLength={8}
         disabled={disabled && canEdit}
         required
-        show
+        show={variant !== 'edit' || loggedInUser?.role !== 'admin'}
         value={password}
         onChange={e => setPassword(e.target.value)}
         placeholder='•••••••••••'
