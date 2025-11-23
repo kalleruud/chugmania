@@ -77,30 +77,9 @@ function UserCard({ user, className, ...props }: Readonly<UserItemProps>) {
                   {loc.no.dialog.cancel}
                 </Button>
               </DialogClose>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button>{loc.no.user.edit.title}</Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>{loc.no.user.edit.title}</DialogTitle>
-                    <DialogDescription>
-                      {/* TODO: Display changes */}
-                      {loc.no.dialog.continue}
-                    </DialogDescription>
-                  </DialogHeader>
-                  <DialogFooter>
-                    <DialogClose asChild>
-                      <Button variant='outline' disabled={isLoading}>
-                        {loc.no.dialog.cancel}
-                      </Button>
-                    </DialogClose>
-                    <Button type='submit' form='editForm' disabled={isLoading}>
-                      {loc.no.dialog.continue}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+              <Button type='submit' form='editForm' disabled={isLoading}>
+                {loc.no.dialog.continue}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

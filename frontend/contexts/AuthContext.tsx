@@ -58,7 +58,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     setIsLoading(true)
     toast.promise(
       emitAsync(socket, WS_LOGIN_NAME, r, handleResponse),
-      loc.no.login.request
+      loc.no.user.login.request
     )
   }
 

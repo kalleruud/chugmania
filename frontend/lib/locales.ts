@@ -7,10 +7,6 @@ export type Locale = 'no'
 
 const no = {
   user: {
-    auth: {
-      incorrectLogin: 'Brukernavn eller passord er feil, prøv igjen.',
-      missingLogin: 'Enten brukernavn eller passord mangler...',
-    },
     notLoggedIn: 'Du er ikke logget inn',
     login: {
       title: 'Logg inn',
@@ -48,6 +44,10 @@ const no = {
       title: 'Bekreft sletting',
       description: 'Er du heeelt sikker?',
     },
+    confirm: {
+      title: 'Bekreft',
+      description: 'Er du heeelt sikker?',
+    },
     cancel: getRandomItem([
       'Abort mission',
       'Avbryt',
@@ -59,11 +59,12 @@ const no = {
       'Vil ikke',
     ]),
     continue: 'Kjør',
+
     delete: 'Slett',
   },
   error: {
     title: 'Noe gikk galt 🥵',
-    descriptions: [
+    description: getRandomItem([
       'Nå har du faen meg rota det til... Skjerpings!',
       'Hvordan har du fått til dette da?',
       'Du en er skuffelse for familien din og alle i verden hater deg.',
@@ -71,8 +72,18 @@ const no = {
       'Dumme faen',
       'Nå tisset du på leggen',
       'Straffeshot på deg!',
-    ],
+    ]),
     retryAction: 'Gå tilbake',
+    messages: {
+      missing_jwt: 'Du har ingen JWT token... Går det an å være mer idiot?',
+      incorrect_login: 'Brukernavn eller passord er feil, prøv igjen.',
+      incorrect_email: 'E-posten finnes ikke på mainframen',
+      missing_login: 'Enten brukernavn eller passord mangler...',
+      incorrect_password:
+        'Passordet er feil... Det er lov å ikke være tilbakestående',
+      insufficient_permissions:
+        'Du får ikke lov til å gjøre dette din hårete faen.',
+    },
   },
   timeEntry: {
     receivedUpdate: 'Rundetidene ble oppdatert',

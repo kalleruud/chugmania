@@ -11,8 +11,11 @@ import type {
   LoginResponse,
   UpdateUserResponse,
 } from '../../../common/models/responses'
-import { type User, type UserInfo } from '../../../common/models/user'
-import { WS_UPDATE_USER } from '../../../common/utils/constants'
+import {
+  WS_BROADCAST_USERS,
+  type User,
+  type UserInfo,
+} from '../../../common/models/user'
 import {
   tryCatch,
   tryCatchAsync,
@@ -45,7 +48,8 @@ export default class AuthManager {
   }
 
   private static verify(token: string | undefined): Result<TokenData> {
-    if (!token) return { data: null, error: new Error('No JWT token provided') }
+    if (!token)
+      return { data: null, error: new Error(loc.no.error.messages.missing_jwt) }
     const { data: user, error } = tryCatch(jwt.verify(token, SECRET))
     if (error) return { data: null, error }
     return {
@@ -55,9 +59,10 @@ export default class AuthManager {
   }
 
   private static async isPasswordValid(
-    providedPassword: string,
-    expectedHash: User['passwordHash']
+    expectedHash: User['passwordHash'],
+    providedPassword?: string
   ) {
+    if (!providedPassword) return false
     return expectedHash.equals(await AuthManager.hash(providedPassword))
   }
 
@@ -84,25 +89,29 @@ export default class AuthManager {
 
     const userExists = await UserManager.userExists(user.email)
     if (!userExists) {
-      const message = `User with email '${user.email}' doesn't exist`
-      console.warn(new Date().toISOString(), message)
+      console.warn(
+        new Date().toISOString(),
+        `User with email '${user.email}' doesn't exist`
+      )
       return {
         data: null,
         error: {
           success: false,
-          message,
+          message: loc.no.error.messages.incorrect_email,
         },
       }
     }
 
     if (allowedRoles && !allowedRoles.includes(user.role)) {
-      const message = `Role '${user.role}' is not allowed to perform this action.`
-      console.warn(new Date().toISOString(), message)
+      console.warn(
+        new Date().toISOString(),
+        `Role '${user.role}' is not allowed to perform this action.`
+      )
       return {
         data: null,
         error: {
           success: false,
-          message,
+          message: loc.no.error.messages.insufficient_permissions,
         },
       }
     }
@@ -115,7 +124,7 @@ export default class AuthManager {
     request: unknown
   ): Promise<BackendResponse> {
     if (!isRegisterRequest(request))
-      throw new Error('Failed to register: email or password not provided.')
+      throw new Error(loc.no.error.messages.missing_login)
 
     const adminExists = await UserManager.adminExists()
     const { password, ...insertUser } = request
@@ -151,7 +160,7 @@ export default class AuthManager {
   ): Promise<BackendResponse> {
     if (!isLoginRequest(request)) {
       await delay(AuthManager.LOGIN_DELAY)
-      throw new Error(loc.no.login.response.missingLogin)
+      throw new Error(loc.no.error.messages.missing_login)
     }
 
     const { email, password } = request
@@ -162,7 +171,7 @@ export default class AuthManager {
       await delay(AuthManager.LOGIN_DELAY)
       return {
         success: false,
-        message: loc.no.login.response.incorrectLogin,
+        message: loc.no.error.messages.incorrect_login,
       } satisfies ErrorResponse
     }
 
@@ -175,8 +184,8 @@ export default class AuthManager {
 
     const { passwordHash, userInfo } = UserManager.toUserInfo(data)
     const isPasswordValid = await AuthManager.isPasswordValid(
-      password,
-      passwordHash
+      passwordHash,
+      password
     )
 
     if (!isPasswordValid) {
@@ -184,7 +193,7 @@ export default class AuthManager {
       await delay(AuthManager.LOGIN_DELAY)
       return {
         success: false,
-        message: loc.no.login.response.incorrectLogin,
+        message: loc.no.error.messages.incorrect_login,
       } satisfies ErrorResponse
     }
 
@@ -219,7 +228,7 @@ export default class AuthManager {
     if (!isUpdateUserRequest(request)) {
       return {
         success: false,
-        message: 'Invalid update user request',
+        message: loc.no.error.description,
       } satisfies ErrorResponse
     }
 
@@ -229,20 +238,20 @@ export default class AuthManager {
     if (!isSelf && !isAdmin) {
       return {
         success: false,
-        message: 'You do not have permission to update this user.',
+        message: loc.no.error.messages.insufficient_permissions,
       } satisfies ErrorResponse
     }
 
     const targetUser = await UserManager.getUserById(request.id)
     const passwordValid = await AuthManager.isPasswordValid(
-      request.password,
-      targetUser.passwordHash
+      targetUser.passwordHash,
+      request.password
     )
 
     if (!passwordValid && !isAdmin) {
       return {
         success: false,
-        message: 'Provided password is incorrect.',
+        message: loc.no.error.messages.incorrect_password,
       } satisfies ErrorResponse
     }
 
@@ -254,7 +263,8 @@ export default class AuthManager {
 
     const updatedUser = await UserManager.updateUser(request.id, updates)
     const { userInfo } = UserManager.toUserInfo(updatedUser)
-    ConnectionManager.emit(WS_UPDATE_USER, updatedUser)
+
+    ConnectionManager.emit(WS_BROADCAST_USERS, await UserManager.onEmitUsers())
 
     return {
       success: true,

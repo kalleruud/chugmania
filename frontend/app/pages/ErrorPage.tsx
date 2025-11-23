@@ -9,7 +9,6 @@ import {
 import loc from '@/lib/locales'
 import { type FallbackProps } from 'react-error-boundary'
 import { Link } from 'react-router-dom'
-import { getRandomItem } from '../utils/utils'
 
 export function ErrorPage({
   error,
@@ -20,7 +19,7 @@ export function ErrorPage({
       <EmptyHeader>
         <EmptyTitle>{loc.no.error.title}</EmptyTitle>
         <EmptyDescription>
-          {error.message ?? getRandomItem(loc.no.error.descriptions)}
+          {error.message ?? loc.no.error.description}
         </EmptyDescription>
       </EmptyHeader>
       <EmptyContent>

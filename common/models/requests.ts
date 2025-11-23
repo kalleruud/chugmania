@@ -174,7 +174,7 @@ export function isSessionSignupRequest(
   return isSessionIdValid && isResponseValid
 }
 
-export type UpdateUserRequest = RegisterRequest & {
+export type UpdateUserRequest = Partial<RegisterRequest> & {
   type: 'UpdateUserRequest'
   id: UserInfo['id']
   newPassword?: RegisterRequest['password']

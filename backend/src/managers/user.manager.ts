@@ -3,10 +3,15 @@ import type {
   BackendResponse,
   GetUsersResponse,
 } from '../../../common/models/responses'
-import type { User, UserInfo } from '../../../common/models/user'
+import {
+  WS_BROADCAST_USERS,
+  type User,
+  type UserInfo,
+} from '../../../common/models/user'
 import { tryCatchAsync } from '../../../common/utils/try-catch'
 import db from '../../database/database'
 import { users } from '../../database/schema'
+import ConnectionManager from './connection.manager'
 
 export default class UserManager {
   static readonly table = users
@@ -70,6 +75,8 @@ export default class UserManager {
 
     if (error) throw error
     if (!data?.[0]) throw new Error(`Couldn't find user with id ${id}`)
+
+    ConnectionManager.emit(WS_BROADCAST_USERS, await UserManager.onEmitUsers())
 
     return data[0]!
   }
