@@ -21,7 +21,7 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer'
 import { useAuth } from '@/contexts/AuthContext'
-import { emitAsync, useConnection } from '@/contexts/ConnectionContext'
+import { useConnection } from '@/contexts/ConnectionContext'
 import loc from '@/lib/locales'
 import { Trash2 } from 'lucide-react'
 import {
@@ -32,9 +32,7 @@ import {
   type ReactNode,
 } from 'react'
 import { toast } from 'sonner'
-import type { EditLapTimeRequest } from '../../common/models/auth'
 import type { TimeEntry } from '../../common/models/timeEntry'
-import { WS_EDIT_LAPTIME } from '../../common/utils/constants'
 
 type TimeEntryDialogContextType = {
   state: 'open' | 'closed'
@@ -83,15 +81,13 @@ export default function TimeEntryDialogProvider({
       return toast.error('Not editing...')
     }
     toast.promise(
-      emitAsync(
-        socket,
-        WS_EDIT_LAPTIME,
-        {
+      socket
+        .emitWithAck('edit_time_entry', {
+          type: 'EditTimeEntryRequest',
           id: editingTimeEntry?.id,
           deletedAt: new Date(),
-        } satisfies EditLapTimeRequest,
-        close
-      ),
+        })
+        .then(close),
       loc.no.timeEntry.input.deleteRequest
     )
   }

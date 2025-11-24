@@ -22,7 +22,7 @@ import AuthManager from './auth.manager'
 import UserManager from './user.manager'
 
 export default class SessionManager {
-  public static async getSessions(): Promise<SessionWithSignups[]> {
+  public static async getAllSessions(): Promise<SessionWithSignups[]> {
     const sessionRows = await db
       .select()
       .from(sessions)
@@ -148,7 +148,7 @@ export default class SessionManager {
       request.name
     )
 
-    broadcast('all_sessions', await SessionManager.getSessions())
+    broadcast('all_sessions', await SessionManager.getAllSessions())
 
     return { success: true }
   }
@@ -178,7 +178,7 @@ export default class SessionManager {
 
     console.debug(new Date().toISOString(), socket.id, 'Updated session', id)
 
-    broadcast('all_sessions', await SessionManager.getSessions())
+    broadcast('all_sessions', await SessionManager.getAllSessions())
 
     return { success: true }
   }
@@ -230,7 +230,7 @@ export default class SessionManager {
       session.id
     )
 
-    broadcast('all_sessions', await SessionManager.getSessions())
+    broadcast('all_sessions', await SessionManager.getAllSessions())
 
     return { success: true }
   }

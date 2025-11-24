@@ -15,7 +15,7 @@ export default class CalendarManager {
 
   public static async getAllSessionsCalendar(baseUrl: URL): Promise<string> {
     return CalendarManager.createIcsCalendar(
-      await SessionManager.getSessions(),
+      await SessionManager.getAllSessions(),
       baseUrl,
       'Chugmania Sessions'
     )

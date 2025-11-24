@@ -6,27 +6,17 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import {
-  WS_BROADCAST_LEADERBOARDS,
-  type Leaderboard,
-  type LeaderboardBroadcast,
-} from '../../common/models/leaderboard'
-import {
-  WS_BROADCAST_TRACKS,
-  type Track,
-  type TrackBroadcast,
-} from '../../common/models/track'
-import {
-  WS_BROADCAST_USERS,
-  type UserBroadcast,
-  type UserInfo,
-} from '../../common/models/user'
+import type { Leaderboard } from '../../common/models/leaderboard'
+import type { SessionWithSignups } from '../../common/models/session'
+import type { Track } from '../../common/models/track'
+import type { UserInfo } from '../../common/models/user'
 import { useConnection } from './ConnectionContext'
 
 type DataContextType = {
   tracks: Record<string, Track> | undefined
   leaderboards: Record<string, Leaderboard> | undefined
   users: Record<string, UserInfo> | undefined
+  sessions: Record<string, SessionWithSignups> | undefined
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined)
@@ -46,31 +36,39 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [leaderboards, setLeaderboards] =
     useState<DataContextType['leaderboards']>(undefined)
   const [users, setUsers] = useState<DataContextType['users']>(undefined)
+  const [sessions, setSessions] =
+    useState<DataContextType['sessions']>(undefined)
 
   useEffect(() => {
-    socket.on(WS_BROADCAST_TRACKS, (data: TrackBroadcast) => {
+    socket.on('all_tracks', (data: Track[]) => {
       setTracks(toIdRecord(data))
     })
 
-    socket.on(WS_BROADCAST_LEADERBOARDS, (data: LeaderboardBroadcast) => {
+    socket.on('all_leaderboards', (data: Leaderboard[]) => {
       setLeaderboards(toIdRecord(data))
     })
 
-    socket.on(WS_BROADCAST_USERS, (data: UserBroadcast) => {
+    socket.on('all_users', (data: UserInfo[]) => {
       setUsers(toIdRecord(data))
     })
 
+    socket.on('all_sessions', (data: SessionWithSignups[]) => {
+      setSessions(toIdRecord(data))
+    })
+
     return () => {
-      socket.off(WS_BROADCAST_TRACKS)
-      socket.off(WS_BROADCAST_LEADERBOARDS)
-      socket.off(WS_BROADCAST_USERS)
+      socket.off('all_leaderboards')
+      socket.off('all_sessions')
+      socket.off('all_tracks')
+      socket.off('all_users')
     }
   }, [])
 
   const context = useMemo<DataContextType>(
     () => ({
-      tracks,
       leaderboards,
+      sessions,
+      tracks,
       users,
     }),
     [tracks, leaderboards, users]

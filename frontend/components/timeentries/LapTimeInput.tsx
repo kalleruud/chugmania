@@ -14,23 +14,14 @@ import {
 import { useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
-import {
-  type EditLapTimeRequest,
-  type PostLapTimeRequest,
-} from '../../../common/models/auth'
-import type {
-  ErrorResponse,
-  GetSessionsResponse,
-} from '../../../common/models/responses'
 import type { SessionWithSignups } from '../../../common/models/session'
-import type { TimeEntry } from '../../../common/models/timeEntry'
+import type {
+  CreateTimeEntryRequest,
+  EditTimeEntryRequest,
+  TimeEntry,
+} from '../../../common/models/timeEntry'
 import type { Track } from '../../../common/models/track'
 import type { UserInfo } from '../../../common/models/user'
-import {
-  WS_EDIT_LAPTIME,
-  WS_GET_SESSIONS,
-  WS_POST_LAPTIME,
-} from '../../../common/utils/constants'
 import {
   durationToInputList,
   formatTime,
@@ -38,7 +29,7 @@ import {
 } from '../../../common/utils/time'
 import { formatTrackName } from '../../../common/utils/track'
 import { useAuth } from '../../contexts/AuthContext'
-import { emitAsync, useConnection } from '../../contexts/ConnectionContext'
+import { useConnection } from '../../contexts/ConnectionContext'
 import { useData } from '../../contexts/DataContext'
 
 const cache: {
@@ -111,7 +102,7 @@ export default function LapTimeInput({
 }: Readonly<LapTimeInputProps>) {
   const { socket } = useConnection()
   const { user: loggedInUser } = useAuth()
-  const { users, tracks } = useData()
+  const { users, tracks, sessions } = useData()
   const location = useLocation()
   const paramId = getId(location.pathname)
 
@@ -131,15 +122,11 @@ export default function LapTimeInput({
     find(editingTimeEntry.track ?? paramId, tracks) ?? cache.track
   )
 
-  const [sessions, setSessions] = useState<SessionWithSignups[] | undefined>(
-    undefined
-  )
-
   const [comment, setComment] = useState(editingTimeEntry.comment ?? undefined)
 
   const [selectedSession, setSelectedSession] = useState<
     ComboboxLookupItem | undefined
-  >(cache.session)
+  >(find(editingTimeEntry.session ?? paramId, sessions) ?? cache.session)
 
   const DIGIT = /^\d$/
 
@@ -207,30 +194,6 @@ export default function LapTimeInput({
     }
   }
 
-  useEffect(() => {
-    socket.emit(
-      WS_GET_SESSIONS,
-      undefined,
-      (r: GetSessionsResponse | ErrorResponse) => {
-        if (!r.success) {
-          console.error(r.message)
-          return globalThis.alert(r.message)
-        }
-
-        setSessions(r.sessions)
-        // Pre-select session if sessionId is provided
-        if (editingTimeEntry.session && !selectedSession) {
-          const session = r.sessions.find(
-            s => s.id === editingTimeEntry.session
-          )
-          if (session) {
-            setSelectedSession(sessionToLookupItem(session))
-          }
-        }
-      }
-    )
-  }, [socket, editingTimeEntry.session, selectedSession, dateFormatter])
-
   function handleUpdate(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
 
@@ -251,16 +214,17 @@ export default function LapTimeInput({
     }
 
     const payload = {
+      type: 'EditTimeEntryRequest',
       id: editingTimeEntry.id,
       duration: durationInput,
-      // user: selectedUser?.id,
+      user: selectedUser?.id,
       track: selectedTrack?.id,
       session: selectedSession?.id,
       comment: comment?.trim() === '' ? null : comment?.trim(),
-    } satisfies EditLapTimeRequest
+    } satisfies EditTimeEntryRequest
 
     toast.promise(
-      emitAsync(socket, WS_EDIT_LAPTIME, payload),
+      socket.emitWithAck('edit_time_entry', payload),
       loc.no.timeEntry.input.editRequest
     )
   }
@@ -280,14 +244,15 @@ export default function LapTimeInput({
     const durationInput = inputListToMs(digits)
 
     const payload = {
+      type: 'CreateTimeEntryRequest',
       duration: durationInput,
       user: uid,
       track: tid,
       session: selectedSession?.id,
       comment: comment?.trim() === '' ? undefined : comment?.trim(),
-    } satisfies PostLapTimeRequest
+    } satisfies CreateTimeEntryRequest
 
-    toast.promise(emitAsync(socket, WS_POST_LAPTIME, payload), {
+    toast.promise(socket.emitWithAck('post_time_entry', payload), {
       ...loc.no.timeEntry.input.createRequest,
       success: loc.no.timeEntry.input.createRequest.success(
         formatTime(payload.duration)
@@ -366,7 +331,7 @@ export default function LapTimeInput({
             placeholder={loc.no.timeEntry.input.placeholder.session}
             selected={selectedSession}
             setSelected={setSelectedSession}
-            items={sessions?.map(sessionToLookupItem)}
+            items={Object.values(sessions).map(sessionToLookupItem)}
           />
         )}
 

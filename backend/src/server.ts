@@ -7,9 +7,12 @@ import {
   ServerToClientEvents,
   SocketData,
 } from '../../common/models/socket.io'
+import AdminManager from './managers/admin.manager'
 import ApiManager from './managers/api.manager'
 import AuthManager from './managers/auth.manager'
 import LeaderboardManager from './managers/leaderboard.manager'
+import SessionManager from './managers/session.manager'
+import TimeEntryManager from './managers/timeEntry.manager'
 import TrackManager from './managers/track.manager'
 import UserManager from './managers/user.manager'
 import { bind } from './utils/bind'
@@ -58,13 +61,25 @@ async function Connect(s: TypedSocket) {
   s.emit('all_users', await UserManager.getAllUsers())
   s.emit('all_tracks', await TrackManager.getAllTracks())
   s.emit('all_leaderboards', await LeaderboardManager.getAllLeaderboards())
+  s.emit('all_sessions', await SessionManager.getAllSessions())
 
   bind(s, {
     disconnect: async () =>
       console.debug(new Date().toISOString(), s.id, 'Disconnected'),
     login: AuthManager.onLogin,
     register: UserManager.onRegister,
+
     get_user_data: AuthManager.onGetUserData,
     edit_user: UserManager.onUpdateUser,
+
+    post_time_entry: TimeEntryManager.onPostTimeEntry,
+    edit_time_entry: TimeEntryManager.onEditTimeEntry,
+
+    create_session: SessionManager.onCreateSession,
+    edit_session: SessionManager.onEditSession,
+    rsvp_session: SessionManager.onRsvpSession,
+
+    import_csv: AdminManager.onImportCsv,
+    export_csv: AdminManager.onExportCsv,
   })
 }

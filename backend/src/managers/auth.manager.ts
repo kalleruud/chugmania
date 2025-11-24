@@ -77,11 +77,11 @@ export default class AuthManager {
     socket: TypedSocket,
     request: EventReq<'login'>
   ): Promise<EventRes<'login'>> {
-    if (!isLoginRequest(request)) {
-      await delay(AuthManager.LOGIN_DELAY)
-      throw new Error(loc.no.error.messages.missing_login)
-    }
     try {
+      if (!isLoginRequest(request)) {
+        throw new Error(loc.no.error.messages.invalid_request('LoginRequest'))
+      }
+
       const { email, password } = request
       const data = await UserManager.getUser(email)
 

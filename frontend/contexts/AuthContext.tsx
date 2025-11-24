@@ -11,13 +11,13 @@ import { toast } from 'sonner'
 import type { LoginRequest } from '../../common/models/auth'
 import { type ErrorResponse } from '../../common/models/responses'
 import { type UserDataResponse, type UserInfo } from '../../common/models/user'
-import { emitAsync, useConnection } from './ConnectionContext'
+import { useConnection } from './ConnectionContext'
 
 type AuthContextType = {
   isLoggedIn: boolean
   isLoading: boolean
   user: UserInfo | undefined
-  login: (request: LoginRequest) => void
+  login: (request: Omit<LoginRequest, 'type'>) => void
   logout: () => void
 
   requiresEmailUpdate: boolean
@@ -57,7 +57,9 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const login: AuthContextType['login'] = r => {
     setIsLoading(true)
     toast.promise(
-      emitAsync('login', r, handleResponse),
+      socket
+        .emitWithAck('login', { type: 'LoginRequest', ...r })
+        .then(handleResponse),
       loc.no.user.login.request
     )
   }
@@ -69,9 +71,9 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   }
 
   useEffect(() => {
-    socket.on('emitUserData', r => handleResponse(r, false))
+    socket.on('user_data', r => handleResponse(r, false))
     return () => {
-      socket.off('emitUserData')
+      socket.off('user_data')
     }
   }, [])
 

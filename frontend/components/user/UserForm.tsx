@@ -1,11 +1,10 @@
 import { useAuth } from '@/contexts/AuthContext'
-import { emitAsync, useConnection } from '@/contexts/ConnectionContext'
+import { useConnection } from '@/contexts/ConnectionContext'
 import loc from '@/lib/locales'
 import { useState, type ComponentProps, type FormEvent } from 'react'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
 import { type UserInfo } from '../../../common/models/user'
-import { WS_UPDATE_USER } from '../../../common/utils/constants'
 import { Input } from '../ui/input'
 import { Label } from '../ui/label'
 
@@ -45,8 +44,8 @@ export default function UserForm({
         return login({ email, password })
       case 'edit':
         return toast.promise(
-          emitAsync(socket, WS_UPDATE_USER, {
-            type: 'UpdateUserRequest',
+          socket.emitWithAck('edit_user', {
+            type: 'EditUserRequest',
             id: user.id,
             email,
             firstName,

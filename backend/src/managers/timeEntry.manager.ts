@@ -25,7 +25,7 @@ export default class TimeEntryManager {
 
     return (await Promise.all(tasks)).flat()
   }
-  static async onPostLapTime(
+  static async onPostTimeEntry(
     socket: TypedSocket,
     request: EventReq<'post_time_entry'>
   ): Promise<EventRes<'post_time_entry'>> {
@@ -58,7 +58,7 @@ export default class TimeEntryManager {
     }
   }
 
-  static async onEditLapTime(
+  static async onEditTimeEntry(
     socket: TypedSocket,
     request: EventReq<'edit_time_entry'>
   ): Promise<EventRes<'edit_time_entry'>> {
@@ -88,11 +88,15 @@ export default class TimeEntryManager {
       throw new Error(loc.no.error.messages.insufficient_permissions)
     }
 
+    let { type, id, ...updates } = request
+    console.log('Editing...', JSON.stringify(updates))
+
     await db
       .update(timeEntries)
-      .set(request)
+      .set(updates)
       .where(eq(timeEntries.id, request.id))
 
+    console.log('Editing...', JSON.stringify(updates))
     console.debug(
       new Date().toISOString(),
       socket.id,

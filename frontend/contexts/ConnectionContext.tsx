@@ -23,7 +23,7 @@ type ConnectionContextType = {
 
 const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io('/', {
   auth: { token: localStorage.getItem(AUTH_KEY) },
-})
+}).timeout(10_000)
 
 function setToken(token: string | undefined): void {
   // @ts-expect-error
