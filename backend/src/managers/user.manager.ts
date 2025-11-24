@@ -1,16 +1,19 @@
 import { eq } from 'drizzle-orm'
-import type {
-  BackendResponse,
-  GetUsersResponse,
-} from '../../../common/models/responses'
+import { isRegisterRequest } from '../../../common/models/auth'
+import type { BackendResponse } from '../../../common/models/responses'
+import { EventReq, EventRes } from '../../../common/models/socket.io'
 import {
+  CreateUser,
   WS_BROADCAST_USERS,
   type User,
   type UserInfo,
 } from '../../../common/models/user'
 import { tryCatchAsync } from '../../../common/utils/try-catch'
+import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
 import { users } from '../../database/schema'
+import { TypedSocket } from '../server'
+import AuthManager from './auth.manager'
 import ConnectionManager from './connection.manager'
 
 export default class UserManager {
@@ -27,7 +30,7 @@ export default class UserManager {
     return user
   }
 
-  static async createUser(userData: typeof users.$inferInsert) {
+  private static async createUser(userData: typeof users.$inferInsert) {
     const { data: user, error } = await tryCatchAsync(
       db.insert(users).values(userData).returning()
     )
@@ -114,6 +117,33 @@ export default class UserManager {
     }
 
     return !!data
+  }
+
+  static async onRegister(
+    socket: TypedSocket,
+    request: EventReq<'register'>
+  ): Promise<EventRes<'register'>> {
+    if (!isRegisterRequest(request)) {
+      throw new Error(loc.no.error.messages.missing_login)
+    }
+
+    // Create as admin if no admin exists
+    const adminExists = await UserManager.adminExists()
+    const { type, password, ...insertUser } = request
+
+    const user = await UserManager.createUser({
+      ...insertUser,
+      role: adminExists ? 'user' : 'admin',
+      passwordHash: await AuthManager.hash(password),
+    } satisfies CreateUser)
+
+    const { userInfo } = UserManager.toUserInfo(user)
+
+    return await AuthManager.onLogin(socket, {
+      type: 'LoginRequest',
+      email: userInfo.email,
+      password,
+    })
   }
 
   static async onGetUsers(): Promise<BackendResponse> {

@@ -79,7 +79,9 @@ export default function UserForm({
         placeholder='cumguzzler69@chugmania.no'
       />
 
-      <div className='flex gap-2'>
+      <div
+        className='flex gap-2'
+        hidden={variant !== 'edit' && variant !== 'register'}>
         <Field
           id='first_name'
           name={loc.no.user.form.firstName}

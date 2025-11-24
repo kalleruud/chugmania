@@ -1,12 +1,13 @@
 import type { Socket } from 'socket.io'
+
 import {
+  ExportCsvResponse,
   isExportCsvRequest,
   isImportCsvRequest,
-} from '../../../common/models/requests'
+} from '../../../common/models/importCsv'
 import type {
   BackendResponse,
   ErrorResponse,
-  ExportCsvResponse,
   SuccessResponse,
 } from '../../../common/models/responses'
 import { tryCatchAsync } from '../../../common/utils/try-catch'
@@ -82,7 +83,7 @@ export default class AdminManager {
   static async onExportCsv(
     socket: Socket,
     request: unknown
-  ): Promise<BackendResponse> {
+  ): Promise<ExportCsvResponse | ErrorResponse> {
     if (!isExportCsvRequest(request))
       throw new Error('Invalid CSV export request payload')
 

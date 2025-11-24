@@ -77,12 +77,17 @@ const no = {
     messages: {
       missing_jwt: 'Du har ingen JWT token... Går det an å være mer idiot?',
       incorrect_login: 'Brukernavn eller passord er feil, prøv igjen.',
-      incorrect_email: 'E-posten finnes ikke på mainframen',
       missing_login: 'Enten brukernavn eller passord mangler...',
       incorrect_password:
         'Passordet er feil... Det er lov å ikke være tilbakestående',
       insufficient_permissions:
         'Du får ikke lov til å gjøre dette din hårete faen.',
+      invalid_jwt:
+        'Jeg vet ikke hvordan du har fått til dette, men jwt tokenen inneholder ikke brukerdata...',
+      connection_failed: (error: Error) =>
+        `Klarer ikke koble til Svetlana '${error.name} - ${error.message}'`,
+      not_in_db: (item: string) => `Fant ikke '${item}' på mainframen`,
+      unknown_error: 'Ngl, jeg aaner ikke hva som skjedde her...',
     },
   },
   timeEntry: {

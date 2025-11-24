@@ -13,7 +13,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import type {
   CancelSessionRequest,
   EditLapTimeRequest,
-} from '../../../common/models/requests'
+} from '../../../common/models/auth'
 import type {
   BackendResponse,
   GetSessionsResponse,

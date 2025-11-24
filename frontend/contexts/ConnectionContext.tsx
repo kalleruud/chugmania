@@ -1,3 +1,4 @@
+import loc from '@/lib/locales'
 import {
   createContext,
   useContext,
@@ -8,53 +9,32 @@ import {
 } from 'react'
 import { io, Socket } from 'socket.io-client'
 import { toast } from 'sonner'
-import type { BackendResponse } from '../../common/models/responses'
+import {
+  type ClientToServerEvents,
+  type ServerToClientEvents,
+} from '../../common/models/socket.io'
 import { AUTH_KEY } from '../../common/utils/constants'
 
 type ConnectionContextType = {
-  socket: Socket
+  socket: typeof socket
   isConnected: boolean
-  refreshToken: typeof refreshToken
+  setToken: typeof setToken
 }
 
-const socket = io('/', {
+const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io('/', {
   auth: { token: localStorage.getItem(AUTH_KEY) },
 })
 
-function refreshToken(token: string | undefined): void {
+function setToken(token: string | undefined): void {
   // @ts-expect-error
   socket.auth.token = token
   if (token) localStorage.setItem(AUTH_KEY, token)
   else localStorage.removeItem(AUTH_KEY)
-  socket.disconnect().connect()
 }
 
 const ConnectionContext = createContext<ConnectionContextType | undefined>(
   undefined
 )
-
-/**
- * Emits a socket event and returns a promise that resolves or rejects based on the response
- * @param socket - Socket.IO socket instance
- * @param event - Event name to emit
- * @param data - Data to send with the event
- * @returns Promise that resolves with the response or rejects with an error
- */
-export function emitAsync<T extends BackendResponse>(
-  socket: Socket,
-  event: string,
-  data: unknown,
-  handler?: (response: T) => void
-): Promise<T> {
-  return new Promise((resolve, reject) => {
-    socket.emit(event, data, (response: T) => {
-      handler?.(response)
-      if (!response.success)
-        return reject(new Error(response.message || 'Unknown error'))
-      resolve(response)
-    })
-  })
-}
 
 export function ConnectionProvider({
   children,
@@ -75,9 +55,9 @@ export function ConnectionProvider({
     })
 
     socket.on('connect_error', err => {
-      console.error('Connection error:', err.message)
+      console.error(loc.no.error.messages.connection_failed(err))
       setIsConnected(socket.connected)
-      toast.error('Failed to connect to the backend: ' + err.message)
+      toast.error(loc.no.error.messages.connection_failed(err))
     })
 
     return () => {
@@ -91,7 +71,7 @@ export function ConnectionProvider({
     () => ({
       socket,
       isConnected,
-      refreshToken,
+      setToken,
     }),
     [socket, isConnected]
   )

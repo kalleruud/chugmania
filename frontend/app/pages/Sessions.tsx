@@ -1,6 +1,6 @@
 import { CalendarPlus } from 'lucide-react'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import type { CancelSessionRequest } from '../../../common/models/requests'
+import type { CancelSessionRequest } from '../../../common/models/auth'
 import type {
   BackendResponse,
   GetSessionsResponse,

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import type {
   ExportCsvRequest,
   ImportCsvRequest,
-} from '../../../common/models/requests'
+} from '../../../common/models/auth'
 import type {
   ErrorResponse,
   ExportCsvResponse,

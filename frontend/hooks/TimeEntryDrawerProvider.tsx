@@ -32,7 +32,7 @@ import {
   type ReactNode,
 } from 'react'
 import { toast } from 'sonner'
-import type { EditLapTimeRequest } from '../../common/models/requests'
+import type { EditLapTimeRequest } from '../../common/models/auth'
 import type { TimeEntry } from '../../common/models/timeEntry'
 import { WS_EDIT_LAPTIME } from '../../common/utils/constants'
 

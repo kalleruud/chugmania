@@ -6,7 +6,7 @@ import {
   isDeleteSessionRequest,
   isSessionSignupRequest,
   isUpdateSessionRequest,
-} from '../../../common/models/requests'
+} from '../../../common/models/auth'
 import type {
   BackendResponse,
   GetSessionsResponse,

@@ -17,7 +17,7 @@ import { twMerge } from 'tailwind-merge'
 import {
   type EditLapTimeRequest,
   type PostLapTimeRequest,
-} from '../../../common/models/requests'
+} from '../../../common/models/auth'
 import type {
   ErrorResponse,
   GetSessionsResponse,

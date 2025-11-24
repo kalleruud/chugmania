@@ -8,13 +8,9 @@ import {
   type ReactNode,
 } from 'react'
 import { toast } from 'sonner'
-import type { LoginRequest } from '../../common/models/requests'
-import {
-  type ErrorResponse,
-  type LoginResponse,
-} from '../../common/models/responses'
-import { WS_BROADCAST_USER_DATA, type UserInfo } from '../../common/models/user'
-import { WS_LOGIN_NAME } from '../../common/utils/constants'
+import type { LoginRequest } from '../../common/models/auth'
+import { type ErrorResponse } from '../../common/models/responses'
+import { type UserDataResponse, type UserInfo } from '../../common/models/user'
 import { emitAsync, useConnection } from './ConnectionContext'
 
 type AuthContextType = {
@@ -30,25 +26,29 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | null>(null)
 
 export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
-  const { socket, refreshToken: setToken } = useConnection()
+  const { socket, setToken } = useConnection()
   const [userInfo, setUserInfo] = useState<AuthContextType['user'] | undefined>(
     undefined
   )
   const [isLoading, setIsLoading] = useState(true)
   const [requiresEmailUpdate, setRequiresEmailUpdate] = useState(false)
 
-  function handleResponse(response: ErrorResponse | LoginResponse) {
+  function handleResponse(
+    response: UserDataResponse | ErrorResponse,
+    reconnect: boolean = true
+  ) {
     try {
       if (!response.success) {
-        console.error(response.message)
+        console.warn(response.message)
         return logout()
       }
 
       setUserInfo(response.userInfo)
-      if (response.token) setToken(response.token)
+      setToken(response.token)
       setRequiresEmailUpdate(
         response.userInfo.email.toLowerCase().endsWith('@chugmania.no')
       )
+      if (reconnect) socket.disconnect().connect()
     } finally {
       setIsLoading(false)
     }
@@ -57,7 +57,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const login: AuthContextType['login'] = r => {
     setIsLoading(true)
     toast.promise(
-      emitAsync(socket, WS_LOGIN_NAME, r, handleResponse),
+      emitAsync('login', r, handleResponse),
       loc.no.user.login.request
     )
   }
@@ -69,19 +69,9 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   }
 
   useEffect(() => {
-    socket.on(WS_BROADCAST_USER_DATA, (r: LoginResponse) => {
-      try {
-        if (!r.success) return
-        setUserInfo(r.userInfo)
-        setRequiresEmailUpdate(
-          r.userInfo.email.toLowerCase().endsWith('@chugmania.no')
-        )
-      } finally {
-        setIsLoading(false)
-      }
-    })
+    socket.on('emitUserData', r => handleResponse(r, false))
     return () => {
-      socket.off(WS_BROADCAST_USER_DATA)
+      socket.off('emitUserData')
     }
   }, [])
 

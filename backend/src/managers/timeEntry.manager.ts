@@ -1,14 +1,12 @@
 import { eq } from 'drizzle-orm'
 import type { Socket } from 'socket.io'
 import { WS_BROADCAST_LEADERBOARDS } from '../../../common/models/leaderboard'
-import {
-  isEditLapTimeRequest,
-  isPostLapTimeRequest,
-} from '../../../common/models/requests'
 import type {
   BackendResponse,
   SuccessResponse,
 } from '../../../common/models/responses'
+import { isCreateTimeEntryRequest } from '../../../common/models/timeEntry'
+import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
 import { timeEntries } from '../../database/schema'
 import AuthManager from './auth.manager'
@@ -33,15 +31,11 @@ export default class TimeEntryManager {
     s: Socket,
     request: unknown
   ): Promise<BackendResponse> {
-    if (!isPostLapTimeRequest(request))
-      throw new Error('Invalid post lap time request')
+    if (!isCreateTimeEntryRequest(request)) {
+      throw new Error(loc.no.error.description)
+    }
 
-    const { data: user, error } = await AuthManager.checkAuth(s)
-    if (error)
-      return {
-        success: false,
-        message: error.message,
-      }
+    const { data: user } = await AuthManager.checkAuth(s)
 
     const isModerator = user.role !== 'user'
     const isPostingOwnTime = request.user === user.id
