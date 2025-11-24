@@ -1,20 +1,13 @@
+import { Button } from '@/components/ui/button'
+import { Spinner } from '@/components/ui/spinner'
 import { Download, ShieldCheck, Upload } from 'lucide-react'
 import { useState } from 'react'
-
 import type {
   ExportCsvRequest,
   ImportCsvRequest,
-} from '../../../common/models/auth'
-import type {
-  ErrorResponse,
-  ExportCsvResponse,
-  SuccessResponse,
-} from '../../../common/models/responses'
-import { WS_EXPORT_CSV, WS_IMPORT_CSV } from '../../../common/utils/constants'
+} from '../../../common/models/importCsv'
 import { useConnection } from '../../contexts/ConnectionContext'
-
 import FileDrop, { type FileDropSelection } from '../components/FileDrop'
-import Spinner from '../components/Spinner'
 
 export default function Admin() {
   const { socket } = useConnection()
@@ -69,9 +62,9 @@ export default function Admin() {
     try {
       setIsImporting(true)
       socket.emit(
-        WS_IMPORT_CSV,
+        'import_csv',
         { table, content: file.content } satisfies ImportCsvRequest,
-        (response: SuccessResponse | ErrorResponse) => {
+        response => {
           if (!response.success) {
             alert(response.message)
           }
@@ -87,29 +80,25 @@ export default function Admin() {
   const handleExport = (table: ExportCsvRequest['table']) => {
     try {
       setIsImporting(true)
-      socket.emit(
-        WS_EXPORT_CSV,
-        { table } satisfies ExportCsvRequest,
-        (response: ExportCsvResponse | ErrorResponse) => {
-          if (!response.success) {
-            alert(response.message)
-            setIsImporting(false)
-            return
-          }
-
-          const element = document.createElement('a')
-          element.setAttribute(
-            'href',
-            'data:text/csv;charset=utf-8,' + encodeURIComponent(response.csv)
-          )
-          element.setAttribute('download', `${table}.csv`)
-          element.style.display = 'none'
-          document.body.appendChild(element)
-          element.click()
-          element.remove()
+      socket.emit('export_csv', { table }, response => {
+        if (!response.success) {
+          alert(response.message)
           setIsImporting(false)
+          return
         }
-      )
+
+        const element = document.createElement('a')
+        element.setAttribute(
+          'href',
+          'data:text/csv;charset=utf-8,' + encodeURIComponent(response.csv)
+        )
+        element.setAttribute('download', `${table}.csv`)
+        element.style.display = 'none'
+        document.body.appendChild(element)
+        element.click()
+        element.remove()
+        setIsImporting(false)
+      })
     } catch (err) {
       alert(err)
       setIsImporting(false)
@@ -162,7 +151,6 @@ export default function Admin() {
               <div className='flex gap-2'>
                 <Button
                   type='button'
-                  variant='primary'
                   size='sm'
                   onClick={() => handleImport(table)}
                   disabled={!file || isImporting}

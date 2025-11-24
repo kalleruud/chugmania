@@ -279,6 +279,7 @@ export default function LapTimeInput({
               }}
               disabled={disabled}
               value={d}
+              onChange={e => setDigitAt(i, e.target.value)}
               placeholder='0'
               onKeyDown={e => handleKeyDown(i, e)}
               onFocus={e => e.currentTarget.select()}

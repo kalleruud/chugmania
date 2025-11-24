@@ -9,7 +9,7 @@ import {
 } from 'react'
 import { toast } from 'sonner'
 import type { LoginRequest } from '../../common/models/auth'
-import { type ErrorResponse } from '../../common/models/responses'
+import type { ErrorResponse } from '../../common/models/socket.io'
 import { type UserDataResponse, type UserInfo } from '../../common/models/user'
 import { useConnection } from './ConnectionContext'
 

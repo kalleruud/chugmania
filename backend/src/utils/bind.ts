@@ -1,6 +1,6 @@
-import { ErrorResponse } from '../../../common/models/responses'
 import {
   ClientToServerEvents,
+  ErrorResponse,
   EventReq,
   EventRes,
 } from '../../../common/models/socket.io'

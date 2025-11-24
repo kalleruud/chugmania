@@ -5,7 +5,6 @@ import type {
 } from '../../common/models/importCsv'
 import type { LoginRequest, RegisterRequest } from './auth'
 import type { Leaderboard } from './leaderboard'
-import type { ErrorResponse, SuccessResponse } from './responses'
 import type {
   CreateSessionRequest,
   EditSessionRequest,
@@ -15,6 +14,15 @@ import type {
 import type { CreateTimeEntryRequest, EditTimeEntryRequest } from './timeEntry'
 import type { Track } from './track'
 import type { EditUserRequest, UserDataResponse, UserInfo } from './user'
+
+export type SuccessResponse = {
+  success: true
+}
+
+export type ErrorResponse = {
+  success: false
+  message: string
+}
 
 export interface ServerToClientEvents {
   user_data: (r: EventRes<'get_user_data'>) => void

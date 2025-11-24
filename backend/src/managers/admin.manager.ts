@@ -5,8 +5,8 @@ import {
   isExportCsvRequest,
   isImportCsvRequest,
 } from '../../../common/models/importCsv'
-import type { ErrorResponse } from '../../../common/models/responses'
 import { EventReq, EventRes } from '../../../common/models/socket.io'
+import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
 import * as schema from '../../database/schema'
 import { sessions, timeEntries, tracks, users } from '../../database/schema'
@@ -110,11 +110,9 @@ export default class AdminManager {
     }
 
     const csv = AdminManager.objectsToCsv(records)
-    if (csv === null)
-      return {
-        success: false,
-        message: 'No data to export',
-      } satisfies ErrorResponse
+    if (csv === null) {
+      throw new Error(loc.no.error.messages.missing_data)
+    }
 
     return {
       success: true,
