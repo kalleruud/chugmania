@@ -1,10 +1,10 @@
 import { eq } from 'drizzle-orm'
 import { isRegisterRequest } from '../../../common/models/auth'
-import type { BackendResponse } from '../../../common/models/responses'
 import { EventReq, EventRes } from '../../../common/models/socket.io'
 import {
   CreateUser,
-  WS_BROADCAST_USERS,
+  isEditUserRequest,
+  UserDataResponse,
   type User,
   type UserInfo,
 } from '../../../common/models/user'
@@ -12,9 +12,8 @@ import { tryCatchAsync } from '../../../common/utils/try-catch'
 import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
 import { users } from '../../database/schema'
-import { TypedSocket } from '../server'
+import { broadcast, TypedSocket } from '../server'
 import AuthManager from './auth.manager'
-import ConnectionManager from './connection.manager'
 
 export default class UserManager {
   static readonly table = users
@@ -48,40 +47,34 @@ export default class UserManager {
   }
 
   static async getUserById(id: User['id']) {
-    const { data: user, error } = await tryCatchAsync(
-      db.query.users.findFirst({ where: eq(users.id, id) })
-    )
-
-    if (error) throw error
-    if (!user) throw new Error(`Couldn't find user with id ${id}`)
-
+    const user = await db.query.users.findFirst({ where: eq(users.id, id) })
+    if (!user) throw new Error(loc.no.error.messages.not_in_db(id))
     return user
   }
 
   static async updateUser(
     id: User['id'],
-    updates: Partial<typeof users.$inferInsert>
+    updates: Partial<typeof this.table.$inferInsert>
   ): Promise<User> {
     const entries = Object.entries(updates).filter(
       ([, value]) => value !== undefined
     )
 
-    if (entries.length === 0) return UserManager.getUserById(id)
+    if (entries.length === 0) {
+      throw new Error(loc.no.error.messages.missing_data)
+    }
 
-    const { data, error } = await tryCatchAsync(
-      db
-        .update(users)
-        .set(Object.fromEntries(entries))
-        .where(eq(users.id, id))
-        .returning()
-    )
+    const data = await db
+      .update(users)
+      .set(Object.fromEntries(entries))
+      .where(eq(users.id, id))
+      .returning()
 
-    if (error) throw error
-    if (!data?.[0]) throw new Error(`Couldn't find user with id ${id}`)
+    const user = data.at(0)
+    if (!user) throw new Error(loc.no.error.messages.not_in_db(id))
 
-    ConnectionManager.emit(WS_BROADCAST_USERS, await UserManager.onEmitUsers())
-
-    return data[0]!
+    broadcast('all_users', await UserManager.getAllUsers())
+    return user
   }
 
   static toUserInfo(user: User) {
@@ -146,16 +139,69 @@ export default class UserManager {
     })
   }
 
-  static async onGetUsers(): Promise<BackendResponse> {
-    const { data, error } = await tryCatchAsync(db.select().from(users))
-    if (error) throw error
-    const userInfos = data.map(r => UserManager.toUserInfo(r).userInfo)
-    return { success: true, users: userInfos } satisfies GetUsersResponse
+  static async onUpdateUser(
+    socket: TypedSocket,
+    request: EventReq<'edit_user'>
+  ): Promise<EventRes<'edit_user'>> {
+    const actor = await AuthManager.checkAuth(socket)
+
+    if (!isEditUserRequest(request)) {
+      throw new Error(loc.no.error.description)
+    }
+
+    const isSelf = actor.id === request.id
+    const isAdmin = actor.role === 'admin'
+
+    if (!isSelf && !isAdmin) {
+      throw new Error(loc.no.error.messages.insufficient_permissions)
+    }
+
+    const targetUser = await UserManager.getUserById(request.id)
+    const passwordValid = await AuthManager.isPasswordValid(
+      targetUser.passwordHash,
+      request.password
+    )
+
+    if (!passwordValid && !isAdmin) {
+      throw new Error(loc.no.error.messages.incorrect_password)
+    }
+
+    const updates: Partial<typeof users.$inferInsert> = request
+
+    if (request.newPassword) {
+      updates.passwordHash = await AuthManager.hash(request.newPassword)
+    }
+
+    const updatedUser = await UserManager.updateUser(request.id, updates)
+    const { userInfo } = UserManager.toUserInfo(updatedUser)
+
+    console.info(
+      new Date().toISOString(),
+      socket.id,
+      `Updated user '${userInfo.email}'`
+    )
+
+    const response: UserDataResponse = {
+      success: true,
+      userInfo,
+      token: AuthManager.sign(isSelf ? userInfo : actor),
+    }
+
+    if (isSelf) {
+      socket.emit('user_data', response)
+    }
+
+    broadcast('all_users', await UserManager.getAllUsers())
+
+    return {
+      success: true,
+    }
   }
 
-  static async onEmitUsers(): Promise<UserInfo[]> {
-    const { data, error } = await tryCatchAsync(db.select().from(users))
-    if (error) throw error
+  static async getAllUsers(): Promise<UserInfo[]> {
+    const data = await db.select().from(users)
+    if (data.length === 0)
+      throw new Error(loc.no.error.messages.not_in_db(loc.no.users.title))
     return data.map(r => UserManager.toUserInfo(r).userInfo)
   }
 }

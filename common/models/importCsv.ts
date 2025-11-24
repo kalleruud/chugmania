@@ -1,5 +1,5 @@
 import * as schema from '../../backend/database/schema'
-import { SuccessResponse } from './responses'
+import type { SuccessResponse } from './responses'
 
 export type ImportCsvRequest = {
   table: keyof typeof schema

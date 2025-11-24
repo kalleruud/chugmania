@@ -16,6 +16,18 @@ export function isCreateTimeEntryRequest(data: any): data is CreateTimeEntry {
   )
 }
 
+export type EditTimeEntryRequest = Partial<CreateTimeEntry> & {
+  type: 'EditTimeEntryRequest'
+  id: TimeEntry['id']
+}
+
+export function isEditTimeEntryRequest(
+  data: any
+): data is EditTimeEntryRequest {
+  if (typeof data !== 'object' || data === null) return false
+  return data.type === 'EditTimeEntryRequest' && typeof data.id === 'string'
+}
+
 export type LeaderboardEntryGap =
   | {
       position?: number

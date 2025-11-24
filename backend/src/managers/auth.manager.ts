@@ -1,20 +1,13 @@
 import jwt from 'jsonwebtoken'
 import { isLoginRequest } from '../../../common/models/auth'
-import type {
-  BackendResponse,
-  ErrorResponse,
-} from '../../../common/models/responses'
-import { EventCb, EventReq, EventRes } from '../../../common/models/socket.io'
+import { EventReq, EventRes } from '../../../common/models/socket.io'
 import {
   isUserInfo,
-  WS_BROADCAST_USER_DATA,
-  WS_BROADCAST_USERS,
   type User,
   type UserInfo,
 } from '../../../common/models/user'
 import { tryCatch } from '../../../common/utils/try-catch'
 import loc from '../../../frontend/lib/locales'
-import { users } from '../../database/schema'
 import { TypedSocket } from '../server'
 import UserManager from './user.manager'
 
@@ -35,7 +28,7 @@ export default class AuthManager {
     expiresIn: '30DAYS',
   }
 
-  private static sign(user: UserInfo) {
+  static sign(user: UserInfo) {
     return jwt.sign(user, SECRET, AuthManager.JWT_OPTIONS)
   }
 
@@ -50,7 +43,7 @@ export default class AuthManager {
     return user as TokenData
   }
 
-  private static async isPasswordValid(
+  static async isPasswordValid(
     expectedHash: User['passwordHash'],
     providedPassword?: string
   ) {
@@ -119,12 +112,8 @@ export default class AuthManager {
   }
 
   static async onGetUserData(
-    socket: TypedSocket,
-    cb: EventCb<"login">,
-    res: EventRes<"login">,
-    cbD: EventCb<"get_user_data">,
-    resD: EventRes<"get_user_data">
-  ): Promise<EventRes<"get_user_data">> {
+    socket: TypedSocket
+  ): Promise<EventRes<'get_user_data'>> {
     const user = await AuthManager.checkAuth(socket)
 
     return {
@@ -132,68 +121,5 @@ export default class AuthManager {
       token: socket.handshake.auth.token,
       userInfo: user,
     }
-  }
-
-  static async onUpdateUser(
-    socket: TypedSocket,
-    request: unknown
-  ): Promise<BackendResponse> {
-    const actor = await AuthManager.checkAuth(socket)
-
-    if (!isUpdateUserRequest(request)) {
-      return {
-        success: false,
-        message: loc.no.error.description,
-      } satisfies ErrorResponse
-    }
-
-    const isSelf = actor.id === request.id
-    const isAdmin = actor.role === 'admin'
-
-    if (!isSelf && !isAdmin) {
-      return {
-        success: false,
-        message: loc.no.error.messages.insufficient_permissions,
-      } satisfies ErrorResponse
-    }
-
-    const targetUser = await UserManager.getUserById(request.id)
-    const passwordValid = await AuthManager.isPasswordValid(
-      targetUser.passwordHash,
-      request.password
-    )
-
-    if (!passwordValid && !isAdmin) {
-      return {
-        success: false,
-        message: loc.no.error.messages.incorrect_password,
-      } satisfies ErrorResponse
-    }
-
-    const updates: Partial<typeof users.$inferInsert> = request
-
-    if (request.newPassword) {
-      updates.passwordHash = await AuthManager.hash(request.newPassword)
-    }
-
-    const updatedUser = await UserManager.updateUser(request.id, updates)
-    const { userInfo } = UserManager.toUserInfo(updatedUser)
-
-    console.info(
-      new Date().toISOString(),
-      socket.id,
-      `Updated user '${userInfo.email}'`
-    )
-
-    const response = {
-      success: true,
-      userInfo,
-      token: AuthManager.sign(isSelf ? userInfo : actor),
-    } satisfies UpdateUserResponse
-
-    socket.emit(WS_BROADCAST_USER_DATA, response)
-    ConnectionManager.emit(WS_BROADCAST_USERS, await UserManager.onEmitUsers())
-
-    return response
   }
 }

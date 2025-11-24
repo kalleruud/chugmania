@@ -1,8 +1,5 @@
 import { and, asc, desc, eq, isNull, sql } from 'drizzle-orm'
-import type {
-  Leaderboard,
-  LeaderboardBroadcast,
-} from '../../../common/models/leaderboard'
+import type { Leaderboard } from '../../../common/models/leaderboard'
 import type { LeaderboardEntryGap } from '../../../common/models/timeEntry'
 import type { Track } from '../../../common/models/track'
 import db from '../../database/database'
@@ -80,8 +77,8 @@ export default class LeaderboardManager {
     }
   }
 
-  static async onEmitLeaderboards(): Promise<LeaderboardBroadcast> {
-    const tracks = await TrackManager.onEmitTracks()
+  static async getAllLeaderboards(): Promise<Leaderboard[]> {
+    const tracks = await TrackManager.getAllTracks()
     return (
       await Promise.all(
         tracks.map(track => LeaderboardManager.getLeaderboard(track.id))

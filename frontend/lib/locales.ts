@@ -39,6 +39,12 @@ const no = {
       newPassword: 'Nytt passord',
     },
   },
+  session: {
+    title: 'Sessions',
+    errorMessages: {
+      no_edit_historical: 'Du kan ikke svare på en session tilbake i tid.',
+    },
+  },
   dialog: {
     confirmDelete: {
       title: 'Bekreft sletting',
@@ -75,6 +81,7 @@ const no = {
     ]),
     retryAction: 'Gå tilbake',
     messages: {
+      missing_data: 'Ingen data ble sendt',
       missing_jwt: 'Du har ingen JWT token... Går det an å være mer idiot?',
       incorrect_login: 'Brukernavn eller passord er feil, prøv igjen.',
       missing_login: 'Enten brukernavn eller passord mangler...',
@@ -88,6 +95,8 @@ const no = {
         `Klarer ikke koble til Svetlana '${error.name} - ${error.message}'`,
       not_in_db: (item: string) => `Fant ikke '${item}' på mainframen`,
       unknown_error: 'Ngl, jeg aaner ikke hva som skjedde her...',
+      invalid_request: (type: string) =>
+        `Svetlana mottok noe søppel av en '${type}' som gir null mening, prøv igjen.`,
     },
   },
   timeEntry: {
@@ -168,7 +177,7 @@ const no = {
     'Har du gått feil?',
   ]),
   home: 'Hjem',
-}
+} as const
 
 const loc: Record<Locale, Localization> = {
   no,

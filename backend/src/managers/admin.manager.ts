@@ -5,12 +5,8 @@ import {
   isExportCsvRequest,
   isImportCsvRequest,
 } from '../../../common/models/importCsv'
-import type {
-  BackendResponse,
-  ErrorResponse,
-  SuccessResponse,
-} from '../../../common/models/responses'
-import { tryCatchAsync } from '../../../common/utils/try-catch'
+import type { ErrorResponse } from '../../../common/models/responses'
+import { EventReq, EventRes } from '../../../common/models/socket.io'
 import db from '../../database/database'
 import * as schema from '../../database/schema'
 import { sessions, timeEntries, tracks, users } from '../../database/schema'
@@ -34,13 +30,12 @@ export default class AdminManager {
 
   static async onImportCsv(
     socket: Socket,
-    request: unknown
-  ): Promise<BackendResponse> {
+    request: EventReq<'import_csv'>
+  ): Promise<EventRes<'import_csv'>> {
     if (!isImportCsvRequest(request))
       throw new Error('Invalid CSV import request payload')
 
-    const { error } = await AuthManager.checkAuth(socket, ['admin'])
-    if (error) return error
+    await AuthManager.checkAuth(socket, ['admin'])
 
     console.debug(
       new Date().toISOString(),
@@ -67,28 +62,27 @@ export default class AdminManager {
         throw new Error(`Invalid table: '${request.table}'`)
     }
 
-    const { data, error: importError } = await tryCatchAsync(task)
-    if (importError)
-      return {
-        success: false,
-        message: importError.message,
-      } satisfies ErrorResponse
+    const data = await task
+
+    console.info(
+      new Date().toISOString(),
+      socket.id,
+      `Imported ${data.imported}/${data.total} ${request.table}`
+    )
 
     return {
       success: true,
-      message: `Imported ${data.imported}/${data.total} ${request.table}`,
-    } satisfies SuccessResponse
+    }
   }
 
   static async onExportCsv(
     socket: Socket,
-    request: unknown
-  ): Promise<ExportCsvResponse | ErrorResponse> {
+    request: EventReq<'export_csv'>
+  ): Promise<EventRes<'export_csv'>> {
     if (!isExportCsvRequest(request))
       throw new Error('Invalid CSV export request payload')
 
-    const { error } = await AuthManager.checkAuth(socket, ['admin'])
-    if (error) return error
+    await AuthManager.checkAuth(socket, ['admin'])
 
     console.debug(
       new Date().toISOString(),

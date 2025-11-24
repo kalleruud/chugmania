@@ -1,18 +1,13 @@
 import { users } from '../../backend/database/schema'
 import type { SuccessResponse } from './responses'
 
-export const WS_BROADCAST_USERS = 'UserBroadcast'
-export const WS_BROADCAST_USER_DATA = 'UserDataBroadcast'
-export type UserBroadcast = UserInfo[]
-export type UserDataResponse = SuccessResponse & {
-  token: string
-  userInfo: UserInfo
-}
-
 export type User = typeof users.$inferSelect
 export type CreateUser = typeof users.$inferInsert
-export type UpdateUser = Omit<typeof users.$inferInsert, 'id'> & {
+export type UpdateUser = Partial<
+  Omit<typeof users.$inferInsert, 'id' | 'passwordHash'>
+> & {
   id: User['id']
+  newPassword?: string
 }
 export type UserInfo = Omit<User, 'passwordHash'> & { passwordHash: undefined }
 
@@ -23,6 +18,25 @@ export function isUserInfo(data: any): data is UserInfo {
     data.passwordHash === undefined &&
     typeof data.id === 'string' &&
     typeof data.email === 'string'
+  )
+}
+
+export type UserDataResponse = SuccessResponse & {
+  token: string
+  userInfo: UserInfo
+}
+
+export type EditUserRequest = UpdateUser & {
+  type: 'EditUserRequest'
+  password?: string
+}
+
+export function isEditUserRequest(data: any): data is EditUserRequest {
+  if (typeof data !== 'object' || data === null) return false
+  return (
+    data.type === 'EditUserRequest' &&
+    typeof data.id === 'string' &&
+    typeof data.passord === 'string'
   )
 }
 

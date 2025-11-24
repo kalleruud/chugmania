@@ -1,6 +1,7 @@
 import { asc, eq } from 'drizzle-orm'
-import { TrackBroadcast } from '../../../common/models/track'
+import { Track } from '../../../common/models/track'
 import { tryCatchAsync } from '../../../common/utils/try-catch'
+import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
 import { timeEntries, tracks } from '../../database/schema'
 
@@ -38,10 +39,11 @@ export default class TrackManager {
     return data.map(d => d.id)
   }
 
-  static async onEmitTracks(): Promise<TrackBroadcast> {
+  static async getAllTracks(): Promise<Track[]> {
     const data = await db.select().from(tracks).orderBy(asc(tracks.number))
 
-    if (data.length === 0) throw new Error('Found no tracks')
+    if (data.length === 0)
+      throw new Error(loc.no.error.messages.not_in_db(loc.no.tracks.title))
     return data
   }
 }

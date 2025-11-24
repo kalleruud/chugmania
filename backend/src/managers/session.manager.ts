@@ -1,31 +1,23 @@
 import { and, asc, eq, isNull } from 'drizzle-orm'
-import type { Socket } from 'socket.io'
 import {
-  isCancelSessionRequest,
   isCreateSessionRequest,
-  isDeleteSessionRequest,
-  isSessionSignupRequest,
-  isUpdateSessionRequest,
-} from '../../../common/models/auth'
-import type {
-  BackendResponse,
-  GetSessionsResponse,
-} from '../../../common/models/responses'
-import type {
-  SessionLapTime,
-  SessionSignup,
-  SessionWithSignups,
+  isEditSessionRequest,
+  isRsvpSessionRequest,
+  type SessionLapTime,
+  type SessionSignup,
+  type SessionWithSignups,
 } from '../../../common/models/session'
-import { WS_SESSIONS_UPDATED } from '../../../common/utils/constants'
-import { tryCatchAsync } from '../../../common/utils/try-catch'
+import { EventReq, EventRes } from '../../../common/models/socket.io'
+import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
 import {
-  sessionSignups,
   sessions,
+  sessionSignups,
   timeEntries,
   tracks,
   users,
 } from '../../database/schema'
+import { broadcast, TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import UserManager from './user.manager'
 
@@ -39,7 +31,7 @@ export default class SessionManager {
     if (!sessionRows || sessionRows.length === 0) {
       console.debug(
         new Date().toISOString(),
-        'SessionManager.getSessions - No sessions found'
+        loc.no.error.messages.not_in_db('sessions')
       )
       return []
     }
@@ -54,17 +46,16 @@ export default class SessionManager {
   }
 
   public static async getSession(
-    sessionId: string
+    id: string
   ): Promise<SessionWithSignups | null> {
     const session = await db.query.sessions.findFirst({
-      where: eq(sessions.id, sessionId),
+      where: eq(sessions.id, id),
     })
 
     if (!session) {
       console.warn(
         new Date().toISOString(),
-        `SessionManager.getSession - Session not found ${sessionId}`,
-        sessionId
+        loc.no.error.messages.not_in_db(id)
       )
       return null
     }
@@ -91,15 +82,15 @@ export default class SessionManager {
       .from(sessionSignups)
       .innerJoin(users, eq(sessionSignups.user, users.id))
       .where(
-        and(eq(sessionSignups.session, sessionId), isNull(users.deletedAt))
+        and(
+          eq(sessionSignups.session, sessionId),
+          isNull(users.deletedAt),
+          isNull(sessionSignups.deletedAt)
+        )
       )
       .orderBy(asc(sessionSignups.createdAt))
 
     if (!signupRows || signupRows.length === 0) {
-      console.debug(
-        new Date().toISOString(),
-        `SessionManager.getSessionSignups - No signups found for session '${sessionId}'`
-      )
       return []
     }
 
@@ -137,262 +128,94 @@ export default class SessionManager {
     }))
   }
 
-  static async onGetSessions(): Promise<GetSessionsResponse> {
-    return {
-      success: true,
-      sessions: await SessionManager.getSessions(),
-    }
-  }
-
   static async onCreateSession(
-    socket: Socket,
-    request: unknown
-  ): Promise<BackendResponse> {
-    if (!isCreateSessionRequest(request))
-      throw new Error('Invalid create session request')
-
-    const { error } = await AuthManager.checkAuth(socket, [
-      'admin',
-      'moderator',
-    ])
-    if (error) return error
-
-    const name = request.name.trim()
-    if (!name)
-      return {
-        success: false,
-        message: 'Session name is required.',
-      }
-
-    const date = new Date(request.date)
-    if (Number.isNaN(date.getTime()))
-      return {
-        success: false,
-        message: 'Session date is invalid.',
-      }
-
-    const location = request.location?.trim()
-    const description = request.description?.trim()
-
-    await db.insert(sessions).values({
-      name,
-      date,
-      location,
-      description,
-    })
-
-    console.debug(new Date().toISOString(), socket.id, 'Created session', name)
-
-    SessionManager.broadcastSessions(socket)
-
-    return { success: true }
-  }
-
-  static async onUpdateSession(
-    socket: Socket,
-    request: unknown
-  ): Promise<BackendResponse> {
-    if (!isUpdateSessionRequest(request))
-      throw new Error('Invalid update session request')
-
-    const { error } = await AuthManager.checkAuth(socket, [
-      'admin',
-      'moderator',
-    ])
-    if (error) return error
-
-    const session = await db.query.sessions.findFirst({
-      where: eq(sessions.id, request.id),
-    })
-    if (!session)
-      return {
-        success: false,
-        message: 'Session not found.',
-      }
-
-    const updates: Record<string, any> = {}
-    if (request.name !== undefined) {
-      const name = request.name.trim()
-      if (!name)
-        return {
-          success: false,
-          message: 'Session name cannot be empty.',
-        }
-      updates.name = name
-    }
-
-    if (request.date !== undefined) {
-      const date = new Date(request.date)
-      if (Number.isNaN(date.getTime()))
-        return {
-          success: false,
-          message: 'Session date is invalid.',
-        }
-      updates.date = date
-    }
-    if (request.location !== undefined) {
-      updates.location = request.location.trim() || null
-    }
-    if (request.description !== undefined) {
-      updates.description = request.description.trim() || null
-    }
-
-    if (Object.keys(updates).length > 0) {
-      await db.update(sessions).set(updates).where(eq(sessions.id, session.id))
-    }
-
-    console.debug(
-      new Date().toISOString(),
-      socket.id,
-      'Updated session',
-      session.id,
-      updates
-    )
-
-    SessionManager.broadcastSessions(socket)
-
-    return { success: true }
-  }
-
-  static async onDeleteSession(
-    socket: Socket,
-    request: unknown
-  ): Promise<BackendResponse> {
-    if (!isDeleteSessionRequest(request))
-      throw new Error('Invalid delete session request')
-
-    const { error } = await AuthManager.checkAuth(socket, ['admin'])
-    if (error) return error
-
-    const session = await db.query.sessions.findFirst({
-      where: eq(sessions.id, request.id),
-    })
-
-    if (!session)
-      return {
-        success: false,
-        message: 'Session not found.',
-      }
-
-    const { error: deleteError } = await tryCatchAsync(
-      db
-        .update(sessions)
-        .set({ deletedAt: new Date() })
-        .where(eq(sessions.id, session.id))
-    )
-
-    if (deleteError) {
-      console.error(
-        new Date().toISOString(),
-        socket.id,
-        'Failed to delete session',
-        session.id,
-        deleteError
+    socket: TypedSocket,
+    request: EventReq<'create_session'>
+  ): Promise<EventRes<'create_session'>> {
+    if (!isCreateSessionRequest(request)) {
+      throw new Error(
+        loc.no.error.messages.invalid_request('CreateSessionRequest')
       )
-      return {
-        success: false,
-        message: 'Failed to delete session.',
-      }
     }
+
+    await AuthManager.checkAuth(socket, ['admin', 'moderator'])
+    await db.insert(sessions).values(request)
 
     console.debug(
       new Date().toISOString(),
       socket.id,
-      'Deleted session',
-      session.id
+      'Created session',
+      request.name
     )
 
-    SessionManager.broadcastSessions(socket)
+    broadcast('all_sessions', await SessionManager.getSessions())
 
     return { success: true }
   }
 
-  static async onCancelSession(
-    socket: Socket,
-    request: unknown
-  ): Promise<BackendResponse> {
-    if (!isDeleteSessionRequest(request))
-      throw new Error('Invalid cancel session request')
+  static async onEditSession(
+    socket: TypedSocket,
+    request: EventReq<'edit_session'>
+  ): Promise<EventRes<'edit_session'>> {
+    if (!isEditSessionRequest(request)) {
+      throw new Error(
+        loc.no.error.messages.invalid_request('EditSessionRequest')
+      )
+    }
 
-    const { error } = await AuthManager.checkAuth(socket, [
-      'admin',
-      'moderator',
-    ])
-    if (error) return error
+    await AuthManager.checkAuth(socket, ['admin', 'moderator'])
 
     const session = await db.query.sessions.findFirst({
       where: eq(sessions.id, request.id),
     })
 
-    if (!session)
-      return {
-        success: false,
-        message: 'Session not found.',
-      }
-
-    const { error: cancelError } = await tryCatchAsync(
-      db
-        .update(sessions)
-        .set({ status: 'cancelled' })
-        .where(eq(sessions.id, session.id))
-    )
-
-    if (cancelError) {
-      console.error(
-        new Date().toISOString(),
-        socket.id,
-        'Failed to cancel session',
-        session.id,
-        cancelError
-      )
-      return {
-        success: false,
-        message: 'Failed to cancel session.',
-      }
+    if (!session) {
+      throw new Error(loc.no.error.messages.not_in_db(request.id))
     }
 
-    console.debug(
-      new Date().toISOString(),
-      socket.id,
-      'Cancelled session',
-      session.id
-    )
+    const { type, id, ...updates } = request
+    await db.update(sessions).set(updates).where(eq(sessions.id, session.id))
 
-    SessionManager.broadcastSessions(socket)
+    console.debug(new Date().toISOString(), socket.id, 'Updated session', id)
+
+    broadcast('all_sessions', await SessionManager.getSessions())
 
     return { success: true }
   }
 
-  static async onJoinSession(
-    socket: Socket,
-    request: unknown
-  ): Promise<BackendResponse> {
-    if (!isSessionSignupRequest(request))
-      throw new Error('Invalid session signup request')
+  static async onRsvpSession(
+    socket: TypedSocket,
+    request: EventReq<'rsvp_session'>
+  ): Promise<EventRes<'rsvp_session'>> {
+    if (!isRsvpSessionRequest(request)) {
+      loc.no.error.messages.invalid_request('RsvpSessionRequest')
+    }
 
-    const { data: user, error } = await AuthManager.checkAuth(socket)
-    if (error) return error
+    const actor = await AuthManager.checkAuth(socket)
+    const isModerator = actor.role !== 'user'
+    const isSelf = actor.id === request.user
+
+    if (!isModerator && !isSelf) {
+      throw new Error(loc.no.error.messages.insufficient_permissions)
+    }
 
     const session = await db.query.sessions.findFirst({
       where: eq(sessions.id, request.session),
     })
-    if (!session)
-      return {
-        success: false,
-        message: 'Session not found.',
-      }
 
-    if (session.date.getTime() < Date.now())
-      return {
-        success: false,
-        message: 'Cannot sign up for a session that has already happened.',
-      }
+    if (!session) {
+      throw new Error(loc.no.error.messages.not_in_db(request.session))
+    }
+
+    if (session.date.getTime() < Date.now() && !isModerator) {
+      throw new Error(loc.no.session.errorMessages.no_edit_historical)
+    }
 
     await db
       .insert(sessionSignups)
       .values({
         session: session.id,
-        user: user.id,
+        user: actor.id,
         response: request.response,
       })
       .onConflictDoUpdate({
@@ -407,83 +230,8 @@ export default class SessionManager {
       session.id
     )
 
-    SessionManager.broadcastSessions(socket)
+    broadcast('all_sessions', await SessionManager.getSessions())
 
     return { success: true }
-  }
-
-  static async onLeaveSession(
-    socket: Socket,
-    request: unknown
-  ): Promise<BackendResponse> {
-    if (!isCancelSessionRequest(request))
-      throw new Error('Invalid cancel session request')
-
-    const { data: user, error } = await AuthManager.checkAuth(socket)
-    if (error) return error
-
-    const session = await db.query.sessions.findFirst({
-      where: eq(sessions.id, request.id),
-    })
-
-    if (!session)
-      return {
-        success: false,
-        message: 'Session not found.',
-      }
-
-    if (session.date.getTime() <= Date.now())
-      return {
-        success: false,
-        message: 'Cannot cancel after the session has happened.',
-      }
-
-    await db
-      .delete(sessionSignups)
-      .where(
-        and(
-          eq(sessionSignups.session, session.id),
-          eq(sessionSignups.user, user.id)
-        )
-      )
-
-    console.debug(
-      new Date().toISOString(),
-      socket.id,
-      'Cancelled session signup',
-      session.id
-    )
-
-    SessionManager.broadcastSessions(socket)
-
-    return { success: true }
-  }
-
-  private static async broadcastSessions(socket: Socket) {
-    try {
-      const payload: GetSessionsResponse = {
-        success: true,
-        sessions: await SessionManager.getSessions(),
-      }
-
-      const namespace = socket.nsp
-      const clients = Array.from(namespace.sockets.values())
-
-      await Promise.all(
-        clients.map(async client => {
-          if (!client.handshake.auth?.token) return
-          const { data } = await AuthManager.checkAuth(client)
-          if (!data) return
-          client.emit(WS_SESSIONS_UPDATED, payload)
-        })
-      )
-    } catch (error) {
-      console.error(
-        new Date().toISOString(),
-        socket.id,
-        'Failed to broadcast sessions',
-        error
-      )
-    }
   }
 }
