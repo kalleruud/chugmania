@@ -111,7 +111,9 @@ export default function LapTimeInput({
   const inputs = useRef<HTMLInputElement[]>([])
 
   const [digits, setDigits] = useState<(typeof cache)['time']>(
-    durationToInputList(editingTimeEntry.duration) ?? cache.time
+    editingTimeEntry.duration
+      ? durationToInputList(editingTimeEntry.duration)
+      : cache.time
   )
   const [selectedUser, setSelectedUser] = useState(
     find(editingTimeEntry.user ?? paramId, users) ??
@@ -144,10 +146,10 @@ export default function LapTimeInput({
     records: Record<string, T> | undefined
   ): ComboboxLookupItem | undefined {
     if (!id || !records || !(id in records)) return undefined
-    const item: any = records[id]
-    if (item.level) return trackToLookupItem(item)
-    if (item.email) return userToLookupItem(item)
-    if (item.status) return sessionToLookupItem(item)
+    const item = records[id]
+    if ('level' in item) return trackToLookupItem(item)
+    if ('email' in item) return userToLookupItem(item)
+    if ('status' in item) return sessionToLookupItem(item)
   }
 
   useEffect(() => {
