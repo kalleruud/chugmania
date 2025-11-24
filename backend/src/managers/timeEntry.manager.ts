@@ -89,14 +89,24 @@ export default class TimeEntryManager {
     }
 
     let { type, id, ...updates } = request
-    console.log('Editing...', JSON.stringify(updates))
+
+    // Convert string dates to Date objects
+    const processedUpdates = { ...updates }
+    if (typeof updates.deletedAt === 'string') {
+      processedUpdates.deletedAt = new Date(updates.deletedAt)
+    }
+    if (typeof updates.updatedAt === 'string') {
+      processedUpdates.updatedAt = new Date(updates.updatedAt)
+    }
+    if (typeof updates.createdAt === 'string') {
+      processedUpdates.createdAt = new Date(updates.createdAt)
+    }
 
     await db
       .update(timeEntries)
-      .set(updates)
+      .set(processedUpdates)
       .where(eq(timeEntries.id, request.id))
 
-    console.log('Editing...', JSON.stringify(updates))
     console.debug(
       new Date().toISOString(),
       socket.id,
