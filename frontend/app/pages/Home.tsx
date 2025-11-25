@@ -2,6 +2,7 @@ import LoginCard from '@/components/user/LoginCard'
 import UserItem from '@/components/user/UserItem'
 import { useAuth } from '@/contexts/AuthContext'
 import { TracksList } from './TracksPage'
+import { UsersList } from './Users'
 
 export default function Home() {
   const { user, isLoggedIn } = useAuth()
@@ -19,6 +20,7 @@ export default function Home() {
         )}
         <LoginCard />
         <TracksList className='bg-background rounded-sm border p-2' />
+        <UsersList className='bg-background rounded-sm border p-2' />
       </div>
     </div>
   )

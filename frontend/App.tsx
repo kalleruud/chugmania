@@ -7,6 +7,7 @@ import { ErrorPage } from './app/pages/ErrorPage'
 import Home from './app/pages/Home'
 import TrackPage from './app/pages/TrackPage'
 import TracksPage from './app/pages/TracksPage'
+import UsersPage from './app/pages/Users'
 import { Toaster } from './components/ui/sonner'
 import { AuthProvider } from './contexts/AuthContext'
 import { ConnectionProvider } from './contexts/ConnectionContext'
@@ -30,7 +31,7 @@ createRoot(document.getElementById('root')!).render(
                       <Route index element={<Home />} />
                       <Route path='tracks' element={<TracksPage />} />
                       <Route path='tracks/:id' element={<TrackPage />} />
-                      {/* <Route path='players' element={<Players />} /> */}
+                      <Route path='players' element={<UsersPage />} />
                       {/* <Route path='players/:id' element={<Player />} /> */}
                       {/* <Route path='sessions' element={<Sessions />} /> */}
                       {/* <Route path='sessions/:id' element={<Session />} /> */}

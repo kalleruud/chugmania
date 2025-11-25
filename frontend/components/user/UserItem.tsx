@@ -1,8 +1,11 @@
+import { Item, ItemActions, ItemContent, ItemTitle } from '@/components/ui/item'
 import { useAuth } from '@/contexts/AuthContext'
 import loc from '@/lib/locales'
+import { ChevronRight } from 'lucide-react'
 import type { ComponentProps } from 'react'
+import { Link } from 'react-router-dom'
 import { twMerge } from 'tailwind-merge'
-import type { UserInfo } from '../../../common/models/user'
+import { type UserInfo } from '../../../common/models/user'
 import { Button } from '../ui/button'
 import {
   Dialog,
@@ -30,8 +33,34 @@ export default function UserItem(props: Readonly<UserItemProps>) {
   }
 }
 
-function UserRow({ user, ...props }: Readonly<UserItemProps>) {
-  return <div {...props}>{user.lastName}</div>
+function UserRow({
+  user,
+  className,
+  variant,
+  ...props
+}: Readonly<UserItemProps>) {
+  return (
+    <Item key={user.id} className={className} asChild {...props}>
+      <Link to={`/users/${user.id}`}>
+        <ItemContent>
+          <div className='flex items-center gap-2'>
+            <div className='bg-primary h-4 w-1 rounded-full' />
+            <ItemTitle className='font-f1 mr-auto flex gap-1 uppercase'>
+              <span>{user.firstName}</span>
+              <span className='font-bold'>{user.lastName}</span>
+            </ItemTitle>
+
+            <span className='text-f1 text-muted-foreground font-bold'>
+              {user.shortName}
+            </span>
+          </div>
+        </ItemContent>
+        <ItemActions>
+          <ChevronRight className='size-4' />
+        </ItemActions>
+      </Link>
+    </Item>
+  )
 }
 
 function UserCard({ user, className, ...props }: Readonly<UserItemProps>) {
