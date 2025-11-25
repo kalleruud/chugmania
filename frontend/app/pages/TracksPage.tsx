@@ -22,6 +22,7 @@ import { Map } from 'lucide-react'
 import type { DetailedHTMLProps, HTMLAttributes } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type { Track } from '../../../common/models/track'
+import { PageHeader } from '../components/PageHeader'
 
 type TracksPageProps = DetailedHTMLProps<
   HTMLAttributes<HTMLDivElement>,
@@ -98,17 +99,11 @@ export function TracksList({ className }: Readonly<TracksPageProps>) {
 
   return (
     <div className={twMerge('flex flex-col', className)}>
-      <Item className='w-full'>
-        <ItemMedia variant='icon'>
-          <Map />
-        </ItemMedia>
-        <ItemContent>
-          <ItemTitle>
-            <h3>{loc.no.tracks.title}</h3>
-          </ItemTitle>
-          <ItemDescription>{loc.no.tracks.description}</ItemDescription>
-        </ItemContent>
-      </Item>
+      <PageHeader
+        title={loc.no.tracks.title}
+        description={loc.no.tracks.description}
+        icon={Map}
+      />
 
       <TrackRowList tracks={tracks.filter(t => t.level !== 'custom')} />
 

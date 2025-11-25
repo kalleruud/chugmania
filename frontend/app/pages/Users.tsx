@@ -7,13 +7,7 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
 import { Empty } from '@/components/ui/empty'
-import {
-  Item,
-  ItemContent,
-  ItemDescription,
-  ItemMedia,
-  ItemTitle,
-} from '@/components/ui/item'
+import { Item, ItemContent, ItemMedia } from '@/components/ui/item'
 import { Skeleton } from '@/components/ui/skeleton'
 import UserItem from '@/components/user/UserItem'
 import { useData } from '@/contexts/DataContext'
@@ -22,6 +16,7 @@ import { Users } from 'lucide-react'
 import type { DetailedHTMLProps, HTMLAttributes } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type { UserInfo } from '../../../common/models/user'
+import { PageHeader } from '../components/PageHeader'
 
 type UsersPageProps = DetailedHTMLProps<
   HTMLAttributes<HTMLDivElement>,
@@ -98,17 +93,11 @@ export function UsersList({ className }: Readonly<UsersPageProps>) {
 
   return (
     <div className={twMerge('flex flex-col', className)}>
-      <Item className='w-full'>
-        <ItemMedia variant='icon'>
-          <Users />
-        </ItemMedia>
-        <ItemContent>
-          <ItemTitle>
-            <h3>{loc.no.users.title}</h3>
-          </ItemTitle>
-          <ItemDescription>{loc.no.users.description}</ItemDescription>
-        </ItemContent>
-      </Item>
+      <PageHeader
+        title={loc.no.users.title}
+        description={loc.no.users.description}
+        icon={Users}
+      />
 
       <UserRowList users={users} />
     </div>
