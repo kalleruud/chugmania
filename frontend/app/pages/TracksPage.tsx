@@ -93,21 +93,25 @@ export function TracksList({ className }: Readonly<TracksPageProps>) {
 
   return (
     <div className={twMerge('flex flex-col', className)}>
-      <PageHeader
-        title={loc.no.tracks.title}
-        description={loc.no.tracks.description}
-        icon={Map}
-      />
+      <div>
+        <PageHeader
+          title={loc.no.tracks.title}
+          description={loc.no.tracks.description}
+          icon={Map}
+        />
 
-      <TrackRowList tracks={tracks.filter(t => t.level !== 'custom')} />
+        <TrackRowList tracks={tracks.filter(t => t.level !== 'custom')} />
+      </div>
 
-      <PageHeader
-        title={loc.no.tracks.level.custom}
-        description={loc.no.tracks.customDescription}
-        icon={Wrench}
-      />
+      <div>
+        <PageHeader
+          title={loc.no.tracks.level.custom}
+          description={loc.no.tracks.customDescription}
+          icon={Wrench}
+        />
 
-      <TrackRowList tracks={tracks.filter(t => t.level === 'custom')} />
+        <TrackRowList tracks={tracks.filter(t => t.level === 'custom')} />
+      </div>
     </div>
   )
 }

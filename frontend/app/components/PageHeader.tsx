@@ -18,18 +18,18 @@ export function PageHeader({
   return (
     <div
       className={twMerge(
-        'bg-background sticky top-0 z-10 flex flex-col gap-1 pb-4 pt-2',
+        'bg-background/80 sticky top-0 z-10 flex flex-col rounded-md p-2 pt-4 backdrop-blur-xl',
         className
       )}
       {...props}>
-      <div className='flex items-center gap-3'>
-        <Icon className='text-primary size-8' />
-        <h1 className='font-f1 text-foreground text-3xl uppercase tracking-wider'>
+      <div className='flex items-center gap-2'>
+        <Icon className='text-primary size-6' />
+        <h3 className='font-f1 text-foreground text-xl font-bold uppercase'>
           {title}
-        </h1>
+        </h3>
       </div>
       {description && (
-        <p className='text-muted-foreground pl-11 text-sm font-medium'>
+        <p className='text-muted-foreground text-sm font-medium'>
           {description}
         </p>
       )}
