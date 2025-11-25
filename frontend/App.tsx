@@ -7,6 +7,7 @@ import { ErrorPage } from './app/pages/ErrorPage'
 import Home from './app/pages/HomePage'
 import TrackPage from './app/pages/TrackPage'
 import TracksPage from './app/pages/TracksPage'
+import UserPage from './app/pages/UserPage'
 import UsersPage from './app/pages/UsersPage'
 import { Toaster } from './components/ui/sonner'
 import { AuthProvider } from './contexts/AuthContext'
@@ -32,6 +33,7 @@ createRoot(document.getElementById('root')!).render(
                       <Route path='tracks' element={<TracksPage />} />
                       <Route path='tracks/:id' element={<TrackPage />} />
                       <Route path='players' element={<UsersPage />} />
+                      <Route path='users/:id' element={<UserPage />} />
                       {/* <Route path='players/:id' element={<Player />} /> */}
                       {/* <Route path='sessions' element={<Sessions />} /> */}
                       {/* <Route path='sessions/:id' element={<Session />} /> */}
