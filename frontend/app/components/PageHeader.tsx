@@ -17,7 +17,10 @@ export function PageHeader({
 }: Readonly<PageHeaderProps>) {
   return (
     <div
-      className={twMerge('flex flex-col gap-1 pb-4 pt-2', className)}
+      className={twMerge(
+        'bg-background sticky top-0 z-10 flex flex-col gap-1 pb-4 pt-2',
+        className
+      )}
       {...props}>
       <div className='flex items-center gap-3'>
         <Icon className='text-primary size-8' />

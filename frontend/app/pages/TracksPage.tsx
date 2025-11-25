@@ -8,17 +8,11 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
 import { Empty } from '@/components/ui/empty'
-import {
-  Item,
-  ItemContent,
-  ItemDescription,
-  ItemMedia,
-  ItemTitle,
-} from '@/components/ui/item'
+import { Item, ItemContent, ItemMedia } from '@/components/ui/item'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
-import { Map } from 'lucide-react'
+import { Map, Wrench } from 'lucide-react'
 import type { DetailedHTMLProps, HTMLAttributes } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type { Track } from '../../../common/models/track'
@@ -107,14 +101,11 @@ export function TracksList({ className }: Readonly<TracksPageProps>) {
 
       <TrackRowList tracks={tracks.filter(t => t.level !== 'custom')} />
 
-      <Item className='w-full pb-2'>
-        <ItemContent>
-          <ItemTitle>
-            <h4>{loc.no.tracks.level.custom}</h4>
-          </ItemTitle>
-          <ItemDescription>{loc.no.tracks.customDescription}</ItemDescription>
-        </ItemContent>
-      </Item>
+      <PageHeader
+        title={loc.no.tracks.level.custom}
+        description={loc.no.tracks.customDescription}
+        icon={Wrench}
+      />
 
       <TrackRowList tracks={tracks.filter(t => t.level === 'custom')} />
     </div>
