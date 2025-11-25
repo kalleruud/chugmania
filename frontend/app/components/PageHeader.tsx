@@ -1,30 +1,31 @@
-import type { LucideIcon } from 'lucide-react'
+import * as HeroIcons from '@heroicons/react/24/solid'
 import type { ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 type PageHeaderProps = {
   title: string
   description?: string
-  icon: LucideIcon
+  icon: keyof typeof HeroIcons
 } & ComponentProps<'div'>
 
 export function PageHeader({
   title,
   description,
-  icon: Icon,
+  icon,
   className,
   ...props
 }: Readonly<PageHeaderProps>) {
+  const Icon = HeroIcons[icon]
   return (
     <div
       className={twMerge(
-        'bg-background/80 sticky top-0 z-10 flex flex-col rounded-md p-2 pt-4 backdrop-blur-xl',
+        'bg-background/90 top-safe sticky z-10 flex flex-col rounded-md p-2 py-4 backdrop-blur',
         className
       )}
       {...props}>
       <div className='flex items-center gap-2'>
         <Icon className='text-primary size-6' />
-        <h3 className='font-f1 text-foreground text-xl font-bold uppercase'>
+        <h3 className='font-f1 text-foreground pt-1 text-xl font-bold uppercase'>
           {title}
         </h3>
       </div>

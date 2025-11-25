@@ -12,7 +12,6 @@ import { Item, ItemContent, ItemMedia } from '@/components/ui/item'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
-import { Map, Wrench } from 'lucide-react'
 import type { DetailedHTMLProps, HTMLAttributes } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type { Track } from '../../../common/models/track'
@@ -97,7 +96,7 @@ export function TracksList({ className }: Readonly<TracksPageProps>) {
         <PageHeader
           title={loc.no.tracks.title}
           description={loc.no.tracks.description}
-          icon={Map}
+          icon={'MapIcon'}
         />
 
         <TrackRowList tracks={tracks.filter(t => t.level !== 'custom')} />
@@ -107,7 +106,7 @@ export function TracksList({ className }: Readonly<TracksPageProps>) {
         <PageHeader
           title={loc.no.tracks.level.custom}
           description={loc.no.tracks.customDescription}
-          icon={Wrench}
+          icon={'WrenchIcon'}
         />
 
         <TrackRowList tracks={tracks.filter(t => t.level === 'custom')} />

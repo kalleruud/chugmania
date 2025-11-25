@@ -168,7 +168,7 @@ const no = {
   },
   users: {
     title: 'Spillere',
-    description: 'Oversikt over alle Chugmania spillere, rangert etter evne',
+    description: 'Oversikt over alle spillere.',
     receivedUpdate: 'Spillerne ble oppdatert',
   },
   noItems: getRandomItem([

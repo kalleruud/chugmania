@@ -12,7 +12,6 @@ import { Skeleton } from '@/components/ui/skeleton'
 import UserItem from '@/components/user/UserItem'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
-import { Users } from 'lucide-react'
 import type { DetailedHTMLProps, HTMLAttributes } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type { UserInfo } from '../../../common/models/user'
@@ -96,7 +95,7 @@ export function UsersList({ className }: Readonly<UsersPageProps>) {
       <PageHeader
         title={loc.no.users.title}
         description={loc.no.users.description}
-        icon={Users}
+        icon={'UsersIcon'}
       />
 
       <UserRowList users={users} />

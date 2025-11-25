@@ -160,7 +160,7 @@ function Field({
 }: Readonly<{ show?: boolean } & Parameters<typeof Input>[0]>) {
   if (!show) return undefined
   return (
-    <div className='grid gap-2'>
+    <div className='grid w-full gap-2'>
       <Label htmlFor={props.id} className='gap-1'>
         {props.name} {props.required && <span className='text-primary'>*</span>}
       </Label>

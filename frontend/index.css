@@ -11,7 +11,7 @@
   }
 
   *:focus-visible {
-    @apply ring-primary-foreground outline-none ring-2;
+    @apply ring-primary outline-none ring-2;
   }
 
   *::selection {
@@ -32,11 +32,11 @@
   }
 
   h3 {
-    @apply text-xl font-black;
+    @apply text-xl;
   }
 
   h4 {
-    @apply text-lg font-black;
+    @apply text-lg;
   }
 
   body {
