@@ -2,7 +2,7 @@ import LoginCard from '@/components/user/LoginCard'
 import UserItem from '@/components/user/UserItem'
 import { useAuth } from '@/contexts/AuthContext'
 import { TracksList } from './TracksPage'
-import { UsersList } from './Users'
+import { UsersList } from './UsersPage'
 
 export default function Home() {
   const { user, isLoggedIn } = useAuth()
