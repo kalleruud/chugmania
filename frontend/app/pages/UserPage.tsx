@@ -103,7 +103,7 @@ export default function UserPage() {
               {user.role}
             </Badge>
             <Badge variant='outline'>
-              {`Joined ${new Date(user.createdAt).getFullYear()}`}
+              {`Joined ${user.createdAt.getFullYear()}`}
             </Badge>
             <Badge variant='outline' className='lowercase'>
               {user.email}

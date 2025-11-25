@@ -29,6 +29,34 @@ function toIdRecord<T extends { id: string }>(entries: T[]): Record<string, T> {
   return map
 }
 
+/**
+ * Automatically converts timestamp fields to Date objects.
+ * Handles: createdAt, updatedAt, deletedAt, date
+ */
+export function parseDates<T extends Record<string, any>>(obj: T): T {
+  const dateFields = ['createdAt', 'updatedAt', 'deletedAt', 'date']
+  const result: any = { ...obj }
+
+  for (const field of dateFields) {
+    if (
+      field in result &&
+      result[field] !== null &&
+      result[field] !== undefined
+    ) {
+      result[field] = new Date(result[field])
+    }
+  }
+
+  return result
+}
+
+/**
+ * Applies date parsing to an array of objects
+ */
+export function parseDatesArray<T extends Record<string, any>>(arr: T[]): T[] {
+  return arr.map(parseDates)
+}
+
 export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
   const { socket } = useConnection()
 
@@ -41,19 +69,19 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
 
   useEffect(() => {
     socket.on('all_tracks', (data: Track[]) => {
-      setTracks(toIdRecord(data))
+      setTracks(toIdRecord(parseDatesArray(data)))
     })
 
     socket.on('all_leaderboards', (data: Leaderboard[]) => {
-      setLeaderboards(toIdRecord(data))
+      setLeaderboards(toIdRecord(parseDatesArray(data)))
     })
 
     socket.on('all_users', (data: UserInfo[]) => {
-      setUsers(toIdRecord(data))
+      setUsers(toIdRecord(parseDatesArray(data)))
     })
 
     socket.on('all_sessions', (data: SessionWithSignups[]) => {
-      setSessions(toIdRecord(data))
+      setSessions(toIdRecord(parseDatesArray(data)))
     })
 
     return () => {
