@@ -23,8 +23,8 @@ createRoot(document.getElementById('root')!).render(
       <BrowserRouter
         future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <ConnectionProvider>
-          <AuthProvider>
-            <DataProvider>
+          <DataProvider>
+            <AuthProvider>
               <ErrorBoundary FallbackComponent={ErrorPage}>
                 <TimeEntryDialogProvider>
                   <Routes>
@@ -32,20 +32,18 @@ createRoot(document.getElementById('root')!).render(
                       <Route index element={<Home />} />
                       <Route path='tracks' element={<TracksPage />} />
                       <Route path='tracks/:id' element={<TrackPage />} />
-                      <Route path='players' element={<UsersPage />} />
+                      <Route path='users' element={<UsersPage />} />
                       <Route path='users/:id' element={<UserPage />} />
-                      {/* <Route path='players/:id' element={<Player />} /> */}
                       {/* <Route path='sessions' element={<Sessions />} /> */}
                       {/* <Route path='sessions/:id' element={<Session />} /> */}
-                      {/* <Route path='login' element={<Login />} /> */}
                       {/* <Route path='admin' element={<Admin />} /> */}
                     </Route>
                   </Routes>
                   <Toaster />
                 </TimeEntryDialogProvider>
               </ErrorBoundary>
-            </DataProvider>
-          </AuthProvider>
+            </AuthProvider>
+          </DataProvider>
         </ConnectionProvider>
       </BrowserRouter>
     </ThemeProvider>

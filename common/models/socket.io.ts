@@ -13,7 +13,7 @@ import type {
 } from './session'
 import type { CreateTimeEntryRequest, EditTimeEntryRequest } from './timeEntry'
 import type { Track } from './track'
-import type { EditUserRequest, UserDataResponse, UserInfo } from './user'
+import type { EditUserRequest, LoginResponse, UserInfo } from './user'
 
 export type SuccessResponse = {
   success: true
@@ -38,15 +38,13 @@ export interface ClientToServerEvents {
   connect_error: (err: Error) => void
   login: (
     r: LoginRequest,
-    callback: (r: UserDataResponse | ErrorResponse) => void
+    callback: (r: LoginResponse | ErrorResponse) => void
   ) => void
   register: (
     r: RegisterRequest,
-    callback: (r: UserDataResponse | ErrorResponse) => void
+    callback: (r: LoginResponse | ErrorResponse) => void
   ) => void
-  get_user_data: (
-    callback: (r: UserDataResponse | ErrorResponse) => void
-  ) => void
+  get_user_data: (callback: (r: LoginResponse | ErrorResponse) => void) => void
   edit_user: (
     r: EditUserRequest,
     callback: (r: SuccessResponse | ErrorResponse) => void
@@ -87,7 +85,7 @@ export interface InterServerEvents {
 
 export interface SocketData {
   token: string
-  user: UserInfo
+  userId: string
 }
 
 // ---------- helpers & types ----------

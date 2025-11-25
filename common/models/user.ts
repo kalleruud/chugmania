@@ -1,5 +1,5 @@
 import { users } from '../../backend/database/schema'
-import type { SuccessResponse } from './responses'
+import type { SocketData, SuccessResponse } from './socket.io'
 
 export type User = typeof users.$inferSelect
 export type CreateUser = typeof users.$inferInsert
@@ -21,10 +21,7 @@ export function isUserInfo(data: any): data is UserInfo {
   )
 }
 
-export type UserDataResponse = SuccessResponse & {
-  token: string
-  userInfo: UserInfo
-}
+export type LoginResponse = SuccessResponse & SocketData
 
 export type EditUserRequest = UpdateUser & {
   type: 'EditUserRequest'

@@ -9,32 +9,41 @@ import {
 } from 'react'
 import { toast } from 'sonner'
 import type { LoginRequest } from '../../common/models/auth'
-import type { ErrorResponse } from '../../common/models/socket.io'
-import { type UserDataResponse, type UserInfo } from '../../common/models/user'
+import type { ErrorResponse, EventRes } from '../../common/models/socket.io'
+import { type LoginResponse, type UserInfo } from '../../common/models/user'
 import { useConnection } from './ConnectionContext'
+import { useData } from './DataContext'
 
 type AuthContextType = {
-  isLoggedIn: boolean
   isLoading: boolean
-  user: UserInfo | undefined
-  login: (request: Omit<LoginRequest, 'type'>) => void
-  logout: () => void
-
-  requiresEmailUpdate: boolean
-}
+} & (
+  | {
+      isLoggedIn: false
+      loggedInUser: undefined
+      login: (request: Omit<LoginRequest, 'type'>) => Promise<EventRes<'login'>>
+      logout: undefined
+    }
+  | {
+      isLoggedIn: true
+      loggedInUser: UserInfo
+      login: undefined
+      logout: () => void
+    }
+)
 
 const AuthContext = createContext<AuthContextType | null>(null)
 
 export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
+  const { users } = useData()
   const { socket, setToken } = useConnection()
-  const [userInfo, setUserInfo] = useState<AuthContextType['user'] | undefined>(
+  const [isLoading, setIsLoading] = useState(true)
+  const [loggedInUserId, setLoggedInUserId] = useState<string | undefined>(
     undefined
   )
-  const [isLoading, setIsLoading] = useState(true)
-  const [requiresEmailUpdate, setRequiresEmailUpdate] = useState(false)
+  const loggedInUser = loggedInUserId ? users?.[loggedInUserId] : undefined
 
   function handleResponse(
-    response: UserDataResponse | ErrorResponse,
+    response: LoginResponse | ErrorResponse,
     reconnect: boolean = true
   ) {
     try {
@@ -43,31 +52,31 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
         return logout()
       }
 
-      setUserInfo(response.userInfo)
       setToken(response.token)
-      setRequiresEmailUpdate(
-        response.userInfo.email.toLowerCase().endsWith('@chugmania.no')
-      )
+      setLoggedInUserId(response.userId)
       if (reconnect) socket.disconnect().connect()
     } finally {
       setIsLoading(false)
     }
   }
 
-  const login: AuthContextType['login'] = r => {
+  const login: Required<AuthContextType>['login'] = async r => {
     setIsLoading(true)
-    toast.promise(
-      socket
-        .emitWithAck('login', { type: 'LoginRequest', ...r })
-        .then(handleResponse),
-      loc.no.user.login.request
+    const response = await socket.emitWithAck('login', {
+      type: 'LoginRequest',
+      ...r,
+    })
+    toast.info(
+      response.success
+        ? loc.no.user.login.request.success
+        : loc.no.user.login.request.error(new Error(response.message))
     )
+    return response
   }
 
   const logout = () => {
     setToken(undefined)
-    setUserInfo(undefined)
-    setRequiresEmailUpdate(false)
+    setLoggedInUserId(undefined)
   }
 
   useEffect(() => {
@@ -77,17 +86,21 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     }
   }, [])
 
-  const context = useMemo<AuthContextType>(
-    () => ({
-      isLoggedIn: !!userInfo,
-      isLoading,
-      user: userInfo,
-      login,
-      logout,
-      requiresEmailUpdate,
-    }),
-    [userInfo, requiresEmailUpdate, isLoading]
-  )
+  const context = useMemo<AuthContextType>(() => {
+    if (loggedInUser)
+      return {
+        isLoading,
+        isLoggedIn: true,
+        loggedInUser,
+        logout,
+      }
+    else
+      return {
+        isLoading,
+        isLoggedIn: false,
+        login,
+      }
+  }, [loggedInUserId, isLoading])
 
   return <AuthContext.Provider value={context}>{children}</AuthContext.Provider>
 }

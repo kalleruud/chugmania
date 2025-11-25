@@ -5,17 +5,17 @@ import { TracksList } from './TracksPage'
 import { UsersList } from './UsersPage'
 
 export default function Home() {
-  const { user, isLoggedIn } = useAuth()
+  const { loggedInUser, isLoggedIn } = useAuth()
 
   return (
     <div className='items-center-safe px-safe-or-2 py-safe-or-4 flex flex-col'>
       <div className='flex w-full max-w-2xl flex-col gap-8'>
         <h1 className='text-primary'>Chugmania</h1>
-        {isLoggedIn && user && (
+        {isLoggedIn && loggedInUser && (
           <UserItem
             className='bg-background rounded-sm border p-4'
             variant='card'
-            user={user}
+            user={loggedInUser}
           />
         )}
         <LoginCard />

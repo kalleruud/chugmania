@@ -17,30 +17,32 @@ import {
 import { useAuth } from '@/contexts/AuthContext'
 import loc from '@/lib/locales'
 import { DialogClose, DialogTrigger } from '@radix-ui/react-dialog'
+import { useState } from 'react'
 import { Spinner } from '../ui/spinner'
 import UserForm from './UserForm'
 
 export default function LoginCard() {
   const { isLoggedIn, isLoading } = useAuth()
+  const [open, setOpen] = useState(false)
 
   if (isLoggedIn) return undefined
 
   if (isLoading) {
     return (
-      <Empty className='w-full border border-dashed'>
+      <Empty className='w-full rounded-sm border border-dashed'>
         <Spinner />
       </Empty>
     )
   }
 
   return (
-    <Empty className='w-full border border-dashed'>
+    <Empty className='w-full rounded-sm border border-dashed'>
       <EmptyHeader>
         <EmptyTitle>{loc.no.user.notLoggedIn}</EmptyTitle>
         <EmptyDescription>{loc.no.user.login.description}</EmptyDescription>
       </EmptyHeader>
       <EmptyContent>
-        <Dialog>
+        <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button size='sm'>{loc.no.user.login.title}</Button>
           </DialogTrigger>
@@ -56,6 +58,7 @@ export default function LoginCard() {
               id='loginForm'
               variant='login'
               className='py-2'
+              onSubmitResponse={() => setOpen(false)}
               disabled={isLoading}
             />
 

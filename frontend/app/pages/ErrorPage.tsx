@@ -15,20 +15,22 @@ export function ErrorPage({
   resetErrorBoundary,
 }: Readonly<FallbackProps>) {
   return (
-    <Empty>
-      <EmptyHeader>
-        <EmptyTitle>{loc.no.error.title}</EmptyTitle>
-        <EmptyDescription>
-          {error.message ?? loc.no.error.description}
-        </EmptyDescription>
-      </EmptyHeader>
-      <EmptyContent>
-        <Button variant='outline' asChild>
-          <Link to='/' onClick={resetErrorBoundary}>
-            {loc.no.error.retryAction}
-          </Link>
-        </Button>
-      </EmptyContent>
-    </Empty>
+    <div className='justify-center-safe flex w-full'>
+      <Empty className='m-safe-or-4 max-w-2xl border border-dashed'>
+        <EmptyHeader>
+          <EmptyTitle>{loc.no.error.title}</EmptyTitle>
+          <EmptyDescription>
+            {error.message ?? loc.no.error.description}
+          </EmptyDescription>
+        </EmptyHeader>
+        <EmptyContent>
+          <Button variant='outline' asChild>
+            <Link to='/' onClick={resetErrorBoundary}>
+              {loc.no.error.retryAction}
+            </Link>
+          </Button>
+        </EmptyContent>
+      </Empty>
+    </div>
   )
 }

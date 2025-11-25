@@ -1,6 +1,10 @@
 import { getRandomItem } from '@/app/utils/utils'
 import type { GapType } from '@/components/timeentries/TimeEntryItem'
-import type { TrackLevel, TrackType } from '../../backend/database/schema'
+import type {
+  TrackLevel,
+  TrackType,
+  UserRole,
+} from '../../backend/database/schema'
 
 export type Localization = typeof no
 export type Locale = 'no'
@@ -38,6 +42,11 @@ const no = {
       oldPassword: 'Gammelt passord',
       newPassword: 'Nytt passord',
     },
+    role: {
+      user: 'Spiller',
+      moderator: 'Moderator',
+      admin: 'Admin',
+    } satisfies Record<UserRole, string>,
   },
   session: {
     title: 'Sessions',

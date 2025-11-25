@@ -4,7 +4,7 @@ import { EventReq, EventRes } from '../../../common/models/socket.io'
 import {
   CreateUser,
   isEditUserRequest,
-  UserDataResponse,
+  LoginResponse,
   type User,
   type UserInfo,
 } from '../../../common/models/user'
@@ -181,7 +181,7 @@ export default class UserManager {
       `Updated user '${userInfo.email}'`
     )
 
-    const response: UserDataResponse = {
+    const response: LoginResponse = {
       success: true,
       userInfo,
       token: AuthManager.sign(isSelf ? userInfo : actor),

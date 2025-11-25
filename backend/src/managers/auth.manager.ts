@@ -1,12 +1,13 @@
-import jwt from 'jsonwebtoken'
+import jwt, { JwtPayload } from 'jsonwebtoken'
 import { isLoginRequest } from '../../../common/models/auth'
-import { EventReq, EventRes } from '../../../common/models/socket.io'
 import {
-  isUserInfo,
-  type User,
-  type UserInfo,
-} from '../../../common/models/user'
-import { tryCatch } from '../../../common/utils/try-catch'
+  ErrorResponse,
+  EventReq,
+  EventRes,
+  SocketData,
+} from '../../../common/models/socket.io'
+import { type User, type UserInfo } from '../../../common/models/user'
+import { tryCatch, tryCatchAsync } from '../../../common/utils/try-catch'
 import loc from '../../../frontend/lib/locales'
 import { TypedSocket } from '../server'
 import UserManager from './user.manager'
@@ -14,7 +15,12 @@ import UserManager from './user.manager'
 const SECRET: jwt.Secret = process.env.SECRET!
 if (!SECRET) throw new Error("Missing environment variable 'SECRET'")
 
-type TokenData = UserInfo & { iat: number; exp: number }
+type TokenData = Omit<SocketData, 'token'> & JwtPayload
+
+function isTokenData(data: any): data is TokenData {
+  if (!data || typeof data !== 'object') return false
+  return typeof data.userId === 'string'
+}
 
 function delay(time: number) {
   return new Promise(resolve => setTimeout(resolve, time))
@@ -28,19 +34,20 @@ export default class AuthManager {
     expiresIn: '30DAYS',
   }
 
-  static sign(user: UserInfo) {
-    return jwt.sign(user, SECRET, AuthManager.JWT_OPTIONS)
+  static sign(payload: TokenData) {
+    return jwt.sign(payload, SECRET, AuthManager.JWT_OPTIONS)
   }
 
   private static async verify(token: string | undefined): Promise<TokenData> {
     if (!token) throw new Error(loc.no.error.messages.missing_jwt)
-    const { data: user, error } = tryCatch(jwt.verify(token, SECRET))
+    const { data, error } = tryCatch(jwt.verify(token, SECRET))
     if (error) {
       console.error(new Date().toISOString(), error)
       throw new Error(loc.no.error.messages.invalid_jwt)
     }
-    if (!isUserInfo(user)) throw new Error(loc.no.error.messages.invalid_jwt)
-    return user as TokenData
+    if (!isTokenData(data) || !UserManager.getUserById(data.userId))
+      throw new Error(loc.no.error.messages.invalid_jwt)
+    return data as TokenData
   }
 
   static async isPasswordValid(
@@ -60,11 +67,8 @@ export default class AuthManager {
     socket: TypedSocket,
     allowedRoles?: UserInfo['role'][]
   ): Promise<UserInfo> {
-    const { iat, exp, ...tokenData } = await AuthManager.verify(
-      socket.handshake.auth.token
-    )
-
-    const user = await UserManager.getUserById(tokenData.id)
+    const { userId } = await AuthManager.verify(socket.handshake.auth.token)
+    const user = await UserManager.getUserById(userId)
 
     if (allowedRoles && !allowedRoles.includes(user.role)) {
       throw new Error(loc.no.error.messages.insufficient_permissions)
@@ -92,13 +96,13 @@ export default class AuthManager {
       )
 
       if (!isPasswordValid) {
-        throw new Error('Incorrect password')
+        throw new Error(loc.no.error.messages.incorrect_password)
       }
 
       return {
         success: true,
-        token: AuthManager.sign(userInfo),
-        userInfo,
+        token: AuthManager.sign({ userId: userInfo.id }),
+        userId: userInfo.id,
       }
     } catch (error) {
       await delay(AuthManager.LOGIN_DELAY)
@@ -111,15 +115,23 @@ export default class AuthManager {
     }
   }
 
-  static async onGetUserData(
+  static async refreshToken(
     socket: TypedSocket
   ): Promise<EventRes<'get_user_data'>> {
-    const user = await AuthManager.checkAuth(socket)
+    const { data: user, error } = await tryCatchAsync(
+      AuthManager.checkAuth(socket)
+    )
+    if (error) {
+      return {
+        success: false,
+        message: error.message,
+      } satisfies ErrorResponse
+    }
 
     return {
       success: true,
       token: socket.handshake.auth.token,
-      userInfo: user,
+      userId: user.id,
     }
   }
 }

@@ -64,59 +64,77 @@ function UserRow({
 }
 
 function UserCard({ user, className, ...props }: Readonly<UserItemProps>) {
-  const { logout, isLoading } = useAuth()
+  const { logout, isLoading, loggedInUser } = useAuth()
+
+  const isSelf = loggedInUser?.id === user.id
+  const isAdmin = loggedInUser?.role === 'admin'
+  const canEdit = isSelf || isAdmin
 
   return (
-    <div
-      className={twMerge(
-        'flex flex-col items-center justify-between gap-4',
-        className
-      )}
-      {...props}>
-      <div className='flex items-center justify-center gap-2'>
-        <h2 className='font-northwell pt-4 text-4xl'>{user.firstName}</h2>
-        <h2 className='font-f1 uppercase'>{user.lastName}</h2>
+    <div className={twMerge('flex flex-col gap-4', className)} {...props}>
+      <div className='flex flex-col items-center justify-center gap-2'>
+        <div className='flex flex-col items-center'>
+          <h1 className='font-northwell text-primary z-1 -mb-6 pt-4 text-6xl normal-case'>
+            {user.firstName}
+          </h1>
+          <h1 className='font-f1 uppercase'>{user.lastName}</h1>
+        </div>
+
+        <div className='text-muted-foreground flex gap-2'>
+          <span className='text-sm'>{user.shortName ?? '-'}</span>
+          <span className='border-r' />
+          <span className='text-sm'>{loc.no.user.role[user.role]}</span>
+          <span className='border-r' />
+          <span className='text-sm'>{`Joined ${user.createdAt.getFullYear()}`}</span>
+        </div>
       </div>
-      <div className='flex gap-2'>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button variant='outline' size='sm'>
-              {loc.no.user.edit.title}
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{loc.no.user.edit.title}</DialogTitle>
-              <DialogDescription>
-                {loc.no.user.edit.description}
-              </DialogDescription>
-            </DialogHeader>
 
-            <UserForm
-              id='editForm'
-              variant='edit'
-              user={user}
-              className='py-2'
-              disabled={isLoading}
-            />
-
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button variant='outline' disabled={isLoading}>
-                  {loc.no.dialog.cancel}
+      {(canEdit || isSelf) && (
+        <div className='flex justify-center gap-2'>
+          {canEdit && (
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant='outline' size='sm'>
+                  {loc.no.user.edit.title}
                 </Button>
-              </DialogClose>
-              <Button type='submit' form='editForm' disabled={isLoading}>
-                {loc.no.dialog.continue}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>{loc.no.user.edit.title}</DialogTitle>
+                  <DialogDescription>
+                    {loc.no.user.edit.description}
+                  </DialogDescription>
+                </DialogHeader>
 
-        <Button onClick={logout} size='sm'>
-          {loc.no.user.logout.title}
-        </Button>
-      </div>
+                <UserForm
+                  id='editForm'
+                  variant='edit'
+                  user={user}
+                  className='py-2'
+                  disabled={isLoading}
+                />
+
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button variant='outline' disabled={isLoading}>
+                      {loc.no.dialog.cancel}
+                    </Button>
+                  </DialogClose>
+                  <Button type='submit' form='editForm' disabled={isLoading}>
+                    {loc.no.dialog.continue}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
+
+          {isSelf && (
+            <Button onClick={logout} variant='destructive' size='sm'>
+              {loc.no.user.logout.title}
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   )
 }

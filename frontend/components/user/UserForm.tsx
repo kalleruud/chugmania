@@ -12,6 +12,7 @@ type UserFormProps = {
   user?: UserInfo
   variant: 'login' | 'register' | 'edit'
   disabled?: boolean
+  onSubmitResponse?: (success: boolean) => void
 } & ({ variant: 'edit'; user: UserInfo } | { variant: 'login' | 'register' }) &
   ComponentProps<'form'>
 
@@ -20,11 +21,12 @@ export default function UserForm({
   variant,
   className,
   disabled,
+  onSubmitResponse: onSubmitSuccessful,
   onSubmit,
   ...rest
 }: Readonly<UserFormProps>) {
   const { socket } = useConnection()
-  const { login, user: loggedInUser } = useAuth()
+  const { login, loggedInUser, isLoggedIn } = useAuth()
 
   const [email, setEmail] = useState(user?.email ?? '')
   const [firstName, setFirstName] = useState(user?.firstName ?? '')
@@ -34,25 +36,30 @@ export default function UserForm({
 
   const canEdit =
     variant !== 'edit' ||
-    (loggedInUser &&
+    (isLoggedIn &&
       (loggedInUser.id === user.id || loggedInUser.role === 'admin'))
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     switch (variant) {
       case 'login':
-        return login({ email, password })
+        login?.({ email, password }).then(() =>
+          onSubmitSuccessful?.(isLoggedIn)
+        )
+        return
       case 'edit':
         return toast.promise(
-          socket.emitWithAck('edit_user', {
-            type: 'EditUserRequest',
-            id: user.id,
-            email,
-            firstName,
-            lastName,
-            shortName,
-            password,
-          }),
+          socket
+            .emitWithAck('edit_user', {
+              type: 'EditUserRequest',
+              id: user.id,
+              email,
+              firstName,
+              lastName,
+              shortName,
+              password,
+            })
+            .then(({ success }) => onSubmitSuccessful?.(success)),
           loc.no.user.edit.request
         )
 

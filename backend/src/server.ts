@@ -57,7 +57,7 @@ io.on('connect', s => Connect(s))
 async function Connect(s: TypedSocket) {
   console.debug(new Date().toISOString(), s.id, 'Connected')
 
-  s.emit('user_data', await AuthManager.onGetUserData(s))
+  s.emit('user_data', await AuthManager.refreshToken(s))
   s.emit('all_users', await UserManager.getAllUsers())
   s.emit('all_tracks', await TrackManager.getAllTracks())
   s.emit('all_leaderboards', await LeaderboardManager.getAllLeaderboards())
@@ -69,7 +69,7 @@ async function Connect(s: TypedSocket) {
     login: AuthManager.onLogin,
     register: UserManager.onRegister,
 
-    get_user_data: AuthManager.onGetUserData,
+    get_user_data: AuthManager.refreshToken,
     edit_user: UserManager.onUpdateUser,
 
     post_time_entry: TimeEntryManager.onPostTimeEntry,
