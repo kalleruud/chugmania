@@ -34,6 +34,10 @@ export default function UserForm({
   const [shortName, setShortName] = useState(user?.shortName ?? '')
   const [newPassword, setNewPassword] = useState('')
   const [password, setPassword] = useState('')
+  const [role, setRole] = useState(user?.role ?? 'user')
+  const [createdAt, setCreatedAt] = useState(
+    user?.createdAt ? new Date(user.createdAt).toISOString().split('T')[0] : ''
+  )
 
   const canEdit =
     variant !== 'edit' ||
@@ -58,6 +62,11 @@ export default function UserForm({
               shortName,
               password,
               newPassword,
+              ...(isLoggedIn &&
+                loggedInUser.role === 'admin' && {
+                  role: role as any,
+                  createdAt: createdAt ? new Date(createdAt) : undefined,
+                }),
             })
             .then(r => {
               onSubmitResponse?.(r.success)
@@ -159,6 +168,39 @@ export default function UserForm({
         show={variant === 'edit'}
         onChange={e => setNewPassword(e.target.value)}
         placeholder='•••••••••••'
+      />
+
+      <div
+        className='grid gap-2'
+        hidden={
+          !isLoggedIn || loggedInUser?.role !== 'admin' || variant !== 'edit'
+        }>
+        <Label htmlFor='role' className='gap-1'>
+          {loc.no.user.form.role}{' '}
+          <span className='text-muted-foreground text-xs'>(admin only)</span>
+        </Label>
+        <select
+          id='role'
+          className='border-input bg-background rounded border px-3 py-2 text-sm'
+          value={role}
+          onChange={e => setRole(e.target.value as any)}
+          disabled={disabled}>
+          <option value='user'>User</option>
+          <option value='moderator'>Moderator</option>
+          <option value='admin'>Admin</option>
+        </select>
+      </div>
+
+      <Field
+        id='created_at'
+        name={`${loc.no.user.form.createdAt} (admin only)`}
+        type='date'
+        disabled={disabled && canEdit}
+        value={createdAt}
+        show={
+          isLoggedIn && loggedInUser?.role === 'admin' && variant === 'edit'
+        }
+        onChange={e => setCreatedAt(e.target.value)}
       />
     </form>
   )

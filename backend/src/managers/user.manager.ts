@@ -70,7 +70,7 @@ export default class UserManager {
       .where(eq(users.id, id))
       .returning()
 
-    const user = data.at(0)
+    const user = data[0]
     if (!user) throw new Error(loc.no.error.messages.not_in_db(id))
 
     broadcast('all_users', await UserManager.getAllUsers())
@@ -122,11 +122,33 @@ export default class UserManager {
 
     // Create as admin if no admin exists
     const adminExists = await UserManager.adminExists()
-    const { type, password, ...insertUser } = request
+    const {
+      type,
+      password,
+      role: requestRole,
+      createdAt,
+      ...insertUser
+    } = request
+
+    // Check if requester is admin (only admins can set role and createdAt)
+    let canSetRoleAndCreatedAt = false
+    try {
+      const actor = await AuthManager.checkAuth(socket)
+      canSetRoleAndCreatedAt = actor.role === 'admin'
+    } catch {
+      // No authentication - this is a public registration
+      canSetRoleAndCreatedAt = false
+    }
 
     const user = await UserManager.createUser({
       ...insertUser,
-      role: adminExists ? 'user' : 'admin',
+      role:
+        canSetRoleAndCreatedAt && requestRole
+          ? requestRole
+          : adminExists
+            ? 'user'
+            : 'admin',
+      createdAt: canSetRoleAndCreatedAt && createdAt ? createdAt : undefined,
       passwordHash: await AuthManager.hash(password),
     } satisfies CreateUser)
 
@@ -166,10 +188,27 @@ export default class UserManager {
       throw new Error(loc.no.error.messages.incorrect_password)
     }
 
-    const updates: Partial<typeof users.$inferInsert> = request
+    const updates: Partial<typeof users.$inferInsert> = {
+      email: request.email,
+      firstName: request.firstName,
+      lastName: request.lastName,
+      shortName: request.shortName,
+      updatedAt: request.updatedAt,
+      deletedAt: request.deletedAt,
+    }
 
     if (request.newPassword) {
       updates.passwordHash = await AuthManager.hash(request.newPassword)
+    }
+
+    // Only admins can set role and createdAt
+    if (isAdmin) {
+      if (request.role !== undefined) {
+        updates.role = request.role
+      }
+      if (request.createdAt !== undefined) {
+        updates.createdAt = request.createdAt
+      }
     }
 
     const updatedUser = await UserManager.updateUser(request.id, updates)

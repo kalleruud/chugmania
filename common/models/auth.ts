@@ -15,7 +15,11 @@ export type RegisterRequest = Omit<
   UserInfo,
   'id' | 'role' | 'updatedAt' | 'createdAt' | 'deletedAt' | 'passwordHash'
 > &
-  Omit<LoginRequest, 'type'> & { type: 'RegisterRequest' }
+  Omit<LoginRequest, 'type'> & {
+    type: 'RegisterRequest'
+    role?: UserInfo['role']
+    createdAt?: UserInfo['createdAt']
+  }
 
 export function isRegisterRequest(data: any): data is RegisterRequest {
   if (typeof data !== 'object' || data !== null) return false

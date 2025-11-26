@@ -26,6 +26,8 @@ export type LoginResponse = SuccessResponse & SocketData
 export type EditUserRequest = UpdateUser & {
   type: 'EditUserRequest'
   password?: string
+  role?: User['role']
+  createdAt?: User['createdAt']
 }
 
 export function isEditUserRequest(data: any): data is EditUserRequest {

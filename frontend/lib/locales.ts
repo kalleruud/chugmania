@@ -42,6 +42,8 @@ const no = {
       password: 'Passord',
       oldPassword: 'Gammelt passord',
       newPassword: 'Nytt passord',
+      role: 'Rolle',
+      createdAt: 'Opprettet',
     },
     role: {
       user: 'Spiller',
