@@ -43,13 +43,14 @@ const no = {
       oldPassword: 'Gammelt passord',
       newPassword: 'Nytt passord',
       role: 'Rolle',
-      createdAt: 'Opprettet',
+      advanced: 'Avansert',
+      createdAt: 'Opprettet dato',
     },
     role: {
       user: 'Spiller',
       moderator: 'Moderator',
       admin: 'Admin',
-    } satisfies Record<UserRole, string>,
+    } as Record<UserRole, string>,
   },
   session: {
     title: 'Sessions',
@@ -116,7 +117,7 @@ const no = {
     gap: {
       leader: 'Leader',
       interval: 'Interval',
-    } satisfies Record<GapType, string>,
+    } as Record<GapType, string>,
     input: {
       create: {
         title: 'Registrer tid',
@@ -170,13 +171,13 @@ const no = {
       blue: 'Blue',
       red: 'Red',
       black: 'Black',
-    } satisfies Record<TrackLevel, string>,
+    } as Record<TrackLevel, string>,
     type: {
       drift: 'Drift',
       valley: 'Valley',
       lagoon: 'Lagoon',
       stadium: 'Stadium',
-    } satisfies Record<TrackType, string>,
+    } as Record<TrackType, string>,
   },
   users: {
     title: 'Spillere',
