@@ -30,11 +30,7 @@ export type EditUserRequest = UpdateUser & {
 
 export function isEditUserRequest(data: any): data is EditUserRequest {
   if (typeof data !== 'object' || data === null) return false
-  return (
-    data.type === 'EditUserRequest' &&
-    typeof data.id === 'string' &&
-    typeof data.passord === 'string'
-  )
+  return data.type === 'EditUserRequest' && typeof data.id === 'string'
 }
 
 export function getUserFullName(

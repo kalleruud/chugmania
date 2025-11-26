@@ -34,8 +34,8 @@ export default class AuthManager {
     expiresIn: '30DAYS',
   }
 
-  static sign(payload: TokenData) {
-    return jwt.sign(payload, SECRET, AuthManager.JWT_OPTIONS)
+  static sign(userId: TokenData['userId']) {
+    return jwt.sign({ userId }, SECRET, AuthManager.JWT_OPTIONS)
   }
 
   private static async verify(token: string | undefined): Promise<TokenData> {
@@ -101,7 +101,7 @@ export default class AuthManager {
 
       return {
         success: true,
-        token: AuthManager.sign({ userId: userInfo.id }),
+        token: AuthManager.sign(userInfo.id),
         userId: userInfo.id,
       }
     } catch (error) {

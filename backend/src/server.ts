@@ -3,6 +3,9 @@ import { Server, Socket } from 'socket.io'
 import ViteExpress from 'vite-express'
 import {
   ClientToServerEvents,
+  ErrorResponse,
+  EventReq,
+  EventRes,
   InterServerEvents,
   ServerToClientEvents,
   SocketData,
@@ -15,7 +18,6 @@ import SessionManager from './managers/session.manager'
 import TimeEntryManager from './managers/timeEntry.manager'
 import TrackManager from './managers/track.manager'
 import UserManager from './managers/user.manager'
-import { bind } from './utils/bind'
 
 const PORT = process.env.PORT ? Number.parseInt(process.env.PORT) : 6996
 const ORIGIN = new URL(process.env.ORIGIN ?? `http://localhost:${PORT}`)
@@ -63,23 +65,43 @@ async function Connect(s: TypedSocket) {
   s.emit('all_leaderboards', await LeaderboardManager.getAllLeaderboards())
   s.emit('all_sessions', await SessionManager.getAllSessions())
 
-  bind(s, {
-    disconnect: async () =>
-      console.debug(new Date().toISOString(), s.id, 'Disconnected'),
-    login: AuthManager.onLogin,
-    register: UserManager.onRegister,
+  s.on('disconnect', () =>
+    console.debug(new Date().toISOString(), s.id, 'Disconnected')
+  )
 
-    get_user_data: AuthManager.refreshToken,
-    edit_user: UserManager.onUpdateUser,
+  setup(s, 'login', AuthManager.onLogin)
+  setup(s, 'register', UserManager.onRegister)
 
-    post_time_entry: TimeEntryManager.onPostTimeEntry,
-    edit_time_entry: TimeEntryManager.onEditTimeEntry,
+  setup(s, 'get_user_data', AuthManager.refreshToken)
+  setup(s, 'edit_user', UserManager.onUpdateUser)
 
-    create_session: SessionManager.onCreateSession,
-    edit_session: SessionManager.onEditSession,
-    rsvp_session: SessionManager.onRsvpSession,
+  setup(s, 'post_time_entry', TimeEntryManager.onPostTimeEntry)
+  setup(s, 'edit_time_entry', TimeEntryManager.onEditTimeEntry)
 
-    import_csv: AdminManager.onImportCsv,
-    export_csv: AdminManager.onExportCsv,
-  })
+  setup(s, 'create_session', SessionManager.onCreateSession)
+  setup(s, 'edit_session', SessionManager.onEditSession)
+  setup(s, 'rsvp_session', SessionManager.onRsvpSession)
+
+  setup(s, 'import_csv', AdminManager.onImportCsv)
+  setup(s, 'export_csv', AdminManager.onExportCsv)
+}
+
+function setup<Ev extends keyof ClientToServerEvents>(
+  s: TypedSocket,
+  event: Ev,
+  handler: (s: TypedSocket, r: EventReq<Ev>) => Promise<EventRes<Ev>>
+) {
+  s.on(
+    event,
+    // @ts-expect-error
+    (r: EventReq<Ev>, callback: EventCb<Ev>) =>
+      handler(s, r)
+        .catch(err =>
+          callback({
+            success: false,
+            message: err.message,
+          } satisfies ErrorResponse)
+        )
+        .then(callback)
+  )
 }

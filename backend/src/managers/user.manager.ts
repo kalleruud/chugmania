@@ -145,7 +145,7 @@ export default class UserManager {
   ): Promise<EventRes<'edit_user'>> {
     const actor = await AuthManager.checkAuth(socket)
 
-    if (!isEditUserRequest(request)) {
+    if (isEditUserRequest(request)) {
       throw new Error(loc.no.error.description)
     }
 
@@ -183,8 +183,8 @@ export default class UserManager {
 
     const response: LoginResponse = {
       success: true,
-      userInfo,
-      token: AuthManager.sign(isSelf ? userInfo : actor),
+      token: AuthManager.sign(userInfo.id),
+      userId: userInfo.id,
     }
 
     if (isSelf) {
