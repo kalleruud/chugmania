@@ -12,9 +12,10 @@ import type {
   SessionWithSignups,
 } from './session'
 import type {
+  AbsoluteTimeEntriesRequest,
+  AbsoluteTimeEntriesResponse,
   CreateTimeEntryRequest,
   EditTimeEntryRequest,
-  TimeEntry,
 } from './timeEntry'
 import type { Track } from './track'
 import type { EditUserRequest, LoginResponse, UserInfo } from './user'
@@ -26,10 +27,6 @@ export type SuccessResponse = {
 export type ErrorResponse = {
   success: false
   message: string
-}
-
-export type GetAbsoluteTimeEntriesResponse = SuccessResponse & {
-  entries: Record<string, (TimeEntry & { position: number })[]>
 }
 
 export interface ServerToClientEvents {
@@ -86,8 +83,8 @@ export interface ClientToServerEvents {
     callback: (r: ExportCsvResponse | ErrorResponse) => void
   ) => void
   get_absolute_time_entries: (
-    userId: string,
-    callback: (r: GetAbsoluteTimeEntriesResponse | ErrorResponse) => void
+    r: AbsoluteTimeEntriesRequest,
+    callback: (r: AbsoluteTimeEntriesResponse | ErrorResponse) => void
   ) => void
 }
 

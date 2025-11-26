@@ -1,4 +1,7 @@
 import { timeEntries } from '../../backend/database/schema'
+import type { SuccessResponse } from './socket.io'
+import type { Track } from './track'
+import type { User } from './user'
 
 export type TimeEntry = typeof timeEntries.$inferSelect
 export type CreateTimeEntry = typeof timeEntries.$inferInsert
@@ -44,4 +47,19 @@ export type LeaderboardEntryGap =
 
 export type LeaderboardEntry = Omit<TimeEntry, 'track'> & {
   gap: LeaderboardEntryGap
+}
+
+export type AbsoluteTimeEntriesRequest = {
+  type: 'AbsoluteTimeEntriesRequest'
+} & (
+  | {
+      user: User['id']
+    }
+  | {
+      track: Track['id']
+    }
+)
+
+export type AbsoluteTimeEntriesResponse = SuccessResponse & {
+  entries: LeaderboardEntry[]
 }

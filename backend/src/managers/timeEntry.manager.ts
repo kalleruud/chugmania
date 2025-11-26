@@ -1,6 +1,6 @@
 import { and, asc, eq, isNull } from 'drizzle-orm'
 import { EventReq, EventRes } from '../../../common/models/socket.io'
-import type { TimeEntry } from '../../../common/models/timeEntry'
+import type { LeaderboardEntry } from '../../../common/models/timeEntry'
 import {
   isCreateTimeEntryRequest,
   isEditTimeEntryRequest,
@@ -122,40 +122,28 @@ export default class TimeEntryManager {
     }
   }
 
-  static async getAbsoluteTimeEntriesForUser(
-    userId: TimeEntry['user']
-  ): Promise<Record<string, (TimeEntry & { position: number })[]>> {
+  static async onGetAbsoluteTimeEntries(
+    socket: TypedSocket,
+    request: EventReq<'get_absolute_time_entries'>
+  ): Promise<EventRes<'get_absolute_time_entries'>> {
     // Get all time entries for the user, grouped by track
     const rows = await db
       .select()
       .from(timeEntries)
-      .where(and(eq(timeEntries.user, userId), isNull(timeEntries.deletedAt)))
-      .orderBy(asc(timeEntries.track), asc(timeEntries.createdAt))
+      .where(
+        and(
+          'user' in request
+            ? eq(timeEntries.user, request.user)
+            : eq(timeEntries.track, request.track),
+          isNull(timeEntries.deletedAt)
+        )
+      )
+      .orderBy(asc(timeEntries.track), asc(timeEntries.duration))
 
-    // Group by track and add position
-    const entriesByTrack: Record<string, (TimeEntry & { position: number })[]> =
-      {}
-
-    for (const entry of rows) {
-      if (!entriesByTrack[entry.track]) {
-        entriesByTrack[entry.track] = []
-      }
-      entriesByTrack[entry.track]!.push({
-        ...entry,
-        position: entriesByTrack[entry.track]!.length + 1,
-      })
+    const entries: LeaderboardEntry[] = []
+    for (const row of rows) {
+      // TODO: Add rows with LeaderboardEntryGap to entries
     }
-
-    return entriesByTrack
-  }
-
-  static async onGetAbsoluteTimeEntries(
-    socket: TypedSocket,
-    userId: string
-  ): Promise<EventRes<'get_absolute_time_entries'>> {
-    await AuthManager.checkAuth(socket)
-
-    const entries = await TimeEntryManager.getAbsoluteTimeEntriesForUser(userId)
 
     return {
       success: true,
