@@ -72,15 +72,16 @@ function GapPart({
   gap,
   gapType = 'leader',
 }: Readonly<{
-  gap?: LeaderboardEntry['gap']
+  gap: LeaderboardEntry['gap']
   gapType?: GapType
   onChangeGapType: () => void
 }>) {
-  const duration = gapType === 'leader' ? gap?.leader : gap?.previous
-  const isLeader = !duration
-  const label = isLeader
-    ? gapType.toUpperCase()
-    : '+' + formatTime(duration, true)
+  const duration = gapType === 'leader' ? gap.leader : gap.previous
+
+  const label =
+    gap.position === 1
+      ? gapType.toUpperCase()
+      : '+' + formatTime(duration ?? 0, true)
 
   return (
     <div

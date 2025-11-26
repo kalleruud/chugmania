@@ -11,7 +11,6 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
 import { Button } from '@/components/ui/button'
-import { ButtonGroup } from '@/components/ui/button-group'
 import { Empty } from '@/components/ui/empty'
 import { Spinner } from '@/components/ui/spinner'
 import { useData } from '@/contexts/DataContext'
@@ -38,25 +37,22 @@ export function RowItemList({
     )
   }
   return (
-    <>
-      <div className='flex w-full justify-center'>
-        <ButtonGroup>
-          <Button
-            className='rounded-l-full'
-            variant={gapType === 'leader' ? 'default' : 'outline'}
-            size='sm'
-            onClick={() => setGapType('leader')}>
-            {loc.no.timeEntry.gap.leader}
-          </Button>
-          <Button
-            className='rounded-r-full'
-            variant={gapType === 'interval' ? 'default' : 'outline'}
-            size='sm'
-            onClick={() => setGapType('interval')}>
-            {loc.no.timeEntry.gap.interval}
-          </Button>
-        </ButtonGroup>
+    <div className='flex flex-col gap-2'>
+      <div className='flex w-full justify-center gap-1'>
+        <Button
+          variant={gapType === 'leader' ? 'default' : 'outline'}
+          size='sm'
+          onClick={() => setGapType('leader')}>
+          {loc.no.timeEntry.gap.leader}
+        </Button>
+        <Button
+          variant={gapType === 'interval' ? 'default' : 'outline'}
+          size='sm'
+          onClick={() => setGapType('interval')}>
+          {loc.no.timeEntry.gap.interval}
+        </Button>
       </div>
+
       <div className='bg-background-secondary flex flex-col rounded-sm'>
         {entries.map(entry => (
           <TimeEntryItem
@@ -71,7 +67,7 @@ export function RowItemList({
           />
         ))}
       </div>
-    </>
+    </div>
   )
 }
 
@@ -112,7 +108,9 @@ export default function TrackPage() {
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
+
       <TrackItem track={track} variant='card' className='pb-0' />
+
       <RowItemList track={track} entries={leaderboard} />
     </div>
   )

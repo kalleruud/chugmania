@@ -33,16 +33,16 @@ export function isEditTimeEntryRequest(
 
 export type LeaderboardEntryGap =
   | {
-      position?: number
+      position: number
       next?: number
       previous?: number
       leader?: number
     }
   | {
-      position?: 1
+      position: 1
       next?: number
-      previous?: never
-      leader?: never
+      previous: undefined
+      leader: undefined
     }
 
 export type LeaderboardEntry = Omit<TimeEntry, 'track'> & {

@@ -21,10 +21,28 @@ import { getUserFullName } from '../../../common/models/user'
 import { RowItemList } from './TrackPage'
 
 function groupByTrack(
-  entries: LeaderboardEntry[]
+  entries: LeaderboardEntry[],
+  tracks: Record<string, Track>
 ): { track: Track; entries: LeaderboardEntry[] }[] {
-  // TODO: Implement grouping
-  return []
+  const grouped: Record<string, LeaderboardEntry[]> = {}
+
+  // Group entries by track ID
+  for (const entry of entries) {
+    // The server returns full TimeEntry which includes track, so we cast to access it
+    const trackId = (entry as any).track as string
+    if (!grouped[trackId]) {
+      grouped[trackId] = []
+    }
+    grouped[trackId].push(entry)
+  }
+
+  // Convert to array and include track data
+  return Object.entries(grouped)
+    .map(([trackId, trackEntries]) => ({
+      track: tracks[trackId],
+      entries: trackEntries,
+    }))
+    .filter(item => item.track !== undefined)
 }
 
 export default function UserPage() {
@@ -64,38 +82,44 @@ export default function UserPage() {
   const user = users[id]
   const fullName = getUserFullName(user)
 
-  const groupedTracks = entries ? groupByTrack(entries) : []
+  const groupedTracks = entries && tracks ? groupByTrack(entries, tracks) : []
 
   return (
-    <div className='p-safe-or-2 flex flex-col gap-4'>
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink to='/'>{loc.no.home}</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbLink to='/users'>{loc.no.users.title}</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>{fullName}</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
+    <div className='p-safe-or-2 justify-center-safe flex'>
+      <div className='flex w-full max-w-2xl flex-col gap-12'>
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink to='/'>{loc.no.home}</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink to='/users'>{loc.no.users.title}</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>{fullName}</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
 
-      <UserItem variant='card' user={user} />
+        <UserItem variant='card' user={user} />
 
-      {entries && (
-        <div className='flex flex-col gap-4'>
-          {groupedTracks.map(({ track, entries }) => (
-            <div key={track.id}>
-              <TrackItem variant='card' track={track} />
-              <RowItemList track={track} entries={entries} />
+        <div className='flex flex-col'>
+          {entries && (
+            <div className='flex flex-col gap-4'>
+              {groupedTracks.map(({ track, entries }) => (
+                <div
+                  key={track.id}
+                  className='bg-background gap-2 rounded-sm border p-2'>
+                  <TrackItem variant='row' track={track} />
+                  <RowItemList track={track} entries={entries} />
+                </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
-      )}
+      </div>
     </div>
   )
 }
