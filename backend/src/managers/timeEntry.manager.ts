@@ -1,4 +1,5 @@
-import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
+import type { Leaderboard } from '../../../common/models/leaderboard'
 import { EventReq, EventRes } from '../../../common/models/socket.io'
 import type {
   LeaderboardEntry,
@@ -8,12 +9,13 @@ import {
   isCreateTimeEntryRequest,
   isEditTimeEntryRequest,
 } from '../../../common/models/timeEntry'
+import type { Track } from '../../../common/models/track'
 import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
-import { timeEntries } from '../../database/schema'
+import { timeEntries, tracks, users } from '../../database/schema'
 import { broadcast, TypedSocket } from '../server'
 import AuthManager from './auth.manager'
-import LeaderboardManager from './leaderboard.manager'
+import TrackManager from './track.manager'
 
 export default class TimeEntryManager {
   static readonly table = timeEntries
@@ -29,6 +31,7 @@ export default class TimeEntryManager {
 
     return (await Promise.all(tasks)).flat()
   }
+
   static async onPostTimeEntry(
     socket: TypedSocket,
     request: EventReq<'post_time_entry'>
@@ -55,7 +58,7 @@ export default class TimeEntryManager {
       request.duration
     )
 
-    broadcast('all_leaderboards', await LeaderboardManager.getAllLeaderboards())
+    broadcast('all_leaderboards', await TimeEntryManager.getAllLeaderboards())
 
     return {
       success: true,
@@ -118,7 +121,7 @@ export default class TimeEntryManager {
       request.id
     )
 
-    broadcast('all_leaderboards', await LeaderboardManager.getAllLeaderboards())
+    broadcast('all_leaderboards', await TimeEntryManager.getAllLeaderboards())
 
     return {
       success: true,
@@ -129,29 +132,52 @@ export default class TimeEntryManager {
     socket: TypedSocket,
     request: EventReq<'get_absolute_time_entries'>
   ): Promise<EventRes<'get_absolute_time_entries'>> {
-    // 1. Determine relevant track IDs
-    let trackIds: string[] = []
-
-    if ('track' in request) {
-      trackIds = [request.track]
-    } else {
-      // For a user, find all tracks they have played
-      const userTracks = await db
-        .selectDistinct({ id: timeEntries.track })
-        .from(timeEntries)
-        .where(
-          and(eq(timeEntries.user, request.user), isNull(timeEntries.deletedAt))
-        )
-      trackIds = userTracks.map(t => t.id)
-    }
-
+    const trackIds = await TimeEntryManager.getRequestedTrackIds(request)
     if (trackIds.length === 0) {
       return { success: true, entries: [] }
     }
 
-    // 2. Fetch ALL time entries for these tracks to establish global context/ranking
-    // Sort: Valid times first (asc), then DNFs (duration 0 or null) sorted by date (oldest first)
-    const rows = await db
+    const rows = await TimeEntryManager.fetchTimeEntriesForTracks(trackIds)
+
+    // Group by track
+    const byTrack: Record<string, typeof rows> = {}
+    for (const row of rows) {
+      if (!byTrack[row.track]) byTrack[row.track] = []
+      byTrack[row.track].push(row)
+    }
+
+    const entries: LeaderboardEntry[] = []
+    for (const trackEntries of Object.values(byTrack)) {
+      entries.push(...TimeEntryManager.computeGaps(trackEntries))
+    }
+
+    const finalEntries =
+      'user' in request ? entries.filter(e => e.user === request.user) : entries
+
+    return {
+      success: true,
+      entries: finalEntries,
+    }
+  }
+
+  private static async getRequestedTrackIds(
+    request: EventReq<'get_absolute_time_entries'>
+  ): Promise<string[]> {
+    if ('track' in request) {
+      return [request.track]
+    }
+    // For a user, find all tracks they have played
+    const userTracks = await db
+      .selectDistinct({ id: timeEntries.track })
+      .from(timeEntries)
+      .where(
+        and(eq(timeEntries.user, request.user), isNull(timeEntries.deletedAt))
+      )
+    return userTracks.map(t => t.id)
+  }
+
+  private static async fetchTimeEntriesForTracks(trackIds: string[]) {
+    return db
       .select()
       .from(timeEntries)
       .where(
@@ -165,70 +191,104 @@ export default class TimeEntryManager {
         asc(timeEntries.duration),
         asc(timeEntries.createdAt)
       )
+  }
 
-    const processedEntries: LeaderboardEntry[] = []
+  private static computeGaps<T extends { duration: number | null }>(
+    entries: T[]
+  ): (T & { gap: LeaderboardEntryGap })[] {
+    const leader = entries[0]?.duration
+    const hasValidLeader = leader && leader > 0
     const roundToHundredth = (ms: number) => Math.round(ms / 10) * 10
 
-    // 3. Group by track to calculate gaps correctly per track
-    const byTrack: Record<string, typeof rows> = {}
-    for (const row of rows) {
-      if (!byTrack[row.track]) byTrack[row.track] = []
-      byTrack[row.track].push(row)
-    }
-
-    for (const trackEntries of Object.values(byTrack)) {
-      const leader = trackEntries[0]?.duration
-      // Only consider it a valid leader if it's not a DNF
-      const hasValidLeader = leader && leader > 0
-
-      for (let i = 0; i < trackEntries.length; i++) {
-        const row = trackEntries[i]
-        const isDnf = !row.duration || row.duration === 0
-
-        if (isDnf) {
-          // DNFs have no position or gaps
-          processedEntries.push(row)
-          continue
-        }
-
-        const prev = i > 0 ? trackEntries[i - 1].duration : null
-        const next =
-          i < trackEntries.length - 1 ? trackEntries[i + 1].duration : null
-
-        const gap: LeaderboardEntryGap = { position: i + 1 }
-
-        if (row.duration && prev && prev > 0) {
-          gap.previous = roundToHundredth(row.duration - prev)
-        }
-        if (
-          row.duration &&
-          hasValidLeader &&
-          leader !== undefined &&
-          leader !== null &&
-          i > 0
-        ) {
-          gap.leader = roundToHundredth(row.duration - leader)
-        }
-        if (row.duration && next && next > 0) {
-          gap.next = roundToHundredth(next - row.duration)
-        }
-
-        processedEntries.push({
-          ...row,
-          gap,
-        })
+    return entries.map((row, i) => {
+      const isDnf = !row.duration || row.duration === 0
+      if (isDnf) {
+        // Force gap to be compatible with LeaderboardEntryGap
+        return { ...row, gap: {} as LeaderboardEntryGap }
       }
-    }
 
-    // 4. Filter results to return only what was requested
-    const finalEntries =
-      'user' in request
-        ? processedEntries.filter(e => e.user === request.user)
-        : processedEntries
+      const prev = i > 0 ? entries[i - 1].duration : null
+      const next = i < entries.length - 1 ? entries[i + 1].duration : null
+      const gap: LeaderboardEntryGap = { position: i + 1 }
+
+      if (row.duration && prev && prev > 0) {
+        gap.previous = roundToHundredth(row.duration - prev)
+      }
+      if (
+        row.duration &&
+        hasValidLeader &&
+        leader !== undefined &&
+        leader !== null &&
+        i > 0
+      ) {
+        gap.leader = roundToHundredth(row.duration - leader)
+      }
+      if (row.duration && next && next > 0) {
+        gap.next = roundToHundredth(next - row.duration)
+      }
+
+      return {
+        ...row,
+        gap,
+      }
+    })
+  }
+
+  static async getAllLeaderboards(): Promise<Leaderboard[]> {
+    const tracks = await TrackManager.getAllTracks()
+    const leaderboards = await Promise.all(
+      tracks.map(track => TimeEntryManager.getLeaderboard(track.id))
+    )
+    return leaderboards.filter(lb => lb.entries.length > 0)
+  }
+
+  private static async getLeaderboard(
+    trackId: Track['id']
+  ): Promise<Leaderboard> {
+    const track = await db.query.tracks.findFirst({
+      where: eq(tracks.id, trackId),
+    })
+    if (!track) throw new Error(`Track not found: ${trackId}`)
+
+    const rows = await db
+      .select()
+      .from(timeEntries)
+      .innerJoin(users, eq(users.id, timeEntries.user))
+      .where(
+        and(
+          eq(timeEntries.track, trackId),
+          isNull(timeEntries.deletedAt),
+          isNull(users.deletedAt)
+        )
+      )
+      .orderBy(
+        asc(
+          sql`CASE WHEN ${timeEntries.duration} IS NULL OR ${timeEntries.duration} = 0 THEN 1 ELSE 0 END`
+        ),
+        asc(timeEntries.duration),
+        desc(timeEntries.createdAt)
+      )
+
+    // Keep best (lowest duration) per user
+    const seen = new Set<string>()
+    const best = rows
+      .filter(r => {
+        const uid = r.users.id
+        if (seen.has(uid)) return false
+        seen.add(uid)
+        return true
+      })
+      .map(r => r.time_entries)
+
+    // Reuse computeGaps
+    const entries = TimeEntryManager.computeGaps(best).map(e => ({
+      ...e,
+      user: e.user, // Ensure user is just the ID string
+    }))
 
     return {
-      success: true,
-      entries: finalEntries,
+      id: trackId,
+      entries,
     }
   }
 }

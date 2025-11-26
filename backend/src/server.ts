@@ -13,7 +13,6 @@ import {
 import AdminManager from './managers/admin.manager'
 import ApiManager from './managers/api.manager'
 import AuthManager from './managers/auth.manager'
-import LeaderboardManager from './managers/leaderboard.manager'
 import SessionManager from './managers/session.manager'
 import TimeEntryManager from './managers/timeEntry.manager'
 import TrackManager from './managers/track.manager'
@@ -62,7 +61,7 @@ async function Connect(s: TypedSocket) {
   s.emit('user_data', await AuthManager.refreshToken(s))
   s.emit('all_users', await UserManager.getAllUsers())
   s.emit('all_tracks', await TrackManager.getAllTracks())
-  s.emit('all_leaderboards', await LeaderboardManager.getAllLeaderboards())
+  s.emit('all_leaderboards', await TimeEntryManager.getAllLeaderboards())
   s.emit('all_sessions', await SessionManager.getAllSessions())
 
   s.on('disconnect', () =>
