@@ -91,30 +91,25 @@ export default function UserPage() {
       <UserItem variant='card' user={user} />
 
       {userLaptimes && Object.keys(userLaptimes).length > 0 && (
-        <div className='flex flex-col gap-2'>
-          <PageHeader title='LAP TIMES' icon='FireIcon' />
-          <div className='bg-card flex flex-col gap-4 rounded-md p-2'>
-            {Object.entries(userLaptimes).map(
-              ([trackId, { entries, trackNumber }]) => (
-                <div key={trackId} className='flex flex-col gap-2'>
-                  <div className='font-f1 text-muted-foreground px-2 text-sm font-bold uppercase'>
-                    #{trackNumber}
-                  </div>
-                  <div className='flex flex-col gap-1'>
-                    {entries.map((entry, idx) => (
-                      <TimeEntryItem
-                        key={`${trackId}-${idx}`}
-                        lapTime={entry}
-                        position={entry.gap.position}
-                        onChangeGapType={() => {}}
-                        className='px-2 py-1'
-                      />
-                    ))}
-                  </div>
+        <div className='flex flex-col gap-4'>
+          {Object.entries(userLaptimes).map(
+            ([trackId, { entries, trackNumber }]) => (
+              <div key={trackId} className='flex flex-col gap-2'>
+                <PageHeader title={`#${trackNumber}`} icon='FireIcon' />
+                <div className='bg-card flex flex-col gap-1 rounded-md p-2'>
+                  {entries.map((entry, idx) => (
+                    <TimeEntryItem
+                      key={`${trackId}-${idx}`}
+                      lapTime={entry}
+                      position={entry.gap.position}
+                      onChangeGapType={() => {}}
+                      className='px-2 py-1'
+                    />
+                  ))}
                 </div>
-              )
-            )}
-          </div>
+              </div>
+            )
+          )}
         </div>
       )}
     </div>
