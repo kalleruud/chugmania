@@ -30,7 +30,7 @@ const no = {
       description: 'Gjør endringer til Chugmania brukeren.',
       request: {
         loading: 'Oppdaterer...',
-        success: 'Brukeren ble oppdatert!',
+        success: 'Brukeren ble endret!',
         error: (e: Error) => `Oppdatering feilet: ${e.message}`,
       },
     },
