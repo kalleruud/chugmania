@@ -73,7 +73,7 @@ async function Connect(s: TypedSocket) {
   setup(s, 'register', UserManager.onRegister)
 
   setup(s, 'get_user_data', AuthManager.refreshToken)
-  setup(s, 'edit_user', UserManager.onUpdateUser)
+  setup(s, 'edit_user', UserManager.onEditUser)
 
   setup(s, 'post_time_entry', TimeEntryManager.onPostTimeEntry)
   setup(s, 'edit_time_entry', TimeEntryManager.onEditTimeEntry)

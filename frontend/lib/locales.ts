@@ -12,6 +12,7 @@ export type Locale = 'no'
 const no = {
   user: {
     notLoggedIn: 'Du er ikke logget inn',
+    joined: 'Chugget siden',
     login: {
       title: 'Logg inn',
       description: 'Logg inn for å registrere tider og meld deg på sessions.',

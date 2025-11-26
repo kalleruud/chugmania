@@ -100,7 +100,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
         isLoggedIn: false,
         login,
       }
-  }, [loggedInUserId, isLoading])
+  }, [loggedInUserId, isLoading, loggedInUser])
 
   return <AuthContext.Provider value={context}>{children}</AuthContext.Provider>
 }

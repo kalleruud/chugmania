@@ -139,7 +139,7 @@ export default class UserManager {
     })
   }
 
-  static async onUpdateUser(
+  static async onEditUser(
     socket: TypedSocket,
     request: EventReq<'edit_user'>
   ): Promise<EventRes<'edit_user'>> {

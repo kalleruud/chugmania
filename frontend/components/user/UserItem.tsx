@@ -2,7 +2,7 @@ import { Item, ItemActions, ItemContent, ItemTitle } from '@/components/ui/item'
 import { useAuth } from '@/contexts/AuthContext'
 import loc from '@/lib/locales'
 import { ChevronRight } from 'lucide-react'
-import type { ComponentProps } from 'react'
+import { useState, type ComponentProps } from 'react'
 import { Link } from 'react-router-dom'
 import { twMerge } from 'tailwind-merge'
 import { type UserInfo } from '../../../common/models/user'
@@ -65,6 +65,7 @@ function UserRow({
 
 function UserCard({ user, className, ...props }: Readonly<UserItemProps>) {
   const { logout, isLoading, loggedInUser } = useAuth()
+  const [open, setOpen] = useState(false)
 
   const isSelf = loggedInUser?.id === user.id
   const isAdmin = loggedInUser?.role === 'admin'
@@ -85,14 +86,14 @@ function UserCard({ user, className, ...props }: Readonly<UserItemProps>) {
           <span className='border-r' />
           <span className='text-sm'>{loc.no.user.role[user.role]}</span>
           <span className='border-r' />
-          <span className='text-sm'>{`Joined ${user.createdAt.getFullYear()}`}</span>
+          <span className='text-sm'>{`${loc.no.user.joined} ${user.createdAt.getFullYear()}`}</span>
         </div>
       </div>
 
       {(canEdit || isSelf) && (
         <div className='flex justify-center gap-2'>
           {canEdit && (
-            <Dialog>
+            <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
                 <Button variant='outline' size='sm'>
                   {loc.no.user.edit.title}
@@ -111,6 +112,7 @@ function UserCard({ user, className, ...props }: Readonly<UserItemProps>) {
                   variant='edit'
                   user={user}
                   className='py-2'
+                  onSubmitResponse={() => setOpen(false)}
                   disabled={isLoading}
                 />
 

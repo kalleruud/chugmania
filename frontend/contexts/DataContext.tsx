@@ -99,7 +99,7 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
       tracks,
       users,
     }),
-    [tracks, leaderboards, users]
+    [tracks, leaderboards, users, sessions]
   )
 
   return <DataContext.Provider value={context}>{children}</DataContext.Provider>
