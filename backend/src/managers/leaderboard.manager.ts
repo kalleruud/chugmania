@@ -27,9 +27,7 @@ export default class LeaderboardManager {
         )
       )
       .orderBy(
-        asc(
-          sql`CASE WHEN ${timeEntries.duration} IS NULL OR ${timeEntries.duration} = 0 THEN 1 ELSE 0 END`
-        ),
+        asc(sql`CASE WHEN ${timeEntries.duration} IS NULL THEN 1 ELSE 0 END`),
         asc(timeEntries.duration),
         desc(timeEntries.createdAt)
       )
