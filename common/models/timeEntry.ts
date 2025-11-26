@@ -46,7 +46,7 @@ export type LeaderboardEntryGap =
     }
 
 export type LeaderboardEntry = Omit<TimeEntry, 'track'> & {
-  gap: LeaderboardEntryGap
+  gap?: LeaderboardEntryGap
 }
 
 export type AbsoluteTimeEntriesRequest = {

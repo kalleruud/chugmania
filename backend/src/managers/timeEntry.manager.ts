@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, isNull } from 'drizzle-orm'
+import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { EventReq, EventRes } from '../../../common/models/socket.io'
 import type {
   LeaderboardEntry,
@@ -150,13 +150,21 @@ export default class TimeEntryManager {
     }
 
     // 2. Fetch ALL time entries for these tracks to establish global context/ranking
+    // Sort: Valid times first (asc), then DNFs (duration 0 or null) sorted by date (oldest first)
     const rows = await db
       .select()
       .from(timeEntries)
       .where(
         and(inArray(timeEntries.track, trackIds), isNull(timeEntries.deletedAt))
       )
-      .orderBy(asc(timeEntries.track), asc(timeEntries.duration))
+      .orderBy(
+        asc(timeEntries.track),
+        asc(
+          sql`CASE WHEN ${timeEntries.duration} IS NULL OR ${timeEntries.duration} = 0 THEN 1 ELSE 0 END`
+        ),
+        asc(timeEntries.duration),
+        asc(timeEntries.createdAt)
+      )
 
     const processedEntries: LeaderboardEntry[] = []
     const roundToHundredth = (ms: number) => Math.round(ms / 10) * 10
@@ -170,22 +178,38 @@ export default class TimeEntryManager {
 
     for (const trackEntries of Object.values(byTrack)) {
       const leader = trackEntries[0]?.duration
+      // Only consider it a valid leader if it's not a DNF
+      const hasValidLeader = leader && leader > 0
 
       for (let i = 0; i < trackEntries.length; i++) {
         const row = trackEntries[i]
+        const isDnf = !row.duration || row.duration === 0
+
+        if (isDnf) {
+          // DNFs have no position or gaps
+          processedEntries.push(row)
+          continue
+        }
+
         const prev = i > 0 ? trackEntries[i - 1].duration : null
         const next =
           i < trackEntries.length - 1 ? trackEntries[i + 1].duration : null
 
         const gap: LeaderboardEntryGap = { position: i + 1 }
 
-        if (row.duration && prev !== null) {
+        if (row.duration && prev && prev > 0) {
           gap.previous = roundToHundredth(row.duration - prev)
         }
-        if (row.duration && leader !== null && i > 0 && leader !== undefined) {
+        if (
+          row.duration &&
+          hasValidLeader &&
+          leader !== undefined &&
+          leader !== null &&
+          i > 0
+        ) {
           gap.leader = roundToHundredth(row.duration - leader)
         }
-        if (row.duration && next !== null) {
+        if (row.duration && next && next > 0) {
           gap.next = roundToHundredth(next - row.duration)
         }
 

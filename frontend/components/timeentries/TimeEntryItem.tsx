@@ -8,7 +8,10 @@ import {
   type ComponentProps,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
-import type { LeaderboardEntry } from '../../../common/models/timeEntry'
+import type {
+  LeaderboardEntry,
+  LeaderboardEntryGap,
+} from '../../../common/models/timeEntry'
 import { formatTime } from '../../../common/utils/time'
 
 type TimeEntryItemProps = {
@@ -72,7 +75,7 @@ function GapPart({
   gap,
   gapType = 'leader',
 }: Readonly<{
-  gap: LeaderboardEntry['gap']
+  gap: LeaderboardEntryGap
   gapType?: GapType
   onChangeGapType: () => void
 }>) {
@@ -95,7 +98,7 @@ function GapPart({
 
 function TimeEntryRow({
   lapTime,
-  position = lapTime.gap.position,
+  position = lapTime.gap?.position,
   gapType,
   onChangeGapType,
   className,
@@ -152,7 +155,7 @@ function TimeEntryRow({
       {show.pos && <PositionBadgePart position={position} />}
       <NameCellPart name={name} hasComment={!!lapTime.comment} />
 
-      {show.gap && lapTime.duration && (
+      {show.gap && lapTime.gap && (
         <GapPart
           gap={lapTime.gap}
           gapType={gapType}
