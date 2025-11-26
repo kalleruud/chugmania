@@ -1,3 +1,4 @@
+import { toastPromise } from '@/app/utils/sonner'
 import LapTimeInput from '@/components/timeentries/LapTimeInput'
 import {
   AlertDialog,
@@ -53,7 +54,7 @@ export default function TimeEntryDialogProvider({
   const [editingTimeEntry, setEditingTimeEntry] = useState<Partial<TimeEntry>>(
     {}
   )
-  const { user: loggedInUser, isLoggedIn } = useAuth()
+  const { loggedInUser, isLoggedIn } = useAuth()
   const { socket } = useConnection()
 
   const localeStrings = editingTimeEntry.id
@@ -63,8 +64,8 @@ export default function TimeEntryDialogProvider({
   const isEditing = !!editingTimeEntry?.id
 
   const isEditingSelf =
-    isLoggedIn && isEditing && loggedInUser?.id === editingTimeEntry.user
-  const canEdit = isEditingSelf || (isLoggedIn && loggedInUser?.role !== 'user')
+    isLoggedIn && isEditing && loggedInUser.id === editingTimeEntry.user
+  const canEdit = isEditingSelf || (isLoggedIn && loggedInUser.role !== 'user')
 
   function open(
     editingTimeEntry: Parameters<TimeEntryDialogContextType['open']>[0] = {}
@@ -81,14 +82,17 @@ export default function TimeEntryDialogProvider({
     if (!editingTimeEntry?.id) {
       return toast.error('Not editing...')
     }
-    toast.promise(
+    toastPromise(
       socket
         .emitWithAck('edit_time_entry', {
           type: 'EditTimeEntryRequest',
           id: editingTimeEntry?.id,
           deletedAt: new Date(),
         })
-        .then(close),
+        .then(r => {
+          if (r.success) close()
+          return r
+        }),
       loc.no.timeEntry.input.deleteRequest
     )
   }

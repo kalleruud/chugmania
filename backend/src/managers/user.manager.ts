@@ -145,8 +145,8 @@ export default class UserManager {
   ): Promise<EventRes<'edit_user'>> {
     const actor = await AuthManager.checkAuth(socket)
 
-    if (isEditUserRequest(request)) {
-      throw new Error(loc.no.error.description)
+    if (!isEditUserRequest(request)) {
+      throw new Error(loc.no.error.messages.invalid_request('EditUserRequest'))
     }
 
     const isSelf = actor.id === request.id

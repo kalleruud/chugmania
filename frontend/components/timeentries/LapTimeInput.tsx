@@ -1,3 +1,4 @@
+import { toastPromise } from '@/app/utils/sonner'
 import Combobox, { type ComboboxLookupItem } from '@/components/combobox'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -101,7 +102,7 @@ export default function LapTimeInput({
   ...rest
 }: Readonly<LapTimeInputProps>) {
   const { socket } = useConnection()
-  const { user: loggedInUser } = useAuth()
+  const { loggedInUser } = useAuth()
   const { users, tracks, sessions } = useData()
   const location = useLocation()
   const paramId = getId(location.pathname)
@@ -225,7 +226,7 @@ export default function LapTimeInput({
       comment: comment?.trim() === '' ? null : comment?.trim(),
     } satisfies EditTimeEntryRequest
 
-    toast.promise(
+    toastPromise(
       socket.emitWithAck('edit_time_entry', payload),
       loc.no.timeEntry.input.editRequest
     )
@@ -254,7 +255,7 @@ export default function LapTimeInput({
       comment: comment?.trim() === '' ? undefined : comment?.trim(),
     } satisfies CreateTimeEntryRequest
 
-    toast.promise(socket.emitWithAck('post_time_entry', payload), {
+    toastPromise(socket.emitWithAck('post_time_entry', payload), {
       ...loc.no.timeEntry.input.createRequest,
       success: loc.no.timeEntry.input.createRequest.success(
         formatTime(payload.duration)

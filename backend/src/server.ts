@@ -91,17 +91,10 @@ function setup<Ev extends keyof ClientToServerEvents>(
   event: Ev,
   handler: (s: TypedSocket, r: EventReq<Ev>) => Promise<EventRes<Ev>>
 ) {
-  s.on(
-    event,
-    // @ts-expect-error
-    (r: EventReq<Ev>, callback: EventCb<Ev>) =>
-      handler(s, r)
-        .catch(err =>
-          callback({
-            success: false,
-            message: err.message,
-          } satisfies ErrorResponse)
-        )
-        .then(callback)
-  )
+  s.on(event, ((r: EventReq<Ev>, callback?: any) =>
+    handler(s, r)
+      .then(callback)
+      .catch(e =>
+        callback({ success: false, message: e.message } satisfies ErrorResponse)
+      )) as any)
 }

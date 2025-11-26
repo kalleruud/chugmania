@@ -1,8 +1,8 @@
+import { toastPromise } from '@/app/utils/sonner'
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import loc from '@/lib/locales'
 import { useState, type ComponentProps, type FormEvent } from 'react'
-import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
 import { type UserInfo } from '../../../common/models/user'
 import { Input } from '../ui/input'
@@ -21,7 +21,7 @@ export default function UserForm({
   variant,
   className,
   disabled,
-  onSubmitResponse: onSubmitSuccessful,
+  onSubmitResponse,
   onSubmit,
   ...rest
 }: Readonly<UserFormProps>) {
@@ -43,12 +43,10 @@ export default function UserForm({
     e.preventDefault()
     switch (variant) {
       case 'login':
-        login?.({ email, password }).then(() =>
-          onSubmitSuccessful?.(isLoggedIn)
-        )
+        login?.({ email, password }).then(() => onSubmitResponse?.(isLoggedIn))
         return
       case 'edit':
-        return toast.promise(
+        return toastPromise(
           socket
             .emitWithAck('edit_user', {
               type: 'EditUserRequest',
@@ -59,7 +57,10 @@ export default function UserForm({
               shortName,
               password,
             })
-            .then(({ success }) => onSubmitSuccessful?.(success)),
+            .then(r => {
+              onSubmitResponse?.(r.success)
+              return r
+            }),
           loc.no.user.edit.request
         )
 
