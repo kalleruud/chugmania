@@ -205,10 +205,11 @@ export default function LapTimeInput({
     }
 
     const durationInput = inputListToMs(digits)
+    const durationToPost = durationInput === 0 ? null : durationInput
     const hasChange =
       selectedUser?.id !== editingTimeEntry.user ||
       selectedTrack?.id !== editingTimeEntry.track ||
-      durationInput !== (editingTimeEntry.duration ?? 0) ||
+      durationToPost !== (editingTimeEntry.duration ?? null) ||
       selectedSession?.id !== (editingTimeEntry.session ?? undefined) ||
       comment !== (editingTimeEntry.comment ?? undefined)
 
@@ -219,7 +220,7 @@ export default function LapTimeInput({
     const payload = {
       type: 'EditTimeEntryRequest',
       id: editingTimeEntry.id,
-      duration: durationInput,
+      duration: durationToPost,
       user: selectedUser?.id,
       track: selectedTrack?.id,
       session: selectedSession?.id,
@@ -248,7 +249,7 @@ export default function LapTimeInput({
 
     const payload = {
       type: 'CreateTimeEntryRequest',
-      duration: durationInput,
+      duration: durationInput === 0 ? null : durationInput,
       user: uid,
       track: tid,
       session: selectedSession?.id,
@@ -258,7 +259,7 @@ export default function LapTimeInput({
     toastPromise(socket.emitWithAck('post_time_entry', payload), {
       ...loc.no.timeEntry.input.createRequest,
       success: loc.no.timeEntry.input.createRequest.success(
-        formatTime(payload.duration)
+        formatTime(payload.duration ?? 0)
       ),
     })
   }
