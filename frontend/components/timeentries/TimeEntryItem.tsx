@@ -102,7 +102,7 @@ function TimeEntryRow({
 }: Readonly<TimeEntryItemProps>) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const [width, setWidth] = useState(breakpoints.md)
-  const { user: loggedInUser } = useAuth()
+  const { loggedInUser } = useAuth()
   const { users } = useData()
   const userInfo = users ? users[lapTime.user] : null
 
@@ -151,7 +151,7 @@ function TimeEntryRow({
       {show.pos && <PositionBadgePart position={position} />}
       <NameCellPart name={name} hasComment={!!lapTime.comment} />
 
-      {show.gap && (
+      {show.gap && lapTime.duration && (
         <GapPart
           gap={lapTime.gap}
           gapType={gapType}
