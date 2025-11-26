@@ -195,16 +195,15 @@ export default class TimeEntryManager {
 
   private static computeGaps<T extends { duration: number | null }>(
     entries: T[]
-  ): (T & { gap: LeaderboardEntryGap })[] {
+  ): (T & { gap?: LeaderboardEntryGap })[] {
     const leader = entries[0]?.duration
     const hasValidLeader = leader && leader > 0
     const roundToHundredth = (ms: number) => Math.round(ms / 10) * 10
 
     return entries.map((row, i) => {
-      const isDnf = !row.duration || row.duration === 0
+      const isDnf = !row.duration
       if (isDnf) {
-        // Force gap to be compatible with LeaderboardEntryGap
-        return { ...row, gap: {} as LeaderboardEntryGap }
+        return { ...row, gap: undefined }
       }
 
       const prev = i > 0 ? entries[i - 1].duration : null
@@ -281,10 +280,7 @@ export default class TimeEntryManager {
       .map(r => r.time_entries)
 
     // Reuse computeGaps
-    const entries = TimeEntryManager.computeGaps(best).map(e => ({
-      ...e,
-      user: e.user, // Ensure user is just the ID string
-    }))
+    const entries = TimeEntryManager.computeGaps(best)
 
     return {
       id: trackId,

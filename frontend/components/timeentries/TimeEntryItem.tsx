@@ -1,5 +1,6 @@
 import { useAuth } from '@/contexts/AuthContext'
 import { useData } from '@/contexts/DataContext'
+import { MinusIcon } from '@heroicons/react/24/solid'
 import {
   useEffect,
   useMemo,
@@ -38,14 +39,17 @@ export type GapType = 'leader' | 'interval'
 function PositionBadgePart({
   position,
 }: Readonly<{ position: TimeEntryItemProps['position'] }>) {
-  if (position === null) return null
   return (
     <div
       className={twMerge(
-        'font-kh-interface text-primary flex w-6 flex-none items-center justify-center rounded-sm uppercase'
+        'font-kh-interface flex w-6 flex-none items-center justify-center rounded-sm uppercase'
       )}
-      aria-label={`#${position}`}>
-      <span>{position}</span>
+      aria-label={position ? `#${position}` : 'DNF'}>
+      {position ? (
+        <span className='text-primary'>{position}</span>
+      ) : (
+        <MinusIcon className='text-muted-foreground' />
+      )}
     </div>
   )
 }
@@ -53,9 +57,13 @@ function PositionBadgePart({
 function NameCellPart({
   name,
   hasComment = false,
+  className,
+  ...props
 }: Readonly<{ name: string; hasComment: boolean } & ComponentProps<'div'>>) {
   return (
-    <div className='font-f1-bold mr-auto truncate uppercase'>
+    <div
+      className={twMerge('font-f1-bold mr-auto truncate uppercase', className)}
+      {...props}>
       {name}
       {hasComment && <span className='text-primary'> *</span>}
     </div>
@@ -63,9 +71,14 @@ function NameCellPart({
 }
 
 function TimePart({ duration }: Readonly<{ duration?: number | null }>) {
+  const isDNF = !duration
   const label = duration ? formatTime(duration).replace(/^0/, '') : 'DNF'
   return (
-    <div className={`font-f1-italic items-center uppercase tabular-nums`}>
+    <div
+      className={twMerge(
+        'font-f1-italic items-center uppercase tabular-nums',
+        isDNF ? 'text-muted-foreground' : ''
+      )}>
       {label}
     </div>
   )
@@ -110,6 +123,8 @@ function TimeEntryRow({
   const { users } = useData()
   const userInfo = users ? users[lapTime.user] : null
 
+  const isDNF = !lapTime.gap
+
   useEffect(() => {
     if (!containerRef.current) return
     const el = containerRef.current
@@ -149,11 +164,16 @@ function TimeEntryRow({
         loggedInUser &&
           loggedInUser?.id === userInfo?.id &&
           'bg-accent hover:bg-foreground/15',
+        isDNF && 'opacity-50',
         className
       )}
       title={lapTime.comment ?? undefined}>
       {show.pos && <PositionBadgePart position={position} />}
-      <NameCellPart name={name} hasComment={!!lapTime.comment} />
+      <NameCellPart
+        name={name}
+        hasComment={!!lapTime.comment}
+        className={isDNF ? 'text-muted-foreground' : undefined}
+      />
 
       {show.gap && lapTime.gap && (
         <GapPart
