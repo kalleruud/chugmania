@@ -8,7 +8,6 @@ import {
 } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-
 export type FileDropSelection = {
   file: File
   content: string

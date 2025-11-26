@@ -1,6 +1,5 @@
 import type { FormEvent } from 'react'
 
-
 export interface SessionFormData {
   name: string
   date: string
