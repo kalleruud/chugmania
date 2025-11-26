@@ -23,7 +23,7 @@ import type { LeaderboardEntry } from '../../../common/models/timeEntry'
 import type { Track } from '../../../common/models/track'
 import { formatTrackName } from '../../../common/utils/track'
 
-function RowItemList({
+export function RowItemList({
   track,
   entries,
 }: Readonly<{ track: Track; entries: LeaderboardEntry[] }>) {

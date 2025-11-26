@@ -1,6 +1,9 @@
 import { and, asc, eq, isNull } from 'drizzle-orm'
 import { EventReq, EventRes } from '../../../common/models/socket.io'
-import type { LeaderboardEntry } from '../../../common/models/timeEntry'
+import type {
+  LeaderboardEntry,
+  LeaderboardEntryGap,
+} from '../../../common/models/timeEntry'
 import {
   isCreateTimeEntryRequest,
   isEditTimeEntryRequest,
@@ -77,7 +80,7 @@ export default class TimeEntryManager {
       .from(timeEntries)
       .where(eq(timeEntries.id, request.id))
 
-    const lapTime = entries.at(0)
+    const lapTime = entries[0]
     if (!lapTime) {
       throw new Error(loc.no.error.messages.not_in_db(request.id))
     }
@@ -141,8 +144,30 @@ export default class TimeEntryManager {
       .orderBy(asc(timeEntries.track), asc(timeEntries.duration))
 
     const entries: LeaderboardEntry[] = []
-    for (const row of rows) {
-      // TODO: Add rows with LeaderboardEntryGap to entries
+    const roundToHundredth = (ms: number) => Math.round(ms / 10) * 10
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i]
+      const prev = i > 0 ? rows[i - 1].duration : null
+      const next = i < rows.length - 1 ? rows[i + 1].duration : null
+      const leader = rows[0]?.duration
+
+      const gap: LeaderboardEntryGap = { position: i + 1 }
+
+      if (row.duration && prev !== null) {
+        gap.previous = roundToHundredth(row.duration - prev)
+      }
+      if (row.duration && leader !== null && i > 0 && leader !== undefined) {
+        gap.leader = roundToHundredth(row.duration - leader)
+      }
+      if (row.duration && next !== null) {
+        gap.next = roundToHundredth(next - row.duration)
+      }
+
+      entries.push({
+        ...row,
+        gap: gap,
+      })
     }
 
     return {
