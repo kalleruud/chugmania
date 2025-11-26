@@ -21,9 +21,8 @@ const metadata = {
   deletedAt: integer('deleted_at', { mode: 'timestamp_ms' }),
 }
 
-export type UserRole = 'admin' | 'moderator' | 'user'
-export type SessionResponse = 'yes' | 'no' | 'maybe'
-export type SessionStatus = 'confirmed' | 'tentative' | 'cancelled'
+export const USER_ROLES = ['admin', 'moderator', 'user'] as const
+export type UserRole = (typeof USER_ROLES)[number]
 
 export const users = sqliteTable('users', {
   ...id,
@@ -49,6 +48,9 @@ export const tracks = sqliteTable('tracks', {
   level: text().$type<TrackLevel>().notNull(),
   type: text().$type<TrackType>().notNull(),
 })
+
+export type SessionResponse = 'yes' | 'no' | 'maybe'
+export type SessionStatus = 'confirmed' | 'tentative' | 'cancelled'
 
 export const sessions = sqliteTable('sessions', {
   ...id,
