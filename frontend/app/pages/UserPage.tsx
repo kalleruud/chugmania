@@ -1,3 +1,5 @@
+import { PageHeader } from '@/app/components/PageHeader'
+import TimeEntryItem from '@/components/timeentries/TimeEntryItem'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -10,12 +12,15 @@ import { Spinner } from '@/components/ui/spinner'
 import UserItem from '@/components/user/UserItem'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
+import { useMemo } from 'react'
 import { useParams } from 'react-router-dom'
+import type { LeaderboardEntry } from '../../../common/models/timeEntry'
 import { getUserFullName } from '../../../common/models/user'
+import { formatTrackName } from '../../../common/utils/track'
 
 export default function UserPage() {
   const { id } = useParams()
-  const { users } = useData()
+  const { users, leaderboards, tracks } = useData()
 
   if (users === undefined) {
     return (
@@ -32,6 +37,38 @@ export default function UserPage() {
 
   const user = users[id]
   const fullName = getUserFullName(user)
+
+  const userLaptimes = useMemo(() => {
+    if (!leaderboards || !tracks) return undefined
+
+    const laptimesByTrack: Record<
+      string,
+      { entries: LeaderboardEntry[]; trackNumber: string }
+    > = {}
+    let position = 1
+
+    // Iterate through all leaderboards and collect lap times for this user
+    for (const trackId of Object.keys(leaderboards)) {
+      const leaderboard = leaderboards[trackId]
+      const track = tracks[trackId]
+      if (!track) continue
+
+      const userEntries = leaderboard.entries.filter(e => e.user === id)
+      if (userEntries.length === 0) continue
+
+      laptimesByTrack[trackId] = {
+        entries: userEntries.map(entry => ({
+          ...entry,
+          gap: { position },
+        })),
+        trackNumber: formatTrackName(track.number),
+      }
+
+      position += userEntries.length
+    }
+
+    return laptimesByTrack
+  }, [id, leaderboards, tracks])
 
   return (
     <div className='p-safe-or-2 flex flex-col gap-4'>
@@ -52,6 +89,34 @@ export default function UserPage() {
       </Breadcrumb>
 
       <UserItem variant='card' user={user} />
+
+      {userLaptimes && Object.keys(userLaptimes).length > 0 && (
+        <div className='flex flex-col gap-2'>
+          <PageHeader title='LAP TIMES' icon='FireIcon' />
+          <div className='bg-card flex flex-col gap-4 rounded-md p-2'>
+            {Object.entries(userLaptimes).map(
+              ([trackId, { entries, trackNumber }]) => (
+                <div key={trackId} className='flex flex-col gap-2'>
+                  <div className='font-f1 text-muted-foreground px-2 text-sm font-bold uppercase'>
+                    #{trackNumber}
+                  </div>
+                  <div className='flex flex-col gap-1'>
+                    {entries.map((entry, idx) => (
+                      <TimeEntryItem
+                        key={`${trackId}-${idx}`}
+                        lapTime={entry}
+                        position={entry.gap.position}
+                        onChangeGapType={() => {}}
+                        className='px-2 py-1'
+                      />
+                    ))}
+                  </div>
+                </div>
+              )
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
