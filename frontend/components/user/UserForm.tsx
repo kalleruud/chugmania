@@ -4,9 +4,17 @@ import { useConnection } from '@/contexts/ConnectionContext'
 import loc from '@/lib/locales'
 import { useState, type ComponentProps, type FormEvent } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { USER_ROLES, type UserRole } from '../../../backend/database/schema'
 import { type UserInfo } from '../../../common/models/user'
 import { Input } from '../ui/input'
 import { Label } from '../ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../ui/select'
 
 type UserFormProps = {
   user?: UserInfo
@@ -34,15 +42,17 @@ export default function UserForm({
   const [shortName, setShortName] = useState(user?.shortName ?? '')
   const [newPassword, setNewPassword] = useState('')
   const [password, setPassword] = useState('')
-  const [role, setRole] = useState(user?.role ?? 'user')
-  const [createdAt, setCreatedAt] = useState(
-    user?.createdAt ? new Date(user.createdAt).toISOString().split('T')[0] : ''
+  const [role, setRole] = useState<UserRole>(user?.role ?? 'user')
+  const [createdAt, setCreatedAt] = useState<Date>(
+    user?.createdAt ? new Date(user.createdAt) : new Date()
   )
 
-  const canEdit =
-    variant !== 'edit' ||
-    (isLoggedIn &&
-      (loggedInUser.id === user.id || loggedInUser.role === 'admin'))
+  const isAdmin = isLoggedIn && loggedInUser.role === 'admin'
+  const isSelf = isLoggedIn && loggedInUser.id === user?.id
+  const isEditing = variant === 'edit'
+  const isRegistering = variant === 'register'
+
+  const canEdit = isEditing && (isSelf || isAdmin)
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -62,11 +72,8 @@ export default function UserForm({
               shortName,
               password,
               newPassword,
-              ...(isLoggedIn &&
-                loggedInUser.role === 'admin' && {
-                  role: role as any,
-                  createdAt: createdAt ? new Date(createdAt) : undefined,
-                }),
+              role,
+              createdAt,
             })
             .then(r => {
               onSubmitResponse?.(r.success)
@@ -97,9 +104,7 @@ export default function UserForm({
         placeholder='cumguzzler69@chugmania.no'
       />
 
-      <div
-        className='flex gap-2'
-        hidden={variant !== 'edit' && variant !== 'register'}>
+      <div className='flex gap-2' hidden={!isEditing && !isRegistering}>
         <Field
           id='first_name'
           name={loc.no.user.form.firstName}
@@ -151,7 +156,7 @@ export default function UserForm({
         minLength={8}
         disabled={disabled && canEdit}
         required
-        show={variant !== 'edit' || loggedInUser?.role !== 'admin'}
+        show={isEditing || loggedInUser?.role !== 'admin'}
         value={password}
         onChange={e => setPassword(e.target.value)}
         placeholder='•••••••••••'
@@ -171,37 +176,21 @@ export default function UserForm({
       />
 
       <div
-        className='grid gap-2'
-        hidden={
-          !isLoggedIn || loggedInUser?.role !== 'admin' || variant !== 'edit'
-        }>
-        <Label htmlFor='role' className='gap-1'>
-          {loc.no.user.form.role}{' '}
-          <span className='text-muted-foreground text-xs'>(admin only)</span>
-        </Label>
-        <select
-          id='role'
-          className='border-input bg-background rounded border px-3 py-2 text-sm'
-          value={role}
-          onChange={e => setRole(e.target.value as any)}
-          disabled={disabled}>
-          <option value='user'>User</option>
-          <option value='moderator'>Moderator</option>
-          <option value='admin'>Admin</option>
-        </select>
+        hidden={!isAdmin}
+        className='border-border rounded-md border border-dashed p-2'>
+        <Select value={role} onValueChange={r => setRole(r as UserRole)}>
+          <SelectTrigger className='w-[180px]'>
+            <SelectValue placeholder='Theme' />
+          </SelectTrigger>
+          <SelectContent>
+            {USER_ROLES.map(r => (
+              <SelectItem key={r} value={r}>
+                {loc.no.user.role[r]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
-
-      <Field
-        id='created_at'
-        name={`${loc.no.user.form.createdAt} (admin only)`}
-        type='date'
-        disabled={disabled && canEdit}
-        value={createdAt}
-        show={
-          isLoggedIn && loggedInUser?.role === 'admin' && variant === 'edit'
-        }
-        onChange={e => setCreatedAt(e.target.value)}
-      />
     </form>
   )
 }
