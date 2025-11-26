@@ -77,6 +77,11 @@ async function Connect(s: TypedSocket) {
 
   setup(s, 'post_time_entry', TimeEntryManager.onPostTimeEntry)
   setup(s, 'edit_time_entry', TimeEntryManager.onEditTimeEntry)
+  setup(
+    s,
+    'get_absolute_time_entries',
+    TimeEntryManager.onGetAbsoluteTimeEntries
+  )
 
   setup(s, 'create_session', SessionManager.onCreateSession)
   setup(s, 'edit_session', SessionManager.onEditSession)

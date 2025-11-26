@@ -1,5 +1,6 @@
-import { eq } from 'drizzle-orm'
+import { and, asc, eq, isNull } from 'drizzle-orm'
 import { EventReq, EventRes } from '../../../common/models/socket.io'
+import type { TimeEntry } from '../../../common/models/timeEntry'
 import {
   isCreateTimeEntryRequest,
   isEditTimeEntryRequest,
@@ -118,6 +119,47 @@ export default class TimeEntryManager {
 
     return {
       success: true,
+    }
+  }
+
+  static async getAbsoluteTimeEntriesForUser(
+    userId: TimeEntry['user']
+  ): Promise<Record<string, (TimeEntry & { position: number })[]>> {
+    // Get all time entries for the user, grouped by track
+    const rows = await db
+      .select()
+      .from(timeEntries)
+      .where(and(eq(timeEntries.user, userId), isNull(timeEntries.deletedAt)))
+      .orderBy(asc(timeEntries.track), asc(timeEntries.createdAt))
+
+    // Group by track and add position
+    const entriesByTrack: Record<string, (TimeEntry & { position: number })[]> =
+      {}
+
+    for (const entry of rows) {
+      if (!entriesByTrack[entry.track]) {
+        entriesByTrack[entry.track] = []
+      }
+      entriesByTrack[entry.track]!.push({
+        ...entry,
+        position: entriesByTrack[entry.track]!.length + 1,
+      })
+    }
+
+    return entriesByTrack
+  }
+
+  static async onGetAbsoluteTimeEntries(
+    socket: TypedSocket,
+    userId: string
+  ): Promise<EventRes<'get_absolute_time_entries'>> {
+    await AuthManager.checkAuth(socket)
+
+    const entries = await TimeEntryManager.getAbsoluteTimeEntriesForUser(userId)
+
+    return {
+      success: true,
+      entries,
     }
   }
 }
