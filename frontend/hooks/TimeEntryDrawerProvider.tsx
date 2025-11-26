@@ -65,7 +65,8 @@ export default function TimeEntryDialogProvider({
 
   const isEditingSelf =
     isLoggedIn && isEditing && loggedInUser.id === editingTimeEntry.user
-  const canEdit = isEditingSelf || (isLoggedIn && loggedInUser.role !== 'user')
+  const canEdit =
+    isEditingSelf || !isEditing || (isLoggedIn && loggedInUser.role !== 'user')
 
   function open(
     editingTimeEntry: Parameters<TimeEntryDialogContextType['open']>[0] = {}

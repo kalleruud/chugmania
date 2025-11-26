@@ -32,6 +32,7 @@ export default function UserForm({
   const [firstName, setFirstName] = useState(user?.firstName ?? '')
   const [lastName, setLastName] = useState(user?.lastName ?? '')
   const [shortName, setShortName] = useState(user?.shortName ?? '')
+  const [newPassword, setNewPassword] = useState('')
   const [password, setPassword] = useState('')
 
   const canEdit =
@@ -56,6 +57,7 @@ export default function UserForm({
               lastName,
               shortName,
               password,
+              newPassword,
             })
             .then(r => {
               onSubmitResponse?.(r.success)
@@ -153,9 +155,9 @@ export default function UserForm({
         type='password'
         minLength={8}
         disabled={disabled && canEdit}
-        value={password}
+        value={newPassword}
         show={variant === 'edit'}
-        onChange={e => setPassword(e.target.value)}
+        onChange={e => setNewPassword(e.target.value)}
         placeholder='•••••••••••'
       />
     </form>

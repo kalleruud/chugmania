@@ -71,6 +71,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
         ? loc.no.user.login.request.success
         : loc.no.user.login.request.error(new Error(response.message))
     )
+    handleResponse(response)
     return response
   }
 

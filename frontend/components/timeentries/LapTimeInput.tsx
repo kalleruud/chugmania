@@ -300,11 +300,11 @@ export default function LapTimeInput({
 
       <div className='flex flex-col gap-2'>
         <div className='flex gap-2'>
-          {loggedInUser?.role !== 'user' && users && (
+          {users && (
             <Combobox
               className='w-full'
               required={true}
-              disabled={disabled}
+              disabled={disabled || loggedInUser?.role === 'user'}
               placeholder={loc.no.timeEntry.input.placeholder.user}
               selected={selectedUser}
               setSelected={setSelectedUser}
