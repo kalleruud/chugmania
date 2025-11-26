@@ -1,4 +1,4 @@
-import { and, asc, eq, isNull } from 'drizzle-orm'
+import { and, asc, eq, inArray, isNull } from 'drizzle-orm'
 import { EventReq, EventRes } from '../../../common/models/socket.io'
 import type {
   LeaderboardEntry,
@@ -129,50 +129,82 @@ export default class TimeEntryManager {
     socket: TypedSocket,
     request: EventReq<'get_absolute_time_entries'>
   ): Promise<EventRes<'get_absolute_time_entries'>> {
-    // Get all time entries for the user, grouped by track
+    // 1. Determine relevant track IDs
+    let trackIds: string[] = []
+
+    if ('track' in request) {
+      trackIds = [request.track]
+    } else {
+      // For a user, find all tracks they have played
+      const userTracks = await db
+        .selectDistinct({ id: timeEntries.track })
+        .from(timeEntries)
+        .where(
+          and(eq(timeEntries.user, request.user), isNull(timeEntries.deletedAt))
+        )
+      trackIds = userTracks.map(t => t.id)
+    }
+
+    if (trackIds.length === 0) {
+      return { success: true, entries: [] }
+    }
+
+    // 2. Fetch ALL time entries for these tracks to establish global context/ranking
     const rows = await db
       .select()
       .from(timeEntries)
       .where(
-        and(
-          'user' in request
-            ? eq(timeEntries.user, request.user)
-            : eq(timeEntries.track, request.track),
-          isNull(timeEntries.deletedAt)
-        )
+        and(inArray(timeEntries.track, trackIds), isNull(timeEntries.deletedAt))
       )
       .orderBy(asc(timeEntries.track), asc(timeEntries.duration))
 
-    const entries: LeaderboardEntry[] = []
+    const processedEntries: LeaderboardEntry[] = []
     const roundToHundredth = (ms: number) => Math.round(ms / 10) * 10
 
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i]
-      const prev = i > 0 ? rows[i - 1].duration : null
-      const next = i < rows.length - 1 ? rows[i + 1].duration : null
-      const leader = rows[0]?.duration
-
-      const gap: LeaderboardEntryGap = { position: i + 1 }
-
-      if (row.duration && prev !== null) {
-        gap.previous = roundToHundredth(row.duration - prev)
-      }
-      if (row.duration && leader !== null && i > 0 && leader !== undefined) {
-        gap.leader = roundToHundredth(row.duration - leader)
-      }
-      if (row.duration && next !== null) {
-        gap.next = roundToHundredth(next - row.duration)
-      }
-
-      entries.push({
-        ...row,
-        gap: gap,
-      })
+    // 3. Group by track to calculate gaps correctly per track
+    const byTrack: Record<string, typeof rows> = {}
+    for (const row of rows) {
+      if (!byTrack[row.track]) byTrack[row.track] = []
+      byTrack[row.track].push(row)
     }
+
+    for (const trackEntries of Object.values(byTrack)) {
+      const leader = trackEntries[0]?.duration
+
+      for (let i = 0; i < trackEntries.length; i++) {
+        const row = trackEntries[i]
+        const prev = i > 0 ? trackEntries[i - 1].duration : null
+        const next =
+          i < trackEntries.length - 1 ? trackEntries[i + 1].duration : null
+
+        const gap: LeaderboardEntryGap = { position: i + 1 }
+
+        if (row.duration && prev !== null) {
+          gap.previous = roundToHundredth(row.duration - prev)
+        }
+        if (row.duration && leader !== null && i > 0 && leader !== undefined) {
+          gap.leader = roundToHundredth(row.duration - leader)
+        }
+        if (row.duration && next !== null) {
+          gap.next = roundToHundredth(next - row.duration)
+        }
+
+        processedEntries.push({
+          ...row,
+          gap,
+        })
+      }
+    }
+
+    // 4. Filter results to return only what was requested
+    const finalEntries =
+      'user' in request
+        ? processedEntries.filter(e => e.user === request.user)
+        : processedEntries
 
     return {
       success: true,
-      entries,
+      entries: finalEntries,
     }
   }
 }
