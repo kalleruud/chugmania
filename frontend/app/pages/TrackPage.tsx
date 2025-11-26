@@ -16,7 +16,8 @@ import { Spinner } from '@/components/ui/spinner'
 import { useData } from '@/contexts/DataContext'
 import { useTimeEntryDrawer } from '@/hooks/TimeEntryDrawerProvider'
 import loc from '@/lib/locales'
-import { useState } from 'react'
+import { ChevronUpDownIcon } from '@heroicons/react/24/solid'
+import { Fragment, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import type { LeaderboardEntry } from '../../../common/models/timeEntry'
 import type { Track } from '../../../common/models/track'
@@ -54,18 +55,34 @@ export function RowItemList({
       </div>
 
       <div className='bg-background-secondary flex flex-col rounded-sm'>
-        {entries.map(entry => (
-          <TimeEntryItem
-            key={entry.id}
-            lapTime={entry}
-            onClick={() => open({ track: track.id, ...entry })}
-            className='p-4 py-3 first:pt-4 last:pb-4'
-            gapType={gapType}
-            onChangeGapType={() =>
-              setGapType(gapType === 'leader' ? 'interval' : 'leader')
-            }
-          />
-        ))}
+        {entries.map((entry, index) => {
+          const prevEntry = entries[index - 1]
+          const showGap =
+            prevEntry?.gap?.position &&
+            entry.gap?.position &&
+            entry.gap?.position > prevEntry.gap.position + 1
+
+          return (
+            <Fragment key={entry.id}>
+              {showGap && (
+                <div className='items-center-safe flex justify-center gap-4 px-4'>
+                  <div className='border-border w-64 rounded-full border-b' />
+                  <ChevronUpDownIcon className='text-border size-6' />
+                  <div className='border-border w-64 rounded-full border-b' />
+                </div>
+              )}
+              <TimeEntryItem
+                lapTime={entry}
+                onClick={() => open({ track: track.id, ...entry })}
+                className='p-4 py-3 first:pt-4 last:pb-4'
+                gapType={gapType}
+                onChangeGapType={() =>
+                  setGapType(gapType === 'leader' ? 'interval' : 'leader')
+                }
+              />
+            </Fragment>
+          )
+        })}
       </div>
     </div>
   )

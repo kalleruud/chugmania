@@ -43,6 +43,7 @@ function groupByTrack(
       entries: trackEntries,
     }))
     .filter(item => item.track !== undefined)
+    .sort((a, b) => a.track.number - b.track.number)
 }
 
 export default function UserPage() {
