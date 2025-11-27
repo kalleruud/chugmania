@@ -86,40 +86,38 @@ export default function UserPage() {
   const groupedTracks = entries && tracks ? groupByTrack(entries, tracks) : []
 
   return (
-    <div className='p-safe-or-2 justify-center-safe flex'>
-      <div className='flex w-full max-w-2xl flex-col gap-12'>
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink to='/'>{loc.no.home}</BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbLink to='/users'>{loc.no.users.title}</BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>{fullName}</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
+    <div className='flex flex-col gap-12'>
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink to='/'>{loc.no.home}</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink to='/users'>{loc.no.users.title}</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>{fullName}</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
 
-        <UserItem variant='card' user={user} />
+      <UserItem variant='card' user={user} />
 
-        <div className='flex flex-col'>
-          {entries && (
-            <div className='flex flex-col gap-4'>
-              {groupedTracks.map(({ track, entries }) => (
-                <div
-                  key={track.id}
-                  className='bg-background gap-2 rounded-sm border p-2'>
-                  <TrackItem variant='row' track={track} />
-                  <RowItemList track={track} entries={entries} />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+      <div className='flex flex-col'>
+        {entries && (
+          <div className='flex flex-col gap-4'>
+            {groupedTracks.map(({ track, entries }) => (
+              <div
+                key={track.id}
+                className='bg-background gap-2 rounded-sm border p-2'>
+                <TrackItem variant='row' track={track} />
+                <RowItemList track={track} entries={entries} />
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

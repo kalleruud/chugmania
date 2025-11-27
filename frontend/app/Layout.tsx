@@ -11,9 +11,13 @@ export default function Layout() {
 
   return (
     <>
-      <main className='z-0 pb-28'>
-        <Outlet />
-      </main>
+      <div className='items-center-safe px-safe-or-2 py-safe-or-4 flex flex-col'>
+        <div className='w-full max-w-2xl'>
+          <main className='z-0 pb-28'>
+            <Outlet />
+          </main>
+        </div>
+      </div>
 
       <Button
         onClick={() => open()}
