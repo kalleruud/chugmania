@@ -15,7 +15,7 @@ import loc from '@/lib/locales'
 import type { DetailedHTMLProps, HTMLAttributes } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type { Track } from '../../../common/models/track'
-import { PageHeader } from '../components/PageHeader'
+import { PageHeader } from '../../components/PageHeader'
 
 type TracksPageProps = DetailedHTMLProps<
   HTMLAttributes<HTMLDivElement>,

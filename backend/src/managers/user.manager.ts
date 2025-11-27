@@ -187,6 +187,13 @@ export default class UserManager {
     }
   }
 
+  static async onRegister(
+    socket: TypedSocket,
+    request: EventReq<'register'>
+  ): Promise<EventRes<'register'>> {
+    throw new Error('Not implemented')
+  }
+
   static async getAllUsers(): Promise<UserInfo[]> {
     const data = await db.select().from(users)
     if (data.length === 0)
