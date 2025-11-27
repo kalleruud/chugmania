@@ -5,6 +5,8 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import Layout from './app/Layout'
 import { ErrorPage } from './app/pages/ErrorPage'
 import Home from './app/pages/HomePage'
+import SessionPage from './app/pages/SessionPage'
+import SessionsPage from './app/pages/SessionsPage'
 import TrackPage from './app/pages/TrackPage'
 import TracksPage from './app/pages/TracksPage'
 import UserPage from './app/pages/UserPage'
@@ -34,8 +36,8 @@ createRoot(document.getElementById('root')!).render(
                       <Route path='tracks/:id' element={<TrackPage />} />
                       <Route path='users' element={<UsersPage />} />
                       <Route path='users/:id' element={<UserPage />} />
-                      {/* <Route path='sessions' element={<Sessions />} /> */}
-                      {/* <Route path='sessions/:id' element={<Session />} /> */}
+                      <Route path='sessions' element={<SessionsPage />} />
+                      <Route path='sessions/:id' element={<SessionPage />} />
                       {/* <Route path='admin' element={<Admin />} /> */}
                     </Route>
                   </Routes>
