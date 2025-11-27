@@ -264,20 +264,51 @@ function CalendarField({
   show,
   id,
   name,
-  ...props
-}: Readonly<
-  {
-    show: boolean
-    id: string
-    name: string
-  } & Parameters<typeof Calendar>[0]
->) {
+  selected,
+  onSelect,
+  disabled,
+}: Readonly<{
+  show: boolean
+  id: string
+  name: string
+  selected: Date
+  onSelect: (date: Date) => void
+  disabled?: boolean
+  required?: boolean
+}>) {
   const [open, setOpen] = useState(false)
+
   if (!show) return undefined
+
+  const hours = String(selected.getHours()).padStart(2, '0')
+  const minutes = String(selected.getMinutes()).padStart(2, '0')
+  const seconds = String(selected.getSeconds()).padStart(2, '0')
+  const timeValue = `${hours}:${minutes}:${seconds}`
+
+  function handleTimeChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const [h, m, s] = e.target.value.split(':').map(Number)
+    const newDate = new Date(selected)
+    newDate.setHours(h)
+    newDate.setMinutes(m)
+    newDate.setSeconds(s || 0)
+    onSelect(newDate)
+  }
+
+  function handleDateSelect(date: Date | undefined) {
+    if (!date) return
+    const newDate = new Date(date)
+    newDate.setHours(selected.getHours())
+    newDate.setMinutes(selected.getMinutes())
+    newDate.setSeconds(selected.getSeconds())
+    onSelect(newDate)
+    setOpen(false)
+  }
+
   return (
     <div className='flex w-full flex-col gap-2'>
       <Label htmlFor={id} className='gap-1'>
-        {name} {props.required && <span className='text-primary'>*</span>}
+        {name}
+        <span className='text-primary'>*</span>
       </Label>
       <div className='flex gap-2'>
         <Popover open={open} onOpenChange={setOpen}>
@@ -285,10 +316,9 @@ function CalendarField({
             <Button
               variant='outline'
               id='date-picker'
-              className='flex-1 justify-between font-normal'>
-              {'selected' in props && props.selected
-                ? props.selected.toLocaleDateString()
-                : 'Select date'}
+              className='flex-1 justify-between font-normal'
+              disabled={disabled}>
+              {selected.toLocaleDateString()}
               <ChevronDownIcon />
             </Button>
           </PopoverTrigger>
@@ -296,20 +326,24 @@ function CalendarField({
             <Calendar
               mode='single'
               captionLayout='dropdown'
-              timeZone={Intl.DateTimeFormat().resolvedOptions().timeZone}
-              {...props}
+              required
+              showOutsideDays
+              showWeekNumber
+              selected={selected}
+              onSelect={handleDateSelect}
             />
           </PopoverContent>
         </Popover>
 
-        <div>
-          <Input
-            type='time'
-            id='time-picker'
-            step='1'
-            className='bg-background appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none'
-          />
-        </div>
+        <Input
+          type='time'
+          id='time-picker'
+          step='1'
+          className='w-32 text-sm'
+          value={timeValue}
+          onChange={handleTimeChange}
+          disabled={disabled}
+        />
       </div>
     </div>
   )

@@ -38,7 +38,7 @@ const no = {
       email: 'E-post',
       firstName: 'Fornavn',
       lastName: 'Etternavn',
-      shortName: 'Kort navn',
+      shortName: 'Visningsnavn',
       password: 'Passord',
       oldPassword: 'Gammelt passord',
       newPassword: 'Nytt passord',
