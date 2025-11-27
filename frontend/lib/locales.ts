@@ -54,6 +54,28 @@ const no = {
   },
   session: {
     title: 'Sessions',
+    description: 'Oversikt over kommende og tidligere sessions.',
+    upcoming: 'Kommende sessions',
+    past: 'Tidligere sessions',
+    all: 'Alle sessions',
+    create: 'Opprett session',
+    edit: 'Rediger session',
+    delete: 'Slett session',
+    location: 'Sted',
+    date: 'Dato',
+    time: 'Tid',
+    attendees: 'Påmeldte',
+    rsvp: {
+      title: 'Meld deg på',
+      yes: 'Kommer',
+      maybe: 'Kanskje',
+      no: 'Kommer ikke',
+      change: 'Endre svar',
+    },
+    calendar: {
+      subscribe: 'Abonner på kalender',
+      download: 'Last ned invitasjon',
+    },
     errorMessages: {
       no_edit_historical: 'Du kan ikke svare på en session tilbake i tid.',
     },
