@@ -47,7 +47,7 @@ export default function UserForm({
   const [newPassword, setNewPassword] = useState('')
   const [password, setPassword] = useState('')
   const [role, setRole] = useState<UserRole>(user?.role ?? 'user')
-  const [createdAt, setCreatedAt] = useState<Date | undefined>(undefined)
+  const [createdAt, setCreatedAt] = useState<Date | undefined>(user?.createdAt)
 
   const isAdmin = isLoggedIn && loggedInUser.role === 'admin'
   const isSelf = isLoggedIn && loggedInUser.id === user?.id

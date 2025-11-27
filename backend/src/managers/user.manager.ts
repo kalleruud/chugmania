@@ -1,8 +1,6 @@
 import { eq } from 'drizzle-orm'
-import { isRegisterRequest } from '../../../common/models/auth'
 import { EventReq, EventRes } from '../../../common/models/socket.io'
 import {
-  CreateUser,
   isEditUserRequest,
   LoginResponse,
   type User,
@@ -56,9 +54,12 @@ export default class UserManager {
     id: User['id'],
     updates: Partial<typeof this.table.$inferInsert>
   ): Promise<User> {
-    const entries = Object.entries(updates).filter(
-      ([, value]) => value !== undefined
-    )
+    const entries = Object.entries({
+      ...updates,
+      createdAt: updates.createdAt ? new Date(updates.createdAt) : undefined,
+      updatedAt: undefined,
+      deletedAt: undefined,
+    } satisfies typeof updates).filter(([, value]) => value !== undefined)
 
     if (entries.length === 0) {
       throw new Error(loc.no.error.messages.missing_data)
@@ -112,55 +113,6 @@ export default class UserManager {
     return !!data
   }
 
-  static async onRegister(
-    socket: TypedSocket,
-    request: EventReq<'register'>
-  ): Promise<EventRes<'register'>> {
-    if (!isRegisterRequest(request)) {
-      throw new Error(loc.no.error.messages.missing_login)
-    }
-
-    // Create as admin if no admin exists
-    const adminExists = await UserManager.adminExists()
-    const {
-      type,
-      password,
-      role: requestRole,
-      createdAt,
-      ...insertUser
-    } = request
-
-    // Check if requester is admin (only admins can set role and createdAt)
-    let canSetRoleAndCreatedAt = false
-    try {
-      const actor = await AuthManager.checkAuth(socket)
-      canSetRoleAndCreatedAt = actor.role === 'admin'
-    } catch {
-      // No authentication - this is a public registration
-      canSetRoleAndCreatedAt = false
-    }
-
-    const user = await UserManager.createUser({
-      ...insertUser,
-      role:
-        canSetRoleAndCreatedAt && requestRole
-          ? requestRole
-          : adminExists
-            ? 'user'
-            : 'admin',
-      createdAt: canSetRoleAndCreatedAt && createdAt ? createdAt : undefined,
-      passwordHash: await AuthManager.hash(password),
-    } satisfies CreateUser)
-
-    const { userInfo } = UserManager.toUserInfo(user)
-
-    return await AuthManager.onLogin(socket, {
-      type: 'LoginRequest',
-      email: userInfo.email,
-      password,
-    })
-  }
-
   static async onEditUser(
     socket: TypedSocket,
     request: EventReq<'edit_user'>
@@ -193,12 +145,10 @@ export default class UserManager {
       firstName: request.firstName,
       lastName: request.lastName,
       shortName: request.shortName,
-      updatedAt: request.updatedAt,
       deletedAt: request.deletedAt,
-    }
-
-    if (request.newPassword) {
-      updates.passwordHash = await AuthManager.hash(request.newPassword)
+      passwordHash: request.newPassword
+        ? await AuthManager.hash(request.newPassword)
+        : undefined,
     }
 
     // Only admins can set role and createdAt
