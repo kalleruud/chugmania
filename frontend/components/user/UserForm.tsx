@@ -1,9 +1,9 @@
-import { toastPromise } from '@/app/utils/sonner'
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import loc from '@/lib/locales'
 import { ChevronDownIcon } from 'lucide-react'
 import { useState, type ComponentProps, type FormEvent } from 'react'
+import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
 import type { UserRole } from '../../../backend/database/schema'
 import { type UserInfo } from '../../../common/models/user'
@@ -63,7 +63,7 @@ export default function UserForm({
         login?.({ email, password }).then(() => onSubmitResponse?.(isLoggedIn))
         return
       case 'edit':
-        return toastPromise(
+        return toast.promise(
           socket
             .emitWithAck('edit_user', {
               type: 'EditUserRequest',

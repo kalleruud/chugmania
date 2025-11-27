@@ -1,4 +1,3 @@
-import { toastPromise } from '@/app/utils/sonner'
 import LapTimeInput from '@/components/timeentries/LapTimeInput'
 import {
   AlertDialog,
@@ -83,7 +82,7 @@ export default function TimeEntryDialogProvider({
     if (!editingTimeEntry?.id) {
       return toast.error('Not editing...')
     }
-    toastPromise(
+    toast.promise(
       socket
         .emitWithAck('edit_time_entry', {
           type: 'EditTimeEntryRequest',

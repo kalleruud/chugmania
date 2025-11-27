@@ -1,4 +1,3 @@
-import { toastPromise } from '@/app/utils/sonner'
 import Combobox, { type ComboboxLookupItem } from '@/components/combobox'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -228,7 +227,7 @@ export default function LapTimeInput({
       comment: comment?.trim() === '' ? null : comment?.trim(),
     } satisfies EditTimeEntryRequest
 
-    toastPromise(
+    toast.promise(
       socket.emitWithAck('edit_time_entry', payload),
       loc.no.timeEntry.input.editRequest
     )
@@ -257,7 +256,7 @@ export default function LapTimeInput({
       comment: comment?.trim() === '' ? undefined : comment?.trim(),
     } satisfies CreateTimeEntryRequest
 
-    toastPromise(socket.emitWithAck('post_time_entry', payload), {
+    toast.promise(socket.emitWithAck('post_time_entry', payload), {
       ...loc.no.timeEntry.input.createRequest,
       success: loc.no.timeEntry.input.createRequest.success(
         formatTime(payload.duration ?? 0)
