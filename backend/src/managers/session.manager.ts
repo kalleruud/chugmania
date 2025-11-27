@@ -1,4 +1,4 @@
-import { and, asc, eq, isNull } from 'drizzle-orm'
+import { and, asc, desc, eq, isNull } from 'drizzle-orm'
 import {
   isCreateSessionRequest,
   isEditSessionRequest,
@@ -26,7 +26,7 @@ export default class SessionManager {
     const sessionRows = await db
       .select()
       .from(sessions)
-      .orderBy(asc(sessions.date), asc(sessions.createdAt))
+      .orderBy(desc(sessions.date), asc(sessions.createdAt))
 
     if (!sessionRows || sessionRows.length === 0) {
       console.debug(

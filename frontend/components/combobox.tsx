@@ -14,8 +14,9 @@ import { Spinner } from './ui/spinner'
 type ComboboxProps = {
   placeholder: string
   emptyLabel?: string
-  items: ComboboxLookupItem[] | undefined
+  items: ComboboxLookupItem[]
   selected?: ComboboxLookupItem
+  limit?: number
   setSelected: (
     value: React.SetStateAction<ComboboxLookupItem | undefined>
   ) => void
@@ -70,6 +71,7 @@ export default function Combobox({
   items,
   selected,
   disabled,
+  limit,
   required,
   setSelected,
   className,
@@ -84,16 +86,17 @@ export default function Combobox({
 
   const results = React.useMemo(() => {
     const term = search.trim().toLowerCase()
-    if (term.length > 0)
-      return items?.filter(i => i.tags?.join(',').toLowerCase().includes(term))
-    return items
+    if (term.length > 0) {
+      return items.filter(i => i.tags?.join(',').toLowerCase().includes(term))
+    }
+    return items.slice(0, limit)
   }, [items, search])
 
   const isLoading = results === undefined
 
   function onSelect(item: ComboboxLookupItem) {
     if (item.id === selected?.id) setSelected(undefined)
-    else setSelected(items?.find(i => i.id === item.id))
+    else setSelected(items.find(i => i.id === item.id))
     closeAndFocusTrigger()
   }
 

@@ -64,11 +64,12 @@ function trackToLookupItem(track: Track): ComboboxLookupItem {
 }
 
 function sessionToLookupItem(session: SessionWithSignups): ComboboxLookupItem {
+  const formattedDate = dateFormatter.format(new Date(session.date))
   return {
     id: session.id,
     label: session.name,
-    sublabel: dateFormatter.format(new Date(session.date)),
-    tags: [session.name, session.location ?? ''],
+    sublabel: formattedDate,
+    tags: [session.name, formattedDate, session.status, session.location ?? ''],
   }
 }
 
@@ -336,6 +337,7 @@ export default function LapTimeInput({
             placeholder={loc.no.timeEntry.input.placeholder.session}
             selected={selectedSession}
             setSelected={setSelectedSession}
+            limit={2}
             items={Object.values(sessions).map(sessionToLookupItem)}
           />
         )}
