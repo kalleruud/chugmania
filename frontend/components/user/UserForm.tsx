@@ -47,9 +47,7 @@ export default function UserForm({
   const [newPassword, setNewPassword] = useState('')
   const [password, setPassword] = useState('')
   const [role, setRole] = useState<string>(user?.role ?? 'user')
-  const [createdAt, setCreatedAt] = useState<Date>(
-    user?.createdAt ? new Date(user.createdAt) : new Date()
-  )
+  const [createdAt, setCreatedAt] = useState<Date | undefined>(undefined)
 
   const isAdmin = isLoggedIn && loggedInUser.role === 'admin'
   const isSelf = isLoggedIn && loggedInUser.id === user?.id
@@ -271,35 +269,37 @@ function CalendarField({
   show: boolean
   id: string
   name: string
-  selected: Date
-  onSelect: (date: Date) => void
+  selected: Date | undefined
+  onSelect: (date: Date | undefined) => void
   disabled?: boolean
   required?: boolean
 }>) {
   const [open, setOpen] = useState(false)
+  const isEmpty = selected === undefined
 
   if (!show) return undefined
 
-  const hours = String(selected.getHours()).padStart(2, '0')
-  const minutes = String(selected.getMinutes()).padStart(2, '0')
-  const seconds = String(selected.getSeconds()).padStart(2, '0')
-  const timeValue = `${hours}:${minutes}:${seconds}`
+  const hours = String(selected?.getHours()).padStart(2, '0')
+  const minutes = String(selected?.getMinutes()).padStart(2, '0')
+  const seconds = String(selected?.getSeconds()).padStart(2, '0')
+  const timeValue = isEmpty ? undefined : `${hours}:${minutes}:${seconds}`
 
   function handleTimeChange(e: React.ChangeEvent<HTMLInputElement>) {
     const [h, m, s] = e.target.value.split(':').map(Number)
-    const newDate = new Date(selected)
+    const newDate = isEmpty ? new Date() : new Date(selected)
     newDate.setHours(h)
     newDate.setMinutes(m)
     newDate.setSeconds(s || 0)
     onSelect(newDate)
   }
 
-  function handleDateSelect(date: Date | undefined) {
-    if (!date) return
+  function handleDateSelect(date: Date) {
+    const now = new Date()
     const newDate = new Date(date)
-    newDate.setHours(selected.getHours())
-    newDate.setMinutes(selected.getMinutes())
-    newDate.setSeconds(selected.getSeconds())
+
+    newDate.setHours(selected?.getHours() ?? now.getHours())
+    newDate.setMinutes(selected?.getMinutes() ?? now.getMinutes())
+    newDate.setSeconds(selected?.getSeconds() ?? now.getSeconds())
     onSelect(newDate)
     setOpen(false)
   }
@@ -316,9 +316,12 @@ function CalendarField({
             <Button
               variant='outline'
               id='date-picker'
-              className='flex-1 justify-between font-normal'
+              className={twMerge(
+                'flex-1 justify-between font-normal',
+                isEmpty && 'text-muted-foreground'
+              )}
               disabled={disabled}>
-              {selected.toLocaleDateString()}
+              {selected?.toLocaleDateString() ?? 'Velg dato'}
               <ChevronDownIcon />
             </Button>
           </PopoverTrigger>
