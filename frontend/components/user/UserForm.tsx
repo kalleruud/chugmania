@@ -46,7 +46,7 @@ export default function UserForm({
   const [shortName, setShortName] = useState(user?.shortName ?? '')
   const [newPassword, setNewPassword] = useState('')
   const [password, setPassword] = useState('')
-  const [role, setRole] = useState<string>(user?.role ?? 'user')
+  const [role, setRole] = useState<UserRole>(user?.role ?? 'user')
   const [createdAt, setCreatedAt] = useState<Date | undefined>(undefined)
 
   const isAdmin = isLoggedIn && loggedInUser.role === 'admin'
@@ -74,7 +74,7 @@ export default function UserForm({
               shortName,
               password,
               newPassword,
-              role: role as UserRole,
+              role,
               createdAt,
             })
             .then(r => {
@@ -153,10 +153,10 @@ export default function UserForm({
           disabled={disabled}
           required
           value={role}
-          onValueChange={r => setRole(r)}
+          onValueChange={setRole}
           name={loc.no.user.form.role}
           entries={Object.entries(loc.no.user.role).map(([key, label]) => ({
-            key,
+            key: key as UserRole,
             label,
           }))}
         />
@@ -223,18 +223,22 @@ function Field({
   )
 }
 
-function SelectField({
+function SelectField<T extends string>({
   show,
   id,
   name,
   entries,
+  value,
+  onValueChange,
   ...props
 }: Readonly<
   {
     show: boolean
     id?: string
-    entries: { key: string; label: string }[]
-  } & Parameters<typeof Select>[0]
+    entries: { key: T; label: string }[]
+    value?: T
+    onValueChange?: (value: T) => void
+  } & Omit<ComponentProps<typeof Select>, 'value' | 'onValueChange'>
 >) {
   if (!show) return undefined
   return (
@@ -242,7 +246,10 @@ function SelectField({
       <Label htmlFor={id} className='gap-1'>
         {name} {props.required && <span className='text-primary'>*</span>}
       </Label>
-      <Select {...props}>
+      <Select
+        value={value}
+        onValueChange={onValueChange as (value: string) => void}
+        {...props}>
         <SelectTrigger className='w-full'>
           <SelectValue placeholder={name} />
         </SelectTrigger>
