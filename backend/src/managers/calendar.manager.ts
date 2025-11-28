@@ -21,19 +21,6 @@ export default class CalendarManager {
     )
   }
 
-  public static async getSessionCalendar(
-    baseUrl: URL,
-    sessionId: string
-  ): Promise<string> {
-    const session = await SessionManager.getSession(sessionId)
-
-    if (!session) {
-      throw new Error('Session not found')
-    }
-
-    return CalendarManager.createIcsCalendar([session], baseUrl, session.name)
-  }
-
   private static createIcsCalendar(
     sessionList: SessionWithSignups[],
     baseUrl: URL,
