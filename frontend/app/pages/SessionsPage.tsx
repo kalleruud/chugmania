@@ -1,4 +1,4 @@
-import { SessionsList } from '@/components/session/SessionsList'
+import SessionsList from '@/components/session/SessionsList'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -9,18 +9,21 @@ import {
 } from '@/components/ui/breadcrumb'
 import { Button } from '@/components/ui/button'
 import loc from '@/lib/locales'
+import { CalendarIcon } from '@heroicons/react/24/solid'
+import { ChevronDown } from 'lucide-react'
 import { useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import { PageHeader } from '../../components/PageHeader'
 
 export default function SessionsPage() {
-  const [showPast, setShowPast] = useState(false)
+  const [showPreviousSessions, setShowPreviousSessions] = useState(false)
 
   return (
     <div className='p-safe-or-2 flex flex-col gap-4'>
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
-            <BreadcrumbLink to='/'>{loc.no.home}</BreadcrumbLink>
+            <BreadcrumbLink to='/'>{loc.no.common.home}</BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
@@ -35,29 +38,36 @@ export default function SessionsPage() {
         icon='CalendarIcon'
       />
 
-      <div className='flex flex-col gap-4'>
-        <div>
-          <h2 className='text-muted-foreground mb-2 px-1 text-sm font-medium uppercase'>
-            {loc.no.session.upcoming}
-          </h2>
-          <SessionsList filter='upcoming' />
-        </div>
+      <SubscribeButton />
 
+      <SessionsList header={loc.no.session.upcoming} after={new Date()} />
+      {showPreviousSessions ? (
+        <SessionsList header={loc.no.session.past} before={new Date()} />
+      ) : (
         <div>
-          <div className='mb-2 flex items-center justify-between px-1'>
-            <h2 className='text-muted-foreground text-sm font-medium uppercase'>
-              {loc.no.session.past}
-            </h2>
-            <Button
-              variant='ghost'
-              size='sm'
-              onClick={() => setShowPast(!showPast)}>
-              {showPast ? 'Skjul' : 'Vis'}
-            </Button>
-          </div>
-          {showPast && <SessionsList filter='past' />}
+          <Button variant='ghost' onClick={() => setShowPreviousSessions(true)}>
+            {loc.no.session.past}
+            <ChevronDown />
+          </Button>
         </div>
-      </div>
+      )}
     </div>
+  )
+}
+
+export function SubscribeButton({
+  className,
+  variant,
+  ...rest
+}: Parameters<typeof Button>[0]) {
+  return (
+    <Button
+      variant={variant ?? 'outline'}
+      className={twMerge('w-full', className)}
+      onClick={() => window.open('/api/sessions/calendar.ics', 'download')}
+      {...rest}>
+      <CalendarIcon />
+      {loc.no.session.calendar.subscribe}
+    </Button>
   )
 }

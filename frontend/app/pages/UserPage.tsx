@@ -56,6 +56,7 @@ export default function UserPage() {
 
   useEffect(() => {
     if (!id) return
+    // TODO: Handle receiving updates on update
     socket
       .emitWithAck('get_absolute_time_entries', {
         type: 'AbsoluteTimeEntriesRequest',
@@ -65,7 +66,7 @@ export default function UserPage() {
         if (!response.success) return toast.error(response.message)
         setEntries(response.entries)
       })
-  }, [id, socket, tracks])
+  }, [id, socket, tracks, users])
 
   if (users === undefined) {
     return (
@@ -90,7 +91,7 @@ export default function UserPage() {
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
-            <BreadcrumbLink to='/'>{loc.no.home}</BreadcrumbLink>
+            <BreadcrumbLink to='/'>{loc.no.common.home}</BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>

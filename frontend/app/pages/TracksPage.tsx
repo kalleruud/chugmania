@@ -26,7 +26,7 @@ function TrackRowList({ tracks }: Readonly<{ tracks: Track[] }>) {
   if (tracks.length === 0) {
     return (
       <Empty className='border-input text-muted-foreground border text-sm'>
-        {loc.no.noItems}
+        {loc.no.common.noItems}
       </Empty>
     )
   }
@@ -50,7 +50,7 @@ export default function TracksPage(props: Readonly<TracksPageProps>) {
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
-            <BreadcrumbLink to='/'>{loc.no.home}</BreadcrumbLink>
+            <BreadcrumbLink to='/'>{loc.no.common.home}</BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>

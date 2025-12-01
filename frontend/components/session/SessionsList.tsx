@@ -2,78 +2,81 @@ import { Empty } from '@/components/ui/empty'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
-import { DateTime } from 'luxon'
+import { type ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { SessionItem } from './SessionItem'
 
 type SessionsListProps = {
   className?: string
+  header: string
+  collapsed?: boolean
   limit?: number
-  filter?: 'upcoming' | 'past' | 'all'
+  before?: Date
+  after?: Date
 }
 
-export function SessionsList({
+export default function SessionsList({
   className,
+  header,
   limit,
-  filter = 'all',
-}: Readonly<SessionsListProps>) {
+  before,
+  after,
+  ...rest
+}: Readonly<SessionsListProps & ComponentProps<'div'>>) {
   const { sessions: sd } = useData()
 
   if (sd === undefined) {
     return (
-      <div className={twMerge('flex flex-col', className)}>
-        <div className='overflow-clip rounded-sm'>
-          <Skeleton className='divide-border h-16 w-full divide-y rounded-none' />
-          <Skeleton className='divide-border h-16 w-full divide-y rounded-none' />
-          <Skeleton className='divide-border h-16 w-full divide-y rounded-none' />
+      <div
+        className={twMerge(
+          'mb-2 flex items-center justify-between px-1',
+          className
+        )}
+        {...rest}>
+        <div>
+          <h2 className='text-muted-foreground text-sm font-medium uppercase'>
+            {header}
+          </h2>
         </div>
+        <Skeleton className='divide-border h-16 w-full divide-y rounded-sm' />
       </div>
     )
   }
 
-  const now = DateTime.now()
-  let sessions = Object.values(sd)
-
-  if (filter === 'upcoming') {
-    sessions = sessions.filter(
-      s => DateTime.fromJSDate(new Date(s.date)) >= now
-    )
-    sessions.sort(
-      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-    )
-  } else if (filter === 'past') {
-    sessions = sessions.filter(s => DateTime.fromJSDate(new Date(s.date)) < now)
-    sessions.sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-    )
-  } else {
-    sessions.sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-    )
-  }
-
-  if (limit) {
-    sessions = sessions.slice(0, limit)
-  }
+  const sessions = Object.values(sd)
+    .filter(s => {
+      if (after && new Date(s.date) <= after) return false
+      if (before && new Date(s.date) > before) return false
+      return true
+    })
+    .slice(0, limit)
 
   if (sessions.length === 0) {
     return (
       <Empty className='border-input text-muted-foreground border text-sm'>
-        {loc.no.noItems}
+        {loc.no.common.noItems}
       </Empty>
     )
   }
 
   return (
-    <div className={twMerge('bg-background-secondary rounded-sm', className)}>
-      {sessions.map(session => (
-        <SessionItem
-          key={session.id}
-          session={session}
-          variant='row'
-          className='py-3 first:pt-4 last:pb-4'
-        />
-      ))}
+    <div className={twMerge('flex flex-col gap-2', className)} {...rest}>
+      <div className='flex items-center justify-between'>
+        <h2 className='text-muted-foreground text-sm font-medium uppercase'>
+          {header}
+        </h2>
+      </div>
+
+      <div className={twMerge('bg-background-secondary rounded-sm')}>
+        {sessions.map(session => (
+          <SessionItem
+            key={session.id}
+            session={session}
+            variant='row'
+            className='py-3 first:pt-4 last:pb-4'
+          />
+        ))}
+      </div>
     </div>
   )
 }

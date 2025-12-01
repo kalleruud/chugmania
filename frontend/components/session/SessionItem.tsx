@@ -1,5 +1,13 @@
 import { Badge } from '@/components/ui/badge'
-import { Item, ItemActions, ItemContent, ItemTitle } from '@/components/ui/item'
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemTitle,
+} from '@/components/ui/item'
+import { useAuth } from '@/contexts/AuthContext'
+import loc from '@/lib/locales'
 import { ChevronRight } from 'lucide-react'
 import { DateTime } from 'luxon'
 import { Link } from 'react-router-dom'
@@ -22,8 +30,12 @@ export function SessionItem(props: Readonly<SessionItemProps>) {
 }
 
 function SessionRow({ session, className }: Readonly<SessionItemProps>) {
+  const { loggedInUser, isLoggedIn } = useAuth()
   const date = DateTime.fromJSDate(new Date(session.date))
   const isPast = date < DateTime.now()
+
+  const isSignedUp =
+    isLoggedIn && session.signups.some(su => su.user.id === loggedInUser.id)
 
   return (
     <Item key={session.id} className={className} asChild>
@@ -32,17 +44,19 @@ function SessionRow({ session, className }: Readonly<SessionItemProps>) {
           <ItemTitle className={twMerge(isPast && 'text-muted-foreground')}>
             {session.name}
           </ItemTitle>
-          <p className='text-muted-foreground text-sm'>
-            {date.setLocale('nb').toFormat('cccc d. MMMM HH:mm')}
-            {session.location && ` · ${session.location}`}
-          </p>
+          <ItemDescription className='flex items-center gap-2 capitalize'>
+            {session.location && (
+              <>
+                <span>{session.location}</span>
+                <span className='opacity-50'>{session.location && '•'}</span>
+              </>
+            )}
+            <span>{date.setLocale('nb').toFormat('cccc d. MMMM HH:mm')}</span>
+          </ItemDescription>
         </ItemContent>
-        <div className='flex items-center gap-2'>
-          <Badge variant='secondary' className='tabular-nums'>
-            {session.signups.length}
-          </Badge>
-        </div>
+
         <ItemActions>
+          {!isSignedUp && <Badge>{loc.no.common.new}</Badge>}
           <ChevronRight className='size-4' />
         </ItemActions>
       </Link>

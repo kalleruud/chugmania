@@ -12,6 +12,7 @@ import db from '../../database/database'
 import { users } from '../../database/schema'
 import { broadcast, TypedSocket } from '../server'
 import AuthManager from './auth.manager'
+import TimeEntryManager from './timeEntry.manager'
 
 export default class UserManager {
   static readonly table = users
@@ -181,6 +182,7 @@ export default class UserManager {
     }
 
     broadcast('all_users', await UserManager.getAllUsers())
+    broadcast('all_leaderboards', await TimeEntryManager.getAllLeaderboards())
 
     return {
       success: true,

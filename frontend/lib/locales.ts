@@ -74,7 +74,6 @@ const no = {
     },
     calendar: {
       subscribe: 'Abonner på kalender',
-      download: 'Last ned invitasjon',
     },
     errorMessages: {
       no_edit_historical: 'Du kan ikke svare på en session tilbake i tid.',
@@ -206,12 +205,22 @@ const no = {
     description: 'Oversikt over alle spillere.',
     receivedUpdate: 'Spillerne ble oppdatert',
   },
-  noItems: getRandomItem([
-    'Finner ikke 🥵',
-    'Her var det tomt...',
-    'Har du gått feil?',
-  ]),
-  home: 'Hjem',
+  common: {
+    new: 'Ny',
+    edit: 'Rediger',
+    delete: 'Slett',
+    save: 'Lagre',
+    cancel: 'Avbryt',
+    showAll: 'Vis alle',
+    show: 'Vis',
+    hide: 'Skjul',
+    home: 'Hjem',
+    noItems: getRandomItem([
+      'Finner ikke 🥵',
+      'Her var det tomt...',
+      'Har du gått feil?',
+    ]),
+  },
 } as const
 
 const loc: Record<Locale, Localization> = {
