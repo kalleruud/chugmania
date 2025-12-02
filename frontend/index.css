@@ -28,11 +28,11 @@
   }
 
   h2 {
-    @apply text-3xl font-black;
+    @apply font-f1 text-3xl font-bold uppercase;
   }
 
   h3 {
-    @apply text-xl;
+    @apply font-f1 text-xl font-bold uppercase;
   }
 
   h4 {

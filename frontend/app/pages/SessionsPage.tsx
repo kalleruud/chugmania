@@ -19,7 +19,7 @@ export default function SessionsPage() {
   const [showPreviousSessions, setShowPreviousSessions] = useState(false)
 
   return (
-    <div className='p-safe-or-2 flex flex-col gap-4'>
+    <div className='p-safe-or-2 flex flex-col gap-2'>
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
@@ -60,11 +60,20 @@ export function SubscribeButton({
   variant,
   ...rest
 }: Parameters<typeof Button>[0]) {
+  const subscribe = () => {
+    const url =
+      `${globalThis.location.origin}/api/sessions/calendar.ics`.replace(
+        /^https?:\/\//,
+        'webcal://'
+      )
+    window.open(url)
+  }
+
   return (
     <Button
       variant={variant ?? 'outline'}
       className={twMerge('w-full', className)}
-      onClick={() => window.open('/api/sessions/calendar.ics')}
+      onClick={subscribe}
       {...rest}>
       <CalendarIcon />
       {loc.no.session.calendar.subscribe}

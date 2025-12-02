@@ -4,6 +4,7 @@ import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
 import { type ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { PageSubheader } from '../PageHeader'
 import { SessionItem } from './SessionItem'
 
 type SessionsListProps = {
@@ -28,9 +29,9 @@ export default function SessionsList({
   if (sd === undefined) {
     return (
       <div className={twMerge('flex flex-col gap-2', className)} {...rest}>
-        <h2 className='text-muted-foreground text-sm font-medium uppercase'>
+        <h3 className='text-muted-foreground text-sm font-medium uppercase'>
           {header}
-        </h2>
+        </h3>
         <Skeleton className='divide-border h-16 w-full divide-y rounded-sm' />
       </div>
     )
@@ -53,10 +54,8 @@ export default function SessionsList({
   }
 
   return (
-    <div className={twMerge('flex flex-col gap-2', className)} {...rest}>
-      <h2 className='text-muted-foreground text-sm font-medium uppercase'>
-        {header}
-      </h2>
+    <div className={twMerge('flex flex-col', className)} {...rest}>
+      <PageSubheader title={header} />
 
       <div className={twMerge('bg-background-secondary rounded-sm')}>
         {sessions.map(session => (

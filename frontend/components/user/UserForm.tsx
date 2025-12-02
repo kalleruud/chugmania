@@ -176,7 +176,7 @@ export default function UserForm({
         </div>
       </div>
 
-      <div className='flex gap-2' hidden={!isEditing && !isRegistering}>
+      <div className='flex gap-2'>
         <Field
           id='password'
           name={
@@ -186,7 +186,7 @@ export default function UserForm({
           minLength={8}
           disabled={disabled && canEdit}
           required
-          show={canEdit && !isAdmin}
+          show={!isEditing && !isAdmin}
           value={password}
           onChange={e => setPassword(e.target.value)}
           placeholder='•••••••••••'

@@ -12,21 +12,20 @@ import { Skeleton } from '@/components/ui/skeleton'
 import UserItem from '@/components/user/UserItem'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
-import type { DetailedHTMLProps, HTMLAttributes } from 'react'
+import type { ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type { UserInfo } from '../../../common/models/user'
 import { PageHeader } from '../../components/PageHeader'
 
-type UsersPageProps = DetailedHTMLProps<
-  HTMLAttributes<HTMLDivElement>,
-  HTMLDivElement
->
+type UsersPageProps = {
+  showAll?: boolean
+} & ComponentProps<'div'>
 
 function UserRowList({ users }: Readonly<{ users: UserInfo[] }>) {
   if (users.length === 0) {
     return (
       <Empty className='border-input text-muted-foreground border text-sm'>
-        {loc.no.noItems}
+        {loc.no.common.noItems}
       </Empty>
     )
   }
@@ -50,7 +49,7 @@ export default function UsersPage(props: Readonly<UsersPageProps>) {
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
-            <BreadcrumbLink to='/'>{loc.no.home}</BreadcrumbLink>
+            <BreadcrumbLink to='/'>{loc.no.common.home}</BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
@@ -58,12 +57,12 @@ export default function UsersPage(props: Readonly<UsersPageProps>) {
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
-      <UsersList {...props} />
+      <UsersList {...props} showAll />
     </div>
   )
 }
 
-export function UsersList({ className }: Readonly<UsersPageProps>) {
+export function UsersList({ className, showAll }: Readonly<UsersPageProps>) {
   const { users: ud } = useData()
 
   if (ud === undefined) {
@@ -88,7 +87,9 @@ export function UsersList({ className }: Readonly<UsersPageProps>) {
     )
   }
 
-  const users = Object.values(ud)
+  const users = Object.values(ud).filter(
+    u => !u.email.endsWith('@chugmania.no') || showAll
+  )
 
   return (
     <div className={twMerge('flex flex-col', className)}>

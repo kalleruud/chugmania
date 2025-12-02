@@ -68,12 +68,31 @@ function SessionRow({ session, className }: Readonly<SessionItemProps>) {
 function SessionCard({ session, className }: Readonly<SessionItemProps>) {
   const date = DateTime.fromJSDate(new Date(session.date))
 
+  const now = DateTime.now()
+
+  const isThisDate = date.hasSame(now, 'day')
+  const isAfterStartTime =
+    now >= date.set({ hour: 0, minute: 0, second: 0 }) &&
+    now <= date.set({ hour: 23, minute: 59, second: 59 })
+  const isNow = isThisDate && isAfterStartTime
+
+  const isPast = !isNow && date < now
+  const isFuture = !isNow && date > now
+
   return (
     <div className={twMerge('flex flex-col gap-1', className)}>
       <h1 className='text-3xl tracking-wide'>{session.name}</h1>
       {session.description && (
         <p className='text-muted-foreground'>{session.description}</p>
       )}
+
+      {isPast && <Badge variant='outline'>{loc.no.session.status.past}</Badge>}
+      {isNow && (
+        <Badge variant='outline' className='animate-pulse'>
+          {loc.no.session.status.ongoing}
+        </Badge>
+      )}
+      {isFuture && <Badge>{loc.no.session.status.upcoming}</Badge>}
 
       <div className='flex items-center gap-2'>
         <ClockIcon className='text-primary size-5' />

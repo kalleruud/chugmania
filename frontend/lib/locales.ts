@@ -66,6 +66,12 @@ const no = {
     date: 'Dato',
     time: 'Tid',
     attendees: 'Påmeldte',
+    attendance: 'Påmelding',
+    status: {
+      past: 'Avsluttet',
+      ongoing: 'Pågår',
+      upcoming: 'Kommende',
+    },
     rsvp: {
       title: 'Meld deg på',
       yes: 'Kommer',

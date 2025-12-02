@@ -1,3 +1,4 @@
+import { PageSubheader } from '@/components/PageHeader'
 import { SessionItem } from '@/components/session/SessionItem'
 import { TrackItem } from '@/components/track/TrackItem'
 import {
@@ -17,42 +18,22 @@ import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
 import { DateTime } from 'luxon'
+import type { ComponentProps } from 'react'
 import { useParams } from 'react-router-dom'
-import { toast } from 'sonner'
+import { twMerge } from 'tailwind-merge'
 import type { SessionResponse } from '../../../backend/database/schema'
+import type { SessionWithSignups } from '../../../common/models/session'
+import { SubscribeButton } from './SessionsPage'
 import { TimeEntryList } from './TrackPage'
 
-export default function SessionPage() {
-  const { id } = useParams()
-  const { sessions, leaderboards, tracks } = useData()
+function Signup({
+  session,
+  className,
+  ...rest
+}: Readonly<{ session: SessionWithSignups } & ComponentProps<'div'>>) {
   const { socket } = useConnection()
   const { loggedInUser, isLoggedIn } = useAuth()
 
-  if (
-    sessions === undefined ||
-    leaderboards === undefined ||
-    tracks === undefined ||
-    id === undefined
-  ) {
-    return (
-      <div className='items-center-safe justify-center-safe flex h-dvh w-full'>
-        <Spinner className='size-6' />
-      </div>
-    )
-  }
-
-  const timeEntries = Object.values(leaderboards)
-    .map(leaderboard => {
-      const entries = leaderboard.entries.filter(entry => entry.session === id)
-      return { id: leaderboard.id, entries }
-    })
-    .filter(te => te.entries.length > 0)
-
-  if (id === undefined || !(id in sessions)) {
-    throw new Error(loc.no.error.messages.not_in_db(`session/${id}`))
-  }
-
-  const session = sessions[id]
   const date = DateTime.fromJSDate(new Date(session.date)).setLocale('nb')
   const isUpcoming = date > DateTime.now()
 
@@ -64,42 +45,19 @@ export default function SessionPage() {
   function handleRsvp(response: SessionResponse) {
     if (!loggedInUser) return
 
-    toast.promise(
-      socket.emitWithAck('rsvp_session', {
-        type: 'RsvpSessionRequest',
-        session: session.id,
-        user: loggedInUser.id,
-        response,
-      }),
-      {
-        ...loc.no.session.rsvp.response,
-        success: loc.no.session.rsvp.response.success(response),
-      }
-    )
+    socket.emitWithAck('rsvp_session', {
+      type: 'RsvpSessionRequest',
+      session: session.id,
+      user: loggedInUser.id,
+      response,
+    })
   }
 
   return (
-    <div className='flex flex-col gap-6'>
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink to='/'>{loc.no.common.home}</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbLink to='/sessions'>
-              {loc.no.session.title}
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>{session.name}</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
-
-      <SessionItem className='px-2' variant='card' session={session} />
-
+    <div className={twMerge('flex flex-col gap-4', className)} {...rest}>
+      <h3 className='px-2 pt-2'>
+        {isUpcoming ? loc.no.session.attendance : loc.no.session.attendees}
+      </h3>
       {isUpcoming && isLoggedIn && (
         <ButtonGroup className='w-full'>
           <Button
@@ -127,9 +85,10 @@ export default function SessionPage() {
         <div className='flex flex-col gap-4'>
           {attendees.length > 0 && (
             <div>
-              <h3 className='text-muted-foreground mb-2 px-1 text-sm font-medium uppercase'>
-                {loc.no.session.rsvp.yes} ({attendees.length})
-              </h3>
+              <PageSubheader
+                title={loc.no.session.rsvp.yes}
+                description={attendees.length.toString()}
+              />
               <div className='bg-background-secondary rounded-sm'>
                 {attendees.map(signup => (
                   <UserItem
@@ -145,10 +104,11 @@ export default function SessionPage() {
 
           {maybe.length > 0 && (
             <div>
-              <h3 className='text-muted-foreground mb-2 px-1 text-sm font-medium uppercase'>
-                {loc.no.session.rsvp.maybe} ({maybe.length})
-              </h3>
-              <div className='bg-background-secondary rounded-sm'>
+              <PageSubheader
+                title={loc.no.session.rsvp.maybe}
+                description={maybe.length.toString()}
+              />
+              <div className='bg-background-secondary rounded-sm opacity-50'>
                 {maybe.map(signup => (
                   <UserItem
                     key={signup.user.id}
@@ -163,10 +123,11 @@ export default function SessionPage() {
 
           {declined.length > 0 && (
             <div>
-              <h3 className='text-muted-foreground mb-2 px-1 text-sm font-medium uppercase'>
-                {loc.no.session.rsvp.no} ({declined.length})
-              </h3>
-              <div className='bg-background-secondary rounded-sm'>
+              <PageSubheader
+                title={loc.no.session.rsvp.no}
+                description={declined.length.toString()}
+              />
+              <div className='bg-background-secondary rounded-sm opacity-25'>
                 {declined.map(signup => (
                   <UserItem
                     key={signup.user.id}
@@ -180,11 +141,72 @@ export default function SessionPage() {
           )}
         </div>
       )}
+    </div>
+  )
+}
+
+export default function SessionPage() {
+  const { id } = useParams()
+  const { sessions, leaderboards, tracks } = useData()
+  const { loggedInUser, isLoggedIn } = useAuth()
+
+  if (
+    sessions === undefined ||
+    leaderboards === undefined ||
+    tracks === undefined ||
+    id === undefined
+  ) {
+    return (
+      <div className='items-center-safe justify-center-safe flex h-dvh w-full'>
+        <Spinner className='size-6' />
+      </div>
+    )
+  }
+
+  const timeEntries = Object.values(leaderboards)
+    .map(leaderboard => {
+      const entries = leaderboard.entries.filter(entry => entry.session === id)
+      return { id: leaderboard.id, entries }
+    })
+    .filter(te => te.entries.length > 0)
+
+  if (id === undefined || !(id in sessions)) {
+    throw new Error(loc.no.error.messages.not_in_db(`session/${id}`))
+  }
+
+  const session = sessions[id]
+
+  return (
+    <div className='flex flex-col gap-6'>
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink to='/'>{loc.no.common.home}</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink to='/sessions'>
+              {loc.no.session.title}
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>{session.name}</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
+      <SessionItem className='px-2' variant='card' session={session} />
+
+      <SubscribeButton />
+
+      <Signup
+        className='bg-background rounded-sm border p-2'
+        session={session}
+      />
 
       {timeEntries.map(({ id: trackId, entries }) => (
-        <div
-          key={trackId}
-          className='bg-background gap-2 rounded-sm border p-2'>
+        <div key={trackId} className='bg-background rounded-sm border p-2'>
           <TrackItem track={tracks[trackId]} variant='row' />
           <TimeEntryList
             key={id}
