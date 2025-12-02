@@ -1,4 +1,5 @@
 import { SessionItem } from '@/components/session/SessionItem'
+import { TrackItem } from '@/components/track/TrackItem'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -19,20 +20,33 @@ import { DateTime } from 'luxon'
 import { useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import type { SessionResponse } from '../../../backend/database/schema'
+import { TimeEntryList } from './TrackPage'
 
 export default function SessionPage() {
   const { id } = useParams()
-  const { sessions } = useData()
+  const { sessions, leaderboards, tracks } = useData()
   const { socket } = useConnection()
   const { loggedInUser, isLoggedIn } = useAuth()
 
-  if (sessions === undefined) {
+  if (
+    sessions === undefined ||
+    leaderboards === undefined ||
+    tracks === undefined ||
+    id === undefined
+  ) {
     return (
       <div className='items-center-safe justify-center-safe flex h-dvh w-full'>
         <Spinner className='size-6' />
       </div>
     )
   }
+
+  const timeEntries = Object.values(leaderboards)
+    .map(leaderboard => {
+      const entries = leaderboard.entries.filter(entry => entry.session === id)
+      return { id: leaderboard.id, entries }
+    })
+    .filter(te => te.entries.length > 0)
 
   if (id === undefined || !(id in sessions)) {
     throw new Error(loc.no.error.messages.not_in_db(`session/${id}`))
@@ -167,19 +181,14 @@ export default function SessionPage() {
         </div>
       )}
 
-      {session.lapTimes.length > 0 && (
-        <div>
-          <h3 className='text-muted-foreground mb-2 px-1 text-sm font-medium uppercase'>
-            Rundetider
-          </h3>
-          <div className='bg-background-secondary rounded-sm'>
-            {/* TODO: Display lap times. For now just a count or simple list */}
-            <p className='text-muted-foreground p-4 text-sm'>
-              {session.lapTimes.length} rundetider registrert.
-            </p>
-          </div>
+      {timeEntries.map(({ id: trackId, entries }) => (
+        <div
+          key={trackId}
+          className='bg-background gap-2 rounded-sm border p-2'>
+          <TrackItem track={tracks[trackId]} variant='row' />
+          <TimeEntryList key={id} entries={entries} />
         </div>
-      )}
+      ))}
     </div>
   )
 }

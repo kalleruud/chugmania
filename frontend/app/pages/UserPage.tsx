@@ -18,7 +18,7 @@ import { toast } from 'sonner'
 import type { LeaderboardEntry } from '../../../common/models/timeEntry'
 import type { Track } from '../../../common/models/track'
 import { getUserFullName } from '../../../common/models/user'
-import { RowItemList } from './TrackPage'
+import { TimeEntryList } from './TrackPage'
 
 function groupByTrack(
   entries: LeaderboardEntry[],
@@ -114,7 +114,7 @@ export default function UserPage() {
                 key={track.id}
                 className='bg-background gap-2 rounded-sm border p-2'>
                 <TrackItem variant='row' track={track} />
-                <RowItemList track={track} entries={entries} />
+                <TimeEntryList entries={entries} />
               </div>
             ))}
           </div>

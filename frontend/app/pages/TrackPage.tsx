@@ -20,13 +20,11 @@ import { ChevronUpDownIcon } from '@heroicons/react/24/solid'
 import { Fragment, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import type { LeaderboardEntry } from '../../../common/models/timeEntry'
-import type { Track } from '../../../common/models/track'
 import { formatTrackName } from '../../../common/utils/track'
 
-export function RowItemList({
-  track,
+export function TimeEntryList({
   entries,
-}: Readonly<{ track: Track; entries: LeaderboardEntry[] }>) {
+}: Readonly<{ entries: LeaderboardEntry[] }>) {
   const [gapType, setGapType] = useState<GapType>('interval')
   const { open } = useTimeEntryDrawer()
 
@@ -73,7 +71,7 @@ export function RowItemList({
               )}
               <TimeEntryItem
                 lapTime={entry}
-                onClick={() => open({ track: track.id, ...entry })}
+                onClick={() => open(entry)}
                 className='p-4 py-3 first:pt-4 last:pb-4'
                 gapType={gapType}
                 onChangeGapType={() =>
@@ -128,7 +126,7 @@ export default function TrackPage() {
 
       <TrackItem track={track} variant='card' className='pb-0' />
 
-      <RowItemList track={track} entries={leaderboard} />
+      <TimeEntryList entries={leaderboard} />
     </div>
   )
 }

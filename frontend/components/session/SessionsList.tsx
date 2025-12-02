@@ -27,17 +27,10 @@ export default function SessionsList({
 
   if (sd === undefined) {
     return (
-      <div
-        className={twMerge(
-          'mb-2 flex items-center justify-between px-1',
-          className
-        )}
-        {...rest}>
-        <div>
-          <h2 className='text-muted-foreground text-sm font-medium uppercase'>
-            {header}
-          </h2>
-        </div>
+      <div className={twMerge('flex flex-col gap-2', className)} {...rest}>
+        <h2 className='text-muted-foreground text-sm font-medium uppercase'>
+          {header}
+        </h2>
         <Skeleton className='divide-border h-16 w-full divide-y rounded-sm' />
       </div>
     )
@@ -61,11 +54,9 @@ export default function SessionsList({
 
   return (
     <div className={twMerge('flex flex-col gap-2', className)} {...rest}>
-      <div className='flex items-center justify-between'>
-        <h2 className='text-muted-foreground text-sm font-medium uppercase'>
-          {header}
-        </h2>
-      </div>
+      <h2 className='text-muted-foreground text-sm font-medium uppercase'>
+        {header}
+      </h2>
 
       <div className={twMerge('bg-background-secondary rounded-sm')}>
         {sessions.map(session => (
