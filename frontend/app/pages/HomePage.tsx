@@ -4,6 +4,7 @@ import LoginCard from '@/components/user/LoginCard'
 import UserItem from '@/components/user/UserItem'
 import { useAuth } from '@/contexts/AuthContext'
 import loc from '@/lib/locales'
+import { SubscribeButton } from './SessionsPage'
 import { TracksList } from './TracksPage'
 import { UsersList } from './UsersPage'
 
@@ -25,6 +26,7 @@ export default function Home() {
           description={loc.no.session.description}
           icon='CalendarIcon'
         />
+        <SubscribeButton />
         <SessionsList header={loc.no.session.upcoming} after={new Date()} />
       </div>
 

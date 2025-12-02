@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/item'
 import { useAuth } from '@/contexts/AuthContext'
 import loc from '@/lib/locales'
+import { CalendarIcon, ClockIcon, MapPinIcon } from '@heroicons/react/24/solid'
 import { ChevronRight } from 'lucide-react'
 import { DateTime } from 'luxon'
 import { Link } from 'react-router-dom'
@@ -69,12 +70,26 @@ function SessionCard({ session, className }: Readonly<SessionItemProps>) {
 
   return (
     <div className={twMerge('flex flex-col gap-1', className)}>
-      <h1 className='text-2xl font-bold'>{session.name}</h1>
-      <p className='text-muted-foreground text-lg'>
-        {date.setLocale('nb').toFormat('cccc d. MMMM HH:mm')}
-      </p>
+      <h1 className='text-3xl tracking-wide'>{session.name}</h1>
+      {session.description && (
+        <p className='text-muted-foreground'>{session.description}</p>
+      )}
+
+      <div className='flex items-center gap-2'>
+        <ClockIcon className='text-primary size-5' />
+        <span className='capitalize'>{date.toFormat('HH:mm')}</span>
+      </div>
+
+      <div className='flex items-center gap-2'>
+        <CalendarIcon className='text-primary size-5' />
+        <span className='capitalize'>{date.toFormat('cccc d. MMMM yyyy')}</span>
+      </div>
+
       {session.location && (
-        <p className='text-muted-foreground'>{session.location}</p>
+        <div className='flex items-center gap-2'>
+          <MapPinIcon className='text-primary size-5' />
+          <span>{session.location}</span>
+        </div>
       )}
     </div>
   )

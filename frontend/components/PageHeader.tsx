@@ -19,7 +19,7 @@ export function PageHeader({
   return (
     <div
       className={twMerge(
-        'bg-background/90 top-safe sticky z-10 flex flex-col rounded-md p-2 py-4 backdrop-blur',
+        'top-safe sticky z-10 flex flex-col rounded-b-sm p-2 py-4 backdrop-blur-3xl',
         className
       )}
       {...props}>

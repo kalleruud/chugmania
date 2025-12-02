@@ -1,6 +1,7 @@
 import { getRandomItem } from '@/app/utils/utils'
 import type { GapType } from '@/components/timeentries/TimeEntryItem'
 import type {
+  SessionResponse,
   TrackLevel,
   TrackType,
   UserRole,
@@ -71,6 +72,12 @@ const no = {
       maybe: 'Kanskje',
       no: 'Kommer ikke',
       change: 'Endre svar',
+      response: {
+        loading: 'Svarer...',
+        success: (response: SessionResponse) =>
+          `Svar ble oppdatert: ${no.session.rsvp[response]}`,
+        error: (err: Error) => `Kunne ikke registrere svar: ${err.message}`,
+      },
     },
     calendar: {
       subscribe: 'Abonner på kalender',

@@ -64,7 +64,7 @@ export function SubscribeButton({
     <Button
       variant={variant ?? 'outline'}
       className={twMerge('w-full', className)}
-      onClick={() => window.open('/api/sessions/calendar.ics', 'download')}
+      onClick={() => window.open('/api/sessions/calendar.ics')}
       {...rest}>
       <CalendarIcon />
       {loc.no.session.calendar.subscribe}
