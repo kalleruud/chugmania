@@ -186,7 +186,11 @@ export default function SessionPage() {
           key={trackId}
           className='bg-background gap-2 rounded-sm border p-2'>
           <TrackItem track={tracks[trackId]} variant='row' />
-          <TimeEntryList key={id} entries={entries} />
+          <TimeEntryList
+            key={id}
+            entries={entries}
+            highlight={e => isLoggedIn && loggedInUser.id === e.user}
+          />
         </div>
       ))}
     </div>

@@ -1,4 +1,3 @@
-import { useAuth } from '@/contexts/AuthContext'
 import { useData } from '@/contexts/DataContext'
 import { MinusIcon } from '@heroicons/react/24/solid'
 import {
@@ -19,6 +18,7 @@ type TimeEntryItemProps = {
   position?: number | null
   lapTime: LeaderboardEntry
   gapType?: GapType
+  highlight?: boolean
   onChangeGapType: () => void
 } & ComponentProps<'div'>
 
@@ -110,16 +110,16 @@ function GapPart({
 }
 
 function TimeEntryRow({
+  className,
   lapTime,
   position = lapTime.gap?.position,
   gapType,
   onChangeGapType,
-  className,
+  highlight,
   ...rest
 }: Readonly<TimeEntryItemProps>) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const [width, setWidth] = useState(breakpoints.md)
-  const { loggedInUser } = useAuth()
   const { users } = useData()
   const userInfo = users ? users[lapTime.user] : null
 
@@ -161,9 +161,7 @@ function TimeEntryRow({
       {...rest}
       className={twMerge(
         'aansition-colors flex cursor-pointer items-center gap-4 rounded-md hover:bg-white/5',
-        loggedInUser &&
-          loggedInUser?.id === userInfo?.id &&
-          'bg-accent hover:bg-foreground/15',
+        highlight && 'ring-muted-foreground ring-2',
         isDNF && 'opacity-50',
         className
       )}

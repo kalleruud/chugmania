@@ -13,6 +13,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Empty } from '@/components/ui/empty'
 import { Spinner } from '@/components/ui/spinner'
+import { useAuth } from '@/contexts/AuthContext'
 import { useData } from '@/contexts/DataContext'
 import { useTimeEntryDrawer } from '@/hooks/TimeEntryDrawerProvider'
 import loc from '@/lib/locales'
@@ -24,7 +25,11 @@ import { formatTrackName } from '../../../common/utils/track'
 
 export function TimeEntryList({
   entries,
-}: Readonly<{ entries: LeaderboardEntry[] }>) {
+  highlight,
+}: Readonly<{
+  entries: LeaderboardEntry[]
+  highlight?: (e: LeaderboardEntry) => boolean
+}>) {
   const [gapType, setGapType] = useState<GapType>('interval')
   const { open } = useTimeEntryDrawer()
 
@@ -72,11 +77,12 @@ export function TimeEntryList({
               <TimeEntryItem
                 lapTime={entry}
                 onClick={() => open(entry)}
-                className='p-4 py-3 first:pt-4 last:pb-4'
+                className='px-4 py-3'
                 gapType={gapType}
                 onChangeGapType={() =>
                   setGapType(gapType === 'leader' ? 'interval' : 'leader')
                 }
+                highlight={highlight?.(entry)}
               />
             </Fragment>
           )
@@ -88,6 +94,7 @@ export function TimeEntryList({
 
 export default function TrackPage() {
   const { id } = useParams()
+  const { isLoggedIn, loggedInUser } = useAuth()
   const { tracks, leaderboards } = useData()
 
   if (tracks === undefined || leaderboards === undefined) {
@@ -126,7 +133,10 @@ export default function TrackPage() {
 
       <TrackItem track={track} variant='card' className='pb-0' />
 
-      <TimeEntryList entries={leaderboard} />
+      <TimeEntryList
+        entries={leaderboard}
+        highlight={e => isLoggedIn && loggedInUser.id === e.user}
+      />
     </div>
   )
 }
