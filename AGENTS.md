@@ -25,7 +25,10 @@
 - Match existing patterns before introducing new ones
 - Implement the simplest solution; avoid unnecessary abstractions
 - Reuse existing components (Button, SearchableDropdown, etc.)
+  - Use `NativeSelect` from `components/ui/native-select.tsx` for dropdowns
+  - Use `Calendar` from `components/ui/calendar.tsx` for date picking
 - Use Tailwind CSS utilities; follow Formula 1 inspired dark-mode design system
+- Use `date-fns` for Calendar component internals, but prefer `luxon` for general date formatting/manipulation in the app
 - After schema changes, run `npm run db:gen` to generate Drizzle migrations
 
 ## Reactive Contract
