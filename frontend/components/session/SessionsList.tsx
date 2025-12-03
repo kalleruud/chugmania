@@ -45,28 +45,25 @@ export default function SessionsList({
     })
     .slice(0, limit)
 
-  if (sessions.length === 0) {
-    return (
-      <Empty className='border-input text-muted-foreground border text-sm'>
-        {loc.no.common.noItems}
-      </Empty>
-    )
-  }
-
   return (
     <div className={twMerge('flex flex-col', className)} {...rest}>
       <PageSubheader title={header} />
-
-      <div className={twMerge('bg-background-secondary rounded-sm')}>
-        {sessions.map(session => (
-          <SessionItem
-            key={session.id}
-            session={session}
-            variant='row'
-            className='py-3 first:pt-4 last:pb-4'
-          />
-        ))}
-      </div>
+      {sessions.length > 0 ? (
+        <div className={twMerge('bg-background-secondary rounded-sm')}>
+          {sessions.map(session => (
+            <SessionItem
+              key={session.id}
+              session={session}
+              variant='row'
+              className='py-3 first:pt-4 last:pb-4'
+            />
+          ))}
+        </div>
+      ) : (
+        <Empty className='border-input text-muted-foreground border text-sm'>
+          {loc.no.common.noItems}
+        </Empty>
+      )}
     </div>
   )
 }

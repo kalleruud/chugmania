@@ -80,36 +80,44 @@ function SessionCard({ session, className }: Readonly<SessionItemProps>) {
   const isFuture = !isNow && date > now
 
   return (
-    <div className={twMerge('flex flex-col gap-1', className)}>
+    <div className={twMerge('flex flex-col gap-2', className)}>
       <h1 className='text-3xl tracking-wide'>{session.name}</h1>
       {session.description && (
         <p className='text-muted-foreground'>{session.description}</p>
       )}
 
-      {isPast && <Badge variant='outline'>{loc.no.session.status.past}</Badge>}
-      {isNow && (
-        <Badge variant='outline' className='animate-pulse'>
-          {loc.no.session.status.ongoing}
-        </Badge>
-      )}
-      {isFuture && <Badge>{loc.no.session.status.upcoming}</Badge>}
+      <div className='flex items-start justify-between'>
+        <div className='flex flex-col gap-1'>
+          <div className='flex items-center gap-2'>
+            <ClockIcon className='text-muted-foreground size-4' />
+            <span className='capitalize'>{date.toFormat('HH:mm')}</span>
+          </div>
 
-      <div className='flex items-center gap-2'>
-        <ClockIcon className='text-primary size-5' />
-        <span className='capitalize'>{date.toFormat('HH:mm')}</span>
-      </div>
+          <div className='flex items-center gap-2'>
+            <CalendarIcon className='text-muted-foreground size-4' />
+            <span className='capitalize'>
+              {date.toFormat('cccc d. MMMM yyyy')}
+            </span>
+          </div>
 
-      <div className='flex items-center gap-2'>
-        <CalendarIcon className='text-primary size-5' />
-        <span className='capitalize'>{date.toFormat('cccc d. MMMM yyyy')}</span>
-      </div>
-
-      {session.location && (
-        <div className='flex items-center gap-2'>
-          <MapPinIcon className='text-primary size-5' />
-          <span>{session.location}</span>
+          {session.location && (
+            <div className='flex items-center gap-2'>
+              <MapPinIcon className='text-muted-foreground size-4' />
+              <span>{session.location}</span>
+            </div>
+          )}
         </div>
-      )}
+
+        {isPast && (
+          <Badge variant='outline'>{loc.no.session.status.past}</Badge>
+        )}
+        {isNow && (
+          <Badge variant='outline' className='animate-pulse'>
+            {loc.no.session.status.ongoing}
+          </Badge>
+        )}
+        {isFuture && <Badge>{loc.no.session.status.upcoming}</Badge>}
+      </div>
     </div>
   )
 }

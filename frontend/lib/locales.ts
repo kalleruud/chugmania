@@ -67,10 +67,11 @@ const no = {
     time: 'Tid',
     attendees: 'Påmeldte',
     attendance: 'Påmelding',
+    next: 'Neste session',
     status: {
       past: 'Avsluttet',
       ongoing: 'Pågår',
-      upcoming: 'Kommende',
+      upcoming: 'Kommer',
     },
     rsvp: {
       change: 'Endre svar',
