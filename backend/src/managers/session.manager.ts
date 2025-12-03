@@ -139,7 +139,12 @@ export default class SessionManager {
     }
 
     await AuthManager.checkAuth(socket, ['admin', 'moderator'])
-    await db.insert(sessions).values(request)
+
+    const { type, createdAt, updatedAt, deletedAt, ...sessionData } = request
+    await db.insert(sessions).values({
+      ...sessionData,
+      date: new Date(sessionData.date),
+    })
 
     console.debug(
       new Date().toISOString(),
@@ -173,8 +178,15 @@ export default class SessionManager {
       throw new Error(loc.no.error.messages.not_in_db(request.id))
     }
 
-    const { type, id, ...updates } = request
-    await db.update(sessions).set(updates).where(eq(sessions.id, session.id))
+    const { type, id, createdAt, updatedAt, ...updates } = request
+    await db
+      .update(sessions)
+      .set({
+        ...updates,
+        date: updates.date ? new Date(updates.date) : undefined,
+        deletedAt: updates.deletedAt ? new Date(updates.deletedAt) : undefined,
+      })
+      .where(eq(sessions.id, session.id))
 
     console.debug(new Date().toISOString(), socket.id, 'Updated session', id)
 

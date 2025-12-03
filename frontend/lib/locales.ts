@@ -2,6 +2,7 @@ import { getRandomItem } from '@/app/utils/utils'
 import type { GapType } from '@/components/timeentries/TimeEntryItem'
 import type {
   SessionResponse,
+  SessionStatus,
   TrackLevel,
   TrackType,
   UserRole,
@@ -68,6 +69,28 @@ const no = {
     attendees: 'Påmeldte',
     attendance: 'Påmelding',
     next: 'Neste session',
+    form: {
+      name: 'Navn',
+      description: 'Beskrivelse',
+      date: 'Dato og tid',
+      location: 'Lokasjon',
+      status: 'Status',
+    },
+    createRequest: {
+      loading: 'Opprett session...',
+      success: 'Session opprettet',
+      error: (err: Error) => `Feil ved opprettelse: ${err.message}`,
+    },
+    editRequest: {
+      loading: 'Rediger session...',
+      success: 'Session endret',
+      error: (err: Error) => `Feil ved endring: ${err.message}`,
+    },
+    statusOptions: {
+      confirmed: 'Bekreftet',
+      tentative: 'Usikkert',
+      cancelled: 'Avlyst',
+    } as Record<SessionStatus, string>,
     status: {
       past: 'Avsluttet',
       ongoing: 'Pågår',

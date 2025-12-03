@@ -112,11 +112,13 @@ function SessionCard({ session, className }: Readonly<SessionItemProps>) {
           <Badge variant='outline'>{loc.no.session.status.past}</Badge>
         )}
         {isNow && (
-          <Badge variant='outline' className='animate-pulse'>
+          <Badge className='animate-pulse'>
             {loc.no.session.status.ongoing}
           </Badge>
         )}
-        {isFuture && <Badge>{loc.no.session.status.upcoming}</Badge>}
+        {isFuture && (
+          <Badge variant='outline'>{loc.no.session.status.upcoming}</Badge>
+        )}
       </div>
     </div>
   )

@@ -1,4 +1,5 @@
 import { PageSubheader } from '@/components/PageHeader'
+import SessionForm from '@/components/session/SessionForm'
 import { SessionItem } from '@/components/session/SessionItem'
 import { TrackItem } from '@/components/track/TrackItem'
 import {
@@ -10,6 +11,15 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 import {
   Select,
   SelectContent,
@@ -24,6 +34,7 @@ import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
 import { CheckCircleIcon } from '@heroicons/react/24/solid'
+import { PencilIcon } from 'lucide-react'
 import { DateTime } from 'luxon'
 import { useState, type ComponentProps } from 'react'
 import { useParams } from 'react-router-dom'
@@ -126,7 +137,12 @@ function Signup({
 export default function SessionPage() {
   const { id } = useParams()
   const { sessions, leaderboards, tracks } = useData()
-  const { loggedInUser, isLoggedIn } = useAuth()
+  const { loggedInUser, isLoggedIn, isLoading } = useAuth()
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+
+  const isAdmin = isLoggedIn && loggedInUser.role === 'admin'
+  const isModerator = isLoggedIn && loggedInUser.role === 'moderator'
+  const canEdit = isAdmin || isModerator
 
   if (
     sessions === undefined ||
@@ -177,7 +193,42 @@ export default function SessionPage() {
 
       <SessionItem className='px-2' variant='card' session={session} />
 
-      <SubscribeButton />
+      <div className='flex items-center gap-1'>
+        <SubscribeButton className='flex-1' />
+        {canEdit && (
+          <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant='outline'>
+                <PencilIcon className='size-4' />
+                {loc.no.session.edit}
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{loc.no.session.edit}</DialogTitle>
+              </DialogHeader>
+              <SessionForm
+                id='editForm'
+                variant='edit'
+                session={session}
+                onSubmitResponse={success => {
+                  if (success) setEditDialogOpen(false)
+                }}
+              />
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button variant='outline' disabled={isLoading}>
+                    {loc.no.dialog.cancel}
+                  </Button>
+                </DialogClose>
+                <Button type='submit' form='editForm' disabled={isLoading}>
+                  {loc.no.dialog.continue}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
+      </div>
 
       <Signup
         className='bg-background rounded-sm border p-2'
