@@ -1,3 +1,4 @@
+import { isOngoing, isPast, isUpcoming } from '@/app/utils/date'
 import { Empty } from '@/components/ui/empty'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useData } from '@/contexts/DataContext'
@@ -12,16 +13,14 @@ type SessionsListProps = {
   header: string
   collapsed?: boolean
   limit?: number
-  before?: Date
-  after?: Date
-}
+} & ({ past: boolean; upcoming?: never } | { past?: never; upcoming: boolean })
 
 export default function SessionsList({
   className,
   header,
   limit,
-  before,
-  after,
+  past,
+  upcoming,
   ...rest
 }: Readonly<SessionsListProps & ComponentProps<'div'>>) {
   const { sessions: sd } = useData()
@@ -39,8 +38,8 @@ export default function SessionsList({
 
   const sessions = Object.values(sd)
     .filter(s => {
-      if (after && new Date(s.date) <= after) return false
-      if (before && new Date(s.date) > before) return false
+      if (past && !isPast(s)) return false
+      if (upcoming && !isOngoing(s) && !isUpcoming(s)) return false
       return true
     })
     .slice(0, limit)

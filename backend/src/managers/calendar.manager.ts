@@ -1,10 +1,10 @@
 import {
-  Attendee,
+  type Attendee,
   createEvents,
-  ParticipationStatus,
   type EventAttributes,
+  type ParticipationStatus,
 } from 'ics'
-import {
+import type {
   SessionSignup,
   SessionWithSignups,
 } from '../../../common/models/session'

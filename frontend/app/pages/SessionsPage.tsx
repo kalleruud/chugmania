@@ -78,9 +78,9 @@ export default function SessionsPage() {
         )}
       </div>
 
-      <SessionsList header={loc.no.session.upcoming} after={new Date()} />
+      <SessionsList header={loc.no.session.upcoming} upcoming />
       {showPreviousSessions ? (
-        <SessionsList header={loc.no.session.past} before={new Date()} />
+        <SessionsList header={loc.no.session.past} past />
       ) : (
         <div>
           <Button variant='ghost' onClick={() => setShowPreviousSessions(true)}>

@@ -38,3 +38,23 @@ export function formatLapTimestamp(
 
   return `${dayLabel} · ${timeLabel}`
 }
+
+export function getEndOfDate(date: Date): Date {
+  const endDate = new Date(date)
+  endDate.setUTCHours(23, 59, 59, 999)
+  return endDate
+}
+
+export function isOngoing(session: { date: Date }) {
+  return !isPast(session) && !isUpcoming(session)
+}
+
+export function isPast({ date }: { date: Date }) {
+  const endDate = DateTime.fromJSDate(getEndOfDate(new Date(date)))
+  return endDate.diffNow().milliseconds <= 0
+}
+
+export function isUpcoming({ date }: { date: Date }) {
+  const startDate = DateTime.fromJSDate(new Date(date))
+  return startDate.diffNow().milliseconds > 0
+}

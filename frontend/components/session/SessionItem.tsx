@@ -1,3 +1,4 @@
+import { isOngoing, isPast, isUpcoming } from '@/app/utils/date'
 import { Badge } from '@/components/ui/badge'
 import {
   Item,
@@ -33,7 +34,6 @@ export function SessionItem(props: Readonly<SessionItemProps>) {
 function SessionRow({ session, className }: Readonly<SessionItemProps>) {
   const { loggedInUser, isLoggedIn } = useAuth()
   const date = DateTime.fromJSDate(new Date(session.date))
-  const isPast = date < DateTime.now()
 
   const isSignedUp =
     isLoggedIn && session.signups.some(su => su.user.id === loggedInUser.id)
@@ -42,7 +42,11 @@ function SessionRow({ session, className }: Readonly<SessionItemProps>) {
     <Item key={session.id} className={className} asChild>
       <Link to={`/sessions/${session.id}`}>
         <ItemContent>
-          <ItemTitle className={twMerge(isPast && 'text-muted-foreground')}>
+          <ItemTitle
+            className={twMerge(isPast(session) && 'text-muted-foreground')}>
+            {isOngoing(session) && (
+              <div className='bg-primary size-2 animate-pulse rounded-full' />
+            )}
             {session.name}
           </ItemTitle>
           <ItemDescription className='flex items-center gap-2 capitalize'>
@@ -67,17 +71,6 @@ function SessionRow({ session, className }: Readonly<SessionItemProps>) {
 
 function SessionCard({ session, className }: Readonly<SessionItemProps>) {
   const date = DateTime.fromJSDate(new Date(session.date))
-
-  const now = DateTime.now()
-
-  const isThisDate = date.hasSame(now, 'day')
-  const isAfterStartTime =
-    now >= date.set({ hour: 0, minute: 0, second: 0 }) &&
-    now <= date.set({ hour: 23, minute: 59, second: 59 })
-  const isNow = isThisDate && isAfterStartTime
-
-  const isPast = !isNow && date < now
-  const isFuture = !isNow && date > now
 
   return (
     <div className={twMerge('flex flex-col gap-2', className)}>
@@ -108,15 +101,15 @@ function SessionCard({ session, className }: Readonly<SessionItemProps>) {
           )}
         </div>
 
-        {isPast && (
+        {isPast(session) && (
           <Badge variant='outline'>{loc.no.session.status.past}</Badge>
         )}
-        {isNow && (
+        {isOngoing(session) && (
           <Badge className='animate-pulse'>
             {loc.no.session.status.ongoing}
           </Badge>
         )}
-        {isFuture && (
+        {isUpcoming(session) && (
           <Badge variant='outline'>{loc.no.session.status.upcoming}</Badge>
         )}
       </div>
