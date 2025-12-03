@@ -195,7 +195,7 @@ export function CalendarField({
           <SelectContent>
             {[...new Array(24).keys()].reverse().map(hour => {
               const h = String(hour).padStart(2, '0')
-              const value = `${h}:00:00`
+              const value = `${h}:00`
               return (
                 <SelectItem key={value} value={value}>
                   <span>{h}:00</span>
