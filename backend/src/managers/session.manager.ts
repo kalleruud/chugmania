@@ -188,7 +188,9 @@ export default class SessionManager {
     request: EventReq<'rsvp_session'>
   ): Promise<EventRes<'rsvp_session'>> {
     if (!isRsvpSessionRequest(request)) {
-      loc.no.error.messages.invalid_request('RsvpSessionRequest')
+      throw new Error(
+        loc.no.error.messages.invalid_request('RsvpSessionRequest')
+      )
     }
 
     const actor = await AuthManager.checkAuth(socket)

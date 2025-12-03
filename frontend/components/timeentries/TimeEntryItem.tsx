@@ -160,8 +160,7 @@ function TimeEntryRow({
       ref={containerRef}
       {...rest}
       className={twMerge(
-        'aansition-colors flex cursor-pointer items-center gap-4 rounded-md hover:bg-white/5',
-        highlight && 'ring-muted-foreground ring-2',
+        'flex cursor-pointer items-center gap-4 rounded-md hover:bg-white/5',
         isDNF && 'opacity-50',
         className
       )}

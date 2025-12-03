@@ -73,15 +73,16 @@ const no = {
       upcoming: 'Kommende',
     },
     rsvp: {
-      title: 'Meld deg på',
-      yes: 'Kommer',
-      maybe: 'Kanskje',
-      no: 'Kommer ikke',
       change: 'Endre svar',
+      responses: {
+        yes: 'Skal',
+        maybe: 'Skal kanskje',
+        no: 'Skal ikke',
+      } as Record<SessionResponse, string>,
       response: {
         loading: 'Svarer...',
         success: (response: SessionResponse) =>
-          `Svar ble oppdatert: ${no.session.rsvp[response]}`,
+          `Svar ble oppdatert: ${no.session.rsvp.responses[response]}`,
         error: (err: Error) => `Kunne ikke registrere svar: ${err.message}`,
       },
     },
@@ -89,7 +90,7 @@ const no = {
       subscribe: 'Abonner på kalender',
     },
     errorMessages: {
-      no_edit_historical: 'Du kan ikke svare på en session tilbake i tid.',
+      no_edit_historical: 'Du kan ikke endre svar på en session tilbake i tid.',
     },
   },
   dialog: {

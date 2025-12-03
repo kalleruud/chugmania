@@ -11,11 +11,11 @@
   }
 
   *:focus-visible {
-    @apply ring-primary outline-none ring-2;
+    @apply ring-primary rounded-sm outline-none ring-2;
   }
 
   *::selection {
-    @apply bg-ring;
+    @apply bg-primary/50;
   }
 
   * {
@@ -129,7 +129,7 @@
   --foreground: oklch(0.985 0 0);
   --card: oklch(21.531% 0.00369 48.293);
   --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.21 0.006 285.885);
+  --popover: oklch(21.531% 0.00369 48.293);
   --popover-foreground: oklch(0.985 0 0);
   --primary: oklch(0.56 0.2 30);
   --primary-foreground: oklch(0.971 0.013 17.38);
