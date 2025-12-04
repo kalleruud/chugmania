@@ -1,3 +1,4 @@
+import { isOngoing } from '@/app/utils/date'
 import Combobox, { type ComboboxLookupItem } from '@/components/combobox'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -107,6 +108,10 @@ export default function LapTimeInput({
   const location = useLocation()
   const paramId = getId(location.pathname)
 
+  const currentOngoingSession = sessions
+    ? Object.values(sessions).find(s => isOngoing(s))
+    : undefined
+
   const isCreating = !editingTimeEntry.id
   const loggedInLookup = find(loggedInUser?.id, users)
   const inputs = useRef<HTMLInputElement[]>([])
@@ -129,7 +134,12 @@ export default function LapTimeInput({
 
   const [selectedSession, setSelectedSession] = useState<
     ComboboxLookupItem | undefined
-  >(find(editingTimeEntry.session ?? paramId, sessions) ?? cache.session)
+  >(
+    find(
+      editingTimeEntry.session ?? currentOngoingSession?.id ?? paramId,
+      sessions
+    ) ?? cache.session
+  )
 
   const DIGIT = /^\d$/
 
