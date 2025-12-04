@@ -174,7 +174,6 @@ export function CalendarField({
           <PopoverContent className='w-auto overflow-hidden p-0' align='start'>
             <Calendar
               mode='single'
-              captionLayout='dropdown'
               required
               showOutsideDays
               showWeekNumber
