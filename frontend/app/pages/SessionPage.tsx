@@ -35,13 +35,13 @@ import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
 import { CheckCircleIcon } from '@heroicons/react/24/solid'
 import { PencilIcon } from 'lucide-react'
-import { DateTime } from 'luxon'
 import { useState, type ComponentProps } from 'react'
 import { useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
 import type { SessionResponse } from '../../../backend/database/schema'
 import type { SessionWithSignups } from '../../../common/models/session'
+import { isUpcoming } from '../utils/date'
 import { SubscribeButton } from './SessionsPage'
 import { TimeEntryList } from './TrackPage'
 
@@ -56,8 +56,7 @@ function Signup({
     session.signups.find(s => s.user.id === loggedInUser?.id)?.response
   )
 
-  const date = DateTime.fromJSDate(new Date(session.date)).setLocale('nb')
-  const isUpcoming = date > DateTime.now()
+  const isAdmin = isLoggedIn && loggedInUser.role !== 'user'
 
   const responses: SessionResponse[] = ['yes', 'maybe', 'no']
 
@@ -80,31 +79,33 @@ function Signup({
     <div className={twMerge('flex flex-col gap-4', className)} {...rest}>
       <div className='flex justify-between'>
         <h3 className='px-2 pt-2'>
-          {isUpcoming ? loc.no.session.attendance : loc.no.session.attendees}
+          {isUpcoming(session)
+            ? loc.no.session.attendance
+            : loc.no.session.attendees}
         </h3>
 
         <div className='flex items-center gap-1'>
-          {isUpcoming &&
-            isLoggedIn &&
-            (myResponse ? (
-              <Select value={myResponse} onValueChange={handleRsvp}>
-                <SelectTrigger className='w-[180px]'>
-                  <SelectValue placeholder={loc.no.session.rsvp.change} />
-                </SelectTrigger>
-                <SelectContent>
-                  {responses.map(response => (
-                    <SelectItem key={response} value={response}>
-                      {loc.no.session.rsvp.responses[response]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : (
-              <Button onClick={() => handleRsvp('yes')}>
-                <CheckCircleIcon />
-                {loc.no.session.rsvp.responses.yes}
-              </Button>
-            ))}
+          {(isUpcoming(session) || isAdmin) && isLoggedIn && myResponse && (
+            <Select value={myResponse} onValueChange={handleRsvp}>
+              <SelectTrigger className='w-[180px]'>
+                <SelectValue placeholder={loc.no.session.rsvp.change} />
+              </SelectTrigger>
+              <SelectContent>
+                {responses.map(response => (
+                  <SelectItem key={response} value={response}>
+                    {loc.no.session.rsvp.responses[response]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
+          {isUpcoming(session) && isLoggedIn && !myResponse && (
+            <Button onClick={() => handleRsvp('yes')}>
+              <CheckCircleIcon />
+              {loc.no.session.rsvp.responses.yes}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -240,6 +241,8 @@ export default function SessionPage() {
           <TrackItem track={tracks[trackId]} variant='row' />
           <TimeEntryList
             key={id}
+            session={session.id}
+            track={trackId}
             entries={entries}
             highlight={e => isLoggedIn && loggedInUser.id === e.user}
           />

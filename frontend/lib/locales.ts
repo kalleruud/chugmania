@@ -27,13 +27,22 @@ const no = {
     logout: {
       title: 'Logg ut',
     },
+    create: {
+      title: 'Opprett spiller',
+      description: 'Registrer en ny degenerate',
+      request: {
+        loading: 'Oppretter...',
+        success: 'Spilleren ble opprettet!',
+        error: (e: Error) => `Oppretting feilet: ${e.message}`,
+      },
+    },
     edit: {
       title: 'Rediger bruker',
       description: 'Gjør endringer til Chugmania brukeren.',
       request: {
         loading: 'Oppdaterer...',
         success: 'Brukeren ble endret!',
-        error: (e: Error) => `Oppdatering feilet: ${e.message}`,
+        error: (e: Error) => `Endring feilet: ${e.message}`,
       },
     },
     form: {
@@ -60,7 +69,6 @@ const no = {
     upcoming: 'Kommende sessions',
     past: 'Tidligere sessions',
     all: 'Alle sessions',
-    create: 'Opprett session',
     edit: 'Rediger session',
     delete: 'Slett session',
     location: 'Sted',
@@ -76,10 +84,14 @@ const no = {
       location: 'Lokasjon',
       status: 'Status',
     },
-    createRequest: {
-      loading: 'Opprett session...',
-      success: 'Session opprettet',
-      error: (err: Error) => `Feil ved opprettelse: ${err.message}`,
+    create: {
+      title: 'Opprett session',
+      description: 'Planlegg en ny sesh med degenerate decisions',
+      request: {
+        loading: 'Oppretter session...',
+        success: 'Session opprettet',
+        error: (err: Error) => `Feil ved opprettelse: ${err.message}`,
+      },
     },
     editRequest: {
       loading: 'Rediger session...',

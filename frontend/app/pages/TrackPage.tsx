@@ -17,7 +17,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useData } from '@/contexts/DataContext'
 import { useTimeEntryDrawer } from '@/hooks/TimeEntryDrawerProvider'
 import loc from '@/lib/locales'
-import { ChevronUpDownIcon } from '@heroicons/react/24/solid'
+import { ChevronUpDownIcon, PlusIcon } from '@heroicons/react/24/solid'
 import { Fragment, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import type { LeaderboardEntry } from '../../../common/models/timeEntry'
@@ -26,9 +26,15 @@ import { formatTrackName } from '../../../common/utils/track'
 export function TimeEntryList({
   entries,
   highlight,
+  track,
+  user,
+  session,
 }: Readonly<{
   entries: LeaderboardEntry[]
   highlight?: (e: LeaderboardEntry) => boolean
+  track?: string
+  user?: string
+  session?: string
 }>) {
   const [gapType, setGapType] = useState<GapType>('interval')
   const { open } = useTimeEntryDrawer()
@@ -88,6 +94,15 @@ export function TimeEntryList({
           )
         })}
       </div>
+
+      <Button
+        variant='ghost'
+        size='sm'
+        className='text-muted-foreground w-fit'
+        onClick={() => open({ track, user, session })}>
+        <PlusIcon />
+        {loc.no.timeEntry.input.create.title}
+      </Button>
     </div>
   )
 }
@@ -112,7 +127,7 @@ export default function TrackPage() {
   const leaderboard = id in leaderboards ? leaderboards[id].entries : []
 
   return (
-    <div className='p-safe-or-2 flex flex-col gap-4'>
+    <div className='flex flex-col gap-4'>
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
@@ -134,6 +149,7 @@ export default function TrackPage() {
       <TrackItem track={track} variant='card' className='pb-0' />
 
       <TimeEntryList
+        track={track.id}
         entries={leaderboard}
         highlight={e => isLoggedIn && loggedInUser.id === e.user}
       />

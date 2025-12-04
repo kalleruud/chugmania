@@ -46,7 +46,7 @@ function TrackRowList({ tracks }: Readonly<{ tracks: Track[] }>) {
 
 export default function TracksPage(props: Readonly<TracksPageProps>) {
   return (
-    <div className='p-safe-or-2'>
+    <div>
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>

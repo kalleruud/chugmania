@@ -11,10 +11,10 @@ import { Label } from '../ui/label'
 
 type UserFormProps = {
   user?: UserInfo
-  variant: 'login' | 'register' | 'edit'
+  variant: 'login' | 'create' | 'edit'
   disabled?: boolean
   onSubmitResponse?: (success: boolean) => void
-} & ({ variant: 'edit'; user: UserInfo } | { variant: 'login' | 'register' }) &
+} & ({ variant: 'edit'; user: UserInfo } | { variant: 'login' | 'create' }) &
   ComponentProps<'form'>
 
 export default function UserForm({
@@ -41,7 +41,7 @@ export default function UserForm({
   const isAdmin = isLoggedIn && loggedInUser.role === 'admin'
   const isSelf = isLoggedIn && loggedInUser.id === user?.id
   const isEditing = variant === 'edit'
-  const isRegistering = variant === 'register'
+  const isCreating = variant === 'create'
   const isLoggingIn = variant === 'login'
 
   const canEdit = isEditing && (isSelf || isAdmin)
@@ -74,7 +74,7 @@ export default function UserForm({
           loc.no.user.edit.request
         )
 
-      case 'register':
+      case 'create':
         return console.log('Registering...')
     }
   }
@@ -97,7 +97,7 @@ export default function UserForm({
 
       <div
         className='grid grid-cols-2 gap-x-2 gap-y-4'
-        hidden={!isEditing && !isRegistering}>
+        hidden={!isEditing && !isCreating}>
         <Field
           id='first_name'
           name={loc.no.user.form.firstName}
@@ -174,7 +174,7 @@ export default function UserForm({
           minLength={8}
           disabled={disabled && canEdit}
           required
-          hidden={isAdmin}
+          hidden={isAdmin && !isCreating}
           value={password}
           onChange={e => setPassword(e.target.value)}
           placeholder='•••••••••••'

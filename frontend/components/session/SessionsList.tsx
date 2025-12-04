@@ -1,11 +1,25 @@
 import { isOngoing, isPast, isUpcoming } from '@/app/utils/date'
 import { Empty } from '@/components/ui/empty'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useAuth } from '@/contexts/AuthContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
-import { type ComponentProps } from 'react'
+import { PlusIcon } from '@heroicons/react/24/solid'
+import { useState, type ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { PageSubheader } from '../PageHeader'
+import { Button } from '../ui/button'
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '../ui/dialog'
+import SessionForm from './SessionForm'
 import { SessionItem } from './SessionItem'
 
 type SessionsListProps = {
@@ -24,6 +38,10 @@ export default function SessionsList({
   ...rest
 }: Readonly<SessionsListProps & ComponentProps<'div'>>) {
   const { sessions: sd } = useData()
+  const { isLoading, isLoggedIn, loggedInUser } = useAuth()
+  const [open, setOpen] = useState(false)
+
+  const isModerator = isLoggedIn && loggedInUser.role !== 'user'
 
   if (sd === undefined) {
     return (
@@ -62,6 +80,50 @@ export default function SessionsList({
         <Empty className='border-input text-muted-foreground border text-sm'>
           {loc.no.common.noItems}
         </Empty>
+      )}
+
+      {isModerator && (
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button
+              variant='ghost'
+              size='sm'
+              className='text-muted-foreground mt-2 w-fit'>
+              <PlusIcon />
+              {loc.no.session.create.title}
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{loc.no.session.create.title}</DialogTitle>
+              <DialogDescription>
+                {loc.no.session.create.description}
+              </DialogDescription>
+            </DialogHeader>
+
+            <SessionForm
+              id='createSessionForm'
+              variant='create'
+              className='py-2'
+              onSubmitResponse={() => setOpen(false)}
+              disabled={isLoading}
+            />
+
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant='outline' disabled={isLoading}>
+                  {loc.no.dialog.cancel}
+                </Button>
+              </DialogClose>
+              <Button
+                type='submit'
+                form='createSessionForm'
+                disabled={isLoading}>
+                {loc.no.dialog.continue}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   )

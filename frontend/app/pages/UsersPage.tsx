@@ -6,13 +6,27 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 import { Empty } from '@/components/ui/empty'
 import { Item, ItemContent, ItemMedia } from '@/components/ui/item'
 import { Skeleton } from '@/components/ui/skeleton'
+import UserForm from '@/components/user/UserForm'
 import UserItem from '@/components/user/UserItem'
+import { useAuth } from '@/contexts/AuthContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
-import type { ComponentProps } from 'react'
+import { PlusIcon } from '@heroicons/react/24/solid'
+import { useState, type ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type { UserInfo } from '../../../common/models/user'
 import { PageHeader } from '../../components/PageHeader'
@@ -45,7 +59,7 @@ function UserRowList({ users }: Readonly<{ users: UserInfo[] }>) {
 
 export default function UsersPage(props: Readonly<UsersPageProps>) {
   return (
-    <div className='p-safe-or-2'>
+    <div>
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
@@ -64,6 +78,10 @@ export default function UsersPage(props: Readonly<UsersPageProps>) {
 
 export function UsersList({ className, showAll }: Readonly<UsersPageProps>) {
   const { users: ud } = useData()
+  const { isLoggedIn, loggedInUser, isLoading } = useAuth()
+  const isModerator = isLoggedIn && loggedInUser.role !== 'user'
+
+  const [open, setOpen] = useState(false)
 
   if (ud === undefined) {
     return (
@@ -100,6 +118,47 @@ export function UsersList({ className, showAll }: Readonly<UsersPageProps>) {
       />
 
       <UserRowList users={users} />
+
+      {isModerator && (
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button
+              variant='ghost'
+              size='sm'
+              className='text-muted-foreground mt-2 w-fit'>
+              <PlusIcon />
+              {loc.no.user.create.title}
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{loc.no.user.create.title}</DialogTitle>
+              <DialogDescription>
+                {loc.no.user.create.description}
+              </DialogDescription>
+            </DialogHeader>
+
+            <UserForm
+              id='createUserForm'
+              variant='create'
+              className='py-2'
+              onSubmitResponse={() => setOpen(false)}
+              disabled={isLoading}
+            />
+
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant='outline' disabled={isLoading}>
+                  {loc.no.dialog.cancel}
+                </Button>
+              </DialogClose>
+              <Button type='submit' form='createUserForm' disabled={isLoading}>
+                {loc.no.dialog.continue}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   )
 }

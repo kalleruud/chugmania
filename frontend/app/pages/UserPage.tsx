@@ -114,7 +114,11 @@ export default function UserPage() {
                 key={track.id}
                 className='bg-background gap-2 rounded-sm border p-2'>
                 <TrackItem variant='row' track={track} />
-                <TimeEntryList entries={entries} />
+                <TimeEntryList
+                  entries={entries}
+                  user={user.id}
+                  track={track.id}
+                />
               </div>
             ))}
           </div>

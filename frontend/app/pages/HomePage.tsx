@@ -27,7 +27,7 @@ export default function Home() {
           icon='CalendarIcon'
         />
         <SubscribeButton />
-        <SessionsList header={loc.no.session.upcoming} after={new Date()} />
+        <SessionsList header={loc.no.session.upcoming} upcoming />
       </div>
 
       <TracksList className='bg-background rounded-sm border p-2' />

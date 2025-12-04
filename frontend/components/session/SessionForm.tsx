@@ -64,7 +64,7 @@ export default function SessionForm({
               onSubmitResponse?.(r.success)
               return r
             }),
-          loc.no.session.createRequest
+          loc.no.session.create.request
         )
 
       case 'edit':
