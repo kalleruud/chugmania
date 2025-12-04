@@ -107,6 +107,7 @@ export function CalendarField({
   const [open, setOpen] = useState(false)
   const [date, setDate] = useState<Date | undefined>(undefined)
   const [time, setTime] = useState<string | undefined>(dateToTime(selected))
+  const [timeError, setTimeError] = useState<string | undefined>()
 
   const isEmpty = selected === undefined
 
@@ -119,21 +120,80 @@ export function CalendarField({
     return `${h}:${m}`
   }
 
+  function parseTimeInput(
+    input: string
+  ): { hours: number; minutes: number; seconds: number } | null {
+    if (!input.trim()) return null
+
+    const separators = /[:.\s]/
+    const hasSeparators = separators.test(input)
+
+    if (hasSeparators) {
+      const parts = input.split(separators).filter(p => p.length > 0)
+
+      if (parts.length < 2 || parts.length > 3) return null
+
+      const hours = Number.parseInt(parts[0])
+      const minutes = Number.parseInt(parts[1])
+      const seconds = parts.length === 3 ? Number.parseInt(parts[2]) : 0
+
+      if (Number.isNaN(hours) || Number.isNaN(minutes) || Number.isNaN(seconds))
+        return null
+      if (hours < 0 || hours > 23) return null
+      if (minutes < 0 || minutes > 59) return null
+      if (seconds < 0 || seconds > 59) return null
+
+      return { hours, minutes, seconds }
+    }
+
+    const digits = input.replaceAll(/\D/g, '')
+    if (digits.length < 1 || digits.length > 6) return null
+
+    const padded = digits.padEnd(6, '0')
+    const hoursStr = padded.slice(0, 2)
+    const minutesStr = padded.slice(2, 4)
+    const secondsStr = padded.slice(4, 6)
+
+    const hours = Number.parseInt(hoursStr)
+    const minutes = Number.parseInt(minutesStr)
+    const seconds = Number.parseInt(secondsStr)
+
+    if (Number.isNaN(hours) || Number.isNaN(minutes) || Number.isNaN(seconds))
+      return null
+    if (hours > 23 || minutes > 59 || seconds > 59) return null
+
+    return { hours, minutes, seconds }
+  }
+
   function handleTimeChange(timeString: string) {
-    if (!timeString) {
+    setTime(timeString)
+  }
+
+  function handleTimeBlur() {
+    if (!time?.trim()) {
+      setTimeError(undefined)
       onSelect?.(date)
-      setTime(undefined)
       return
     }
 
-    const [h, m] = timeString.split(':').map(Number)
+    const parsed = parseTimeInput(time)
+    if (!parsed) {
+      setTimeError('Ugyldig tid')
+      return
+    }
 
+    setTimeError(undefined)
     const newDate = isEmpty ? new Date() : new Date(selected)
-    newDate.setHours(h)
-    newDate.setMinutes(m)
+    newDate.setHours(parsed.hours)
+    newDate.setMinutes(parsed.minutes)
+    newDate.setSeconds(parsed.seconds)
     onSelect?.(newDate)
     setDate(newDate)
-    setTime(timeString)
+    setTime(
+      Object.values(parsed)
+        .map(v => v.toString().padStart(2, '0'))
+        .join(':')
+    )
   }
 
   function handleDateSelect(date: Date) {
@@ -141,9 +201,12 @@ export function CalendarField({
     setDate(newDate)
 
     if (time) {
-      const [h, m] = time.split(':').map(Number)
-      newDate.setHours(h)
-      newDate.setMinutes(m)
+      const parsed = parseTimeInput(time)
+      if (parsed) {
+        newDate.setHours(parsed.hours)
+        newDate.setMinutes(parsed.minutes)
+        newDate.setSeconds(parsed.seconds)
+      }
     }
 
     onSelect?.(newDate)
@@ -183,26 +246,20 @@ export function CalendarField({
           </PopoverContent>
         </Popover>
 
-        <Select
-          value={time}
-          required={required}
-          onValueChange={handleTimeChange}
-          disabled={disabled}>
-          <SelectTrigger className='w-32'>
-            <SelectValue placeholder='Tid' />
-          </SelectTrigger>
-          <SelectContent>
-            {[...new Array(24).keys()].reverse().map(hour => {
-              const h = String(hour).padStart(2, '0')
-              const value = `${h}:00`
-              return (
-                <SelectItem key={value} value={value}>
-                  <span>{h}:00</span>
-                </SelectItem>
-              )
-            })}
-          </SelectContent>
-        </Select>
+        <div className='flex flex-col gap-1'>
+          <Input
+            type='text'
+            placeholder='Tid'
+            value={time ?? ''}
+            onChange={e => handleTimeChange(e.target.value)}
+            onBlur={handleTimeBlur}
+            disabled={disabled}
+            required={required}
+            className={twMerge(
+              timeError && 'border-destructive ring-destructive ring-2'
+            )}
+          />
+        </div>
       </div>
     </div>
   )

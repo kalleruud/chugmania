@@ -179,7 +179,7 @@ export default class SessionManager {
     }
 
     const { type, id, createdAt, updatedAt, ...updates } = request
-    await db
+    const res = await db
       .update(sessions)
       .set({
         ...updates,
@@ -187,6 +187,8 @@ export default class SessionManager {
         deletedAt: updates.deletedAt ? new Date(updates.deletedAt) : undefined,
       })
       .where(eq(sessions.id, session.id))
+
+    if (res.changes === 0) throw new Error('Update failed')
 
     console.debug(new Date().toISOString(), socket.id, 'Updated session', id)
 
