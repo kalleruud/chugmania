@@ -112,7 +112,7 @@ export default function UserPage() {
             {groupedTracks.map(({ track, entries }) => (
               <div
                 key={track.id}
-                className='bg-background gap-2 rounded-sm border p-2'>
+                className='bg-background flex flex-col gap-2 rounded-sm border p-2'>
                 <TrackItem variant='row' track={track} />
                 <TimeEntryList
                   entries={entries}

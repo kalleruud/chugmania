@@ -237,7 +237,9 @@ export default function SessionPage() {
       />
 
       {timeEntries.map(({ id: trackId, entries }) => (
-        <div key={trackId} className='bg-background rounded-sm border p-2'>
+        <div
+          key={trackId}
+          className='bg-background flex flex-col gap-2 rounded-sm border p-2'>
           <TrackItem track={tracks[trackId]} variant='row' />
           <TimeEntryList
             key={id}
