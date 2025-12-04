@@ -42,6 +42,7 @@ export default function UserForm({
   const isSelf = isLoggedIn && loggedInUser.id === user?.id
   const isEditing = variant === 'edit'
   const isRegistering = variant === 'register'
+  const isLoggingIn = variant === 'login'
 
   const canEdit = isEditing && (isSelf || isAdmin)
 
@@ -89,7 +90,6 @@ export default function UserForm({
         type='email'
         disabled={disabled && canEdit}
         required
-        show
         value={email}
         onChange={e => setEmail(e.target.value.toLowerCase())}
         placeholder='cumguzzler69@chugmania.no'
@@ -104,7 +104,7 @@ export default function UserForm({
           type='text'
           disabled={disabled && canEdit}
           required
-          show={isEditing || isRegistering}
+          hidden={isLoggingIn}
           value={firstName}
           onChange={e => setFirstName(e.target.value)}
           placeholder='Ola'
@@ -116,7 +116,7 @@ export default function UserForm({
           type='text'
           disabled={disabled && canEdit}
           required
-          show={isEditing || isRegistering}
+          hidden={isLoggingIn}
           value={lastName}
           onChange={e => setLastName(e.target.value)}
           placeholder='Nordmann'
@@ -130,7 +130,7 @@ export default function UserForm({
           minLength={3}
           maxLength={3}
           required
-          show={isEditing || isRegistering}
+          hidden={isLoggingIn}
           value={shortName}
           onChange={e => setShortName(e.target.value.toUpperCase())}
           placeholder='NOR'
@@ -138,7 +138,7 @@ export default function UserForm({
 
         <SelectField
           id='role'
-          show={isAdmin}
+          hidden={!isAdmin}
           disabled={disabled}
           required
           value={role}
@@ -156,7 +156,6 @@ export default function UserForm({
         <div className='border-border rounded-md border border-dashed p-3'>
           <CalendarField
             id='created_at'
-            show={isAdmin}
             selected={createdAt}
             onSelect={setCreatedAt}
             disabled={disabled}
@@ -175,7 +174,7 @@ export default function UserForm({
           minLength={8}
           disabled={disabled && canEdit}
           required
-          show={!isEditing && !isAdmin}
+          hidden={isAdmin}
           value={password}
           onChange={e => setPassword(e.target.value)}
           placeholder='•••••••••••'
@@ -188,7 +187,7 @@ export default function UserForm({
           minLength={8}
           disabled={disabled && canEdit}
           value={newPassword}
-          show={isEditing}
+          hidden={!isEditing}
           onChange={e => setNewPassword(e.target.value)}
           placeholder='•••••••••••'
         />
