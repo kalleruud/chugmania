@@ -1,4 +1,4 @@
-import { TrackItem } from '@/components/track/TrackItem'
+import TrackLeaderboard from '@/components/track/TrackLeaderboard'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -18,7 +18,6 @@ import { toast } from 'sonner'
 import type { LeaderboardEntry } from '../../../common/models/timeEntry'
 import type { Track } from '../../../common/models/track'
 import { getUserFullName } from '../../../common/models/user'
-import { TimeEntryList } from './TrackPage'
 
 function groupByTrack(
   entries: LeaderboardEntry[],
@@ -110,16 +109,12 @@ export default function UserPage() {
         {entries && (
           <div className='flex flex-col gap-4'>
             {groupedTracks.map(({ track, entries }) => (
-              <div
+              <TrackLeaderboard
                 key={track.id}
-                className='bg-background flex flex-col gap-2 rounded-sm border p-2'>
-                <TrackItem variant='row' track={track} />
-                <TimeEntryList
-                  entries={entries}
-                  user={user.id}
-                  track={track.id}
-                />
-              </div>
+                track={track}
+                entries={entries}
+                user={user.id}
+              />
             ))}
           </div>
         )}

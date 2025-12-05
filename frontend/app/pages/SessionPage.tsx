@@ -1,7 +1,7 @@
 import { PageSubheader } from '@/components/PageHeader'
 import SessionForm from '@/components/session/SessionForm'
 import { SessionItem } from '@/components/session/SessionItem'
-import { TrackItem } from '@/components/track/TrackItem'
+import TrackLeaderboard from '@/components/track/TrackLeaderboard'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -20,6 +20,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import { Empty } from '@/components/ui/empty'
 import {
   Select,
   SelectContent,
@@ -43,7 +44,6 @@ import type { SessionResponse } from '../../../backend/database/schema'
 import type { SessionWithSignups } from '../../../common/models/session'
 import { isUpcoming } from '../utils/date'
 import { SubscribeButton } from './SessionsPage'
-import { TimeEntryList } from './TrackPage'
 
 function Signup({
   session,
@@ -101,13 +101,19 @@ function Signup({
           )}
 
           {isUpcoming(session) && isLoggedIn && !myResponse && (
-            <Button onClick={() => handleRsvp('yes')}>
+            <Button size='sm' onClick={() => handleRsvp('yes')}>
               <CheckCircleIcon />
               {loc.no.session.rsvp.responses.yes}
             </Button>
           )}
         </div>
       </div>
+
+      {session.signups.length === 0 && (
+        <Empty className='border-input text-muted-foreground border text-sm'>
+          {loc.no.common.noItems}
+        </Empty>
+      )}
 
       {responses.map(response => {
         const responses = session.signups.filter(s => s.response === response)
@@ -237,18 +243,12 @@ export default function SessionPage() {
       />
 
       {timeEntries.map(({ id: trackId, entries }) => (
-        <div
+        <TrackLeaderboard
           key={trackId}
-          className='bg-background flex flex-col gap-2 rounded-sm border p-2'>
-          <TrackItem track={tracks[trackId]} variant='row' />
-          <TimeEntryList
-            key={id}
-            session={session.id}
-            track={trackId}
-            entries={entries}
-            highlight={e => isLoggedIn && loggedInUser.id === e.user}
-          />
-        </div>
+          track={tracks[trackId]}
+          entries={entries}
+          highlight={e => isLoggedIn && loggedInUser.id === e.id}
+        />
       ))}
     </div>
   )
