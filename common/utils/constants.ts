@@ -1,26 +1,12 @@
-export const WS_CONNECT_NAME = 'connect'
-export const WS_DISCONNECT_NAME = 'disconnect'
-export const WS_LOGIN_NAME = 'login'
-export const WS_REGISTER_NAME = 'register'
-export const WS_GET_LEADERBOARD_SUMMARIES = 'get_leaderboard_summaries'
-export const WS_GET_LEADERBOARD = 'get_leaderboard'
-export const WS_GET_USER_DATA = 'get_user_data'
-export const WS_GET_USERS = 'get_users'
-export const WS_GET_TRACKS = 'get_tracks'
-export const WS_GET_PLAYER_SUMMARIES = 'get_player_summaries'
-export const WS_GET_PLAYER_DETAILS = 'get_player_details'
-export const WS_POST_LAPTIME = 'post_laptime'
-export const WS_EDIT_LAPTIME = 'edit_laptime'
-export const WS_IMPORT_CSV = 'import_csv'
-export const WS_EXPORT_CSV = 'export_csv'
-export const WS_GET_SESSIONS = 'get_sessions'
-export const WS_CREATE_SESSION = 'create_session'
-export const WS_UPDATE_SESSION = 'update_session'
-export const WS_DELETE_SESSION = 'delete_session'
-export const WS_CANCEL_SESSION = 'cancel_session'
-export const WS_JOIN_SESSION = 'join_session'
-export const WS_LEAVE_SESSION = 'leave_session'
-export const WS_SESSIONS_UPDATED = 'sessions_updated'
-export const WS_UPDATE_USER = 'update_user'
+import type { LoginRequest, RegisterRequest } from '../models/auth'
+import type { LoginResponse } from '../models/user'
+
+export type WS_EVENT = {
+  connect: () => void
+  disconnect: () => void
+  connect_error: () => Error
+  login: (r: LoginRequest) => LoginResponse
+  register: (r: RegisterRequest) => LoginResponse
+}
 
 export const AUTH_KEY = 'auth'

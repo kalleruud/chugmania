@@ -1,10 +1,10 @@
 import {
-  Attendee,
+  type Attendee,
   createEvents,
-  ParticipationStatus,
   type EventAttributes,
+  type ParticipationStatus,
 } from 'ics'
-import {
+import type {
   SessionSignup,
   SessionWithSignups,
 } from '../../../common/models/session'
@@ -15,23 +15,10 @@ export default class CalendarManager {
 
   public static async getAllSessionsCalendar(baseUrl: URL): Promise<string> {
     return CalendarManager.createIcsCalendar(
-      await SessionManager.getSessions(),
+      await SessionManager.getAllSessions(),
       baseUrl,
       'Chugmania Sessions'
     )
-  }
-
-  public static async getSessionCalendar(
-    baseUrl: URL,
-    sessionId: string
-  ): Promise<string> {
-    const session = await SessionManager.getSession(sessionId)
-
-    if (!session) {
-      throw new Error('Session not found')
-    }
-
-    return CalendarManager.createIcsCalendar([session], baseUrl, session.name)
   }
 
   private static createIcsCalendar(

@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button'
 import { Upload } from 'lucide-react'
 import {
   useRef,
@@ -6,7 +7,6 @@ import {
   type DragEventHandler,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { Button } from './Button'
 
 export type FileDropSelection = {
   file: File

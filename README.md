@@ -12,7 +12,7 @@ Chugmania is a full-stack Trackmania Turbo companion for logging lap times, shar
 ## Tech Stack
 
 - **Backend:** Node.js, Express 5, Socket.IO, Drizzle ORM (SQLite)
-- **Frontend:** React 19, Vite, Tailwind Merge utilities, Lucide icons
+- **Frontend:** React 19, Vite, Tailwind Merge utilities, Lucide icons, shadcn/ui components (Calendar, Popover, etc.)
 - **Tooling:** TypeScript (strict), tsup bundling, Prettier with organize-imports and Tailwind plugins
 
 ## Getting Started

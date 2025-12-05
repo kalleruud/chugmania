@@ -1,105 +1,109 @@
+import loc from '@/lib/locales'
 import {
   createContext,
-  useCallback,
   useContext,
   useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from 'react'
-import { useNavigate } from 'react-router-dom'
-import type {
-  LoginRequest,
-  RegisterRequest,
-} from '../../common/models/requests'
-import {
-  type ErrorResponse,
-  type LoginResponse,
-} from '../../common/models/responses'
-import { type UserInfo } from '../../common/models/user'
-import {
-  AUTH_KEY,
-  WS_GET_USER_DATA,
-  WS_LOGIN_NAME,
-  WS_REGISTER_NAME,
-} from '../../common/utils/constants'
+import { toast } from 'sonner'
+import type { LoginRequest } from '../../common/models/auth'
+import type { ErrorResponse, EventRes } from '../../common/models/socket.io'
+import { type LoginResponse, type UserInfo } from '../../common/models/user'
 import { useConnection } from './ConnectionContext'
+import { useData } from './DataContext'
 
 type AuthContextType = {
-  isLoggedIn: boolean
-  user: UserInfo | undefined
-  errorMessage: string | undefined
-  login: (request: LoginRequest) => void
-  register: (request: RegisterRequest) => void
-  logout: () => void
-  refreshUser: (user: UserInfo, token?: string) => void
-  requiresEmailUpdate: boolean
-}
+  isLoading: boolean
+} & (
+  | {
+      isLoggedIn: false
+      loggedInUser: undefined
+      login: (request: Omit<LoginRequest, 'type'>) => Promise<EventRes<'login'>>
+      logout: undefined
+    }
+  | {
+      isLoggedIn: true
+      loggedInUser: UserInfo
+      login: undefined
+      logout: () => void
+    }
+)
 
 const AuthContext = createContext<AuthContextType | null>(null)
 
 export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
+  const { users } = useData()
   const { socket, setToken } = useConnection()
-  const navigate = useNavigate()
-  const [userInfo, setUserInfo] = useState<AuthContextType['user']>(undefined)
-  const [errorMessage, setErrorMessage] =
-    useState<AuthContextType['errorMessage']>(undefined)
-  const [requiresEmailUpdate, setRequiresEmailUpdate] = useState(false)
-
-  const refreshUser: AuthContextType['refreshUser'] = useCallback(
-    (user, token) => {
-      setUserInfo(user)
-      if (token) setToken(token)
-      setRequiresEmailUpdate(user.email.toLowerCase().endsWith('@chugmania.no'))
-    },
-    [setToken]
+  const [isLoading, setIsLoading] = useState(true)
+  const [loggedInUserId, setLoggedInUserId] = useState<string | undefined>(
+    undefined
   )
+  const loggedInUser = loggedInUserId
+    ? users?.find(u => loggedInUserId === u.id)
+    : undefined
 
-  function handleResponse(response: ErrorResponse | LoginResponse) {
-    if (!response.success) {
-      console.error(response.message)
-      logout()
-      return setErrorMessage(response.message)
+  function handleResponse(
+    response: LoginResponse | ErrorResponse,
+    reconnect: boolean = true
+  ) {
+    try {
+      if (!response.success) {
+        console.warn(response.message)
+        return logout()
+      }
+
+      setToken(response.token)
+      setLoggedInUserId(response.userId)
+      if (reconnect) socket.disconnect().connect()
+    } finally {
+      setIsLoading(false)
     }
-
-    setErrorMessage(undefined)
-    refreshUser(response.userInfo, response.token)
   }
 
-  const login: AuthContextType['login'] = r => {
-    socket.emit(WS_LOGIN_NAME, r, handleResponse)
-  }
-
-  const register: AuthContextType['register'] = r => {
-    socket.emit(WS_REGISTER_NAME, r, handleResponse)
+  const login: Required<AuthContextType>['login'] = async r => {
+    setIsLoading(true)
+    const response = await socket.emitWithAck('login', {
+      type: 'LoginRequest',
+      ...r,
+    })
+    toast.info(
+      response.success
+        ? loc.no.user.login.request.success
+        : loc.no.user.login.request.error(new Error(response.message))
+    )
+    handleResponse(response)
+    return response
   }
 
   const logout = () => {
     setToken(undefined)
-    setUserInfo(undefined)
-    setRequiresEmailUpdate(false)
-    navigate('/login')
+    setLoggedInUserId(undefined)
   }
 
   useEffect(() => {
-    if (!userInfo && localStorage.getItem(AUTH_KEY))
-      socket.emit(WS_GET_USER_DATA, undefined, handleResponse)
-  }, [socket])
+    socket.on('user_data', r => handleResponse(r, false))
+    return () => {
+      socket.off('user_data')
+    }
+  }, [])
 
-  const context = useMemo(
-    () =>
-      ({
-        isLoggedIn: !!userInfo,
-        errorMessage,
-        user: userInfo,
-        login,
-        register,
+  const context = useMemo<AuthContextType>(() => {
+    if (loggedInUser)
+      return {
+        isLoading,
+        isLoggedIn: true,
+        loggedInUser,
         logout,
-        refreshUser,
-        requiresEmailUpdate,
-      }) satisfies AuthContextType,
-    [userInfo, errorMessage, requiresEmailUpdate, refreshUser]
-  )
+      }
+    else
+      return {
+        isLoading,
+        isLoggedIn: false,
+        login,
+      }
+  }, [loggedInUserId, isLoading, loggedInUser])
 
   return <AuthContext.Provider value={context}>{children}</AuthContext.Provider>
 }

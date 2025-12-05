@@ -1,3 +1,4 @@
+import loc from '@/lib/locales'
 import {
   createContext,
   useContext,
@@ -7,40 +8,40 @@ import {
   type ReactNode,
 } from 'react'
 import { io, Socket } from 'socket.io-client'
+import { toast } from 'sonner'
+import {
+  type ClientToServerEvents,
+  type ServerToClientEvents,
+} from '../../common/models/socket.io'
 import { AUTH_KEY } from '../../common/utils/constants'
 
 type ConnectionContextType = {
-  socket: Socket
+  socket: typeof socket
   isConnected: boolean
-  setToken: (token: string | undefined) => void
+  setToken: typeof setToken
 }
 
-const socket = io('/', {
+const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io('/', {
   auth: { token: localStorage.getItem(AUTH_KEY) },
-})
+}).timeout(10_000)
 
-const setToken: ConnectionContextType['setToken'] = token => {
+function setToken(token: string | undefined): void {
   // @ts-expect-error
   socket.auth.token = token
   if (token) localStorage.setItem(AUTH_KEY, token)
   else localStorage.removeItem(AUTH_KEY)
-  socket.disconnect().connect()
 }
 
-const ConnectionContext = createContext<ConnectionContextType>({
-  isConnected: socket.connected,
-  socket: socket,
-  setToken,
-})
+const ConnectionContext = createContext<ConnectionContextType | undefined>(
+  undefined
+)
 
 export function ConnectionProvider({
   children,
 }: Readonly<{ children: ReactNode }>) {
-  const [isConnected, setIsConnected] = useState(socket.connected)
-  const context = useMemo(
-    () => ({ isConnected, socket, setToken }),
-    [isConnected]
-  )
+  const [isConnected, setIsConnected] = useState<
+    ConnectionContextType['isConnected']
+  >(socket.connected)
 
   useEffect(() => {
     socket.on('connect', () => {
@@ -54,8 +55,9 @@ export function ConnectionProvider({
     })
 
     socket.on('connect_error', err => {
-      console.error('Connection error:', err.message)
+      console.error(loc.no.error.messages.connection_failed(err))
       setIsConnected(socket.connected)
+      toast.error(loc.no.error.messages.connection_failed(err))
     })
 
     return () => {
@@ -64,6 +66,15 @@ export function ConnectionProvider({
       socket.off('connect_error')
     }
   }, [])
+
+  const context = useMemo<ConnectionContextType>(
+    () => ({
+      socket,
+      isConnected,
+      setToken,
+    }),
+    [socket, isConnected]
+  )
 
   return (
     <ConnectionContext.Provider value={context}>

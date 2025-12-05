@@ -1,56 +1,60 @@
-import jwt from 'jsonwebtoken'
-import type { Socket } from 'socket.io'
+import jwt, { JwtPayload } from 'jsonwebtoken'
+import { isLoginRequest } from '../../../common/models/auth'
 import {
-  isLoginRequest,
-  isRegisterRequest,
-  isUpdateUserRequest,
-} from '../../../common/models/requests'
-import type {
-  BackendResponse,
   ErrorResponse,
-  LoginResponse,
-  UpdateUserResponse,
-} from '../../../common/models/responses'
+  EventReq,
+  EventRes,
+  SocketData,
+} from '../../../common/models/socket.io'
 import { type User, type UserInfo } from '../../../common/models/user'
-import { WS_UPDATE_USER } from '../../../common/utils/constants'
-import {
-  tryCatch,
-  tryCatchAsync,
-  type Result,
-} from '../../../common/utils/try-catch'
-import { users } from '../../database/schema'
-import ConnectionManager from './connection.manager'
+import { tryCatch, tryCatchAsync } from '../../../common/utils/try-catch'
+import loc from '../../../frontend/lib/locales'
+import { TypedSocket } from '../server'
 import UserManager from './user.manager'
 
 const SECRET: jwt.Secret = process.env.SECRET!
 if (!SECRET) throw new Error("Missing environment variable 'SECRET'")
 
-type TokenData = UserInfo & { iat: number; exp: number }
+type TokenData = Omit<SocketData, 'token'> & JwtPayload
+
+function isTokenData(data: any): data is TokenData {
+  if (!data || typeof data !== 'object') return false
+  return typeof data.userId === 'string'
+}
+
+function delay(time: number) {
+  return new Promise(resolve => setTimeout(resolve, time))
+}
 
 export default class AuthManager {
+  private static readonly LOGIN_DELAY = 1000
+
   private static readonly JWT_OPTIONS: jwt.SignOptions = {
     algorithm: 'HS512',
     expiresIn: '30DAYS',
   }
 
-  private static sign(user: UserInfo) {
-    return jwt.sign(user, SECRET, AuthManager.JWT_OPTIONS)
+  static sign(userId: TokenData['userId']) {
+    return jwt.sign({ userId }, SECRET, AuthManager.JWT_OPTIONS)
   }
 
-  private static verify(token: string | undefined): Result<TokenData> {
-    if (!token) return { data: null, error: new Error('No JWT token provided') }
-    const { data: user, error } = tryCatch(jwt.verify(token, SECRET))
-    if (error) return { data: null, error }
-    return {
-      data: user as TokenData,
-      error: null,
+  private static async verify(token: string | undefined): Promise<TokenData> {
+    if (!token) throw new Error(loc.no.error.messages.missing_jwt)
+    const { data, error } = tryCatch(jwt.verify(token, SECRET))
+    if (error) {
+      console.error(new Date().toISOString(), error)
+      throw new Error(loc.no.error.messages.invalid_jwt)
     }
+    if (!isTokenData(data) || !UserManager.getUserById(data.userId))
+      throw new Error(loc.no.error.messages.invalid_jwt)
+    return data as TokenData
   }
 
-  private static async isPasswordValid(
-    providedPassword: string,
-    expectedHash: User['passwordHash']
+  static async isPasswordValid(
+    expectedHash: User['passwordHash'],
+    providedPassword?: string
   ) {
+    if (!providedPassword) return false
     return expectedHash.equals(await AuthManager.hash(providedPassword))
   }
 
@@ -60,196 +64,74 @@ export default class AuthManager {
   }
 
   static async checkAuth(
-    socket: Socket,
+    socket: TypedSocket,
     allowedRoles?: UserInfo['role'][]
-  ): Promise<Result<UserInfo, ErrorResponse>> {
-    const { data, error } = AuthManager.verify(socket.handshake.auth.token)
-    if (error)
-      return {
-        data: null,
-        error: {
-          success: false,
-          message: error.message,
-        },
-      }
-
-    const { iat, exp, ...user } = data
-
-    const userExists = await UserManager.userExists(user.email)
-    if (!userExists) {
-      const message = `User with email '${user.email}' doesn't exist`
-      console.warn(new Date().toISOString(), message)
-      return {
-        data: null,
-        error: {
-          success: false,
-          message,
-        },
-      }
-    }
+  ): Promise<UserInfo> {
+    const { userId } = await AuthManager.verify(socket.handshake.auth.token)
+    const user = await UserManager.getUserById(userId)
 
     if (allowedRoles && !allowedRoles.includes(user.role)) {
-      const message = `Role '${user.role}' is not allowed to perform this action.`
-      console.warn(new Date().toISOString(), message)
-      return {
-        data: null,
-        error: {
-          success: false,
-          message,
-        },
-      }
+      throw new Error(loc.no.error.messages.insufficient_permissions)
     }
 
-    return { data: user, error: null }
-  }
-
-  static async onRegister(
-    socket: Socket,
-    request: unknown
-  ): Promise<BackendResponse> {
-    if (!isRegisterRequest(request))
-      throw new Error('Failed to register: email or password not provided.')
-
-    const adminExists = await UserManager.adminExists()
-    const { password, ...insertUser } = request
-
-    const { data: user, error } = await tryCatchAsync(
-      UserManager.createUser({
-        ...insertUser,
-        role: adminExists ? 'user' : 'admin',
-        passwordHash: await AuthManager.hash(password),
-      } satisfies typeof users.$inferInsert)
-    )
-
-    if (error) {
-      console.error(new Date().toISOString(), socket.id, error.message)
-      return {
-        success: false,
-        message: error.message,
-      } satisfies ErrorResponse
-    }
-
-    const userInfo = UserManager.toUserInfo(user).userInfo
-
-    return {
-      success: true,
-      token: AuthManager.sign(userInfo),
-      userInfo,
-    } satisfies LoginResponse
+    return UserManager.toUserInfo(user).userInfo
   }
 
   static async onLogin(
-    socket: Socket,
-    request: unknown
-  ): Promise<BackendResponse> {
-    if (!isLoginRequest(request))
-      throw new Error('Failed to log in: email or password not provided.')
+    socket: TypedSocket,
+    request: EventReq<'login'>
+  ): Promise<EventRes<'login'>> {
+    try {
+      if (!isLoginRequest(request)) {
+        throw new Error(loc.no.error.messages.invalid_request('LoginRequest'))
+      }
 
-    const { email, password } = request
-    const { data, error } = await tryCatchAsync(UserManager.getUser(email))
+      const { email, password } = request
+      const data = await UserManager.getUser(email)
 
-    if (error) {
+      const { passwordHash, userInfo } = UserManager.toUserInfo(data)
+      const isPasswordValid = await AuthManager.isPasswordValid(
+        passwordHash,
+        password
+      )
+
+      if (!isPasswordValid) {
+        throw new Error(loc.no.error.messages.incorrect_password)
+      }
+
+      return {
+        success: true,
+        token: AuthManager.sign(userInfo.id),
+        userId: userInfo.id,
+      }
+    } catch (error) {
+      await delay(AuthManager.LOGIN_DELAY)
+      if (!error || typeof error !== 'object' || !('message' in error)) {
+        console.error(new Date().toISOString(), socket.id, error)
+        throw new Error(loc.no.error.messages.unknown_error)
+      }
       console.error(new Date().toISOString(), socket.id, error.message)
+      throw new Error(loc.no.error.messages.incorrect_login)
+    }
+  }
+
+  static async refreshToken(
+    socket: TypedSocket
+  ): Promise<EventRes<'get_user_data'>> {
+    const { data: user, error } = await tryCatchAsync(
+      AuthManager.checkAuth(socket)
+    )
+    if (error) {
       return {
         success: false,
         message: error.message,
       } satisfies ErrorResponse
     }
 
-    if (!data) {
-      console.error(new Date().toISOString(), socket.id, 'User not found')
-      return {
-        success: false,
-        message: 'User not found',
-      } satisfies ErrorResponse
-    }
-
-    console.debug(
-      new Date().toISOString(),
-      socket.id,
-      '👤 Logging in:',
-      request.email
-    )
-
-    const { passwordHash, userInfo } = UserManager.toUserInfo(data)
-
-    return (await AuthManager.isPasswordValid(password, passwordHash))
-      ? ({
-          success: true,
-          token: AuthManager.sign(userInfo),
-          userInfo,
-        } satisfies LoginResponse)
-      : ({
-          success: false,
-          message: 'Incorrect password',
-        } satisfies ErrorResponse)
-  }
-
-  static async onGetUserData(s: Socket): Promise<BackendResponse> {
-    const { data: user, error } = await AuthManager.checkAuth(s)
-    if (error) return error
     return {
       success: true,
-      token: s.handshake.auth.token,
-      userInfo: user,
-    } satisfies LoginResponse
-  }
-
-  static async onUpdateUser(
-    socket: Socket,
-    request: unknown
-  ): Promise<BackendResponse> {
-    const { data: actor, error } = await AuthManager.checkAuth(socket)
-    if (error)
-      return {
-        success: false,
-        message: 'Checking auth failed: ' + error.message,
-      } satisfies ErrorResponse
-
-    if (!isUpdateUserRequest(request)) {
-      return {
-        success: false,
-        message: 'Invalid update user request',
-      } satisfies ErrorResponse
+      token: socket.handshake.auth.token,
+      userId: user.id,
     }
-
-    const isSelf = actor.id === request.id
-    const isAdmin = actor.role === 'admin'
-
-    if (!isSelf && !isAdmin) {
-      return {
-        success: false,
-        message: 'You do not have permission to update this user.',
-      } satisfies ErrorResponse
-    }
-
-    const targetUser = await UserManager.getUserById(request.id)
-    const passwordValid = await AuthManager.isPasswordValid(
-      request.password,
-      targetUser.passwordHash
-    )
-
-    if (!passwordValid && !isAdmin) {
-      return {
-        success: false,
-        message: 'Provided password is incorrect.',
-      } satisfies ErrorResponse
-    }
-
-    const updates: Partial<typeof users.$inferInsert> = request
-
-    if (request.newPassword) {
-      updates.passwordHash = await AuthManager.hash(request.newPassword)
-    }
-
-    const updatedUser = await UserManager.updateUser(request.id, updates)
-    const { userInfo } = UserManager.toUserInfo(updatedUser)
-    ConnectionManager.emit(WS_UPDATE_USER, updatedUser)
-
-    return {
-      success: true,
-      userInfo,
-      token: AuthManager.sign(isSelf ? userInfo : actor),
-    } satisfies UpdateUserResponse
   }
 }

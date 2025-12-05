@@ -1,15 +1,14 @@
-import { eq } from 'drizzle-orm'
-import type { Socket } from 'socket.io'
+import { asc, eq, isNull, sql } from 'drizzle-orm'
+import { EventReq, EventRes } from '../../../common/models/socket.io'
+import type { TimeEntry } from '../../../common/models/timeEntry'
 import {
-  isEditLapTimeRequest,
-  isPostLapTimeRequest,
-} from '../../../common/models/requests'
-import type {
-  BackendResponse,
-  SuccessResponse,
-} from '../../../common/models/responses'
+  isCreateTimeEntryRequest,
+  isEditTimeEntryRequest,
+} from '../../../common/models/timeEntry'
+import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
 import { timeEntries } from '../../database/schema'
+import { broadcast, TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 
 export default class TimeEntryManager {
@@ -26,51 +25,51 @@ export default class TimeEntryManager {
 
     return (await Promise.all(tasks)).flat()
   }
-  static async onPostLapTime(
-    s: Socket,
-    request: unknown
-  ): Promise<BackendResponse> {
-    if (!isPostLapTimeRequest(request))
-      throw new Error('Invalid post lap time request')
 
-    const { data: user, error } = await AuthManager.checkAuth(s)
-    if (error)
-      return {
-        success: false,
-        message: error.message,
-      }
+  static async onPostTimeEntry(
+    socket: TypedSocket,
+    request: EventReq<'post_time_entry'>
+  ): Promise<EventRes<'post_time_entry'>> {
+    if (!isCreateTimeEntryRequest(request)) {
+      throw new Error(
+        loc.no.error.messages.invalid_request('CreateTimeEntryRequest')
+      )
+    }
+    const user = await AuthManager.checkAuth(socket)
 
     const isModerator = user.role !== 'user'
     const isPostingOwnTime = request.user === user.id
-    if (!isModerator && !isPostingOwnTime)
-      return {
-        success: false,
-        message: `Role '${user.role}' is not allowed to post lap times for others.`,
-      }
+    if (!isModerator && !isPostingOwnTime) {
+      throw new Error(loc.no.error.messages.insufficient_permissions)
+    }
 
     await db.insert(timeEntries).values(request)
 
     console.debug(
       new Date().toISOString(),
-      s.id,
+      socket.id,
       'Created time entry',
       request.duration
     )
 
+    broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
+
     return {
       success: true,
-    } satisfies SuccessResponse
+    }
   }
 
-  static async onEditLapTime(
-    s: Socket,
-    request: unknown
-  ): Promise<BackendResponse> {
-    if (!isEditLapTimeRequest(request))
-      throw new Error('Invalid edit lap time request')
+  static async onEditTimeEntry(
+    socket: TypedSocket,
+    request: EventReq<'edit_time_entry'>
+  ): Promise<EventRes<'edit_time_entry'>> {
+    if (!isEditTimeEntryRequest(request)) {
+      throw new Error(
+        loc.no.error.messages.invalid_request('EditTimeEntryRequest')
+      )
+    }
 
-    const { data: user, error } = await AuthManager.checkAuth(s)
-    if (error) return error
+    const user = await AuthManager.checkAuth(socket)
 
     // Get the lap time entry to check ownership
     const entries = await db
@@ -78,50 +77,64 @@ export default class TimeEntryManager {
       .from(timeEntries)
       .where(eq(timeEntries.id, request.id))
 
-    if (entries.length === 0)
-      return {
-        success: false,
-        message: 'Lap time entry not found.',
-      }
-
     const lapTime = entries[0]
+    if (!lapTime) {
+      throw new Error(loc.no.error.messages.not_in_db(request.id))
+    }
 
     // Check permissions: admins/mods can edit any, users only their own
     const isModerator = user.role !== 'user'
     const isOwner = lapTime.user === user.id
-    if (!isModerator && !isOwner)
-      return {
-        success: false,
-        message: `Role '${user.role}' is not allowed to edit this lap time.`,
-      }
+    if (!isModerator && !isOwner) {
+      throw new Error(loc.no.error.messages.insufficient_permissions)
+    }
 
-    // Build update object - exclude fields that shouldn't be updated
-    const updateData: Partial<typeof timeEntries.$inferInsert> = {}
-    if (request.duration !== undefined) updateData.duration = request.duration
-    if (request.amount !== undefined) updateData.amount = request.amount
-    if (request.comment !== undefined) updateData.comment = request.comment
-    if (request.createdAt !== undefined)
-      updateData.createdAt = new Date(request.createdAt)
-    if (request.track !== undefined) updateData.track = request.track
-    if (request.session !== undefined) updateData.session = request.session
+    let { type, id, ...updates } = request
 
-    // Never update deletedAt or updatedAt manually, but do update the updatedAt timestamp
-    updateData.updatedAt = new Date()
+    // Convert string dates to Date objects
+    const processedUpdates = { ...updates }
+    if (typeof updates.deletedAt === 'string') {
+      processedUpdates.deletedAt = new Date(updates.deletedAt)
+    }
+    if (typeof updates.updatedAt === 'string') {
+      processedUpdates.updatedAt = new Date(updates.updatedAt)
+    }
+    if (typeof updates.createdAt === 'string') {
+      processedUpdates.createdAt = new Date(updates.createdAt)
+    }
 
     await db
       .update(timeEntries)
-      .set(updateData)
+      .set(processedUpdates)
       .where(eq(timeEntries.id, request.id))
 
     console.debug(
       new Date().toISOString(),
-      s.id,
+      socket.id,
       'Updated time entry',
       request.id
     )
 
+    broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
+
     return {
       success: true,
-    } satisfies SuccessResponse
+    }
+  }
+
+  static async getAllTimeEntries(): Promise<TimeEntry[]> {
+    const data = await db
+      .select()
+      .from(timeEntries)
+      .where(isNull(timeEntries.deletedAt))
+      .orderBy(
+        asc(
+          sql`CASE WHEN ${timeEntries.duration} IS NULL OR ${timeEntries.duration} = 0 THEN 1 ELSE 0 END`
+        ),
+        asc(timeEntries.duration),
+        asc(timeEntries.createdAt)
+      )
+
+    return data
   }
 }

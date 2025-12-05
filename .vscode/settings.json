@@ -11,7 +11,7 @@
     "*.css": "tailwindcss"
   },
   "sonarlint.connectedMode.project": {
-    "connectionId": "kallerud.no",
+    "connectionId": "sonarqube-kallerud-no",
     "projectKey": "chugmania"
   }
 }

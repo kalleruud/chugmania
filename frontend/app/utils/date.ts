@@ -38,3 +38,24 @@ export function formatLapTimestamp(
 
   return `${dayLabel} · ${timeLabel}`
 }
+
+export function getEndOfDate(date: Date): Date {
+  return DateTime.fromJSDate(date)
+    .plus({ days: 1 })
+    .set({ hour: 3, minute: 59, second: 59, millisecond: 999 })
+    .toJSDate()
+}
+
+export function isOngoing(session: { date: Date }) {
+  return !isPast(session) && !isUpcoming(session)
+}
+
+export function isPast({ date }: { date: Date }) {
+  const endDate = DateTime.fromJSDate(getEndOfDate(new Date(date)))
+  return endDate.diffNow().milliseconds <= 0
+}
+
+export function isUpcoming({ date }: { date: Date }) {
+  const startDate = DateTime.fromJSDate(new Date(date))
+  return startDate.diffNow().milliseconds > 0
+}
