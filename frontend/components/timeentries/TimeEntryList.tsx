@@ -124,8 +124,8 @@ export function TimeEntryList({
 
   return (
     <div className='flex flex-col gap-2'>
-      <div className='flex w-full flex-col gap-1'>
-        <div className='flex w-full justify-center gap-1'>
+      <div className='flex w-full justify-between gap-1'>
+        <div className='flex gap-1'>
           <Button
             variant={filterType === 'all' ? 'default' : 'outline'}
             size='sm'
@@ -146,7 +146,7 @@ export function TimeEntryList({
           </Button>
         </div>
 
-        <div className='flex w-full justify-center gap-1'>
+        <div className='flex gap-1'>
           <Button
             variant={gapType === 'leader' ? 'default' : 'outline'}
             size='sm'
