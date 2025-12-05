@@ -3,13 +3,21 @@ import SessionsList from '@/components/session/SessionsList'
 import LoginCard from '@/components/user/LoginCard'
 import UserItem from '@/components/user/UserItem'
 import { useAuth } from '@/contexts/AuthContext'
+import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
+import { isOngoing, isUpcoming } from '../utils/date'
 import { SubscribeButton } from './SessionsPage'
 import { TracksList } from './TracksPage'
 import { UsersList } from './UsersPage'
 
 export default function Home() {
   const { loggedInUser, isLoggedIn } = useAuth()
+  const { sessions } = useData()
+
+  const upcomingSessions =
+    sessions?.filter(s => isUpcoming(s)).slice(0, 3) ?? []
+
+  const ongoingSessions = sessions?.filter(s => isOngoing(s)) ?? []
 
   return (
     <div className='flex flex-col gap-8'>
@@ -27,7 +35,19 @@ export default function Home() {
           icon='CalendarIcon'
         />
         <SubscribeButton />
-        <SessionsList header={loc.no.session.upcoming} upcoming />
+
+        {ongoingSessions.length > 0 && (
+          <SessionsList
+            header={loc.no.session.status.ongoing}
+            sessions={ongoingSessions}
+            hideCreate
+          />
+        )}
+
+        <SessionsList
+          header={loc.no.session.status.upcoming}
+          sessions={upcomingSessions}
+        />
       </div>
 
       <TracksList className='bg-background rounded-sm border p-2' />

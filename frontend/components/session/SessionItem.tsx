@@ -9,7 +9,12 @@ import {
 } from '@/components/ui/item'
 import { useAuth } from '@/contexts/AuthContext'
 import loc from '@/lib/locales'
-import { CalendarIcon, ClockIcon, MapPinIcon } from '@heroicons/react/24/solid'
+import {
+  CalendarIcon,
+  ClockIcon,
+  MapPinIcon,
+  SlashIcon,
+} from '@heroicons/react/24/solid'
 import { ChevronRight } from 'lucide-react'
 import { DateTime } from 'luxon'
 import { Link } from 'react-router-dom'
@@ -42,18 +47,17 @@ function SessionRow({ session, className }: Readonly<SessionItemProps>) {
     <Item key={session.id} className={className} asChild>
       <Link to={`/sessions/${session.id}`}>
         <ItemContent>
-          <ItemTitle
-            className={twMerge(isPast(session) && 'text-muted-foreground')}>
+          <ItemTitle>
             {isOngoing(session) && (
               <div className='bg-primary size-2 animate-pulse rounded-full' />
             )}
             {session.name}
           </ItemTitle>
-          <ItemDescription className='flex items-center gap-2 capitalize'>
+          <ItemDescription className='flex items-center gap-1 capitalize'>
             {session.location && (
               <>
                 <span>{session.location}</span>
-                <span className='opacity-50'>{session.location && '•'}</span>
+                <SlashIcon className='size-4 opacity-50' />
               </>
             )}
             <span>{date.setLocale('nb').toFormat('cccc d. MMMM HH:mm')}</span>

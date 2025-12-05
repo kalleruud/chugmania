@@ -35,7 +35,7 @@ function getGap(
   return {
     position: i,
     previous: compareEntry
-      ? (entry.duration - (compareEntry.duration ?? 0))
+      ? entry.duration - (compareEntry.duration ?? 0)
       : undefined,
   }
 }
@@ -53,6 +53,7 @@ export function TimeEntryList({
   session?: string
   entries: TimeEntry[]
 }>) {
+  const { isLoggedIn } = useAuth()
   const [gapType, setGapType] = useState<GapType>('interval')
   const { open } = useTimeEntryDrawer()
 
@@ -111,14 +112,16 @@ export function TimeEntryList({
         })}
       </div>
 
-      <Button
-        variant='ghost'
-        size='sm'
-        className='text-muted-foreground w-fit'
-        onClick={() => open({ track, user, session })}>
-        <PlusIcon />
-        {loc.no.timeEntry.input.create.title}
-      </Button>
+      {isLoggedIn && (
+        <Button
+          variant='ghost'
+          size='sm'
+          className='text-muted-foreground w-fit'
+          onClick={() => open({ track, user, session })}>
+          <PlusIcon />
+          {loc.no.timeEntry.input.create.title}
+        </Button>
+      )}
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import { asc, eq, sql } from 'drizzle-orm'
+import { asc, eq, isNull, sql } from 'drizzle-orm'
 import { EventReq, EventRes } from '../../../common/models/socket.io'
 import type { TimeEntry } from '../../../common/models/timeEntry'
 import {
@@ -126,6 +126,7 @@ export default class TimeEntryManager {
     const data = await db
       .select()
       .from(timeEntries)
+      .where(isNull(timeEntries.deletedAt))
       .orderBy(
         asc(
           sql`CASE WHEN ${timeEntries.duration} IS NULL OR ${timeEntries.duration} = 0 THEN 1 ELSE 0 END`

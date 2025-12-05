@@ -137,7 +137,9 @@ export default function LapTimeInput({
     ComboboxLookupItem | undefined
   >(
     find(
-      editingTimeEntry.session ?? currentOngoingSession?.id ?? paramId,
+      editingTimeEntry.id
+        ? editingTimeEntry.session
+        : (currentOngoingSession?.id ?? paramId),
       sessions
     ) ?? cache.session
   )
@@ -166,23 +168,23 @@ export default function LapTimeInput({
   }
 
   useEffect(() => {
-    if (!isCreating) return
+    if (!isCreating || selectedUser === paramId) return
     cache.user = selectedUser
   }, [selectedUser])
 
   useEffect(() => {
-    if (!isCreating) return
+    if (!isCreating || selectedTrack === paramId) return
     cache.track = selectedTrack
   }, [selectedTrack])
 
   useEffect(() => {
-    if (!isCreating) return
+    if (!isCreating || selectedSession === paramId) return
     cache.session = selectedSession
   }, [selectedSession])
 
   if (isLoadingData) {
     return (
-      <div className='items-center-safe justify-center-safe flex h-dvh w-full'>
+      <div className='items-center-safe justify-center-safe flex h-32 w-full'>
         <Spinner className='size-6' />
       </div>
     )

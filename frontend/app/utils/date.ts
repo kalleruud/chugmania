@@ -40,9 +40,10 @@ export function formatLapTimestamp(
 }
 
 export function getEndOfDate(date: Date): Date {
-  const endDate = new Date(date)
-  endDate.setUTCHours(23, 59, 59, 999)
-  return endDate
+  return DateTime.fromJSDate(date)
+    .plus({ days: 1 })
+    .set({ hour: 3, minute: 59, second: 59, millisecond: 999 })
+    .toJSDate()
 }
 
 export function isOngoing(session: { date: Date }) {

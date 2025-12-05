@@ -1,4 +1,3 @@
-import { isOngoing, isPast, isUpcoming } from '@/app/utils/date'
 import { Empty } from '@/components/ui/empty'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAuth } from '@/contexts/AuthContext'
@@ -7,6 +6,7 @@ import loc from '@/lib/locales'
 import { PlusIcon } from '@heroicons/react/24/solid'
 import { useState, type ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
+import type { SessionWithSignups } from '../../../common/models/session'
 import { PageSubheader } from '../PageHeader'
 import { Button } from '../ui/button'
 import {
@@ -26,15 +26,15 @@ type SessionsListProps = {
   className?: string
   header: string
   collapsed?: boolean
-  limit?: number
-} & ({ past: boolean; upcoming?: never } | { past?: never; upcoming: boolean })
+  sessions: SessionWithSignups[]
+  hideCreate?: boolean
+}
 
 export default function SessionsList({
   className,
   header,
-  limit,
-  past,
-  upcoming,
+  sessions,
+  hideCreate,
   ...rest
 }: Readonly<SessionsListProps & ComponentProps<'div'>>) {
   const { sessions: sd } = useData()
@@ -53,14 +53,6 @@ export default function SessionsList({
       </div>
     )
   }
-
-  const sessions = sd
-    .filter(s => {
-      if (past && !isPast(s)) return false
-      if (upcoming && !isOngoing(s) && !isUpcoming(s)) return false
-      return true
-    })
-    .slice(0, limit)
 
   return (
     <div className={twMerge('flex flex-col', className)} {...rest}>
@@ -82,7 +74,7 @@ export default function SessionsList({
         </Empty>
       )}
 
-      {isModerator && (
+      {!hideCreate && isModerator && (
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button

@@ -66,7 +66,6 @@ const no = {
   session: {
     title: 'Sessions',
     description: 'Oversikt over kommende og tidligere sessions.',
-    upcoming: 'Kommende sessions',
     past: 'Tidligere sessions',
     all: 'Alle sessions',
     edit: 'Rediger session',

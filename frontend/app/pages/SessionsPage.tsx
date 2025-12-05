@@ -9,20 +9,27 @@ import {
 } from '@/components/ui/breadcrumb'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/contexts/AuthContext'
+import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
 import { CalendarIcon } from '@heroicons/react/24/solid'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { PageHeader } from '../../components/PageHeader'
+import { isPast, isUpcoming } from '../utils/date'
 
 export default function SessionsPage() {
-  const [showPreviousSessions, setShowPreviousSessions] = useState(false)
   const { loggedInUser, isLoggedIn } = useAuth()
+  const { sessions } = useData()
+
+  const [showPreviousSessions, setShowPreviousSessions] = useState(false)
 
   const isAdmin = isLoggedIn && loggedInUser.role === 'admin'
   const isModerator = isLoggedIn && loggedInUser.role === 'moderator'
   const canCreate = isAdmin || isModerator
+
+  const upcomingSessions = sessions?.filter(s => isUpcoming(s)) ?? []
+  const pastSessions = sessions?.filter(s => isPast(s)) ?? []
 
   return (
     <div className='flex flex-col gap-2'>
@@ -46,16 +53,24 @@ export default function SessionsPage() {
 
       <SubscribeButton className={twMerge(!canCreate && 'w-full')} />
 
-      <SessionsList header={loc.no.session.upcoming} upcoming />
+      <SessionsList
+        header={loc.no.session.status.upcoming}
+        sessions={upcomingSessions}
+      />
       {showPreviousSessions && (
-        <SessionsList header={loc.no.session.past} past />
+        <SessionsList
+          className='opacity-75'
+          header={loc.no.session.past}
+          sessions={pastSessions}
+          hideCreate
+        />
       )}
       <div>
         <Button
           variant='ghost'
           onClick={() => setShowPreviousSessions(!showPreviousSessions)}>
-          {loc.no.session.past}
           {showPreviousSessions ? <ChevronUp /> : <ChevronDown />}
+          {loc.no.session.past}
         </Button>
       </div>
     </div>
