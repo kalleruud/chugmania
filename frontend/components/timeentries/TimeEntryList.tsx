@@ -9,6 +9,7 @@ import type {
 } from '../../../common/models/timeEntry'
 import { Button } from '../ui/button'
 import { Empty } from '../ui/empty'
+import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group'
 import type { GapType } from './TimeEntryItem'
 import TimeEntryItem from './TimeEntryItem'
 
@@ -123,43 +124,40 @@ export function TimeEntryList({
   }
 
   return (
-    <div className='flex flex-col gap-2'>
-      <div className='flex w-full justify-between gap-1'>
-        <div className='flex gap-1'>
-          <Button
-            variant={filterType === 'all' ? 'default' : 'outline'}
-            size='sm'
-            onClick={() => setFilterType('all')}>
+    <div className='flex flex-col gap-3'>
+      <div className='flex w-full justify-between'>
+        <ToggleGroup
+          type='single'
+          value={filterType}
+          onValueChange={value => setFilterType(value as FilterType)}
+          variant='outline'
+          size='sm'>
+          <ToggleGroupItem value='all' aria-label='Show all entries'>
             All
-          </Button>
-          <Button
-            variant={filterType === 'best' ? 'default' : 'outline'}
-            size='sm'
-            onClick={() => setFilterType('best')}>
+          </ToggleGroupItem>
+          <ToggleGroupItem value='best' aria-label='Show best entry per user'>
             Best
-          </Button>
-          <Button
-            variant={filterType === 'latest' ? 'default' : 'outline'}
-            size='sm'
-            onClick={() => setFilterType('latest')}>
+          </ToggleGroupItem>
+          <ToggleGroupItem
+            value='latest'
+            aria-label='Show latest entry per user'>
             Latest
-          </Button>
-        </div>
+          </ToggleGroupItem>
+        </ToggleGroup>
 
-        <div className='flex gap-1'>
-          <Button
-            variant={gapType === 'leader' ? 'default' : 'outline'}
-            size='sm'
-            onClick={() => setGapType('leader')}>
+        <ToggleGroup
+          type='single'
+          value={gapType}
+          onValueChange={value => setGapType(value as GapType)}
+          variant='outline'
+          size='sm'>
+          <ToggleGroupItem value='leader' aria-label='Gap to leader'>
             {loc.no.timeEntry.gap.leader}
-          </Button>
-          <Button
-            variant={gapType === 'interval' ? 'default' : 'outline'}
-            size='sm'
-            onClick={() => setGapType('interval')}>
+          </ToggleGroupItem>
+          <ToggleGroupItem value='interval' aria-label='Gap to previous'>
             {loc.no.timeEntry.gap.interval}
-          </Button>
-        </div>
+          </ToggleGroupItem>
+        </ToggleGroup>
       </div>
 
       <div className='bg-background-secondary flex flex-col rounded-sm'>
