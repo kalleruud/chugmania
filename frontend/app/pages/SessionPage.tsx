@@ -143,7 +143,7 @@ function Signup({
 
 export default function SessionPage() {
   const { id } = useParams()
-  const { sessions, leaderboards, tracks } = useData()
+  const { sessions, tracks, isLoadingData } = useData()
   const { loggedInUser, isLoggedIn, isLoading } = useAuth()
   const [editDialogOpen, setEditDialogOpen] = useState(false)
 
@@ -151,13 +151,7 @@ export default function SessionPage() {
   const isModerator = isLoggedIn && loggedInUser.role === 'moderator'
   const canEdit = isAdmin || isModerator
 
-  if (
-    sessions === undefined ||
-    leaderboards === undefined ||
-    tracks === undefined ||
-    id === undefined ||
-    !(id in sessions)
-  ) {
+  if (isLoadingData) {
     return (
       <div className='items-center-safe justify-center-safe flex h-dvh w-full'>
         <Spinner className='size-6' />
@@ -165,18 +159,9 @@ export default function SessionPage() {
     )
   }
 
-  const session = sessions[id]
-
-  const timeEntries = Object.values(leaderboards)
-    .map(leaderboard => {
-      const entries = leaderboard.entries.filter(entry => entry.session === id)
-      return { id: leaderboard.id, entries }
-    })
-    .filter(te => te.entries.length > 0)
-
-  if (id === undefined || !(id in sessions)) {
-    throw new Error(loc.no.error.messages.not_in_db(`session/${id}`))
-  }
+  const session = sessions.find(s => s.id === id)
+  if (!session)
+    throw new Error(loc.no.error.messages.not_in_db('sessions/' + id))
 
   return (
     <div className='flex flex-col gap-6'>
@@ -242,11 +227,11 @@ export default function SessionPage() {
         session={session}
       />
 
-      {timeEntries.map(({ id: trackId, entries }) => (
+      {tracks.map(track => (
         <TrackLeaderboard
-          key={trackId}
-          track={tracks[trackId]}
-          entries={entries}
+          key={track.id}
+          track={track}
+          session={session.id}
           highlight={e => isLoggedIn && loggedInUser.id === e.id}
         />
       ))}

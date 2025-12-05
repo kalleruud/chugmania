@@ -61,7 +61,7 @@ async function Connect(s: TypedSocket) {
   s.emit('user_data', await AuthManager.refreshToken(s))
   s.emit('all_users', await UserManager.getAllUsers())
   s.emit('all_tracks', await TrackManager.getAllTracks())
-  s.emit('all_leaderboards', await TimeEntryManager.getAllLeaderboards())
+  s.emit('all_time_entries', await TimeEntryManager.getAllTimeEntries())
   s.emit('all_sessions', await SessionManager.getAllSessions())
 
   s.on('disconnect', () =>

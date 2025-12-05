@@ -105,9 +105,7 @@ export function UsersList({ className, showAll }: Readonly<UsersPageProps>) {
     )
   }
 
-  const users = Object.values(ud).filter(
-    u => !u.email.endsWith('@chugmania.no') || showAll
-  )
+  const users = ud.filter(u => !u.email.endsWith('@chugmania.no') || showAll)
 
   return (
     <div className={twMerge('flex flex-col', className)}>

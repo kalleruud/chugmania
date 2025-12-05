@@ -9,14 +9,15 @@ import {
 } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type {
-  LeaderboardEntry,
   LeaderboardEntryGap,
+  TimeEntry,
 } from '../../../common/models/timeEntry'
 import { formatTime } from '../../../common/utils/time'
 
 type TimeEntryItemProps = {
   position?: number | null
-  lapTime: LeaderboardEntry
+  lapTime: TimeEntry
+  gap?: LeaderboardEntryGap
   gapType?: GapType
   highlight?: boolean
   onChangeGapType: () => void
@@ -112,7 +113,7 @@ function GapPart({
 function TimeEntryRow({
   className,
   lapTime,
-  position = lapTime.gap?.position,
+  gap,
   gapType,
   onChangeGapType,
   highlight,
@@ -121,9 +122,9 @@ function TimeEntryRow({
   const containerRef = useRef<HTMLDivElement | null>(null)
   const [width, setWidth] = useState(breakpoints.md)
   const { users } = useData()
-  const userInfo = users ? users[lapTime.user] : null
+  const userInfo = users ? users.find(u => u.id === lapTime.user) : null
 
-  const isDNF = !lapTime.gap
+  const isDNF = !lapTime.duration
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -165,16 +166,16 @@ function TimeEntryRow({
         className
       )}
       title={lapTime.comment ?? undefined}>
-      {show.pos && <PositionBadgePart position={position} />}
+      {show.pos && <PositionBadgePart position={gap?.position} />}
       <NameCellPart
         name={name}
         hasComment={!!lapTime.comment}
         className={isDNF ? 'text-muted-foreground' : undefined}
       />
 
-      {show.gap && lapTime.gap && (
+      {show.gap && gap && (
         <GapPart
-          gap={lapTime.gap}
+          gap={gap}
           gapType={gapType}
           onChangeGapType={onChangeGapType}
         />

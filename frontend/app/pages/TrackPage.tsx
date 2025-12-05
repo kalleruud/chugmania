@@ -17,24 +17,40 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useData } from '@/contexts/DataContext'
 import { useTimeEntryDrawer } from '@/hooks/TimeEntryDrawerProvider'
 import loc from '@/lib/locales'
-import { ChevronUpDownIcon, PlusIcon } from '@heroicons/react/24/solid'
-import { Fragment, useState } from 'react'
+import { PlusIcon } from '@heroicons/react/24/solid'
+import { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import type { LeaderboardEntry } from '../../../common/models/timeEntry'
+import type {
+  LeaderboardEntryGap,
+  TimeEntry,
+} from '../../../common/models/timeEntry'
 import { formatTrackName } from '../../../common/utils/track'
 
+function getGap(
+  i: number,
+  entry: TimeEntry,
+  compareEntry: TimeEntry | undefined
+): LeaderboardEntryGap {
+  return {
+    position: i,
+    previous: compareEntry
+      ? (entry.duration ?? 0 - (compareEntry.duration ?? 0))
+      : undefined,
+  }
+}
+
 export function TimeEntryList({
-  entries,
   highlight,
   track,
   user,
   session,
+  entries,
 }: Readonly<{
-  entries: LeaderboardEntry[]
-  highlight?: (e: LeaderboardEntry) => boolean
+  highlight?: (e: TimeEntry) => boolean
   track?: string
   user?: string
   session?: string
+  entries: TimeEntry[]
 }>) {
   const [gapType, setGapType] = useState<GapType>('interval')
   const { open } = useTimeEntryDrawer()
@@ -42,10 +58,18 @@ export function TimeEntryList({
   if (entries.length === 0) {
     return (
       <Empty className='border-input text-muted-foreground border text-sm'>
-        {loc.no.common.noItems}
+        <Button
+          variant='outline'
+          size='sm'
+          className='text-muted-foreground w-fit'
+          onClick={() => open({ track, user, session })}>
+          <PlusIcon />
+          {loc.no.timeEntry.input.create.title}
+        </Button>
       </Empty>
     )
   }
+
   return (
     <div className='flex flex-col gap-2'>
       <div className='flex w-full justify-center gap-1'>
@@ -64,33 +88,24 @@ export function TimeEntryList({
       </div>
 
       <div className='bg-background-secondary flex flex-col rounded-sm'>
-        {entries.map((entry, index) => {
-          const prevEntry = entries[index - 1]
-          const showGap =
-            prevEntry?.gap?.position &&
-            entry.gap?.position &&
-            entry.gap?.position > prevEntry.gap.position + 1
-
+        {entries.map((entry, i) => {
           return (
-            <Fragment key={entry.id}>
-              {showGap && (
-                <div className='items-center-safe flex justify-center gap-4 px-4'>
-                  <div className='border-border w-64 rounded-full border-b' />
-                  <ChevronUpDownIcon className='text-border size-6' />
-                  <div className='border-border w-64 rounded-full border-b' />
-                </div>
+            <TimeEntryItem
+              key={entry.id}
+              lapTime={entry}
+              gap={getGap(
+                i,
+                entry,
+                gapType === 'interval' ? entries.at(i - 1) : entries.at(0)
               )}
-              <TimeEntryItem
-                lapTime={entry}
-                onClick={() => open(entry)}
-                className='px-4 py-3'
-                gapType={gapType}
-                onChangeGapType={() =>
-                  setGapType(gapType === 'leader' ? 'interval' : 'leader')
-                }
-                highlight={highlight?.(entry)}
-              />
-            </Fragment>
+              onClick={() => open(entry)}
+              className='px-4 py-3'
+              gapType={gapType}
+              onChangeGapType={() =>
+                setGapType(gapType === 'leader' ? 'interval' : 'leader')
+              }
+              highlight={highlight?.(entry)}
+            />
           )
         })}
       </div>
@@ -110,9 +125,9 @@ export function TimeEntryList({
 export default function TrackPage() {
   const { id } = useParams()
   const { isLoggedIn, loggedInUser } = useAuth()
-  const { tracks, leaderboards } = useData()
+  const { timeEntries, tracks, isLoadingData } = useData()
 
-  if (tracks === undefined || leaderboards === undefined) {
+  if (isLoadingData) {
     return (
       <div className='items-center-safe justify-center-safe flex h-dvh w-full'>
         <Spinner className='size-6' />
@@ -120,11 +135,10 @@ export default function TrackPage() {
     )
   }
 
-  if (id === undefined) throw new Error('Ingen id')
-  if (!(id in tracks)) throw new Error('Banen med denne iden finnes ikke')
+  const track = tracks.find(t => t.id === id)
+  if (!track) throw new Error(loc.no.error.messages.not_in_db('track/' + id))
 
-  const track = tracks[id]
-  const leaderboard = id in leaderboards ? leaderboards[id].entries : []
+  const entries = timeEntries?.filter(te => !track || track.id === te.track)
 
   return (
     <div className='flex flex-col gap-4'>
@@ -150,7 +164,7 @@ export default function TrackPage() {
 
       <TimeEntryList
         track={track.id}
-        entries={leaderboard}
+        entries={entries}
         highlight={e => isLoggedIn && loggedInUser.id === e.user}
       />
     </div>

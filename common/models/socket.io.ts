@@ -4,7 +4,6 @@ import type {
   ImportCsvRequest,
 } from '../../common/models/importCsv'
 import type { LoginRequest, RegisterRequest } from './auth'
-import type { Leaderboard } from './leaderboard'
 import type {
   CreateSessionRequest,
   EditSessionRequest,
@@ -16,6 +15,7 @@ import type {
   AbsoluteTimeEntriesResponse,
   CreateTimeEntryRequest,
   EditTimeEntryRequest,
+  TimeEntry,
 } from './timeEntry'
 import type { Track } from './track'
 import type { EditUserRequest, LoginResponse, UserInfo } from './user'
@@ -33,7 +33,7 @@ export interface ServerToClientEvents {
   user_data: (r: EventRes<'get_user_data'>) => void
   all_users: (r: UserInfo[]) => void
   all_tracks: (r: Track[]) => void
-  all_leaderboards: (r: Leaderboard[]) => void
+  all_time_entries: (r: TimeEntry[]) => void
   all_sessions: (r: SessionWithSignups[]) => void
 }
 

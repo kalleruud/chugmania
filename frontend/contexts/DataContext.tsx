@@ -6,28 +6,29 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import type { Leaderboard } from '../../common/models/leaderboard'
 import type { SessionWithSignups } from '../../common/models/session'
+import type { TimeEntry } from '../../common/models/timeEntry'
 import type { Track } from '../../common/models/track'
 import type { UserInfo } from '../../common/models/user'
 import { useConnection } from './ConnectionContext'
 
-type DataContextType = {
-  tracks: Record<string, Track> | undefined
-  leaderboards: Record<string, Leaderboard> | undefined
-  users: Record<string, UserInfo> | undefined
-  sessions: Record<string, SessionWithSignups> | undefined
-}
+type DataContextType =
+  | {
+      isLoadingData: false
+      tracks: Track[]
+      timeEntries: TimeEntry[]
+      users: UserInfo[]
+      sessions: SessionWithSignups[]
+    }
+  | {
+      isLoadingData: true
+      tracks?: never
+      timeEntries?: never
+      users?: never
+      sessions?: never
+    }
 
 const DataContext = createContext<DataContextType | undefined>(undefined)
-
-function toIdRecord<T extends { id: string }>(entries: T[]): Record<string, T> {
-  const map: Record<string, T> = {}
-  for (const entry of entries) {
-    map[entry.id] = entry
-  }
-  return map
-}
 
 /**
  * Automatically converts timestamp fields to Date objects.
@@ -61,46 +62,54 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
   const { socket } = useConnection()
 
   const [tracks, setTracks] = useState<DataContextType['tracks']>(undefined)
-  const [leaderboards, setLeaderboards] =
-    useState<DataContextType['leaderboards']>(undefined)
+  const [timeEntries, setTimeEntries] =
+    useState<DataContextType['timeEntries']>(undefined)
   const [users, setUsers] = useState<DataContextType['users']>(undefined)
   const [sessions, setSessions] =
     useState<DataContextType['sessions']>(undefined)
 
   useEffect(() => {
-    socket.on('all_tracks', (data: Track[]) => {
-      setTracks(toIdRecord(parseDatesArray(data)))
+    socket.on('all_sessions', data => {
+      setSessions(parseDatesArray(data))
     })
 
-    socket.on('all_leaderboards', (data: Leaderboard[]) => {
-      setLeaderboards(toIdRecord(parseDatesArray(data)))
+    socket.on('all_time_entries', data => {
+      setTimeEntries(parseDatesArray(data))
     })
 
-    socket.on('all_users', (data: UserInfo[]) => {
-      setUsers(toIdRecord(parseDatesArray(data)))
+    socket.on('all_tracks', data => {
+      setTracks(parseDatesArray(data))
     })
 
-    socket.on('all_sessions', (data: SessionWithSignups[]) => {
-      setSessions(toIdRecord(parseDatesArray(data)))
+    socket.on('all_users', data => {
+      setUsers(parseDatesArray(data))
     })
 
     return () => {
-      socket.off('all_leaderboards')
       socket.off('all_sessions')
+      socket.off('all_time_entries')
       socket.off('all_tracks')
       socket.off('all_users')
     }
   }, [])
 
-  const context = useMemo<DataContextType>(
-    () => ({
-      leaderboards,
+  const context = useMemo<DataContextType>(() => {
+    if (
+      tracks === undefined ||
+      timeEntries === undefined ||
+      users === undefined ||
+      sessions === undefined
+    ) {
+      return { isLoadingData: true }
+    }
+    return {
+      isLoadingData: false,
+      timeEntries,
       sessions,
       tracks,
       users,
-    }),
-    [tracks, leaderboards, users, sessions]
-  )
+    }
+  }, [tracks, timeEntries, users, sessions])
 
   return <DataContext.Provider value={context}>{children}</DataContext.Provider>
 }

@@ -32,6 +32,7 @@ import { formatTrackName } from '../../../common/utils/track'
 import { useAuth } from '../../contexts/AuthContext'
 import { useConnection } from '../../contexts/ConnectionContext'
 import { useData } from '../../contexts/DataContext'
+import { Spinner } from '../ui/spinner'
 
 const cache: {
   time: string[]
@@ -104,12 +105,12 @@ export default function LapTimeInput({
 }: Readonly<LapTimeInputProps>) {
   const { socket } = useConnection()
   const { loggedInUser } = useAuth()
-  const { users, tracks, sessions } = useData()
+  const { users, tracks, sessions, isLoadingData } = useData()
   const location = useLocation()
   const paramId = getId(location.pathname)
 
   const currentOngoingSession = sessions
-    ? Object.values(sessions).find(s => isOngoing(s))
+    ? sessions.find(s => isOngoing(s))
     : undefined
 
   const isCreating = !editingTimeEntry.id
@@ -154,10 +155,11 @@ export default function LapTimeInput({
 
   function find<T extends Track | UserInfo | SessionWithSignups>(
     id: string | null | undefined,
-    records: Record<string, T> | undefined
+    records: T[] | undefined
   ): ComboboxLookupItem | undefined {
-    if (!id || !records || !(id in records)) return undefined
-    const item = records[id]
+    if (!id || !records) return undefined
+    const item = records.find(r => r.id === id)
+    if (!item) return undefined
     if ('level' in item) return trackToLookupItem(item)
     if ('email' in item) return userToLookupItem(item)
     if ('status' in item) return sessionToLookupItem(item)
@@ -177,6 +179,14 @@ export default function LapTimeInput({
     if (!isCreating) return
     cache.session = selectedSession
   }, [selectedSession])
+
+  if (isLoadingData) {
+    return (
+      <div className='items-center-safe justify-center-safe flex h-dvh w-full'>
+        <Spinner className='size-6' />
+      </div>
+    )
+  }
 
   function setFocus(i: number) {
     inputs.current[i]?.focus()
@@ -320,7 +330,7 @@ export default function LapTimeInput({
               selected={selectedUser}
               setSelected={setSelectedUser}
               align='start'
-              items={Object.values(users).map(userToLookupItem)}
+              items={users.map(userToLookupItem)}
             />
           )}
 
@@ -333,7 +343,7 @@ export default function LapTimeInput({
               selected={selectedTrack}
               setSelected={setSelectedTrack}
               align='end'
-              items={Object.values(tracks).map(trackToLookupItem)}
+              items={tracks.map(trackToLookupItem)}
             />
           )}
         </div>
@@ -347,7 +357,7 @@ export default function LapTimeInput({
             selected={selectedSession}
             setSelected={setSelectedSession}
             limit={2}
-            items={Object.values(sessions).map(sessionToLookupItem)}
+            items={sessions.map(sessionToLookupItem)}
           />
         )}
 

@@ -64,9 +64,9 @@ export default function TracksPage(props: Readonly<TracksPageProps>) {
 }
 
 export function TracksList({ className }: Readonly<TracksPageProps>) {
-  const { tracks: td, leaderboards: ld } = useData()
+  const { tracks, timeEntries, isLoadingData } = useData()
 
-  if (td === undefined || ld === undefined) {
+  if (isLoadingData) {
     return (
       <div className={twMerge('flex flex-col', className)}>
         <Item>
@@ -88,7 +88,9 @@ export function TracksList({ className }: Readonly<TracksPageProps>) {
     )
   }
 
-  const tracks = Object.values(td).filter(t => t.id in ld)
+  const tracksWithEntries = tracks.filter(t =>
+    timeEntries.some(te => te.track === t.id)
+  )
 
   return (
     <div className={twMerge('flex flex-col', className)}>
@@ -99,7 +101,9 @@ export function TracksList({ className }: Readonly<TracksPageProps>) {
           icon={'MapIcon'}
         />
 
-        <TrackRowList tracks={tracks.filter(t => t.level !== 'custom')} />
+        <TrackRowList
+          tracks={tracksWithEntries.filter(t => t.level !== 'custom')}
+        />
       </div>
 
       <div>
@@ -109,7 +113,9 @@ export function TracksList({ className }: Readonly<TracksPageProps>) {
           icon={'WrenchIcon'}
         />
 
-        <TrackRowList tracks={tracks.filter(t => t.level === 'custom')} />
+        <TrackRowList
+          tracks={tracksWithEntries.filter(t => t.level === 'custom')}
+        />
       </div>
     </div>
   )

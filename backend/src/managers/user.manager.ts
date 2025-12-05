@@ -182,7 +182,7 @@ export default class UserManager {
     }
 
     broadcast('all_users', await UserManager.getAllUsers())
-    broadcast('all_leaderboards', await TimeEntryManager.getAllLeaderboards())
+    broadcast('all_leaderboards', await TimeEntryManager.getAllTimeEntries())
 
     return {
       success: true,

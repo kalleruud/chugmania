@@ -40,7 +40,9 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [loggedInUserId, setLoggedInUserId] = useState<string | undefined>(
     undefined
   )
-  const loggedInUser = loggedInUserId ? users?.[loggedInUserId] : undefined
+  const loggedInUser = loggedInUserId
+    ? users?.find(u => loggedInUserId === u.id)
+    : undefined
 
   function handleResponse(
     response: LoginResponse | ErrorResponse,

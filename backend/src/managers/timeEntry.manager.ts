@@ -1,21 +1,19 @@
-import { and, asc, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
-import type { Leaderboard } from '../../../common/models/leaderboard'
+import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { EventReq, EventRes } from '../../../common/models/socket.io'
 import type {
   LeaderboardEntry,
   LeaderboardEntryGap,
+  TimeEntry,
 } from '../../../common/models/timeEntry'
 import {
   isCreateTimeEntryRequest,
   isEditTimeEntryRequest,
 } from '../../../common/models/timeEntry'
-import type { Track } from '../../../common/models/track'
 import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
-import { timeEntries, tracks, users } from '../../database/schema'
+import { timeEntries } from '../../database/schema'
 import { broadcast, TypedSocket } from '../server'
 import AuthManager from './auth.manager'
-import TrackManager from './track.manager'
 
 export default class TimeEntryManager {
   static readonly table = timeEntries
@@ -58,7 +56,7 @@ export default class TimeEntryManager {
       request.duration
     )
 
-    broadcast('all_leaderboards', await TimeEntryManager.getAllLeaderboards())
+    broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
 
     return {
       success: true,
@@ -121,7 +119,7 @@ export default class TimeEntryManager {
       request.id
     )
 
-    broadcast('all_leaderboards', await TimeEntryManager.getAllLeaderboards())
+    broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
 
     return {
       success: true,
@@ -233,58 +231,12 @@ export default class TimeEntryManager {
     })
   }
 
-  static async getAllLeaderboards(): Promise<Leaderboard[]> {
-    const tracks = await TrackManager.getAllTracks()
-    const leaderboards = await Promise.all(
-      tracks.map(track => TimeEntryManager.getLeaderboard(track.id))
-    )
-    return leaderboards.filter(lb => lb.entries.length > 0)
-  }
-
-  private static async getLeaderboard(
-    trackId: Track['id']
-  ): Promise<Leaderboard> {
-    const track = await db.query.tracks.findFirst({
-      where: eq(tracks.id, trackId),
-    })
-    if (!track) throw new Error(`Track not found: ${trackId}`)
-
-    const rows = await db
+  static async getAllTimeEntries(): Promise<TimeEntry[]> {
+    const data = await db
       .select()
       .from(timeEntries)
-      .innerJoin(users, eq(users.id, timeEntries.user))
-      .where(
-        and(
-          eq(timeEntries.track, trackId),
-          isNull(timeEntries.deletedAt),
-          isNull(users.deletedAt)
-        )
-      )
-      .orderBy(
-        asc(
-          sql`CASE WHEN ${timeEntries.duration} IS NULL OR ${timeEntries.duration} = 0 THEN 1 ELSE 0 END`
-        ),
-        asc(timeEntries.duration),
-        desc(timeEntries.createdAt)
-      )
+      .orderBy(asc(timeEntries.duration))
 
-    // Keep best (lowest duration) per user
-    const seen = new Set<string>()
-    const best = rows
-      .filter(r => {
-        const uid = r.users.id
-        if (seen.has(uid)) return false
-        seen.add(uid)
-        return true
-      })
-      .map(r => r.time_entries)
-
-    // Reuse computeGaps
-    const entries = TimeEntryManager.computeGaps(best)
-
-    return {
-      id: trackId,
-      entries,
-    }
+    return data
   }
 }

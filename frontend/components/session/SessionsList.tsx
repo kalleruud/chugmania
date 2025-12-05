@@ -54,7 +54,7 @@ export default function SessionsList({
     )
   }
 
-  const sessions = Object.values(sd)
+  const sessions = sd
     .filter(s => {
       if (past && !isPast(s)) return false
       if (upcoming && !isOngoing(s) && !isUpcoming(s)) return false
