@@ -35,7 +35,7 @@ function getGap(
   return {
     position: i,
     previous: compareEntry
-      ? (entry.duration ?? 0 - (compareEntry.duration ?? 0))
+      ? (entry.duration - (compareEntry.duration ?? 0))
       : undefined,
   }
 }
@@ -95,7 +95,7 @@ export function TimeEntryList({
               key={entry.id}
               lapTime={entry}
               gap={getGap(
-                i,
+                i + 1,
                 entry,
                 gapType === 'interval' ? entries.at(i - 1) : entries.at(0)
               )}
