@@ -65,7 +65,7 @@ function SessionRow({ session, className }: Readonly<SessionItemProps>) {
         </ItemContent>
 
         <ItemActions>
-          {!isSignedUp && <Badge>{loc.no.common.new}</Badge>}
+          {isLoggedIn && !isSignedUp && <Badge>{loc.no.common.new}</Badge>}
           <ChevronRight className='size-4' />
         </ItemActions>
       </Link>
