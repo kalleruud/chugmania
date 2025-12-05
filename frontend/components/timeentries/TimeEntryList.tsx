@@ -73,9 +73,21 @@ function filterEntries(
 function getGap(
   i: number,
   entry: TimeEntry,
-  compareEntry: TimeEntry | undefined
+  compareEntry: TimeEntry | undefined,
+  leader: TimeEntry | undefined = undefined
 ): LeaderboardEntryGap | undefined {
   if (!entry.duration) return undefined
+
+  // For leader gap type, calculate gap to the leader (first entry)
+  if (leader) {
+    return {
+      position: i,
+      leader: leader.duration ? entry.duration - leader.duration : undefined,
+      previous: undefined,
+    }
+  }
+
+  // For interval gap type, calculate gap to previous entry
   return {
     position: i,
     previous: compareEntry
@@ -169,9 +181,8 @@ export function TimeEntryList({
               gap={getGap(
                 i + 1,
                 entry,
-                gapType === 'interval'
-                  ? filteredEntries.at(i - 1)
-                  : filteredEntries.at(0)
+                gapType === 'interval' ? filteredEntries.at(i - 1) : undefined,
+                gapType === 'leader' ? filteredEntries.at(0) : undefined
               )}
               onClick={() => open(entry)}
               className='px-4 py-3'
