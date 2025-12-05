@@ -30,7 +30,8 @@ function getGap(
   i: number,
   entry: TimeEntry,
   compareEntry: TimeEntry | undefined
-): LeaderboardEntryGap {
+): LeaderboardEntryGap | undefined {
+  if (!entry.duration) return undefined
   return {
     position: i,
     previous: compareEntry
