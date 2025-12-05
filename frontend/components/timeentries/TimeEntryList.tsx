@@ -33,39 +33,44 @@ function sortEntries(entries: TimeEntry[]): TimeEntry[] {
   })
 }
 
+function isBetterEntry(current: TimeEntry, existing: TimeEntry): boolean {
+  if (!current.duration) return false
+  if (!existing.duration) return true
+  return current.duration < existing.duration
+}
+
+function getBestByUser(entries: TimeEntry[]): TimeEntry[] {
+  const bestByUser = new Map<string, TimeEntry>()
+  for (const entry of entries) {
+    const existing = bestByUser.get(entry.user)
+    if (!existing || isBetterEntry(entry, existing)) {
+      bestByUser.set(entry.user, entry)
+    }
+  }
+  return Array.from(bestByUser.values())
+}
+
+function getLatestByUser(entries: TimeEntry[]): TimeEntry[] {
+  const latestByUser = new Map<string, TimeEntry>()
+  for (const entry of entries) {
+    const existing = latestByUser.get(entry.user)
+    if (!existing || entry.createdAt > existing.createdAt) {
+      latestByUser.set(entry.user, entry)
+    }
+  }
+  return Array.from(latestByUser.values())
+}
+
 function filterEntries(
   entries: TimeEntry[],
   filterType: FilterType
 ): TimeEntry[] {
-  let filtered = entries
-
-  if (filterType === 'best') {
-    const bestByUser = new Map<string, TimeEntry>()
-    for (const entry of entries) {
-      const existing = bestByUser.get(entry.user)
-      if (!existing) {
-        bestByUser.set(entry.user, entry)
-      } else if (entry.duration && existing.duration) {
-        if (entry.duration < existing.duration) {
-          bestByUser.set(entry.user, entry)
-        }
-      } else if (entry.duration && !existing.duration) {
-        bestByUser.set(entry.user, entry)
-      }
-    }
-    filtered = Array.from(bestByUser.values())
-  } else if (filterType === 'latest') {
-    const latestByUser = new Map<string, TimeEntry>()
-    for (const entry of entries) {
-      const existing = latestByUser.get(entry.user)
-      if (!existing) {
-        latestByUser.set(entry.user, entry)
-      } else if (entry.createdAt > existing.createdAt) {
-        latestByUser.set(entry.user, entry)
-      }
-    }
-    filtered = Array.from(latestByUser.values())
-  }
+  const filtered =
+    filterType === 'best'
+      ? getBestByUser(entries)
+      : filterType === 'latest'
+        ? getLatestByUser(entries)
+        : entries
 
   return sortEntries(filtered)
 }
