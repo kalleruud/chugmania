@@ -23,7 +23,6 @@ import {
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import loc from '@/lib/locales'
-import { ArrowUpIcon, PencilIcon } from '@heroicons/react/24/solid'
 import { Trash2 } from 'lucide-react'
 import {
   createContext,
@@ -131,7 +130,6 @@ export default function TimeEntryDialogProvider({
                 form='laptimeInput'
                 className='flex gap-1'
                 onClick={close}>
-                {isEditing ? <PencilIcon /> : <ArrowUpIcon />}
                 {isEditing
                   ? loc.no.timeEntry.input.update
                   : loc.no.timeEntry.input.submit}
