@@ -52,7 +52,12 @@ export default function UserPage() {
       <UserItem variant='card' user={user} />
 
       {tracks.map(track => (
-        <TrackLeaderboard key={track.id} track={track} user={user.id} />
+        <TrackLeaderboard
+          key={track.id}
+          track={track}
+          user={user.id}
+          filter='all'
+        />
       ))}
     </div>
   )

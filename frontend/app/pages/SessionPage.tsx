@@ -233,6 +233,7 @@ export default function SessionPage() {
           track={track}
           session={session.id}
           highlight={e => isLoggedIn && loggedInUser.id === e.id}
+          filter='all'
         />
       ))}
     </div>
