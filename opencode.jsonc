@@ -13,5 +13,26 @@
         "Authorization": "Bearer {file:./.secrets/github.key}",
       },
     },
+    "sonarqube": {
+      "type": "local",
+      "command": [
+        "docker",
+        "run",
+        "-i",
+        "--rm",
+        "-e",
+        "SONARQUBE_TOKEN",
+        "-e",
+        "SONARQUBE_URL",
+        "-e",
+        "SONARQUBE_IDE_PORT",
+        "mcp/sonarqube",
+      ],
+      "environment": {
+        "SONARQUBE_URL": "https://sonarqube.kallerud.no",
+        "SONARQUBE_TOKEN": "{file:./.secrets/sonarqube.key}",
+        "SONARQUBE_IDE_PORT": "64121",
+      },
+    },
   },
 }
