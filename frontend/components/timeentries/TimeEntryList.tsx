@@ -65,12 +65,13 @@ function filterEntries(
   entries: TimeEntry[],
   filterType: FilterType
 ): TimeEntry[] {
-  const filtered =
-    filterType === 'best'
-      ? getBestByUser(entries)
-      : filterType === 'latest'
-        ? getLatestByUser(entries)
-        : entries
+  let filtered = entries
+
+  if (filterType === 'best') {
+    filtered = getBestByUser(entries)
+  } else if (filterType === 'latest') {
+    filtered = getLatestByUser(entries)
+  }
 
   return sortEntries(filtered)
 }
