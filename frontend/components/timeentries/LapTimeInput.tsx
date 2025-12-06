@@ -1,4 +1,4 @@
-import { isOngoing } from '@/app/utils/date'
+import { formatDateRelative, isOngoing } from '@/app/utils/date'
 import Combobox, { type ComboboxLookupItem } from '@/components/combobox'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -51,10 +51,6 @@ type LapTimeInputProps = {
   disabled?: boolean
 } & ComponentProps<'form'>
 
-const dateFormatter = new Intl.DateTimeFormat('nb-NO', {
-  dateStyle: 'medium',
-})
-
 function trackToLookupItem(track: Track): ComboboxLookupItem {
   return {
     id: track.id,
@@ -65,7 +61,7 @@ function trackToLookupItem(track: Track): ComboboxLookupItem {
 }
 
 function sessionToLookupItem(session: SessionWithSignups): ComboboxLookupItem {
-  const formattedDate = dateFormatter.format(new Date(session.date))
+  const formattedDate = formatDateRelative(session.date)
   return {
     id: session.id,
     label: session.name,
