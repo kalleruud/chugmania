@@ -62,6 +62,7 @@ export default function SessionForm({
             })
             .then(r => {
               onSubmitResponse?.(r.success)
+              if (!r.success) throw new Error(r.message)
               return r
             }),
           loc.no.session.create.request
@@ -85,6 +86,7 @@ export default function SessionForm({
             })
             .then(r => {
               onSubmitResponse?.(r.success)
+              if (!r.success) throw new Error(r.message)
               return r
             }),
           loc.no.session.editRequest

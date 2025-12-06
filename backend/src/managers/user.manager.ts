@@ -1,4 +1,5 @@
 import { eq } from 'drizzle-orm'
+import { isRegisterRequest } from '../../../common/models/auth'
 import { EventReq, EventRes } from '../../../common/models/socket.io'
 import {
   isEditUserRequest,
@@ -26,23 +27,6 @@ export default class UserManager {
     if (!user) throw new Error(`Couldn't find user with email ${email}`)
 
     return user
-  }
-
-  private static async createUser(userData: typeof users.$inferInsert) {
-    const { data: user, error } = await tryCatchAsync(
-      db.insert(users).values(userData).returning()
-    )
-
-    if (error) {
-      if (error.message.includes('UNIQUE constraint failed')) {
-        error.message = 'Email alreadt registered'
-      }
-      throw error
-    }
-
-    if (user.length != 1)
-      throw new Error('Unknown error: Failed to create user')
-    return user[0]!
   }
 
   static async getUserById(id: User['id']) {
@@ -118,11 +102,11 @@ export default class UserManager {
     socket: TypedSocket,
     request: EventReq<'edit_user'>
   ): Promise<EventRes<'edit_user'>> {
-    const actor = await AuthManager.checkAuth(socket)
-
     if (!isEditUserRequest(request)) {
       throw new Error(loc.no.error.messages.invalid_request('EditUserRequest'))
     }
+
+    const actor = await AuthManager.checkAuth(socket)
 
     const isSelf = actor.id === request.id
     const isAdmin = actor.role === 'admin'
@@ -182,7 +166,7 @@ export default class UserManager {
     }
 
     broadcast('all_users', await UserManager.getAllUsers())
-    broadcast('all_leaderboards', await TimeEntryManager.getAllTimeEntries())
+    broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
 
     return {
       success: true,
@@ -193,7 +177,50 @@ export default class UserManager {
     socket: TypedSocket,
     request: EventReq<'register'>
   ): Promise<EventRes<'register'>> {
-    throw new Error('Not implemented')
+    if (!isRegisterRequest(request)) {
+      throw new Error(loc.no.error.messages.invalid_request('RegisterRequest'))
+    }
+
+    const actor = await AuthManager.checkAuth(socket)
+    if (actor.role !== 'admin' && request.role !== 'user') {
+      throw new Error(loc.no.error.messages.insufficient_permissions)
+    }
+
+    const userAlreadyExists = await UserManager.userExists(request.email)
+    if (userAlreadyExists) {
+      throw new Error(loc.no.error.messages.email_already_exists)
+    }
+
+    const isFirstUser = !(await UserManager.adminExists())
+    const role = isFirstUser ? 'admin' : (request.role ?? 'user')
+
+    const passwordHash = await AuthManager.hash(request.password)
+
+    const { password, createdAt, role: _, ...user } = request
+    const newUser = await db
+      .insert(users)
+      .values({
+        ...user,
+        createdAt: createdAt ? new Date(createdAt) : undefined,
+        passwordHash,
+        role,
+      })
+      .returning()
+
+    const createdUser = newUser.at(0)
+    if (!createdUser) throw new Error(loc.no.error.messages.db_failed)
+
+    const { userInfo } = UserManager.toUserInfo(createdUser)
+
+    console.info(
+      new Date().toISOString(),
+      socket.id,
+      `Registered user '${userInfo.email}' with role '${role}'`
+    )
+
+    broadcast('all_users', await UserManager.getAllUsers())
+
+    return { success: true }
   }
 
   static async getAllUsers(): Promise<UserInfo[]> {

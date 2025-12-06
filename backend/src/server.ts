@@ -17,6 +17,7 @@ import SessionManager from './managers/session.manager'
 import TimeEntryManager from './managers/timeEntry.manager'
 import TrackManager from './managers/track.manager'
 import UserManager from './managers/user.manager'
+import { tryCatchAsync } from '../../common/utils/try-catch'
 
 const PORT = process.env.PORT ? Number.parseInt(process.env.PORT) : 6996
 const ORIGIN = new URL(process.env.ORIGIN ?? `http://localhost:${PORT}`)

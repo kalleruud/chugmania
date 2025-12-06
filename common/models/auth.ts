@@ -7,8 +7,12 @@ export type LoginRequest = {
 }
 
 export function isLoginRequest(data: any): data is LoginRequest {
-  if (typeof data !== 'object') return false
-  return data.email && data.password && data.type === 'LoginRequest'
+  if (typeof data !== 'object' || !data) return false
+  return (
+    data.type === 'LoginRequest' &&
+    typeof data.email === 'string' &&
+    typeof data.password === 'string'
+  )
 }
 
 export type RegisterRequest = Omit<
@@ -22,7 +26,7 @@ export type RegisterRequest = Omit<
   }
 
 export function isRegisterRequest(data: any): data is RegisterRequest {
-  if (typeof data !== 'object' || data !== null) return false
+  if (typeof data !== 'object' || !data) return false
   return (
     data.type === 'RegisterRequest' &&
     typeof data.email === 'string' &&

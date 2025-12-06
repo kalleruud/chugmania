@@ -24,6 +24,15 @@ const no = {
         error: (e: Error) => `Innlogging feilet: ${e.message}`,
       },
     },
+    register: {
+      title: 'Registrer',
+      description: 'Lag din egen Chugmania-bruker',
+      request: {
+        loading: 'Registrerer...',
+        success: 'Brukeren ble opprettet, prøv å logg inn!',
+        error: (e: Error) => `Registrering feilet: ${e.message}`,
+      },
+    },
     logout: {
       title: 'Logg ut',
     },
@@ -168,6 +177,7 @@ const no = {
       missing_jwt: 'Du har ingen JWT token... Går det an å være mer idiot?',
       incorrect_login: 'Brukernavn eller passord er feil, prøv igjen.',
       missing_login: 'Enten brukernavn eller passord mangler...',
+      db_failed: 'Databasen sa nei',
       incorrect_password:
         'Passordet er feil... Det er lov å ikke være tilbakestående',
       insufficient_permissions:
@@ -180,6 +190,8 @@ const no = {
       unknown_error: 'Ngl, jeg aaner ikke hva som skjedde her...',
       invalid_request: (type: string) =>
         `Svetlana mottok noe søppel av en '${type}' som gir null mening, prøv igjen.`,
+      email_already_exists:
+        'E-posten er allerede registrert, prøv med en annen mail din idiot.',
     },
   },
   timeEntry: {

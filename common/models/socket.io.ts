@@ -47,7 +47,7 @@ export interface ClientToServerEvents {
   ) => void
   register: (
     r: RegisterRequest,
-    callback: (r: LoginResponse | ErrorResponse) => void
+    callback: (r: SuccessResponse | ErrorResponse) => void
   ) => void
   get_user_data: (callback: (r: LoginResponse | ErrorResponse) => void) => void
   edit_user: (

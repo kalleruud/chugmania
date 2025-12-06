@@ -69,13 +69,32 @@ export default function UserForm({
             })
             .then(r => {
               onSubmitResponse?.(r.success)
+              if (!r.success) throw new Error(r.message)
               return r
             }),
           loc.no.user.edit.request
         )
 
       case 'create':
-        return console.log('Registering...')
+        return toast.promise(
+          socket
+            .emitWithAck('register', {
+              type: 'RegisterRequest',
+              email,
+              firstName,
+              lastName,
+              shortName,
+              password,
+              role,
+              createdAt,
+            })
+            .then(r => {
+              onSubmitResponse?.(r.success)
+              if (!r.success) throw new Error(r.message)
+              return r
+            }),
+          loc.no.user.create.request
+        )
     }
   }
 
