@@ -1,3 +1,4 @@
+import { formatDateRelative } from '@/app/utils/date'
 import { Item, ItemActions, ItemContent, ItemTitle } from '@/components/ui/item'
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
@@ -111,7 +112,7 @@ function UserCard({ user, className, ...props }: Readonly<UserItemProps>) {
           <span className='border-r' />
           <span className='text-sm'>{loc.no.user.role[user.role]}</span>
           <span className='border-r' />
-          <span className='text-sm'>{`${loc.no.user.joined} ${user.createdAt.getFullYear()}`}</span>
+          <span className='text-sm'>{`${loc.no.user.joined} ${formatDateRelative(user.createdAt)}`}</span>
         </div>
       </div>
 

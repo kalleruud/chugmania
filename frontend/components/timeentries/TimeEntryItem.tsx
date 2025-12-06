@@ -1,3 +1,4 @@
+import { formatDateRelative } from '@/app/utils/date'
 import { useData } from '@/contexts/DataContext'
 import { MinusIcon } from '@heroicons/react/24/solid'
 import {
@@ -110,6 +111,14 @@ function GapPart({
   )
 }
 
+function DatePart({ createdAt }: Readonly<{ createdAt: Date }>) {
+  return (
+    <div className='text-muted-foreground flex flex-none items-center text-sm'>
+      {formatDateRelative(createdAt)}
+    </div>
+  )
+}
+
 function TimeEntryRow({
   className,
   lapTime,
@@ -181,6 +190,7 @@ function TimeEntryRow({
         />
       )}
       {show.time && <TimePart duration={lapTime.duration} />}
+      {show.date && <DatePart createdAt={lapTime.createdAt} />}
     </div>
   )
 }
