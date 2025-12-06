@@ -1,5 +1,5 @@
 import {
-  formatDateOnly,
+  formatDateRelative,
   formatDateWithYear,
   formatTimeOnly,
   isOngoing,
@@ -54,9 +54,7 @@ function SessionRow({ session, className }: Readonly<SessionItemProps>) {
             {session.name}
           </ItemTitle>
           <ItemDescription className='flex items-center gap-1 capitalize'>
-            <span>
-              {formatDateOnly(session.date)} {formatTimeOnly(session.date)}
-            </span>
+            <span>{formatDateRelative(session.date)}</span>
           </ItemDescription>
         </ItemContent>
 
