@@ -181,8 +181,8 @@ export default class UserManager {
       throw new Error(loc.no.error.messages.invalid_request('RegisterRequest'))
     }
 
-    const actor = await AuthManager.checkAuth(socket)
-    if (actor.role !== 'admin' && request.role !== 'user') {
+    const { data: actor } = await tryCatchAsync(AuthManager.checkAuth(socket))
+    if (actor && actor?.role !== 'admin' && request.role !== 'user') {
       throw new Error(loc.no.error.messages.insufficient_permissions)
     }
 

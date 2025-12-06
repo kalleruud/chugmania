@@ -21,7 +21,7 @@ import { useState } from 'react'
 import { Spinner } from '../ui/spinner'
 import UserForm from './UserForm'
 
-const ALLOW_SIGNUPS = false
+const ALLOW_SIGNUPS = true
 
 export default function LoginCard() {
   const { isLoggedIn, isLoading } = useAuth()
@@ -83,8 +83,8 @@ export default function LoginCard() {
                     disabled={isLoading}>
                     {isLoading && <Spinner />}
                     {isLoading
-                      ? loc.no.user.login.request.loading
-                      : loc.no.user.login.title}
+                      ? loc.no.user.register.request.loading
+                      : loc.no.user.register.title}
                   </Button>
                 </DialogFooter>
               </DialogContent>
