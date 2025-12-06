@@ -1,9 +1,12 @@
 import { Item, ItemActions, ItemContent, ItemTitle } from '@/components/ui/item'
 import { useAuth } from '@/contexts/AuthContext'
+import { useConnection } from '@/contexts/ConnectionContext'
 import loc from '@/lib/locales'
-import { ChevronRight } from 'lucide-react'
+import { PencilIcon } from '@heroicons/react/24/solid'
+import { ChevronRight, Trash2 } from 'lucide-react'
 import { useState, type ComponentProps } from 'react'
 import { Link } from 'react-router-dom'
+import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
 import { type UserInfo } from '../../../common/models/user'
 import { Button } from '../ui/button'
@@ -65,11 +68,33 @@ function UserRow({
 
 function UserCard({ user, className, ...props }: Readonly<UserItemProps>) {
   const { logout, isLoading, loggedInUser } = useAuth()
+  const { socket } = useConnection()
   const [open, setOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 
   const isSelf = loggedInUser?.id === user.id
   const isAdmin = loggedInUser?.role === 'admin'
   const canEdit = isSelf || isAdmin
+
+  const handleDeleteUser = async () => {
+    toast.promise(
+      socket
+        .emitWithAck('delete_user', {
+          type: 'DeleteUserRequest',
+          id: user.id,
+        })
+        .then(r => {
+          setDeleteDialogOpen(false)
+          if (!r.success) throw new Error(r.message)
+          return r
+        }),
+      {
+        loading: 'Sletter bruker...',
+        success: 'Brukeren ble slettet',
+        error: (err: Error) => `Sletting feilet: ${err.message}`,
+      }
+    )
+  }
 
   return (
     <div className={twMerge('flex flex-col gap-4', className)} {...props}>
@@ -90,13 +115,43 @@ function UserCard({ user, className, ...props }: Readonly<UserItemProps>) {
         </div>
       </div>
 
-      {(canEdit || isSelf) && (
+      {canEdit && (
         <div className='flex justify-center gap-2'>
+          <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant='destructive' size='sm' disabled={isSelf}>
+                <Trash2 className='mr-2 size-4' />
+                {loc.no.common.delete}
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{loc.no.dialog.confirmDelete.title}</DialogTitle>
+                <DialogDescription>
+                  {loc.no.dialog.confirmDelete.description}
+                </DialogDescription>
+              </DialogHeader>
+
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button variant='outline'>{loc.no.dialog.cancel}</Button>
+                </DialogClose>
+                <Button
+                  variant='destructive'
+                  onClick={handleDeleteUser}
+                  disabled={isLoading}>
+                  {loc.no.common.delete}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
           {canEdit && (
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
                 <Button variant='outline' size='sm'>
-                  {loc.no.user.edit.title}
+                  <PencilIcon />
+                  {loc.no.common.edit}
                 </Button>
               </DialogTrigger>
               <DialogContent>

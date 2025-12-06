@@ -250,7 +250,9 @@ export default function LapTimeInput({
     } satisfies EditTimeEntryRequest
 
     toast.promise(
-      socket.emitWithAck('edit_time_entry', payload),
+      socket.emitWithAck('edit_time_entry', payload).then(r => {
+        if (!r.success) throw new Error(r.message)
+      }),
       loc.no.timeEntry.input.editRequest
     )
   }
@@ -278,12 +280,17 @@ export default function LapTimeInput({
       comment: comment?.trim() === '' ? undefined : comment?.trim(),
     } satisfies CreateTimeEntryRequest
 
-    toast.promise(socket.emitWithAck('post_time_entry', payload), {
-      ...loc.no.timeEntry.input.createRequest,
-      success: loc.no.timeEntry.input.createRequest.success(
-        formatTime(payload.duration ?? 0)
-      ),
-    })
+    toast.promise(
+      socket.emitWithAck('post_time_entry', payload).then(r => {
+        if (!r.success) throw new Error(r.message)
+      }),
+      {
+        ...loc.no.timeEntry.input.createRequest,
+        success: loc.no.timeEntry.input.createRequest.success(
+          formatTime(payload.duration ?? 0)
+        ),
+      }
+    )
   }
 
   // Stable keys for each digit position to avoid using array index as key

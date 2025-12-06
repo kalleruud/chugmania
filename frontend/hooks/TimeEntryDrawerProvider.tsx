@@ -90,6 +90,7 @@ export default function TimeEntryDialogProvider({
         })
         .then(r => {
           if (r.success) close()
+          else throw new Error(r.message)
           return r
         }),
       loc.no.timeEntry.input.deleteRequest

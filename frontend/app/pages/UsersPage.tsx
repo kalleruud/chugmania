@@ -140,7 +140,7 @@ export function UsersList({ className, showAll }: Readonly<UsersPageProps>) {
               id='createUserForm'
               variant='create'
               className='py-2'
-              onSubmitResponse={() => setOpen(false)}
+              onSubmitResponse={success => success && setOpen(false)}
               disabled={isLoading}
             />
 
