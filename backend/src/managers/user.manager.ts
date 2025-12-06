@@ -43,8 +43,8 @@ export default class UserManager {
     const entries = Object.entries({
       ...updates,
       createdAt: updates.createdAt ? new Date(updates.createdAt) : undefined,
+      deletedAt: updates.deletedAt ? new Date(updates.deletedAt) : undefined,
       updatedAt: undefined,
-      deletedAt: undefined,
     } satisfies typeof updates).filter(([, value]) => value !== undefined)
 
     if (entries.length === 0) {
