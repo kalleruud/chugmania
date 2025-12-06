@@ -21,7 +21,7 @@ import { useState } from 'react'
 import { Spinner } from '../ui/spinner'
 import UserForm from './UserForm'
 
-const ALLOW_SIGNUPS = true
+const ALLOW_SIGNUPS = false
 
 export default function LoginCard() {
   const { isLoggedIn, isLoading } = useAuth()
