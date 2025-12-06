@@ -45,6 +45,50 @@
 - `frontend/`: React + Vite, components in `app/components/`, pages in `app/pages/`
 - `common/`: Shared models/utils consumed by both sides
 
+## Issue Creation & Formatting
+
+All GitHub issues must follow a consistent, concise format:
+
+**Structure:**
+
+1. **Overview** (1-2 sentences): What is being built and why
+2. **Acceptance Requirements** (bullet list): Clear, testable requirements
+3. **Implementation Plan** (checkbox list): Actionable steps organized by phase/area
+
+**Example:**
+
+```markdown
+## Overview
+
+Brief description of what and why in 1-2 sentences.
+
+## Acceptance Requirements
+
+- Feature/fix is testable and verifiable
+- Code follows existing patterns
+- All edge cases handled
+- Tests pass with `npm run check`
+
+## Implementation Steps
+
+### Backend
+
+- [ ] Step 1
+- [ ] Step 2
+
+### Frontend
+
+- [ ] Step 3
+- [ ] Step 4
+
+### Testing
+
+- [ ] Test scenario 1
+- [ ] Test scenario 2
+```
+
+Keep descriptions concise—avoid lengthy explanations of current state or background unless critical to understanding.
+
 ## Tools
 
 - When needing to search docs, use `context7` tools.
