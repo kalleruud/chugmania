@@ -1,7 +1,8 @@
-import { eq } from 'drizzle-orm'
+import { eq, isNull } from 'drizzle-orm'
 import { isRegisterRequest } from '../../../common/models/auth'
 import { EventReq, EventRes } from '../../../common/models/socket.io'
 import {
+  isDeleteUserRequest,
   isEditUserRequest,
   LoginResponse,
   type User,
@@ -173,6 +174,36 @@ export default class UserManager {
     }
   }
 
+  static async onDeleteUser(
+    socket: TypedSocket,
+    request: EventReq<'delete_user'>
+  ): Promise<EventRes<'delete_user'>> {
+    if (!isDeleteUserRequest(request)) {
+      throw new Error(
+        loc.no.error.messages.invalid_request('DeleteUserRequest')
+      )
+    }
+
+    await AuthManager.checkAuth(socket, ['admin'])
+
+    const deletedUser = await UserManager.updateUser(request.id, {
+      deletedAt: new Date(),
+    })
+
+    console.info(
+      new Date().toISOString(),
+      socket.id,
+      `Deleted user '${deletedUser.email}'`
+    )
+
+    broadcast('all_users', await UserManager.getAllUsers())
+    broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
+
+    return {
+      success: true,
+    }
+  }
+
   static async onRegister(
     socket: TypedSocket,
     request: EventReq<'register'>
@@ -224,7 +255,7 @@ export default class UserManager {
   }
 
   static async getAllUsers(): Promise<UserInfo[]> {
-    const data = await db.select().from(users)
+    const data = await db.select().from(users).where(isNull(users.deletedAt))
     if (data.length === 0)
       throw new Error(loc.no.error.messages.not_in_db(loc.no.users.title))
     return data.map(r => UserManager.toUserInfo(r).userInfo)

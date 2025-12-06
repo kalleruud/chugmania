@@ -18,7 +18,12 @@ import type {
   TimeEntry,
 } from './timeEntry'
 import type { Track } from './track'
-import type { EditUserRequest, LoginResponse, UserInfo } from './user'
+import type {
+  DeleteUserRequest,
+  EditUserRequest,
+  LoginResponse,
+  UserInfo,
+} from './user'
 
 export type SuccessResponse = {
   success: true
@@ -52,6 +57,10 @@ export interface ClientToServerEvents {
   get_user_data: (callback: (r: LoginResponse | ErrorResponse) => void) => void
   edit_user: (
     r: EditUserRequest,
+    callback: (r: SuccessResponse | ErrorResponse) => void
+  ) => void
+  delete_user: (
+    r: DeleteUserRequest,
     callback: (r: SuccessResponse | ErrorResponse) => void
   ) => void
   post_time_entry: (

@@ -35,6 +35,16 @@ export function isEditUserRequest(data: any): data is EditUserRequest {
   return data.type === 'EditUserRequest' && typeof data.id === 'string'
 }
 
+export type DeleteUserRequest = {
+  type: 'DeleteUserRequest'
+  id: User['id']
+}
+
+export function isDeleteUserRequest(data: any): data is DeleteUserRequest {
+  if (typeof data !== 'object' || data === null) return false
+  return data.type === 'DeleteUserRequest' && typeof data.id === 'string'
+}
+
 export function getUserFullName(
   user: Pick<UserInfo, 'firstName' | 'lastName'>
 ) {
