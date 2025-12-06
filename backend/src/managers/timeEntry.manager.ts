@@ -5,6 +5,7 @@ import {
   isCreateTimeEntryRequest,
   isEditTimeEntryRequest,
 } from '../../../common/models/timeEntry'
+import type { User } from '../../../common/models/user'
 import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
 import { timeEntries } from '../../database/schema'
@@ -120,6 +121,14 @@ export default class TimeEntryManager {
     return {
       success: true,
     }
+  }
+
+  static async deleteTimeEntriesForUser(userId: User['id']): Promise<void> {
+    const deletedAt = new Date()
+    await db
+      .update(timeEntries)
+      .set({ deletedAt })
+      .where(eq(timeEntries.user, userId))
   }
 
   static async getAllTimeEntries(): Promise<TimeEntry[]> {

@@ -190,10 +190,13 @@ export default class UserManager {
       deletedAt: new Date(),
     })
 
+    // Soft-delete all time entries for this user
+    await TimeEntryManager.deleteTimeEntriesForUser(request.id)
+
     console.info(
       new Date().toISOString(),
       socket.id,
-      `Deleted user '${deletedUser.email}'`
+      `Deleted user '${deletedUser.email}' and their time entries`
     )
 
     broadcast('all_users', await UserManager.getAllUsers())
