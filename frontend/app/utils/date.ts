@@ -1,8 +1,92 @@
+import { formatRelative } from 'date-fns'
+import { nb } from 'date-fns/locale'
 import { DateTime } from 'luxon'
 
 const DEFAULT_LOCALE = 'nb-NO'
 const DEFAULT_ZONE = 'Europe/Oslo'
 
+/**
+ * Format a date with relative display (today, tomorrow, in 4 days, 6 days ago, etc.)
+ * with time appended. Falls back to full date format for dates beyond 1 week.
+ *
+ * @param input - Date object or ISO string
+ * @returns Formatted relative date with time (e.g., "i dag · 14:30", "i morgen · 09:15")
+ */
+export function formatDateRelative(input: Date | string): string {
+  const date = typeof input === 'string' ? new Date(input) : input
+
+  if (!date || isNaN(date.getTime())) return ''
+
+  // Format relative part using date-fns with Norwegian locale
+  const relativeDate = formatRelative(date, new Date(), { locale: nb })
+
+  // Extract and format time separately for consistency
+  const dateTime = DateTime.fromJSDate(date, { zone: DEFAULT_ZONE })
+  const timeLabel = dateTime.toLocaleString(DateTime.TIME_SIMPLE)
+
+  return `${relativeDate} · ${timeLabel}`
+}
+
+/**
+ * Format a date for display without relative formatting
+ * @param input - Date object or ISO string
+ * @returns Formatted date (e.g., "mandag 5. januar")
+ */
+export function formatDateOnly(input: Date | string): string {
+  const dateTime =
+    typeof input === 'string'
+      ? DateTime.fromISO(input, { zone: DEFAULT_ZONE })
+      : DateTime.fromJSDate(input, { zone: DEFAULT_ZONE })
+
+  if (!dateTime.isValid) return ''
+
+  const localized = dateTime.setZone(DEFAULT_ZONE).setLocale(DEFAULT_LOCALE)
+  return localized.toFormat('cccc d. MMMM')
+}
+
+/**
+ * Format a date with full date and year
+ * @param input - Date object or ISO string
+ * @returns Formatted date (e.g., "mandag 5. januar 2025")
+ */
+export function formatDateWithYear(input: Date | string): string {
+  const dateTime =
+    typeof input === 'string'
+      ? DateTime.fromISO(input, { zone: DEFAULT_ZONE })
+      : DateTime.fromJSDate(input, { zone: DEFAULT_ZONE })
+
+  if (!dateTime.isValid) return ''
+
+  const localized = dateTime.setZone(DEFAULT_ZONE).setLocale(DEFAULT_LOCALE)
+  return localized.toFormat('cccc d. MMMM yyyy')
+}
+
+/**
+ * Format a time for display
+ * @param input - Date object or ISO string
+ * @returns Formatted time (e.g., "14:30")
+ */
+export function formatTimeOnly(input: Date | string): string {
+  const dateTime =
+    typeof input === 'string'
+      ? DateTime.fromISO(input, { zone: DEFAULT_ZONE })
+      : DateTime.fromJSDate(input, { zone: DEFAULT_ZONE })
+
+  if (!dateTime.isValid) return ''
+
+  const localized = dateTime.setZone(DEFAULT_ZONE).setLocale(DEFAULT_LOCALE)
+  return localized.toFormat('HH:mm')
+}
+
+/**
+ * Legacy function - kept for backwards compatibility
+ * Formats a lap timestamp with relative date and time
+ *
+ * @param input - Date object or ISO string
+ * @param locale - Optional locale (kept for signature compatibility)
+ * @returns Formatted timestamp
+ * @deprecated Use formatDateRelative() instead
+ */
 export function formatLapTimestamp(
   input: Date | string,
   locale: string = DEFAULT_LOCALE
