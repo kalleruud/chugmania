@@ -9,6 +9,7 @@
     /* Module resolution */
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
+    "noEmit": true,
     "allowImportingTsExtensions": true,
 
     /* Code generation */
