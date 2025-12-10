@@ -48,10 +48,7 @@ export const broadcast: typeof io.emit = (ev, ...args) => {
 }
 
 app.get('/api/sessions/calendar.ics', (req, res) =>
-  ApiManager.handleGetAllSessionsCalendar(ORIGIN, req, res)
-)
-app.get('/api/sessions/:id/calendar.ics', (req, res) =>
-  ApiManager.handleGetSessionCalendar(ORIGIN, req, res)
+  ApiManager.onGetCalendar(ORIGIN, req, res)
 )
 
 io.on('connect', s => Connect(s))
