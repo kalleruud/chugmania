@@ -1,5 +1,5 @@
 import { isLoginRequest } from '@common/models/auth'
-import {
+import type {
   ErrorResponse,
   EventReq,
   EventRes,
@@ -7,13 +7,16 @@ import {
 } from '@common/models/socket.io'
 import { type User, type UserInfo } from '@common/models/user'
 import { tryCatch, tryCatchAsync } from '@common/utils/try-catch'
-import jwt, { JwtPayload } from 'jsonwebtoken'
+import jwt, { type JwtPayload } from 'jsonwebtoken'
 import loc from '../../../frontend/lib/locales'
-import { TypedSocket } from '../server'
+import type { TypedSocket } from '../server'
 import UserManager from './user.manager'
 
-const SECRET: jwt.Secret = process.env.SECRET!
-if (!SECRET) throw new Error("Missing environment variable 'SECRET'")
+const SECRET: jwt.Secret = (() => {
+  const secret = process.env.SECRET
+  if (!secret) throw new Error("Missing environment variable 'SECRET'")
+  return secret
+})()
 
 type TokenData = Omit<SocketData, 'token'> & JwtPayload
 
@@ -45,9 +48,14 @@ export default class AuthManager {
       console.error(new Date().toISOString(), error)
       throw new Error(loc.no.error.messages.invalid_jwt)
     }
-    if (!isTokenData(data) || !UserManager.getUserById(data.userId))
-      throw new Error(loc.no.error.messages.invalid_jwt)
-    return data as TokenData
+    if (!isTokenData(data)) throw new Error(loc.no.error.messages.invalid_jwt)
+
+    const { data: user, error: userError } = await tryCatchAsync(
+      UserManager.getUserById(data.userId)
+    )
+    if (userError || !user) throw new Error(loc.no.error.messages.invalid_jwt)
+
+    return data
   }
 
   static async isPasswordValid(

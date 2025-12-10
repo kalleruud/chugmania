@@ -128,7 +128,7 @@ export default class AdminManager {
       return null
     }
 
-    const headers = Object.keys(objects[0]!)
+    const headers = Object.keys(objects[0])
     const rows = objects.map(obj =>
       headers
         .map(header => {
