@@ -1,7 +1,7 @@
-import {
+import type {
+  TrackLevel,
   tracks,
-  type TrackLevel,
-  type TrackType,
+  TrackType,
 } from '../../backend/database/schema'
 
 export type Track = typeof tracks.$inferSelect

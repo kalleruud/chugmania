@@ -1,7 +1,4 @@
-import express from 'express'
-import { Server, Socket } from 'socket.io'
-import ViteExpress from 'vite-express'
-import {
+import type {
   ClientToServerEvents,
   ErrorResponse,
   EventReq,
@@ -9,7 +6,10 @@ import {
   InterServerEvents,
   ServerToClientEvents,
   SocketData,
-} from '../../common/models/socket.io'
+} from '@common/models/socket.io'
+import express from 'express'
+import { Server, Socket } from 'socket.io'
+import ViteExpress from 'vite-express'
 import AdminManager from './managers/admin.manager'
 import ApiManager from './managers/api.manager'
 import AuthManager from './managers/auth.manager'

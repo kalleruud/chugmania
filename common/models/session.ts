@@ -1,4 +1,4 @@
-import { sessionSignups, sessions } from '../../backend/database/schema'
+import type { sessionSignups, sessions } from '../../backend/database/schema'
 import { type UserInfo } from './user'
 
 export type Session = typeof sessions.$inferSelect
