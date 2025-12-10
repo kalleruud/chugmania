@@ -16,6 +16,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './frontend'),
+      '@common': path.resolve(__dirname, './common'),
     },
   },
 })
