@@ -7,6 +7,8 @@ Chugmania is a full-stack Trackmania Turbo companion for logging lap times, shar
 - Record lap times with optional session/context metadata and real-time Socket.IO updates
 - Browse aggregated leaderboards, player profiles, and track stats from the shared SQLite database
 - Plan meetups through the sessions module, including calendar exports and attendance tracking
+- Soft-delete sessions with cascading deletion of signups (admin/moderator only)
+- Centralized date formatting with Norwegian localization and relative dates
 - Bulk-import users, tracks, and lap times through CSV uploads for quick seeding
 
 ## Tech Stack
@@ -44,13 +46,13 @@ Formal test suites are still pending. Author backend specs as `*.spec.ts` or fro
 ## Project Layout
 
 ```
-backend/   Express server, Socket.IO, database layer, managers
-common/    Shared TypeScript models and utilities
-frontend/  React app components, pages, contexts, and styling
-data/      Local SQLite database (created automatically, ignored by Git)
+backend/    Express server, Socket.IO, database layer, managers
+common/     Shared TypeScript models and utilities (date formatting, validation)
+frontend/   React app components, pages, contexts, and styling
+data/       Local SQLite database (created automatically, ignored by Git)
 ```
 
-Key backend flows live under `backend/src/managers/`, while shared DTOs reside in `common/models/`. Frontend routes sit in `frontend/app/pages/` and reuse reusable UI from `frontend/app/components/`.
+Key backend flows live under `backend/src/managers/`, while shared DTOs reside in `common/models/`. Frontend routes sit in `frontend/app/pages/` and reuse components from `frontend/components/`. Date formatting utilities are centralized in `common/utils/date.ts` with Norwegian localization and relative date display.
 
 ## CSV Imports
 
@@ -58,7 +60,7 @@ Admins can visit `/admin` to upload CSV files matching the sample schemas in `da
 
 ## Sessions Module
 
-The `/sessions` route shows upcoming and past events. Authorized users may create, edit, or cancel sessions with optional locations and descriptions. Attendees can RSVP; ICS feeds are available via `/api/sessions/calendar.ics`, and individual invites can be downloaded per session.
+The `/sessions` route shows upcoming and past events. Authorized users may create, edit, or delete sessions with optional locations and descriptions. Attendees can RSVP; ICS feeds are available via `/api/sessions/calendar.ics`, and individual invites can be downloaded per session. Session deletion is soft-delete (retained for audit), cascading to all signups, and only available to admin/moderator roles.
 
 ## Configuration
 
