@@ -23,23 +23,6 @@ export function formatDateRelative(input: Date | string): string {
 }
 
 /**
- * Format a date for display without relative formatting
- * @param input - Date object or ISO string
- * @returns Formatted date (e.g., "mandag 5. januar")
- */
-export function formatDateOnly(input: Date | string): string {
-  const dateTime =
-    typeof input === 'string'
-      ? DateTime.fromISO(input, { zone: DEFAULT_ZONE })
-      : DateTime.fromJSDate(input, { zone: DEFAULT_ZONE })
-
-  if (!dateTime.isValid) return ''
-
-  const localized = dateTime.setZone(DEFAULT_ZONE).setLocale(DEFAULT_LOCALE)
-  return localized.toFormat('cccc d. MMMM')
-}
-
-/**
  * Format a date with full date and year
  * @param input - Date object or ISO string
  * @returns Formatted date (e.g., "mandag 5. januar 2025")
@@ -54,6 +37,18 @@ export function formatDateWithYear(input: Date | string): string {
 
   const localized = dateTime.setZone(DEFAULT_ZONE).setLocale(DEFAULT_LOCALE)
   return localized.toFormat('cccc d. MMMM yyyy')
+}
+
+export function formatYear(input: Date | string): string {
+  const dateTime =
+    typeof input === 'string'
+      ? DateTime.fromISO(input, { zone: DEFAULT_ZONE })
+      : DateTime.fromJSDate(input, { zone: DEFAULT_ZONE })
+
+  if (!dateTime.isValid) return ''
+
+  const localized = dateTime.setZone(DEFAULT_ZONE).setLocale(DEFAULT_LOCALE)
+  return localized.toFormat('yyyy')
 }
 
 /**

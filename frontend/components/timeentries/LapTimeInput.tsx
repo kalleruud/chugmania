@@ -10,7 +10,7 @@ import type {
 } from '@common/models/timeEntry'
 import type { Track } from '@common/models/track'
 import type { UserInfo } from '@common/models/user'
-import { formatDateRelative, isOngoing } from '@common/utils/date'
+import { formatDateWithYear, isOngoing } from '@common/utils/date'
 import {
   durationToInputList,
   formatTime,
@@ -61,7 +61,7 @@ function trackToLookupItem(track: Track): ComboboxLookupItem {
 }
 
 function sessionToLookupItem(session: SessionWithSignups): ComboboxLookupItem {
-  const formattedDate = formatDateRelative(session.date)
+  const formattedDate = formatDateWithYear(session.date)
   return {
     id: session.id,
     label: session.name,

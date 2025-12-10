@@ -1,6 +1,5 @@
 import { useData } from '@/contexts/DataContext'
 import type { LeaderboardEntryGap, TimeEntry } from '@common/models/timeEntry'
-import { formatDateRelative } from '@common/utils/date'
 import { formatTime } from '@common/utils/time'
 import { MinusIcon } from '@heroicons/react/24/solid'
 import {
@@ -29,7 +28,7 @@ const breakpoints = {
   none: 0,
   sm: 180,
   md: 270,
-  lg: 380,
+  lg: 360,
   xl: 640,
 }
 
@@ -108,14 +107,6 @@ function GapPart({
   )
 }
 
-function DatePart({ createdAt }: Readonly<{ createdAt: Date }>) {
-  return (
-    <div className='text-muted-foreground flex flex-none items-center text-sm'>
-      {formatDateRelative(createdAt)}
-    </div>
-  )
-}
-
 function TimeEntryRow({
   className,
   lapTime,
@@ -187,7 +178,6 @@ function TimeEntryRow({
         />
       )}
       {show.time && <TimePart duration={lapTime.duration} />}
-      {show.date && <DatePart createdAt={lapTime.createdAt} />}
     </div>
   )
 }

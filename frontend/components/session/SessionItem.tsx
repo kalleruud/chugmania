@@ -85,7 +85,7 @@ function SessionCard({ session, className }: Readonly<SessionItemProps>) {
             <span className='capitalize'>{formatTimeOnly(session.date)}</span>
           </div>
 
-          <div className='flex items-center gap-2'>
+          <div className='flex items-center gap-2 capitalize'>
             <CalendarIcon className='text-muted-foreground size-4' />
             {formatDateWithYear(session.date)}
           </div>
