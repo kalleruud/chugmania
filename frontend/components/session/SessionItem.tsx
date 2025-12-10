@@ -7,10 +7,11 @@ import {
   ItemTitle,
 } from '@/components/ui/item'
 import { useAuth } from '@/contexts/AuthContext'
+import { useTimeAgoStrict } from '@/hooks/useTimeAgoStrict'
 import loc from '@/lib/locales'
 import type { SessionWithSignups } from '@common/models/session'
 import {
-  formatDateRelative,
+  formatDateWithYear,
   formatTimeOnly,
   isOngoing,
   isPast,
@@ -38,6 +39,7 @@ export function SessionItem(props: Readonly<SessionItemProps>) {
 
 function SessionRow({ session, className }: Readonly<SessionItemProps>) {
   const { loggedInUser, isLoggedIn } = useAuth()
+  const timeAgo = useTimeAgoStrict({ date: session.date })
 
   const isSignedUp =
     isLoggedIn && session.signups.some(su => su.user.id === loggedInUser.id)
@@ -53,7 +55,7 @@ function SessionRow({ session, className }: Readonly<SessionItemProps>) {
             {session.name}
           </ItemTitle>
           <ItemDescription>
-            <span>{formatDateRelative(session.date)}</span>
+            <span>{timeAgo}</span>
           </ItemDescription>
         </ItemContent>
 
@@ -83,7 +85,7 @@ function SessionCard({ session, className }: Readonly<SessionItemProps>) {
 
           <div className='flex items-center gap-2'>
             <CalendarIcon className='text-muted-foreground size-4' />
-            {formatDateRelative(session.date)}
+            {formatDateWithYear(session.date)}
           </div>
 
           {session.location && (
