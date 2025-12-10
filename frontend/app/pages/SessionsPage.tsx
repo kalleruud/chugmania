@@ -11,26 +11,14 @@ import { Button } from '@/components/ui/button'
 import { useAuth } from '@/contexts/AuthContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
-import { isPast, isUpcoming } from '@common/utils/date'
+import { isOngoing, isPast, isUpcoming } from '@common/utils/date'
 import { CalendarIcon } from '@heroicons/react/24/solid'
 import { ChevronDown, ChevronUp } from 'lucide-react'
-import { useState } from 'react'
+import { useState, type ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { PageHeader } from '../../components/PageHeader'
 
 export default function SessionsPage() {
-  const { loggedInUser, isLoggedIn } = useAuth()
-  const { sessions } = useData()
-
-  const [showPreviousSessions, setShowPreviousSessions] = useState(false)
-
-  const isAdmin = isLoggedIn && loggedInUser.role === 'admin'
-  const isModerator = isLoggedIn && loggedInUser.role === 'moderator'
-  const canCreate = isAdmin || isModerator
-
-  const upcomingSessions = sessions?.filter(s => isUpcoming(s)) ?? []
-  const pastSessions = sessions?.filter(s => isPast(s)) ?? []
-
   return (
     <div className='flex flex-col gap-2'>
       <Breadcrumb>
@@ -45,6 +33,30 @@ export default function SessionsPage() {
         </BreadcrumbList>
       </Breadcrumb>
 
+      <SessionsContent />
+    </div>
+  )
+}
+
+export function SessionsContent({
+  className,
+  ...props
+}: ComponentProps<'div'>) {
+  const { loggedInUser, isLoggedIn } = useAuth()
+  const { sessions } = useData()
+
+  const [showPreviousSessions, setShowPreviousSessions] = useState(false)
+
+  const isAdmin = isLoggedIn && loggedInUser.role === 'admin'
+  const isModerator = isLoggedIn && loggedInUser.role === 'moderator'
+  const canCreate = isAdmin || isModerator
+
+  const upcomingSessions = sessions?.filter(isUpcoming) ?? []
+  const pastSessions = sessions?.filter(isPast) ?? []
+  const ongoingSessions = sessions?.filter(isOngoing) ?? []
+
+  return (
+    <div className={twMerge('flex flex-col gap-2', className)} {...props}>
       <PageHeader
         title={loc.no.session.title}
         description={loc.no.session.description}
@@ -52,6 +64,14 @@ export default function SessionsPage() {
       />
 
       <SubscribeButton className={twMerge(!canCreate && 'w-full')} />
+
+      {ongoingSessions.length > 0 && (
+        <SessionsList
+          header={loc.no.session.status.ongoing}
+          sessions={ongoingSessions}
+          hideCreate
+        />
+      )}
 
       <SessionsList
         header={loc.no.session.status.upcoming}
