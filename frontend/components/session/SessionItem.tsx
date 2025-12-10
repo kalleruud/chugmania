@@ -1,15 +1,4 @@
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
 import {
   Item,
   ItemActions,
@@ -18,7 +7,6 @@ import {
   ItemTitle,
 } from '@/components/ui/item'
 import { useAuth } from '@/contexts/AuthContext'
-import { useConnection } from '@/contexts/ConnectionContext'
 import { useTimeAgoStrict as useDistanceToNow } from '@/hooks/useTimeAgoStrict'
 import loc from '@/lib/locales'
 import type { SessionWithSignups } from '@common/models/session'
@@ -30,10 +18,8 @@ import {
   isUpcoming,
 } from '@common/utils/date'
 import { CalendarIcon, ClockIcon, MapPinIcon } from '@heroicons/react/24/solid'
-import { ChevronRight, Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import { ChevronRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
 
 type SessionItemProps = {
@@ -85,34 +71,6 @@ function SessionRow({ session, className }: Readonly<SessionItemProps>) {
 }
 
 function SessionCard({ session, className }: Readonly<SessionItemProps>) {
-  const { socket } = useConnection()
-  const { loggedInUser, isLoggedIn, isLoading } = useAuth()
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-
-  const isAdmin = isLoggedIn && loggedInUser.role === 'admin'
-  const isModerator = isLoggedIn && loggedInUser.role === 'moderator'
-  const canEdit = isAdmin || isModerator
-
-  const handleDeleteSession = async () => {
-    toast.promise(
-      socket
-        .emitWithAck('delete_session', {
-          type: 'DeleteSessionRequest',
-          id: session.id,
-        })
-        .then(r => {
-          setDeleteDialogOpen(false)
-          if (!r.success) throw new Error(r.message)
-          return r
-        }),
-      {
-        loading: 'Sletter session...',
-        success: 'Sesjonen ble slettet',
-        error: (err: Error) => `Sletting feilet: ${err.message}`,
-      }
-    )
-  }
-
   return (
     <div className={twMerge('flex flex-col gap-2', className)}>
       <h1 className='text-3xl tracking-wide'>{session.name}</h1>
@@ -140,52 +98,17 @@ function SessionCard({ session, className }: Readonly<SessionItemProps>) {
           )}
         </div>
 
-        <div className='flex flex-col items-end gap-2'>
-          <div>
-            {isPast(session) && (
-              <Badge variant='outline'>{loc.no.session.status.past}</Badge>
-            )}
-            {isOngoing(session) && (
-              <Badge className='animate-pulse'>
-                {loc.no.session.status.ongoing}
-              </Badge>
-            )}
-            {isUpcoming(session) && (
-              <Badge variant='outline'>{loc.no.session.status.upcoming}</Badge>
-            )}
-          </div>
-
-          {canEdit && (
-            <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant='destructive' size='sm'>
-                  <Trash2 className='mr-2 size-4' />
-                  {loc.no.common.delete}
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>{loc.no.dialog.confirmDelete.title}</DialogTitle>
-                  <DialogDescription>
-                    {loc.no.dialog.confirmDelete.description}
-                  </DialogDescription>
-                </DialogHeader>
-
-                <DialogFooter>
-                  <DialogClose asChild>
-                    <Button variant='outline'>{loc.no.dialog.cancel}</Button>
-                  </DialogClose>
-                  <Button
-                    variant='destructive'
-                    onClick={handleDeleteSession}
-                    disabled={isLoading}>
-                    {loc.no.common.delete}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          )}
-        </div>
+        {isPast(session) && (
+          <Badge variant='outline'>{loc.no.session.status.past}</Badge>
+        )}
+        {isOngoing(session) && (
+          <Badge className='animate-pulse'>
+            {loc.no.session.status.ongoing}
+          </Badge>
+        )}
+        {isUpcoming(session) && (
+          <Badge variant='outline'>{loc.no.session.status.upcoming}</Badge>
+        )}
       </div>
     </div>
   )
