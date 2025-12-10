@@ -48,9 +48,12 @@ import { SubscribeButton } from './SessionsPage'
 
 function Signup({
   session,
+  disabled,
   className,
   ...rest
-}: Readonly<{ session: SessionWithSignups } & ComponentProps<'div'>>) {
+}: Readonly<
+  { session: SessionWithSignups; disabled?: boolean } & ComponentProps<'div'>
+>) {
   const { socket } = useConnection()
   const { loggedInUser, isLoggedIn } = useAuth()
   const [myResponse, setMyResponse] = useState<SessionResponse | undefined>(
@@ -58,7 +61,6 @@ function Signup({
   )
 
   const isAdmin = isLoggedIn && loggedInUser.role !== 'user'
-
   const responses: SessionResponse[] = ['yes', 'maybe', 'no']
 
   function handleRsvp(response: SessionResponse) {
@@ -87,7 +89,10 @@ function Signup({
 
         <div className='flex items-center gap-1'>
           {(isUpcoming(session) || isAdmin) && isLoggedIn && myResponse && (
-            <Select value={myResponse} onValueChange={handleRsvp}>
+            <Select
+              disabled={disabled}
+              value={myResponse}
+              onValueChange={handleRsvp}>
               <SelectTrigger className='w-[180px]'>
                 <SelectValue placeholder={loc.no.session.rsvp.change} />
               </SelectTrigger>
@@ -102,7 +107,10 @@ function Signup({
           )}
 
           {isUpcoming(session) && isLoggedIn && !myResponse && (
-            <Button size='sm' onClick={() => handleRsvp('yes')}>
+            <Button
+              size='sm'
+              onClick={() => handleRsvp('yes')}
+              disabled={disabled}>
               <CheckCircleIcon />
               {loc.no.session.rsvp.responses.yes}
             </Button>
@@ -185,6 +193,8 @@ export default function SessionPage() {
   const session = sessions.find(s => s.id === id)
   if (!session)
     throw new Error(loc.no.error.messages.not_in_db('sessions/' + id))
+
+  const isCancelled = session?.status === 'cancelled'
 
   return (
     <div className='flex flex-col gap-6'>
@@ -278,6 +288,7 @@ export default function SessionPage() {
 
       <Signup
         className='bg-background rounded-sm border p-2'
+        disabled={isCancelled}
         session={session}
       />
 
