@@ -1,4 +1,5 @@
 import type { SessionSignup, SessionWithSignups } from '@common/models/session'
+import { getEndOfDate } from '@common/utils/date'
 import {
   type Attendee,
   createEvents,
@@ -75,7 +76,7 @@ export default class CalendarManager {
       start: CalendarManager.toUtcArray(session.date),
       startInputType: 'utc',
       startOutputType: 'utc',
-      end: CalendarManager.toUtcArray(getEndDate(session)),
+      end: CalendarManager.toUtcArray(getEndOfDate(session.date)),
       endInputType: 'utc',
       endOutputType: 'utc',
       created: CalendarManager.toUtcArray(session.createdAt),
@@ -83,7 +84,7 @@ export default class CalendarManager {
         ? CalendarManager.toUtcArray(session.updatedAt)
         : undefined,
       attendees: session.signups.map(this.createEventAttendee),
-    } satisfies EventAttributes
+    }
   }
 
   private static createEventAttendee(signup: SessionSignup) {
