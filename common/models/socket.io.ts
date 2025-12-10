@@ -6,6 +6,7 @@ import type {
 import type { LoginRequest, RegisterRequest } from './auth'
 import type {
   CreateSessionRequest,
+  DeleteSessionRequest,
   EditSessionRequest,
   RsvpSessionRequest,
   SessionWithSignups,

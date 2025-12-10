@@ -1,9 +1,9 @@
 import { isRegisterRequest } from '@common/models/auth'
-import { EventReq, EventRes } from '@common/models/socket.io'
+import type { EventReq, EventRes } from '@common/models/socket.io'
 import {
   isDeleteUserRequest,
   isEditUserRequest,
-  LoginResponse,
+  type LoginResponse,
   type User,
   type UserInfo,
 } from '@common/models/user'
@@ -12,7 +12,7 @@ import { eq, isNull } from 'drizzle-orm'
 import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
 import { users } from '../../database/schema'
-import { broadcast, TypedSocket } from '../server'
+import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import TimeEntryManager from './timeEntry.manager'
 

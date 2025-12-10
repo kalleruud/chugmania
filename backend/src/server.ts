@@ -54,8 +54,6 @@ app.get('/api/sessions/calendar.ics', (req, res) =>
 io.on('connect', s => Connect(s))
 
 // Initialize session scheduler when server starts
-SessionScheduler.init(io)
-broadcast('all_sessions', await SessionManager.getAllSessions())
 await SessionScheduler.scheduleNext()
 
 async function Connect(s: TypedSocket) {

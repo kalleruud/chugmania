@@ -44,8 +44,7 @@ export default class SessionManager {
     id: string
   ): Promise<SessionWithSignups | null> {
     const session = await db.query.sessions.findFirst({
-      where: (fields, { and, eq, isNull }) =>
-        and(eq(fields.id, id), isNull(fields.deletedAt)),
+      where: and(eq(sessions.id, id), isNull(sessions.deletedAt)),
     })
 
     if (!session) {
@@ -231,21 +230,11 @@ export default class SessionManager {
       )
     }
 
-    await AuthManager.checkAuth(socket, ['admin', 'moderator'])
-
-    const session = await db.query.sessions.findFirst({
-      where: eq(sessions.id, request.id),
+    await this.onEditSession(socket, {
+      ...request,
+      type: 'EditSessionRequest',
+      deletedAt: new Date(),
     })
-
-    if (!session) {
-      throw new Error(loc.no.error.messages.not_in_db(request.id))
-    }
-
-    // Soft-delete the session
-    await db
-      .update(sessions)
-      .set({ deletedAt: new Date() })
-      .where(eq(sessions.id, request.id))
 
     // Soft-delete all signups for this session
     await db
@@ -256,11 +245,8 @@ export default class SessionManager {
     console.info(
       new Date().toISOString(),
       socket.id,
-      `Deleted session '${session.name}'`
+      `Deleted all related signups '${request.id}'`
     )
-
-    broadcast('all_sessions', await SessionManager.getAllSessions())
-    await SessionScheduler.reschedule()
 
     return {
       success: true,

@@ -1,4 +1,4 @@
-import { Track } from '@common/models/track'
+import type { Track } from '@common/models/track'
 import { tryCatchAsync } from '@common/utils/try-catch'
 import { asc, eq } from 'drizzle-orm'
 import loc from '../../../frontend/lib/locales'
