@@ -8,18 +8,18 @@ import {
 } from '@/components/ui/item'
 import { useAuth } from '@/contexts/AuthContext'
 import loc from '@/lib/locales'
-import { CalendarIcon, ClockIcon, MapPinIcon } from '@heroicons/react/24/solid'
-import { ChevronRight } from 'lucide-react'
-import { Link } from 'react-router-dom'
-import { twMerge } from 'tailwind-merge'
-import type { SessionWithSignups } from '../../../common/models/session'
+import type { SessionWithSignups } from '@common/models/session'
 import {
   formatDateRelative,
   formatTimeOnly,
   isOngoing,
   isPast,
   isUpcoming,
-} from '../../../common/utils/date'
+} from '@common/utils/date'
+import { CalendarIcon, ClockIcon, MapPinIcon } from '@heroicons/react/24/solid'
+import { ChevronRight } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { twMerge } from 'tailwind-merge'
 
 type SessionItemProps = {
   session: SessionWithSignups

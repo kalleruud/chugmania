@@ -1,12 +1,9 @@
 import { useAuth } from '@/contexts/AuthContext'
 import { useTimeEntryDrawer } from '@/hooks/TimeEntryDrawerProvider'
 import loc from '@/lib/locales'
+import type { LeaderboardEntryGap, TimeEntry } from '@common/models/timeEntry'
 import { PlusIcon } from '@heroicons/react/24/solid'
 import { useState } from 'react'
-import type {
-  LeaderboardEntryGap,
-  TimeEntry,
-} from '../../../common/models/timeEntry'
 import { Button } from '../ui/button'
 import { Empty } from '../ui/empty'
 import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group'

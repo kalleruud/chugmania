@@ -12,9 +12,9 @@ import { Item, ItemContent, ItemMedia } from '@/components/ui/item'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
+import type { Track } from '@common/models/track'
 import type { DetailedHTMLProps, HTMLAttributes } from 'react'
 import { twMerge } from 'tailwind-merge'
-import type { Track } from '../../../common/models/track'
 import { PageHeader } from '../../components/PageHeader'
 
 type TracksPageProps = DetailedHTMLProps<

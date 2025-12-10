@@ -2,7 +2,7 @@ import type {
   ExportCsvRequest,
   ExportCsvResponse,
   ImportCsvRequest,
-} from '../../common/models/importCsv'
+} from '@common/models/importCsv'
 import type { LoginRequest, RegisterRequest } from './auth'
 import type {
   CreateSessionRequest,

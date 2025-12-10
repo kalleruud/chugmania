@@ -25,10 +25,10 @@ import UserItem from '@/components/user/UserItem'
 import { useAuth } from '@/contexts/AuthContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
+import type { UserInfo } from '@common/models/user'
 import { PlusIcon } from '@heroicons/react/24/solid'
 import { useState, type ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
-import type { UserInfo } from '../../../common/models/user'
 import { PageHeader } from '../../components/PageHeader'
 
 type UsersPageProps = {

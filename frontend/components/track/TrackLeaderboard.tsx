@@ -1,7 +1,7 @@
 import { useData } from '@/contexts/DataContext'
+import type { Track } from '@common/models/track'
 import type { ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
-import type { Track } from '../../../common/models/track'
 import {
   TimeEntryList,
   type TimeEntryListProps,

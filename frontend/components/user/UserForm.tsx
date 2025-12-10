@@ -1,11 +1,11 @@
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import loc from '@/lib/locales'
+import { type UserInfo } from '@common/models/user'
 import { useState, type ComponentProps, type FormEvent } from 'react'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
 import type { UserRole } from '../../../backend/database/schema'
-import { type UserInfo } from '../../../common/models/user'
 import { CalendarField, Field, SelectField } from '../FormFields'
 import { Label } from '../ui/label'
 

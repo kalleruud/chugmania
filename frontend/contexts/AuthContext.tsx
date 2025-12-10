@@ -1,4 +1,7 @@
 import loc from '@/lib/locales'
+import type { LoginRequest } from '@common/models/auth'
+import type { ErrorResponse, EventRes } from '@common/models/socket.io'
+import { type LoginResponse, type UserInfo } from '@common/models/user'
 import {
   createContext,
   useContext,
@@ -8,9 +11,6 @@ import {
   type ReactNode,
 } from 'react'
 import { toast } from 'sonner'
-import type { LoginRequest } from '../../common/models/auth'
-import type { ErrorResponse, EventRes } from '../../common/models/socket.io'
-import { type LoginResponse, type UserInfo } from '../../common/models/user'
 import { useConnection } from './ConnectionContext'
 import { useData } from './DataContext'
 

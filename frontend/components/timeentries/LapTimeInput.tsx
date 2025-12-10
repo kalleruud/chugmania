@@ -2,6 +2,21 @@ import Combobox, { type ComboboxLookupItem } from '@/components/combobox'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import loc from '@/lib/locales'
+import type { SessionWithSignups } from '@common/models/session'
+import type {
+  CreateTimeEntryRequest,
+  EditTimeEntryRequest,
+  TimeEntry,
+} from '@common/models/timeEntry'
+import type { Track } from '@common/models/track'
+import type { UserInfo } from '@common/models/user'
+import { formatDateRelative, isOngoing } from '@common/utils/date'
+import {
+  durationToInputList,
+  formatTime,
+  inputListToMs,
+} from '@common/utils/time'
+import { formatTrackName } from '@common/utils/track'
 import {
   useCallback,
   useEffect,
@@ -14,21 +29,6 @@ import {
 import { useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
-import type { SessionWithSignups } from '../../../common/models/session'
-import type {
-  CreateTimeEntryRequest,
-  EditTimeEntryRequest,
-  TimeEntry,
-} from '../../../common/models/timeEntry'
-import type { Track } from '../../../common/models/track'
-import type { UserInfo } from '../../../common/models/user'
-import { formatDateRelative, isOngoing } from '../../../common/utils/date'
-import {
-  durationToInputList,
-  formatTime,
-  inputListToMs,
-} from '../../../common/utils/time'
-import { formatTrackName } from '../../../common/utils/track'
 import { useAuth } from '../../contexts/AuthContext'
 import { useConnection } from '../../contexts/ConnectionContext'
 import { useData } from '../../contexts/DataContext'

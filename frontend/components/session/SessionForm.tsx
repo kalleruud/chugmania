@@ -1,11 +1,11 @@
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import loc from '@/lib/locales'
+import type { SessionWithSignups } from '@common/models/session'
 import { useState, type ComponentProps, type FormEvent } from 'react'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
 import type { SessionStatus } from '../../../backend/database/schema'
-import type { SessionWithSignups } from '../../../common/models/session'
 import { CalendarField, Field, SelectField, TextField } from '../FormFields'
 
 type SessionFormProps = {

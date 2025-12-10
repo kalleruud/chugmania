@@ -1,4 +1,7 @@
 import { useData } from '@/contexts/DataContext'
+import type { LeaderboardEntryGap, TimeEntry } from '@common/models/timeEntry'
+import { formatDateRelative } from '@common/utils/date'
+import { formatTime } from '@common/utils/time'
 import { MinusIcon } from '@heroicons/react/24/solid'
 import {
   useEffect,
@@ -8,12 +11,6 @@ import {
   type ComponentProps,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
-import type {
-  LeaderboardEntryGap,
-  TimeEntry,
-} from '../../../common/models/timeEntry'
-import { formatDateRelative } from '../../../common/utils/date'
-import { formatTime } from '../../../common/utils/time'
 
 type TimeEntryItemProps = {
   position?: number | null

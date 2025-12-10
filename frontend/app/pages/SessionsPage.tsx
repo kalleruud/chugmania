@@ -11,11 +11,11 @@ import { Button } from '@/components/ui/button'
 import { useAuth } from '@/contexts/AuthContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
+import { isPast, isUpcoming } from '@common/utils/date'
 import { CalendarIcon } from '@heroicons/react/24/solid'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { isPast, isUpcoming } from '../../../common/utils/date'
 import { PageHeader } from '../../components/PageHeader'
 
 export default function SessionsPage() {
