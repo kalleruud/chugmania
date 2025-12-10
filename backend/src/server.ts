@@ -87,6 +87,7 @@ async function Connect(s: TypedSocket) {
   setup(s, 'create_session', SessionManager.onCreateSession)
   setup(s, 'edit_session', SessionManager.onEditSession)
   setup(s, 'rsvp_session', SessionManager.onRsvpSession)
+  setup(s, 'delete_session', SessionManager.onDeleteSession)
 
   setup(s, 'import_csv', AdminManager.onImportCsv)
   setup(s, 'export_csv', AdminManager.onExportCsv)
