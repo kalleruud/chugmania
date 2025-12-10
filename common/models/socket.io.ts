@@ -83,6 +83,10 @@ export interface ClientToServerEvents {
     r: RsvpSessionRequest,
     callback: (r: SuccessResponse | ErrorResponse) => void
   ) => void
+  delete_session: (
+    r: DeleteSessionRequest,
+    callback: (r: SuccessResponse | ErrorResponse) => void
+  ) => void
   import_csv: (
     r: ImportCsvRequest,
     callback: (r: SuccessResponse | ErrorResponse) => void

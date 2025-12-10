@@ -1,5 +1,6 @@
 import {
   isCreateSessionRequest,
+  isDeleteSessionRequest,
   isEditSessionRequest,
   isRsvpSessionRequest,
   type SessionSignup,
@@ -20,6 +21,7 @@ export default class SessionManager {
     const sessionRows = await db
       .select()
       .from(sessions)
+      .where(isNull(sessions.deletedAt))
       .orderBy(desc(sessions.date), asc(sessions.createdAt))
 
     if (!sessionRows || sessionRows.length === 0) {
@@ -42,7 +44,8 @@ export default class SessionManager {
     id: string
   ): Promise<SessionWithSignups | null> {
     const session = await db.query.sessions.findFirst({
-      where: eq(sessions.id, id),
+      where: (fields, { and, eq, isNull }) =>
+        and(eq(fields.id, id), isNull(fields.deletedAt)),
     })
 
     if (!session) {
@@ -216,5 +219,51 @@ export default class SessionManager {
     await SessionScheduler.reschedule()
 
     return { success: true }
+  }
+
+  static async onDeleteSession(
+    socket: TypedSocket,
+    request: EventReq<'delete_session'>
+  ): Promise<EventRes<'delete_session'>> {
+    if (!isDeleteSessionRequest(request)) {
+      throw new Error(
+        loc.no.error.messages.invalid_request('DeleteSessionRequest')
+      )
+    }
+
+    await AuthManager.checkAuth(socket, ['admin', 'moderator'])
+
+    const session = await db.query.sessions.findFirst({
+      where: eq(sessions.id, request.id),
+    })
+
+    if (!session) {
+      throw new Error(loc.no.error.messages.not_in_db(request.id))
+    }
+
+    // Soft-delete the session
+    await db
+      .update(sessions)
+      .set({ deletedAt: new Date() })
+      .where(eq(sessions.id, request.id))
+
+    // Soft-delete all signups for this session
+    await db
+      .update(sessionSignups)
+      .set({ deletedAt: new Date() })
+      .where(eq(sessionSignups.session, request.id))
+
+    console.info(
+      new Date().toISOString(),
+      socket.id,
+      `Deleted session '${session.name}'`
+    )
+
+    broadcast('all_sessions', await SessionManager.getAllSessions())
+    await SessionScheduler.reschedule()
+
+    return {
+      success: true,
+    }
   }
 }

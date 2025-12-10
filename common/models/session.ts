@@ -47,3 +47,15 @@ export function isRsvpSessionRequest(data: any): data is RsvpSessionRequest {
     typeof data.response === 'string'
   )
 }
+
+export type DeleteSessionRequest = {
+  type: 'DeleteSessionRequest'
+  id: Session['id']
+}
+
+export function isDeleteSessionRequest(
+  data: any
+): data is DeleteSessionRequest {
+  if (typeof data !== 'object' || data === null) return false
+  return data.type === 'DeleteSessionRequest' && typeof data.id === 'string'
+}
