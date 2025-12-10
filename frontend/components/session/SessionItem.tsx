@@ -53,17 +53,17 @@ function SessionRow({ session, className }: Readonly<SessionItemProps>) {
           className={twMerge(
             isCancelled && 'text-muted-foreground line-through'
           )}>
-          <ItemTitle>{session.name}</ItemTitle>
+          <ItemTitle className='font-bold'>{session.name}</ItemTitle>
           <ItemDescription>
             <span>{timeAgo}</span>
           </ItemDescription>
         </ItemContent>
 
         <ItemActions>
-          {isLoggedIn && !isSignedUp && <Badge>{loc.no.common.new}</Badge>}
           <Badge variant='outline'>
             {loc.no.session.statusOptions[session.status]}
           </Badge>
+          {isLoggedIn && !isSignedUp && <Badge>{loc.no.common.new}</Badge>}
           <ChevronRight className='size-4' />
         </ItemActions>
       </Link>
