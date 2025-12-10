@@ -47,8 +47,6 @@ export const broadcast: typeof io.emit = (ev, ...args) => {
   return io.emit(ev, ...args)
 }
 
-export { io }
-
 app.get('/api/sessions/calendar.ics', (req, res) =>
   ApiManager.handleGetAllSessionsCalendar(ORIGIN, req, res)
 )
@@ -59,10 +57,9 @@ app.get('/api/sessions/:id/calendar.ics', (req, res) =>
 io.on('connect', s => Connect(s))
 
 // Initialize session scheduler when server starts
-void (async () => {
-  broadcast('all_sessions', await SessionManager.getAllSessions())
-  await SessionScheduler.getInstance().scheduleNext(io)
-})()
+SessionScheduler.init(io)
+broadcast('all_sessions', await SessionManager.getAllSessions())
+await SessionScheduler.scheduleNext()
 
 async function Connect(s: TypedSocket) {
   console.debug(new Date().toISOString(), s.id, 'Connected')

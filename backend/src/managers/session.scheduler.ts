@@ -6,20 +6,16 @@ import { sessions } from '../../database/schema'
 import { broadcast } from '../server'
 import SessionManager from './session.manager'
 
-let instance: SessionScheduler | null = null
-
 export default class SessionScheduler {
-  private currentTimeout: NodeJS.Timeout | null = null
-  private nextScheduledSessionId: string | null = null
+  private static currentTimeout: NodeJS.Timeout | null = null
+  private static nextScheduledSessionId: string | null = null
+  private static io: Server | null = null
 
-  static getInstance(): SessionScheduler {
-    if (!instance) {
-      instance = new SessionScheduler()
-    }
-    return instance
+  static init(io: Server): void {
+    SessionScheduler.io = io
   }
 
-  async findNextSession(): Promise<SessionWithSignups | null> {
+  static async findNextSession(): Promise<SessionWithSignups | null> {
     const now = new Date()
 
     const nextSessionRow = await db.query.sessions.findFirst({
@@ -35,10 +31,15 @@ export default class SessionScheduler {
     return SessionManager.getSession(nextSessionRow.id)
   }
 
-  async scheduleNext(io: Server): Promise<void> {
-    this.cancel()
+  static async scheduleNext(io?: Server): Promise<void> {
+    const server = io || SessionScheduler.io
+    if (!server) {
+      throw new Error('Server instance not set in SessionScheduler')
+    }
 
-    const nextSession = await this.findNextSession()
+    SessionScheduler.cancel()
+
+    const nextSession = await SessionScheduler.findNextSession()
 
     if (!nextSession) {
       console.debug(
@@ -56,7 +57,7 @@ export default class SessionScheduler {
         'Next session is in the past, triggering immediately',
         nextSession.id
       )
-      await this.onSessionStart(io)
+      await SessionScheduler.onSessionStart(server)
       return
     }
 
@@ -66,11 +67,14 @@ export default class SessionScheduler {
       nextSession.id
     )
 
-    this.nextScheduledSessionId = nextSession.id
-    this.currentTimeout = setTimeout(() => this.onSessionStart(io), delayMs)
+    SessionScheduler.nextScheduledSessionId = nextSession.id
+    SessionScheduler.currentTimeout = setTimeout(
+      () => SessionScheduler.onSessionStart(server),
+      delayMs
+    )
   }
 
-  private async onSessionStart(io: Server): Promise<void> {
+  private static async onSessionStart(server: Server): Promise<void> {
     console.debug(
       new Date().toISOString(),
       'Session started, broadcasting all_sessions'
@@ -78,22 +82,22 @@ export default class SessionScheduler {
 
     broadcast('all_sessions', await SessionManager.getAllSessions())
 
-    this.nextScheduledSessionId = null
-    this.currentTimeout = null
+    SessionScheduler.nextScheduledSessionId = null
+    SessionScheduler.currentTimeout = null
 
-    await this.scheduleNext(io)
+    await this.scheduleNext(server)
   }
 
-  async reset(io: Server): Promise<void> {
+  static async reschedule(): Promise<void> {
     console.debug(
       new Date().toISOString(),
       'Resetting session scheduler (session created/edited/rsvp)'
     )
     this.cancel()
-    await this.scheduleNext(io)
+    await this.scheduleNext()
   }
 
-  cancel(): void {
+  static cancel(): void {
     if (this.currentTimeout) {
       clearTimeout(this.currentTimeout)
       console.debug(
