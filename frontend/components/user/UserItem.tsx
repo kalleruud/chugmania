@@ -1,4 +1,3 @@
-import { formatDateRelative } from '@/app/utils/date'
 import { Item, ItemActions, ItemContent, ItemTitle } from '@/components/ui/item'
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
@@ -10,6 +9,7 @@ import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
 import { type UserInfo } from '../../../common/models/user'
+import { formatDateRelative } from '../../../common/utils/date'
 import { Button } from '../ui/button'
 import {
   Dialog,

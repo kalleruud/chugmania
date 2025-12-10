@@ -1,11 +1,3 @@
-import {
-  formatDateRelative,
-  formatDateWithYear,
-  formatTimeOnly,
-  isOngoing,
-  isPast,
-  isUpcoming,
-} from '@/app/utils/date'
 import { Badge } from '@/components/ui/badge'
 import {
   Item,
@@ -21,6 +13,13 @@ import { ChevronRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { twMerge } from 'tailwind-merge'
 import type { SessionWithSignups } from '../../../common/models/session'
+import {
+  formatDateRelative,
+  formatTimeOnly,
+  isOngoing,
+  isPast,
+  isUpcoming,
+} from '../../../common/utils/date'
 
 type SessionItemProps = {
   session: SessionWithSignups
@@ -53,7 +52,7 @@ function SessionRow({ session, className }: Readonly<SessionItemProps>) {
             )}
             {session.name}
           </ItemTitle>
-          <ItemDescription className='flex items-center gap-1 capitalize'>
+          <ItemDescription>
             <span>{formatDateRelative(session.date)}</span>
           </ItemDescription>
         </ItemContent>
@@ -84,9 +83,7 @@ function SessionCard({ session, className }: Readonly<SessionItemProps>) {
 
           <div className='flex items-center gap-2'>
             <CalendarIcon className='text-muted-foreground size-4' />
-            <span className='capitalize'>
-              {formatDateWithYear(session.date)}
-            </span>
+            {formatDateRelative(session.date)}
           </div>
 
           {session.location && (

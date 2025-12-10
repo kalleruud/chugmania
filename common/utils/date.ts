@@ -15,7 +15,7 @@ const DEFAULT_ZONE = 'Europe/Oslo'
 export function formatDateRelative(input: Date | string): string {
   const date = typeof input === 'string' ? new Date(input) : input
 
-  if (!date || isNaN(date.getTime())) return ''
+  if (!date || Number.isNaN(date.getTime())) return ''
 
   // Format relative part using date-fns with Norwegian locale
   // This returns only the relative date part without time (i dag, i morgen, for 3 dager siden, etc.)

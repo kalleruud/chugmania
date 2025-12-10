@@ -1,4 +1,3 @@
-import { formatDateRelative } from '@/app/utils/date'
 import { useData } from '@/contexts/DataContext'
 import { MinusIcon } from '@heroicons/react/24/solid'
 import {
@@ -13,6 +12,7 @@ import type {
   LeaderboardEntryGap,
   TimeEntry,
 } from '../../../common/models/timeEntry'
+import { formatDateRelative } from '../../../common/utils/date'
 import { formatTime } from '../../../common/utils/time'
 
 type TimeEntryItemProps = {

@@ -1,4 +1,3 @@
-import { formatDateRelative, isOngoing } from '@/app/utils/date'
 import Combobox, { type ComboboxLookupItem } from '@/components/combobox'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -23,6 +22,7 @@ import type {
 } from '../../../common/models/timeEntry'
 import type { Track } from '../../../common/models/track'
 import type { UserInfo } from '../../../common/models/user'
+import { formatDateRelative, isOngoing } from '../../../common/utils/date'
 import {
   durationToInputList,
   formatTime,

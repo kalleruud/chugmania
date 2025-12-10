@@ -42,7 +42,7 @@ import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
 import type { SessionResponse } from '../../../backend/database/schema'
 import type { SessionWithSignups } from '../../../common/models/session'
-import { isUpcoming } from '../utils/date'
+import { isUpcoming } from '../../../common/utils/date'
 import { SubscribeButton } from './SessionsPage'
 
 function Signup({

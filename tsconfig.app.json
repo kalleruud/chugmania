@@ -28,5 +28,5 @@
       "@/*": ["./frontend/*"]
     }
   },
-  "include": ["frontend"]
+  "include": ["frontend", "common/utils/date.ts"]
 }

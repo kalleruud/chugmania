@@ -15,8 +15,8 @@ import { CalendarIcon } from '@heroicons/react/24/solid'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { isPast, isUpcoming } from '../../../common/utils/date'
 import { PageHeader } from '../../components/PageHeader'
-import { isPast, isUpcoming } from '../utils/date'
 
 export default function SessionsPage() {
   const { loggedInUser, isLoggedIn } = useAuth()
