@@ -212,35 +212,6 @@ export default function SessionPage() {
         <SubscribeButton className='flex-1' />
         {canEdit && (
           <>
-            <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant='destructive' size='sm'>
-                  <Trash2 className='mr-2 size-4' />
-                  {loc.no.common.delete}
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>{loc.no.dialog.confirmDelete.title}</DialogTitle>
-                  <DialogDescription>
-                    {loc.no.dialog.confirmDelete.description}
-                  </DialogDescription>
-                </DialogHeader>
-
-                <DialogFooter>
-                  <DialogClose asChild>
-                    <Button variant='outline'>{loc.no.dialog.cancel}</Button>
-                  </DialogClose>
-                  <Button
-                    variant='destructive'
-                    onClick={() => handleDeleteSession(session.id)}
-                    disabled={isLoading}>
-                    {loc.no.common.delete}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-
             <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
               <DialogTrigger asChild>
                 <Button variant='outline'>
@@ -268,6 +239,35 @@ export default function SessionPage() {
                   </DialogClose>
                   <Button type='submit' form='editForm' disabled={isLoading}>
                     {loc.no.dialog.continue}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant='destructive'>
+                  <Trash2 className='mr-2 size-4' />
+                  {loc.no.common.delete}
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>{loc.no.dialog.confirmDelete.title}</DialogTitle>
+                  <DialogDescription>
+                    {loc.no.dialog.confirmDelete.description}
+                  </DialogDescription>
+                </DialogHeader>
+
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button variant='outline'>{loc.no.dialog.cancel}</Button>
+                  </DialogClose>
+                  <Button
+                    variant='destructive'
+                    onClick={() => handleDeleteSession(session.id)}
+                    disabled={isLoading}>
+                    {loc.no.common.delete}
                   </Button>
                 </DialogFooter>
               </DialogContent>
