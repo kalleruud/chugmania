@@ -1,6 +1,8 @@
-import { formatDistanceToNowStrict } from 'date-fns'
+import loc from '@/lib/locales'
+import { isOngoing, isPast } from '@common/utils/date'
+import { formatDistanceToNowStrict as formatDistanceToNow } from 'date-fns'
 import { nb } from 'date-fns/locale'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 interface UseTimeAgoStrictProps {
   date: Date | string
@@ -20,34 +22,32 @@ export function useTimeAgoStrict({
   date,
   updateInterval = 1000,
 }: UseTimeAgoStrictProps): string {
-  const parsedDate = typeof date === 'string' ? new Date(date) : date
-  const [, setForceUpdate] = useState(0)
-  const previousStringRef = useRef<string>('')
-
-  // Initialize with the current formatted string
-  if (!previousStringRef.current) {
-    previousStringRef.current = formatDistanceToNowStrict(parsedDate, {
-      addSuffix: true,
-      locale: nb,
-    })
-  }
+  const parsedDate = new Date(date)
+  const [formattedDistance, setFormattedDistance] = useState(
+    getString(parsedDate)
+  )
 
   useEffect(() => {
     const interval = setInterval(() => {
-      const newString = formatDistanceToNowStrict(parsedDate, {
-        addSuffix: true,
-        locale: nb,
-      })
+      const newString = getString(parsedDate)
 
       // Only trigger re-render if the string changed
-      if (newString !== previousStringRef.current) {
-        previousStringRef.current = newString
-        setForceUpdate(prev => prev + 1)
+      if (newString !== formattedDistance) {
+        setFormattedDistance(newString)
       }
     }, updateInterval)
 
     return () => clearInterval(interval)
-  }, [parsedDate, updateInterval])
+  }, [])
 
-  return previousStringRef.current
+  return formattedDistance
+}
+
+function getString(date: Date) {
+  if (isOngoing({ date })) return loc.no.common.now
+  return formatDistanceToNow(date, {
+    addSuffix: true,
+    locale: nb,
+    roundingMethod: isPast({ date }) ? 'floor' : 'ceil',
+  })
 }

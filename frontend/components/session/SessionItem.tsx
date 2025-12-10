@@ -7,7 +7,7 @@ import {
   ItemTitle,
 } from '@/components/ui/item'
 import { useAuth } from '@/contexts/AuthContext'
-import { useTimeAgoStrict } from '@/hooks/useTimeAgoStrict'
+import { useTimeAgoStrict as useDistanceToNow } from '@/hooks/useTimeAgoStrict'
 import loc from '@/lib/locales'
 import type { SessionWithSignups } from '@common/models/session'
 import {
@@ -39,10 +39,12 @@ export function SessionItem(props: Readonly<SessionItemProps>) {
 
 function SessionRow({ session, className }: Readonly<SessionItemProps>) {
   const { loggedInUser, isLoggedIn } = useAuth()
-  const timeAgo = useTimeAgoStrict({ date: session.date })
+  const timeAgo = useDistanceToNow({ date: session.date })
 
   const isSignedUp =
     isLoggedIn && session.signups.some(su => su.user.id === loggedInUser.id)
+
+  const displayTime = isOngoing(session) ? 'Nå' : timeAgo
 
   return (
     <Item key={session.id} className={className} asChild>
@@ -55,7 +57,7 @@ function SessionRow({ session, className }: Readonly<SessionItemProps>) {
             {session.name}
           </ItemTitle>
           <ItemDescription>
-            <span>{timeAgo}</span>
+            <span>{displayTime}</span>
           </ItemDescription>
         </ItemContent>
 
