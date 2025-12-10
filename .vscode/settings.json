@@ -16,9 +16,7 @@
   },
   "typescript.tsdk": "node_modules/typescript/lib",
   "typescript.enablePromptUseWorkspaceTsdk": true,
-  "typescript.defaultProject": "tsconfig.json",
   "[typescript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
-  "typescript.preferences.preferTypeOnlyImports": true
+  }
 }
