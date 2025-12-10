@@ -14,6 +14,7 @@ import AdminManager from './managers/admin.manager'
 import ApiManager from './managers/api.manager'
 import AuthManager from './managers/auth.manager'
 import SessionManager from './managers/session.manager'
+import SessionScheduler from './managers/session.scheduler'
 import TimeEntryManager from './managers/timeEntry.manager'
 import TrackManager from './managers/track.manager'
 import UserManager from './managers/user.manager'
@@ -46,6 +47,8 @@ export const broadcast: typeof io.emit = (ev, ...args) => {
   return io.emit(ev, ...args)
 }
 
+export { io }
+
 app.get('/api/sessions/calendar.ics', (req, res) =>
   ApiManager.handleGetAllSessionsCalendar(ORIGIN, req, res)
 )
@@ -54,6 +57,12 @@ app.get('/api/sessions/:id/calendar.ics', (req, res) =>
 )
 
 io.on('connect', s => Connect(s))
+
+// Initialize session scheduler when server starts
+void (async () => {
+  broadcast('all_sessions', await SessionManager.getAllSessions())
+  await SessionScheduler.getInstance().scheduleNext(io)
+})()
 
 async function Connect(s: TypedSocket) {
   console.debug(new Date().toISOString(), s.id, 'Connected')

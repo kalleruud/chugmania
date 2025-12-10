@@ -2,23 +2,17 @@ import {
   isCreateSessionRequest,
   isEditSessionRequest,
   isRsvpSessionRequest,
-  type SessionLapTime,
   type SessionSignup,
   type SessionWithSignups,
 } from '@common/models/session'
-import { EventReq, EventRes } from '@common/models/socket.io'
+import type { EventReq, EventRes } from '@common/models/socket.io'
 import { and, asc, desc, eq, isNull } from 'drizzle-orm'
 import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
-import {
-  sessions,
-  sessionSignups,
-  timeEntries,
-  tracks,
-  users,
-} from '../../database/schema'
-import { broadcast, TypedSocket } from '../server'
+import { sessions, sessionSignups, users } from '../../database/schema'
+import { broadcast, io, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
+import SessionScheduler from './session.scheduler'
 import UserManager from './user.manager'
 
 export default class SessionManager {
@@ -40,7 +34,6 @@ export default class SessionManager {
       sessionRows.map(async session => ({
         ...session,
         signups: await SessionManager.getSessionSignups(session.id),
-        lapTimes: await SessionManager.getSessionLapTimes(session.id),
       }))
     )
   }
@@ -63,7 +56,6 @@ export default class SessionManager {
     return {
       ...session,
       signups: await SessionManager.getSessionSignups(session.id),
-      lapTimes: await SessionManager.getSessionLapTimes(session.id),
     }
   }
 
@@ -100,34 +92,6 @@ export default class SessionManager {
     }))
   }
 
-  private static async getSessionLapTimes(
-    sessionId: string
-  ): Promise<SessionLapTime[]> {
-    const lapRows = await db
-      .select()
-      .from(timeEntries)
-      .innerJoin(users, eq(timeEntries.user, users.id))
-      .innerJoin(tracks, eq(timeEntries.track, tracks.id))
-      .where(
-        and(
-          eq(timeEntries.session, sessionId),
-          isNull(timeEntries.deletedAt),
-          isNull(users.deletedAt)
-        )
-      )
-      .orderBy(asc(timeEntries.createdAt))
-
-    if (!lapRows || lapRows.length === 0) {
-      return []
-    }
-
-    return lapRows.map(row => ({
-      entry: row.time_entries,
-      track: row.tracks,
-      user: UserManager.toUserInfo(row.users).userInfo,
-    }))
-  }
-
   static async onCreateSession(
     socket: TypedSocket,
     request: EventReq<'create_session'>
@@ -154,6 +118,7 @@ export default class SessionManager {
     )
 
     broadcast('all_sessions', await SessionManager.getAllSessions())
+    await SessionScheduler.getInstance().reset(io)
 
     return { success: true }
   }
@@ -193,6 +158,7 @@ export default class SessionManager {
     console.debug(new Date().toISOString(), socket.id, 'Updated session', id)
 
     broadcast('all_sessions', await SessionManager.getAllSessions())
+    await SessionScheduler.getInstance().reset(io)
 
     return { success: true }
   }
@@ -247,6 +213,7 @@ export default class SessionManager {
     )
 
     broadcast('all_sessions', await SessionManager.getAllSessions())
+    await SessionScheduler.getInstance().reset(io)
 
     return { success: true }
   }
