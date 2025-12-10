@@ -1,4 +1,3 @@
-import { and, asc, desc, eq, isNull } from 'drizzle-orm'
 import {
   isCreateSessionRequest,
   isEditSessionRequest,
@@ -6,8 +5,9 @@ import {
   type SessionLapTime,
   type SessionSignup,
   type SessionWithSignups,
-} from '../../../common/models/session'
-import { EventReq, EventRes } from '../../../common/models/socket.io'
+} from '@common/models/session'
+import { EventReq, EventRes } from '@common/models/socket.io'
+import { and, asc, desc, eq, isNull } from 'drizzle-orm'
 import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
 import {

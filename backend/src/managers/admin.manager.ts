@@ -1,11 +1,11 @@
 import type { Socket } from 'socket.io'
 
+import type { ExportCsvResponse } from '@common/models/importCsv'
 import {
-  ExportCsvResponse,
   isExportCsvRequest,
   isImportCsvRequest,
-} from '../../../common/models/importCsv'
-import { EventReq, EventRes } from '../../../common/models/socket.io'
+} from '@common/models/importCsv'
+import type { EventReq, EventRes } from '@common/models/socket.io'
 import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
 import * as schema from '../../database/schema'

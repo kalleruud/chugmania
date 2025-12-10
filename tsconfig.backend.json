@@ -1,37 +1,30 @@
 {
+  "extends": "./tsconfig.json",
   "compilerOptions": {
-    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
     "target": "ES2023",
     "lib": ["ES2023"],
     "module": "ESNext",
     "skipLibCheck": true,
-
-    /* Bundler mode */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
-    "noEmit": true,
+    "noEmit": false,
     "allowJs": false,
     "esModuleInterop": true,
     "isolatedModules": true,
     "resolveJsonModule": true,
-
-    /* Linting */
     "strict": true,
-    "erasableSyntaxOnly": true,
-    "noFallthroughCasesInSwitch": true,
-    "noImplicitAny": true,
-    "noImplicitThis": true,
-    "noUncheckedSideEffectImports": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-
-    /* Path aliases for backend */
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitAny": true,
+    "noUncheckedSideEffectImports": true,
     "paths": {
       "@common/*": ["./common/*"],
       "@backend/*": ["./backend/*"]
     }
   },
-  "include": ["vite.config.ts", "backend"]
+  "include": ["backend/src/**/*.ts", "common/**/*.ts"],
+  "exclude": ["node_modules", "dist", "frontend"]
 }

@@ -1,13 +1,13 @@
-import jwt, { JwtPayload } from 'jsonwebtoken'
-import { isLoginRequest } from '../../../common/models/auth'
+import { isLoginRequest } from '@common/models/auth'
 import {
   ErrorResponse,
   EventReq,
   EventRes,
   SocketData,
-} from '../../../common/models/socket.io'
-import { type User, type UserInfo } from '../../../common/models/user'
-import { tryCatch, tryCatchAsync } from '../../../common/utils/try-catch'
+} from '@common/models/socket.io'
+import { type User, type UserInfo } from '@common/models/user'
+import { tryCatch, tryCatchAsync } from '@common/utils/try-catch'
+import jwt, { JwtPayload } from 'jsonwebtoken'
 import loc from '../../../frontend/lib/locales'
 import { TypedSocket } from '../server'
 import UserManager from './user.manager'
