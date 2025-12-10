@@ -15,6 +15,7 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -37,7 +38,7 @@ import loc from '@/lib/locales'
 import type { SessionWithSignups } from '@common/models/session'
 import { isUpcoming } from '@common/utils/date'
 import { CheckCircleIcon } from '@heroicons/react/24/solid'
-import { PencilIcon } from 'lucide-react'
+import { PencilIcon, Trash2 } from 'lucide-react'
 import { useState, type ComponentProps } from 'react'
 import { useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -143,13 +144,35 @@ function Signup({
 
 export default function SessionPage() {
   const { id } = useParams()
+  const { socket } = useConnection()
   const { sessions, tracks, isLoadingData } = useData()
   const { loggedInUser, isLoggedIn, isLoading } = useAuth()
   const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 
   const isAdmin = isLoggedIn && loggedInUser.role === 'admin'
   const isModerator = isLoggedIn && loggedInUser.role === 'moderator'
   const canEdit = isAdmin || isModerator
+
+  const handleDeleteSession = async (sessionId: string) => {
+    toast.promise(
+      socket
+        .emitWithAck('delete_session', {
+          type: 'DeleteSessionRequest',
+          id: sessionId,
+        })
+        .then(r => {
+          setDeleteDialogOpen(false)
+          if (!r.success) throw new Error(r.message)
+          return r
+        }),
+      {
+        loading: 'Sletter session...',
+        success: 'Sesjonen ble slettet',
+        error: (err: Error) => `Sletting feilet: ${err.message}`,
+      }
+    )
+  }
 
   if (isLoadingData) {
     return (
@@ -188,37 +211,68 @@ export default function SessionPage() {
       <div className='flex items-center gap-1'>
         <SubscribeButton className='flex-1' />
         {canEdit && (
-          <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant='outline'>
-                <PencilIcon className='size-4' />
-                {loc.no.session.edit}
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>{loc.no.session.edit}</DialogTitle>
-              </DialogHeader>
-              <SessionForm
-                id='editForm'
-                variant='edit'
-                session={session}
-                onSubmitResponse={success => {
-                  if (success) setEditDialogOpen(false)
-                }}
-              />
-              <DialogFooter>
-                <DialogClose asChild>
-                  <Button variant='outline' disabled={isLoading}>
-                    {loc.no.dialog.cancel}
-                  </Button>
-                </DialogClose>
-                <Button type='submit' form='editForm' disabled={isLoading}>
-                  {loc.no.dialog.continue}
+          <>
+            <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant='destructive' size='sm'>
+                  <Trash2 className='mr-2 size-4' />
+                  {loc.no.common.delete}
                 </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>{loc.no.dialog.confirmDelete.title}</DialogTitle>
+                  <DialogDescription>
+                    {loc.no.dialog.confirmDelete.description}
+                  </DialogDescription>
+                </DialogHeader>
+
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button variant='outline'>{loc.no.dialog.cancel}</Button>
+                  </DialogClose>
+                  <Button
+                    variant='destructive'
+                    onClick={() => handleDeleteSession(session.id)}
+                    disabled={isLoading}>
+                    {loc.no.common.delete}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant='outline'>
+                  <PencilIcon className='size-4' />
+                  {loc.no.session.edit}
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>{loc.no.session.edit}</DialogTitle>
+                </DialogHeader>
+                <SessionForm
+                  id='editForm'
+                  variant='edit'
+                  session={session}
+                  onSubmitResponse={success => {
+                    if (success) setEditDialogOpen(false)
+                  }}
+                />
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button variant='outline' disabled={isLoading}>
+                      {loc.no.dialog.cancel}
+                    </Button>
+                  </DialogClose>
+                  <Button type='submit' form='editForm' disabled={isLoading}>
+                    {loc.no.dialog.continue}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </>
         )}
       </div>
 
