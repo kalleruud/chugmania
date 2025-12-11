@@ -1,5 +1,4 @@
 import { useAuth } from '@/contexts/AuthContext'
-import { useTimeEntryDrawer } from '@/hooks/TimeEntryDrawerProvider'
 import loc from '@/lib/locales'
 import type { LeaderboardEntryGap, TimeEntry } from '@common/models/timeEntry'
 import { PlusIcon } from '@heroicons/react/24/solid'
@@ -119,7 +118,7 @@ export function TimeEntryList({
   const { isLoggedIn } = useAuth()
   const [gapType, setGapType] = useState<GapType>('interval')
   const [filterType, setFilterType] = useState<FilterType>(filter)
-  const { open } = useTimeEntryDrawer()
+  const { open } = useTimeEntryInput()
 
   const filteredEntries = filterEntries(entries, filterType)
 

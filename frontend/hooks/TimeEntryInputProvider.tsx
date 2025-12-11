@@ -12,14 +12,14 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-} from '@/components/ui/drawer'
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import loc from '@/lib/locales'
@@ -34,21 +34,21 @@ import {
 } from 'react'
 import { toast } from 'sonner'
 
-type TimeEntryDialogContextType = {
+type TimeEntryInputContextType = {
   state: 'open' | 'closed'
   open: (editingTimeEntry?: Partial<TimeEntry>) => void
   close: () => void
 }
 
-const TimeEntryDialogContext = createContext<
-  TimeEntryDialogContextType | undefined
+const TimeEntryInputContext = createContext<
+  TimeEntryInputContextType | undefined
 >(undefined)
 
-export default function TimeEntryDialogProvider({
+export default function TimeEntryInputProvider({
   children,
 }: Readonly<{ children: ReactNode }>) {
   const [state, setState] =
-    useState<TimeEntryDialogContextType['state']>('closed')
+    useState<TimeEntryInputContextType['state']>('closed')
   const [editingTimeEntry, setEditingTimeEntry] = useState<Partial<TimeEntry>>(
     {}
   )
@@ -67,7 +67,7 @@ export default function TimeEntryDialogProvider({
     isEditingSelf || !isEditing || (isLoggedIn && loggedInUser.role !== 'user')
 
   function open(
-    editingTimeEntry: Parameters<TimeEntryDialogContextType['open']>[0] = {}
+    editingTimeEntry: Parameters<TimeEntryInputContextType['open']>[0] = {}
   ) {
     setEditingTimeEntry(editingTimeEntry)
     setState('open')
@@ -97,7 +97,7 @@ export default function TimeEntryDialogProvider({
     )
   }
 
-  const context = useMemo<TimeEntryDialogContextType>(
+  const context = useMemo<TimeEntryInputContextType>(
     () => ({
       state,
       open,
@@ -107,15 +107,15 @@ export default function TimeEntryDialogProvider({
   )
 
   return (
-    <TimeEntryDialogContext.Provider value={context}>
-      <Drawer
+    <TimeEntryInputContext.Provider value={context}>
+      <Dialog
         open={state === 'open'}
         onOpenChange={open => setState(open ? 'open' : 'closed')}>
-        <DrawerContent className='pb-safe'>
-          <DrawerHeader className='text-left'>
-            <DrawerTitle>{localeStrings.title}</DrawerTitle>
-            <DrawerDescription>{localeStrings.description}</DrawerDescription>
-          </DrawerHeader>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{localeStrings.title}</DialogTitle>
+            <DialogDescription>{localeStrings.description}</DialogDescription>
+          </DialogHeader>
 
           <LapTimeInput
             id='laptimeInput'
@@ -124,7 +124,7 @@ export default function TimeEntryDialogProvider({
             disabled={!canEdit}
           />
 
-          <DrawerFooter>
+          <DialogFooter>
             {canEdit && (
               <Button
                 type='submit'
@@ -167,21 +167,24 @@ export default function TimeEntryDialogProvider({
                 </AlertDialogContent>
               </AlertDialog>
             )}
-            <DrawerClose asChild>
+            <DialogClose asChild>
               <Button variant='outline' className='w-full'>
                 {loc.no.dialog.cancel}
               </Button>
-            </DrawerClose>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       {children}
-    </TimeEntryDialogContext.Provider>
+    </TimeEntryInputContext.Provider>
   )
 }
 
-export const useTimeEntryDrawer = () => {
-  const context = useContext(TimeEntryDialogContext)
-  if (!context) throw new Error('useData must be used inside DataProvider')
+export const useTimeEntryInput = () => {
+  const context = useContext(TimeEntryInputContext)
+  if (!context)
+    throw new Error(
+      'useTimeEntryInput must be used inside TimeEntryInputProvider'
+    )
   return context
 }
