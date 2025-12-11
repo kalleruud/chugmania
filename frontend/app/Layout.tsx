@@ -22,7 +22,7 @@ export default function Layout() {
       <Button
         onClick={() => open()}
         disabled={!isLoggedIn || isLoading}
-        className='disabled:bg-background-secondary/90 drop-shadow-black disabled:text-muted-foreground fixed bottom-0 right-0 z-50 m-8 rounded-full drop-shadow-2xl backdrop-blur-2xl disabled:border disabled:opacity-100'
+        className='disabled:bg-background-secondary/90 drop-shadow-black disabled:text-muted-foreground fixed bottom-0 right-0 z-50 m-12 rounded-full drop-shadow-2xl backdrop-blur-2xl disabled:border disabled:opacity-100'
         size='icon-2xl'>
         {isLoading ? <Spinner /> : <PlusIcon className='size-8' />}
       </Button>

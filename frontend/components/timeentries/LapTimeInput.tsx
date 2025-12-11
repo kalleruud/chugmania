@@ -112,7 +112,6 @@ export default function LapTimeInput({
   const isCreating = !editingTimeEntry.id
   const loggedInLookup = find(loggedInUser?.id, users)
   const inputs = useRef<HTMLInputElement[]>([])
-  const userComboboxRef = useRef<HTMLButtonElement>(null)
 
   const [digits, setDigits] = useState<(typeof cache)['time']>(
     editingTimeEntry.duration
@@ -194,8 +193,6 @@ export default function LapTimeInput({
   function handleKeyDown(index: number, e: KeyboardEvent<HTMLInputElement>) {
     e.preventDefault()
 
-    const isLastDigit = index === 5
-
     switch (e.key) {
       case 'ArrowLeft':
         setFocus(index - 1)
@@ -203,11 +200,7 @@ export default function LapTimeInput({
       case 'Tab':
       case ' ':
       case 'ArrowRight':
-        if (isLastDigit) {
-          userComboboxRef.current?.focus()
-        } else {
-          setFocus(index + 1)
-        }
+        setFocus(index + 1)
         break
       case 'Backspace':
       case 'Delete':
@@ -217,11 +210,7 @@ export default function LapTimeInput({
       default:
         if (DIGIT.test(e.key)) {
           setDigitAt(index, e.key)
-          if (isLastDigit) {
-            userComboboxRef.current?.focus()
-          } else {
-            setFocus(index + 1)
-          }
+          setFocus(index + 1)
         }
     }
   }
@@ -339,7 +328,6 @@ export default function LapTimeInput({
         <div className='flex gap-2'>
           {users && (
             <Combobox
-              ref={userComboboxRef}
               className='w-full'
               required={true}
               disabled={disabled || loggedInUser?.role === 'user'}
