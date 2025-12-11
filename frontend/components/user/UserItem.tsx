@@ -26,6 +26,7 @@ import UserForm from './UserForm'
 type UserItemProps = {
   user: UserInfo
   variant?: 'row' | 'card'
+  hideLink?: boolean
 } & ComponentProps<'div'>
 
 export default function UserItem(props: Readonly<UserItemProps>) {
@@ -41,28 +42,43 @@ function UserRow({
   user,
   className,
   variant,
+  hideLink,
   ...props
 }: Readonly<UserItemProps>) {
-  return (
-    <Item key={user.id} className={className} asChild {...props}>
-      <Link to={`/users/${user.id}`}>
-        <ItemContent>
-          <div className='flex items-center gap-2'>
-            <div className='bg-primary h-4 w-1 rounded-full' />
-            <ItemTitle className='font-f1 mr-auto flex gap-1 uppercase'>
-              <span>{user.firstName}</span>
-              <span className='font-bold'>{user.lastName}</span>
-            </ItemTitle>
+  const content = (
+    <>
+      <ItemContent>
+        <div className='flex items-center gap-2'>
+          <div className='bg-primary h-4 w-1 rounded-full' />
+          <ItemTitle className='font-f1 mr-auto flex gap-1 uppercase'>
+            <span>{user.firstName}</span>
+            <span className='font-bold'>{user.lastName}</span>
+          </ItemTitle>
 
-            <span className='text-f1 text-muted-foreground font-bold'>
-              {user.shortName}
-            </span>
-          </div>
-        </ItemContent>
+          <span className='text-f1 text-muted-foreground font-bold'>
+            {user.shortName}
+          </span>
+        </div>
+      </ItemContent>
+      {!hideLink && (
         <ItemActions>
           <ChevronRight className='size-4' />
         </ItemActions>
-      </Link>
+      )}
+    </>
+  )
+
+  if (hideLink) {
+    return (
+      <Item key={user.id} className={className} asChild {...props}>
+        <div>{content}</div>
+      </Item>
+    )
+  }
+
+  return (
+    <Item key={user.id} className={className} asChild {...props}>
+      <Link to={`/users/${user.id}`}>{content}</Link>
     </Item>
   )
 }

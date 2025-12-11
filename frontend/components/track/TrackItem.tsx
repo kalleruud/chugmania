@@ -10,7 +10,7 @@ type TrackItemProps = {
   track: Track
   variant: 'row' | 'card'
   className?: string
-  isLink?: boolean
+  hideLink?: boolean
 }
 
 export function TrackItem(props: Readonly<TrackItemProps>) {
@@ -22,28 +22,42 @@ export function TrackItem(props: Readonly<TrackItemProps>) {
   }
 }
 
-function TrackRow({ track, className }: Readonly<TrackItemProps>) {
-  return (
-    <Item key={track.id} className={className} asChild>
-      <Link to={`/tracks/${track.id}`}>
-        <ItemContent>
-          <ItemTitle className='font-kh-interface text-2xl tabular-nums tracking-tight'>
-            <p className='text-primary'>#</p>
-            {formatTrackName(track.number)}
-          </ItemTitle>
-        </ItemContent>
-        <div className='flex gap-2'>
-          <TrackBadge variant='outline' trackLevel={track.level}>
-            {track.level}
-          </TrackBadge>
-          <TrackBadge variant='outline' trackType={track.type}>
-            {track.type}
-          </TrackBadge>
-        </div>
+function TrackRow({ track, className, hideLink }: Readonly<TrackItemProps>) {
+  const content = (
+    <>
+      <ItemContent>
+        <ItemTitle className='font-kh-interface text-2xl tabular-nums tracking-tight'>
+          <p className='text-primary'>#</p>
+          {formatTrackName(track.number)}
+        </ItemTitle>
+      </ItemContent>
+      <div className='flex gap-2'>
+        <TrackBadge variant='outline' trackLevel={track.level}>
+          {track.level}
+        </TrackBadge>
+        <TrackBadge variant='outline' trackType={track.type}>
+          {track.type}
+        </TrackBadge>
+      </div>
+      {!hideLink && (
         <ItemActions>
           <ChevronRight className='size-4' />
         </ItemActions>
-      </Link>
+      )}
+    </>
+  )
+
+  if (hideLink) {
+    return (
+      <Item key={track.id} className={className} asChild>
+        <div>{content}</div>
+      </Item>
+    )
+  }
+
+  return (
+    <Item key={track.id} className={className} asChild>
+      <Link to={`/tracks/${track.id}`}>{content}</Link>
     </Item>
   )
 }

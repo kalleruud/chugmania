@@ -26,6 +26,7 @@ type SessionItemProps = {
   session: SessionWithSignups
   variant: 'row' | 'card'
   className?: string
+  hideLink?: boolean
 }
 
 export function SessionItem(props: Readonly<SessionItemProps>) {
@@ -37,7 +38,11 @@ export function SessionItem(props: Readonly<SessionItemProps>) {
   }
 }
 
-function SessionRow({ session, className }: Readonly<SessionItemProps>) {
+function SessionRow({
+  session,
+  className,
+  hideLink,
+}: Readonly<SessionItemProps>) {
   const { loggedInUser, isLoggedIn } = useAuth()
   const timeAgo = useDistanceToNow({ date: session.date })
 
@@ -46,19 +51,19 @@ function SessionRow({ session, className }: Readonly<SessionItemProps>) {
   const isSignedUp =
     isLoggedIn && session.signups.some(su => su.user.id === loggedInUser.id)
 
-  return (
-    <Item key={session.id} className={className} asChild>
-      <Link to={`/sessions/${session.id}`}>
-        <ItemContent
-          className={twMerge(
-            isCancelled && 'text-muted-foreground line-through'
-          )}>
-          <ItemTitle className='font-bold'>{session.name}</ItemTitle>
-          <ItemDescription>
-            <span>{timeAgo}</span>
-          </ItemDescription>
-        </ItemContent>
+  const content = (
+    <>
+      <ItemContent
+        className={twMerge(
+          isCancelled && 'text-muted-foreground line-through'
+        )}>
+        <ItemTitle className='font-bold'>{session.name}</ItemTitle>
+        <ItemDescription>
+          <span>{timeAgo}</span>
+        </ItemDescription>
+      </ItemContent>
 
+      {!hideLink && (
         <ItemActions>
           <Badge variant='outline'>
             {loc.no.session.statusOptions[session.status]}
@@ -66,7 +71,29 @@ function SessionRow({ session, className }: Readonly<SessionItemProps>) {
           {isLoggedIn && !isSignedUp && <Badge>{loc.no.common.new}</Badge>}
           <ChevronRight className='size-4' />
         </ItemActions>
-      </Link>
+      )}
+      {hideLink && (
+        <div className='flex gap-2'>
+          <Badge variant='outline'>
+            {loc.no.session.statusOptions[session.status]}
+          </Badge>
+          {isLoggedIn && !isSignedUp && <Badge>{loc.no.common.new}</Badge>}
+        </div>
+      )}
+    </>
+  )
+
+  if (hideLink) {
+    return (
+      <Item key={session.id} className={className} asChild>
+        <div>{content}</div>
+      </Item>
+    )
+  }
+
+  return (
+    <Item key={session.id} className={className} asChild>
+      <Link to={`/sessions/${session.id}`}>{content}</Link>
     </Item>
   )
 }
