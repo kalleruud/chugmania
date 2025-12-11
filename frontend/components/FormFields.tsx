@@ -1,3 +1,4 @@
+import { formatDateWithYear, formatTimeOnly } from '@common/utils/date'
 import { ChevronDownIcon } from '@heroicons/react/24/solid'
 import { useState, type ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -186,7 +187,7 @@ export function CalendarField({
                 isEmpty && 'text-muted-foreground'
               )}
               disabled={disabled}>
-              {selected?.toLocaleDateString() ?? now.toLocaleDateString()}
+              {formatDateWithYear(selected ?? now)}
               <ChevronDownIcon />
             </Button>
           </PopoverTrigger>
@@ -196,6 +197,7 @@ export function CalendarField({
               required
               showOutsideDays
               showWeekNumber
+              weekStartsOn={1}
               selected={selected}
               onSelect={handleDateSelect}
             />
@@ -205,10 +207,11 @@ export function CalendarField({
         <div className='flex w-32 flex-col gap-1'>
           <Input
             type='text'
-            placeholder={now.toLocaleTimeString()}
-            value={time ?? ''}
+            placeholder={formatTimeOnly(now)}
+            value={time}
             onChange={e => handleTimeChange(e.target.value)}
             onBlur={handleTimeBlur}
+            inputMode='decimal'
             disabled={disabled}
             required={required}
             className={twMerge(
@@ -242,7 +245,7 @@ function validateTime(
 function parseTimeWithSeparators(
   input: string
 ): { hours: number; minutes: number; seconds: number } | null {
-  const separators = /[:.\s]/
+  const separators = /[:.,\s]/
   const parts = input.split(separators).filter(p => p.length > 0)
 
   if (parts.length < 2 || parts.length > 3) return null

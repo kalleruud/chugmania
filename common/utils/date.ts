@@ -1,26 +1,7 @@
-import { formatRelative } from 'date-fns'
-import { nb } from 'date-fns/locale'
 import { DateTime } from 'luxon'
 
 const DEFAULT_LOCALE = 'nb-NO'
 const DEFAULT_ZONE = 'Europe/Oslo'
-
-/**
- * Format a date with relative display (today, tomorrow, in 4 days, 6 days ago, etc.)
- * Falls back to full date format for dates beyond 1 week.
- *
- * @param input - Date object or ISO string
- * @returns Formatted relative date (e.g., "i dag", "i morgen", "for 3 dager siden")
- */
-export function formatDateRelative(input: Date | string): string {
-  const date = typeof input === 'string' ? new Date(input) : input
-
-  if (!date || Number.isNaN(date.getTime())) return ''
-
-  // Format relative part using date-fns with Norwegian locale
-  // This returns only the relative date part without time (i dag, i morgen, for 3 dager siden, etc.)
-  return formatRelative(date, new Date(), { locale: nb })
-}
 
 /**
  * Format a date with full date and year
