@@ -1,3 +1,7 @@
+import type { SessionWithSignups } from '@common/models/session'
+import type { TimeEntry } from '@common/models/timeEntry'
+import type { Track } from '@common/models/track'
+import type { UserInfo } from '@common/models/user'
 import {
   createContext,
   useContext,
@@ -6,10 +10,6 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import type { SessionWithSignups } from '../../common/models/session'
-import type { TimeEntry } from '../../common/models/timeEntry'
-import type { Track } from '../../common/models/track'
-import type { UserInfo } from '../../common/models/user'
 import { useConnection } from './ConnectionContext'
 
 type DataContextType =

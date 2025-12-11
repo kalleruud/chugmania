@@ -1,4 +1,4 @@
-import { users } from '../../backend/database/schema'
+import type { users } from '../../backend/database/schema'
 import type { SocketData, SuccessResponse } from './socket.io'
 
 export type User = typeof users.$inferSelect

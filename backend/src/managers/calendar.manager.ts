@@ -1,13 +1,11 @@
+import type { SessionSignup, SessionWithSignups } from '@common/models/session'
+import { getEndOfDate } from '@common/utils/date'
 import {
   type Attendee,
   createEvents,
   type EventAttributes,
   type ParticipationStatus,
 } from 'ics'
-import type {
-  SessionSignup,
-  SessionWithSignups,
-} from '../../../common/models/session'
 import SessionManager from './session.manager'
 
 export default class CalendarManager {
@@ -65,7 +63,7 @@ export default class CalendarManager {
       title: '🍺 ' + session.name,
       description: descriptionText,
       location: session.location ?? undefined,
-      url: baseUrl.toString(),
+      url: `${baseUrl}/${session.id}`,
       uid: `${session.id}@chugmania`,
       sequence: this.toSequence(session.updatedAt ?? session.createdAt),
       productId: CalendarManager.PRODUCT_ID,
@@ -78,13 +76,15 @@ export default class CalendarManager {
       start: CalendarManager.toUtcArray(session.date),
       startInputType: 'utc',
       startOutputType: 'utc',
-      duration: { hours: 4 },
+      end: CalendarManager.toUtcArray(getEndOfDate(session.date)),
+      endInputType: 'utc',
+      endOutputType: 'utc',
       created: CalendarManager.toUtcArray(session.createdAt),
       lastModified: session.updatedAt
         ? CalendarManager.toUtcArray(session.updatedAt)
         : undefined,
       attendees: session.signups.map(this.createEventAttendee),
-    } satisfies EventAttributes
+    }
   }
 
   private static createEventAttendee(signup: SessionSignup) {

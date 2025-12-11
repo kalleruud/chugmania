@@ -1,7 +1,4 @@
-import express from 'express'
-import { Server, Socket } from 'socket.io'
-import ViteExpress from 'vite-express'
-import {
+import type {
   ClientToServerEvents,
   ErrorResponse,
   EventReq,
@@ -9,11 +6,15 @@ import {
   InterServerEvents,
   ServerToClientEvents,
   SocketData,
-} from '../../common/models/socket.io'
+} from '@common/models/socket.io'
+import express from 'express'
+import { Server, Socket } from 'socket.io'
+import ViteExpress from 'vite-express'
 import AdminManager from './managers/admin.manager'
 import ApiManager from './managers/api.manager'
 import AuthManager from './managers/auth.manager'
 import SessionManager from './managers/session.manager'
+import SessionScheduler from './managers/session.scheduler'
 import TimeEntryManager from './managers/timeEntry.manager'
 import TrackManager from './managers/track.manager'
 import UserManager from './managers/user.manager'
@@ -47,13 +48,13 @@ export const broadcast: typeof io.emit = (ev, ...args) => {
 }
 
 app.get('/api/sessions/calendar.ics', (req, res) =>
-  ApiManager.handleGetAllSessionsCalendar(ORIGIN, req, res)
-)
-app.get('/api/sessions/:id/calendar.ics', (req, res) =>
-  ApiManager.handleGetSessionCalendar(ORIGIN, req, res)
+  ApiManager.onGetCalendar(ORIGIN, req, res)
 )
 
 io.on('connect', s => Connect(s))
+
+// Initialize session scheduler when server starts
+await SessionScheduler.scheduleNext()
 
 async function Connect(s: TypedSocket) {
   console.debug(new Date().toISOString(), s.id, 'Connected')
@@ -81,6 +82,7 @@ async function Connect(s: TypedSocket) {
   setup(s, 'create_session', SessionManager.onCreateSession)
   setup(s, 'edit_session', SessionManager.onEditSession)
   setup(s, 'rsvp_session', SessionManager.onRsvpSession)
+  setup(s, 'delete_session', SessionManager.onDeleteSession)
 
   setup(s, 'import_csv', AdminManager.onImportCsv)
   setup(s, 'export_csv', AdminManager.onExportCsv)

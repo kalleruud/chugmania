@@ -1,12 +1,9 @@
+import loc from '@/lib/locales'
 import type { Request, Response } from 'express'
 import CalendarManager from './calendar.manager'
 
 export default class ApiManager {
-  static async handleGetAllSessionsCalendar(
-    baseUrl: URL,
-    req: Request,
-    res: Response
-  ) {
+  static async onGetCalendar(baseUrl: URL, _: Request, res: Response) {
     try {
       const calendar = await CalendarManager.getAllSessionsCalendar(baseUrl)
 
@@ -16,64 +13,22 @@ export default class ApiManager {
         .setHeader('Cache-Control', 'no-store')
         .send(calendar)
     } catch (error) {
-      ApiManager.handleError(
-        res,
-        error,
-        'Failed to create sessions calendar',
-        500
-      )
-    }
-  }
-
-  static async handleGetSessionCalendar(
-    baseUrl: URL,
-    req: Request,
-    res: Response
-  ) {
-    try {
-      const sessionId = req.params.id
-      if (!sessionId) {
-        res.status(400).send('Session id is required')
-        return
-      }
-
-      const calendar = await CalendarManager.getSessionCalendar(
-        baseUrl,
-        sessionId
-      )
-
-      res
-        .type('text/calendar; charset=utf-8')
-        .setHeader(
-          'Content-Disposition',
-          `inline; filename="session-${sessionId}.ics"`
-        )
-        .setHeader('Cache-Control', 'no-store')
-        .send(calendar)
-    } catch (error) {
-      if (error instanceof Error && error.message === 'Session not found') {
-        res.status(404).send('Session not found')
-        return
-      }
-      ApiManager.handleError(
-        res,
-        error,
-        'Failed to create session calendar',
-        500
-      )
+      ApiManager.handleError(res, 500, 'Failed to create calendar', error)
     }
   }
 
   private static handleError(
     res: Response,
-    error: unknown,
+    statusCode: number,
     context: string,
-    statusCode: number
+    error: unknown
   ) {
     const timestamp = new Date().toISOString()
-    if (error instanceof Error)
-      console.error(timestamp, context, error.message, error.stack)
-    else console.error(timestamp, context, error)
-    res.status(statusCode).send(context)
+    const message =
+      error instanceof Error
+        ? error.message
+        : loc.no.error.messages.unknown_error
+    console.error(timestamp, message, error)
+    res.status(statusCode).send(context + ': ' + message)
   }
 }

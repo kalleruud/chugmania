@@ -11,8 +11,8 @@ import { Spinner } from '@/components/ui/spinner'
 import UserItem from '@/components/user/UserItem'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
+import { getUserFullName } from '@common/models/user'
 import { useParams } from 'react-router-dom'
-import { getUserFullName } from '../../../common/models/user'
 
 export default function UserPage() {
   const { id } = useParams()

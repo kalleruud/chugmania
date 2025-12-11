@@ -1,9 +1,9 @@
 import { Item, ItemActions, ItemContent, ItemTitle } from '@/components/ui/item'
+import type { Track } from '@common/models/track'
+import { formatTrackName } from '@common/utils/track'
 import { ChevronRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { twMerge } from 'tailwind-merge'
-import type { Track } from '../../../common/models/track'
-import { formatTrackName } from '../../../common/utils/track'
 import TrackBadge from './TrackBadge'
 
 type TrackItemProps = {

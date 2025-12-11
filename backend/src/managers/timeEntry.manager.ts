@@ -1,15 +1,16 @@
-import { asc, eq, isNull, sql } from 'drizzle-orm'
-import { EventReq, EventRes } from '../../../common/models/socket.io'
-import type { TimeEntry } from '../../../common/models/timeEntry'
+import type { EventReq, EventRes } from '@common/models/socket.io'
+import type { TimeEntry } from '@common/models/timeEntry'
 import {
   isCreateTimeEntryRequest,
   isEditTimeEntryRequest,
-} from '../../../common/models/timeEntry'
-import type { User } from '../../../common/models/user'
+} from '@common/models/timeEntry'
+import type { User } from '@common/models/user'
+import { asc, eq, isNull, sql } from 'drizzle-orm'
 import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
 import { timeEntries } from '../../database/schema'
-import { broadcast, TypedSocket } from '../server'
+import type { TypedSocket } from '../server'
+import { broadcast } from '../server'
 import AuthManager from './auth.manager'
 
 export default class TimeEntryManager {

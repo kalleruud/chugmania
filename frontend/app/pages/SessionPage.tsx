@@ -15,6 +15,7 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -34,22 +35,25 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
+import type { SessionWithSignups } from '@common/models/session'
+import { isUpcoming } from '@common/utils/date'
 import { CheckCircleIcon } from '@heroicons/react/24/solid'
-import { PencilIcon } from 'lucide-react'
+import { PencilIcon, Trash2 } from 'lucide-react'
 import { useState, type ComponentProps } from 'react'
 import { useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
 import type { SessionResponse } from '../../../backend/database/schema'
-import type { SessionWithSignups } from '../../../common/models/session'
-import { isUpcoming } from '../utils/date'
 import { SubscribeButton } from './SessionsPage'
 
 function Signup({
   session,
+  disabled,
   className,
   ...rest
-}: Readonly<{ session: SessionWithSignups } & ComponentProps<'div'>>) {
+}: Readonly<
+  { session: SessionWithSignups; disabled?: boolean } & ComponentProps<'div'>
+>) {
   const { socket } = useConnection()
   const { loggedInUser, isLoggedIn } = useAuth()
   const [myResponse, setMyResponse] = useState<SessionResponse | undefined>(
@@ -57,7 +61,6 @@ function Signup({
   )
 
   const isAdmin = isLoggedIn && loggedInUser.role !== 'user'
-
   const responses: SessionResponse[] = ['yes', 'maybe', 'no']
 
   function handleRsvp(response: SessionResponse) {
@@ -86,7 +89,10 @@ function Signup({
 
         <div className='flex items-center gap-1'>
           {(isUpcoming(session) || isAdmin) && isLoggedIn && myResponse && (
-            <Select value={myResponse} onValueChange={handleRsvp}>
+            <Select
+              disabled={disabled}
+              value={myResponse}
+              onValueChange={handleRsvp}>
               <SelectTrigger className='w-[180px]'>
                 <SelectValue placeholder={loc.no.session.rsvp.change} />
               </SelectTrigger>
@@ -101,7 +107,10 @@ function Signup({
           )}
 
           {isUpcoming(session) && isLoggedIn && !myResponse && (
-            <Button size='sm' onClick={() => handleRsvp('yes')}>
+            <Button
+              size='sm'
+              onClick={() => handleRsvp('yes')}
+              disabled={disabled}>
               <CheckCircleIcon />
               {loc.no.session.rsvp.responses.yes}
             </Button>
@@ -143,13 +152,35 @@ function Signup({
 
 export default function SessionPage() {
   const { id } = useParams()
+  const { socket } = useConnection()
   const { sessions, tracks, isLoadingData } = useData()
   const { loggedInUser, isLoggedIn, isLoading } = useAuth()
   const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 
   const isAdmin = isLoggedIn && loggedInUser.role === 'admin'
   const isModerator = isLoggedIn && loggedInUser.role === 'moderator'
   const canEdit = isAdmin || isModerator
+
+  const handleDeleteSession = async (sessionId: string) => {
+    toast.promise(
+      socket
+        .emitWithAck('delete_session', {
+          type: 'DeleteSessionRequest',
+          id: sessionId,
+        })
+        .then(r => {
+          setDeleteDialogOpen(false)
+          if (!r.success) throw new Error(r.message)
+          return r
+        }),
+      {
+        loading: 'Sletter session...',
+        success: 'Sesjonen ble slettet',
+        error: (err: Error) => `Sletting feilet: ${err.message}`,
+      }
+    )
+  }
 
   if (isLoadingData) {
     return (
@@ -162,6 +193,8 @@ export default function SessionPage() {
   const session = sessions.find(s => s.id === id)
   if (!session)
     throw new Error(loc.no.error.messages.not_in_db('sessions/' + id))
+
+  const isCancelled = session?.status === 'cancelled'
 
   return (
     <div className='flex flex-col gap-6'>
@@ -188,42 +221,74 @@ export default function SessionPage() {
       <div className='flex items-center gap-1'>
         <SubscribeButton className='flex-1' />
         {canEdit && (
-          <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant='outline'>
-                <PencilIcon className='size-4' />
-                {loc.no.session.edit}
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>{loc.no.session.edit}</DialogTitle>
-              </DialogHeader>
-              <SessionForm
-                id='editForm'
-                variant='edit'
-                session={session}
-                onSubmitResponse={success => {
-                  if (success) setEditDialogOpen(false)
-                }}
-              />
-              <DialogFooter>
-                <DialogClose asChild>
-                  <Button variant='outline' disabled={isLoading}>
-                    {loc.no.dialog.cancel}
-                  </Button>
-                </DialogClose>
-                <Button type='submit' form='editForm' disabled={isLoading}>
-                  {loc.no.dialog.continue}
+          <>
+            <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant='outline'>
+                  <PencilIcon className='size-4' />
+                  {loc.no.session.edit}
                 </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>{loc.no.session.edit}</DialogTitle>
+                </DialogHeader>
+                <SessionForm
+                  id='editForm'
+                  variant='edit'
+                  session={session}
+                  onSubmitResponse={success => {
+                    if (success) setEditDialogOpen(false)
+                  }}
+                />
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button variant='outline' disabled={isLoading}>
+                      {loc.no.dialog.cancel}
+                    </Button>
+                  </DialogClose>
+                  <Button type='submit' form='editForm' disabled={isLoading}>
+                    {loc.no.dialog.continue}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant='destructive'>
+                  <Trash2 className='mr-2 size-4' />
+                  {loc.no.common.delete}
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>{loc.no.dialog.confirmDelete.title}</DialogTitle>
+                  <DialogDescription>
+                    {loc.no.dialog.confirmDelete.description}
+                  </DialogDescription>
+                </DialogHeader>
+
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button variant='outline'>{loc.no.dialog.cancel}</Button>
+                  </DialogClose>
+                  <Button
+                    variant='destructive'
+                    onClick={() => handleDeleteSession(session.id)}
+                    disabled={isLoading}>
+                    {loc.no.common.delete}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </>
         )}
       </div>
 
       <Signup
         className='bg-background rounded-sm border p-2'
+        disabled={isCancelled}
         session={session}
       />
 

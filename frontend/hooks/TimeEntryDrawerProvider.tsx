@@ -23,6 +23,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import loc from '@/lib/locales'
+import type { TimeEntry } from '@common/models/timeEntry'
 import { Trash2 } from 'lucide-react'
 import {
   createContext,
@@ -32,7 +33,6 @@ import {
   type ReactNode,
 } from 'react'
 import { toast } from 'sonner'
-import type { TimeEntry } from '../../common/models/timeEntry'
 
 type TimeEntryDialogContextType = {
   state: 'open' | 'closed'

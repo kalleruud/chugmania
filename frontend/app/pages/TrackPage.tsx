@@ -12,8 +12,8 @@ import { Spinner } from '@/components/ui/spinner'
 import { useAuth } from '@/contexts/AuthContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
+import { formatTrackName } from '@common/utils/track'
 import { useParams } from 'react-router-dom'
-import { formatTrackName } from '../../../common/utils/track'
 
 export default function TrackPage() {
   const { id } = useParams()

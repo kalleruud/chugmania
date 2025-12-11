@@ -1,8 +1,22 @@
-import { isOngoing } from '@/app/utils/date'
 import Combobox, { type ComboboxLookupItem } from '@/components/combobox'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import loc from '@/lib/locales'
+import type { SessionWithSignups } from '@common/models/session'
+import type {
+  CreateTimeEntryRequest,
+  EditTimeEntryRequest,
+  TimeEntry,
+} from '@common/models/timeEntry'
+import type { Track } from '@common/models/track'
+import type { UserInfo } from '@common/models/user'
+import { formatDateWithYear, isOngoing } from '@common/utils/date'
+import {
+  durationToInputList,
+  formatTime,
+  inputListToMs,
+} from '@common/utils/time'
+import { formatTrackName } from '@common/utils/track'
 import {
   useCallback,
   useEffect,
@@ -15,20 +29,6 @@ import {
 import { useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
-import type { SessionWithSignups } from '../../../common/models/session'
-import type {
-  CreateTimeEntryRequest,
-  EditTimeEntryRequest,
-  TimeEntry,
-} from '../../../common/models/timeEntry'
-import type { Track } from '../../../common/models/track'
-import type { UserInfo } from '../../../common/models/user'
-import {
-  durationToInputList,
-  formatTime,
-  inputListToMs,
-} from '../../../common/utils/time'
-import { formatTrackName } from '../../../common/utils/track'
 import { useAuth } from '../../contexts/AuthContext'
 import { useConnection } from '../../contexts/ConnectionContext'
 import { useData } from '../../contexts/DataContext'
@@ -51,10 +51,6 @@ type LapTimeInputProps = {
   disabled?: boolean
 } & ComponentProps<'form'>
 
-const dateFormatter = new Intl.DateTimeFormat('nb-NO', {
-  dateStyle: 'medium',
-})
-
 function trackToLookupItem(track: Track): ComboboxLookupItem {
   return {
     id: track.id,
@@ -65,7 +61,7 @@ function trackToLookupItem(track: Track): ComboboxLookupItem {
 }
 
 function sessionToLookupItem(session: SessionWithSignups): ComboboxLookupItem {
-  const formattedDate = dateFormatter.format(new Date(session.date))
+  const formattedDate = formatDateWithYear(session.date)
   return {
     id: session.id,
     label: session.name,

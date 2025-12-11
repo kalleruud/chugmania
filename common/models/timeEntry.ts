@@ -1,4 +1,4 @@
-import { timeEntries } from '../../backend/database/schema'
+import type { timeEntries } from '../../backend/database/schema'
 import type { SuccessResponse } from './socket.io'
 import type { Track } from './track'
 import type { User } from './user'

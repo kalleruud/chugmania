@@ -2,13 +2,14 @@ import { Item, ItemActions, ItemContent, ItemTitle } from '@/components/ui/item'
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import loc from '@/lib/locales'
+import { type UserInfo } from '@common/models/user'
+import { formatYear } from '@common/utils/date'
 import { PencilIcon } from '@heroicons/react/24/solid'
 import { ChevronRight, Trash2 } from 'lucide-react'
 import { useState, type ComponentProps } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
-import { type UserInfo } from '../../../common/models/user'
 import { Button } from '../ui/button'
 import {
   Dialog,
@@ -111,7 +112,7 @@ function UserCard({ user, className, ...props }: Readonly<UserItemProps>) {
           <span className='border-r' />
           <span className='text-sm'>{loc.no.user.role[user.role]}</span>
           <span className='border-r' />
-          <span className='text-sm'>{`${loc.no.user.joined} ${user.createdAt.getFullYear()}`}</span>
+          <span className='text-sm'>{`${loc.no.user.joined} ${formatYear(user.createdAt)}`}</span>
         </div>
       </div>
 
