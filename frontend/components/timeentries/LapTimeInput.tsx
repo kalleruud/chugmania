@@ -191,6 +191,9 @@ export default function LapTimeInput({
   }
 
   function handleKeyDown(index: number, e: KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Tab') return
+
+    e.preventDefault()
     switch (e.key) {
       case 'ArrowLeft':
         setFocus(index - 1)
