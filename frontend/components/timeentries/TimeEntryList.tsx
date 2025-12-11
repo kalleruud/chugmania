@@ -1,4 +1,5 @@
 import { useAuth } from '@/contexts/AuthContext'
+import { useTimeEntryInput } from '@/hooks/TimeEntryInputProvider'
 import loc from '@/lib/locales'
 import type { LeaderboardEntryGap, TimeEntry } from '@common/models/timeEntry'
 import { PlusIcon } from '@heroicons/react/24/solid'

@@ -119,30 +119,18 @@ export default function TimeEntryInputProvider({
 
           <LapTimeInput
             id='laptimeInput'
-            className='px-4'
             editingTimeEntry={editingTimeEntry}
             disabled={!canEdit}
           />
 
           <DialogFooter>
-            {canEdit && (
-              <Button
-                type='submit'
-                form='laptimeInput'
-                className='flex gap-1'
-                onClick={close}>
-                {isEditing
-                  ? loc.no.timeEntry.input.update
-                  : loc.no.timeEntry.input.submit}
-              </Button>
-            )}
+            <DialogClose asChild>
+              <Button variant='outline'>{loc.no.dialog.cancel}</Button>
+            </DialogClose>
             {canEdit && isEditing && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button
-                    type='button'
-                    variant='destructive'
-                    className='w-full'>
+                  <Button type='button' variant='destructive'>
                     <Trash2 />
                     {loc.no.dialog.delete}
                   </Button>
@@ -167,11 +155,17 @@ export default function TimeEntryInputProvider({
                 </AlertDialogContent>
               </AlertDialog>
             )}
-            <DialogClose asChild>
-              <Button variant='outline' className='w-full'>
-                {loc.no.dialog.cancel}
+            {canEdit && (
+              <Button
+                type='submit'
+                form='laptimeInput'
+                className='flex gap-1'
+                onClick={close}>
+                {isEditing
+                  ? loc.no.timeEntry.input.update
+                  : loc.no.timeEntry.input.submit}
               </Button>
-            </DialogClose>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
