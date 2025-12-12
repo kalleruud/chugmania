@@ -1,15 +1,5 @@
+import { ConfirmButton } from '@/components/ConfirmButton'
 import LapTimeInput from '@/components/timeentries/LapTimeInput'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -129,32 +119,13 @@ export default function TimeEntryInputProvider({
               <Button variant='outline'>{loc.no.dialog.cancel}</Button>
             </DialogClose>
             {canEdit && isEditing && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button type='button' variant='destructive'>
-                    <Trash2 />
-                    {loc.no.dialog.delete}
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>
-                      {loc.no.dialog.confirmDelete.title}
-                    </AlertDialogTitle>
-                    <AlertDialogDescription>
-                      {loc.no.dialog.confirmDelete.description}
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>
-                      {loc.no.dialog.cancel}
-                    </AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete}>
-                      {loc.no.dialog.continue}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              <ConfirmButton
+                type='button'
+                variant='destructive'
+                onConfirm={handleDelete}>
+                <Trash2 />
+                {loc.no.dialog.delete}
+              </ConfirmButton>
             )}
 
             {canEdit && (

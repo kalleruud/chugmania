@@ -8,6 +8,7 @@ import { Trash2 } from 'lucide-react'
 import { useState, type ComponentProps } from 'react'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
+import { ConfirmButton } from '../ConfirmButton'
 import { Button } from '../ui/button'
 import {
   Dialog,
@@ -33,7 +34,6 @@ export default function UserCard({
   const { logout, isLoading, loggedInUser } = useAuth()
   const { socket } = useConnection()
   const [open, setOpen] = useState(false)
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 
   const isSelf = loggedInUser?.id === user.id
   const isAdmin = loggedInUser?.role === 'admin'
@@ -47,7 +47,6 @@ export default function UserCard({
           id: user.id,
         })
         .then(r => {
-          setDeleteDialogOpen(false)
           if (!r.success) throw new Error(r.message)
           return r
         }),
@@ -80,34 +79,14 @@ export default function UserCard({
 
       {canEdit && (
         <div className='flex justify-center gap-2'>
-          <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant='destructive' size='sm' disabled={isSelf}>
-                <Trash2 className='mr-2 size-4' />
-                {loc.no.common.delete}
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>{loc.no.dialog.confirmDelete.title}</DialogTitle>
-                <DialogDescription>
-                  {loc.no.dialog.confirmDelete.description}
-                </DialogDescription>
-              </DialogHeader>
-
-              <DialogFooter>
-                <DialogClose asChild>
-                  <Button variant='outline'>{loc.no.dialog.cancel}</Button>
-                </DialogClose>
-                <Button
-                  variant='destructive'
-                  onClick={handleDeleteUser}
-                  disabled={isLoading}>
-                  {loc.no.common.delete}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <ConfirmButton
+            variant='destructive'
+            size='sm'
+            disabled={isSelf || isLoading}
+            onConfirm={handleDeleteUser}>
+            <Trash2 className='mr-2 size-4' />
+            {loc.no.common.delete}
+          </ConfirmButton>
 
           {canEdit && (
             <Dialog open={open} onOpenChange={setOpen}>

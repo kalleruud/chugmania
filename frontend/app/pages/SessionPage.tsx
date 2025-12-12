@@ -1,3 +1,4 @@
+import { ConfirmButton } from '@/components/ConfirmButton'
 import { PageSubheader } from '@/components/PageHeader'
 import SessionCard from '@/components/session/SessionCard'
 import SessionForm from '@/components/session/SessionForm'
@@ -15,7 +16,6 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -155,7 +155,6 @@ export default function SessionPage() {
   const { sessions, tracks, isLoadingData } = useData()
   const { loggedInUser, isLoggedIn, isLoading } = useAuth()
   const [editDialogOpen, setEditDialogOpen] = useState(false)
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 
   const isAdmin = isLoggedIn && loggedInUser.role === 'admin'
   const isModerator = isLoggedIn && loggedInUser.role === 'moderator'
@@ -169,7 +168,6 @@ export default function SessionPage() {
           id: sessionId,
         })
         .then(r => {
-          setDeleteDialogOpen(false)
           if (!r.success) throw new Error(r.message)
           return r
         }),
@@ -253,34 +251,13 @@ export default function SessionPage() {
               </DialogContent>
             </Dialog>
 
-            <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant='destructive'>
-                  <Trash2 className='mr-2 size-4' />
-                  {loc.no.common.delete}
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>{loc.no.dialog.confirmDelete.title}</DialogTitle>
-                  <DialogDescription>
-                    {loc.no.dialog.confirmDelete.description}
-                  </DialogDescription>
-                </DialogHeader>
-
-                <DialogFooter>
-                  <DialogClose asChild>
-                    <Button variant='outline'>{loc.no.dialog.cancel}</Button>
-                  </DialogClose>
-                  <Button
-                    variant='destructive'
-                    onClick={() => handleDeleteSession(session.id)}
-                    disabled={isLoading}>
-                    {loc.no.common.delete}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            <ConfirmButton
+              variant='destructive'
+              onConfirm={() => handleDeleteSession(session.id)}
+              disabled={isLoading}>
+              <Trash2 className='mr-2 size-4' />
+              {loc.no.common.delete}
+            </ConfirmButton>
           </>
         )}
       </div>
