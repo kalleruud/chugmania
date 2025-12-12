@@ -21,7 +21,7 @@ import { Empty } from '@/components/ui/empty'
 import { Item, ItemContent, ItemMedia } from '@/components/ui/item'
 import { Skeleton } from '@/components/ui/skeleton'
 import UserForm from '@/components/user/UserForm'
-import UserItem from '@/components/user/UserItem'
+import UserRow from '@/components/user/UserRow'
 import { useAuth } from '@/contexts/AuthContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
@@ -46,10 +46,9 @@ function UserRowList({ users }: Readonly<{ users: UserInfo[] }>) {
   return (
     <div className='bg-background-secondary rounded-sm'>
       {users.map(user => (
-        <UserItem
+        <UserRow
           key={user.id}
-          user={user}
-          variant='row'
+          item={user}
           className='py-3 first:pt-4 last:pb-4'
         />
       ))}
@@ -147,11 +146,11 @@ export function UsersList({ className, showAll }: Readonly<UsersPageProps>) {
             <DialogFooter>
               <DialogClose asChild>
                 <Button variant='outline' disabled={isLoading}>
-                  {loc.no.dialog.cancel}
+                  {loc.no.common.cancel}
                 </Button>
               </DialogClose>
               <Button type='submit' form='createUserForm' disabled={isLoading}>
-                {loc.no.dialog.continue}
+                {loc.no.common.continue}
               </Button>
             </DialogFooter>
           </DialogContent>

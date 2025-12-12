@@ -16,7 +16,7 @@ import { AuthProvider } from './contexts/AuthContext'
 import { ConnectionProvider } from './contexts/ConnectionContext'
 import { DataProvider } from './contexts/DataContext'
 import { ThemeProvider } from './contexts/ThemeContext'
-import TimeEntryDialogProvider from './hooks/TimeEntryDrawerProvider'
+import TimeEntryInputProvider from './hooks/TimeEntryInputProvider'
 import './index.css'
 
 createRoot(document.getElementById('root')!).render(
@@ -28,7 +28,7 @@ createRoot(document.getElementById('root')!).render(
           <DataProvider>
             <AuthProvider>
               <ErrorBoundary FallbackComponent={ErrorPage}>
-                <TimeEntryDialogProvider>
+                <TimeEntryInputProvider>
                   <Routes>
                     <Route element={<Layout />}>
                       <Route index element={<Home />} />
@@ -42,7 +42,7 @@ createRoot(document.getElementById('root')!).render(
                     </Route>
                   </Routes>
                   <Toaster />
-                </TimeEntryDialogProvider>
+                </TimeEntryInputProvider>
               </ErrorBoundary>
             </AuthProvider>
           </DataProvider>

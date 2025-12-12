@@ -7,7 +7,7 @@ import {
   type TimeEntryListProps,
 } from '../timeentries/TimeEntryList'
 import { Spinner } from '../ui/spinner'
-import { TrackItem } from './TrackItem'
+import { TrackRow } from './TrackRow'
 
 type TrackLeaderboardProps = {
   track: Track
@@ -39,9 +39,8 @@ export default function TrackLeaderboard({
       className={twMerge(
         'bg-background flex flex-col gap-2 rounded-sm border p-2',
         className
-      )}
-      {...rest}>
-      <TrackItem track={track} variant='row' />
+      )}>
+      <TrackRow item={track} />
       <TimeEntryList track={track.id} entries={entries} {...rest} />
     </div>
   )

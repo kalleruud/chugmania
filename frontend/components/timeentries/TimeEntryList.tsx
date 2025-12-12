@@ -1,5 +1,5 @@
 import { useAuth } from '@/contexts/AuthContext'
-import { useTimeEntryDrawer } from '@/hooks/TimeEntryDrawerProvider'
+import { useTimeEntryInput } from '@/hooks/TimeEntryInputProvider'
 import loc from '@/lib/locales'
 import type { LeaderboardEntryGap, TimeEntry } from '@common/models/timeEntry'
 import { PlusIcon } from '@heroicons/react/24/solid'
@@ -7,8 +7,7 @@ import { useState } from 'react'
 import { Button } from '../ui/button'
 import { Empty } from '../ui/empty'
 import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group'
-import type { GapType } from './TimeEntryItem'
-import TimeEntryItem from './TimeEntryItem'
+import TimeEntryRow, { type GapType } from './TimeEntryRow'
 
 type FilterType = 'all' | 'best' | 'latest'
 
@@ -119,7 +118,7 @@ export function TimeEntryList({
   const { isLoggedIn } = useAuth()
   const [gapType, setGapType] = useState<GapType>('interval')
   const [filterType, setFilterType] = useState<FilterType>(filter)
-  const { open } = useTimeEntryDrawer()
+  const { open } = useTimeEntryInput()
 
   const filteredEntries = filterEntries(entries, filterType)
 
@@ -178,9 +177,9 @@ export function TimeEntryList({
       <div className='bg-background-secondary flex flex-col rounded-sm'>
         {filteredEntries.map((entry, i) => {
           return (
-            <TimeEntryItem
+            <TimeEntryRow
               key={entry.id}
-              lapTime={entry}
+              item={entry}
               gap={getGap(
                 i + 1,
                 entry,

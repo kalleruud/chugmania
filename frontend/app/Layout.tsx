@@ -1,13 +1,13 @@
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { useAuth } from '@/contexts/AuthContext'
-import { useTimeEntryDrawer } from '@/hooks/TimeEntryDrawerProvider'
+import { useTimeEntryInput } from '@/hooks/TimeEntryInputProvider'
 import { PlusIcon } from '@heroicons/react/24/solid'
 import { Outlet } from 'react-router-dom'
 
 export default function Layout() {
   const { isLoggedIn, isLoading } = useAuth()
-  const { open } = useTimeEntryDrawer()
+  const { open } = useTimeEntryInput()
 
   return (
     <>

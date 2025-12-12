@@ -1,14 +1,6 @@
 import { Badge } from '@/components/ui/badge'
-import {
-  Item,
-  ItemActions,
-  ItemContent,
-  ItemDescription,
-  ItemTitle,
-} from '@/components/ui/item'
-import { useAuth } from '@/contexts/AuthContext'
-import { useTimeAgoStrict as useDistanceToNow } from '@/hooks/useTimeAgoStrict'
 import loc from '@/lib/locales'
+import type { SessionStatus } from '@backend/database/schema'
 import type { SessionWithSignups } from '@common/models/session'
 import {
   formatDateWithYear,
@@ -17,61 +9,43 @@ import {
   isPast,
   isUpcoming,
 } from '@common/utils/date'
-import { CalendarIcon, ClockIcon, MapPinIcon } from '@heroicons/react/24/solid'
-import { ChevronRight } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import {
+  CalendarIcon,
+  CheckCircleIcon,
+  ClockIcon,
+  MapPinIcon,
+  QuestionMarkCircleIcon,
+  XCircleIcon,
+} from '@heroicons/react/24/solid'
+import { type ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-type SessionItemProps = {
+type SessionCardProps = {
   session: SessionWithSignups
-  variant: 'row' | 'card'
   className?: string
-}
+} & ComponentProps<'div'>
 
-export function SessionItem(props: Readonly<SessionItemProps>) {
-  switch (props.variant) {
-    case 'row':
-      return <SessionRow {...props} />
-    case 'card':
-      return <SessionCard {...props} />
+function StatusIcon({
+  status,
+  ...props
+}: Readonly<
+  { status: SessionStatus } & Parameters<typeof CheckCircleIcon>[0]
+>) {
+  switch (status) {
+    case 'cancelled':
+      return <XCircleIcon {...props} />
+    case 'confirmed':
+      return <CheckCircleIcon {...props} />
+    case 'tentative':
+      return <QuestionMarkCircleIcon {...props} />
   }
 }
 
-function SessionRow({ session, className }: Readonly<SessionItemProps>) {
-  const { loggedInUser, isLoggedIn } = useAuth()
-  const timeAgo = useDistanceToNow({ date: session.date })
-
-  const isCancelled = session.status === 'cancelled'
-
-  const isSignedUp =
-    isLoggedIn && session.signups.some(su => su.user.id === loggedInUser.id)
-
-  return (
-    <Item key={session.id} className={className} asChild>
-      <Link to={`/sessions/${session.id}`}>
-        <ItemContent
-          className={twMerge(
-            isCancelled && 'text-muted-foreground line-through'
-          )}>
-          <ItemTitle className='font-bold'>{session.name}</ItemTitle>
-          <ItemDescription>
-            <span>{timeAgo}</span>
-          </ItemDescription>
-        </ItemContent>
-
-        <ItemActions>
-          <Badge variant='outline'>
-            {loc.no.session.statusOptions[session.status]}
-          </Badge>
-          {isLoggedIn && !isSignedUp && <Badge>{loc.no.common.new}</Badge>}
-          <ChevronRight className='size-4' />
-        </ItemActions>
-      </Link>
-    </Item>
-  )
-}
-
-function SessionCard({ session, className }: Readonly<SessionItemProps>) {
+export default function SessionCard({
+  session,
+  className,
+  ...props
+}: Readonly<SessionCardProps>) {
   const isCancelled = session.status === 'cancelled'
 
   return (
@@ -80,7 +54,8 @@ function SessionCard({ session, className }: Readonly<SessionItemProps>) {
         'flex flex-col gap-2',
         isCancelled && 'text-muted-foreground line-through',
         className
-      )}>
+      )}
+      {...props}>
       <h1 className='text-3xl tracking-wide'>{session.name}</h1>
       {session.description && (
         <p className='text-muted-foreground'>{session.description}</p>
@@ -88,6 +63,14 @@ function SessionCard({ session, className }: Readonly<SessionItemProps>) {
 
       <div className='flex items-start justify-between'>
         <div className='flex flex-col gap-1'>
+          <div className='flex items-center gap-2'>
+            <StatusIcon
+              status={session.status}
+              className='text-muted-foreground size-4'
+            />
+            <span>{loc.no.session.statusOptions[session.status]}</span>
+          </div>
+
           <div className='flex items-center gap-2'>
             <ClockIcon className='text-muted-foreground size-4' />
             <span className='capitalize'>{formatTimeOnly(session.date)}</span>
@@ -118,10 +101,6 @@ function SessionCard({ session, className }: Readonly<SessionItemProps>) {
           {isUpcoming(session) && (
             <Badge variant='outline'>{loc.no.session.status.upcoming}</Badge>
           )}
-
-          <Badge variant='outline'>
-            {loc.no.session.statusOptions[session.status]}
-          </Badge>
         </div>
       </div>
     </div>

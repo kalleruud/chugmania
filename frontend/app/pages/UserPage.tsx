@@ -8,7 +8,7 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
 import { Spinner } from '@/components/ui/spinner'
-import UserItem from '@/components/user/UserItem'
+import UserCard from '@/components/user/UserCard'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
 import { getUserFullName } from '@common/models/user'
@@ -49,7 +49,7 @@ export default function UserPage() {
         </BreadcrumbList>
       </Breadcrumb>
 
-      <UserItem variant='card' user={user} />
+      <UserCard user={user} />
 
       {tracks.map(track => (
         <TrackLeaderboard

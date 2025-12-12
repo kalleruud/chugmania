@@ -1,4 +1,5 @@
 import { DateTime } from 'luxon'
+import type { SessionStatus } from '../../backend/database/schema'
 
 const DEFAULT_LOCALE = 'nb-NO'
 const DEFAULT_ZONE = 'Europe/Oslo'
@@ -56,16 +57,18 @@ export function getEndOfDate(date: Date): Date {
     .toJSDate()
 }
 
-export function isOngoing(session: { date: Date }) {
-  return !isPast(session) && !isUpcoming(session)
+export function isOngoing(session: { date: Date; status: SessionStatus }) {
+  return (
+    !isPast(session) && !isUpcoming(session) && session.status !== 'cancelled'
+  )
 }
 
-export function isPast({ date }: { date: Date }) {
-  const endDate = DateTime.fromJSDate(getEndOfDate(new Date(date)))
+export function isPast(session: { date: Date; status: SessionStatus }) {
+  const endDate = DateTime.fromJSDate(getEndOfDate(new Date(session.date)))
   return endDate.diffNow().milliseconds <= 0
 }
 
-export function isUpcoming({ date }: { date: Date }) {
-  const startDate = DateTime.fromJSDate(new Date(date))
+export function isUpcoming(session: { date: Date; status: SessionStatus }) {
+  const startDate = DateTime.fromJSDate(new Date(session.date))
   return startDate.diffNow().milliseconds > 0
 }

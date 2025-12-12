@@ -1,6 +1,4 @@
-import Combobox, { type ComboboxLookupItem } from '@/components/combobox'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
+import Combobox from '@/components/combobox'
 import loc from '@/lib/locales'
 import type { SessionWithSignups } from '@common/models/session'
 import type {
@@ -19,7 +17,6 @@ import {
 import { formatTrackName } from '@common/utils/track'
 import {
   useCallback,
-  useEffect,
   useRef,
   useState,
   type ComponentProps,
@@ -32,49 +29,41 @@ import { twMerge } from 'tailwind-merge'
 import { useAuth } from '../../contexts/AuthContext'
 import { useConnection } from '../../contexts/ConnectionContext'
 import { useData } from '../../contexts/DataContext'
+import { TextField } from '../FormFields'
+import { SessionRow } from '../session/SessionRow'
+import { TrackRow } from '../track/TrackRow'
 import { Spinner } from '../ui/spinner'
-
-const cache: {
-  time: string[]
-  user: ComboboxLookupItem | undefined
-  track: ComboboxLookupItem | undefined
-  session: ComboboxLookupItem | undefined
-} = {
-  time: new Array(6).fill(''),
-  user: undefined,
-  track: undefined,
-  session: undefined,
-}
+import UserRow from '../user/UserRow'
 
 type LapTimeInputProps = {
   editingTimeEntry: Partial<TimeEntry>
+  onSubmitResponse?: (success: boolean) => void
   disabled?: boolean
 } & ComponentProps<'form'>
 
-function trackToLookupItem(track: Track): ComboboxLookupItem {
+function trackToLookupItem(track: Track) {
+  const trackName = '#' + formatTrackName(track.number)
   return {
-    id: track.id,
-    label: '#' + formatTrackName(track.number),
+    ...track,
+    label: trackName,
     sublabel: `${track.level} • ${track.type}`,
-    tags: [track.level, track.type, track.number.toString()],
+    tags: [track.level, track.type, trackName],
   }
 }
 
-function sessionToLookupItem(session: SessionWithSignups): ComboboxLookupItem {
+function sessionToLookupItem(session: SessionWithSignups) {
   const formattedDate = formatDateWithYear(session.date)
   return {
-    id: session.id,
+    ...session,
     label: session.name,
     sublabel: formattedDate,
     tags: [session.name, formattedDate, session.status, session.location ?? ''],
   }
 }
 
-function userToLookupItem(user: UserInfo): ComboboxLookupItem {
+function userToLookupItem(user: UserInfo) {
   return {
-    id: user.id,
-    label: user.lastName ?? user.firstName,
-    sublabel: user.shortName ?? undefined,
+    ...user,
     tags: [
       user.firstName,
       user.lastName ?? '',
@@ -92,8 +81,9 @@ function getId(path: string) {
   return id && uuidRegex.test(id) ? id : undefined
 }
 
-export default function LapTimeInput({
+export default function TimeEntryInput({
   editingTimeEntry,
+  onSubmitResponse,
   onSubmit,
   disabled,
   className,
@@ -105,40 +95,34 @@ export default function LapTimeInput({
   const location = useLocation()
   const paramId = getId(location.pathname)
 
+  const isCreating = !editingTimeEntry.id
+  const inputs = useRef<HTMLInputElement[]>([])
+
+  const [digits, setDigits] = useState<string[]>(
+    durationToInputList(editingTimeEntry.duration)
+  )
+
+  const [selectedUser, setSelectedUser] = useState<UserInfo | undefined>(
+    users?.find(u => u.id === (editingTimeEntry.user ?? paramId)) ??
+      loggedInUser
+  )
+  const [selectedTrack, setSelectedTrack] = useState<Track | undefined>(
+    tracks?.find(u => u.id === (editingTimeEntry.track ?? paramId))
+  )
+
   const currentOngoingSession = sessions
     ? sessions.find(s => isOngoing(s))
     : undefined
 
-  const isCreating = !editingTimeEntry.id
-  const loggedInLookup = find(loggedInUser?.id, users)
-  const inputs = useRef<HTMLInputElement[]>([])
-
-  const [digits, setDigits] = useState<(typeof cache)['time']>(
-    editingTimeEntry.duration
-      ? durationToInputList(editingTimeEntry.duration)
-      : cache.time
-  )
-  const [selectedUser, setSelectedUser] = useState(
-    find(editingTimeEntry.user ?? paramId, users) ??
-      cache.user ??
-      loggedInLookup
-  )
-  const [selectedTrack, setSelectedTrack] = useState(
-    find(editingTimeEntry.track ?? paramId, tracks) ?? cache.track
+  const [selectedSession, setSelectedSession] = useState<
+    SessionWithSignups | undefined
+  >(
+    editingTimeEntry?.id
+      ? sessions?.find(u => u.id === editingTimeEntry.session)
+      : (currentOngoingSession ?? sessions?.find(u => u.id === paramId))
   )
 
   const [comment, setComment] = useState(editingTimeEntry.comment ?? undefined)
-
-  const [selectedSession, setSelectedSession] = useState<
-    ComboboxLookupItem | undefined
-  >(
-    find(
-      editingTimeEntry.id
-        ? editingTimeEntry.session
-        : (currentOngoingSession?.id ?? paramId),
-      sessions
-    ) ?? cache.session
-  )
 
   const DIGIT = /^\d$/
 
@@ -148,35 +132,7 @@ export default function LapTimeInput({
       next[i] = val
       return next
     })
-    cache.time[i] = val
   }, [])
-
-  function find<T extends Track | UserInfo | SessionWithSignups>(
-    id: string | null | undefined,
-    records: T[] | undefined
-  ): ComboboxLookupItem | undefined {
-    if (!id || !records) return undefined
-    const item = records.find(r => r.id === id)
-    if (!item) return undefined
-    if ('level' in item) return trackToLookupItem(item)
-    if ('email' in item) return userToLookupItem(item)
-    if ('status' in item) return sessionToLookupItem(item)
-  }
-
-  useEffect(() => {
-    if (!isCreating || selectedUser === paramId) return
-    cache.user = selectedUser
-  }, [selectedUser])
-
-  useEffect(() => {
-    if (!isCreating || selectedTrack === paramId) return
-    cache.track = selectedTrack
-  }, [selectedTrack])
-
-  useEffect(() => {
-    if (!isCreating || selectedSession === paramId) return
-    cache.session = selectedSession
-  }, [selectedSession])
 
   if (isLoadingData) {
     return (
@@ -191,13 +147,13 @@ export default function LapTimeInput({
   }
 
   function handleKeyDown(index: number, e: KeyboardEvent<HTMLInputElement>) {
-    e.preventDefault()
+    if (e.key === 'Tab') return
 
+    e.preventDefault()
     switch (e.key) {
       case 'ArrowLeft':
         setFocus(index - 1)
         break
-      case 'Tab':
       case ' ':
       case 'ArrowRight':
         setFocus(index + 1)
@@ -247,6 +203,7 @@ export default function LapTimeInput({
 
     toast.promise(
       socket.emitWithAck('edit_time_entry', payload).then(r => {
+        onSubmitResponse?.(r.success)
         if (!r.success) throw new Error(r.message)
       }),
       loc.no.timeEntry.input.editRequest
@@ -278,6 +235,7 @@ export default function LapTimeInput({
 
     toast.promise(
       socket.emitWithAck('post_time_entry', payload).then(r => {
+        onSubmitResponse?.(r.success)
         if (!r.success) throw new Error(r.message)
       }),
       {
@@ -325,33 +283,35 @@ export default function LapTimeInput({
       </div>
 
       <div className='flex flex-col gap-2'>
-        <div className='flex gap-2'>
-          {users && (
-            <Combobox
-              className='w-full'
-              required={true}
-              disabled={disabled || loggedInUser?.role === 'user'}
-              placeholder={loc.no.timeEntry.input.placeholder.user}
-              selected={selectedUser}
-              setSelected={setSelectedUser}
-              align='start'
-              items={users.map(userToLookupItem)}
-            />
-          )}
+        {users && (
+          <Combobox
+            className='w-full'
+            required={true}
+            disabled={disabled || loggedInUser?.role === 'user'}
+            placeholder={loc.no.timeEntry.input.placeholder.user}
+            selected={selectedUser}
+            setSelected={setSelectedUser}
+            limit={2}
+            align='start'
+            items={users.map(userToLookupItem)}
+            CustomRow={UserRow}
+          />
+        )}
 
-          {tracks && (
-            <Combobox
-              className='w-full'
-              required={true}
-              disabled={disabled}
-              placeholder={loc.no.timeEntry.input.placeholder.track}
-              selected={selectedTrack}
-              setSelected={setSelectedTrack}
-              align='end'
-              items={tracks.map(trackToLookupItem)}
-            />
-          )}
-        </div>
+        {tracks && (
+          <Combobox
+            className='w-full'
+            required={true}
+            disabled={disabled}
+            placeholder={loc.no.timeEntry.input.placeholder.track}
+            selected={selectedTrack}
+            setSelected={setSelectedTrack}
+            limit={2}
+            align='start'
+            items={tracks.map(trackToLookupItem)}
+            CustomRow={TrackRow}
+          />
+        )}
 
         {sessions && (
           <Combobox
@@ -362,17 +322,17 @@ export default function LapTimeInput({
             selected={selectedSession}
             setSelected={setSelectedSession}
             limit={2}
-            items={sessions.map(sessionToLookupItem)}
+            align='start'
+            items={sessions
+              .filter(s => s.status !== 'cancelled')
+              .map(sessionToLookupItem)}
+            CustomRow={SessionRow}
           />
         )}
 
-        <Label htmlFor='laptime-comment' className='pt-2'>
-          {loc.no.timeEntry.input.fieldName.comment}
-        </Label>
-        <Textarea
-          id='laptime-comment'
+        <TextField
+          id='comment'
           name='Comment'
-          className='text-sm'
           disabled={disabled}
           onChange={e => setComment(e.target.value)}
           value={comment}

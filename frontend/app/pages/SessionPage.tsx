@@ -1,6 +1,7 @@
+import ConfirmationButton from '@/components/ConfirmationButton'
 import { PageSubheader } from '@/components/PageHeader'
+import SessionCard from '@/components/session/SessionCard'
 import SessionForm from '@/components/session/SessionForm'
-import { SessionItem } from '@/components/session/SessionItem'
 import TrackLeaderboard from '@/components/track/TrackLeaderboard'
 import {
   Breadcrumb,
@@ -15,7 +16,6 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -30,7 +30,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Spinner } from '@/components/ui/spinner'
-import UserItem from '@/components/user/UserItem'
+import UserRow from '@/components/user/UserRow'
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
@@ -135,10 +135,9 @@ function Signup({
             />
             <div className='bg-background-secondary rounded-sm'>
               {responses.map(signup => (
-                <UserItem
+                <UserRow
                   key={signup.user.id}
-                  user={signup.user}
-                  variant='row'
+                  item={signup.user}
                   className='py-3 first:pt-4 last:pb-4'
                 />
               ))}
@@ -156,7 +155,6 @@ export default function SessionPage() {
   const { sessions, tracks, isLoadingData } = useData()
   const { loggedInUser, isLoggedIn, isLoading } = useAuth()
   const [editDialogOpen, setEditDialogOpen] = useState(false)
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 
   const isAdmin = isLoggedIn && loggedInUser.role === 'admin'
   const isModerator = isLoggedIn && loggedInUser.role === 'moderator'
@@ -170,7 +168,6 @@ export default function SessionPage() {
           id: sessionId,
         })
         .then(r => {
-          setDeleteDialogOpen(false)
           if (!r.success) throw new Error(r.message)
           return r
         }),
@@ -216,7 +213,7 @@ export default function SessionPage() {
         </BreadcrumbList>
       </Breadcrumb>
 
-      <SessionItem className='px-2' variant='card' session={session} />
+      <SessionCard className='px-2' session={session} />
 
       <div className='flex items-center gap-1'>
         <SubscribeButton className='flex-1' />
@@ -244,44 +241,23 @@ export default function SessionPage() {
                 <DialogFooter>
                   <DialogClose asChild>
                     <Button variant='outline' disabled={isLoading}>
-                      {loc.no.dialog.cancel}
+                      {loc.no.common.cancel}
                     </Button>
                   </DialogClose>
-                  <Button type='submit' form='editForm' disabled={isLoading}>
-                    {loc.no.dialog.continue}
-                  </Button>
+                  <ConfirmationButton form='editForm' disabled={isLoading}>
+                    {loc.no.common.continue}
+                  </ConfirmationButton>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
 
-            <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant='destructive'>
-                  <Trash2 className='mr-2 size-4' />
-                  {loc.no.common.delete}
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>{loc.no.dialog.confirmDelete.title}</DialogTitle>
-                  <DialogDescription>
-                    {loc.no.dialog.confirmDelete.description}
-                  </DialogDescription>
-                </DialogHeader>
-
-                <DialogFooter>
-                  <DialogClose asChild>
-                    <Button variant='outline'>{loc.no.dialog.cancel}</Button>
-                  </DialogClose>
-                  <Button
-                    variant='destructive'
-                    onClick={() => handleDeleteSession(session.id)}
-                    disabled={isLoading}>
-                    {loc.no.common.delete}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            <ConfirmationButton
+              variant='destructive'
+              onClick={() => handleDeleteSession(session.id)}
+              disabled={isLoading}>
+              <Trash2 className='mr-2 size-4' />
+              {loc.no.common.delete}
+            </ConfirmationButton>
           </>
         )}
       </div>

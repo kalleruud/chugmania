@@ -10,18 +10,15 @@ import {
   type ComponentProps,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
+import type { BaseRowProps } from '../row/RowProps'
 
-type TimeEntryItemProps = {
+export type GapType = 'leader' | 'interval'
+
+type TimeEntryRowProps = BaseRowProps<TimeEntry> & {
   position?: number | null
-  lapTime: TimeEntry
   gap?: LeaderboardEntryGap
   gapType?: GapType
-  highlight?: boolean
   onChangeGapType: () => void
-} & ComponentProps<'div'>
-
-export default function TimeEntryItem(props: Readonly<TimeEntryItemProps>) {
-  return <TimeEntryRow {...props} />
 }
 
 const breakpoints = {
@@ -32,11 +29,9 @@ const breakpoints = {
   xl: 640,
 }
 
-export type GapType = 'leader' | 'interval'
-
 function PositionBadgePart({
   position,
-}: Readonly<{ position: TimeEntryItemProps['position'] }>) {
+}: Readonly<{ position: TimeEntryRowProps['position'] }>) {
   return (
     <div
       className={twMerge(
@@ -107,15 +102,15 @@ function GapPart({
   )
 }
 
-function TimeEntryRow({
+export default function TimeEntryRow({
   className,
-  lapTime,
+  item: lapTime,
   gap,
   gapType,
   onChangeGapType,
   highlight,
   ...rest
-}: Readonly<TimeEntryItemProps>) {
+}: Readonly<TimeEntryRowProps>) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const [width, setWidth] = useState(breakpoints.md)
   const { users } = useData()
@@ -156,13 +151,15 @@ function TimeEntryRow({
   return (
     <div
       ref={containerRef}
-      {...rest}
       className={twMerge(
-        'flex cursor-pointer items-center gap-4 rounded-md hover:bg-white/5',
+        'hover:bg-foreground/5 flex cursor-pointer items-center gap-4 rounded-md',
+        highlight &&
+          'bg-primary-background hover:bg-primary/25 ring-primary/50 ring-1',
         isDNF && 'opacity-50',
         className
       )}
-      title={lapTime.comment ?? undefined}>
+      title={lapTime.comment ?? undefined}
+      {...rest}>
       {show.pos && <PositionBadgePart position={gap?.position} />}
       <NameCellPart
         name={name}

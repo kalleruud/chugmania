@@ -20,7 +20,7 @@ import {
   DialogTrigger,
 } from '../ui/dialog'
 import SessionForm from './SessionForm'
-import { SessionItem } from './SessionItem'
+import { SessionRow } from './SessionRow'
 
 type SessionsListProps = {
   className?: string
@@ -60,10 +60,9 @@ export default function SessionsList({
       {sessions.length > 0 ? (
         <div className={twMerge('bg-background-secondary rounded-sm')}>
           {sessions.map(session => (
-            <SessionItem
+            <SessionRow
               key={session.id}
-              session={session}
-              variant='row'
+              item={session}
               className='py-3 first:pt-4 last:pb-4'
             />
           ))}
@@ -104,14 +103,14 @@ export default function SessionsList({
             <DialogFooter>
               <DialogClose asChild>
                 <Button variant='outline' disabled={isLoading}>
-                  {loc.no.dialog.cancel}
+                  {loc.no.common.cancel}
                 </Button>
               </DialogClose>
               <Button
                 type='submit'
                 form='createSessionForm'
                 disabled={isLoading}>
-                {loc.no.dialog.continue}
+                {loc.no.common.continue}
               </Button>
             </DialogFooter>
           </DialogContent>
