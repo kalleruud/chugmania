@@ -20,6 +20,16 @@ export function isExportCsvRequest(data: any): data is ExportCsvRequest {
   return data.table && typeof data.table === 'string'
 }
 
+export type ImportCsvResponse = SuccessResponse & {
+  imported: number
+  total: number
+}
+
+export function isImportCsvResponse(data: any): data is ImportCsvResponse {
+  if (typeof data !== 'object' || data === null) return false
+  return typeof data.imported === 'number' && typeof data.total === 'number'
+}
+
 export type ExportCsvResponse = SuccessResponse & {
   csv: string
 }

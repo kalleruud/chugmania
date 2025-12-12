@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm'
 import type { Socket } from 'socket.io'
 
 import type { ExportCsvResponse } from '@common/models/importCsv'
@@ -8,24 +9,101 @@ import {
 import type { EventReq, EventRes } from '@common/models/socket.io'
 import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
-import * as schema from '../../database/schema'
 import { sessions, timeEntries, tracks, users } from '../../database/schema'
 import CsvParser from '../utils/csv-parser'
 import AuthManager from './auth.manager'
 
 export default class AdminManager {
-  private static async import(
-    into: (typeof schema)[keyof typeof schema],
-    data: string
-  ) {
-    const values = await CsvParser.parse<typeof into.$inferInsert>(data)
-    const inserts = await db
-      .insert(into)
+  private static async importUsers(data: string) {
+    const values = await CsvParser.parse<typeof users.$inferInsert>(data)
+    if (values.length === 0) return { imported: 0, total: 0 }
+
+    const result = await db
+      .insert(users)
       .values(values)
-      .onConflictDoNothing()
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          email: sql`excluded.email`,
+          firstName: sql`excluded.first_name`,
+          lastName: sql`excluded.last_name`,
+          shortName: sql`excluded.short_name`,
+          passwordHash: sql`excluded.password_hash`,
+          role: sql`excluded.role`,
+          updatedAt: new Date(),
+        },
+      })
       .returning()
 
-    return { imported: inserts.length, total: values.length }
+    return { imported: result.length, total: values.length }
+  }
+
+  private static async importTracks(data: string) {
+    const values = await CsvParser.parse<typeof tracks.$inferInsert>(data)
+    if (values.length === 0) return { imported: 0, total: 0 }
+
+    const result = await db
+      .insert(tracks)
+      .values(values)
+      .onConflictDoUpdate({
+        target: tracks.id,
+        set: {
+          number: sql`excluded.number`,
+          level: sql`excluded.level`,
+          type: sql`excluded.type`,
+          updatedAt: new Date(),
+        },
+      })
+      .returning()
+
+    return { imported: result.length, total: values.length }
+  }
+
+  private static async importSessions(data: string) {
+    const values = await CsvParser.parse<typeof sessions.$inferInsert>(data)
+    if (values.length === 0) return { imported: 0, total: 0 }
+
+    const result = await db
+      .insert(sessions)
+      .values(values)
+      .onConflictDoUpdate({
+        target: sessions.id,
+        set: {
+          name: sql`excluded.name`,
+          description: sql`excluded.description`,
+          date: sql`excluded.date`,
+          location: sql`excluded.location`,
+          status: sql`excluded.status`,
+          updatedAt: new Date(),
+        },
+      })
+      .returning()
+
+    return { imported: result.length, total: values.length }
+  }
+
+  private static async importTimeEntries(data: string) {
+    const values = await CsvParser.parse<typeof timeEntries.$inferInsert>(data)
+    if (values.length === 0) return { imported: 0, total: 0 }
+
+    const result = await db
+      .insert(timeEntries)
+      .values(values)
+      .onConflictDoUpdate({
+        target: timeEntries.id,
+        set: {
+          user: sql`excluded.user`,
+          track: sql`excluded.track`,
+          session: sql`excluded.session`,
+          duration: sql`excluded.duration_ms`,
+          amount: sql`excluded.amount_l`,
+          comment: sql`excluded.comment`,
+          updatedAt: new Date(),
+        },
+      })
+      .returning()
+
+    return { imported: result.length, total: values.length }
   }
 
   static async onImportCsv(
@@ -44,19 +122,19 @@ export default class AdminManager {
       request.table
     )
 
-    let task: ReturnType<typeof AdminManager.import> | undefined = undefined
+    let task: Promise<{ imported: number; total: number }>
     switch (request.table) {
       case 'users':
-        task = AdminManager.import(users, request.content)
+        task = AdminManager.importUsers(request.content)
         break
       case 'tracks':
-        task = AdminManager.import(tracks, request.content)
+        task = AdminManager.importTracks(request.content)
         break
       case 'timeEntries':
-        task = AdminManager.import(timeEntries, request.content)
+        task = AdminManager.importTimeEntries(request.content)
         break
       case 'sessions':
-        task = AdminManager.import(sessions, request.content)
+        task = AdminManager.importSessions(request.content)
         break
       default:
         throw new Error(`Invalid table: '${request.table}'`)
@@ -72,7 +150,34 @@ export default class AdminManager {
 
     return {
       success: true,
+      imported: data.imported,
+      total: data.total,
     }
+  }
+
+  private static filterColumnsForExport(
+    records: object[],
+    tableName: string
+  ): object[] {
+    const excludeColumns =
+      {
+        users: ['passwordHash'],
+        tracks: [],
+        sessions: [],
+        timeEntries: [],
+      }[tableName] || []
+
+    if (excludeColumns.length === 0) return records
+
+    return records.map(record => {
+      const filtered: Record<string, any> = {}
+      for (const [key, value] of Object.entries(record)) {
+        if (!excludeColumns.includes(key)) {
+          filtered[key] = value
+        }
+      }
+      return filtered
+    })
   }
 
   static async onExportCsv(
@@ -108,6 +213,9 @@ export default class AdminManager {
       default:
         throw new Error(`Invalid table: '${request.table}'`)
     }
+
+    // Filter out sensitive columns
+    records = AdminManager.filterColumnsForExport(records, request.table)
 
     const csv = AdminManager.objectsToCsv(records)
     if (csv === null) {

@@ -1,4 +1,3 @@
-import { Button } from '@/components/ui/button'
 import { Upload } from 'lucide-react'
 import {
   useRef,
@@ -95,13 +94,10 @@ export default function FileDrop({
 
   return (
     <>
-      <Button
-        type='button'
-        variant='secondary'
-        size='lg'
+      <button
         className={twMerge(
-          'flex-col gap-2 rounded-2xl border-dashed border-white/15 px-4 py-10 text-center normal-case hover:border-white/30 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent',
-          dragging ? 'border-accent/60 bg-white/10 text-white' : '',
+          'border-border text-muted-foreground flex w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed p-8 text-center normal-case transition-colors hover:border-white/30 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent',
+          dragging ? 'border-muted-foreground' : '',
           className
         )}
         onClick={() => inputRef.current?.click()}
@@ -109,20 +105,14 @@ export default function FileDrop({
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}>
-        <Upload className='text-label-muted size-8' />
+        <Upload className='size-8' />
         <div className='flex flex-col gap-1 text-sm'>
           <span className='text-label-secondary'>{label}</span>
-          {hint && (
-            <span className='text-label-muted text-xs'>
-              {selectedFileName ?? hint}
-            </span>
-          )}
+          {hint && <span className='text-xs'>{selectedFileName ?? hint}</span>}
           {error && <span className='text-xs text-red-400'>{error}</span>}
-          {loading && (
-            <span className='text-label-muted text-xs'>Reading file…</span>
-          )}
+          {loading && <span className='text-xs'>Reading file…</span>}
         </div>
-      </Button>
+      </button>
       <input
         ref={inputRef}
         type='file'

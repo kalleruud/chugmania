@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { ErrorBoundary } from 'react-error-boundary'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import Layout from './app/Layout'
+import AdminPage from './app/pages/AdminPage'
 import { ErrorPage } from './app/pages/ErrorPage'
 import Home from './app/pages/HomePage'
 import SessionPage from './app/pages/SessionPage'
@@ -38,7 +39,7 @@ createRoot(document.getElementById('root')!).render(
                       <Route path='users/:id' element={<UserPage />} />
                       <Route path='sessions' element={<SessionsPage />} />
                       <Route path='sessions/:id' element={<SessionPage />} />
-                      {/* <Route path='admin' element={<Admin />} /> */}
+                      <Route path='admin' element={<AdminPage />} />
                     </Route>
                   </Routes>
                   <Toaster />
