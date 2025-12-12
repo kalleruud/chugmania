@@ -1,6 +1,8 @@
+import { PageHeader } from '@/components/PageHeader'
 import LoginCard from '@/components/user/LoginCard'
 import UserCard from '@/components/user/UserCard'
 import { useAuth } from '@/contexts/AuthContext'
+import loc from '@/lib/locales'
 import { SessionsContent } from './SessionsPage'
 import { TracksList } from './TracksPage'
 import { UsersList } from './UsersPage'
@@ -15,6 +17,14 @@ export default function Home() {
 
       <LoginCard />
 
+      {loggedInUser?.role === 'admin' && (
+        <PageHeader
+          className='rounded-sm p-4'
+          title={loc.no.admin.title}
+          icon='ShieldExclamationIcon'
+          to='/admin'
+        />
+      )}
       <SessionsContent className='bg-background rounded-sm border p-2' />
       <TracksList className='bg-background rounded-sm border p-2' />
       <UsersList className='bg-background rounded-sm border p-2' />
