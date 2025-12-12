@@ -11,7 +11,9 @@ import {
 } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-type TimeEntryItemProps = {
+export type GapType = 'leader' | 'interval'
+
+type TimeEntryRowProps = {
   position?: number | null
   lapTime: TimeEntry
   gap?: LeaderboardEntryGap
@@ -19,10 +21,6 @@ type TimeEntryItemProps = {
   highlight?: boolean
   onChangeGapType: () => void
 } & ComponentProps<'div'>
-
-export default function TimeEntryItem(props: Readonly<TimeEntryItemProps>) {
-  return <TimeEntryRow {...props} />
-}
 
 const breakpoints = {
   none: 0,
@@ -32,11 +30,9 @@ const breakpoints = {
   xl: 640,
 }
 
-export type GapType = 'leader' | 'interval'
-
 function PositionBadgePart({
   position,
-}: Readonly<{ position: TimeEntryItemProps['position'] }>) {
+}: Readonly<{ position: TimeEntryRowProps['position'] }>) {
   return (
     <div
       className={twMerge(
@@ -107,7 +103,7 @@ function GapPart({
   )
 }
 
-function TimeEntryRow({
+export default function TimeEntryRow({
   className,
   lapTime,
   gap,
@@ -115,7 +111,7 @@ function TimeEntryRow({
   onChangeGapType,
   highlight,
   ...rest
-}: Readonly<TimeEntryItemProps>) {
+}: Readonly<TimeEntryRowProps>) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const [width, setWidth] = useState(breakpoints.md)
   const { users } = useData()

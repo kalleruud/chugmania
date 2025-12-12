@@ -1,4 +1,4 @@
-import { TrackItem } from '@/components/track/TrackItem'
+import { TrackRow } from '@/components/track/TrackRow'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -33,10 +33,9 @@ function TrackRowList({ tracks }: Readonly<{ tracks: Track[] }>) {
   return (
     <div className='bg-background-secondary rounded-sm'>
       {tracks.map(track => (
-        <TrackItem
+        <TrackRow
           key={track.id}
           track={track}
-          variant='row'
           className='py-3 first:pt-4 last:pb-4'
         />
       ))}

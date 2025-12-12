@@ -92,6 +92,42 @@ function getId(path: string) {
   return id && uuidRegex.test(id) ? id : undefined
 }
 
+// Note: These are simple lookup-item renderers. For full Row features,
+// we'd need to store actual objects, not just ComboboxLookupItems.
+// For now, we render a simple highlighted div with the label + sublabel
+function renderUserRow(item: ComboboxLookupItem, highlighted: boolean) {
+  return (
+    <div className={highlighted ? 'text-primary-foreground' : ''}>
+      <span className='font-semibold'>{item.label}</span>
+      {item.sublabel && (
+        <span className='text-muted-foreground ml-2'>{item.sublabel}</span>
+      )}
+    </div>
+  )
+}
+
+function renderTrackRow(item: ComboboxLookupItem, highlighted: boolean) {
+  return (
+    <div className={highlighted ? 'text-primary-foreground' : ''}>
+      <span className='font-semibold'>{item.label}</span>
+      {item.sublabel && (
+        <span className='text-muted-foreground ml-2'>{item.sublabel}</span>
+      )}
+    </div>
+  )
+}
+
+function renderSessionRow(item: ComboboxLookupItem, highlighted: boolean) {
+  return (
+    <div className={highlighted ? 'text-primary-foreground' : ''}>
+      <span className='font-semibold'>{item.label}</span>
+      {item.sublabel && (
+        <span className='text-muted-foreground ml-2'>{item.sublabel}</span>
+      )}
+    </div>
+  )
+}
+
 export default function LapTimeInput({
   editingTimeEntry,
   onSubmit,
@@ -336,6 +372,7 @@ export default function LapTimeInput({
               setSelected={setSelectedUser}
               align='start'
               items={users.map(userToLookupItem)}
+              renderRow={renderUserRow}
             />
           )}
 
@@ -349,6 +386,7 @@ export default function LapTimeInput({
               setSelected={setSelectedTrack}
               align='end'
               items={tracks.map(trackToLookupItem)}
+              renderRow={renderTrackRow}
             />
           )}
         </div>
@@ -363,6 +401,7 @@ export default function LapTimeInput({
             setSelected={setSelectedSession}
             limit={2}
             items={sessions.map(sessionToLookupItem)}
+            renderRow={renderSessionRow}
           />
         )}
 

@@ -1,5 +1,5 @@
 import { getRandomItem } from '@/app/utils/utils'
-import type { GapType } from '@/components/timeentries/TimeEntryItem'
+import type { GapType } from '@/components/timeentries/TimeEntryRow'
 import type {
   SessionResponse,
   SessionStatus,

@@ -7,7 +7,7 @@ import {
   type TimeEntryListProps,
 } from '../timeentries/TimeEntryList'
 import { Spinner } from '../ui/spinner'
-import { TrackItem } from './TrackItem'
+import { TrackRow } from './TrackRow'
 
 type TrackLeaderboardProps = {
   track: Track
@@ -41,7 +41,7 @@ export default function TrackLeaderboard({
         className
       )}
       {...rest}>
-      <TrackItem track={track} variant='row' />
+      <TrackRow track={track} />
       <TimeEntryList track={track.id} entries={entries} {...rest} />
     </div>
   )

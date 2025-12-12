@@ -1,6 +1,6 @@
 import { PageSubheader } from '@/components/PageHeader'
+import SessionCard from '@/components/session/SessionCard'
 import SessionForm from '@/components/session/SessionForm'
-import { SessionItem } from '@/components/session/SessionItem'
 import TrackLeaderboard from '@/components/track/TrackLeaderboard'
 import {
   Breadcrumb,
@@ -30,7 +30,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Spinner } from '@/components/ui/spinner'
-import UserItem from '@/components/user/UserItem'
+import UserRow from '@/components/user/UserRow'
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
@@ -135,10 +135,9 @@ function Signup({
             />
             <div className='bg-background-secondary rounded-sm'>
               {responses.map(signup => (
-                <UserItem
+                <UserRow
                   key={signup.user.id}
                   user={signup.user}
-                  variant='row'
                   className='py-3 first:pt-4 last:pb-4'
                 />
               ))}
@@ -216,7 +215,7 @@ export default function SessionPage() {
         </BreadcrumbList>
       </Breadcrumb>
 
-      <SessionItem className='px-2' variant='card' session={session} />
+      <SessionCard className='px-2' session={session} />
 
       <div className='flex items-center gap-1'>
         <SubscribeButton className='flex-1' />

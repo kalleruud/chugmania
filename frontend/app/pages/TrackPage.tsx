@@ -1,5 +1,5 @@
 import { TimeEntryList } from '@/components/timeentries/TimeEntryList'
-import { TrackItem } from '@/components/track/TrackItem'
+import TrackCard from '@/components/track/TrackCard'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -53,7 +53,7 @@ export default function TrackPage() {
         </BreadcrumbList>
       </Breadcrumb>
 
-      <TrackItem track={track} variant='card' className='pb-0' />
+      <TrackCard track={track} className='pb-0' />
 
       <TimeEntryList
         track={track.id}

@@ -21,6 +21,10 @@ type ComboboxProps = {
     value: React.SetStateAction<ComboboxLookupItem | undefined>
   ) => void
   align?: PopoverContentProps['align']
+  renderRow?: (
+    item: ComboboxLookupItem,
+    highlighted: boolean
+  ) => React.ReactNode
 } & React.DetailedHTMLProps<
   React.InputHTMLAttributes<HTMLInputElement>,
   HTMLInputElement
@@ -76,6 +80,7 @@ export default function Combobox({
   setSelected,
   className,
   align,
+  renderRow: customRenderRow,
   ...inputProps
 }: Readonly<ComboboxProps>) {
   const [open, setOpen] = React.useState(false)
@@ -140,7 +145,11 @@ export default function Combobox({
             variant='outline'
             aria-expanded={open}
             className='w-full justify-between gap-2'>
-            <Row item={selected} placeholder={placeholder} />
+            {selected && customRenderRow ? (
+              customRenderRow(selected, false)
+            ) : (
+              <Row item={selected} placeholder={placeholder} />
+            )}
             <input type='hidden' value={selected?.id} {...inputProps} />
             {isLoading && <Spinner />}
             {!disabled && !isLoading && (
@@ -179,7 +188,11 @@ export default function Combobox({
                       size='sm'
                       className={'flex w-full justify-between'}
                       onClick={() => onSelect(item)}>
-                      <Row item={item} selected={selected} />
+                      {customRenderRow ? (
+                        customRenderRow(item, item.id === selected?.id)
+                      ) : (
+                        <Row item={item} selected={selected} />
+                      )}
                     </Button>
                   </li>
                 ))}

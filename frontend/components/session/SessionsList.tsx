@@ -20,7 +20,7 @@ import {
   DialogTrigger,
 } from '../ui/dialog'
 import SessionForm from './SessionForm'
-import { SessionItem } from './SessionItem'
+import { SessionRow } from './SessionRow'
 
 type SessionsListProps = {
   className?: string
@@ -60,10 +60,9 @@ export default function SessionsList({
       {sessions.length > 0 ? (
         <div className={twMerge('bg-background-secondary rounded-sm')}>
           {sessions.map(session => (
-            <SessionItem
+            <SessionRow
               key={session.id}
               session={session}
-              variant='row'
               className='py-3 first:pt-4 last:pb-4'
             />
           ))}

@@ -1,13 +1,11 @@
-import { Item, ItemActions, ItemContent, ItemTitle } from '@/components/ui/item'
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import loc from '@/lib/locales'
 import { type UserInfo } from '@common/models/user'
 import { formatYear } from '@common/utils/date'
 import { PencilIcon } from '@heroicons/react/24/solid'
-import { ChevronRight, Trash2 } from 'lucide-react'
+import { Trash2 } from 'lucide-react'
 import { useState, type ComponentProps } from 'react'
-import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
 import { Button } from '../ui/button'
@@ -23,67 +21,15 @@ import {
 } from '../ui/dialog'
 import UserForm from './UserForm'
 
-type UserItemProps = {
+type UserCardProps = {
   user: UserInfo
-  variant?: 'row' | 'card'
-  hideLink?: boolean
 } & ComponentProps<'div'>
 
-export default function UserItem(props: Readonly<UserItemProps>) {
-  switch (props.variant) {
-    case 'row':
-      return <UserRow {...props} />
-    case 'card':
-      return <UserCard {...props} />
-  }
-}
-
-function UserRow({
+export default function UserCard({
   user,
   className,
-  variant,
-  hideLink,
   ...props
-}: Readonly<UserItemProps>) {
-  const content = (
-    <>
-      <ItemContent>
-        <div className='flex items-center gap-2'>
-          <div className='bg-primary h-4 w-1 rounded-full' />
-          <ItemTitle className='font-f1 mr-auto flex gap-1 uppercase'>
-            <span>{user.firstName}</span>
-            <span className='font-bold'>{user.lastName}</span>
-          </ItemTitle>
-
-          <span className='text-f1 text-muted-foreground font-bold'>
-            {user.shortName}
-          </span>
-        </div>
-      </ItemContent>
-      {!hideLink && (
-        <ItemActions>
-          <ChevronRight className='size-4' />
-        </ItemActions>
-      )}
-    </>
-  )
-
-  if (hideLink) {
-    return (
-      <Item key={user.id} className={className} asChild {...props}>
-        <div>{content}</div>
-      </Item>
-    )
-  }
-
-  return (
-    <Item key={user.id} className={className} asChild {...props}>
-      <Link to={`/users/${user.id}`}>{content}</Link>
-    </Item>
-  )
-}
-
-function UserCard({ user, className, ...props }: Readonly<UserItemProps>) {
+}: Readonly<UserCardProps>) {
   const { logout, isLoading, loggedInUser } = useAuth()
   const { socket } = useConnection()
   const [open, setOpen] = useState(false)

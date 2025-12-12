@@ -7,8 +7,7 @@ import { useState } from 'react'
 import { Button } from '../ui/button'
 import { Empty } from '../ui/empty'
 import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group'
-import type { GapType } from './TimeEntryItem'
-import TimeEntryItem from './TimeEntryItem'
+import TimeEntryRow, { type GapType } from './TimeEntryRow'
 
 type FilterType = 'all' | 'best' | 'latest'
 
@@ -178,7 +177,7 @@ export function TimeEntryList({
       <div className='bg-background-secondary flex flex-col rounded-sm'>
         {filteredEntries.map((entry, i) => {
           return (
-            <TimeEntryItem
+            <TimeEntryRow
               key={entry.id}
               lapTime={entry}
               gap={getGap(
