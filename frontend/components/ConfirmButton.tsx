@@ -65,10 +65,10 @@ export const ConfirmButton = forwardRef<HTMLButtonElement, ConfirmButtonProps>(
       onClick?.(e)
     }
 
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
+    const handleKeyDown = async (e: React.KeyboardEvent<HTMLButtonElement>) => {
       if (e.key === 'Enter' && isConfirming) {
         e.preventDefault()
-        onConfirm()
+        await onConfirm()
         setIsConfirming(false)
       } else if (e.key === 'Escape' && isConfirming) {
         e.preventDefault()
