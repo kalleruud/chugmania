@@ -291,6 +291,7 @@ export default function TimeEntryInput({
             placeholder={loc.no.timeEntry.input.placeholder.user}
             selected={selectedUser}
             setSelected={setSelectedUser}
+            limit={2}
             align='start'
             items={users.map(userToLookupItem)}
             CustomRow={UserRow}
@@ -305,7 +306,7 @@ export default function TimeEntryInput({
             placeholder={loc.no.timeEntry.input.placeholder.track}
             selected={selectedTrack}
             setSelected={setSelectedTrack}
-            limit={10}
+            limit={2}
             align='start'
             items={tracks.map(trackToLookupItem)}
             CustomRow={TrackRow}

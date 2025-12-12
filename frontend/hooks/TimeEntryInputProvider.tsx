@@ -69,7 +69,7 @@ export default function TimeEntryInputProvider({
 
   function handleDelete() {
     if (!editingTimeEntry?.id) {
-      return toast.error('Not editing...')
+      return toast.error('Du kan ikke slette en uregistrert tid...')
     }
     toast.promise(
       socket

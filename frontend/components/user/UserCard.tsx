@@ -119,10 +119,7 @@ export default function UserCard({
                       {loc.no.common.cancel}
                     </Button>
                   </DialogClose>
-                  <ConfirmationButton
-                    form='editForm'
-                    disabled={isLoading}
-                    confirmText='Lagre endringer?'>
+                  <ConfirmationButton form='editForm' disabled={isLoading}>
                     {loc.no.common.continue}
                   </ConfirmationButton>
                 </DialogFooter>

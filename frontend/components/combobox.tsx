@@ -88,7 +88,9 @@ export default function Combobox<T extends ComboboxLookupItem>({
   const results = useMemo(() => {
     const term = search.trim().toLowerCase()
     if (term.length > 0) {
-      return items.filter(i => i.tags?.join(',').toLowerCase().includes(term))
+      return items
+        .filter(i => i.tags?.join(',').toLowerCase().includes(term))
+        .slice(0, limit)
     }
     return items.slice(0, limit)
   }, [items, search])

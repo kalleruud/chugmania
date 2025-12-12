@@ -10,13 +10,8 @@ type ConfirmationButtonProps = Parameters<typeof Button>[0] & {
 export default function ConfirmationButton({
   confirmText = loc.no.common.confirm,
   confirmDuration = 3000,
-  variant,
-  type,
   form,
-  onSubmit,
-  onSubmitCapture,
   onClick,
-  children,
   ...props
 }: Readonly<ConfirmationButtonProps>) {
   const [isConfirming, setIsConfirming] = useState(false)
@@ -44,16 +39,23 @@ export default function ConfirmationButton({
     }
   }, [isConfirming, confirmDuration])
 
-  return (
-    <Button
-      type={isConfirming ? type : 'button'}
-      form={isConfirming ? form : undefined}
-      variant={isConfirming ? 'default' : variant}
-      onSubmit={isConfirming ? onSubmit : undefined}
-      onSubmitCapture={isConfirming ? onSubmitCapture : undefined}
-      onClick={isConfirming ? onClick : () => setIsConfirming(true)}
-      {...props}>
-      {isConfirming ? confirmText : children}
-    </Button>
-  )
+  if (isConfirming)
+    return (
+      <Button
+        {...props}
+        onClick={e => {
+          if (form)
+            (
+              document.getElementById(form) as HTMLFormElement | undefined
+            )?.requestSubmit()
+          onClick?.(e)
+          setIsConfirming(false)
+        }}
+        variant={'default'}>
+        {confirmText}
+      </Button>
+    )
+
+  const { type, formAction, onSubmit, onSubmitCapture, ...initProps } = props
+  return <Button {...initProps} onClick={() => setIsConfirming(true)} />
 }
