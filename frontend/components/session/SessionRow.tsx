@@ -62,29 +62,31 @@ export function SessionRow({
 
   if (hideLink) {
     return (
+      <div key={session.id}>
+        <Item
+          className={twMerge(
+            highlight &&
+              'bg-primary-background hover:bg-primary/25 ring-primary/50 ring-1',
+            className
+          )}
+          asChild>
+          <div>{content}</div>
+        </Item>
+      </div>
+    )
+  }
+
+  return (
+    <div key={session.id}>
       <Item
-        key={session.id}
         className={twMerge(
           highlight &&
             'bg-primary-background hover:bg-primary/25 ring-primary/50 ring-1',
           className
         )}
         asChild>
-        <div>{content}</div>
+        <Link to={`/sessions/${session.id}`}>{content}</Link>
       </Item>
-    )
-  }
-
-  return (
-    <Item
-      key={session.id}
-      className={twMerge(
-        highlight &&
-          'bg-primary-background hover:bg-primary/25 ring-primary/50 ring-1',
-        className
-      )}
-      asChild>
-      <Link to={`/sessions/${session.id}`}>{content}</Link>
-    </Item>
+    </div>
   )
 }
