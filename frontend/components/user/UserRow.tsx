@@ -2,10 +2,12 @@ import { Item, ItemActions, ItemContent, ItemTitle } from '@/components/ui/item'
 import { type UserInfo } from '@common/models/user'
 import { ChevronRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { twMerge } from 'tailwind-merge'
 import type { BaseRowProps } from '../row/RowProps'
 
 export default function UserRow({
   item: user,
+  className,
   hideLink,
   highlight,
   ...props
@@ -35,14 +37,30 @@ export default function UserRow({
 
   if (hideLink) {
     return (
-      <Item key={user.id} asChild {...props}>
+      <Item
+        key={user.id}
+        className={twMerge(
+          highlight &&
+            'bg-primary-background hover:bg-primary/25 ring-primary/50 ring-1',
+          className
+        )}
+        asChild
+        {...props}>
         <div>{content}</div>
       </Item>
     )
   }
 
   return (
-    <Item key={user.id} asChild {...props}>
+    <Item
+      key={user.id}
+      className={twMerge(
+        highlight &&
+          'bg-primary-background hover:bg-primary/25 ring-primary/50 ring-1',
+        className
+      )}
+      asChild
+      {...props}>
       <Link to={`/users/${user.id}`}>{content}</Link>
     </Item>
   )
