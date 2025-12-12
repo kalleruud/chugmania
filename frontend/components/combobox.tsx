@@ -27,6 +27,7 @@ type ComboboxProps<T extends ComboboxLookupItem> = {
   items: T[]
   selected?: T
   limit?: number
+  required?: boolean
   setSelected: (value: SetStateAction<T | undefined>) => void
   align?: PopoverContentProps['align']
   CustomRow?: (props: BaseRowProps<T>) => ReactNode
