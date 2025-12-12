@@ -13,14 +13,11 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
 import type { Track } from '@common/models/track'
-import type { DetailedHTMLProps, HTMLAttributes } from 'react'
+import type { ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { PageHeader } from '../../components/PageHeader'
 
-type TracksPageProps = DetailedHTMLProps<
-  HTMLAttributes<HTMLDivElement>,
-  HTMLDivElement
->
+type TracksPageProps = { showLink?: true } & ComponentProps<'div'>
 
 function TrackRowList({ tracks }: Readonly<{ tracks: Track[] }>) {
   if (tracks.length === 0) {
@@ -57,12 +54,15 @@ export default function TracksPage(props: Readonly<TracksPageProps>) {
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
-      <TracksList {...props} />
+      <TracksContent {...props} />
     </div>
   )
 }
 
-export function TracksList({ className }: Readonly<TracksPageProps>) {
+export function TracksContent({
+  className,
+  showLink,
+}: Readonly<TracksPageProps>) {
   const { tracks, timeEntries, isLoadingData } = useData()
 
   if (isLoadingData) {
@@ -93,29 +93,26 @@ export function TracksList({ className }: Readonly<TracksPageProps>) {
 
   return (
     <div className={twMerge('flex flex-col', className)}>
-      <div>
-        <PageHeader
-          title={loc.no.tracks.title}
-          description={loc.no.tracks.description}
-          icon={'MapIcon'}
-        />
+      <PageHeader
+        title={loc.no.tracks.title}
+        description={loc.no.tracks.description}
+        to={showLink ? '/tracks' : undefined}
+        icon={'MapIcon'}
+      />
 
-        <TrackRowList
-          tracks={tracksWithEntries.filter(t => t.level !== 'custom')}
-        />
-      </div>
+      <TrackRowList
+        tracks={tracksWithEntries.filter(t => t.level !== 'custom')}
+      />
 
-      <div>
-        <PageHeader
-          title={loc.no.tracks.level.custom}
-          description={loc.no.tracks.customDescription}
-          icon={'WrenchIcon'}
-        />
+      <PageHeader
+        title={loc.no.tracks.level.custom}
+        description={loc.no.tracks.customDescription}
+        icon={'WrenchIcon'}
+      />
 
-        <TrackRowList
-          tracks={tracksWithEntries.filter(t => t.level === 'custom')}
-        />
-      </div>
+      <TrackRowList
+        tracks={tracksWithEntries.filter(t => t.level === 'custom')}
+      />
     </div>
   )
 }

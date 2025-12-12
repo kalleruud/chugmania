@@ -4,8 +4,8 @@ import UserCard from '@/components/user/UserCard'
 import { useAuth } from '@/contexts/AuthContext'
 import loc from '@/lib/locales'
 import { SessionsContent } from './SessionsPage'
-import { TracksList } from './TracksPage'
-import { UsersList } from './UsersPage'
+import { TracksContent } from './TracksPage'
+import { UsersContent } from './UsersPage'
 
 export default function Home() {
   const { loggedInUser, isLoggedIn } = useAuth()
@@ -19,15 +19,18 @@ export default function Home() {
 
       {loggedInUser?.role === 'admin' && (
         <PageHeader
-          className='rounded-sm p-4'
+          className='mx-2'
           title={loc.no.admin.title}
           icon='ShieldExclamationIcon'
           to='/admin'
         />
       )}
-      <SessionsContent className='bg-background rounded-sm border p-2' />
-      <TracksList className='bg-background rounded-sm border p-2' />
-      <UsersList className='bg-background rounded-sm border p-2' />
+      <SessionsContent
+        className='bg-background rounded-sm border p-2'
+        showLink
+      />
+      <TracksContent className='bg-background rounded-sm border p-2' showLink />
+      <UsersContent className='bg-background rounded-sm border p-2' showLink />
     </div>
   )
 }

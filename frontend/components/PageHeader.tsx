@@ -38,11 +38,18 @@ export function PageHeader({
 
   if (to)
     return (
-      <Link className={twMerge('hover:bg-border p-2 py-4', className)} to={to}>
+      <Link
+        className={twMerge(
+          'hover:bg-primary-foreground/10 my-2 rounded-sm p-2',
+          className
+        )}
+        to={to}>
         {content}
       </Link>
     )
-  return <div className={twMerge('p-2 py-4', className)}>{content}</div>
+  return (
+    <div className={twMerge('my-2 rounded-sm p-2', className)}>{content}</div>
+  )
 }
 
 export function PageSubheader({
