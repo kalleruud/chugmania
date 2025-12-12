@@ -1,5 +1,5 @@
 import { ConfirmButton } from '@/components/ConfirmButton'
-import LapTimeInput from '@/components/timeentries/LapTimeInput'
+import TimeEntryInput from '@/components/timeentries/TimeEntryInput'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -107,7 +107,7 @@ export default function TimeEntryInputProvider({
             <DialogDescription>{localeStrings.description}</DialogDescription>
           </DialogHeader>
 
-          <LapTimeInput
+          <TimeEntryInput
             id='laptimeInput'
             editingTimeEntry={editingTimeEntry}
             disabled={!canEdit}

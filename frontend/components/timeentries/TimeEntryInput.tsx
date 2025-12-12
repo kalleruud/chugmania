@@ -81,7 +81,7 @@ function getId(path: string) {
   return id && uuidRegex.test(id) ? id : undefined
 }
 
-export default function LapTimeInput({
+export default function TimeEntryInput({
   editingTimeEntry,
   onSubmitResponse,
   onSubmit,
