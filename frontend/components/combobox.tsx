@@ -132,6 +132,12 @@ export default function Combobox<T extends ComboboxLookupItem>({
 
   return (
     <div ref={containerRef} className={className}>
+      <input
+        type='hidden'
+        required={required}
+        value={selected?.id}
+        {...inputProps}
+      />
       <Popover open={open} onOpenChange={setOpen} modal={true}>
         <PopoverTrigger asChild>
           <Button
@@ -140,13 +146,6 @@ export default function Combobox<T extends ComboboxLookupItem>({
             disabled={disabled || isLoading}
             aria-expanded={open}
             ref={triggerRef}>
-            <input
-              type='hidden'
-              required={required}
-              value={selected?.id}
-              {...inputProps}
-            />
-
             {!selected && (
               <span className='text-muted-foreground'>{placeholder}</span>
             )}

@@ -322,7 +322,9 @@ export default function LapTimeInput({
             setSelected={setSelectedSession}
             limit={2}
             align='start'
-            items={sessions.map(sessionToLookupItem)}
+            items={sessions
+              .filter(s => s.status !== 'cancelled')
+              .map(sessionToLookupItem)}
             CustomRow={SessionRow}
           />
         )}

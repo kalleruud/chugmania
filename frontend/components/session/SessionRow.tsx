@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useTimeAgoStrict as useDistanceToNow } from '@/hooks/useTimeAgoStrict'
 import loc from '@/lib/locales'
 import type { SessionWithSignups } from '@common/models/session'
+import { isOngoing } from '@common/utils/date'
 import { ChevronRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { twMerge } from 'tailwind-merge'
@@ -35,29 +36,26 @@ export function SessionRow({
         className={twMerge(
           isCancelled && 'text-muted-foreground line-through'
         )}>
-        <ItemTitle className='font-bold'>{session.name}</ItemTitle>
+        <ItemTitle>
+          {isOngoing(session) && !isCancelled && (
+            <div className='bg-primary size-2 animate-pulse rounded-full' />
+          )}
+          {session.name}
+        </ItemTitle>
         <ItemDescription className='text-start'>
           <span>{distance}</span>
         </ItemDescription>
       </ItemContent>
 
-      {!hideLink && (
-        <ItemActions>
-          <Badge variant='outline'>
-            {loc.no.session.statusOptions[session.status]}
-          </Badge>
-          {isLoggedIn && !isSignedUp && <Badge>{loc.no.common.new}</Badge>}
-          <ChevronRight className='size-4' />
-        </ItemActions>
-      )}
-      {hideLink && (
-        <div className='flex gap-2'>
-          <Badge variant='outline'>
-            {loc.no.session.statusOptions[session.status]}
-          </Badge>
-          {isLoggedIn && !isSignedUp && <Badge>{loc.no.common.new}</Badge>}
-        </div>
-      )}
+      <ItemActions>
+        <Badge variant='outline'>
+          {loc.no.session.statusOptions[session.status]}
+        </Badge>
+        {isLoggedIn && !isSignedUp && !isCancelled && (
+          <Badge>{loc.no.common.new}</Badge>
+        )}
+        {!hideLink && <ChevronRight className='size-4' />}
+      </ItemActions>
     </>
   )
 

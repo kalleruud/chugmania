@@ -156,6 +156,7 @@ export default function TimeEntryInputProvider({
                 </AlertDialogContent>
               </AlertDialog>
             )}
+
             {canEdit && (
               <Button
                 type='submit'
