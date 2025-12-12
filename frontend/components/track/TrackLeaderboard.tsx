@@ -41,7 +41,7 @@ export default function TrackLeaderboard({
         className
       )}
       {...rest}>
-      <TrackRow track={track} />
+      <TrackRow item={track} />
       <TimeEntryList track={track.id} entries={entries} {...rest} />
     </div>
   )

@@ -35,7 +35,7 @@ function TrackRowList({ tracks }: Readonly<{ tracks: Track[] }>) {
       {tracks.map(track => (
         <TrackRow
           key={track.id}
-          track={track}
+          item={track}
           className='py-3 first:pt-4 last:pb-4'
         />
       ))}

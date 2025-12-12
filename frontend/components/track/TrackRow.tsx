@@ -3,21 +3,15 @@ import type { Track } from '@common/models/track'
 import { formatTrackName } from '@common/utils/track'
 import { ChevronRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import type { BaseRowProps } from '../row/RowProps'
 import TrackBadge from './TrackBadge'
 
-type TrackRowProps = {
-  track: Track
-  hideLink?: boolean
-  highlighted?: boolean
-  className?: string
-}
-
 export function TrackRow({
-  track,
+  item: track,
   className,
   hideLink,
-  highlighted,
-}: Readonly<TrackRowProps>) {
+  highlight,
+}: Readonly<BaseRowProps<Track>>) {
   const content = (
     <>
       <ItemContent>

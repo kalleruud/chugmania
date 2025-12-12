@@ -179,7 +179,7 @@ export function TimeEntryList({
           return (
             <TimeEntryRow
               key={entry.id}
-              lapTime={entry}
+              item={entry}
               gap={getGap(
                 i + 1,
                 entry,

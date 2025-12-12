@@ -48,7 +48,7 @@ function UserRowList({ users }: Readonly<{ users: UserInfo[] }>) {
       {users.map(user => (
         <UserRow
           key={user.id}
-          user={user}
+          item={user}
           className='py-3 first:pt-4 last:pb-4'
         />
       ))}

@@ -10,17 +10,16 @@ import {
   type ComponentProps,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
+import type { BaseRowProps } from '../row/RowProps'
 
 export type GapType = 'leader' | 'interval'
 
-type TimeEntryRowProps = {
+type TimeEntryRowProps = BaseRowProps<TimeEntry> & {
   position?: number | null
-  lapTime: TimeEntry
   gap?: LeaderboardEntryGap
   gapType?: GapType
-  highlight?: boolean
   onChangeGapType: () => void
-} & ComponentProps<'div'>
+}
 
 const breakpoints = {
   none: 0,
@@ -105,7 +104,7 @@ function GapPart({
 
 export default function TimeEntryRow({
   className,
-  lapTime,
+  item: lapTime,
   gap,
   gapType,
   onChangeGapType,
@@ -152,13 +151,13 @@ export default function TimeEntryRow({
   return (
     <div
       ref={containerRef}
-      {...rest}
       className={twMerge(
         'flex cursor-pointer items-center gap-4 rounded-md hover:bg-white/5',
         isDNF && 'opacity-50',
         className
       )}
-      title={lapTime.comment ?? undefined}>
+      title={lapTime.comment ?? undefined}
+      {...rest}>
       {show.pos && <PositionBadgePart position={gap?.position} />}
       <NameCellPart
         name={name}

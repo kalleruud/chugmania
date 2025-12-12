@@ -13,20 +13,14 @@ import type { SessionWithSignups } from '@common/models/session'
 import { ChevronRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { twMerge } from 'tailwind-merge'
-
-type SessionRowProps = {
-  session: SessionWithSignups
-  hideLink?: boolean
-  highlighted?: boolean
-  className?: string
-}
+import type { BaseRowProps } from '../row/RowProps'
 
 export function SessionRow({
-  session,
+  item: session,
   className,
   hideLink,
-  highlighted,
-}: Readonly<SessionRowProps>) {
+  highlight,
+}: Readonly<BaseRowProps<SessionWithSignups>>) {
   const { loggedInUser, isLoggedIn } = useAuth()
   const timeAgo = useDistanceToNow({ date: session.date })
 

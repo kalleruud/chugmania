@@ -1,22 +1,15 @@
 import { Item, ItemActions, ItemContent, ItemTitle } from '@/components/ui/item'
 import { type UserInfo } from '@common/models/user'
 import { ChevronRight } from 'lucide-react'
-import { type ComponentProps } from 'react'
 import { Link } from 'react-router-dom'
-
-type UserRowProps = {
-  user: UserInfo
-  hideLink?: boolean
-  highlighted?: boolean
-} & ComponentProps<'div'>
+import type { BaseRowProps } from '../row/RowProps'
 
 export default function UserRow({
-  user,
-  className,
+  item: user,
   hideLink,
-  highlighted,
+  highlight,
   ...props
-}: Readonly<UserRowProps>) {
+}: Readonly<BaseRowProps<UserInfo>>) {
   const content = (
     <>
       <ItemContent>
@@ -42,14 +35,14 @@ export default function UserRow({
 
   if (hideLink) {
     return (
-      <Item key={user.id} className={className} asChild {...props}>
+      <Item key={user.id} asChild {...props}>
         <div>{content}</div>
       </Item>
     )
   }
 
   return (
-    <Item key={user.id} className={className} asChild {...props}>
+    <Item key={user.id} asChild {...props}>
       <Link to={`/users/${user.id}`}>{content}</Link>
     </Item>
   )

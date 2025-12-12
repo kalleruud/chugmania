@@ -62,7 +62,7 @@ export default function SessionsList({
           {sessions.map(session => (
             <SessionRow
               key={session.id}
-              session={session}
+              item={session}
               className='py-3 first:pt-4 last:pb-4'
             />
           ))}

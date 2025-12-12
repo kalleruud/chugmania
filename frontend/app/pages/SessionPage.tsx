@@ -137,7 +137,7 @@ function Signup({
               {responses.map(signup => (
                 <UserRow
                   key={signup.user.id}
-                  user={signup.user}
+                  item={signup.user}
                   className='py-3 first:pt-4 last:pb-4'
                 />
               ))}
