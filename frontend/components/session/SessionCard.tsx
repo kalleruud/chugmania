@@ -1,5 +1,6 @@
 import { Badge } from '@/components/ui/badge'
 import loc from '@/lib/locales'
+import type { SessionStatus } from '@backend/database/schema'
 import type { SessionWithSignups } from '@common/models/session'
 import {
   formatDateWithYear,
@@ -8,7 +9,14 @@ import {
   isPast,
   isUpcoming,
 } from '@common/utils/date'
-import { CalendarIcon, ClockIcon, MapPinIcon } from '@heroicons/react/24/solid'
+import {
+  CalendarIcon,
+  CheckCircleIcon,
+  ClockIcon,
+  MapPinIcon,
+  QuestionMarkCircleIcon,
+  XCircleIcon,
+} from '@heroicons/react/24/solid'
 import { type ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -16,6 +24,22 @@ type SessionCardProps = {
   session: SessionWithSignups
   className?: string
 } & ComponentProps<'div'>
+
+function StatusIcon({
+  status,
+  ...props
+}: Readonly<
+  { status: SessionStatus } & Parameters<typeof CheckCircleIcon>[0]
+>) {
+  switch (status) {
+    case 'cancelled':
+      return <XCircleIcon {...props} />
+    case 'confirmed':
+      return <CheckCircleIcon {...props} />
+    case 'tentative':
+      return <QuestionMarkCircleIcon {...props} />
+  }
+}
 
 export default function SessionCard({
   session,
@@ -39,6 +63,14 @@ export default function SessionCard({
 
       <div className='flex items-start justify-between'>
         <div className='flex flex-col gap-1'>
+          <div className='flex items-center gap-2'>
+            <StatusIcon
+              status={session.status}
+              className='text-muted-foreground size-4'
+            />
+            <span>{loc.no.session.statusOptions[session.status]}</span>
+          </div>
+
           <div className='flex items-center gap-2'>
             <ClockIcon className='text-muted-foreground size-4' />
             <span className='capitalize'>{formatTimeOnly(session.date)}</span>
@@ -69,10 +101,6 @@ export default function SessionCard({
           {isUpcoming(session) && (
             <Badge variant='outline'>{loc.no.session.status.upcoming}</Badge>
           )}
-
-          <Badge variant='outline'>
-            {loc.no.session.statusOptions[session.status]}
-          </Badge>
         </div>
       </div>
     </div>

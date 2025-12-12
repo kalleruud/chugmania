@@ -18,10 +18,11 @@ import type { BaseRowProps } from '../row/RowProps'
 
 export function SessionRow({
   item: session,
+  description,
   className,
   hideLink,
   highlight,
-}: Readonly<BaseRowProps<SessionWithSignups>>) {
+}: Readonly<BaseRowProps<SessionWithSignups> & { description?: string }>) {
   const { loggedInUser, isLoggedIn } = useAuth()
   const distance = useDistanceToNow({ date: session.date })
 
@@ -43,7 +44,7 @@ export function SessionRow({
           {session.name}
         </ItemTitle>
         <ItemDescription className='text-start'>
-          <span>{distance}</span>
+          <span>{description ?? distance}</span>
         </ItemDescription>
       </ItemContent>
 
