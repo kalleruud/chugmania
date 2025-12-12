@@ -22,7 +22,7 @@ export function SessionRow({
   highlight,
 }: Readonly<BaseRowProps<SessionWithSignups>>) {
   const { loggedInUser, isLoggedIn } = useAuth()
-  const timeAgo = useDistanceToNow({ date: session.date })
+  const distance = useDistanceToNow({ date: session.date })
 
   const isCancelled = session.status === 'cancelled'
 
@@ -36,8 +36,8 @@ export function SessionRow({
           isCancelled && 'text-muted-foreground line-through'
         )}>
         <ItemTitle className='font-bold'>{session.name}</ItemTitle>
-        <ItemDescription>
-          <span>{timeAgo}</span>
+        <ItemDescription className='text-start'>
+          <span>{distance}</span>
         </ItemDescription>
       </ItemContent>
 

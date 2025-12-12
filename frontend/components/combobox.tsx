@@ -1,7 +1,3 @@
-import { ChevronsUpDown, Search } from 'lucide-react'
-import * as React from 'react'
-
-import { Button } from '@/components/ui/button'
 import {
   Popover,
   PopoverContent,
@@ -9,49 +5,48 @@ import {
 } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
 import type { PopoverContentProps } from '@radix-ui/react-popover'
+import { ChevronsUpDown, Search } from 'lucide-react'
+
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentProps,
+  type ReactNode,
+  type SetStateAction,
+} from 'react'
+import { twMerge } from 'tailwind-merge'
+import type { BaseRowProps } from './row/RowProps'
+import { Button } from './ui/button'
 import { Spinner } from './ui/spinner'
 
-type ComboboxProps = {
+type ComboboxProps<T extends ComboboxLookupItem> = {
   placeholder: string
   emptyLabel?: string
-  items: ComboboxLookupItem[]
-  selected?: ComboboxLookupItem
+  items: T[]
+  selected?: T
   limit?: number
-  setSelected: (
-    value: React.SetStateAction<ComboboxLookupItem | undefined>
-  ) => void
+  setSelected: (value: SetStateAction<T | undefined>) => void
   align?: PopoverContentProps['align']
-  renderRow?: (
-    item: ComboboxLookupItem,
-    highlighted: boolean
-  ) => React.ReactNode
-} & React.DetailedHTMLProps<
-  React.InputHTMLAttributes<HTMLInputElement>,
-  HTMLInputElement
->
+  CustomRow?: (props: BaseRowProps<T>) => ReactNode
+} & ComponentProps<'input'>
 
 export type ComboboxLookupItem = {
   id: string
-  label: string
+  label?: string
   sublabel?: string
   tags?: string[]
 }
 
-function Row({
+function Row<T extends ComboboxLookupItem>({
   className,
   item,
-  selected,
-  placeholder,
-}: Readonly<{
-  className?: string
-  item?: ComboboxLookupItem
-  selected?: ComboboxLookupItem
-  placeholder?: string
-}>) {
-  if (!item) return <div className='text-muted-foreground'>{placeholder}</div>
+  highlight,
+}: Readonly<BaseRowProps<T> & ComponentProps<'div'>>) {
   return (
     <div
-      className={cn(
+      className={twMerge(
         'flex w-full items-center justify-between gap-2',
         className
       )}>
@@ -61,7 +56,7 @@ function Row({
       <p
         className={cn(
           'text-muted-foreground block truncate text-right',
-          item.id === selected?.id && 'text-primary-foreground'
+          highlight && 'text-primary-foreground'
         )}>
         {item.sublabel}
       </p>
@@ -69,7 +64,7 @@ function Row({
   )
 }
 
-export default function Combobox({
+export default function Combobox<T extends ComboboxLookupItem>({
   placeholder,
   emptyLabel,
   items,
@@ -80,16 +75,16 @@ export default function Combobox({
   setSelected,
   className,
   align,
-  renderRow: customRenderRow,
+  CustomRow,
   ...inputProps
-}: Readonly<ComboboxProps>) {
-  const [open, setOpen] = React.useState(false)
-  const [search, setSearch] = React.useState('')
+}: Readonly<ComboboxProps<T>>) {
+  const [open, setOpen] = useState(false)
+  const [search, setSearch] = useState('')
 
-  const triggerRef = React.useRef<HTMLButtonElement>(null)
-  const containerRef = React.useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
-  const results = React.useMemo(() => {
+  const results = useMemo(() => {
     const term = search.trim().toLowerCase()
     if (term.length > 0) {
       return items.filter(i => i.tags?.join(',').toLowerCase().includes(term))
@@ -113,7 +108,7 @@ export default function Combobox({
   }
 
   // Close on outside click / Escape
-  React.useEffect(() => {
+  useEffect(() => {
     function onDocMouseDown(e: MouseEvent) {
       if (!open) return
       if (!containerRef.current) return
@@ -140,26 +135,41 @@ export default function Combobox({
       <Popover open={open} onOpenChange={setOpen} modal={true}>
         <PopoverTrigger asChild>
           <Button
-            disabled={disabled || isLoading}
-            ref={triggerRef}
+            className='flex h-fit w-full items-center justify-between gap-2 p-4'
             variant='outline'
+            disabled={disabled || isLoading}
             aria-expanded={open}
-            className='w-full justify-between gap-2'>
-            {selected && customRenderRow ? (
-              customRenderRow(selected, false)
-            ) : (
-              <Row item={selected} placeholder={placeholder} />
+            ref={triggerRef}>
+            {CustomRow && !selected && (
+              <span className='text-muted-foreground'>{placeholder}</span>
             )}
-            <input type='hidden' value={selected?.id} {...inputProps} />
-            {isLoading && <Spinner />}
+
+            {CustomRow && selected && (
+              <CustomRow item={selected} hideLink className='flex-1 p-0' />
+            )}
+
+            {!CustomRow && (
+              <div>
+                <input type='hidden' value={selected?.id} {...inputProps} />
+
+                {selected && <Row item={selected} />}
+
+                {!selected && (
+                  <span className='text-muted-foreground'>{placeholder}</span>
+                )}
+
+                {isLoading && <Spinner />}
+              </div>
+            )}
+
             {!disabled && !isLoading && (
-              <ChevronsUpDown className='text-muted-foreground flex-none' />
+              <ChevronsUpDown className='text-muted-foreground size-4 flex-none' />
             )}
           </Button>
         </PopoverTrigger>
         {!isLoading && (
           <PopoverContent
-            className='bg-popover/90 p-0 backdrop-blur-xl'
+            className='bg-popover/90 w-sm p-0 backdrop-blur-xl'
             align={align}>
             <div className='border-border flex items-center gap-2 border-b px-2'>
               <Search className='text-muted-foreground size-4' />
@@ -184,14 +194,19 @@ export default function Combobox({
                   <li key={item.id} className='list-none'>
                     <Button
                       type='button'
-                      variant={item.id === selected?.id ? 'default' : 'ghost'}
+                      variant='ghost'
                       size='sm'
-                      className={'flex w-full justify-between'}
+                      className='flex h-fit w-full justify-between p-0'
                       onClick={() => onSelect(item)}>
-                      {customRenderRow ? (
-                        customRenderRow(item, item.id === selected?.id)
+                      {CustomRow ? (
+                        <CustomRow
+                          item={item}
+                          className='w-full px-2 py-3'
+                          hideLink
+                          highlight={item.id === selected?.id}
+                        />
                       ) : (
-                        <Row item={item} selected={selected} />
+                        <Row item={item} highlight={item.id === selected?.id} />
                       )}
                     </Button>
                   </li>
