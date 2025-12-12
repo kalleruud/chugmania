@@ -121,6 +121,7 @@ export default function TimeEntryInputProvider({
             id='laptimeInput'
             editingTimeEntry={editingTimeEntry}
             disabled={!canEdit}
+            onSubmitResponse={success => success && setState('closed')}
           />
 
           <DialogFooter>

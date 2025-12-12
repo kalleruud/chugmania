@@ -140,7 +140,14 @@ export default function Combobox<T extends ComboboxLookupItem>({
             disabled={disabled || isLoading}
             aria-expanded={open}
             ref={triggerRef}>
-            {CustomRow && !selected && (
+            <input
+              type='hidden'
+              required={required}
+              value={selected?.id}
+              {...inputProps}
+            />
+
+            {!selected && (
               <span className='text-muted-foreground'>{placeholder}</span>
             )}
 
@@ -148,20 +155,9 @@ export default function Combobox<T extends ComboboxLookupItem>({
               <CustomRow item={selected} hideLink className='flex-1 p-0' />
             )}
 
-            {!CustomRow && (
-              <div>
-                <input type='hidden' value={selected?.id} {...inputProps} />
+            {!CustomRow && selected && <Row item={selected} />}
 
-                {selected && <Row item={selected} />}
-
-                {!selected && (
-                  <span className='text-muted-foreground'>{placeholder}</span>
-                )}
-
-                {isLoading && <Spinner />}
-              </div>
-            )}
-
+            {isLoading && <Spinner />}
             {!disabled && !isLoading && (
               <ChevronsUpDown className='text-muted-foreground size-4 flex-none' />
             )}

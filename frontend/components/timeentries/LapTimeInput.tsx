@@ -1,6 +1,4 @@
 import Combobox from '@/components/combobox'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import loc from '@/lib/locales'
 import type { SessionWithSignups } from '@common/models/session'
 import type {
@@ -31,6 +29,7 @@ import { twMerge } from 'tailwind-merge'
 import { useAuth } from '../../contexts/AuthContext'
 import { useConnection } from '../../contexts/ConnectionContext'
 import { useData } from '../../contexts/DataContext'
+import { TextField } from '../FormFields'
 import { SessionRow } from '../session/SessionRow'
 import { TrackRow } from '../track/TrackRow'
 import { Spinner } from '../ui/spinner'
@@ -38,6 +37,7 @@ import UserRow from '../user/UserRow'
 
 type LapTimeInputProps = {
   editingTimeEntry: Partial<TimeEntry>
+  onSubmitResponse?: (success: boolean) => void
   disabled?: boolean
 } & ComponentProps<'form'>
 
@@ -83,6 +83,7 @@ function getId(path: string) {
 
 export default function LapTimeInput({
   editingTimeEntry,
+  onSubmitResponse,
   onSubmit,
   disabled,
   className,
@@ -202,6 +203,7 @@ export default function LapTimeInput({
 
     toast.promise(
       socket.emitWithAck('edit_time_entry', payload).then(r => {
+        onSubmitResponse?.(r.success)
         if (!r.success) throw new Error(r.message)
       }),
       loc.no.timeEntry.input.editRequest
@@ -233,6 +235,7 @@ export default function LapTimeInput({
 
     toast.promise(
       socket.emitWithAck('post_time_entry', payload).then(r => {
+        onSubmitResponse?.(r.success)
         if (!r.success) throw new Error(r.message)
       }),
       {
@@ -324,13 +327,9 @@ export default function LapTimeInput({
           />
         )}
 
-        <Label htmlFor='laptime-comment' className='pt-2'>
-          {loc.no.timeEntry.input.fieldName.comment}
-        </Label>
-        <Textarea
-          id='laptime-comment'
+        <TextField
+          id='comment'
           name='Comment'
-          className='text-sm'
           disabled={disabled}
           onChange={e => setComment(e.target.value)}
           value={comment}
