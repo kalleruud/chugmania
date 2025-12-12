@@ -1,3 +1,4 @@
+import loc from '@/lib/locales'
 import type { VariantProps } from 'class-variance-authority'
 import { forwardRef, useEffect, useRef, useState } from 'react'
 import { Button, buttonVariants } from './ui/button'
@@ -14,10 +15,10 @@ export const ConfirmButton = forwardRef<HTMLButtonElement, ConfirmButtonProps>(
   (
     {
       onConfirm,
-      confirmText = 'Sikker?',
+      confirmText = loc.no.common.confirm,
       confirmDuration = 3000,
       children,
-      variant = 'destructive',
+      variant,
       disabled,
       onClick,
       ...props

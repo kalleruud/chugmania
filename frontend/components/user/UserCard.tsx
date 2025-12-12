@@ -119,9 +119,17 @@ export default function UserCard({
                       {loc.no.dialog.cancel}
                     </Button>
                   </DialogClose>
-                  <Button type='submit' form='editForm' disabled={isLoading}>
+                  <ConfirmButton
+                    disabled={isLoading}
+                    confirmText='Lagre endringer?'
+                    onConfirm={() => {
+                      const form = document.getElementById(
+                        'editForm'
+                      ) as HTMLFormElement
+                      form?.requestSubmit()
+                    }}>
                     {loc.no.dialog.continue}
-                  </Button>
+                  </ConfirmButton>
                 </DialogFooter>
               </DialogContent>
             </Dialog>

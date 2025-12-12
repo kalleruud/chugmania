@@ -267,6 +267,7 @@ const no = {
     receivedUpdate: 'Spillerne ble oppdatert',
   },
   common: {
+    confirm: 'Sikker?',
     now: 'Nå',
     new: 'Ny',
     edit: 'Rediger',

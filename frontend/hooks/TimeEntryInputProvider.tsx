@@ -129,15 +129,19 @@ export default function TimeEntryInputProvider({
             )}
 
             {canEdit && (
-              <Button
-                type='submit'
-                form='laptimeInput'
-                className='flex gap-1'
-                onClick={close}>
+              <ConfirmButton
+                confirmText={isEditing ? 'Lagre endringer?' : 'Lagre tid?'}
+                onConfirm={() => {
+                  const form = document.getElementById(
+                    'laptimeInput'
+                  ) as HTMLFormElement
+                  form?.requestSubmit()
+                  close()
+                }}>
                 {isEditing
                   ? loc.no.timeEntry.input.update
                   : loc.no.timeEntry.input.submit}
-              </Button>
+              </ConfirmButton>
             )}
           </DialogFooter>
         </DialogContent>
