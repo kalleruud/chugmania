@@ -1,34 +1,48 @@
 import * as HeroIcons from '@heroicons/react/24/solid'
 import type { ComponentProps } from 'react'
+import { Link } from 'react-router-dom'
 import { twMerge } from 'tailwind-merge'
 
 type PageHeaderProps = {
   title: string
   description?: string
   icon?: keyof typeof HeroIcons
+  to?: string
 } & ComponentProps<'div'>
 
 export function PageHeader({
   title,
   description,
   icon,
+  to,
   className,
   ...props
 }: Readonly<PageHeaderProps>) {
   const Icon = icon ? HeroIcons[icon] : undefined
-  return (
-    <div className={twMerge('flex flex-col p-2 py-4', className)} {...props}>
-      <div className='flex items-center gap-2'>
-        {Icon && <Icon className='text-primary size-6' />}
-        <h3 className='text-foreground pt-0.5'>{title}</h3>
+  const content = (
+    <div className='flex items-center justify-between'>
+      <div className='flex flex-col' {...props}>
+        <div className='flex items-center gap-2'>
+          {Icon && <Icon className='text-primary size-6' />}
+          <h3 className='text-foreground pt-0.5'>{title}</h3>
+        </div>
+        {description && (
+          <p className='text-muted-foreground text-sm font-medium'>
+            {description}
+          </p>
+        )}
       </div>
-      {description && (
-        <p className='text-muted-foreground text-sm font-medium'>
-          {description}
-        </p>
-      )}
+      {to && <HeroIcons.ChevronRightIcon className='size-4' />}
     </div>
   )
+
+  if (to)
+    return (
+      <Link className={twMerge('hover:bg-border p-2 py-4', className)} to={to}>
+        {content}
+      </Link>
+    )
+  return <div className={twMerge('p-2 py-4', className)}>{content}</div>
 }
 
 export function PageSubheader({
