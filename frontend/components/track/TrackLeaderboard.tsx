@@ -39,8 +39,7 @@ export default function TrackLeaderboard({
       className={twMerge(
         'bg-background flex flex-col gap-2 rounded-sm border p-2',
         className
-      )}
-      {...rest}>
+      )}>
       <TrackRow item={track} />
       <TimeEntryList track={track.id} entries={entries} {...rest} />
     </div>
