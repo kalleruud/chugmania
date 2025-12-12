@@ -8,7 +8,7 @@ import { Trash2 } from 'lucide-react'
 import { useState, type ComponentProps } from 'react'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
-import { ConfirmButton } from '../ConfirmButton'
+import ConfirmationButton from '../ConfirmationButton'
 import { Button } from '../ui/button'
 import {
   Dialog,
@@ -79,14 +79,14 @@ export default function UserCard({
 
       {canEdit && (
         <div className='flex justify-center gap-2'>
-          <ConfirmButton
+          <ConfirmationButton
             variant='destructive'
             size='sm'
             disabled={isSelf || isLoading}
-            onConfirm={handleDeleteUser}>
+            onClick={handleDeleteUser}>
             <Trash2 className='mr-2 size-4' />
             {loc.no.common.delete}
-          </ConfirmButton>
+          </ConfirmationButton>
 
           {canEdit && (
             <Dialog open={open} onOpenChange={setOpen}>
@@ -116,20 +116,15 @@ export default function UserCard({
                 <DialogFooter>
                   <DialogClose asChild>
                     <Button variant='outline' disabled={isLoading}>
-                      {loc.no.dialog.cancel}
+                      {loc.no.common.cancel}
                     </Button>
                   </DialogClose>
-                  <ConfirmButton
+                  <ConfirmationButton
+                    form='editForm'
                     disabled={isLoading}
-                    confirmText='Lagre endringer?'
-                    onConfirm={() => {
-                      const form = document.getElementById(
-                        'editForm'
-                      ) as HTMLFormElement
-                      form?.requestSubmit()
-                    }}>
-                    {loc.no.dialog.continue}
-                  </ConfirmButton>
+                    confirmText='Lagre endringer?'>
+                    {loc.no.common.continue}
+                  </ConfirmationButton>
                 </DialogFooter>
               </DialogContent>
             </Dialog>

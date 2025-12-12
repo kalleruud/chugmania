@@ -146,11 +146,11 @@ export function UsersList({ className, showAll }: Readonly<UsersPageProps>) {
             <DialogFooter>
               <DialogClose asChild>
                 <Button variant='outline' disabled={isLoading}>
-                  {loc.no.dialog.cancel}
+                  {loc.no.common.cancel}
                 </Button>
               </DialogClose>
               <Button type='submit' form='createUserForm' disabled={isLoading}>
-                {loc.no.dialog.continue}
+                {loc.no.common.continue}
               </Button>
             </DialogFooter>
           </DialogContent>

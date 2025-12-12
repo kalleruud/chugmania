@@ -103,14 +103,14 @@ export default function SessionsList({
             <DialogFooter>
               <DialogClose asChild>
                 <Button variant='outline' disabled={isLoading}>
-                  {loc.no.dialog.cancel}
+                  {loc.no.common.cancel}
                 </Button>
               </DialogClose>
               <Button
                 type='submit'
                 form='createSessionForm'
                 disabled={isLoading}>
-                {loc.no.dialog.continue}
+                {loc.no.common.continue}
               </Button>
             </DialogFooter>
           </DialogContent>

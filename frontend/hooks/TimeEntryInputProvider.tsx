@@ -1,4 +1,4 @@
-import { ConfirmButton } from '@/components/ConfirmButton'
+import ConfirmationButton from '@/components/ConfirmationButton'
 import TimeEntryInput from '@/components/timeentries/TimeEntryInput'
 import { Button } from '@/components/ui/button'
 import {
@@ -116,32 +116,26 @@ export default function TimeEntryInputProvider({
 
           <DialogFooter>
             <DialogClose asChild>
-              <Button variant='outline'>{loc.no.dialog.cancel}</Button>
+              <Button variant='outline'>{loc.no.common.cancel}</Button>
             </DialogClose>
             {canEdit && isEditing && (
-              <ConfirmButton
+              <ConfirmationButton
                 type='button'
                 variant='destructive'
-                onConfirm={handleDelete}>
+                onClick={handleDelete}>
                 <Trash2 />
-                {loc.no.dialog.delete}
-              </ConfirmButton>
+                {loc.no.common.delete}
+              </ConfirmationButton>
             )}
 
-            {canEdit && (
-              <ConfirmButton
-                confirmText={isEditing ? 'Lagre endringer?' : 'Lagre tid?'}
-                onConfirm={() => {
-                  const form = document.getElementById(
-                    'laptimeInput'
-                  ) as HTMLFormElement
-                  form?.requestSubmit()
-                  close()
-                }}>
-                {isEditing
-                  ? loc.no.timeEntry.input.update
-                  : loc.no.timeEntry.input.submit}
-              </ConfirmButton>
+            {isEditing ? (
+              <ConfirmationButton form='laptimeInput' disabled={!canEdit}>
+                {loc.no.timeEntry.input.update}
+              </ConfirmationButton>
+            ) : (
+              <Button form='laptimeInput' disabled={!canEdit}>
+                {loc.no.timeEntry.input.submit}
+              </Button>
             )}
           </DialogFooter>
         </DialogContent>

@@ -137,29 +137,6 @@ const no = {
       no_edit_historical: 'Du kan ikke endre svar på en session tilbake i tid.',
     },
   },
-  dialog: {
-    confirmDelete: {
-      title: 'Bekreft sletting',
-      description: 'Er du heeelt sikker?',
-    },
-    confirm: {
-      title: 'Bekreft',
-      description: 'Er du heeelt sikker?',
-    },
-    cancel: getRandomItem([
-      'Abort mission',
-      'Avbryt',
-      'Cap',
-      'Føkk dette',
-      'Nah',
-      'Jeg ombestemte meg',
-      'Regretti spaghetti',
-      'Vil ikke',
-    ]),
-    continue: 'Kjør',
-
-    delete: 'Slett',
-  },
   error: {
     title: 'Noe gikk galt 🥵',
     description: getRandomItem([
@@ -273,11 +250,21 @@ const no = {
     edit: 'Rediger',
     delete: 'Slett',
     save: 'Lagre',
-    cancel: 'Avbryt',
     showAll: 'Vis alle',
     show: 'Vis',
     hide: 'Skjul',
     home: 'Hjem',
+    continue: 'Kjør',
+    cancel: getRandomItem([
+      'Abort mission',
+      'Avbryt',
+      'Cap',
+      'Føkk dette',
+      'Nah',
+      'Jeg ombestemte meg',
+      'Regretti spaghetti',
+      'Vil ikke',
+    ]),
     noItems: getRandomItem([
       'Finner ikke 🥵',
       'Her var det tomt...',

@@ -1,4 +1,4 @@
-import { ConfirmButton } from '@/components/ConfirmButton'
+import ConfirmationButton from '@/components/ConfirmationButton'
 import { PageSubheader } from '@/components/PageHeader'
 import SessionCard from '@/components/session/SessionCard'
 import SessionForm from '@/components/session/SessionForm'
@@ -241,31 +241,23 @@ export default function SessionPage() {
                 <DialogFooter>
                   <DialogClose asChild>
                     <Button variant='outline' disabled={isLoading}>
-                      {loc.no.dialog.cancel}
+                      {loc.no.common.cancel}
                     </Button>
                   </DialogClose>
-                  <ConfirmButton
-                    disabled={isLoading}
-                    confirmText='Lagre endringer?'
-                    onConfirm={() => {
-                      const form = document.getElementById(
-                        'editForm'
-                      ) as HTMLFormElement
-                      form?.requestSubmit()
-                    }}>
-                    {loc.no.dialog.continue}
-                  </ConfirmButton>
+                  <ConfirmationButton form='editForm' disabled={isLoading}>
+                    {loc.no.common.continue}
+                  </ConfirmationButton>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
 
-            <ConfirmButton
+            <ConfirmationButton
               variant='destructive'
-              onConfirm={() => handleDeleteSession(session.id)}
+              onClick={() => handleDeleteSession(session.id)}
               disabled={isLoading}>
               <Trash2 className='mr-2 size-4' />
               {loc.no.common.delete}
-            </ConfirmButton>
+            </ConfirmationButton>
           </>
         )}
       </div>
