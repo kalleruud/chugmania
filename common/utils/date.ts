@@ -1,5 +1,5 @@
-import type { SessionStatus } from '@backend/database/schema'
 import { DateTime } from 'luxon'
+import type { SessionStatus } from '../../backend/database/schema'
 
 const DEFAULT_LOCALE = 'nb-NO'
 const DEFAULT_ZONE = 'Europe/Oslo'
