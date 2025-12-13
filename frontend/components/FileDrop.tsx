@@ -1,72 +1,34 @@
-import { Upload } from 'lucide-react'
 import {
   useRef,
   useState,
   type ChangeEvent,
+  type ComponentProps,
   type DragEventHandler,
 } from 'react'
-import { twMerge } from 'tailwind-merge'
-
-export type FileDropSelection = {
-  file: File
-  content: string
-}
+import { Spinner } from './ui/spinner'
 
 type FileDropProps = {
   accept?: string
-  className?: string
-  label?: string
-  hint?: string
-  onSelect: (file: FileDropSelection | undefined) => void
-}
+  isLoading?: boolean
+  onSelect: (file: FileList | undefined) => void
+} & Omit<ComponentProps<'button'>, 'onSelect'>
 
 export default function FileDrop({
-  accept = '',
-  className = '',
-  label = 'Drop file here or click to select',
-  hint,
+  accept,
+  isLoading,
   onSelect,
+  children,
+  ...props
 }: Readonly<FileDropProps>) {
   const inputRef = useRef<HTMLInputElement>(null)
-  const pendingIdRef = useRef(0)
-  const [dragging, setDragging] = useState(false)
-  const [selectedFileName, setSelectedFileName] = useState<string>()
-  const [error, setError] = useState<string>()
-  const [loading, setLoading] = useState(false)
+  const [isDragging, setIsDragging] = useState<boolean>(false)
 
   const handleFiles = async (fileList: FileList | null) => {
-    const [file] = fileList ? Array.from(fileList) : []
-
-    if (!file) {
-      setSelectedFileName(undefined)
-      setError(undefined)
+    if (!fileList || fileList.length === 0) {
       onSelect(undefined)
       return
     }
-
-    const requestId = pendingIdRef.current + 1
-    pendingIdRef.current = requestId
-
-    try {
-      setLoading(true)
-      setError(undefined)
-      setSelectedFileName(file.name)
-      const content = await file.text()
-      if (pendingIdRef.current === requestId) {
-        onSelect({ file, content })
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to read file'
-      if (pendingIdRef.current === requestId) {
-        setError(message)
-        setSelectedFileName(undefined)
-        onSelect(undefined)
-      }
-    } finally {
-      if (pendingIdRef.current === requestId) {
-        setLoading(false)
-      }
-    }
+    onSelect(fileList)
   }
 
   const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -77,42 +39,40 @@ export default function FileDrop({
 
   const handleDragOver: DragEventHandler<HTMLButtonElement> = event => {
     event.preventDefault()
-    if (!dragging) setDragging(true)
+    setIsDragging(true)
     event.dataTransfer.dropEffect = 'copy'
   }
 
   const handleDragLeave: DragEventHandler<HTMLButtonElement> = event => {
     event.preventDefault()
-    if (dragging) setDragging(false)
+    setIsDragging(false)
   }
 
   const handleDrop: DragEventHandler<HTMLButtonElement> = event => {
     event.preventDefault()
-    setDragging(false)
+    event.stopPropagation()
+    setIsDragging(false)
     handleFiles(event.dataTransfer.files)
   }
 
   return (
     <>
       <button
-        className={twMerge(
-          'border-border text-muted-foreground flex w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed p-8 text-center normal-case transition-colors hover:border-white/30 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent',
-          dragging ? 'border-muted-foreground' : '',
-          className
-        )}
+        className={'relative'}
         onClick={() => inputRef.current?.click()}
         onDragEnter={handleDragOver}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
-        onDrop={handleDrop}>
-        <Upload className='size-8' />
-        <div className='flex flex-col gap-1 text-sm'>
-          <span className='text-label-secondary'>{label}</span>
-          {hint && <span className='text-xs'>{selectedFileName ?? hint}</span>}
-          {error && <span className='text-xs text-red-400'>{error}</span>}
-          {loading && <span className='text-xs'>Reading file…</span>}
-        </div>
+        onDrop={handleDrop}
+        {...props}>
+        {(isLoading || isDragging) && (
+          <div className='bg-background/25 absolute flex size-full items-center justify-center p-0.5'>
+            {isLoading ? <Spinner /> : undefined}
+          </div>
+        )}
+        {children}
       </button>
+
       <input
         ref={inputRef}
         type='file'

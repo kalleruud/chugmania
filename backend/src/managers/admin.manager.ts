@@ -1,12 +1,11 @@
-import { sql } from 'drizzle-orm'
-import type { Socket } from 'socket.io'
-
 import type { ExportCsvResponse } from '@common/models/importCsv'
 import {
   isExportCsvRequest,
   isImportCsvRequest,
 } from '@common/models/importCsv'
 import type { EventReq, EventRes } from '@common/models/socket.io'
+import { sql } from 'drizzle-orm'
+import type { Socket } from 'socket.io'
 import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
 import { sessions, timeEntries, tracks, users } from '../../database/schema'
@@ -15,27 +14,41 @@ import AuthManager from './auth.manager'
 
 export default class AdminManager {
   private static async importUsers(data: string) {
-    const values = await CsvParser.parse<typeof users.$inferInsert>(data)
-    if (values.length === 0) return { imported: 0, total: 0 }
+    const parsed = await CsvParser.parse<Record<string, any>>(data)
+    if (parsed.length === 0) return { imported: 0, total: 0 }
+
+    // Filter out rows missing required passwordHash for new inserts
+    // For existing users (with ID), password is optional and can be updated
+    const values = parsed.filter(
+      v => 'passwordHash' in v || v.id
+    ) as (typeof users.$inferInsert)[]
+
+    if (values.length === 0) return { imported: 0, total: parsed.length }
+
+    const updateSet: Record<string, any> = {
+      email: sql`excluded.email`,
+      firstName: sql`excluded.first_name`,
+      lastName: sql`excluded.last_name`,
+      shortName: sql`excluded.short_name`,
+      role: sql`excluded.role`,
+      updatedAt: new Date(),
+    }
+
+    // Only update password if it was provided in the CSV
+    if (values.some(v => 'passwordHash' in v)) {
+      updateSet.passwordHash = sql`excluded.password_hash`
+    }
 
     const result = await db
       .insert(users)
       .values(values)
       .onConflictDoUpdate({
         target: users.id,
-        set: {
-          email: sql`excluded.email`,
-          firstName: sql`excluded.first_name`,
-          lastName: sql`excluded.last_name`,
-          shortName: sql`excluded.short_name`,
-          passwordHash: sql`excluded.password_hash`,
-          role: sql`excluded.role`,
-          updatedAt: new Date(),
-        },
+        set: updateSet,
       })
       .returning()
 
-    return { imported: result.length, total: values.length }
+    return { imported: result.length, total: parsed.length }
   }
 
   private static async importTracks(data: string) {
@@ -210,8 +223,11 @@ export default class AdminManager {
       case 'sessions':
         records = await db.query.sessions.findMany()
         break
+      case 'sessionSignups':
+        records = await db.query.sessionSignups.findMany()
+        break
       default:
-        throw new Error(`Invalid table: '${request.table}'`)
+        throw new Error(loc.no.error.messages.not_in_db(request.table))
     }
 
     // Filter out sensitive columns

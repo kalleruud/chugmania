@@ -40,7 +40,7 @@ export function PageHeader({
     return (
       <Link
         className={twMerge(
-          'hover:bg-primary-foreground/10 my-2 rounded-sm p-2',
+          'hover:bg-primary-foreground/10 my-2 rounded-sm p-2 transition-colors',
           className
         )}
         to={to}>

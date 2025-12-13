@@ -1,4 +1,6 @@
 import FileDrop from '@/components/FileDrop'
+import { PageHeader, PageSubheader } from '@/components/PageHeader'
+import { Badge } from '@/components/ui/badge'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -8,123 +10,41 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Spinner } from '@/components/ui/spinner'
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import loc from '@/lib/locales'
-import { Download } from 'lucide-react'
-import { useState } from 'react'
-import { Navigate } from 'react-router-dom'
+import {
+  CloudArrowDownIcon,
+  CloudArrowUpIcon,
+  DocumentIcon,
+} from '@heroicons/react/24/solid'
+import { useState, type ComponentProps } from 'react'
 import { toast } from 'sonner'
+import { twMerge } from 'tailwind-merge'
 
-type Table = 'users' | 'tracks' | 'sessions' | 'timeEntries'
+type Table = keyof typeof loc.no.admin.tables
 
-type ImportResult = {
-  imported: number
-  total: number
-}
-
-const TABLES: { value: Table; label: string }[] = [
-  { value: 'users', label: 'Users' },
-  { value: 'tracks', label: 'Tracks' },
-  { value: 'sessions', label: 'Sessions' },
-  { value: 'timeEntries', label: 'Time Entries' },
-]
+const tableNames = Object.keys(loc.no.admin.tables) as Table[]
 
 export default function AdminPage() {
-  const { loggedInUser, isLoggedIn } = useAuth()
-  const { socket } = useConnection()
-  const [selectedImportTable, setSelectedImportTable] = useState<Table>('users')
-  const [selectedExportTable, setSelectedExportTable] = useState<Table>('users')
-  const [importFile, setImportFile] = useState<
-    { content: string } | undefined
-  >()
-  const [importResult, setImportResult] = useState<ImportResult | undefined>()
-  const [importLoading, setImportLoading] = useState(false)
-  const [exportLoading, setExportLoading] = useState(false)
+  const { isLoading, loggedInUser } = useAuth()
+
+  if (isLoading) {
+    return (
+      <div className='h-dvh-safe flex w-full items-center justify-center'>
+        <Spinner />
+      </div>
+    )
+  }
 
   // Check admin access
-  if (!isLoggedIn || loggedInUser?.role !== 'admin') {
-    return <Navigate to='/' replace />
-  }
-
-  const handleImport = async () => {
-    if (!importFile) {
-      toast.error('Please select a file to import')
-      return
-    }
-
-    setImportLoading(true)
-    try {
-      const result = await socket.emitWithAck('import_csv', {
-        table: selectedImportTable,
-        content: importFile.content,
-      })
-
-      if (result.success) {
-        toast.success(`Import completed for ${selectedImportTable}`)
-        setImportResult({
-          imported: result.imported || 0,
-          total: result.total || 0,
-        })
-        setImportFile(undefined)
-      } else {
-        toast.error(result.message || 'Import failed')
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Import failed'
-      toast.error(message)
-    } finally {
-      setImportLoading(false)
-    }
-  }
-
-  const handleExport = async () => {
-    setExportLoading(true)
-    try {
-      const result = await socket.emitWithAck('export_csv', {
-        table: selectedExportTable,
-      })
-
-      if (result.success && result.csv) {
-        const element = document.createElement('a')
-        element.setAttribute(
-          'href',
-          'data:text/csv;charset=utf-8,' + encodeURIComponent(result.csv)
-        )
-        element.setAttribute('download', `${selectedExportTable}.csv`)
-        element.style.display = 'none'
-        document.body.appendChild(element)
-        element.click()
-        document.body.removeChild(element)
-        toast.success(`Export completed for ${selectedExportTable}`)
-      } else {
-        toast.error(result.message || 'Export failed')
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Export failed'
-      toast.error(message)
-    } finally {
-      setExportLoading(false)
-    }
+  if (loggedInUser?.role !== 'admin') {
+    throw new Error(loc.no.error.messages.insufficient_permissions)
   }
 
   return (
-    <div className='flex flex-col gap-6'>
+    <div className='flex flex-col gap-4'>
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
@@ -137,122 +57,144 @@ export default function AdminPage() {
         </BreadcrumbList>
       </Breadcrumb>
 
-      <div className='grid gap-6 md:grid-cols-2'>
-        {/* Import Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Import CSV</CardTitle>
-            <CardDescription>
-              Upload a CSV file to import data into the database
-            </CardDescription>
-          </CardHeader>
-          <CardContent className='space-y-4'>
-            <div className='space-y-2'>
-              <label className='text-sm font-medium'>Table</label>
-              <Select
-                value={selectedImportTable}
-                onValueChange={v => setSelectedImportTable(v as Table)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {TABLES.map(table => (
-                    <SelectItem key={table.value} value={table.value}>
-                      {table.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+      <PageHeader
+        title={loc.no.admin.title}
+        description={loc.no.admin.description}
+        icon='ShieldExclamationIcon'
+      />
 
-            <FileDrop
-              accept='.csv'
-              label='Drop CSV file here or click to select'
-              hint='Select a CSV file to import'
-              onSelect={file =>
-                setImportFile(file ? { content: file.content } : undefined)
-              }
-            />
-
-            {importResult && (
-              <div className='border-input bg-background-secondary rounded-sm border p-3 text-sm'>
-                <div className='font-medium'>Import Results</div>
-                <div className='text-label-secondary mt-2 space-y-1'>
-                  <div>Total rows: {importResult.total}</div>
-                  <div>Rows processed: {importResult.imported}</div>
-                </div>
-              </div>
-            )}
-
-            <Button
-              onClick={handleImport}
-              disabled={!importFile || importLoading}
-              className='w-full'>
-              {importLoading ? (
-                <>
-                  <Spinner className='mr-2 size-4' />
-                  Importing...
-                </>
-              ) : (
-                'Import'
-              )}
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Export Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Export CSV</CardTitle>
-            <CardDescription>Download table data as a CSV file</CardDescription>
-          </CardHeader>
-          <CardContent className='space-y-4'>
-            <div className='space-y-2'>
-              <label className='text-sm font-medium'>Table</label>
-              <Select
-                value={selectedExportTable}
-                onValueChange={v => setSelectedExportTable(v as Table)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {TABLES.map(table => (
-                    <SelectItem key={table.value} value={table.value}>
-                      {table.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className='border-input bg-background-secondary rounded-sm border p-3 text-sm'>
-              <div className='font-medium'>Export Information</div>
-              <div className='text-label-secondary mt-2'>
-                Select a table and click Export to download the data as a CSV
-                file. Sensitive columns like passwords are automatically
-                excluded.
-              </div>
-            </div>
-
-            <Button
-              onClick={handleExport}
-              disabled={exportLoading}
-              className='w-full'>
-              {exportLoading ? (
-                <>
-                  <Spinner className='mr-2 size-4' />
-                  Exporting...
-                </>
-              ) : (
-                <>
-                  <Download className='mr-2 size-4' />
-                  Export
-                </>
-              )}
-            </Button>
-          </CardContent>
-        </Card>
+      <div className='grid gap-2'>
+        <PageSubheader
+          title={loc.no.admin.tableManagement}
+          description={`${tableNames.length}`}
+        />
+        {tableNames.map(t => (
+          <div
+            key={t}
+            className='bg-background-secondary flex flex-col rounded-sm border'>
+            <TableRow table={t} />
+          </div>
+        ))}
       </div>
     </div>
   )
+}
+
+function hasSelectedFiles(
+  fileList: FileList | undefined | null
+): fileList is FileList {
+  return !!fileList && fileList.length > 0
+}
+
+function TableRow({
+  table,
+  className,
+  ...props
+}: Readonly<{ table: Table } & ComponentProps<'div'>>) {
+  const { socket } = useConnection()
+
+  const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [selectedFiles, setSelectedFiles] = useState<FileList | undefined>(
+    undefined
+  )
+
+  const handleImport = async () => {
+    if (!hasSelectedFiles(selectedFiles)) {
+      toast.error(loc.no.error.messages.missing_files)
+      return
+    }
+
+    setIsLoading(true)
+    for (const file of selectedFiles) {
+      toast.promise(
+        socket
+          .emitWithAck('import_csv', {
+            table,
+            content: await file.text(),
+          })
+          .then(r => {
+            if (!r.success) throw new Error(r.message)
+          }),
+        loc.no.admin.importRequest
+      )
+    }
+    setIsLoading(false)
+  }
+
+  const handleExport = () => {
+    setIsLoading(true)
+
+    toast.promise(
+      socket
+        .emitWithAck('export_csv', {
+          table,
+        })
+        .then(r => {
+          if (!r.success) throw new Error(r.message)
+          downloadFile(table, r.csv)
+        }),
+      loc.no.admin.exportRequest
+    )
+    setIsLoading(false)
+  }
+
+  return (
+    <div
+      className={twMerge(
+        'flex items-center justify-between gap-2 rounded-md p-4',
+        className
+      )}
+      {...props}>
+      <h4>{loc.no.admin.tables[table]}</h4>
+
+      <div className='flex items-center gap-2'>
+        {hasSelectedFiles(selectedFiles) &&
+          Array.from(selectedFiles).map(f => (
+            <Badge
+              key={f.name}
+              variant='outline'
+              className='size-fit font-mono'>
+              {f.name}
+            </Badge>
+          ))}
+
+        <FileDrop
+          onSelect={setSelectedFiles}
+          accept={'.csv'}
+          isLoading={isLoading}>
+          <Button size='sm' variant='outline'>
+            <DocumentIcon />
+            {loc.no.admin.selectFiles}
+          </Button>
+        </FileDrop>
+
+        <Button
+          size='sm'
+          variant='outline'
+          onClick={handleImport}
+          disabled={!hasSelectedFiles(selectedFiles)}>
+          <CloudArrowUpIcon />
+          {loc.no.admin.import}
+        </Button>
+
+        <Button size='sm' onClick={handleExport}>
+          <CloudArrowDownIcon />
+          {loc.no.admin.export}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+function downloadFile(filename: string, content: string) {
+  const element = document.createElement('a')
+  element.setAttribute(
+    'href',
+    'data:text/csv;charset=utf-8,' + encodeURIComponent(content)
+  )
+  element.setAttribute('download', `${filename}.csv`)
+  element.style.display = 'none'
+  document.body.appendChild(element)
+  element.click()
+  element.remove()
 }
