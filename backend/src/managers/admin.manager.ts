@@ -66,7 +66,7 @@ export default class AdminManager {
       for (const update of toUpdate) {
         db.update(table).set(update).where(eq(table.id, update.id)).run()
       }
-    })
+    })()
   }
 
   static async onImportCsv(
