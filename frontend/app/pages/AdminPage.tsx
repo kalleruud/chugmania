@@ -118,6 +118,7 @@ function TableRow({
         loc.no.admin.importRequest
       )
     }
+    setSelectedFiles(undefined)
     setIsLoading(false)
   }
 
