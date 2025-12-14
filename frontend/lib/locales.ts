@@ -24,14 +24,12 @@ const no = {
     exportRequest: {
       loading: 'Eksporterer...',
       success: 'Tabellen ble eksportert',
-      error: (err: Error) =>
-        `Kunne ikke laste eksportere tabellen: ${err.message}`,
+      error: (err: Error) => `Kunne ikke eksportere tabellen: ${err.message}`,
     },
     importRequest: {
       loading: 'Importer...',
-      success: 'Tabellen ble importert',
-      error: (err: Error) =>
-        `Kunne ikke laste importere tabellen: ${err.message}`,
+      success: (table: string, count: number) => `Importerte ${count} ${table}`,
+      error: (err: Error) => `Kunne ikke importere tabellen: ${err.message}`,
     },
     tables: {
       sessionSignups: 'Sesssion Signups',

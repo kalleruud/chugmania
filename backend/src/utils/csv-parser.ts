@@ -21,9 +21,9 @@ export default class CsvParser {
         for (let i = 0; i < headers.length; i++) {
           const k = headers.at(i)?.trim()
           if (!k) continue
-          const { key, value } = await CsvParser.normalize(k, values.at(i))
-          if (value === null) continue
-          entries.set(key, value)
+          const keyVal = await CsvParser.normalize(k, values.at(i))
+          if (!keyVal) continue
+          entries.set(keyVal.key, keyVal.value)
         }
 
         return Object.fromEntries(entries) as Record<string, any>
@@ -32,8 +32,8 @@ export default class CsvParser {
   }
 
   private static async normalize(key: string, value: string | undefined) {
-    const val = value?.replaceAll('"', '').trim()
-    if (val === '' || val === undefined) return { key, value: null }
+    const val = value?.replaceAll('"', "'").trim()
+    if (!val) return { key, value: null }
 
     if (
       CsvParser.DATE_KEYS.has(key) ||
@@ -41,13 +41,16 @@ export default class CsvParser {
     )
       return { key, value: new Date(Number.parseInt(val)) }
 
-    if (key === 'password')
+    if (key === 'password') {
       return { key: 'passwordHash', value: await AuthManager.hash(val) }
+    }
 
     return { key, value: val }
   }
 
-  public static toCsv<T extends Record<string, any>>(objects: T[]): string | null {
+  public static toCsv<T extends Record<string, any>>(
+    objects: T[]
+  ): string | null {
     if (objects.length === 0) {
       console.warn('No objects to convert to CSV')
       return null
