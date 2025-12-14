@@ -1,5 +1,3 @@
-import * as csv from 'fast-csv'
-import { Readable } from 'node:stream'
 import AuthManager from '../managers/auth.manager'
 
 export default class CsvParser {
@@ -11,60 +9,40 @@ export default class CsvParser {
     'date',
   ])
 
-  static async toObjects(csvString: string): Promise<Record<string, any>[]> {
-    return new Promise((resolve, reject) => {
-      const rows: Record<string, any>[] = []
-      const stream = Readable.from([csvString])
+  static async toObjects(csv: string) {
+    const [headerLine, ...lines] = csv.trim().split('\n')
+    const headers = headerLine.split(',')
 
-      stream
-        .pipe(csv.parse({ headers: true }))
-        .on('error', reject)
-        .on('data', async (row: Record<string, string>) => {
-          const normalized = await CsvParser.normalizeRow(row)
-          rows.push(normalized)
-        })
-        .on('end', () => resolve(rows))
-    })
+    return await Promise.all(
+      lines.map(async line => {
+        const values = line.split(',')
+        const entries = new Map()
+
+        for (let i = 0; i < headers.length; i++) {
+          const k = headers.at(i)?.trim()
+          if (!k) continue
+          const keyVal = await CsvParser.normalize(k, values.at(i))
+          if (!keyVal) continue
+          entries.set(keyVal.key, keyVal.value)
+        }
+
+        return Object.fromEntries(entries) as Record<string, any>
+      })
+    )
   }
 
-  private static async normalizeRow(
-    row: Record<string, string>
-  ): Promise<Record<string, any>> {
-    const normalized: Record<string, any> = {}
-
-    for (const [key, value] of Object.entries(row)) {
-      const keyVal = await CsvParser.normalize(key, value)
-      if (keyVal) {
-        normalized[keyVal.key] = keyVal.value
-      }
-    }
-
-    return normalized
-  }
-
-  private static async normalize(
-    key: string,
-    value: string | undefined
-  ): Promise<{ key: string; value: any } | null> {
-    const val = value?.trim()
-    if (!val) return null
-
-    if (key === 'password') {
-      return { key: 'passwordHash', value: await AuthManager.hash(val) }
-    }
+  private static async normalize(key: string, value: string | undefined) {
+    const val = value?.replaceAll('"', "'").trim()
+    if (!val) return { key, value: null }
 
     if (
       CsvParser.DATE_KEYS.has(key) ||
       (Number.isInteger(val) && Number.parseInt(val) >= CsvParser.JAN_01_2000)
-    ) {
-      return {
-        key,
-        value: new Date(Number.isInteger(val) ? Number.parseInt(val) : val),
-      }
-    }
+    )
+      return { key, value: new Date(Number.parseInt(val)) }
 
-    if (Number.isInteger(+val)) {
-      return { key, value: Number.parseFloat(val) }
+    if (key === 'password') {
+      return { key: 'passwordHash', value: await AuthManager.hash(val) }
     }
 
     return { key, value: val }
@@ -72,23 +50,27 @@ export default class CsvParser {
 
   public static toCsv<T extends Record<string, any>>(
     objects: T[]
-  ): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const output: string[] = []
+  ): string | null {
+    if (objects.length === 0) {
+      console.warn('No objects to convert to CSV')
+      return null
+    }
 
-      const formatter = csv.format({ headers: true })
-
-      formatter
-        .on('data', (chunk: Buffer) => {
-          output.push(chunk.toString())
+    const headers = Object.keys(objects[0])
+    const rows = objects.map(obj =>
+      headers
+        .map(header => {
+          const value = obj[header]
+          if (value === null || value === undefined) return ''
+          if (value instanceof Date) return String(value.getTime())
+          const str = String(value)
+          if (str.includes(',') || str.includes('\n') || str.includes('"'))
+            return `"${str.replaceAll(/"/g, '""')}"`
+          return str
         })
-        .on('error', reject)
-        .on('end', () => {
-          resolve(output.join(''))
-        })
+        .join(',')
+    )
 
-      objects.forEach(obj => formatter.write(obj))
-      formatter.end()
-    })
+    return [headers.join(','), ...rows].join('\n')
   }
 }

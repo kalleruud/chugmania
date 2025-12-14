@@ -139,7 +139,7 @@ export default class AdminManager {
     // Filter out sensitive columns
     const filtered = AdminManager.filterColumnsForExport(request.table, records)
 
-    const csv = await CsvParser.toCsv(filtered)
+    const csv = CsvParser.toCsv(filtered)
     if (!csv) {
       throw new Error(loc.no.error.messages.missing_data)
     }
