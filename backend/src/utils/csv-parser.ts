@@ -10,18 +10,20 @@ export default class CsvParser {
   ])
 
   static async toObjects(csv: string) {
-    const [headerLine, ...lines] = csv.trim().split('\n')
-    const headers = headerLine.split(',')
+    const lines = CsvParser.parseLines(csv.trim())
+    if (lines.length === 0) return []
+
+    const headerLine = lines[0]
+    const dataLines = lines.slice(1)
 
     return await Promise.all(
-      lines.map(async line => {
-        const values = line.split(',')
+      dataLines.map(async values => {
         const entries = new Map()
 
-        for (let i = 0; i < headers.length; i++) {
-          const k = headers.at(i)?.trim()
+        for (let i = 0; i < headerLine.length; i++) {
+          const k = headerLine[i]?.trim()
           if (!k) continue
-          const keyVal = await CsvParser.normalize(k, values.at(i))
+          const keyVal = await CsvParser.normalize(k, values[i])
           console.log(keyVal?.key ?? k, keyVal?.value ?? 'N/A')
           if (!keyVal) continue
           entries.set(keyVal.key, keyVal.value)
@@ -30,6 +32,63 @@ export default class CsvParser {
         return Object.fromEntries(entries) as Record<string, any>
       })
     )
+  }
+
+  private static parseLines(csv: string): string[][] {
+    const lines: string[][] = []
+    let currentLine: string[] = []
+    let currentField = ''
+    let inQuotes = false
+    let i = 0
+
+    while (i < csv.length) {
+      const char = csv[i]
+
+      if (char === '"') {
+        if (inQuotes && csv[i + 1] === '"') {
+          // Escaped quote
+          currentField += '"'
+          i += 2
+        } else {
+          // Toggle quote state
+          inQuotes = !inQuotes
+          i++
+        }
+      } else if (char === ',' && !inQuotes) {
+        // Field delimiter
+        currentLine.push(currentField)
+        currentField = ''
+        i++
+      } else if ((char === '\n' || char === '\r') && !inQuotes) {
+        // Line delimiter
+        if (currentField || currentLine.length > 0) {
+          currentLine.push(currentField)
+        }
+        if (currentLine.length > 0) {
+          lines.push(currentLine)
+        }
+        currentLine = []
+        currentField = ''
+        if (char === '\r' && csv[i + 1] === '\n') {
+          i += 2
+        } else {
+          i++
+        }
+      } else {
+        currentField += char
+        i++
+      }
+    }
+
+    // Add final field and line
+    if (currentField || currentLine.length > 0) {
+      currentLine.push(currentField)
+    }
+    if (currentLine.length > 0) {
+      lines.push(currentLine)
+    }
+
+    return lines
   }
 
   private static async normalize(
