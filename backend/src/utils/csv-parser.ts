@@ -34,60 +34,95 @@ export default class CsvParser {
   }
 
   private static parseLines(csv: string): string[][] {
-    const lines: string[][] = []
-    let currentLine: string[] = []
-    let currentField = ''
-    let inQuotes = false
-    let i = 0
+    const state = {
+      lines: [] as string[][],
+      currentLine: [] as string[],
+      currentField: '',
+      inQuotes: false,
+      i: 0,
+    }
 
-    while (i < csv.length) {
-      const char = csv[i]
+    while (state.i < csv.length) {
+      const char = csv[state.i]
 
       if (char === '"') {
-        if (inQuotes && csv[i + 1] === '"') {
-          // Escaped quote
-          currentField += '"'
-          i += 2
-        } else {
-          // Toggle quote state
-          inQuotes = !inQuotes
-          i++
-        }
-      } else if (char === ',' && !inQuotes) {
-        // Field delimiter
-        currentLine.push(currentField)
-        currentField = ''
-        i++
-      } else if ((char === '\n' || char === '\r') && !inQuotes) {
-        // Line delimiter
-        if (currentField || currentLine.length > 0) {
-          currentLine.push(currentField)
-        }
-        if (currentLine.length > 0) {
-          lines.push(currentLine)
-        }
-        currentLine = []
-        currentField = ''
-        if (char === '\r' && csv[i + 1] === '\n') {
-          i += 2
-        } else {
-          i++
-        }
+        this.handleQuote(csv, state)
+      } else if (char === ',' && !state.inQuotes) {
+        this.handleFieldDelimiter(state)
+      } else if ((char === '\n' || char === '\r') && !state.inQuotes) {
+        this.handleLineDelimiter(csv, state)
       } else {
-        currentField += char
-        i++
+        state.currentField += char
+        state.i++
       }
     }
 
-    // Add final field and line
-    if (currentField || currentLine.length > 0) {
-      currentLine.push(currentField)
-    }
-    if (currentLine.length > 0) {
-      lines.push(currentLine)
-    }
+    this.finalizeParsing(state)
+    return state.lines
+  }
 
-    return lines
+  private static handleQuote(
+    csv: string,
+    state: {
+      currentField: string
+      inQuotes: boolean
+      i: number
+    }
+  ): void {
+    if (state.inQuotes && csv[state.i + 1] === '"') {
+      state.currentField += '"'
+      state.i += 2
+    } else {
+      state.inQuotes = !state.inQuotes
+      state.i++
+    }
+  }
+
+  private static handleFieldDelimiter(state: {
+    currentLine: string[]
+    currentField: string
+    i: number
+  }): void {
+    state.currentLine.push(state.currentField)
+    state.currentField = ''
+    state.i++
+  }
+
+  private static handleLineDelimiter(
+    csv: string,
+    state: {
+      lines: string[][]
+      currentLine: string[]
+      currentField: string
+      i: number
+    }
+  ): void {
+    if (state.currentField || state.currentLine.length > 0) {
+      state.currentLine.push(state.currentField)
+    }
+    if (state.currentLine.length > 0) {
+      state.lines.push(state.currentLine)
+    }
+    state.currentLine = []
+    state.currentField = ''
+    if (csv[state.i] === '\r' && csv[state.i + 1] === '\n') {
+      state.i += 2
+    } else {
+      state.i++
+    }
+  }
+
+  private static finalizeParsing(state: {
+    lines: string[][]
+    currentLine: string[]
+    currentField: string
+  }): void {
+    if (state.currentField || state.currentLine.length > 0) {
+      state.currentLine.push(state.currentField)
+    }
+    if (state.currentLine.length > 0) {
+      state.lines.push(state.currentLine)
+    }
   }
 
   private static async normalize(
