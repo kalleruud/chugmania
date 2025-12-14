@@ -11,7 +11,25 @@ CREATE TABLE `__new_session_signups` (
 	FOREIGN KEY (`user`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
-INSERT INTO `__new_session_signups`("id", "updated_at", "created_at", "deleted_at", "session", "user", "response") SELECT "id", "updated_at", "created_at", "deleted_at", "session", "user", "response" FROM `session_signups`;--> statement-breakpoint
+INSERT INTO `__new_session_signups`("id", "updated_at", "created_at", "deleted_at", "session", "user", "response") 
+WITH uuid_gen AS (
+  SELECT 
+    session,
+    user,
+    response,
+    updated_at,
+    created_at,
+    deleted_at,
+    lower(
+      substr(hex(randomblob(4)), 1, 8) || '-' ||
+      substr(hex(randomblob(2)), 1, 4) || '-' ||
+      '4' || substr(hex(randomblob(2)), 1, 3) || '-' ||
+      printf('%x', 8 + (abs(random()) % 4)) || substr(hex(randomblob(2)), 1, 3) || '-' ||
+      substr(hex(randomblob(6)), 1, 12)
+    ) as id
+  FROM `session_signups`
+)
+SELECT id, updated_at, created_at, deleted_at, session, user, response FROM uuid_gen;--> statement-breakpoint
 DROP TABLE `session_signups`;--> statement-breakpoint
 ALTER TABLE `__new_session_signups` RENAME TO `session_signups`;--> statement-breakpoint
 PRAGMA foreign_keys=ON;
