@@ -37,6 +37,7 @@
     "drizzle-kit": "^0.31.7",
     "drizzle-orm": "^0.44.5",
     "express": "^5.1.0",
+    "fast-csv": "^5.0.5",
     "ics": "^3.8.1",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.540.0",
