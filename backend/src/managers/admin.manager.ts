@@ -45,14 +45,19 @@ export default class AdminManager {
     const toCreate: T[] = []
     const toUpdate: T[] = []
     for (const item of data) {
-      if (
-        await db
-          .select({ id: table.id })
-          .from(table)
-          .where(eq(table.id, item.id))
-      )
-        toUpdate.push(item)
-      else toCreate.push(item)
+      const existing = await db
+        .select({ id: table.id })
+        .from(table)
+        .where(eq(table.id, item.id))
+
+      if (existing.length > 0) toUpdate.push(item)
+      else {
+        toCreate.push({
+          ...item,
+          // Avoid setting createdAt to NULL when creating, this will crash db.
+          createdAt: item.createdAt === null ? undefined : item.createdAt,
+        })
+      }
     }
 
     await db.transaction(async tx => {
