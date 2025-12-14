@@ -19,7 +19,7 @@ export default function Home() {
 
       {loggedInUser?.role === 'admin' && (
         <PageHeader
-          className='mx-2'
+          className='mx-2 my-0'
           title={loc.no.admin.title}
           icon='ShieldExclamationIcon'
           to='/admin'

@@ -24,7 +24,6 @@ export default class CsvParser {
           const k = headerLine[i]?.trim()
           if (!k) continue
           const keyVal = await CsvParser.normalize(k, values[i])
-          console.log(keyVal?.key ?? k, keyVal?.value ?? 'N/A')
           if (!keyVal) continue
           entries.set(keyVal.key, keyVal.value)
         }
