@@ -28,7 +28,7 @@ const no = {
     },
     importRequest: {
       loading: 'Importer...',
-      success: (table: string, count: number) => `Importerte ${count} ${table}`,
+      success: (file: string) => `Importerte filen '${file}'`,
       error: (err: Error) => `Kunne ikke importere tabellen: ${err.message}`,
     },
     tables: {

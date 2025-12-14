@@ -115,7 +115,11 @@ function TableRow({
           .then(r => {
             if (!r.success) throw new Error(r.message)
           }),
-        loc.no.admin.importRequest
+        {
+          loading: loc.no.admin.importRequest.loading,
+          success: loc.no.admin.importRequest.success(file.name),
+          error: loc.no.admin.importRequest.error,
+        }
       )
     }
     setSelectedFiles(undefined)

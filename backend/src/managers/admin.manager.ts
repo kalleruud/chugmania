@@ -8,7 +8,7 @@ import { eq } from 'drizzle-orm'
 import type { SQLiteTable } from 'drizzle-orm/sqlite-core'
 import type { Socket } from 'socket.io'
 import loc from '../../../frontend/lib/locales'
-import db from '../../database/database'
+import db, { database } from '../../database/database'
 import {
   sessions,
   sessionSignups,
@@ -60,10 +60,11 @@ export default class AdminManager {
       }
     }
 
-    await db.transaction(async tx => {
-      if (toCreate.length > 0) await tx.insert(table).values(toCreate)
+    // Manual transaction management for better-sqlite3
+    database.transaction(() => {
+      if (toCreate.length > 0) db.insert(table).values(toCreate).run()
       for (const update of toUpdate) {
-        await tx.update(table).set(update).where(eq(table.id, update.id))
+        db.update(table).set(update).where(eq(table.id, update.id)).run()
       }
     })
   }

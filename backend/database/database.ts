@@ -7,4 +7,5 @@ const database = new Database(db_url)
 database.pragma('journal_mode = WAL')
 
 const db = drizzle(database, { schema })
+export { database }
 export default db
