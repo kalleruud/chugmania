@@ -1,5 +1,8 @@
 import AuthManager from '../managers/auth.manager'
 
+const JAN_01_2000 = 946681200000
+const DATE_KEYS = new Set(['createdAt', 'updatedAt', 'deletedAt', 'date'])
+
 export default class CsvParser {
   static async parse<T>(csv: string): Promise<T[]> {
     const [headerLine, ...lines] = csv.trim().split('\n')
@@ -28,8 +31,11 @@ export default class CsvParser {
     const val = value?.replaceAll('"', '').trim()
     if (val === '' || val === undefined) return { key, value: null }
 
-    if (key.endsWith('At'))
-      return { key, value: new Date(Number.parseFloat(val)) }
+    if (
+      DATE_KEYS.has(key) ||
+      (Number.isInteger(val) && Number.parseInt(val) >= JAN_01_2000)
+    )
+      return { key, value: new Date(Number.parseInt(val)) }
 
     if (key === 'password')
       return { key: 'passwordHash', value: await AuthManager.hash(val) }
