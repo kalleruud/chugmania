@@ -6,14 +6,15 @@
   "instructions": ["*.md"],
   "mcp": {
     "github": {
+      "enabled": false,
       "type": "remote",
       "url": "https://api.githubcopilot.com/mcp/",
-      "enabled": true,
       "headers": {
         "Authorization": "Bearer {file:./.secrets/github.key}",
       },
     },
     "sonarqube": {
+      "enabled": false,
       "type": "local",
       "command": [
         "docker",
