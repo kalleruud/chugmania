@@ -5,7 +5,7 @@ import {
 } from '@common/models/importCsv'
 import type { EventReq, EventRes } from '@common/models/socket.io'
 import { eq } from 'drizzle-orm'
-import type { IndexColumn, SQLiteTable } from 'drizzle-orm/sqlite-core'
+import type { SQLiteTable } from 'drizzle-orm/sqlite-core'
 import type { Socket } from 'socket.io'
 import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
@@ -41,18 +41,22 @@ export default class AdminManager {
     data: T[]
   ) {
     const table = AdminManager.TABLE_MAP[tableName]
-    const primaryKey: IndexColumn[] =
-      table === sessionSignups ? [table.session, table.user] : [table.id]
 
     const toCreate: T[] = []
     const toUpdate: T[] = []
     for (const item of data) {
-      if (item.id) toUpdate.push(item)
+      if (
+        await db
+          .select({ id: table.id })
+          .from(table)
+          .where(eq(table.id, item.id))
+      )
+        toUpdate.push(item)
       else toCreate.push(item)
     }
 
     await db.transaction(async tx => {
-      await tx.insert(table).values(toCreate)
+      if (toCreate.length > 0) await tx.insert(table).values(toCreate)
       for (const update of toUpdate) {
         await tx.update(table).set(update).where(eq(table.id, update.id))
       }
