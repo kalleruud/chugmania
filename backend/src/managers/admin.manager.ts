@@ -39,7 +39,7 @@ export default class AdminManager {
   private static async importRows<T extends Record<string, any>>(
     tableName: ExportCsvRequest['table'],
     data: T[]
-  ) {
+  ): Promise<{ created: number; updated: number }> {
     const table = AdminManager.TABLE_MAP[tableName]
 
     const toCreate: T[] = []
@@ -60,13 +60,26 @@ export default class AdminManager {
       }
     }
 
+    let created = 0
+    let updated = 0
     // Manual transaction management for better-sqlite3
     database.transaction(() => {
-      if (toCreate.length > 0) db.insert(table).values(toCreate).run()
+      if (toCreate.length > 0) {
+        const res = db.insert(table).values(toCreate).run()
+        created = res.changes
+      }
+
       for (const update of toUpdate) {
-        db.update(table).set(update).where(eq(table.id, update.id)).run()
+        const res = db
+          .update(table)
+          .set(update)
+          .where(eq(table.id, update.id))
+          .run()
+        updated += res.changes
       }
     })()
+
+    return { created, updated }
   }
 
   static async onImportCsv(
@@ -85,7 +98,7 @@ export default class AdminManager {
       request.table
     )
     const data = await CsvParser.toObjects(request.content)
-    await AdminManager.importRows(request.table, data)
+    const results = await AdminManager.importRows(request.table, data)
 
     console.info(
       new Date().toISOString(),
@@ -95,7 +108,7 @@ export default class AdminManager {
 
     return {
       success: true,
-      count: data.length,
+      ...results,
     }
   }
 

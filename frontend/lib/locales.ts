@@ -28,7 +28,8 @@ const no = {
     },
     importRequest: {
       loading: 'Importer...',
-      success: (file: string) => `Importerte filen '${file}'`,
+      success: (file: string, created: number, updated: number) =>
+        `Importerte filen '${file}', opprettet ${created} og oppdaterte ${updated}`,
       error: (err: Error) => `Kunne ikke importere tabellen: ${err.message}`,
     },
     tables: {

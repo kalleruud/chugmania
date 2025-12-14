@@ -21,7 +21,8 @@ export function isExportCsvRequest(data: any): data is ExportCsvRequest {
 }
 
 export type ImportCsvResponse = SuccessResponse & {
-  count: number
+  created: number
+  updated: number
 }
 
 export function isImportCsvResponse(data: any): data is ImportCsvResponse {

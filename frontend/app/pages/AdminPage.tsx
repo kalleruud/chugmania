@@ -105,23 +105,28 @@ function TableRow({
     }
 
     setIsLoading(true)
-    for (const file of selectedFiles) {
-      toast.promise(
-        socket
+
+    await Promise.all(
+      Array.from(selectedFiles).map(async file => {
+        return socket
           .emitWithAck('import_csv', {
             table,
             content: await file.text(),
           })
           .then(r => {
-            if (!r.success) throw new Error(r.message)
-          }),
-        {
-          loading: loc.no.admin.importRequest.loading,
-          success: loc.no.admin.importRequest.success(file.name),
-          error: loc.no.admin.importRequest.error,
-        }
-      )
-    }
+            if (r.success)
+              return toast.success(
+                loc.no.admin.importRequest.success(
+                  file.name,
+                  r.created,
+                  r.updated
+                )
+              )
+            toast.error(r.message)
+          })
+      })
+    )
+
     setSelectedFiles(undefined)
     setIsLoading(false)
   }
