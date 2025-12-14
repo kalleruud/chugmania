@@ -63,9 +63,10 @@ export default class CsvParser {
           const value = obj[header]
           if (value === null || value === undefined) return ''
           if (value instanceof Date) return String(value.getTime())
-          if (typeof value === 'string' && value.includes(','))
-            return `"${value.replaceAll(/"/, '""')}"`
-          return String(value)
+          const str = String(value)
+          if (str.includes(',') || str.includes('\n') || str.includes('"'))
+            return `"${str.replaceAll(/"/g, '""')}"`
+          return str
         })
         .join(',')
     )
