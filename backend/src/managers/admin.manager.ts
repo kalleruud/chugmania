@@ -1,7 +1,7 @@
-import type { ExportCsvResponse } from '@common/models/importCsv'
 import {
   isExportCsvRequest,
   isImportCsvRequest,
+  type ExportCsvRequest,
 } from '@common/models/importCsv'
 import type { EventReq, EventRes } from '@common/models/socket.io'
 import { sql } from 'drizzle-orm'
@@ -13,8 +13,16 @@ import CsvParser from '../utils/csv-parser'
 import AuthManager from './auth.manager'
 
 export default class AdminManager {
+  private static readonly EXCLUDED_COL_EXPORT = {
+    users: new Set(['passwordHash']),
+    tracks: new Set(),
+    sessions: new Set(),
+    timeEntries: new Set(),
+    sessionSignups: new Set(),
+  } satisfies Record<ExportCsvRequest['table'], Set<string>>
+
   private static async importUsers(data: string) {
-    const parsed = await CsvParser.parse<Record<string, any>>(data)
+    const parsed = await CsvParser.toObjects(data)
     if (parsed.length === 0) return { imported: 0, total: 0 }
 
     // Filter out rows missing required passwordHash for new inserts
@@ -52,7 +60,7 @@ export default class AdminManager {
   }
 
   private static async importTracks(data: string) {
-    const values = await CsvParser.parse<typeof tracks.$inferInsert>(data)
+    const values = await CsvParser.toObjects<typeof tracks.$inferInsert>(data)
     if (values.length === 0) return { imported: 0, total: 0 }
 
     const result = await db
@@ -73,7 +81,7 @@ export default class AdminManager {
   }
 
   private static async importSessions(data: string) {
-    const values = await CsvParser.parse<typeof sessions.$inferInsert>(data)
+    const values = await CsvParser.toObjects<typeof sessions.$inferInsert>(data)
     if (values.length === 0) return { imported: 0, total: 0 }
 
     const result = await db
@@ -96,7 +104,8 @@ export default class AdminManager {
   }
 
   private static async importTimeEntries(data: string) {
-    const values = await CsvParser.parse<typeof timeEntries.$inferInsert>(data)
+    const values =
+      await CsvParser.toObjects<typeof timeEntries.$inferInsert>(data)
     if (values.length === 0) return { imported: 0, total: 0 }
 
     const result = await db
@@ -169,23 +178,16 @@ export default class AdminManager {
   }
 
   private static filterColumnsForExport(
-    records: object[],
-    tableName: string
+    tableName: ExportCsvRequest['table'],
+    records: object[]
   ): object[] {
-    const excludeColumns =
-      {
-        users: ['passwordHash'],
-        tracks: [],
-        sessions: [],
-        timeEntries: [],
-      }[tableName] || []
-
-    if (excludeColumns.length === 0) return records
+    const excludeColumns = AdminManager.EXCLUDED_COL_EXPORT[tableName]
+    if (excludeColumns.size === 0) return records
 
     return records.map(record => {
       const filtered: Record<string, any> = {}
       for (const [key, value] of Object.entries(record)) {
-        if (!excludeColumns.includes(key)) {
+        if (!excludeColumns.has(key)) {
           filtered[key] = value
         }
       }
@@ -198,7 +200,7 @@ export default class AdminManager {
     request: EventReq<'export_csv'>
   ): Promise<EventRes<'export_csv'>> {
     if (!isExportCsvRequest(request))
-      throw new Error('Invalid CSV export request payload')
+      throw new Error(loc.no.error.messages.invalid_request('ExportCsvRequest'))
 
     await AuthManager.checkAuth(socket, ['admin'])
 
@@ -209,63 +211,20 @@ export default class AdminManager {
       request.table
     )
 
-    let records: object[] = []
-    switch (request.table) {
-      case 'users':
-        records = await db.query.users.findMany()
-        break
-      case 'tracks':
-        records = await db.query.tracks.findMany()
-        break
-      case 'timeEntries':
-        records = await db.query.timeEntries.findMany()
-        break
-      case 'sessions':
-        records = await db.query.sessions.findMany()
-        break
-      case 'sessionSignups':
-        records = await db.query.sessionSignups.findMany()
-        break
-      default:
-        throw new Error(loc.no.error.messages.not_in_db(request.table))
-    }
+    // @ts-expect-error
+    const records = await db.query[request.table].findMany()
 
     // Filter out sensitive columns
-    records = AdminManager.filterColumnsForExport(records, request.table)
+    const filtered = AdminManager.filterColumnsForExport(request.table, records)
 
-    const csv = AdminManager.objectsToCsv(records)
-    if (csv === null) {
+    const csv = CsvParser.toCsv(filtered)
+    if (!csv) {
       throw new Error(loc.no.error.messages.missing_data)
     }
 
     return {
       success: true,
       csv,
-    } satisfies ExportCsvResponse
-  }
-
-  private static objectsToCsv<T extends Record<string, any>>(
-    objects: T[]
-  ): string | null {
-    if (objects.length === 0) {
-      console.warn('No objects to convert to CSV')
-      return null
     }
-
-    const headers = Object.keys(objects[0])
-    const rows = objects.map(obj =>
-      headers
-        .map(header => {
-          const value = obj[header]
-          if (value === null || value === undefined) return ''
-          if (value instanceof Date) return String(value.getTime())
-          if (typeof value === 'string' && value.includes(','))
-            return `"${value.replaceAll(/"/, '""')}"`
-          return String(value)
-        })
-        .join(',')
-    )
-
-    return [headers.join(','), ...rows].join('\n')
   }
 }

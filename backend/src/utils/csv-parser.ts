@@ -1,14 +1,19 @@
 import AuthManager from '../managers/auth.manager'
 
-const JAN_01_2000 = 946681200000
-const DATE_KEYS = new Set(['createdAt', 'updatedAt', 'deletedAt', 'date'])
-
 export default class CsvParser {
-  static async parse<T>(csv: string): Promise<T[]> {
+  private static readonly JAN_01_2000 = 946681200000
+  private static readonly DATE_KEYS = new Set([
+    'createdAt',
+    'updatedAt',
+    'deletedAt',
+    'date',
+  ])
+
+  static async toObjects(csv: string) {
     const [headerLine, ...lines] = csv.trim().split('\n')
     const headers = headerLine.split(',')
 
-    const objects = await Promise.all(
+    return await Promise.all(
       lines.map(async line => {
         const values = line.split(',')
         const entries = new Map()
@@ -21,11 +26,9 @@ export default class CsvParser {
           entries.set(key, value)
         }
 
-        return Object.fromEntries(entries)
+        return Object.fromEntries(entries) as Record<string, any>
       })
     )
-
-    return objects as T[]
   }
 
   private static async normalize(key: string, value: string | undefined) {
@@ -33,8 +36,8 @@ export default class CsvParser {
     if (val === '' || val === undefined) return { key, value: null }
 
     if (
-      DATE_KEYS.has(key) ||
-      (Number.isInteger(val) && Number.parseInt(val) >= JAN_01_2000)
+      CsvParser.DATE_KEYS.has(key) ||
+      (Number.isInteger(val) && Number.parseInt(val) >= CsvParser.JAN_01_2000)
     )
       return { key, value: new Date(Number.parseInt(val)) }
 
@@ -42,5 +45,28 @@ export default class CsvParser {
       return { key: 'passwordHash', value: await AuthManager.hash(val) }
 
     return { key, value: val }
+  }
+
+  public static toCsv<T extends Record<string, any>>(objects: T[]): string | null {
+    if (objects.length === 0) {
+      console.warn('No objects to convert to CSV')
+      return null
+    }
+
+    const headers = Object.keys(objects[0])
+    const rows = objects.map(obj =>
+      headers
+        .map(header => {
+          const value = obj[header]
+          if (value === null || value === undefined) return ''
+          if (value instanceof Date) return String(value.getTime())
+          if (typeof value === 'string' && value.includes(','))
+            return `"${value.replaceAll(/"/, '""')}"`
+          return String(value)
+        })
+        .join(',')
+    )
+
+    return [headers.join(','), ...rows].join('\n')
   }
 }
