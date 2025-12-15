@@ -1,31 +1,85 @@
-import type { Socket } from 'socket.io'
-
-import type { ExportCsvResponse } from '@common/models/importCsv'
 import {
   isExportCsvRequest,
   isImportCsvRequest,
+  type ExportCsvRequest,
 } from '@common/models/importCsv'
 import type { EventReq, EventRes } from '@common/models/socket.io'
+import { eq } from 'drizzle-orm'
+import type { SQLiteTable } from 'drizzle-orm/sqlite-core'
+import type { Socket } from 'socket.io'
 import loc from '../../../frontend/lib/locales'
-import db from '../../database/database'
-import * as schema from '../../database/schema'
-import { sessions, timeEntries, tracks, users } from '../../database/schema'
+import db, { database } from '../../database/database'
+import {
+  sessions,
+  sessionSignups,
+  timeEntries,
+  tracks,
+  users,
+} from '../../database/schema'
 import CsvParser from '../utils/csv-parser'
 import AuthManager from './auth.manager'
 
 export default class AdminManager {
-  private static async import(
-    into: (typeof schema)[keyof typeof schema],
-    data: string
-  ) {
-    const values = await CsvParser.parse<typeof into.$inferInsert>(data)
-    const inserts = await db
-      .insert(into)
-      .values(values)
-      .onConflictDoNothing()
-      .returning()
+  private static readonly EXCLUDED_COL_EXPORT = {
+    users: new Set(['passwordHash']),
+    tracks: new Set(),
+    sessions: new Set(),
+    timeEntries: new Set(),
+    sessionSignups: new Set(),
+  } satisfies Record<ExportCsvRequest['table'], Set<string>>
 
-    return { imported: inserts.length, total: values.length }
+  private static readonly TABLE_MAP = {
+    users: users,
+    tracks: tracks,
+    sessions: sessions,
+    timeEntries: timeEntries,
+    sessionSignups: sessionSignups,
+  } satisfies Record<ExportCsvRequest['table'], SQLiteTable>
+
+  private static async importRows<T extends Record<string, any>>(
+    tableName: ExportCsvRequest['table'],
+    data: T[]
+  ): Promise<{ created: number; updated: number }> {
+    const table = AdminManager.TABLE_MAP[tableName]
+
+    // Fetch all existing IDs in a single query instead of per-row
+    const existingRecords = await db.select({ id: table.id }).from(table)
+    const existingIds = new Set(existingRecords.map(r => r.id))
+
+    const toCreate: T[] = []
+    const toUpdate: T[] = []
+    for (const item of data) {
+      if (existingIds.has(item.id)) {
+        toUpdate.push(item)
+      } else {
+        toCreate.push({
+          ...item,
+          // Avoid setting createdAt to NULL when creating, this will crash db.
+          createdAt: item.createdAt === null ? undefined : item.createdAt,
+        })
+      }
+    }
+
+    let created = 0
+    let updated = 0
+    // Manual transaction management for better-sqlite3
+    database.transaction(() => {
+      if (toCreate.length > 0) {
+        const res = db.insert(table).values(toCreate).run()
+        created = res.changes
+      }
+
+      for (const update of toUpdate) {
+        const res = db
+          .update(table)
+          .set(update)
+          .where(eq(table.id, update.id))
+          .run()
+        updated += res.changes
+      }
+    })()
+
+    return { created, updated }
   }
 
   static async onImportCsv(
@@ -33,7 +87,7 @@ export default class AdminManager {
     request: EventReq<'import_csv'>
   ): Promise<EventRes<'import_csv'>> {
     if (!isImportCsvRequest(request))
-      throw new Error('Invalid CSV import request payload')
+      throw new Error(loc.no.error.messages.invalid_request('ImportCsvRequest'))
 
     await AuthManager.checkAuth(socket, ['admin'])
 
@@ -43,36 +97,37 @@ export default class AdminManager {
       'Received CSV file:',
       request.table
     )
-
-    let task: ReturnType<typeof AdminManager.import> | undefined = undefined
-    switch (request.table) {
-      case 'users':
-        task = AdminManager.import(users, request.content)
-        break
-      case 'tracks':
-        task = AdminManager.import(tracks, request.content)
-        break
-      case 'timeEntries':
-        task = AdminManager.import(timeEntries, request.content)
-        break
-      case 'sessions':
-        task = AdminManager.import(sessions, request.content)
-        break
-      default:
-        throw new Error(`Invalid table: '${request.table}'`)
-    }
-
-    const data = await task
+    const data = await CsvParser.toObjects(request.content)
+    const results = await AdminManager.importRows(request.table, data)
 
     console.info(
       new Date().toISOString(),
       socket.id,
-      `Imported ${data.imported}/${data.total} ${request.table}`
+      `Imported ${data.length} ${request.table}`
     )
 
     return {
       success: true,
+      ...results,
     }
+  }
+
+  private static filterColumnsForExport(
+    tableName: ExportCsvRequest['table'],
+    records: object[]
+  ): object[] {
+    const excludeColumns = AdminManager.EXCLUDED_COL_EXPORT[tableName]
+    if (excludeColumns.size === 0) return records
+
+    return records.map(record => {
+      const filtered: Record<string, any> = {}
+      for (const [key, value] of Object.entries(record)) {
+        if (!excludeColumns.has(key)) {
+          filtered[key] = value
+        }
+      }
+      return filtered
+    })
   }
 
   static async onExportCsv(
@@ -80,7 +135,7 @@ export default class AdminManager {
     request: EventReq<'export_csv'>
   ): Promise<EventRes<'export_csv'>> {
     if (!isExportCsvRequest(request))
-      throw new Error('Invalid CSV export request payload')
+      throw new Error(loc.no.error.messages.invalid_request('ExportCsvRequest'))
 
     await AuthManager.checkAuth(socket, ['admin'])
 
@@ -91,57 +146,21 @@ export default class AdminManager {
       request.table
     )
 
-    let records: object[] = []
-    switch (request.table) {
-      case 'users':
-        records = await db.query.users.findMany()
-        break
-      case 'tracks':
-        records = await db.query.tracks.findMany()
-        break
-      case 'timeEntries':
-        records = await db.query.timeEntries.findMany()
-        break
-      case 'sessions':
-        records = await db.query.sessions.findMany()
-        break
-      default:
-        throw new Error(`Invalid table: '${request.table}'`)
-    }
+    // Use type-safe table lookup
+    const table = AdminManager.TABLE_MAP[request.table]
+    const records = await db.select().from(table)
 
-    const csv = AdminManager.objectsToCsv(records)
-    if (csv === null) {
+    // Filter out sensitive columns
+    const filtered = AdminManager.filterColumnsForExport(request.table, records)
+
+    const csv = CsvParser.toCsv(filtered)
+    if (!csv) {
       throw new Error(loc.no.error.messages.missing_data)
     }
 
     return {
       success: true,
       csv,
-    } satisfies ExportCsvResponse
-  }
-
-  private static objectsToCsv<T extends Record<string, any>>(
-    objects: T[]
-  ): string | null {
-    if (objects.length === 0) {
-      console.warn('No objects to convert to CSV')
-      return null
     }
-
-    const headers = Object.keys(objects[0])
-    const rows = objects.map(obj =>
-      headers
-        .map(header => {
-          const value = obj[header]
-          if (value === null || value === undefined) return ''
-          if (value instanceof Date) return String(value.getTime())
-          if (typeof value === 'string' && value.includes(','))
-            return `"${value.replaceAll(/"/, '""')}"`
-          return String(value)
-        })
-        .join(',')
-    )
-
-    return [headers.join(','), ...rows].join('\n')
   }
 }

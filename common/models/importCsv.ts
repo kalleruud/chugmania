@@ -20,11 +20,11 @@ export function isExportCsvRequest(data: any): data is ExportCsvRequest {
   return data.table && typeof data.table === 'string'
 }
 
-export type ExportCsvResponse = SuccessResponse & {
-  csv: string
+export type ImportCsvResponse = SuccessResponse & {
+  created: number
+  updated: number
 }
 
-export function isExportCsvResponse(data: any): data is ExportCsvResponse {
-  if (typeof data !== 'object' || data === null) return false
-  return data.csv && typeof data.csv === 'string'
+export type ExportCsvResponse = SuccessResponse & {
+  csv: string
 }

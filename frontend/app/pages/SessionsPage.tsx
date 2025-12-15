@@ -40,8 +40,9 @@ export default function SessionsPage() {
 
 export function SessionsContent({
   className,
+  showLink,
   ...props
-}: ComponentProps<'div'>) {
+}: Readonly<{ showLink?: boolean } & ComponentProps<'div'>>) {
   const { loggedInUser, isLoggedIn } = useAuth()
   const { sessions } = useData()
 
@@ -60,6 +61,7 @@ export function SessionsContent({
       <PageHeader
         title={loc.no.session.title}
         description={loc.no.session.description}
+        to={showLink ? '/sessions' : undefined}
         icon='CalendarIcon'
       />
 

@@ -54,9 +54,9 @@ data/       Local SQLite database (created automatically, ignored by Git)
 
 Key backend flows live under `backend/src/managers/`, while shared DTOs reside in `common/models/`. Frontend routes sit in `frontend/app/pages/` and reuse components from `frontend/components/`. Date formatting utilities are centralized in `common/utils/date.ts` with Norwegian localization and relative date display.
 
-## CSV Imports
+## CSV Import/Export
 
-Admins can visit `/admin` to upload CSV files matching the sample schemas in `data/*.csv`. Each upload reports inserted, updated, and skipped rows to confirm the data outcome. Ensure the column order mirrors the template files (e.g., `email,firstName,lastName,id,shortName,password` for users).
+Admins can visit `/admin` to upload and download CSV files for all database tables. Supported tables: `users`, `tracks`, `sessions`, `timeEntries`, and `sessionSignups`. Each upload reports created and updated row counts to confirm the data outcome. Ensure the column order matches the exported format. When adding new database tables, update `AdminManager` in `backend/src/managers/admin.manager.ts` to include them in the `TABLE_MAP` and `EXCLUDED_COL_EXPORT` configuration.
 
 ## Sessions Module
 

@@ -1,17 +1,8 @@
-import {
-  blob,
-  integer,
-  primaryKey,
-  sqliteTable,
-  text,
-} from 'drizzle-orm/sqlite-core'
+import { blob, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { randomUUID } from 'node:crypto'
 
-const id = {
-  id: text().primaryKey().$defaultFn(randomUUID),
-}
-
 const metadata = {
+  id: text().primaryKey().$defaultFn(randomUUID),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).$onUpdateFn(
     () => new Date()
   ),
@@ -26,7 +17,6 @@ export type SessionResponse = 'yes' | 'no' | 'maybe'
 export type SessionStatus = 'confirmed' | 'tentative' | 'cancelled'
 
 export const users = sqliteTable('users', {
-  ...id,
   ...metadata,
   email: text().notNull().unique(),
   firstName: text('first_name').notNull(),
@@ -43,7 +33,6 @@ export type TrackLevel = 'white' | 'green' | 'blue' | 'red' | 'black' | 'custom'
 export type TrackType = 'drift' | 'valley' | 'lagoon' | 'stadium'
 
 export const tracks = sqliteTable('tracks', {
-  ...id,
   ...metadata,
   number: integer().notNull(),
   level: text().$type<TrackLevel>().notNull(),
@@ -51,7 +40,6 @@ export const tracks = sqliteTable('tracks', {
 })
 
 export const sessions = sqliteTable('sessions', {
-  ...id,
   ...metadata,
   name: text().notNull(),
   description: text(),
@@ -63,23 +51,18 @@ export const sessions = sqliteTable('sessions', {
     .$default(() => 'confirmed'),
 })
 
-export const sessionSignups = sqliteTable(
-  'session_signups',
-  {
-    ...metadata,
-    session: text()
-      .notNull()
-      .references(() => sessions.id, { onDelete: 'cascade' }),
-    user: text()
-      .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
-    response: text().$type<SessionResponse>().notNull(),
-  },
-  table => [primaryKey({ columns: [table.session, table.user] })]
-)
+export const sessionSignups = sqliteTable('session_signups', {
+  ...metadata,
+  session: text()
+    .notNull()
+    .references(() => sessions.id, { onDelete: 'cascade' }),
+  user: text()
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  response: text().$type<SessionResponse>().notNull(),
+})
 
 export const timeEntries = sqliteTable('time_entries', {
-  ...id,
   ...metadata,
   user: text()
     .notNull()

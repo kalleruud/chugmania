@@ -96,7 +96,8 @@ function setup<Ev extends keyof ClientToServerEvents>(
   s.on(event, ((r: EventReq<Ev>, callback?: any) =>
     handler(s, r)
       .then(callback)
-      .catch(e =>
+      .catch(e => {
+        console.warn(e.message)
         callback({ success: false, message: e.message } satisfies ErrorResponse)
-      )) as any)
+      })) as any)
 }

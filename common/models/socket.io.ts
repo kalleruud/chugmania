@@ -2,6 +2,7 @@ import type {
   ExportCsvRequest,
   ExportCsvResponse,
   ImportCsvRequest,
+  ImportCsvResponse,
 } from '@common/models/importCsv'
 import type { LoginRequest, RegisterRequest } from './auth'
 import type {
@@ -90,7 +91,7 @@ export interface ClientToServerEvents {
   ) => void
   import_csv: (
     r: ImportCsvRequest,
-    callback: (r: SuccessResponse | ErrorResponse) => void
+    callback: (r: ImportCsvResponse | ErrorResponse) => void
   ) => void
   export_csv: (
     r: ExportCsvRequest,

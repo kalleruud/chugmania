@@ -1,9 +1,11 @@
+import { PageHeader } from '@/components/PageHeader'
 import LoginCard from '@/components/user/LoginCard'
 import UserCard from '@/components/user/UserCard'
 import { useAuth } from '@/contexts/AuthContext'
+import loc from '@/lib/locales'
 import { SessionsContent } from './SessionsPage'
-import { TracksList } from './TracksPage'
-import { UsersList } from './UsersPage'
+import { TracksContent } from './TracksPage'
+import { UsersContent } from './UsersPage'
 
 export default function Home() {
   const { loggedInUser, isLoggedIn } = useAuth()
@@ -15,9 +17,20 @@ export default function Home() {
 
       <LoginCard />
 
-      <SessionsContent className='bg-background rounded-sm border p-2' />
-      <TracksList className='bg-background rounded-sm border p-2' />
-      <UsersList className='bg-background rounded-sm border p-2' />
+      {loggedInUser?.role === 'admin' && (
+        <PageHeader
+          className='mx-2 my-0'
+          title={loc.no.admin.title}
+          icon='ShieldExclamationIcon'
+          to='/admin'
+        />
+      )}
+      <SessionsContent
+        className='bg-background rounded-sm border p-2'
+        showLink
+      />
+      <TracksContent className='bg-background rounded-sm border p-2' showLink />
+      <UsersContent className='bg-background rounded-sm border p-2' showLink />
     </div>
   )
 }

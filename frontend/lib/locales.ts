@@ -1,5 +1,6 @@
 import { getRandomItem } from '@/app/utils/utils'
 import type { GapType } from '@/components/timeentries/TimeEntryRow'
+import type { ExportCsvRequest } from '@common/models/importCsv'
 import type {
   SessionResponse,
   SessionStatus,
@@ -12,6 +13,33 @@ export type Localization = typeof no
 export type Locale = 'no'
 
 const no = {
+  admin: {
+    title: 'Admin',
+    description: 'Det som skjer i admin panelet, blir i admin panelet.',
+    dropFiles: 'Drop it like it hot',
+    import: 'Importer',
+    export: 'Eksporter',
+    selectFiles: 'Velg filer',
+    tableManagement: 'Tabeller',
+    exportRequest: {
+      loading: 'Eksporterer...',
+      success: 'Tabellen ble eksportert',
+      error: (err: Error) => `Kunne ikke eksportere tabellen: ${err.message}`,
+    },
+    importRequest: {
+      loading: 'Importer...',
+      success: (file: string, created: number, updated: number) =>
+        `Importerte filen '${file}', opprettet ${created} og oppdaterte ${updated}`,
+      error: (err: Error) => `Kunne ikke importere tabellen: ${err.message}`,
+    },
+    tables: {
+      sessionSignups: 'Sesssion Signups',
+      sessions: 'Sessions',
+      timeEntries: 'Rundetider',
+      tracks: 'Baner',
+      users: 'Spillere',
+    } satisfies Record<ExportCsvRequest['table'], string>,
+  },
   user: {
     notLoggedIn: 'Du er ikke logget inn',
     joined: 'Chugget siden',
@@ -150,6 +178,7 @@ const no = {
     ]),
     retryAction: 'Gå tilbake',
     messages: {
+      missing_files: 'Du har ikke valgt noen filer',
       missing_data: 'Ingen data ble sendt',
       missing_jwt: 'Du har ingen JWT token... Går det an å være mer idiot?',
       incorrect_login: 'Brukernavn eller passord er feil, prøv igjen.',

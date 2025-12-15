@@ -33,6 +33,7 @@ import { PageHeader } from '../../components/PageHeader'
 
 type UsersPageProps = {
   showAll?: boolean
+  showLink?: boolean
 } & ComponentProps<'div'>
 
 function UserRowList({ users }: Readonly<{ users: UserInfo[] }>) {
@@ -70,12 +71,16 @@ export default function UsersPage(props: Readonly<UsersPageProps>) {
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
-      <UsersList {...props} showAll />
+      <UsersContent {...props} showAll />
     </div>
   )
 }
 
-export function UsersList({ className, showAll }: Readonly<UsersPageProps>) {
+export function UsersContent({
+  className,
+  showAll,
+  showLink,
+}: Readonly<UsersPageProps>) {
   const { users: ud } = useData()
   const { isLoggedIn, loggedInUser, isLoading } = useAuth()
   const isModerator = isLoggedIn && loggedInUser.role !== 'user'
@@ -111,6 +116,7 @@ export function UsersList({ className, showAll }: Readonly<UsersPageProps>) {
       <PageHeader
         title={loc.no.users.title}
         description={loc.no.users.description}
+        to={showLink ? '/users' : undefined}
         icon={'UsersIcon'}
       />
 
