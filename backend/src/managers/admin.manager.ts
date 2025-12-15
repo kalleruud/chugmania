@@ -146,8 +146,9 @@ export default class AdminManager {
       request.table
     )
 
-    // @ts-expect-error
-    const records = await db.query[request.table].findMany()
+    // Use type-safe table lookup
+    const table = AdminManager.TABLE_MAP[request.table]
+    const records = await db.select().from(table)
 
     // Filter out sensitive columns
     const filtered = AdminManager.filterColumnsForExport(request.table, records)
