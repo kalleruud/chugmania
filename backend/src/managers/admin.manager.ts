@@ -42,16 +42,16 @@ export default class AdminManager {
   ): Promise<{ created: number; updated: number }> {
     const table = AdminManager.TABLE_MAP[tableName]
 
+    // Fetch all existing IDs in a single query instead of per-row
+    const existingRecords = await db.select({ id: table.id }).from(table)
+    const existingIds = new Set(existingRecords.map(r => r.id))
+
     const toCreate: T[] = []
     const toUpdate: T[] = []
     for (const item of data) {
-      const existing = await db
-        .select({ id: table.id })
-        .from(table)
-        .where(eq(table.id, item.id))
-
-      if (existing.length > 0) toUpdate.push(item)
-      else {
+      if (existingIds.has(item.id)) {
+        toUpdate.push(item)
+      } else {
         toCreate.push({
           ...item,
           // Avoid setting createdAt to NULL when creating, this will crash db.
