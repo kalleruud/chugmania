@@ -106,37 +106,26 @@ function TableRow({
 
     setIsLoading(true)
 
-    const files = Array.from(selectedFiles)
-    const results = await Promise.allSettled(
-      files.map(async file => {
-        const response = await socket.emitWithAck('import_csv', {
-          table,
-          content: await file.text(),
-        })
-        return { file, response }
+    await Promise.all(
+      Array.from(selectedFiles).map(async file => {
+        return socket
+          .emitWithAck('import_csv', {
+            table,
+            content: await file.text(),
+          })
+          .then(r => {
+            if (r.success)
+              return toast.success(
+                loc.no.admin.importRequest.success(
+                  file.name,
+                  r.created,
+                  r.updated
+                )
+              )
+            toast.error(r.message)
+          })
       })
     )
-
-    // Report results for each file individually
-    results.forEach((result, index) => {
-      const file = files[index]
-      if (result.status === 'fulfilled') {
-        const { response } = result.value
-        if (response.success) {
-          toast.success(
-            loc.no.admin.importRequest.success(
-              file.name,
-              response.created,
-              response.updated
-            )
-          )
-        } else {
-          toast.error(`${file.name}: ${response.message}`)
-        }
-      } else {
-        toast.error(`${file.name}: Import failed`)
-      }
-    })
 
     setSelectedFiles(undefined)
     setIsLoading(false)
