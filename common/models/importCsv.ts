@@ -25,20 +25,6 @@ export type ImportCsvResponse = SuccessResponse & {
   updated: number
 }
 
-export function isImportCsvResponse(data: any): data is ImportCsvResponse {
-  if (typeof data !== 'object' || data === null) return false
-  return (
-    typeof data.created === 'number' &&
-    typeof data.updated === 'number' &&
-    typeof data.success === 'boolean'
-  )
-}
-
 export type ExportCsvResponse = SuccessResponse & {
   csv: string
-}
-
-export function isExportCsvResponse(data: any): data is ExportCsvResponse {
-  if (typeof data !== 'object' || data === null) return false
-  return data.csv && typeof data.csv === 'string'
 }
