@@ -52,7 +52,7 @@ export default function AdminPage() {
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>Admin</BreadcrumbPage>
+            <BreadcrumbPage>{loc.no.admin.title}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
