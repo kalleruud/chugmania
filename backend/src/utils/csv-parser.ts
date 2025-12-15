@@ -136,18 +136,26 @@ export default class CsvParser {
       return { key: 'passwordHash', value: await AuthManager.hash(val) }
     }
 
-    if (
-      CsvParser.DATE_KEYS.has(key) ||
-      (Number.isInteger(val) && Number.parseInt(val) >= CsvParser.JAN_01_2000)
-    ) {
-      return {
-        key,
-        value: new Date(Number.isInteger(val) ? Number.parseInt(val) : val),
-      }
+    // Check if field should be parsed as a date
+    if (CsvParser.DATE_KEYS.has(key)) {
+      const timestamp = Number.isNaN(Number(val)) ? val : Number(val)
+      return { key, value: new Date(timestamp) }
     }
 
-    if (Number.isInteger(+val)) {
-      return { key, value: Number.parseFloat(val) }
+    // Check if numeric string represents a timestamp
+    const numVal = Number(val)
+    if (!Number.isNaN(numVal) && numVal >= CsvParser.JAN_01_2000) {
+      return { key, value: new Date(numVal) }
+    }
+
+    // Check if value is a plain integer
+    if (Number.isInteger(numVal)) {
+      return { key, value: numVal }
+    }
+
+    // Check if value is a number
+    if (!Number.isNaN(numVal)) {
+      return { key, value: numVal }
     }
 
     return { key, value: val }
