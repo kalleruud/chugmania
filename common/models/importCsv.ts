@@ -27,7 +27,11 @@ export type ImportCsvResponse = SuccessResponse & {
 
 export function isImportCsvResponse(data: any): data is ImportCsvResponse {
   if (typeof data !== 'object' || data === null) return false
-  return typeof data.imported === 'number' && typeof data.total === 'number'
+  return (
+    typeof data.created === 'number' &&
+    typeof data.updated === 'number' &&
+    typeof data.success === 'boolean'
+  )
 }
 
 export type ExportCsvResponse = SuccessResponse & {
