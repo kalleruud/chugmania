@@ -1,3 +1,4 @@
+import { TextField } from '@/components/FormFields'
 import Combobox from '@/components/combobox'
 import { SessionRow } from '@/components/session/SessionRow'
 import { TrackRow } from '@/components/track/TrackRow'
@@ -103,6 +104,8 @@ export default function MatchInput({
   const [status, setStatus] = useState<MatchStatus>(
     (editingMatch.status as MatchStatus) ?? 'planned'
   )
+  const [stage, setStage] = useState(editingMatch.stage ?? 'group')
+  const [comment, setComment] = useState(editingMatch.comment ?? '')
 
   function handleCreate(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -119,6 +122,8 @@ export default function MatchInput({
       session: session?.id,
       winner: winner,
       status: status,
+      stage: stage,
+      comment: comment,
       duration: null,
     }
 
@@ -144,6 +149,8 @@ export default function MatchInput({
       session: session?.id,
       winner: winner,
       status: status,
+      stage: stage,
+      comment: comment,
     }
 
     toast.promise(
@@ -223,6 +230,26 @@ export default function MatchInput({
           />
         )}
       </div>
+
+      <div className='flex gap-4'>
+        <div className='flex-1'>
+          <TextField
+            id='stage'
+            name={loc.no.match.form.stage}
+            value={stage}
+            onChange={e => setStage(e.target.value)}
+            disabled={disabled}
+          />
+        </div>
+      </div>
+
+      <TextField
+        id='comment'
+        name={loc.no.match.form.comment}
+        value={comment}
+        onChange={e => setComment(e.target.value)}
+        disabled={disabled}
+      />
 
       <div className='flex gap-4'>
         <div className='flex-1'>

@@ -186,6 +186,8 @@ const no = {
       session: 'Session (Valgfritt)',
       status: 'Status',
       winner: 'Vinner',
+      stage: 'Stage',
+      comment: 'Kommentar',
     },
     placeholder: {
       selectUser1: 'Velg spiller 1',
