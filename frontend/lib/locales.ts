@@ -2,6 +2,7 @@ import { getRandomItem } from '@/app/utils/utils'
 import type { GapType } from '@/components/timeentries/TimeEntryRow'
 import type { ExportCsvRequest } from '@common/models/importCsv'
 import type {
+  MatchStage,
   MatchStatus,
   SessionResponse,
   SessionStatus,
@@ -179,6 +180,19 @@ const no = {
       completed: 'Ferdig',
       cancelled: 'Avlyst',
     } as Record<MatchStatus, string>,
+    stage: {
+      group: 'Gruppespill',
+      eight: '8-delsfinale',
+      quarter: 'Kvartfinale',
+      semi: 'Semifinale',
+      bronze: 'Bronsefinale',
+      final: 'Finale',
+      loser_eight: 'Taper 8-dels',
+      loser_quarter: 'Taper kvart',
+      loser_semi: 'Taper semi',
+      loser_bronze: 'Taper bronse',
+      loser_final: 'Taper finale',
+    } as Record<MatchStage, string>,
     form: {
       user1: 'Spiller 1',
       user2: 'Spiller 2',

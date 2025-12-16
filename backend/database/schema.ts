@@ -16,6 +16,18 @@ export type UserRole = 'admin' | 'moderator' | 'user'
 export type SessionResponse = 'yes' | 'no' | 'maybe'
 export type SessionStatus = 'confirmed' | 'tentative' | 'cancelled'
 export type MatchStatus = 'planned' | 'completed' | 'cancelled'
+export type MatchStage =
+  | 'group'
+  | 'eight'
+  | 'quarter'
+  | 'semi'
+  | 'bronze'
+  | 'final'
+  | 'loser_eight'
+  | 'loser_quarter'
+  | 'loser_semi'
+  | 'loser_bronze'
+  | 'loser_final'
 
 export const users = sqliteTable('users', {
   ...metadata,
@@ -91,7 +103,7 @@ export const matches = sqliteTable('matches', {
   session: text().references(() => sessions.id),
   winner: text().references(() => users.id),
   duration: integer('duration_ms'),
-  stage: text().notNull().default('group'),
+  stage: text().$type<MatchStage>().notNull().default('group'),
   comment: text(),
   status: text()
     .$type<MatchStatus>()

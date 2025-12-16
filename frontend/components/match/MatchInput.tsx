@@ -11,6 +11,7 @@ import type {
   CreateMatchRequest,
   EditMatchRequest,
   Match,
+  MatchStage,
   MatchStatus,
 } from '@common/models/match'
 import type { SessionWithSignups } from '@common/models/session'
@@ -104,7 +105,9 @@ export default function MatchInput({
   const [status, setStatus] = useState<MatchStatus>(
     (editingMatch.status as MatchStatus) ?? 'planned'
   )
-  const [stage, setStage] = useState(editingMatch.stage ?? 'group')
+  const [stage, setStage] = useState<MatchStage>(
+    (editingMatch.stage as MatchStage) ?? 'group'
+  )
   const [comment, setComment] = useState(editingMatch.comment ?? '')
 
   function handleCreate(e: FormEvent<HTMLFormElement>) {
@@ -233,13 +236,22 @@ export default function MatchInput({
 
       <div className='flex gap-4'>
         <div className='flex-1'>
-          <TextField
-            id='stage'
-            name={loc.no.match.form.stage}
+          <Label>{loc.no.match.form.stage}</Label>
+          <Select
             value={stage}
-            onChange={e => setStage(e.target.value)}
-            disabled={disabled}
-          />
+            onValueChange={v => setStage(v as MatchStage)}
+            disabled={disabled}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.entries(loc.no.match.stage).map(([key, label]) => (
+                <SelectItem key={key} value={key}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
