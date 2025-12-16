@@ -5,6 +5,7 @@ import UserRow from '@/components/user/UserRow'
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
+import loc from '@/lib/locales'
 import type {
   CreateMatchRequest,
   EditMatchRequest,
@@ -106,7 +107,7 @@ export default function MatchInput({
   function handleCreate(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!user1 || !user2 || !track) {
-      toast.error('Please fill in all required fields')
+      toast.error(loc.no.match.toast.validationError)
       return
     }
 
@@ -126,11 +127,7 @@ export default function MatchInput({
         onSubmitResponse?.(r.success)
         if (!r.success) throw new Error(r.message)
       }),
-      {
-        loading: 'Creating match...',
-        success: 'Match created!',
-        error: 'Failed to create match',
-      }
+      loc.no.match.toast.create
     )
   }
 
@@ -154,11 +151,7 @@ export default function MatchInput({
         onSubmitResponse?.(r.success)
         if (!r.success) throw new Error(r.message)
       }),
-      {
-        loading: 'Updating match...',
-        success: 'Match updated!',
-        error: 'Failed to update match',
-      }
+      loc.no.match.toast.update
     )
   }
 
@@ -169,7 +162,7 @@ export default function MatchInput({
       {...rest}>
       <div className='flex gap-4'>
         <div className='flex-1'>
-          <Label>User 1</Label>
+          <Label>{loc.no.match.form.user1}</Label>
           {users && (
             <Combobox
               className='w-full'
@@ -179,12 +172,12 @@ export default function MatchInput({
               setSelected={setUser1}
               items={users.map(userToLookupItem)}
               CustomRow={UserRow}
-              placeholder='Select User 1'
+              placeholder={loc.no.match.placeholder.selectUser1}
             />
           )}
         </div>
         <div className='flex-1'>
-          <Label>User 2</Label>
+          <Label>{loc.no.match.form.user2}</Label>
           {users && (
             <Combobox
               className='w-full'
@@ -194,14 +187,14 @@ export default function MatchInput({
               setSelected={setUser2}
               items={users.map(userToLookupItem)}
               CustomRow={UserRow}
-              placeholder='Select User 2'
+              placeholder={loc.no.match.placeholder.selectUser2}
             />
           )}
         </div>
       </div>
 
       <div>
-        <Label>Track</Label>
+        <Label>{loc.no.match.form.track}</Label>
         {tracks && (
           <Combobox
             className='w-full'
@@ -211,13 +204,13 @@ export default function MatchInput({
             setSelected={setTrack}
             items={tracks.map(trackToLookupItem)}
             CustomRow={TrackRow}
-            placeholder='Select Track'
+            placeholder={loc.no.match.placeholder.selectTrack}
           />
         )}
       </div>
 
       <div>
-        <Label>Session (Optional)</Label>
+        <Label>{loc.no.match.form.session}</Label>
         {sessions && (
           <Combobox
             className='w-full'
@@ -226,14 +219,14 @@ export default function MatchInput({
             setSelected={setSession}
             items={sessions.map(sessionToLookupItem)}
             CustomRow={SessionRow}
-            placeholder='Select Session'
+            placeholder={loc.no.match.placeholder.selectSession}
           />
         )}
       </div>
 
       <div className='flex gap-4'>
         <div className='flex-1'>
-          <Label>Status</Label>
+          <Label>{loc.no.match.form.status}</Label>
           <Select
             value={status}
             onValueChange={v => setStatus(v as MatchStatus)}
@@ -242,24 +235,34 @@ export default function MatchInput({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value='planned'>Planned</SelectItem>
-              <SelectItem value='completed'>Completed</SelectItem>
-              <SelectItem value='cancelled'>Cancelled</SelectItem>
+              <SelectItem value='planned'>
+                {loc.no.match.status.planned}
+              </SelectItem>
+              <SelectItem value='completed'>
+                {loc.no.match.status.completed}
+              </SelectItem>
+              <SelectItem value='cancelled'>
+                {loc.no.match.status.cancelled}
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         <div className='flex-1'>
-          <Label>Winner</Label>
+          <Label>{loc.no.match.form.winner}</Label>
           <Select
             value={winner ?? 'none'}
             onValueChange={v => setWinner(v === 'none' ? undefined : v)}
             disabled={disabled || status !== 'completed'}>
             <SelectTrigger>
-              <SelectValue placeholder='Select Winner' />
+              <SelectValue
+                placeholder={loc.no.match.placeholder.selectWinner}
+              />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value='none'>None</SelectItem>
+              <SelectItem value='none'>
+                {loc.no.match.placeholder.none}
+              </SelectItem>
               {user1 && (
                 <SelectItem value={user1.id}>{user1.firstName}</SelectItem>
               )}

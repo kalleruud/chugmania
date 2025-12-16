@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/dialog'
 import { useAuth } from '@/contexts/AuthContext'
 import { useData } from '@/contexts/DataContext'
+import loc from '@/lib/locales'
 import type { Match } from '@common/models/match'
 import { PlusIcon } from 'lucide-react'
 import { useState, type ComponentProps } from 'react'
@@ -29,11 +30,11 @@ export default function MatchesPage() {
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
-            <BreadcrumbLink to='/'>Home</BreadcrumbLink>
+            <BreadcrumbLink to='/'>{loc.no.common.home}</BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>Matches</BreadcrumbPage>
+            <BreadcrumbPage>{loc.no.match.title}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
@@ -69,15 +70,15 @@ export function MatchesContent({
     <div className={twMerge('flex flex-col gap-2', className)} {...props}>
       <div className='flex items-center justify-between pr-2'>
         <PageHeader
-          title='Matches'
-          description='1v1 Competitions'
+          title={loc.no.match.title}
+          description={loc.no.match.description}
           icon='TrophyIcon'
           to={showLink ? '/matches' : undefined}
         />
         {isLoggedIn && !showLink && (
           <Button onClick={handleCreate} size='sm'>
             <PlusIcon className='mr-2 size-4' />
-            Create Match
+            {loc.no.match.create}
           </Button>
         )}
       </div>
@@ -92,7 +93,7 @@ export function MatchesContent({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editingMatch?.id ? 'Edit Match' : 'New Match'}
+              {editingMatch?.id ? loc.no.match.edit : loc.no.match.new}
             </DialogTitle>
           </DialogHeader>
           {editingMatch && (

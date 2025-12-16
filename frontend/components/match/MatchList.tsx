@@ -1,4 +1,5 @@
 import { useAuth } from '@/contexts/AuthContext'
+import loc from '@/lib/locales'
 import type { Match } from '@common/models/match'
 import { PlusIcon } from '@heroicons/react/24/solid'
 import { Button } from '../ui/button'
@@ -28,10 +29,10 @@ export default function MatchList({
             className='text-muted-foreground w-fit'
             onClick={onCreate}>
             <PlusIcon />
-            Create Match
+            {loc.no.match.create}
           </Button>
         )}
-        {!isLoggedIn && 'No matches found.'}
+        {!isLoggedIn && loc.no.match.noMatches}
       </Empty>
     )
   }
@@ -55,7 +56,7 @@ export default function MatchList({
           className='text-muted-foreground w-fit'
           onClick={onCreate}>
           <PlusIcon />
-          Create Match
+          {loc.no.match.create}
         </Button>
       )}
     </div>

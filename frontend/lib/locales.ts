@@ -2,6 +2,7 @@ import { getRandomItem } from '@/app/utils/utils'
 import type { GapType } from '@/components/timeentries/TimeEntryRow'
 import type { ExportCsvRequest } from '@common/models/importCsv'
 import type {
+  MatchStatus,
   SessionResponse,
   SessionStatus,
   TrackLevel,
@@ -166,6 +167,47 @@ const no = {
     },
   },
   match: {
+    title: 'Matcher',
+    description: '1v1 Konkurranser',
+    create: 'Registrer match',
+    edit: 'Rediger match',
+    new: 'Ny match',
+    noMatches: 'Ingen matcher funnet.',
+    unknownUser: 'Ukjent',
+    status: {
+      planned: 'Planlagt',
+      completed: 'Ferdig',
+      cancelled: 'Avlyst',
+    } as Record<MatchStatus, string>,
+    form: {
+      user1: 'Spiller 1',
+      user2: 'Spiller 2',
+      track: 'Bane',
+      session: 'Session (Valgfritt)',
+      status: 'Status',
+      winner: 'Vinner',
+    },
+    placeholder: {
+      selectUser1: 'Velg spiller 1',
+      selectUser2: 'Velg spiller 2',
+      selectTrack: 'Velg bane',
+      selectSession: 'Velg session',
+      selectWinner: 'Velg vinner',
+      none: 'Ingen',
+    },
+    toast: {
+      validationError: 'Du må fylle ut alle feltene...',
+      create: {
+        loading: 'Oppretter match...',
+        success: 'Match opprettet!',
+        error: 'Klarte ikke opprette match',
+      },
+      update: {
+        loading: 'Oppdaterer match...',
+        success: 'Match oppdatert!',
+        error: 'Klarte ikke oppdatere match',
+      },
+    },
     error: {
       planned_winner:
         'Du kan ikke velge vinner på en planlagt eller avlyst match.',
@@ -204,6 +246,7 @@ const no = {
         `Svetlana mottok noe søppel av en '${type}' som gir null mening, prøv igjen.`,
       email_already_exists:
         'E-posten er allerede registrert, prøv med en annen mail din idiot.',
+      update_failed: 'Oppdatering feilet, prøv igjen.',
     },
   },
   timeEntry: {

@@ -1,4 +1,5 @@
 import { useData } from '@/contexts/DataContext'
+import loc from '@/lib/locales'
 import type { Match } from '@common/models/match'
 import { formatTrackName } from '@common/utils/track'
 import { twMerge } from 'tailwind-merge'
@@ -30,7 +31,7 @@ export default function MatchRow({
             'font-f1-bold uppercase',
             match.winner === match.user1 && 'text-primary'
           )}>
-          {user1?.firstName ?? 'Unknown'}
+          {user1?.firstName ?? loc.no.match.unknownUser}
         </span>
         <span className='text-muted-foreground text-xs'>VS</span>
         <span
@@ -38,7 +39,7 @@ export default function MatchRow({
             'font-f1-bold uppercase',
             match.winner === match.user2 && 'text-primary'
           )}>
-          {user2?.firstName ?? 'Unknown'}
+          {user2?.firstName ?? loc.no.match.unknownUser}
         </span>
       </div>
 
@@ -54,7 +55,7 @@ export default function MatchRow({
       )}
 
       <div className='text-muted-foreground text-sm uppercase tabular-nums'>
-        {match.status}
+        {loc.no.match.status[match.status]}
       </div>
     </div>
   )

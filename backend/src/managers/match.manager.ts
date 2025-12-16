@@ -45,11 +45,7 @@ export default class MatchManager {
     const { type, createdAt, updatedAt, deletedAt, ...matchData } = request
     await db.insert(matches).values(matchData)
 
-    console.debug(
-      new Date().toISOString(),
-      socket.id,
-      'Created match'
-    )
+    console.debug(new Date().toISOString(), socket.id, 'Created match')
 
     broadcast('all_matches', await MatchManager.getAllMatches())
 
@@ -61,9 +57,7 @@ export default class MatchManager {
     request: EventReq<'edit_match'>
   ): Promise<EventRes<'edit_match'>> {
     if (!isEditMatchRequest(request)) {
-      throw new Error(
-        loc.no.error.messages.invalid_request('EditMatchRequest')
-      )
+      throw new Error(loc.no.error.messages.invalid_request('EditMatchRequest'))
     }
 
     await AuthManager.checkAuth(socket, ['admin', 'moderator'])
@@ -92,7 +86,7 @@ export default class MatchManager {
       })
       .where(eq(matches.id, match.id))
 
-    if (res.changes === 0) throw new Error('Update failed')
+    if (res.changes === 0) throw new Error(loc.no.error.messages.update_failed)
 
     console.debug(new Date().toISOString(), socket.id, 'Updated match', id)
 
