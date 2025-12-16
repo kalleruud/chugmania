@@ -165,6 +165,12 @@ const no = {
       no_edit_historical: 'Du kan ikke endre svar på en session tilbake i tid.',
     },
   },
+  match: {
+    error: {
+      planned_winner:
+        'Du kan ikke velge vinner på en planlagt eller avlyst match.',
+    },
+  },
   error: {
     title: 'Noe gikk galt 🥵',
     description: getRandomItem([

@@ -6,6 +6,7 @@ import loc from '@/lib/locales'
 import { SessionsContent } from './SessionsPage'
 import { TracksContent } from './TracksPage'
 import { UsersContent } from './UsersPage'
+import { MatchesContent } from './MatchesPage'
 
 export default function Home() {
   const { loggedInUser, isLoggedIn } = useAuth()
@@ -25,6 +26,7 @@ export default function Home() {
           to='/admin'
         />
       )}
+      <MatchesContent className='bg-background rounded-sm border p-2' showLink />
       <SessionsContent
         className='bg-background rounded-sm border p-2'
         showLink

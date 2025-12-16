@@ -15,6 +15,7 @@ const metadata = {
 export type UserRole = 'admin' | 'moderator' | 'user'
 export type SessionResponse = 'yes' | 'no' | 'maybe'
 export type SessionStatus = 'confirmed' | 'tentative' | 'cancelled'
+export type MatchStatus = 'planned' | 'completed' | 'cancelled'
 
 export const users = sqliteTable('users', {
   ...metadata,
@@ -74,4 +75,18 @@ export const timeEntries = sqliteTable('time_entries', {
   duration: integer('duration_ms'),
   amount: integer('amount_l').notNull().default(0.5),
   comment: text(),
+})
+
+export const matches = sqliteTable('matches', {
+  ...metadata,
+  user1: text().notNull().references(() => users.id),
+  user2: text().notNull().references(() => users.id),
+  track: text().notNull().references(() => tracks.id),
+  session: text().references(() => sessions.id),
+  winner: text().references(() => users.id),
+  duration: integer('duration_ms'),
+  status: text()
+    .$type<MatchStatus>()
+    .notNull()
+    .$default(() => 'planned'),
 })

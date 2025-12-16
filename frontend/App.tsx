@@ -6,6 +6,7 @@ import Layout from './app/Layout'
 import AdminPage from './app/pages/AdminPage'
 import { ErrorPage } from './app/pages/ErrorPage'
 import Home from './app/pages/HomePage'
+import MatchesPage from './app/pages/MatchesPage'
 import SessionPage from './app/pages/SessionPage'
 import SessionsPage from './app/pages/SessionsPage'
 import TrackPage from './app/pages/TrackPage'
@@ -37,6 +38,7 @@ createRoot(document.getElementById('root')!).render(
                       <Route path='tracks/:id' element={<TrackPage />} />
                       <Route path='users' element={<UsersPage />} />
                       <Route path='users/:id' element={<UserPage />} />
+                      <Route path='matches' element={<MatchesPage />} />
                       <Route path='sessions' element={<SessionsPage />} />
                       <Route path='sessions/:id' element={<SessionPage />} />
                       <Route path='admin' element={<AdminPage />} />
