@@ -105,7 +105,7 @@ export default function MatchInput({
   const [status, setStatus] = useState<MatchStatus>(
     (editingMatch.status as MatchStatus) ?? 'planned'
   )
-  const [stage, setStage] = useState<MatchStage>(
+  const [stage, setStage] = useState<MatchStage | undefined>(
     (editingMatch.stage as MatchStage) ?? 'group'
   )
   const [comment, setComment] = useState(editingMatch.comment ?? '')
@@ -238,7 +238,7 @@ export default function MatchInput({
         <div className='flex-1'>
           <Label>{loc.no.match.form.stage}</Label>
           <Select
-            value={stage}
+            value={stage ?? 'group'}
             onValueChange={v => setStage(v as MatchStage)}
             disabled={disabled}>
             <SelectTrigger>

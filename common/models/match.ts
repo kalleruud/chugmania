@@ -15,8 +15,7 @@ export function isCreateMatchRequest(data: any): data is CreateMatchRequest {
     data.type === 'CreateMatchRequest' &&
     typeof data.user1 === 'string' &&
     typeof data.user2 === 'string' &&
-    typeof data.track === 'string' &&
-    typeof data.stage === 'string'
+    typeof data.track === 'string'
   )
 }
 
