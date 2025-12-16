@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "dbc29e32-6154-4b67-b6d5-1df50c9c4297",
+  "id": "5688a426-5d83-4737-b589-1c8e590ebd86",
   "prevId": "f3b6efa9-42e8-4a05-bf1f-287aaf9ff3a9",
   "tables": {
     "matches": {
@@ -81,9 +81,8 @@
           "name": "stage",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'group'"
+          "notNull": false,
+          "autoincrement": false
         },
         "comment": {
           "name": "comment",

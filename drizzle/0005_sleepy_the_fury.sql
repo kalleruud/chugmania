@@ -1,5 +1,4 @@
-PRAGMA foreign_keys=OFF;--> statement-breakpoint
-CREATE TABLE `__new_matches` (
+CREATE TABLE `matches` (
 	`id` text PRIMARY KEY NOT NULL,
 	`updated_at` integer,
 	`created_at` integer NOT NULL,
@@ -10,7 +9,7 @@ CREATE TABLE `__new_matches` (
 	`session` text,
 	`winner` text,
 	`duration_ms` integer,
-	`stage` text DEFAULT 'group',
+	`stage` text,
 	`comment` text,
 	`status` text NOT NULL,
 	FOREIGN KEY (`user1`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE no action,
@@ -19,8 +18,3 @@ CREATE TABLE `__new_matches` (
 	FOREIGN KEY (`session`) REFERENCES `sessions`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`winner`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE no action
 );
---> statement-breakpoint
-INSERT INTO `__new_matches`("id", "updated_at", "created_at", "deleted_at", "user1", "user2", "track", "session", "winner", "duration_ms", "stage", "comment", "status") SELECT "id", "updated_at", "created_at", "deleted_at", "user1", "user2", "track", "session", "winner", "duration_ms", "stage", "comment", "status" FROM `matches`;--> statement-breakpoint
-DROP TABLE `matches`;--> statement-breakpoint
-ALTER TABLE `__new_matches` RENAME TO `matches`;--> statement-breakpoint
-PRAGMA foreign_keys=ON;

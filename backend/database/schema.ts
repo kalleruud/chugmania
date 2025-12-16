@@ -103,7 +103,7 @@ export const matches = sqliteTable('matches', {
   session: text().references(() => sessions.id),
   winner: text().references(() => users.id),
   duration: integer('duration_ms'),
-  stage: text().$type<MatchStage>().default('group'),
+  stage: text().$type<MatchStage>(),
   comment: text(),
   status: text()
     .$type<MatchStatus>()
