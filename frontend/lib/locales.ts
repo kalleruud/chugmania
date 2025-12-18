@@ -40,6 +40,7 @@ const no = {
       timeEntries: 'Rundetider',
       tracks: 'Baner',
       users: 'Spillere',
+      matches: 'Matcher',
     } satisfies Record<ExportCsvRequest['table'], string>,
   },
   user: {
