@@ -65,12 +65,12 @@ export default function MatchList({
         </div>
       )}
 
-      {isLoggedIn && onCreate && (
+      {isLoggedIn && (
         <Button
           variant='ghost'
           size='sm'
           className='text-muted-foreground w-fit'
-          onClick={onCreate}>
+          onClick={() => open()}>
           <PlusIcon />
           {loc.no.match.new}
         </Button>
