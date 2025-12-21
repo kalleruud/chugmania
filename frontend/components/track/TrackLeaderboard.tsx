@@ -1,7 +1,10 @@
+import MatchList from '@/components/match/MatchList'
 import { useData } from '@/contexts/DataContext'
+import loc from '@/lib/locales'
 import type { Track } from '@common/models/track'
 import type { ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { PageSubheader } from '../PageHeader'
 import {
   TimeEntryList,
   type TimeEntryListProps,
@@ -18,7 +21,7 @@ export default function TrackLeaderboard({
   track,
   ...rest
 }: Readonly<TrackLeaderboardProps & ComponentProps<'div'>>) {
-  const { timeEntries, isLoadingData } = useData()
+  const { timeEntries, matches, isLoadingData } = useData()
 
   if (isLoadingData)
     return (
@@ -32,7 +35,16 @@ export default function TrackLeaderboard({
     .filter(te => !rest.user || rest.user === te.user)
     .filter(te => !track || track.id === te.track)
 
-  if (entries.length === 0) return undefined
+  const filteredMatches = matches
+    ?.filter(m => !rest.session || rest.session === m.session)
+    .filter(m => !rest.user || rest.user === m.user1 || rest.user === m.user2)
+    .filter(m => !track || track.id === m.track)
+
+  if (
+    (!entries || entries.length === 0) &&
+    (!filteredMatches || filteredMatches.length === 0)
+  )
+    return undefined
 
   return (
     <div
@@ -41,7 +53,16 @@ export default function TrackLeaderboard({
         className
       )}>
       <TrackRow item={track} />
-      <TimeEntryList track={track.id} entries={entries} {...rest} />
+      <TimeEntryList track={track.id} entries={entries ?? []} {...rest} />
+      {filteredMatches && filteredMatches.length > 0 && (
+        <div className='flex flex-col gap-2'>
+          <PageSubheader
+            title={loc.no.match.matches}
+            description={filteredMatches.length.toString()}
+          />
+          <MatchList matches={filteredMatches} layout='list' />
+        </div>
+      )}
     </div>
   )
 }

@@ -1,4 +1,5 @@
-import MatchRow from '@/components/match/MatchRow'
+import MatchList from '@/components/match/MatchList'
+import { PageSubheader } from '@/components/PageHeader'
 import { TimeEntryList } from '@/components/timeentries/TimeEntryList'
 import TrackCard from '@/components/track/TrackCard'
 import {
@@ -19,7 +20,7 @@ import { useParams } from 'react-router-dom'
 export default function TrackPage() {
   const { id } = useParams()
   const { isLoggedIn, loggedInUser } = useAuth()
-  const { timeEntries, tracks, isLoadingData } = useData()
+  const { timeEntries, tracks, matches, isLoadingData } = useData()
 
   if (isLoadingData) {
     return (
@@ -31,6 +32,7 @@ export default function TrackPage() {
 
   const track = tracks.find(t => t.id === id)
   if (!track) throw new Error(loc.no.error.messages.not_in_db('track/' + id))
+  const filteredMatches = matches?.filter(m => m.track === track.id) ?? []
 
   const entries = timeEntries?.filter(te => !track || track.id === te.track)
 
@@ -63,14 +65,11 @@ export default function TrackPage() {
       />
 
       <div className='flex flex-col gap-2'>
-        <h2 className='text-lg font-bold'>{loc.no.match.matches}</h2>
-        <div className='flex flex-col gap-2'>
-          {useData()
-            .matches?.filter(m => m.track === track.id)
-            .map(match => (
-              <MatchRow key={match.id} item={match} />
-            ))}
-        </div>
+        <PageSubheader
+          title={loc.no.match.matches}
+          description={filteredMatches.length.toString()}
+        />
+        <MatchList matches={filteredMatches} layout='list' />
       </div>
     </div>
   )
