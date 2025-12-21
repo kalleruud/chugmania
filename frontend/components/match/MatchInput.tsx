@@ -7,11 +7,11 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
+import type { MatchStage } from '@backend/database/schema'
 import type {
   CreateMatchRequest,
   EditMatchRequest,
   Match,
-  MatchStage,
   MatchStatus,
 } from '@common/models/match'
 import type { SessionWithSignups } from '@common/models/session'
@@ -26,7 +26,9 @@ import { Label } from '../ui/label'
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '../ui/select'
@@ -103,10 +105,10 @@ export default function MatchInput({
     editingMatch.winner ?? undefined
   )
   const [status, setStatus] = useState<MatchStatus>(
-    (editingMatch.status as MatchStatus) ?? 'planned'
+    editingMatch.status ?? 'planned'
   )
   const [stage, setStage] = useState<MatchStage | undefined>(
-    (editingMatch.stage as MatchStage) ?? 'group'
+    editingMatch.stage ?? undefined
   )
   const [comment, setComment] = useState(editingMatch.comment ?? '')
 
@@ -170,9 +172,8 @@ export default function MatchInput({
       className={twMerge('flex flex-col gap-6', className)}
       onSubmit={onSubmit ?? (isCreating ? handleCreate : handleUpdate)}
       {...rest}>
-      <div className='flex gap-4'>
-        <div className='flex-1'>
-          <Label>{loc.no.match.form.user1}</Label>
+      <div className='grid gap-4'>
+        <div>
           {users && (
             <Combobox
               className='w-full'
@@ -186,8 +187,12 @@ export default function MatchInput({
             />
           )}
         </div>
-        <div className='flex-1'>
-          <Label>{loc.no.match.form.user2}</Label>
+
+        <h1 className='font-kh-interface text-center text-2xl font-bold'>
+          {loc.no.match.vs}
+        </h1>
+
+        <div>
           {users && (
             <Combobox
               className='w-full'
@@ -203,8 +208,7 @@ export default function MatchInput({
         </div>
       </div>
 
-      <div>
-        <Label>{loc.no.match.form.track}</Label>
+      <div className='grid gap-2'>
         {tracks && (
           <Combobox
             className='w-full'
@@ -217,10 +221,6 @@ export default function MatchInput({
             placeholder={loc.no.match.placeholder.selectTrack}
           />
         )}
-      </div>
-
-      <div>
-        <Label>{loc.no.match.form.session}</Label>
         {sessions && (
           <Combobox
             className='w-full'
@@ -234,37 +234,52 @@ export default function MatchInput({
         )}
       </div>
 
-      <div className='flex gap-4'>
-        <div className='flex-1'>
+      <div className='grid grid-flow-col gap-2'>
+        <div className='flex flex-col gap-1'>
           <Label>{loc.no.match.form.stage}</Label>
-          <Select
-            value={stage ?? 'group'}
-            onValueChange={v => setStage(v as MatchStage)}
-            disabled={disabled}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.entries(loc.no.match.stage).map(([key, label]) => (
-                <SelectItem key={key} value={key}>
-                  {label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className='flex items-center gap-2'>
+            <Select
+              value={stage}
+              onValueChange={v => setStage(v as MatchStage)}
+              disabled={disabled}>
+              <SelectTrigger>
+                <SelectValue placeholder={loc.no.match.placeholder.none} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectLabel>Gruppespill</SelectLabel>
+                  <SelectItem value='group'>
+                    {loc.no.match.stage.group}
+                  </SelectItem>
+                </SelectGroup>
+                <SelectGroup>
+                  <SelectLabel>Sluttspill</SelectLabel>
+                  {Object.entries(loc.no.match.stage)
+                    .filter(
+                      ([key]) => !key.includes('loser') && key !== 'group'
+                    )
+                    .map(([key, label]) => (
+                      <SelectItem key={key} value={key}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                </SelectGroup>
+                <SelectGroup>
+                  <SelectLabel>Tapersluttspill</SelectLabel>
+                  {Object.entries(loc.no.match.stage)
+                    .filter(([key]) => key.includes('loser'))
+                    .map(([key, label]) => (
+                      <SelectItem key={key} value={key}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-      </div>
 
-      <TextField
-        id='comment'
-        name={loc.no.match.form.comment}
-        value={comment}
-        onChange={e => setComment(e.target.value)}
-        disabled={disabled}
-      />
-
-      <div className='flex gap-4'>
-        <div className='flex-1'>
+        <div className='flex flex-col gap-1'>
           <Label>{loc.no.match.form.status}</Label>
           <Select
             value={status}
@@ -274,20 +289,16 @@ export default function MatchInput({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value='planned'>
-                {loc.no.match.status.planned}
-              </SelectItem>
-              <SelectItem value='completed'>
-                {loc.no.match.status.completed}
-              </SelectItem>
-              <SelectItem value='cancelled'>
-                {loc.no.match.status.cancelled}
-              </SelectItem>
+              {Object.entries(loc.no.match.status).map(([key, label]) => (
+                <SelectItem key={key} value={key}>
+                  {label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
 
-        <div className='flex-1'>
+        <div className='flex flex-col gap-1'>
           <Label>{loc.no.match.form.winner}</Label>
           <Select
             value={winner ?? 'none'}
@@ -312,6 +323,14 @@ export default function MatchInput({
           </Select>
         </div>
       </div>
+
+      <TextField
+        id='comment'
+        name={loc.no.match.form.comment}
+        value={comment}
+        onChange={e => setComment(e.target.value)}
+        disabled={disabled}
+      />
     </form>
   )
 }

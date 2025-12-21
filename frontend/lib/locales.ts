@@ -169,6 +169,7 @@ const no = {
     },
   },
   match: {
+    vs: 'vs',
     title: 'Matcher',
     description: '1v1 Konkurranser',
     edit: 'Rediger match',
@@ -200,7 +201,7 @@ const no = {
       session: 'Session',
       status: 'Status',
       winner: 'Vinner',
-      stage: 'Stage',
+      stage: 'Nivå',
       comment: 'Kommentar',
     },
     placeholder: {
