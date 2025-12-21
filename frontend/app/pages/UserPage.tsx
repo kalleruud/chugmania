@@ -1,3 +1,4 @@
+import MatchRow from '@/components/match/MatchRow'
 import TrackLeaderboard from '@/components/track/TrackLeaderboard'
 import {
   Breadcrumb,
@@ -50,6 +51,17 @@ export default function UserPage() {
       </Breadcrumb>
 
       <UserCard user={user} />
+
+      <div className='flex flex-col gap-2'>
+        <h2 className='text-lg font-bold'>{loc.no.match.matches}</h2>
+        <div className='flex flex-col gap-2'>
+          {useData()
+            .matches?.filter(m => m.user1 === user.id || m.user2 === user.id)
+            .map(match => (
+              <MatchRow key={match.id} item={match} />
+            ))}
+        </div>
+      </div>
 
       {tracks.map(track => (
         <TrackLeaderboard

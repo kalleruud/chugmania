@@ -4,7 +4,7 @@ import type { Match } from '@common/models/match'
 import { PlusIcon } from '@heroicons/react/24/solid'
 import { Button } from '../ui/button'
 import { Empty } from '../ui/empty'
-import MatchRow from './MatchRow'
+import MatchCard from './MatchCard'
 
 export type MatchListProps = {
   matches: Match[]
@@ -39,11 +39,11 @@ export default function MatchList({
 
   return (
     <div className='flex flex-col gap-3'>
-      <div className='bg-background-secondary flex flex-col rounded-sm'>
+      <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3'>
         {matches.map(match => (
-          <MatchRow
+          <MatchCard
             key={match.id}
-            item={match}
+            match={match}
             onClick={() => onSelect?.(match)}
           />
         ))}

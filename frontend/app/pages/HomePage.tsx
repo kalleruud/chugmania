@@ -3,7 +3,6 @@ import LoginCard from '@/components/user/LoginCard'
 import UserCard from '@/components/user/UserCard'
 import { useAuth } from '@/contexts/AuthContext'
 import loc from '@/lib/locales'
-import { MatchesContent } from './MatchesPage'
 import { SessionsContent } from './SessionsPage'
 import { TracksContent } from './TracksPage'
 import { UsersContent } from './UsersPage'
@@ -26,10 +25,6 @@ export default function Home() {
           to='/admin'
         />
       )}
-      <MatchesContent
-        className='bg-background rounded-sm border p-2'
-        showLink
-      />
       <SessionsContent
         className='bg-background rounded-sm border p-2'
         showLink

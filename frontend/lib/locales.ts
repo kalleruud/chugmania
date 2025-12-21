@@ -170,8 +170,9 @@ const no = {
   },
   match: {
     title: 'Matcher',
+    matches: 'Matcher',
     description: '1v1 Konkurranser',
-    create: 'Registrer match',
+    matches: 'Matcher', // Added Matches translation
     edit: 'Rediger match',
     new: 'Ny match',
     noMatches: 'Ingen matcher funnet.',

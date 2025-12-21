@@ -1,3 +1,4 @@
+import MatchRow from '@/components/match/MatchRow'
 import { TimeEntryList } from '@/components/timeentries/TimeEntryList'
 import TrackCard from '@/components/track/TrackCard'
 import {
@@ -60,6 +61,17 @@ export default function TrackPage() {
         entries={entries}
         highlight={e => isLoggedIn && loggedInUser.id === e.user}
       />
+
+      <div className='flex flex-col gap-2'>
+        <h2 className='text-lg font-bold'>{loc.no.match.matches}</h2>
+        <div className='flex flex-col gap-2'>
+          {useData()
+            .matches?.filter(m => m.track === track.id)
+            .map(match => (
+              <MatchRow key={match.id} item={match} />
+            ))}
+        </div>
+      </div>
     </div>
   )
 }
