@@ -5,6 +5,7 @@ import loc from '@/lib/locales'
 import type { EditMatchRequest, Match } from '@common/models/match'
 import type { UserInfo } from '@common/models/user'
 import { formatTrackName } from '@common/utils/track'
+import { XMarkIcon } from '@heroicons/react/24/solid'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
 import type { BaseRowProps } from '../row/RowProps'
@@ -23,6 +24,8 @@ export default function MatchRow({
   const user1 = users?.find(u => u.id === match.user1)
   const user2 = users?.find(u => u.id === match.user2)
   const track = tracks?.find(t => t.id === match.track)
+
+  const isCancelled = match.status === 'cancelled'
 
   function handleSetWinner(userId: string) {
     if (!isLoggedIn) return
@@ -46,31 +49,74 @@ export default function MatchRow({
     )
   }
 
+  function handleCancel() {
+    if (!isLoggedIn) return
+
+    const payload: EditMatchRequest = {
+      type: 'EditMatchRequest',
+      id: match.id,
+      status: 'cancelled',
+      winner: null,
+    }
+
+    toast.promise(
+      socket.emitWithAck('edit_match', payload).then(r => {
+        if (!r.success) throw new Error(r.message)
+      }),
+      loc.no.match.toast.update
+    )
+  }
+
   return (
     <div
       className={twMerge(
-        'hover:bg-foreground/5 relative flex cursor-pointer items-center justify-center rounded-md px-4 py-3',
+        'hover:bg-foreground/5 group relative flex cursor-pointer items-center justify-center rounded-md px-4 py-3',
+        isCancelled && 'text-muted-foreground opacity-33',
         className
       )}
       {...rest}>
       {track && (
         <div className='absolute left-4 flex items-center gap-2'>
-          <span className='font-kh-interface tabular-nums'>
+          <span
+            className={twMerge(
+              'font-kh-interface tabular-nums',
+              isCancelled && 'line-through'
+            )}>
             #{formatTrackName(track.number)}
           </span>
         </div>
       )}
 
-      <div className='flex w-full items-center justify-center gap-2'>
+      {isLoggedIn && match.status !== 'completed' && !isCancelled && (
+        <button
+          className='hover:bg-destructive/10 hover:text-destructive text-muted-foreground/50 absolute right-4 hidden rounded-full p-1 transition-colors group-hover:block'
+          onClick={e => {
+            e.stopPropagation()
+            handleCancel()
+          }}>
+          <XMarkIcon className='h-4 w-4' />
+        </button>
+      )}
+
+      <div
+        className={twMerge(
+          'flex w-full items-center justify-center gap-2',
+          isCancelled && 'line-through'
+        )}>
         <UserCell
           className='justify-end'
           user={user1}
           isWinner={match.winner === match.user1}
           onClick={() => user1 && handleSetWinner(user1.id)}
-          disabled={!isLoggedIn}
+          disabled={!isLoggedIn || isCancelled}
+          isCancelled={isCancelled}
         />
 
-        <span className='text-muted-foreground font-kh-interface mt-0.5 text-sm font-black'>
+        <span
+          className={twMerge(
+            'text-muted-foreground font-kh-interface mt-0.5 text-sm font-black',
+            isCancelled && 'line-through'
+          )}>
           {loc.no.match.vs}
         </span>
 
@@ -78,7 +124,8 @@ export default function MatchRow({
           user={user2}
           isWinner={match.winner === match.user2}
           onClick={() => user2 && handleSetWinner(user2.id)}
-          disabled={!isLoggedIn}
+          disabled={!isLoggedIn || isCancelled}
+          isCancelled={isCancelled}
         />
       </div>
     </div>
@@ -91,12 +138,14 @@ function UserCell({
   isWinner,
   onClick,
   disabled,
+  isCancelled,
 }: Readonly<{
   className?: string
   user: UserInfo | undefined
   isWinner: boolean
   onClick?: () => void
   disabled?: boolean
+  isCancelled?: boolean
 }>) {
   if (!user) return null
   return (
@@ -113,7 +162,8 @@ function UserCell({
           !isWinner && 'hover:bg-accent hover:text-accent-foreground',
           isWinner && 'bg-primary/10 ring-primary hover:bg-primary ring-2',
           !user && 'opacity-50',
-          disabled && 'pointer-events-none'
+          disabled && 'pointer-events-none',
+          isCancelled && 'line-through'
         )}>
         <NameCellPart name={user?.firstName ?? loc.no.match.unknownUser} />
       </button>
