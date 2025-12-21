@@ -17,9 +17,10 @@ import type {
 import type { SessionWithSignups } from '@common/models/session'
 import type { Track } from '@common/models/track'
 import type { UserInfo } from '@common/models/user'
-import { formatDateWithYear } from '@common/utils/date'
+import { formatDateWithYear, isOngoing } from '@common/utils/date'
 import { formatTrackName } from '@common/utils/track'
 import { useState, type ComponentProps, type FormEvent } from 'react'
+import { useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
 import { Label } from '../ui/label'
@@ -75,6 +76,14 @@ function userToLookupItem(user: UserInfo) {
   }
 }
 
+function getId(path: string) {
+  const id = path.split('/').at(-1)
+  // Verify that id is a valid UUID (GUID) format, return undefined if not
+  const uuidRegex =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  return id && uuidRegex.test(id) ? id : undefined
+}
+
 export default function MatchInput({
   editingMatch,
   onSubmitResponse,
@@ -86,20 +95,27 @@ export default function MatchInput({
   const { socket } = useConnection()
   const { users, tracks, sessions } = useData()
   const { loggedInUser } = useAuth()
+  const location = useLocation()
+  const paramId = getId(location.pathname)
 
   const isCreating = !editingMatch.id
 
   const [user1, setUser1] = useState<UserInfo | undefined>(
-    users?.find(u => u.id === editingMatch.user1) ?? loggedInUser
+    users?.find(u => u.id === (editingMatch.user1 ?? paramId)) ?? loggedInUser
   )
   const [user2, setUser2] = useState<UserInfo | undefined>(
     users?.find(u => u.id === editingMatch.user2)
   )
   const [track, setTrack] = useState<Track | undefined>(
-    tracks?.find(t => t.id === editingMatch.track)
+    tracks?.find(t => t.id === (editingMatch.track ?? paramId))
   )
+
+  const currentOngoingSession = sessions?.find(s => isOngoing(s))
+
   const [session, setSession] = useState<SessionWithSignups | undefined>(
-    sessions?.find(s => s.id === editingMatch.session)
+    editingMatch.id
+      ? sessions?.find(s => s.id === editingMatch.session)
+      : (currentOngoingSession ?? sessions?.find(s => s.id === paramId))
   )
   const [winner, setWinner] = useState<string | undefined>(
     editingMatch.winner ?? undefined

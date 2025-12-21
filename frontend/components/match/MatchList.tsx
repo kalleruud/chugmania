@@ -10,6 +10,9 @@ import { useAuth } from '@/contexts/AuthContext'
 import MatchRow from './MatchRow'
 
 export type MatchListProps = {
+  track?: string
+  user?: string
+  session?: string
   matches: Match[]
   onCreate?: () => void
   onSelect?: (match: Match) => void
@@ -18,6 +21,9 @@ export type MatchListProps = {
 
 export default function MatchList({
   matches,
+  track,
+  user,
+  session,
   layout = 'grid',
 }: Readonly<MatchListProps>) {
   const { isLoggedIn } = useAuth()
@@ -70,7 +76,7 @@ export default function MatchList({
           variant='ghost'
           size='sm'
           className='text-muted-foreground w-fit'
-          onClick={() => openMatch()}>
+          onClick={() => openMatch({ track, user1: user, session })}>
           <PlusIcon />
           {loc.no.match.new}
         </Button>

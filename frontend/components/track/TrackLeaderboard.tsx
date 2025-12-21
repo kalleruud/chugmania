@@ -19,6 +19,8 @@ type TrackLeaderboardProps = {
 export default function TrackLeaderboard({
   className,
   track,
+  user,
+  session,
   ...rest
 }: Readonly<TrackLeaderboardProps & ComponentProps<'div'>>) {
   const { timeEntries, matches, isLoadingData } = useData()
@@ -31,13 +33,13 @@ export default function TrackLeaderboard({
     )
 
   const entries = timeEntries
-    ?.filter(te => !rest.session || rest.session === te.session)
-    .filter(te => !rest.user || rest.user === te.user)
+    ?.filter(te => !session || session === te.session)
+    .filter(te => !user || user === te.user)
     .filter(te => !track || track.id === te.track)
 
   const filteredMatches = matches
-    ?.filter(m => !rest.session || rest.session === m.session)
-    .filter(m => !rest.user || rest.user === m.user1 || rest.user === m.user2)
+    ?.filter(m => !session || session === m.session)
+    .filter(m => !user || user === m.user1 || user === m.user2)
     .filter(m => !track || track.id === m.track)
 
   if (
@@ -59,10 +61,22 @@ export default function TrackLeaderboard({
           <TabsTrigger value='matches'>{loc.no.match.title}</TabsTrigger>
         </TabsList>
         <TabsContent value='laptimes'>
-          <TimeEntryList track={track.id} entries={entries ?? []} {...rest} />
+          <TimeEntryList
+            track={track.id}
+            user={user}
+            session={session}
+            entries={entries ?? []}
+            {...rest}
+          />
         </TabsContent>
         <TabsContent value='matches'>
-          <MatchList matches={filteredMatches} layout='list' />
+          <MatchList
+            track={track.id}
+            user={user}
+            session={session}
+            matches={filteredMatches}
+            layout='list'
+          />
         </TabsContent>
       </Tabs>
     </div>
