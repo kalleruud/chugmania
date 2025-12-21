@@ -5,7 +5,6 @@ import loc from '@/lib/locales'
 import type { Track } from '@common/models/track'
 import type { ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { PageSubheader } from '../PageHeader'
 import {
   TimeEntryList,
   type TimeEntryListProps,
@@ -54,28 +53,18 @@ export default function TrackLeaderboard({
         className
       )}>
       <TrackRow item={track} />
-      {filteredMatches && filteredMatches.length > 0 ? (
-        <Tabs defaultValue='laptimes'>
-          <TabsList className='w-full'>
-            <TabsTrigger value='laptimes'>{loc.no.timeEntry.title}</TabsTrigger>
-            <TabsTrigger value='matches'>{loc.no.match.title}</TabsTrigger>
-          </TabsList>
-          <TabsContent value='laptimes'>
-            <TimeEntryList track={track.id} entries={entries ?? []} {...rest} />
-          </TabsContent>
-          <TabsContent value='matches'>
-            <div className='flex flex-col gap-2'>
-              <PageSubheader
-                title={loc.no.match.title}
-                description={filteredMatches.length.toString()}
-              />
-              <MatchList matches={filteredMatches} layout='list' />
-            </div>
-          </TabsContent>
-        </Tabs>
-      ) : (
-        <TimeEntryList track={track.id} entries={entries ?? []} {...rest} />
-      )}
+      <Tabs defaultValue={entries.length > 0 ? 'laptimes' : 'matches'}>
+        <TabsList className='w-full'>
+          <TabsTrigger value='laptimes'>{loc.no.timeEntry.title}</TabsTrigger>
+          <TabsTrigger value='matches'>{loc.no.match.title}</TabsTrigger>
+        </TabsList>
+        <TabsContent value='laptimes'>
+          <TimeEntryList track={track.id} entries={entries ?? []} {...rest} />
+        </TabsContent>
+        <TabsContent value='matches'>
+          <MatchList matches={filteredMatches} layout='list' />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
