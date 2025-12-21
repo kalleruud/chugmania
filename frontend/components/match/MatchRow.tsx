@@ -65,11 +65,14 @@ function UserCell({
     <div className={twMerge('flex w-48', className)}>
       <button
         type='button'
-        onClick={() => console.log('clicked')}
+        onClick={e => {
+          e.stopPropagation()
+          console.log('clicked')
+        }}
         className={twMerge(
           'z-10 flex items-center gap-2 rounded-md px-2 py-1 transition-colors',
           !isWinner && 'hover:bg-accent hover:text-accent-foreground',
-          isWinner && 'text-primary bg-primary/10 ring-primary ring-2',
+          isWinner && 'bg-primary/10 ring-primary hover:bg-primary ring-2',
           !user && 'opacity-50'
         )}>
         <NameCellPart name={user?.firstName ?? loc.no.match.unknownUser} />
