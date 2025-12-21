@@ -1,4 +1,5 @@
 import MatchList from '@/components/match/MatchList'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
 import type { Track } from '@common/models/track'
@@ -53,15 +54,27 @@ export default function TrackLeaderboard({
         className
       )}>
       <TrackRow item={track} />
-      <TimeEntryList track={track.id} entries={entries ?? []} {...rest} />
-      {filteredMatches && filteredMatches.length > 0 && (
-        <div className='flex flex-col gap-2'>
-          <PageSubheader
-            title={loc.no.match.matches}
-            description={filteredMatches.length.toString()}
-          />
-          <MatchList matches={filteredMatches} layout='list' />
-        </div>
+      {filteredMatches && filteredMatches.length > 0 ? (
+        <Tabs defaultValue='laptimes'>
+          <TabsList className='w-full'>
+            <TabsTrigger value='laptimes'>{loc.no.timeEntry.title}</TabsTrigger>
+            <TabsTrigger value='matches'>{loc.no.match.title}</TabsTrigger>
+          </TabsList>
+          <TabsContent value='laptimes'>
+            <TimeEntryList track={track.id} entries={entries ?? []} {...rest} />
+          </TabsContent>
+          <TabsContent value='matches'>
+            <div className='flex flex-col gap-2'>
+              <PageSubheader
+                title={loc.no.match.title}
+                description={filteredMatches.length.toString()}
+              />
+              <MatchList matches={filteredMatches} layout='list' />
+            </div>
+          </TabsContent>
+        </Tabs>
+      ) : (
+        <TimeEntryList track={track.id} entries={entries ?? []} {...rest} />
       )}
     </div>
   )

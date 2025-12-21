@@ -170,9 +170,7 @@ const no = {
   },
   match: {
     title: 'Matcher',
-    matches: 'Matcher',
     description: '1v1 Konkurranser',
-    matches: 'Matcher', // Added Matches translation
     edit: 'Rediger match',
     new: 'Ny match',
     noMatches: 'Ingen matcher funnet.',
@@ -184,22 +182,22 @@ const no = {
     } as Record<MatchStatus, string>,
     stage: {
       group: 'Gruppespill',
-      eight: '8-delsfinale',
+      eight: 'Åttendelsfinale',
       quarter: 'Kvartfinale',
       semi: 'Semifinale',
       bronze: 'Bronsefinale',
       final: 'Finale',
-      loser_eight: 'Taper 8-dels',
-      loser_quarter: 'Taper kvart',
-      loser_semi: 'Taper semi',
-      loser_bronze: 'Taper bronse',
+      loser_eight: 'Taper åttendelsfinale',
+      loser_quarter: 'Taper kvartfinale',
+      loser_semi: 'Taper semifinale',
+      loser_bronze: 'Taper bronsefinale',
       loser_final: 'Taper finale',
     } as Record<MatchStage, string>,
     form: {
       user1: 'Spiller 1',
       user2: 'Spiller 2',
       track: 'Bane',
-      session: 'Session (Valgfritt)',
+      session: 'Session',
       status: 'Status',
       winner: 'Vinner',
       stage: 'Stage',
@@ -268,6 +266,7 @@ const no = {
     },
   },
   timeEntry: {
+    title: 'Rundetider',
     receivedUpdate: 'Rundetidene ble oppdatert',
     gap: {
       leader: 'Leader',

@@ -66,7 +66,7 @@ export default function TrackPage() {
 
       <div className='flex flex-col gap-2'>
         <PageSubheader
-          title={loc.no.match.matches}
+          title={loc.no.match.title}
           description={filteredMatches.length.toString()}
         />
         <MatchList matches={filteredMatches} layout='list' />
