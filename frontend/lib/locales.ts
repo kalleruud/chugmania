@@ -223,6 +223,11 @@ const no = {
         success: 'Match oppdatert!',
         error: 'Klarte ikke oppdatere match',
       },
+      delete: {
+        loading: 'Sletter match...',
+        success: 'Match slettet!',
+        error: 'Klarte ikke slette match',
+      },
     },
     error: {
       planned_winner:

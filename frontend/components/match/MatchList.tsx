@@ -1,4 +1,4 @@
-import { useAuth } from '@/contexts/AuthContext'
+import { useTimeEntryInput } from '@/hooks/TimeEntryInputProvider'
 import loc from '@/lib/locales'
 import type { Match } from '@common/models/match'
 import { PlusIcon } from '@heroicons/react/24/solid'
@@ -6,6 +6,7 @@ import { Button } from '../ui/button'
 import { Empty } from '../ui/empty'
 import MatchCard from './MatchCard'
 
+import { useAuth } from '@/contexts/AuthContext'
 import MatchRow from './MatchRow'
 
 export type MatchListProps = {
@@ -17,21 +18,20 @@ export type MatchListProps = {
 
 export default function MatchList({
   matches,
-  onCreate,
-  onSelect,
   layout = 'grid',
 }: Readonly<MatchListProps>) {
   const { isLoggedIn } = useAuth()
+  const { openMatch } = useTimeEntryInput()
 
   if (matches.length === 0) {
     return (
       <Empty className='border-input text-muted-foreground border text-sm'>
-        {isLoggedIn && onCreate && (
+        {isLoggedIn && (
           <Button
             variant='outline'
             size='sm'
             className='text-muted-foreground w-fit'
-            onClick={onCreate}>
+            onClick={() => openMatch()}>
             <PlusIcon />
             {loc.no.match.new}
           </Button>
@@ -49,7 +49,7 @@ export default function MatchList({
             <MatchCard
               key={match.id}
               match={match}
-              onClick={() => onSelect?.(match)}
+              onClick={() => openMatch(match)}
             />
           ))}
         </div>
@@ -59,7 +59,7 @@ export default function MatchList({
             <MatchRow
               key={match.id}
               item={match}
-              onClick={() => onSelect?.(match)}
+              onClick={() => openMatch(match)}
             />
           ))}
         </div>
@@ -70,7 +70,7 @@ export default function MatchList({
           variant='ghost'
           size='sm'
           className='text-muted-foreground w-fit'
-          onClick={() => open()}>
+          onClick={() => openMatch()}>
           <PlusIcon />
           {loc.no.match.new}
         </Button>

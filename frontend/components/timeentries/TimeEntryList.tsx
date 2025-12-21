@@ -118,7 +118,7 @@ export function TimeEntryList({
   const { isLoggedIn } = useAuth()
   const [gapType, setGapType] = useState<GapType>('interval')
   const [filterType, setFilterType] = useState<FilterType>(filter)
-  const { open } = useTimeEntryInput()
+  const { open, openMatch } = useTimeEntryInput()
 
   const filteredEntries = filterEntries(entries, filterType)
 
