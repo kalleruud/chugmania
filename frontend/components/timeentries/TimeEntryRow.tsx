@@ -47,15 +47,20 @@ function PositionBadgePart({
   )
 }
 
-function NameCellPart({
+export function NameCellPart({
   name,
   hasComment = false,
   className,
   ...props
-}: Readonly<{ name: string; hasComment: boolean } & ComponentProps<'div'>>) {
+}: Readonly<
+  {
+    name: string
+    hasComment?: boolean
+  } & ComponentProps<'div'>
+>) {
   return (
     <div
-      className={twMerge('font-f1-bold mr-auto truncate uppercase', className)}
+      className={twMerge('font-f1-bold truncate uppercase', className)}
       {...props}>
       {name}
       {hasComment && <span className='text-primary'> *</span>}
@@ -164,7 +169,10 @@ export default function TimeEntryRow({
       <NameCellPart
         name={name}
         hasComment={!!lapTime.comment}
-        className={isDNF ? 'text-muted-foreground' : undefined}
+        className={twMerge(
+          'mr-auto',
+          isDNF ? 'text-muted-foreground' : undefined
+        )}
       />
 
       {show.gap && gap && (
