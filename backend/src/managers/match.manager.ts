@@ -62,19 +62,21 @@ export default class MatchManager {
 
     await AuthManager.checkAuth(socket, ['admin', 'moderator'])
 
-    if (
-      (request.status === 'planned' || request.status === 'cancelled') &&
-      request.winner
-    ) {
-      throw new Error(loc.no.match.error.planned_winner)
-    }
-
     const match = await db.query.matches.findFirst({
       where: eq(matches.id, request.id),
     })
 
     if (!match) {
       throw new Error(loc.no.error.messages.not_in_db(request.id))
+    }
+
+    const effectiveStatus = request.status ?? match.status
+
+    if (
+      (effectiveStatus === 'planned' || effectiveStatus === 'cancelled') &&
+      request.winner
+    ) {
+      throw new Error(loc.no.match.error.planned_winner)
     }
 
     const { type, id, createdAt, updatedAt, ...updates } = request
