@@ -93,10 +93,12 @@ export default class MatchManager {
       throw new Error(loc.no.match.error.planned_winner)
     }
 
-    const effectiveUser1 = request.user1 ?? match.user1
-    const effectiveUser2 = request.user2 ?? match.user2
+    const effectiveUser1 =
+      request.user1 === null ? null : (request.user1 ?? match.user1)
+    const effectiveUser2 =
+      request.user2 === null ? null : (request.user2 ?? match.user2)
 
-    if (effectiveUser1 === effectiveUser2) {
+    if (effectiveUser1 && effectiveUser2 && effectiveUser1 === effectiveUser2) {
       throw new Error(loc.no.match.error.same_user)
     }
 
