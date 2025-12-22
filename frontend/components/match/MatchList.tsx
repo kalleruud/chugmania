@@ -1,3 +1,4 @@
+import { useAuth } from '@/contexts/AuthContext'
 import { useTimeEntryInput } from '@/hooks/TimeEntryInputProvider'
 import loc from '@/lib/locales'
 import type { Match } from '@common/models/match'
@@ -5,8 +6,6 @@ import { PlusIcon } from '@heroicons/react/24/solid'
 import { Button } from '../ui/button'
 import { Empty } from '../ui/empty'
 import MatchCard from './MatchCard'
-
-import { useAuth } from '@/contexts/AuthContext'
 import MatchRow from './MatchRow'
 
 export type MatchListProps = {
@@ -14,8 +13,6 @@ export type MatchListProps = {
   user?: string
   session?: string
   matches: Match[]
-  onCreate?: () => void
-  onSelect?: (match: Match) => void
   layout?: 'list' | 'grid'
 }
 
