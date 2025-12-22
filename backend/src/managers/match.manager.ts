@@ -50,6 +50,10 @@ export default class MatchManager {
       throw new Error(loc.no.match.error.invalid_winner)
     }
 
+    if (request.user1 === request.user2) {
+      throw new Error(loc.no.match.error.same_user)
+    }
+
     const { type, createdAt, updatedAt, deletedAt, ...matchData } = request
     await db.insert(matches).values(matchData)
 
@@ -91,6 +95,10 @@ export default class MatchManager {
 
     const effectiveUser1 = request.user1 ?? match.user1
     const effectiveUser2 = request.user2 ?? match.user2
+
+    if (effectiveUser1 === effectiveUser2) {
+      throw new Error(loc.no.match.error.same_user)
+    }
 
     if (
       effectiveWinner &&

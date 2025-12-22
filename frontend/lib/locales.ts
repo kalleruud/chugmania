@@ -235,6 +235,7 @@ const no = {
       planned_winner:
         'Du kan ikke velge vinner på en planlagt eller avlyst match.',
       invalid_winner: 'Vinneren må være en av deltakerne.',
+      same_user: 'Begge deltakerne kan ikke være den samme spilleren.',
     },
   },
   error: {
