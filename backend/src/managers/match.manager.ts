@@ -84,7 +84,9 @@ export default class MatchManager {
       .update(matches)
       .set({
         ...updates,
-        deletedAt: updates.deletedAt ? new Date(updates.deletedAt) : undefined,
+        deletedAt: updates.deletedAt
+          ? new Date(updates.deletedAt)
+          : updates.deletedAt,
       })
       .where(eq(matches.id, match.id))
 
