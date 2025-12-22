@@ -185,9 +185,13 @@ function UserCell({
           onClick?.()
         }}
         className={twMerge(
-          'flex items-center gap-2 px-1 transition-colors',
+          'flex items-center gap-2 border-b-2 border-transparent px-1 transition-all',
+          !isCancelled &&
+            !isCompleted &&
+            user &&
+            'hover:border-primary hover:border-b-2',
           !isWinner && isCompleted && 'text-muted-foreground',
-          isWinner && 'border-primary border-b-2',
+          isWinner && 'border-primary',
           !user && 'text-muted-foreground opacity-50',
           disabled && 'pointer-events-none',
           isCancelled && 'line-through'

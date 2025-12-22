@@ -3,7 +3,6 @@ import Combobox from '@/components/combobox'
 import { SessionRow } from '@/components/session/SessionRow'
 import { TrackRow } from '@/components/track/TrackRow'
 import UserRow from '@/components/user/UserRow'
-import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
@@ -94,14 +93,13 @@ export default function MatchInput({
 }: Readonly<MatchInputProps>) {
   const { socket } = useConnection()
   const { users, tracks, sessions } = useData()
-  const { loggedInUser } = useAuth()
   const location = useLocation()
   const paramId = getId(location.pathname)
 
   const isCreating = !editingMatch.id
 
   const [user1, setUser1] = useState<UserInfo | undefined>(
-    users?.find(u => u.id === (editingMatch.user1 ?? paramId)) ?? loggedInUser
+    users?.find(u => u.id === editingMatch.user1)
   )
   const [user2, setUser2] = useState<UserInfo | undefined>(
     users?.find(u => u.id === editingMatch.user2)
