@@ -43,7 +43,7 @@ export default function MatchCard({
           <div
             className={twMerge(
               'bg-background flex h-12 w-12 items-center justify-center rounded-full border-2',
-              match.winner === match.user1
+              match.winner === match.user1 && match.user1
                 ? 'border-primary text-primary'
                 : 'border-border text-muted-foreground'
             )}>
@@ -54,7 +54,7 @@ export default function MatchCard({
           <span
             className={twMerge(
               'font-f1-bold max-w-[120px] truncate text-sm uppercase',
-              match.winner === match.user1 && 'text-primary'
+              match.winner === match.user1 && match.user1 && 'text-primary'
             )}>
             {user1?.firstName ?? loc.no.match.unknownUser}
           </span>
@@ -72,7 +72,7 @@ export default function MatchCard({
           <div
             className={twMerge(
               'bg-background flex h-12 w-12 items-center justify-center rounded-full border-2',
-              match.winner === match.user2
+              match.winner === match.user2 && match.user2
                 ? 'border-primary text-primary'
                 : 'border-border text-muted-foreground'
             )}>
@@ -83,7 +83,7 @@ export default function MatchCard({
           <span
             className={twMerge(
               'font-f1-bold max-w-[120px] truncate text-sm uppercase',
-              match.winner === match.user2 && 'text-primary'
+              match.winner === match.user2 && match.user2 && 'text-primary'
             )}>
             {user2?.firstName ?? loc.no.match.unknownUser}
           </span>

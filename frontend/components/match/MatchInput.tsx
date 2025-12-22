@@ -130,15 +130,15 @@ export default function MatchInput({
 
   function handleCreate(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    if (!user1 || !user2 || !track) {
+    if (!track) {
       toast.error(loc.no.match.toast.validationError)
       return
     }
 
     const payload: CreateMatchRequest = {
       type: 'CreateMatchRequest',
-      user1: user1.id,
-      user2: user2.id,
+      user1: user1?.id ?? null,
+      user2: user2?.id ?? null,
       track: track.id,
       session: session?.id,
       winner: winner,

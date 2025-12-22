@@ -11,12 +11,7 @@ export type CreateMatchRequest = {
 
 export function isCreateMatchRequest(data: any): data is CreateMatchRequest {
   if (typeof data !== 'object' || data === null) return false
-  return (
-    data.type === 'CreateMatchRequest' &&
-    typeof data.user1 === 'string' &&
-    typeof data.user2 === 'string' &&
-    typeof data.track === 'string'
-  )
+  return data.type === 'CreateMatchRequest' && typeof data.track === 'string'
 }
 
 export type EditMatchRequest = Partial<CreateMatch> & {

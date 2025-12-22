@@ -91,12 +91,8 @@ export const timeEntries = sqliteTable('time_entries', {
 
 export const matches = sqliteTable('matches', {
   ...metadata,
-  user1: text()
-    .notNull()
-    .references(() => users.id),
-  user2: text()
-    .notNull()
-    .references(() => users.id),
+  user1: text().references(() => users.id),
+  user2: text().references(() => users.id),
   track: text()
     .notNull()
     .references(() => tracks.id),

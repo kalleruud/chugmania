@@ -71,10 +71,9 @@ export default function MatchRow({
   return (
     <div
       className={twMerge(
-        'hover:bg-foreground/5 group relative flex cursor-pointer items-center justify-center rounded-md px-4 py-3',
+        'hover:bg-foreground/5 group relative flex cursor-pointer items-center justify-center rounded-md px-4 py-3 transition-colors',
         isCancelled && 'text-muted-foreground opacity-33',
-        highlight &&
-          'bg-primary-background hover:bg-primary/25 ring-primary/50 ring-1',
+        highlight && 'ring-primary/50 ring-1',
         className
       )}
       {...rest}>
@@ -90,17 +89,6 @@ export default function MatchRow({
         </div>
       )}
 
-      {isLoggedIn && match.status !== 'completed' && !isCancelled && (
-        <button
-          className='hover:bg-destructive/10 hover:text-destructive text-muted-foreground/50 absolute right-4 hidden rounded-full p-1 transition-colors group-hover:block'
-          onClick={e => {
-            e.stopPropagation()
-            handleCancel()
-          }}>
-          <XMarkIcon className='h-4 w-4' />
-        </button>
-      )}
-
       <div
         className={twMerge(
           'flex w-full items-center justify-center gap-2',
@@ -109,7 +97,7 @@ export default function MatchRow({
         <UserCell
           className='justify-end'
           user={user1}
-          isWinner={match.winner === match.user1}
+          isWinner={!!match.winner && match.winner === match.user1}
           onClick={() => user1 && handleSetWinner(user1.id)}
           disabled={!isLoggedIn || isCancelled || match.status !== 'planned'}
           isCancelled={isCancelled}
@@ -125,12 +113,23 @@ export default function MatchRow({
 
         <UserCell
           user={user2}
-          isWinner={match.winner === match.user2}
+          isWinner={!!match.winner && match.winner === match.user2}
           onClick={() => user2 && handleSetWinner(user2.id)}
           disabled={!isLoggedIn || isCancelled || match.status !== 'planned'}
           isCancelled={isCancelled}
         />
       </div>
+
+      {isLoggedIn && match.status !== 'completed' && !isCancelled && (
+        <button
+          className='text-muted-foreground hover:text-muted-foreground/80 absolute right-0 hidden p-4 transition-colors group-hover:block'
+          onClick={e => {
+            e.stopPropagation()
+            handleCancel()
+          }}>
+          <XMarkIcon className='size-4' />
+        </button>
+      )}
     </div>
   )
 }
@@ -150,7 +149,6 @@ function UserCell({
   disabled?: boolean
   isCancelled?: boolean
 }>) {
-  if (!user) return null
   return (
     <div className={twMerge('flex w-48', className)}>
       <button

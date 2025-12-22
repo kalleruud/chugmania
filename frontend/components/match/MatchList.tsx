@@ -37,7 +37,7 @@ export default function MatchList({
             variant='outline'
             size='sm'
             className='text-muted-foreground w-fit'
-            onClick={() => openMatch()}>
+            onClick={() => openMatch({ track, user1: user, session })}>
             <PlusIcon />
             {loc.no.match.new}
           </Button>
