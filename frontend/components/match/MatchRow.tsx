@@ -101,6 +101,7 @@ export default function MatchRow({
           onClick={() => user1 && handleSetWinner(user1.id)}
           disabled={!isLoggedIn || isCancelled || match.status !== 'planned'}
           isCancelled={isCancelled}
+          isCompleted={match.status === 'completed'}
         />
 
         <span
@@ -117,6 +118,7 @@ export default function MatchRow({
           onClick={() => user2 && handleSetWinner(user2.id)}
           disabled={!isLoggedIn || isCancelled || match.status !== 'planned'}
           isCancelled={isCancelled}
+          isCompleted={match.status === 'completed'}
         />
       </div>
 
@@ -141,13 +143,15 @@ function UserCell({
   onClick,
   disabled,
   isCancelled,
+  isCompleted,
 }: Readonly<{
   className?: string
   user: UserInfo | undefined
   isWinner: boolean
   onClick?: () => void
   disabled?: boolean
-  isCancelled?: boolean
+  isCancelled: boolean
+  isCompleted: boolean
 }>) {
   return (
     <div className={twMerge('flex w-48', className)}>
@@ -159,9 +163,10 @@ function UserCell({
           onClick?.()
         }}
         className={twMerge(
-          'z-10 flex items-center gap-2 rounded-md px-2 py-1 transition-colors',
-          !isWinner && 'hover:bg-accent hover:text-accent-foreground',
-          isWinner && 'bg-primary/10 ring-primary hover:bg-primary ring-2',
+          'z-10 flex items-center gap-2 px-1 transition-colors',
+          !isWinner && isCompleted && 'text-muted-foreground',
+          // isWinner && 'bg-primary/10 ring-primary hover:bg-primary ring-2',
+          isWinner && 'border-primary border-b-2',
           !user && 'opacity-50',
           disabled && 'pointer-events-none',
           isCancelled && 'line-through'
