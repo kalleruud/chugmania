@@ -73,7 +73,7 @@ export default function MatchRow({
       className={twMerge(
         'hover:bg-foreground/5 group relative flex cursor-pointer items-center justify-center rounded-md px-4 py-3 transition-colors',
         isCancelled && 'text-muted-foreground opacity-33',
-        highlight && 'ring-primary/50 ring-1',
+        highlight && 'bg-foreground/3',
         className
       )}
       {...rest}>

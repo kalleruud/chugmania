@@ -158,8 +158,7 @@ export default function TimeEntryRow({
       ref={containerRef}
       className={twMerge(
         'hover:bg-foreground/5 flex cursor-pointer items-center gap-4 rounded-md',
-        highlight &&
-          'bg-primary-background hover:bg-primary/25 ring-primary/50 ring-1',
+        highlight && 'bg-foreground/3',
         isDNF && 'opacity-50',
         className
       )}
