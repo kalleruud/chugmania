@@ -5,9 +5,33 @@ import * as React from 'react'
 import { cn } from '@/lib/utils'
 
 function Select({
+  onValueChange,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Root>) {
-  return <SelectPrimitive.Root data-slot='select' {...props} />
+  return (
+    <SelectPrimitive.Root
+      data-slot='select'
+      onValueChange={onValueChange}
+      {...props}>
+      {/* @ts-ignore */}
+      <div
+        style={{ display: 'contents' }}
+        ref={node => {
+          if (node) {
+            node.addEventListener('deselect-item', (e: any) => {
+              e.stopPropagation()
+              // If the value being deselected is the current value, clear it
+              if (props.value === e.detail.value) {
+                // @ts-ignore
+                onValueChange?.('none')
+              }
+            })
+          }
+        }}>
+        {props.children}
+      </div>
+    </SelectPrimitive.Root>
+  )
 }
 
 function SelectGroup({
@@ -107,7 +131,23 @@ function SelectItem({
         "focus:bg-accent focus:text-accent-foreground [&_svg:not([class*='text-'])]:text-muted-foreground outline-hidden *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2 relative flex w-full cursor-default select-none items-center gap-2 rounded-sm py-1.5 pl-2 pr-8 text-sm data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
         className
       )}
-      {...props}>
+      {...props}
+      onPointerUp={e => {
+        if (
+          e.target instanceof Element &&
+          e.target.hasAttribute('data-state')
+        ) {
+          const state = e.target.getAttribute('data-state')
+          if (state === 'checked') {
+            const event = new CustomEvent('deselect-item', {
+              bubbles: true,
+              detail: { value: props.value },
+            })
+            e.currentTarget.dispatchEvent(event)
+          }
+        }
+        props.onPointerUp?.(e)
+      }}>
       <span className='absolute right-2 flex size-3.5 items-center justify-center'>
         <SelectPrimitive.ItemIndicator>
           <CheckIcon className='size-4' />

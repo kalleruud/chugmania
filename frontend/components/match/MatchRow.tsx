@@ -5,7 +5,7 @@ import loc from '@/lib/locales'
 import type { EditMatchRequest, Match } from '@common/models/match'
 import type { UserInfo } from '@common/models/user'
 import { formatTrackName } from '@common/utils/track'
-import { XMarkIcon } from '@heroicons/react/24/solid'
+import { MinusIcon } from '@heroicons/react/24/solid'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
 import type { BaseRowProps } from '../row/RowProps'
@@ -28,6 +28,8 @@ export default function MatchRow({
   const track = tracks?.find(t => t.id === match.track)
 
   const isCancelled = match.status === 'cancelled'
+  const isCompleted = match.status === 'completed'
+  const isPlanned = match.status === 'planned'
 
   function handleSetWinner(userId: string) {
     if (!isLoggedIn) return
@@ -109,7 +111,7 @@ export default function MatchRow({
           onClick={() => user1 && handleSetWinner(user1.id)}
           disabled={!isLoggedIn || isCancelled || match.status !== 'planned'}
           isCancelled={isCancelled}
-          isCompleted={match.status === 'completed'}
+          isCompleted={isCompleted}
         />
 
         <span
@@ -127,20 +129,27 @@ export default function MatchRow({
           onClick={() => user2 && handleSetWinner(user2.id)}
           disabled={!isLoggedIn || isCancelled || match.status !== 'planned'}
           isCancelled={isCancelled}
-          isCompleted={match.status === 'completed'}
+          isCompleted={isCompleted}
         />
       </div>
 
-      {isLoggedIn && match.status !== 'completed' && !isCancelled && (
-        <button
-          className='text-muted-foreground hover:text-muted-foreground/80 absolute right-0 hidden p-4 transition-colors group-hover:block'
-          onClick={e => {
-            e.stopPropagation()
-            handleCancel()
-          }}>
-          <XMarkIcon className='size-4' />
-        </button>
-      )}
+      <div className='absolute right-0 flex items-center'>
+        {isLoggedIn && isPlanned && (
+          <button
+            title={loc.no.match.cancel}
+            className='text-muted-foreground hover:text-primary-foreground hover:bg-muted m-2 hidden p-2 transition-colors hover:rounded-sm group-hover:block'
+            onClick={e => {
+              e.stopPropagation()
+              handleCancel()
+            }}>
+            <MinusIcon className='size-4' />
+          </button>
+        )}
+
+        {isPlanned && (
+          <span className='bg-primary mr-5 size-2 animate-pulse rounded-full group-hover:hidden' />
+        )}
+      </div>
     </div>
   )
 }

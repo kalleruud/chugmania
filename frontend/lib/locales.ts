@@ -169,6 +169,7 @@ const no = {
     },
   },
   match: {
+    cancel: 'Avlys',
     vs: 'vs',
     title: 'Matcher',
     description: '1v1 Konkurranser',
