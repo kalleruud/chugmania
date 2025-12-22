@@ -97,9 +97,7 @@ export default function MatchCard({
           <span className='font-kh-interface text-sm tabular-nums'>
             #{formatTrackName(track.number)}
           </span>
-          <TrackBadge trackLevel={track.level} size='xs'>
-            {track.level}
-          </TrackBadge>
+          <TrackBadge trackLevel={track.level}>{track.level}</TrackBadge>
         </div>
       )}
     </button>
