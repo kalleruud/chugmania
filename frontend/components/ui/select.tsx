@@ -133,11 +133,8 @@ function SelectItem({
       )}
       {...props}
       onPointerUp={e => {
-        if (
-          e.target instanceof Element &&
-          e.target.hasAttribute('data-state')
-        ) {
-          const state = e.target.getAttribute('data-state')
+        if (e.target instanceof HTMLElement && e.target.dataset.state) {
+          const state = e.target.dataset.state
           if (state === 'checked') {
             const event = new CustomEvent('deselect-item', {
               bubbles: true,

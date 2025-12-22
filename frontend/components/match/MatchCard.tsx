@@ -22,10 +22,11 @@ export default function MatchCard({
   const track = tracks?.find(t => t.id === match.track)
 
   return (
-    <div
+    <button
+      type='button'
       onClick={onClick}
       className={twMerge(
-        'bg-background-secondary hover:bg-background-tertiary hover:border-primary/20 flex cursor-pointer flex-col items-center justify-center gap-4 rounded-lg border border-transparent p-6 transition-colors',
+        'bg-background-secondary hover:bg-background-tertiary hover:border-primary/20 flex w-full cursor-pointer flex-col items-center justify-center gap-4 rounded-lg border border-transparent p-6 transition-colors',
         className
       )}>
       {/* Header: Stage and Status */}
@@ -101,6 +102,6 @@ export default function MatchCard({
           </TrackBadge>
         </div>
       )}
-    </div>
+    </button>
   )
 }

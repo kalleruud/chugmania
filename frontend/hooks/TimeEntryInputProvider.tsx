@@ -48,38 +48,40 @@ export default function TimeEntryInputProvider({
   const { loggedInUser, isLoggedIn } = useAuth()
   const { socket } = useConnection()
 
+  const matchLocaleStrings = editingMatch.id
+    ? {
+        title: loc.no.match.edit,
+        description: loc.no.match.description,
+        deleteRequest: loc.no.match.toast.delete,
+        update: loc.no.match.toast.update.success,
+        submit: loc.no.match.new,
+      }
+    : {
+        title: loc.no.match.new,
+        description: loc.no.match.description,
+        deleteRequest: loc.no.match.toast.delete,
+        update: loc.no.match.toast.create.success,
+        submit: loc.no.match.new,
+      }
+
+  const timeEntryLocaleStrings = editingTimeEntry.id
+    ? {
+        title: loc.no.timeEntry.input.edit.title,
+        description: loc.no.timeEntry.input.edit.description,
+        deleteRequest: loc.no.timeEntry.input.deleteRequest,
+        update: loc.no.timeEntry.input.update,
+        submit: loc.no.timeEntry.input.submit,
+      }
+    : {
+        title: loc.no.timeEntry.input.create.title,
+        description: loc.no.timeEntry.input.create.description,
+        deleteRequest: loc.no.timeEntry.input.deleteRequest,
+        update: loc.no.timeEntry.input.update,
+        submit: loc.no.timeEntry.input.submit,
+      }
+
   const localeStrings =
-    mode === 'match'
-      ? editingMatch.id
-        ? {
-            title: loc.no.match.edit,
-            description: loc.no.match.description,
-            deleteRequest: loc.no.match.toast.delete,
-            update: loc.no.match.toast.update.success,
-            submit: loc.no.match.new,
-          }
-        : {
-            title: loc.no.match.new,
-            description: loc.no.match.description,
-            deleteRequest: loc.no.match.toast.delete,
-            update: loc.no.match.toast.create.success,
-            submit: loc.no.match.new,
-          }
-      : editingTimeEntry.id
-        ? {
-            title: loc.no.timeEntry.input.edit.title,
-            description: loc.no.timeEntry.input.edit.description,
-            deleteRequest: loc.no.timeEntry.input.deleteRequest,
-            update: loc.no.timeEntry.input.update,
-            submit: loc.no.timeEntry.input.submit,
-          }
-        : {
-            title: loc.no.timeEntry.input.create.title,
-            description: loc.no.timeEntry.input.create.description,
-            deleteRequest: loc.no.timeEntry.input.deleteRequest,
-            update: loc.no.timeEntry.input.update,
-            submit: loc.no.timeEntry.input.submit,
-          }
+    mode === 'match' ? matchLocaleStrings : timeEntryLocaleStrings
 
   const isEditing = mode === 'match' ? !!editingMatch.id : !!editingTimeEntry.id
 
