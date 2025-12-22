@@ -42,6 +42,14 @@ export default class MatchManager {
       throw new Error(loc.no.match.error.planned_winner)
     }
 
+    if (
+      request.winner &&
+      request.winner !== request.user1 &&
+      request.winner !== request.user2
+    ) {
+      throw new Error(loc.no.match.error.invalid_winner)
+    }
+
     const { type, createdAt, updatedAt, deletedAt, ...matchData } = request
     await db.insert(matches).values(matchData)
 
@@ -79,6 +87,17 @@ export default class MatchManager {
       effectiveWinner
     ) {
       throw new Error(loc.no.match.error.planned_winner)
+    }
+
+    const effectiveUser1 = request.user1 ?? match.user1
+    const effectiveUser2 = request.user2 ?? match.user2
+
+    if (
+      effectiveWinner &&
+      effectiveWinner !== effectiveUser1 &&
+      effectiveWinner !== effectiveUser2
+    ) {
+      throw new Error(loc.no.match.error.invalid_winner)
     }
 
     const { type, id, createdAt, updatedAt, ...updates } = request
