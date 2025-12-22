@@ -115,7 +115,7 @@ export default function MatchRow({
           user={user1}
           isWinner={!!match.winner && match.winner === match.user1}
           onClick={() => user1 && handleSetWinner(user1.id)}
-          disabled={!isLoggedIn || isCancelled || match.status !== 'planned'}
+          disabled={!canEdit || isCancelled || match.status !== 'planned'}
           isCancelled={isCancelled}
           isCompleted={isCompleted}
         />
@@ -133,7 +133,7 @@ export default function MatchRow({
           className='w-36'
           isWinner={!!match.winner && match.winner === match.user2}
           onClick={() => user2 && handleSetWinner(user2.id)}
-          disabled={!isLoggedIn || isCancelled || match.status !== 'planned'}
+          disabled={!canEdit || isCancelled || match.status !== 'planned'}
           isCancelled={isCancelled}
           isCompleted={isCompleted}
         />
