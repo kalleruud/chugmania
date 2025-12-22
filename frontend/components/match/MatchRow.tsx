@@ -22,17 +22,19 @@ export default function MatchRow({
 }: Readonly<MatchRowProps>) {
   const { users, tracks } = useData()
   const { socket } = useConnection()
-  const { isLoggedIn } = useAuth()
+  const { isLoggedIn, loggedInUser } = useAuth()
   const user1 = users?.find(u => u.id === match.user1)
   const user2 = users?.find(u => u.id === match.user2)
   const track = tracks?.find(t => t.id === match.track)
+
+  const canEdit = isLoggedIn && loggedInUser.role !== 'user'
 
   const isCancelled = match.status === 'cancelled'
   const isCompleted = match.status === 'completed'
   const isPlanned = match.status === 'planned'
 
   function handleSetWinner(userId: string) {
-    if (!isLoggedIn) return
+    if (!canEdit) return
 
     const isWinner = match.winner === userId
     const newWinner = isWinner ? null : userId
@@ -54,7 +56,7 @@ export default function MatchRow({
   }
 
   function handleCancel() {
-    if (!isLoggedIn) return
+    if (!canEdit) return
 
     const payload: EditMatchRequest = {
       type: 'EditMatchRequest',
@@ -138,7 +140,7 @@ export default function MatchRow({
       </div>
 
       <div className='absolute right-0 flex items-center'>
-        {isLoggedIn && isPlanned && (
+        {canEdit && isPlanned && (
           <button
             title={loc.no.match.cancel}
             className='text-muted-foreground hover:text-primary-foreground hover:bg-muted m-2 hidden p-2 transition-colors hover:rounded-sm group-hover:block'
