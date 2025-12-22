@@ -26,7 +26,7 @@ export default function MatchList({
   session,
   layout = 'grid',
 }: Readonly<MatchListProps>) {
-  const { isLoggedIn } = useAuth()
+  const { isLoggedIn, loggedInUser } = useAuth()
   const { openMatch } = useTimeEntryInput()
 
   if (matches.length === 0) {
@@ -65,6 +65,12 @@ export default function MatchList({
             <MatchRow
               key={match.id}
               item={match}
+              highlight={
+                match.status !== 'cancelled' &&
+                isLoggedIn &&
+                (match.user1 === loggedInUser.id ||
+                  match.user2 === loggedInUser.id)
+              }
               onClick={() => openMatch(match)}
             />
           ))}

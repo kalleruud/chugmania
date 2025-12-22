@@ -16,6 +16,7 @@ export type MatchRowProps = BaseRowProps<Match>
 export default function MatchRow({
   className,
   item: match,
+  highlight,
   ...rest
 }: Readonly<MatchRowProps>) {
   const { users, tracks } = useData()
@@ -72,6 +73,8 @@ export default function MatchRow({
       className={twMerge(
         'hover:bg-foreground/5 group relative flex cursor-pointer items-center justify-center rounded-md px-4 py-3',
         isCancelled && 'text-muted-foreground opacity-33',
+        highlight &&
+          'bg-primary-background hover:bg-primary/25 ring-primary/50 ring-1',
         className
       )}
       {...rest}>
@@ -108,7 +111,7 @@ export default function MatchRow({
           user={user1}
           isWinner={match.winner === match.user1}
           onClick={() => user1 && handleSetWinner(user1.id)}
-          disabled={!isLoggedIn || isCancelled}
+          disabled={!isLoggedIn || isCancelled || match.status !== 'planned'}
           isCancelled={isCancelled}
         />
 
@@ -124,7 +127,7 @@ export default function MatchRow({
           user={user2}
           isWinner={match.winner === match.user2}
           onClick={() => user2 && handleSetWinner(user2.id)}
-          disabled={!isLoggedIn || isCancelled}
+          disabled={!isLoggedIn || isCancelled || match.status !== 'planned'}
           isCancelled={isCancelled}
         />
       </div>
