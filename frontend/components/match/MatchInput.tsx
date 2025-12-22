@@ -164,10 +164,10 @@ export default function MatchInput({
     const payload: EditMatchRequest = {
       type: 'EditMatchRequest',
       id: editingMatch.id,
-      user1: user1?.id,
-      user2: user2?.id,
+      user1: user1?.id ?? null,
+      user2: user2?.id ?? null,
       track: track?.id,
-      session: session?.id,
+      session: session?.id ?? null,
       winner: winner === 'none' ? null : (winner ?? null),
       status: status ?? null,
       stage: stage,
