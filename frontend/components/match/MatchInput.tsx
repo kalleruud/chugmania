@@ -111,10 +111,13 @@ export default function MatchInput({
   const currentOngoingSession = sessions?.find(s => isOngoing(s))
 
   const [session, setSession] = useState<SessionWithSignups | undefined>(
-    editingMatch.id
-      ? sessions?.find(s => s.id === editingMatch.session)
-      : (currentOngoingSession ?? sessions?.find(s => s.id === paramId))
+    isCreating
+      ? (sessions?.find(u => u.id === editingMatch.session) ??
+          currentOngoingSession ??
+          sessions?.find(u => u.id === paramId))
+      : sessions?.find(u => u.id === editingMatch.session)
   )
+
   const [winner, setWinner] = useState<string | undefined>(
     editingMatch.winner ?? undefined
   )

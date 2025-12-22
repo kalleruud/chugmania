@@ -117,9 +117,11 @@ export default function TimeEntryInput({
   const [selectedSession, setSelectedSession] = useState<
     SessionWithSignups | undefined
   >(
-    editingTimeEntry?.id
-      ? sessions?.find(u => u.id === editingTimeEntry.session)
-      : (currentOngoingSession ?? sessions?.find(u => u.id === paramId))
+    isCreating
+      ? (sessions?.find(u => u.id === editingTimeEntry.session) ??
+          currentOngoingSession ??
+          sessions?.find(u => u.id === paramId))
+      : sessions?.find(u => u.id === editingTimeEntry.session)
   )
 
   const [comment, setComment] = useState(editingTimeEntry.comment ?? undefined)
