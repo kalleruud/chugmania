@@ -95,7 +95,11 @@ export default function MatchRow({
         )}
 
         {match.stage && (
-          <Badge variant='outline'>{loc.no.match.stage[match.stage]}</Badge>
+          <Badge
+            variant='outline'
+            className={twMerge(isCancelled && 'line-through')}>
+            {loc.no.match.stage[match.stage]}
+          </Badge>
         )}
       </div>
 
