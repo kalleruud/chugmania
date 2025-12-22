@@ -141,11 +141,10 @@ export default function MatchInput({
       user2: user2?.id ?? null,
       track: track.id,
       session: session?.id,
-      winner: winner,
-      status: status,
+      winner: winner === 'none' ? null : winner,
+      status: status ?? null,
       stage: stage,
-      comment: comment,
-      duration: null,
+      comment: comment?.trim() === '' ? undefined : comment?.trim(),
     }
 
     toast.promise(
@@ -168,10 +167,10 @@ export default function MatchInput({
       user2: user2?.id,
       track: track?.id,
       session: session?.id,
-      winner: winner,
-      status: status,
+      winner: winner === 'none' ? null : (winner ?? null),
+      status: status ?? null,
       stage: stage,
-      comment: comment,
+      comment: comment?.trim() === '' ? undefined : comment?.trim(),
     }
 
     toast.promise(
@@ -181,6 +180,23 @@ export default function MatchInput({
       }),
       loc.no.match.toast.update
     )
+  }
+
+  function handleSetWinner(userId: string) {
+    if (!userId || userId === 'none') {
+      setWinner('none')
+      setStatus('planned')
+      return
+    }
+    setWinner(userId)
+    setStatus('completed')
+  }
+
+  function handleSetStatus(status: MatchStatus) {
+    setStatus(status)
+    if (status !== 'completed') {
+      setWinner('none')
+    }
   }
 
   return (
@@ -299,7 +315,7 @@ export default function MatchInput({
           <Label>{loc.no.match.form.status}</Label>
           <Select
             value={status}
-            onValueChange={v => setStatus(v as MatchStatus)}
+            onValueChange={handleSetStatus}
             disabled={disabled}>
             <SelectTrigger>
               <SelectValue />
@@ -317,13 +333,11 @@ export default function MatchInput({
         <div className='flex flex-col gap-1'>
           <Label>{loc.no.match.form.winner}</Label>
           <Select
-            value={winner ?? 'none'}
-            onValueChange={v => setWinner(v === 'none' ? undefined : v)}
+            value={winner}
+            onValueChange={handleSetWinner}
             disabled={disabled || status !== 'completed'}>
             <SelectTrigger>
-              <SelectValue
-                placeholder={loc.no.match.placeholder.selectWinner}
-              />
+              <SelectValue placeholder={loc.no.match.placeholder.none} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value='none'>

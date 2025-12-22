@@ -10,6 +10,7 @@ import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
 import type { BaseRowProps } from '../row/RowProps'
 import { NameCellPart } from '../timeentries/TimeEntryRow'
+import { Badge } from '../ui/badge'
 
 export type MatchRowProps = BaseRowProps<Match>
 
@@ -71,27 +72,34 @@ export default function MatchRow({
   return (
     <div
       className={twMerge(
-        'hover:bg-foreground/5 group relative flex cursor-pointer items-center justify-center rounded-md px-4 py-3 transition-colors',
+        'hover:bg-foreground/5 group relative flex cursor-pointer items-center justify-between rounded-md p-4 transition-colors',
         isCancelled && 'text-muted-foreground opacity-33',
         highlight && 'bg-foreground/3',
         className
       )}
       {...rest}>
-      {track && (
-        <div className='absolute left-4 flex items-center gap-2'>
-          <span
-            className={twMerge(
-              'font-kh-interface tabular-nums',
-              isCancelled && 'line-through'
-            )}>
-            #{formatTrackName(track.number)}
-          </span>
-        </div>
-      )}
+      <div className='flex items-center gap-2'>
+        {track && (
+          <div className='flex items-center gap-2'>
+            <span
+              className={twMerge(
+                'font-kh-interface tabular-nums',
+                isCancelled && 'line-through'
+              )}>
+              <span className='text-primary'>#</span>
+              {formatTrackName(track.number)}
+            </span>
+          </div>
+        )}
+
+        {match.stage && (
+          <Badge variant='outline'>{loc.no.match.stage[match.stage]}</Badge>
+        )}
+      </div>
 
       <div
         className={twMerge(
-          'flex w-full items-center justify-center gap-2',
+          'flex items-center justify-center gap-2',
           isCancelled && 'line-through'
         )}>
         <UserCell
@@ -114,6 +122,7 @@ export default function MatchRow({
 
         <UserCell
           user={user2}
+          className='w-36'
           isWinner={!!match.winner && match.winner === match.user2}
           onClick={() => user2 && handleSetWinner(user2.id)}
           disabled={!isLoggedIn || isCancelled || match.status !== 'planned'}
@@ -154,7 +163,7 @@ function UserCell({
   isCompleted: boolean
 }>) {
   return (
-    <div className={twMerge('flex w-48', className)}>
+    <div className={twMerge('flex', className)}>
       <button
         type='button'
         disabled={disabled}
@@ -163,11 +172,10 @@ function UserCell({
           onClick?.()
         }}
         className={twMerge(
-          'z-10 flex items-center gap-2 px-1 transition-colors',
+          'flex items-center gap-2 px-1 transition-colors',
           !isWinner && isCompleted && 'text-muted-foreground',
-          // isWinner && 'bg-primary/10 ring-primary hover:bg-primary ring-2',
           isWinner && 'border-primary border-b-2',
-          !user && 'opacity-50',
+          !user && 'text-muted-foreground opacity-50',
           disabled && 'pointer-events-none',
           isCancelled && 'line-through'
         )}>
