@@ -71,10 +71,12 @@ export default class MatchManager {
     }
 
     const effectiveStatus = request.status ?? match.status
+    const effectiveWinner =
+      request.winner === undefined ? match.winner : request.winner
 
     if (
       (effectiveStatus === 'planned' || effectiveStatus === 'cancelled') &&
-      request.winner
+      effectiveWinner
     ) {
       throw new Error(loc.no.match.error.planned_winner)
     }
