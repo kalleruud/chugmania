@@ -37,9 +37,10 @@ import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
 import type { SessionWithSignups } from '@common/models/session'
 import { isUpcoming } from '@common/utils/date'
+import accumulateSignups from '@common/utils/signupAccumulator'
 import { CheckCircleIcon } from '@heroicons/react/24/solid'
 import { PencilIcon, Trash2 } from 'lucide-react'
-import { useState, type ComponentProps } from 'react'
+import { useMemo, useState, type ComponentProps } from 'react'
 import { useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
@@ -56,12 +57,32 @@ function Signup({
 >) {
   const { socket } = useConnection()
   const { loggedInUser, isLoggedIn } = useAuth()
+  const { timeEntries, matches, users, isLoadingData } = useData()
+
   const [myResponse, setMyResponse] = useState<SessionResponse | undefined>(
     session.signups.find(s => s.user.id === loggedInUser?.id)?.response
   )
 
   const isAdmin = isLoggedIn && loggedInUser.role !== 'user'
   const responses: SessionResponse[] = ['yes', 'maybe', 'no']
+
+  const accumulatedSignups = useMemo(
+    () =>
+      accumulateSignups(
+        session.id,
+        session.signups,
+        timeEntries ?? [],
+        matches ?? []
+      ),
+    [session.id, session.signups, timeEntries, matches]
+  )
+
+  if (isLoadingData)
+    return (
+      <div className='items-center-safe justify-center-safe flex h-dvh w-full'>
+        <Spinner className='size-6' />
+      </div>
+    )
 
   function handleRsvp(response: SessionResponse) {
     if (!isLoggedIn) return
@@ -118,14 +139,16 @@ function Signup({
         </div>
       </div>
 
-      {session.signups.length === 0 && (
+      {accumulatedSignups.length === 0 && (
         <Empty className='border-input text-muted-foreground border text-sm'>
           {loc.no.common.noItems}
         </Empty>
       )}
 
       {responses.map(response => {
-        const responses = session.signups.filter(s => s.response === response)
+        const responses = accumulatedSignups.filter(
+          s => s.response === response
+        )
         if (responses.length === 0) return undefined
         return (
           <div key={response} className='flex flex-col'>
@@ -134,10 +157,10 @@ function Signup({
               description={responses.length.toString()}
             />
             <div className='bg-background-secondary rounded-sm'>
-              {responses.map(signup => (
+              {accumulatedSignups.map(signup => (
                 <UserRow
-                  key={signup.user.id}
-                  item={signup.user}
+                  key={signup.user}
+                  item={users.find(u => u.id === signup.user)!}
                   className='py-3 first:pt-4 last:pb-4'
                 />
               ))}
