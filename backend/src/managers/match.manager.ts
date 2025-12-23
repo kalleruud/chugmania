@@ -7,7 +7,7 @@ import {
   type Match,
 } from '@common/models/match'
 import type { EventReq, EventRes } from '@common/models/socket.io'
-import { desc, eq, getTableColumns, isNull } from 'drizzle-orm'
+import { desc, eq, getTableColumns, isNull, sql } from 'drizzle-orm'
 import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
 import { matches, sessions } from '../../database/schema'
@@ -43,7 +43,7 @@ export default class MatchManager {
       .from(matches)
       .leftJoin(sessions, eq(matches.session, sessions.id))
       .where(isNull(matches.deletedAt))
-      .orderBy(desc(sessions.date), desc(matches.createdAt))
+      .orderBy(desc(sql`COALESCE(${sessions.date}, ${matches.createdAt})`))
 
     return matchRows
   }
