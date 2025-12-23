@@ -277,11 +277,13 @@ const no = {
   timeEntry: {
     title: 'Rundetider',
     receivedUpdate: 'Rundetidene ble oppdatert',
+    dnf: 'DNF',
     gap: {
       leader: 'Leader',
       interval: 'Interval',
     } as Record<GapType, string>,
     input: {
+      validationError: 'Du må fylle ut alle feltene...',
       create: {
         title: 'Registrer tid',
         description: 'Tiden din publiseres asap zulu.',

@@ -182,8 +182,7 @@ export default function TimeEntryInput({
 
   function handleCreate(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    if (!request) return toast.error(loc.no.timeEntry.input.noUser)
-    if (!request) return toast.error(loc.no.timeEntry.input.noTrack)
+    if (!request) return toast.error(loc.no.timeEntry.input.validationError)
 
     toast.promise(
       socket
@@ -198,7 +197,7 @@ export default function TimeEntryInput({
       {
         ...loc.no.timeEntry.input.createRequest,
         success: loc.no.timeEntry.input.createRequest.success(
-          formatTime(request.duration ?? 0)
+          request.duration ? formatTime(request.duration) : loc.no.timeEntry.dnf
         ),
       }
     )

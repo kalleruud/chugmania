@@ -1,4 +1,5 @@
 import { useData } from '@/contexts/DataContext'
+import loc from '@/lib/locales'
 import type { LeaderboardEntryGap, TimeEntry } from '@common/models/timeEntry'
 import { formatTime } from '@common/utils/time'
 import { MinusIcon } from '@heroicons/react/24/solid'
@@ -37,7 +38,7 @@ function PositionBadgePart({
       className={twMerge(
         'font-kh-interface flex w-6 flex-none items-center justify-center rounded-sm uppercase'
       )}
-      aria-label={position ? `#${position}` : 'DNF'}>
+      aria-label={position ? `#${position}` : loc.no.timeEntry.dnf}>
       {position ? (
         <span className='text-primary'>{position}</span>
       ) : (
@@ -70,7 +71,9 @@ export function NameCellPart({
 
 function TimePart({ duration }: Readonly<{ duration?: number | null }>) {
   const isDNF = !duration
-  const label = duration ? formatTime(duration).replace(/^0/, '') : 'DNF'
+  const label = duration
+    ? formatTime(duration).replace(/^0/, '')
+    : loc.no.timeEntry.dnf
   return (
     <div
       className={twMerge(
