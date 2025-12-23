@@ -180,6 +180,13 @@ export default class SessionManager {
     const isModerator = actor.role !== 'user'
     const isSelf = actor.id === request.user
 
+    const existingSignup = await db.query.sessionSignups.findFirst({
+      where: and(
+        eq(sessionSignups.session, request.session),
+        eq(sessionSignups.user, request.user)
+      ),
+    })
+
     if (!isModerator && !isSelf) {
       throw new Error(loc.no.error.messages.insufficient_permissions)
     }
@@ -196,17 +203,18 @@ export default class SessionManager {
       throw new Error(loc.no.session.errorMessages.no_edit_historical)
     }
 
-    await db
-      .insert(sessionSignups)
-      .values({
+    if (existingSignup) {
+      await db
+        .update(sessionSignups)
+        .set({ response: request.response })
+        .where(eq(sessionSignups.id, existingSignup.id))
+    } else {
+      await db.insert(sessionSignups).values({
         session: session.id,
         user: actor.id,
         response: request.response,
       })
-      .onConflictDoUpdate({
-        target: [sessionSignups.session, sessionSignups.user],
-        set: { response: request.response },
-      })
+    }
 
     console.debug(
       new Date().toISOString(),

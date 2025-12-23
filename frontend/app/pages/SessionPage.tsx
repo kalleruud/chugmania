@@ -134,15 +134,19 @@ function Signup({
             </Select>
           )}
 
-          {isUpcoming(session) && isLoggedIn && !myResponse && (
-            <Button
-              size='sm'
-              onClick={() => handleRsvp('yes')}
-              disabled={disabled}>
-              <CheckCircleIcon />
-              {loc.no.session.rsvp.responses.yes}
-            </Button>
-          )}
+          {isUpcoming(session) &&
+            isLoggedIn &&
+            !myResponse &&
+            responses.map(response => (
+              <Button
+                key={response}
+                size='sm'
+                onClick={() => handleRsvp(response)}
+                disabled={disabled}>
+                <CheckCircleIcon />
+                {loc.no.session.rsvp.responses[response]}
+              </Button>
+            ))}
         </div>
       </div>
 
@@ -164,13 +168,15 @@ function Signup({
               description={responses.length.toString()}
             />
             <div className='bg-background-secondary rounded-sm'>
-              {accumulatedSignups.map(signup => (
-                <UserRow
-                  key={signup.user}
-                  item={users.find(u => u.id === signup.user)!}
-                  className='py-3 first:pt-4 last:pb-4'
-                />
-              ))}
+              {accumulatedSignups
+                .filter(s => s.response === response)
+                .map(signup => (
+                  <UserRow
+                    key={signup.user}
+                    item={users.find(u => u.id === signup.user)!}
+                    className='py-3 first:pt-4 last:pb-4'
+                  />
+                ))}
             </div>
           </div>
         )
