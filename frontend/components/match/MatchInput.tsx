@@ -167,7 +167,6 @@ export default function MatchInput({
           {users && (
             <Combobox
               className='w-full'
-              required
               disabled={disabled}
               selected={user1}
               setSelected={value => setUser1(value ?? null)}
@@ -186,7 +185,6 @@ export default function MatchInput({
           {users && (
             <Combobox
               className='w-full'
-              required
               disabled={disabled}
               selected={user2}
               setSelected={value => setUser2(value ?? null)}
