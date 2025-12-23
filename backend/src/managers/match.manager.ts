@@ -2,6 +2,8 @@ import {
   isCreateMatchRequest,
   isDeleteMatchRequest,
   isEditMatchRequest,
+  type CreateMatchRequest,
+  type EditMatchRequest,
   type Match,
 } from '@common/models/match'
 import type { EventReq, EventRes } from '@common/models/socket.io'
@@ -13,6 +15,28 @@ import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 
 export default class MatchManager {
+  private static validateMatchState(
+    request: CreateMatchRequest | EditMatchRequest,
+    match?: Match
+  ) {
+    const user1 = request.user1 === undefined ? match?.user1 : request.user1
+    const user2 = request.user2 === undefined ? match?.user2 : request.user2
+    const winner = request.winner === undefined ? match?.winner : request.winner
+    const status = request.status ?? match?.status
+
+    if (status !== 'completed' && winner) {
+      throw new Error(loc.no.match.error.planned_winner)
+    }
+
+    if (user1 && user2 && user1 === user2) {
+      throw new Error(loc.no.match.error.same_user)
+    }
+
+    if (winner && winner !== user1 && winner !== user2) {
+      throw new Error(loc.no.match.error.invalid_winner)
+    }
+  }
+
   public static async getAllMatches(): Promise<Match[]> {
     const matchRows = await db
       .select()
@@ -35,24 +59,7 @@ export default class MatchManager {
 
     await AuthManager.checkAuth(socket, ['admin', 'moderator'])
 
-    if (
-      (request.status === 'planned' || request.status === 'cancelled') &&
-      request.winner
-    ) {
-      throw new Error(loc.no.match.error.planned_winner)
-    }
-
-    if (
-      request.winner &&
-      request.winner !== request.user1 &&
-      request.winner !== request.user2
-    ) {
-      throw new Error(loc.no.match.error.invalid_winner)
-    }
-
-    if (request.user1 === request.user2) {
-      throw new Error(loc.no.match.error.same_user)
-    }
+    MatchManager.validateMatchState(request)
 
     const { type, createdAt, updatedAt, deletedAt, ...matchData } = request
     await db.insert(matches).values(matchData)
@@ -82,33 +89,7 @@ export default class MatchManager {
       throw new Error(loc.no.error.messages.not_in_db(request.id))
     }
 
-    const effectiveStatus = request.status ?? match.status
-    const effectiveWinner =
-      request.winner === undefined ? match.winner : request.winner
-
-    if (
-      (effectiveStatus === 'planned' || effectiveStatus === 'cancelled') &&
-      effectiveWinner
-    ) {
-      throw new Error(loc.no.match.error.planned_winner)
-    }
-
-    const effectiveUser1 =
-      request.user1 === null ? null : (request.user1 ?? match.user1)
-    const effectiveUser2 =
-      request.user2 === null ? null : (request.user2 ?? match.user2)
-
-    if (effectiveUser1 && effectiveUser2 && effectiveUser1 === effectiveUser2) {
-      throw new Error(loc.no.match.error.same_user)
-    }
-
-    if (
-      effectiveWinner &&
-      effectiveWinner !== effectiveUser1 &&
-      effectiveWinner !== effectiveUser2
-    ) {
-      throw new Error(loc.no.match.error.invalid_winner)
-    }
+    MatchManager.validateMatchState(request, match)
 
     const { type, id, createdAt, updatedAt, ...updates } = request
     const res = await db

@@ -1,20 +1,21 @@
 import Combobox from '@/components/combobox'
 import loc from '@/lib/locales'
+import {
+  getId,
+  sessionToLookupItem,
+  trackToLookupItem,
+  userToLookupItem,
+} from '@/lib/lookup-utils'
 import type { SessionWithSignups } from '@common/models/session'
-import type {
-  CreateTimeEntryRequest,
-  EditTimeEntryRequest,
-  TimeEntry,
-} from '@common/models/timeEntry'
+import type { TimeEntry } from '@common/models/timeEntry'
 import type { Track } from '@common/models/track'
 import type { UserInfo } from '@common/models/user'
-import { formatDateWithYear, isOngoing } from '@common/utils/date'
+import { isOngoing } from '@common/utils/date'
 import {
   durationToInputList,
   formatTime,
   inputListToMs,
 } from '@common/utils/time'
-import { formatTrackName } from '@common/utils/track'
 import {
   useCallback,
   useRef,
@@ -40,46 +41,6 @@ type LapTimeInputProps = {
   onSubmitResponse?: (success: boolean) => void
   disabled?: boolean
 } & ComponentProps<'form'>
-
-function trackToLookupItem(track: Track) {
-  const trackName = '#' + formatTrackName(track.number)
-  return {
-    ...track,
-    label: trackName,
-    sublabel: `${track.level} • ${track.type}`,
-    tags: [track.level, track.type, trackName],
-  }
-}
-
-function sessionToLookupItem(session: SessionWithSignups) {
-  const formattedDate = formatDateWithYear(session.date)
-  return {
-    ...session,
-    label: session.name,
-    sublabel: formattedDate,
-    tags: [session.name, formattedDate, session.status, session.location ?? ''],
-  }
-}
-
-function userToLookupItem(user: UserInfo) {
-  return {
-    ...user,
-    tags: [
-      user.firstName,
-      user.lastName ?? '',
-      user.shortName ?? '',
-      user.email ?? '',
-    ],
-  }
-}
-
-function getId(path: string) {
-  const id = path.split('/').at(-1)
-  // Verify that id is a valid UUID (GUID) format, return undefined if not
-  const uuidRegex =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-  return id && uuidRegex.test(id) ? id : undefined
-}
 
 export default function TimeEntryInput({
   editingTimeEntry,
@@ -193,21 +154,21 @@ export default function TimeEntryInput({
       return toast.error(loc.no.timeEntry.input.noChanges)
     }
 
-    const payload = {
-      type: 'EditTimeEntryRequest',
-      id: editingTimeEntry.id,
-      duration: durationToPost,
-      user: selectedUser?.id,
-      track: selectedTrack?.id,
-      session: selectedSession?.id,
-      comment: comment?.trim() === '' ? null : comment?.trim(),
-    } satisfies EditTimeEntryRequest
-
     toast.promise(
-      socket.emitWithAck('edit_time_entry', payload).then(r => {
-        onSubmitResponse?.(r.success)
-        if (!r.success) throw new Error(r.message)
-      }),
+      socket
+        .emitWithAck('edit_time_entry', {
+          type: 'EditTimeEntryRequest',
+          id: editingTimeEntry.id,
+          duration: durationToPost,
+          user: selectedUser?.id,
+          track: selectedTrack?.id,
+          session: selectedSession?.id,
+          comment: comment?.trim() === '' ? null : comment?.trim(),
+        })
+        .then(r => {
+          onSubmitResponse?.(r.success)
+          if (!r.success) throw new Error(r.message)
+        }),
       loc.no.timeEntry.input.editRequest
     )
   }
@@ -226,24 +187,24 @@ export default function TimeEntryInput({
 
     const durationInput = inputListToMs(digits)
 
-    const payload = {
-      type: 'CreateTimeEntryRequest',
-      duration: durationInput === 0 ? null : durationInput,
-      user: uid,
-      track: tid,
-      session: selectedSession?.id,
-      comment: comment?.trim() === '' ? undefined : comment?.trim(),
-    } satisfies CreateTimeEntryRequest
-
     toast.promise(
-      socket.emitWithAck('post_time_entry', payload).then(r => {
-        onSubmitResponse?.(r.success)
-        if (!r.success) throw new Error(r.message)
-      }),
+      socket
+        .emitWithAck('post_time_entry', {
+          type: 'CreateTimeEntryRequest',
+          duration: durationInput === 0 ? null : durationInput,
+          user: uid,
+          track: tid,
+          session: selectedSession?.id,
+          comment: comment?.trim() === '' ? undefined : comment?.trim(),
+        })
+        .then(r => {
+          onSubmitResponse?.(r.success)
+          if (!r.success) throw new Error(r.message)
+        }),
       {
         ...loc.no.timeEntry.input.createRequest,
         success: loc.no.timeEntry.input.createRequest.success(
-          formatTime(payload.duration ?? 0)
+          formatTime(durationInput)
         ),
       }
     )

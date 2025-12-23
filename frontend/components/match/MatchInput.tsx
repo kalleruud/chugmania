@@ -6,18 +6,18 @@ import UserRow from '@/components/user/UserRow'
 import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
+import {
+  getId,
+  sessionToLookupItem,
+  trackToLookupItem,
+  userToLookupItem,
+} from '@/lib/lookup-utils'
 import type { MatchStage } from '@backend/database/schema'
-import type {
-  CreateMatchRequest,
-  EditMatchRequest,
-  Match,
-  MatchStatus,
-} from '@common/models/match'
+import type { Match, MatchStatus } from '@common/models/match'
 import type { SessionWithSignups } from '@common/models/session'
 import type { Track } from '@common/models/track'
 import type { UserInfo } from '@common/models/user'
-import { formatDateWithYear, isOngoing } from '@common/utils/date'
-import { formatTrackName } from '@common/utils/track'
+import { isOngoing } from '@common/utils/date'
 import { useState, type ComponentProps, type FormEvent } from 'react'
 import { useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -39,49 +39,6 @@ type MatchInputProps = {
   onSubmit?: (e: FormEvent<HTMLFormElement>) => void
   disabled?: boolean
 } & ComponentProps<'form'>
-
-function trackToLookupItem(track: Track) {
-  const trackName = '#' + formatTrackName(track.number)
-  return {
-    ...track,
-    label: trackName,
-    sublabel: `${track.level} • ${track.type}`,
-    tags: [track.level, track.type, trackName],
-  }
-}
-
-function sessionToLookupItem(session: SessionWithSignups) {
-  const formattedDate = formatDateWithYear(session.date)
-  return {
-    ...session,
-    label: session.name,
-    sublabel: formattedDate,
-    tags: [session.name, formattedDate, session.status, session.location ?? ''],
-    value: session.id,
-  }
-}
-
-function userToLookupItem(user: UserInfo) {
-  return {
-    ...user,
-    label: user.firstName + (user.lastName ? ' ' + user.lastName : ''),
-    sublabel: user.shortName,
-    tags: [
-      user.firstName,
-      user.lastName ?? '',
-      user.shortName ?? '',
-      user.email ?? '',
-    ],
-  }
-}
-
-function getId(path: string) {
-  const id = path.split('/').at(-1)
-  // Verify that id is a valid UUID (GUID) format, return undefined if not
-  const uuidRegex =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-  return id && uuidRegex.test(id) ? id : undefined
-}
 
 export default function MatchInput({
   editingMatch,
@@ -136,23 +93,23 @@ export default function MatchInput({
       return
     }
 
-    const payload: CreateMatchRequest = {
-      type: 'CreateMatchRequest',
-      user1: user1?.id ?? null,
-      user2: user2?.id ?? null,
-      track: track.id,
-      session: session?.id,
-      winner: winner === 'none' ? null : winner,
-      status: status ?? null,
-      stage: stage,
-      comment: comment?.trim() === '' ? undefined : comment?.trim(),
-    }
-
     toast.promise(
-      socket.emitWithAck('create_match', payload).then(r => {
-        onSubmitResponse?.(r.success)
-        if (!r.success) throw new Error(r.message)
-      }),
+      socket
+        .emitWithAck('create_match', {
+          type: 'CreateMatchRequest',
+          user1: user1?.id ?? null,
+          user2: user2?.id ?? null,
+          track: track.id,
+          session: session?.id,
+          winner: !winner || winner === 'none' ? null : winner,
+          status: status,
+          stage: stage,
+          comment: comment?.trim() === '' ? undefined : comment?.trim(),
+        })
+        .then(r => {
+          onSubmitResponse?.(r.success)
+          if (!r.success) throw new Error(r.message)
+        }),
       loc.no.match.toast.create
     )
   }
@@ -161,24 +118,24 @@ export default function MatchInput({
     e.preventDefault()
     if (!editingMatch.id) return
 
-    const payload: EditMatchRequest = {
-      type: 'EditMatchRequest',
-      id: editingMatch.id,
-      user1: user1?.id ?? null,
-      user2: user2?.id ?? null,
-      track: track?.id,
-      session: session?.id ?? null,
-      winner: winner === 'none' ? null : (winner ?? null),
-      status: status ?? null,
-      stage: stage,
-      comment: comment?.trim() === '' ? undefined : comment?.trim(),
-    }
-
     toast.promise(
-      socket.emitWithAck('edit_match', payload).then(r => {
-        onSubmitResponse?.(r.success)
-        if (!r.success) throw new Error(r.message)
-      }),
+      socket
+        .emitWithAck('edit_match', {
+          type: 'EditMatchRequest',
+          id: editingMatch.id,
+          user1: user1?.id ?? null,
+          user2: user2?.id ?? null,
+          track: track?.id,
+          session: session?.id ?? null,
+          winner: !winner || winner === 'none' ? null : winner,
+          status: status,
+          stage: stage,
+          comment: comment?.trim() === '' ? undefined : comment?.trim(),
+        })
+        .then(r => {
+          onSubmitResponse?.(r.success)
+          if (!r.success) throw new Error(r.message)
+        }),
       loc.no.match.toast.update
     )
   }
