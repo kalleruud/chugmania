@@ -1,6 +1,6 @@
-import type { SessionResponse } from '../../backend/database/schema'
+import type { SessionResponse } from '@backend/database/schema'
+import type { SessionSignup } from '@common/models/session'
 import type { Match } from '../models/match'
-import type { SessionSignup } from '../models/session'
 import type { TimeEntry } from '../models/timeEntry'
 
 type AccumulatedSignup = {
@@ -12,27 +12,25 @@ const YES_RES: SessionResponse = 'yes'
 
 export default function accumulateSignups(
   sessionId: string,
-  sessionSignups: SessionSignup[],
+  signups: SessionSignup[],
   te: TimeEntry[],
   ma: Match[]
 ): AccumulatedSignup[] {
-  const alreadySignedUp = new Set(
-    sessionSignups.filter(s => s.response === YES_RES).map(s => s.user.id)
+  const accumulatedSignups = new Set([
+    ...te.filter(te => te.session === sessionId).map(te => te.user),
+    ...ma.filter(m => m.session === sessionId && m.user1).map(m => m.user1!),
+    ...ma.filter(m => m.session === sessionId && m.user2).map(m => m.user2!),
+  ])
+
+  const existingSignups = signups.filter(
+    s => !accumulatedSignups.has(s.user.id)
   )
-  const timeEntryUsers = te
-    .filter(te => te.session === sessionId && !alreadySignedUp.has(te.user))
-    .map(te => te.user)
-  const matches = ma.filter(m => m.session === sessionId)
-  const user1Matches = matches
-    .filter(m => m.user1 !== null && !alreadySignedUp.has(m.user1))
-    .map(m => m.user1!)
-  const user2Matches = matches
-    .filter(m => m.user2 !== null && !alreadySignedUp.has(m.user2))
-    .map(m => m.user2!)
-  const users = new Set([...user1Matches, ...user2Matches, ...timeEntryUsers])
 
   return [
-    ...sessionSignups.map(s => ({ user: s.user.id, response: s.response })),
-    ...Array.from(users).map(user => ({ user, response: YES_RES })),
+    ...existingSignups.map(s => ({ user: s.user.id, response: s.response })),
+    ...Array.from(accumulatedSignups).map(user => ({
+      user,
+      response: YES_RES,
+    })),
   ]
 }
