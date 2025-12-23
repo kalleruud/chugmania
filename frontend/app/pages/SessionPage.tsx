@@ -33,7 +33,7 @@ import { Spinner } from '@/components/ui/spinner'
 import UserRow from '@/components/user/UserRow'
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
-import { useData } from '@/contexts/DataContext'
+import { useData, useDataSubscription } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
 import type { SessionWithSignups } from '@common/models/session'
 import { isUpcoming } from '@common/utils/date'
@@ -152,6 +152,7 @@ function Signup({
 export default function SessionPage() {
   const { id } = useParams()
   const { socket } = useConnection()
+  useDataSubscription(['sessions', 'tracks', 'timeEntries'])
   const { sessions, tracks, isLoadingData } = useData()
   const { loggedInUser, isLoggedIn, isLoading } = useAuth()
   const [editDialogOpen, setEditDialogOpen] = useState(false)

@@ -9,8 +9,7 @@ import { asc, eq, isNull, sql } from 'drizzle-orm'
 import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
 import { timeEntries } from '../../database/schema'
-import type { TypedSocket } from '../server'
-import { broadcast } from '../server'
+import { notifySubscribers, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 
 export default class TimeEntryManager {
@@ -45,7 +44,7 @@ export default class TimeEntryManager {
       throw new Error(loc.no.error.messages.insufficient_permissions)
     }
 
-    await db.insert(timeEntries).values(request)
+    const [inserted] = await db.insert(timeEntries).values(request).returning()
 
     console.debug(
       new Date().toISOString(),
@@ -54,7 +53,7 @@ export default class TimeEntryManager {
       request.duration
     )
 
-    broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
+    notifySubscribers('time_entries', 'create', inserted.id, inserted)
 
     return {
       success: true,
@@ -105,10 +104,11 @@ export default class TimeEntryManager {
       processedUpdates.createdAt = new Date(updates.createdAt)
     }
 
-    await db
+    const [updated] = await db
       .update(timeEntries)
       .set(processedUpdates)
       .where(eq(timeEntries.id, request.id))
+      .returning()
 
     console.debug(
       new Date().toISOString(),
@@ -117,7 +117,11 @@ export default class TimeEntryManager {
       request.id
     )
 
-    broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
+    if (updated.deletedAt) {
+      notifySubscribers('time_entries', 'delete', updated.id)
+    } else {
+      notifySubscribers('time_entries', 'update', updated.id, updated)
+    }
 
     return {
       success: true,
@@ -126,10 +130,15 @@ export default class TimeEntryManager {
 
   static async deleteTimeEntriesForUser(userId: User['id']): Promise<void> {
     const deletedAt = new Date()
-    await db
+    const deleted = await db
       .update(timeEntries)
       .set({ deletedAt })
       .where(eq(timeEntries.user, userId))
+      .returning({ id: timeEntries.id })
+
+    for (const entry of deleted) {
+      notifySubscribers('time_entries', 'delete', entry.id)
+    }
   }
 
   static async getAllTimeEntries(): Promise<TimeEntry[]> {
