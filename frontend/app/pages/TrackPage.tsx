@@ -69,7 +69,7 @@ export default function TrackPage() {
           title={loc.no.match.title}
           description={filteredMatches.length.toString()}
         />
-        <MatchList matches={filteredMatches} layout='list' hideTrack />
+        <MatchList matches={filteredMatches} hideTrack />
       </div>
     </div>
   )

@@ -77,7 +77,6 @@ export default function TrackLeaderboard({
             user={user}
             session={session}
             matches={filteredMatches}
-            layout='list'
             hideTrack={hideTrack}
           />
         </TabsContent>
