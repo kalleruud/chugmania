@@ -89,7 +89,7 @@ export default function MatchInput({
   const [comment, setComment] = useState(inputMatch.comment ?? '')
 
   const request = useMemo(() => {
-    if (!track || !stage) return undefined
+    if (!track || !status) return undefined
 
     return {
       user1: user1?.id ?? null,
