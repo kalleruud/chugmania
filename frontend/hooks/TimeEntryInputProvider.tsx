@@ -177,7 +177,7 @@ export default function TimeEntryInputProvider({
           {mode === 'timeEntry' && (
             <TimeEntryInput
               id='inputForm'
-              editingTimeEntry={editingTimeEntry}
+              inputTimeEntry={editingTimeEntry}
               disabled={!canEdit}
               onSubmitResponse={success => success && close()}
             />

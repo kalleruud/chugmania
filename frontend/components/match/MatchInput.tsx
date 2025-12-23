@@ -13,7 +13,12 @@ import {
   userToLookupItem,
 } from '@/lib/lookup-utils'
 import type { MatchStage } from '@backend/database/schema'
-import type { Match, MatchStatus } from '@common/models/match'
+import type {
+  CreateMatchRequest,
+  EditMatchRequest,
+  Match,
+  MatchStatus,
+} from '@common/models/match'
 import type { SessionWithSignups } from '@common/models/session'
 import type { Track } from '@common/models/track'
 import type { UserInfo } from '@common/models/user'
@@ -84,21 +89,19 @@ export default function MatchInput({
   const [comment, setComment] = useState(inputMatch.comment ?? '')
 
   const request = useMemo(() => {
-    if (isCreating) {
-      if (!track) return undefined
+    if (!track || !stage) return undefined
 
-      return {
-        user1: user1?.id ?? null,
-        user2: user2?.id ?? null,
-        track: track.id,
-        session: session?.id ?? null,
-        winner: !winner || winner === 'none' ? null : winner,
-        status: status ?? null,
-        stage: stage ?? null,
-        comment: comment?.trim() === '' ? null : comment?.trim(),
-      }
-    }
-  }, [user1, user2, track, session, isCreating, winner, status, stage, comment])
+    return {
+      user1: user1?.id ?? null,
+      user2: user2?.id ?? null,
+      track: track.id,
+      session: session?.id ?? null,
+      winner: !winner || winner === 'none' ? null : winner,
+      status: status,
+      stage: stage ?? null,
+      comment: comment?.trim() === '' ? null : comment?.trim(),
+    } satisfies Omit<CreateMatchRequest | EditMatchRequest, 'type'> | undefined
+  }, [user1, user2, track, session, winner, status, stage, comment])
 
   function handleCreate(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()

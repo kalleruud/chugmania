@@ -7,7 +7,11 @@ import {
   userToLookupItem,
 } from '@/lib/lookup-utils'
 import type { SessionWithSignups } from '@common/models/session'
-import type { TimeEntry } from '@common/models/timeEntry'
+import type {
+  CreateTimeEntryRequest,
+  EditTimeEntryRequest,
+  TimeEntry,
+} from '@common/models/timeEntry'
 import type { Track } from '@common/models/track'
 import type { UserInfo } from '@common/models/user'
 import { isOngoing } from '@common/utils/date'
@@ -18,6 +22,7 @@ import {
 } from '@common/utils/time'
 import {
   useCallback,
+  useMemo,
   useRef,
   useState,
   type ComponentProps,
@@ -37,13 +42,13 @@ import { Spinner } from '../ui/spinner'
 import UserRow from '../user/UserRow'
 
 type LapTimeInputProps = {
-  editingTimeEntry: Partial<TimeEntry>
+  inputTimeEntry: Partial<TimeEntry>
   onSubmitResponse?: (success: boolean) => void
   disabled?: boolean
 } & ComponentProps<'form'>
 
 export default function TimeEntryInput({
-  editingTimeEntry,
+  inputTimeEntry,
   onSubmitResponse,
   onSubmit,
   disabled,
@@ -56,36 +61,58 @@ export default function TimeEntryInput({
   const location = useLocation()
   const paramId = getId(location.pathname)
 
-  const isCreating = !editingTimeEntry.id
+  const currentOngoingSession = sessions?.find(s => isOngoing(s))
+
+  const isCreating = !inputTimeEntry.id
+
+  const initialUser: UserInfo | null = isCreating
+    ? (users?.find(u => u.id === (inputTimeEntry.user ?? paramId)) ??
+      loggedInUser ??
+      null)
+    : (users?.find(u => u.id === inputTimeEntry.user) ?? null)
+  const initialTrack: Track | null = isCreating
+    ? (tracks?.find(t => t.id === (inputTimeEntry.track ?? paramId)) ?? null)
+    : (tracks?.find(t => t.id === inputTimeEntry.track) ?? null)
+  const initialSession: SessionWithSignups | null = isCreating
+    ? (sessions?.find(u => u.id === inputTimeEntry.session) ??
+      currentOngoingSession ??
+      sessions?.find(u => u.id === paramId) ??
+      null)
+    : (sessions?.find(u => u.id === inputTimeEntry.session) ?? null)
+
   const inputs = useRef<HTMLInputElement[]>([])
 
   const [digits, setDigits] = useState<string[]>(
-    durationToInputList(editingTimeEntry.duration)
+    durationToInputList(inputTimeEntry.duration)
   )
 
-  const [selectedUser, setSelectedUser] = useState<UserInfo | undefined>(
-    users?.find(u => u.id === (editingTimeEntry.user ?? paramId)) ??
-      loggedInUser
-  )
-  const [selectedTrack, setSelectedTrack] = useState<Track | undefined>(
-    tracks?.find(u => u.id === (editingTimeEntry.track ?? paramId))
-  )
+  const [selectedUser, setSelectedUser] = useState(initialUser)
+  const [selectedTrack, setSelectedTrack] = useState(initialTrack)
+  const [selectedSession, setSelectedSession] = useState(initialSession)
+  const [comment, setComment] = useState(inputTimeEntry.comment ?? '')
 
-  const currentOngoingSession = sessions
-    ? sessions.find(s => isOngoing(s))
-    : undefined
+  const request = useMemo(() => {
+    if (!selectedUser?.id || !selectedTrack?.id) return undefined
+    const durationInput = inputListToMs(digits)
+    const durationToPost = durationInput === 0 ? null : durationInput
 
-  const [selectedSession, setSelectedSession] = useState<
-    SessionWithSignups | undefined
-  >(
-    isCreating
-      ? (sessions?.find(u => u.id === editingTimeEntry.session) ??
-          currentOngoingSession ??
-          sessions?.find(u => u.id === paramId))
-      : sessions?.find(u => u.id === editingTimeEntry.session)
-  )
-
-  const [comment, setComment] = useState(editingTimeEntry.comment ?? undefined)
+    return {
+      duration: durationToPost,
+      user: selectedUser.id,
+      track: selectedTrack.id,
+      session: selectedSession?.id ?? null,
+      comment: comment?.trim() === '' ? null : comment?.trim(),
+    } satisfies
+      | Omit<CreateTimeEntryRequest | EditTimeEntryRequest, 'type'>
+      | undefined
+  }, [
+    selectedUser,
+    selectedTrack,
+    selectedSession,
+    isCreating,
+    digits,
+    comment,
+  ])
 
   const DIGIT = /^\d$/
 
@@ -136,34 +163,14 @@ export default function TimeEntryInput({
 
   function handleUpdate(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
-
-    if (!editingTimeEntry?.id) {
-      return toast.error('Is not editing')
-    }
-
-    const durationInput = inputListToMs(digits)
-    const durationToPost = durationInput === 0 ? null : durationInput
-    const hasChange =
-      selectedUser?.id !== editingTimeEntry.user ||
-      selectedTrack?.id !== editingTimeEntry.track ||
-      durationToPost !== (editingTimeEntry.duration ?? null) ||
-      selectedSession?.id !== (editingTimeEntry.session ?? undefined) ||
-      comment !== (editingTimeEntry.comment ?? undefined)
-
-    if (!hasChange) {
-      return toast.error(loc.no.timeEntry.input.noChanges)
-    }
+    if (!inputTimeEntry?.id) return toast.error('Is not editing')
 
     toast.promise(
       socket
         .emitWithAck('edit_time_entry', {
           type: 'EditTimeEntryRequest',
-          id: editingTimeEntry.id,
-          duration: durationToPost,
-          user: selectedUser?.id,
-          track: selectedTrack?.id,
-          session: selectedSession?.id,
-          comment: comment?.trim() === '' ? null : comment?.trim(),
+          id: inputTimeEntry.id,
+          ...request,
         })
         .then(r => {
           onSubmitResponse?.(r.success)
@@ -253,7 +260,7 @@ export default function TimeEntryInput({
             disabled={disabled || loggedInUser?.role === 'user'}
             placeholder={loc.no.timeEntry.input.placeholder.user}
             selected={selectedUser}
-            setSelected={setSelectedUser}
+            setSelected={value => setSelectedUser(value ?? null)}
             limit={2}
             align='start'
             items={users.map(userToLookupItem)}
@@ -268,7 +275,7 @@ export default function TimeEntryInput({
             disabled={disabled}
             placeholder={loc.no.timeEntry.input.placeholder.track}
             selected={selectedTrack}
-            setSelected={setSelectedTrack}
+            setSelected={value => setSelectedTrack(value ?? null)}
             limit={2}
             align='start'
             items={tracks.map(trackToLookupItem)}
@@ -283,7 +290,7 @@ export default function TimeEntryInput({
             disabled={disabled}
             placeholder={loc.no.timeEntry.input.placeholder.session}
             selected={selectedSession}
-            setSelected={setSelectedSession}
+            setSelected={value => setSelectedSession(value ?? null)}
             limit={2}
             align='start'
             items={sessions
