@@ -14,6 +14,7 @@ export type MatchListProps = {
   session?: string
   matches: Match[]
   layout?: 'list' | 'grid'
+  hideTrack?: boolean
 }
 
 export default function MatchList({
@@ -22,6 +23,7 @@ export default function MatchList({
   user,
   session,
   layout = 'grid',
+  hideTrack,
 }: Readonly<MatchListProps>) {
   const { isLoggedIn, loggedInUser } = useAuth()
   const { openMatch } = useTimeEntryInput()
@@ -68,7 +70,9 @@ export default function MatchList({
                 (match.user1 === loggedInUser.id ||
                   match.user2 === loggedInUser.id)
               }
+              className='py-2 first:pt-4 last:pb-4'
               onClick={() => openMatch(match)}
+              hideTrack={hideTrack}
             />
           ))}
         </div>

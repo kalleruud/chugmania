@@ -14,6 +14,7 @@ import { TrackRow } from './TrackRow'
 
 type TrackLeaderboardProps = {
   track: Track
+  hideTrack?: boolean
 } & Omit<TimeEntryListProps, 'track' | 'entries'>
 
 export default function TrackLeaderboard({
@@ -21,6 +22,7 @@ export default function TrackLeaderboard({
   track,
   user,
   session,
+  hideTrack,
   ...rest
 }: Readonly<TrackLeaderboardProps & ComponentProps<'div'>>) {
   const { timeEntries, matches, isLoadingData } = useData()
@@ -76,6 +78,7 @@ export default function TrackLeaderboard({
             session={session}
             matches={filteredMatches}
             layout='list'
+            hideTrack={hideTrack}
           />
         </TabsContent>
       </Tabs>

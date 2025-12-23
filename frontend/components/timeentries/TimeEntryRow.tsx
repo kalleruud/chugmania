@@ -21,7 +21,7 @@ type TimeEntryRowProps = BaseRowProps<TimeEntry> & {
   onChangeGapType: () => void
 }
 
-const breakpoints = {
+export const breakpoints = {
   none: 0,
   sm: 180,
   md: 270,

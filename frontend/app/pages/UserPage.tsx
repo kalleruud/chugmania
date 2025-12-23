@@ -57,6 +57,7 @@ export default function UserPage() {
           track={track}
           user={user.id}
           filter='all'
+          hideTrack={true}
         />
       ))}
     </div>
