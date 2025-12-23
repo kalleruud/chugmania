@@ -7,10 +7,10 @@ import {
   type Match,
 } from '@common/models/match'
 import type { EventReq, EventRes } from '@common/models/socket.io'
-import { desc, eq, isNull } from 'drizzle-orm'
+import { desc, eq, getTableColumns, isNull } from 'drizzle-orm'
 import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
-import { matches } from '../../database/schema'
+import { matches, sessions } from '../../database/schema'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 
@@ -39,10 +39,11 @@ export default class MatchManager {
 
   public static async getAllMatches(): Promise<Match[]> {
     const matchRows = await db
-      .select()
+      .select({ ...getTableColumns(matches) })
       .from(matches)
+      .leftJoin(sessions, eq(matches.session, sessions.id))
       .where(isNull(matches.deletedAt))
-      .orderBy(desc(matches.createdAt))
+      .orderBy(desc(sessions.date), desc(matches.createdAt))
 
     return matchRows
   }
