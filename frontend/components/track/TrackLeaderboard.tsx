@@ -58,7 +58,7 @@ export default function TrackLeaderboard({
       )}>
       <TrackRow item={track} />
       <Tabs defaultValue={entries.length > 0 ? 'laptimes' : 'matches'}>
-        <TabsList className='w-full bg-background-secondary'>
+        <TabsList className='bg-background-secondary w-full'>
           <TabsTrigger value='laptimes'>{loc.no.timeEntry.title}</TabsTrigger>
           <TabsTrigger value='matches'>{loc.no.match.title}</TabsTrigger>
         </TabsList>
