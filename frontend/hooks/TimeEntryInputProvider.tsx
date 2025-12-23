@@ -186,7 +186,7 @@ export default function TimeEntryInputProvider({
           {mode === 'match' && (
             <MatchInput
               id='inputForm'
-              editingMatch={editingMatch}
+              inputMatch={editingMatch}
               disabled={!canEdit}
               onSubmitResponse={success => success && close()}
             />

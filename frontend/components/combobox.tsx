@@ -14,7 +14,6 @@ import {
   useState,
   type ComponentProps,
   type ReactNode,
-  type SetStateAction,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type { BaseRowProps } from './row/RowProps'
@@ -25,10 +24,10 @@ type ComboboxProps<T extends ComboboxLookupItem> = {
   placeholder: string
   emptyLabel?: string
   items: T[]
-  selected?: T
+  selected: T | null | undefined
   limit?: number
   required?: boolean
-  setSelected: (value: SetStateAction<T | undefined>) => void
+  setSelected: (value: T | null | undefined) => void
   align?: PopoverContentProps['align']
   CustomRow?: (props: BaseRowProps<T>) => ReactNode
 } & ComponentProps<'input'>

@@ -18,7 +18,7 @@ import type { SessionWithSignups } from '@common/models/session'
 import type { Track } from '@common/models/track'
 import type { UserInfo } from '@common/models/user'
 import { isOngoing } from '@common/utils/date'
-import { useState, type ComponentProps, type FormEvent } from 'react'
+import { useMemo, useState, type ComponentProps, type FormEvent } from 'react'
 import { useLocation } from 'react-router-dom'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
@@ -34,14 +34,14 @@ import {
 } from '../ui/select'
 
 type MatchInputProps = {
-  editingMatch: Partial<Match>
+  inputMatch: Partial<Match>
   onSubmitResponse?: (success: boolean) => void
   onSubmit?: (e: FormEvent<HTMLFormElement>) => void
   disabled?: boolean
 } & ComponentProps<'form'>
 
 export default function MatchInput({
-  editingMatch,
+  inputMatch,
   onSubmitResponse,
   onSubmit,
   disabled,
@@ -53,58 +53,62 @@ export default function MatchInput({
   const location = useLocation()
   const paramId = getId(location.pathname)
 
-  const isCreating = !editingMatch.id
-
-  const [user1, setUser1] = useState<UserInfo | undefined>(
-    users?.find(u => u.id === editingMatch.user1)
-  )
-  const [user2, setUser2] = useState<UserInfo | undefined>(
-    users?.find(u => u.id === editingMatch.user2)
-  )
-  const [track, setTrack] = useState<Track | undefined>(
-    tracks?.find(t => t.id === (editingMatch.track ?? paramId))
-  )
-
   const currentOngoingSession = sessions?.find(s => isOngoing(s))
 
-  const [session, setSession] = useState<SessionWithSignups | undefined>(
-    isCreating
-      ? (sessions?.find(u => u.id === editingMatch.session) ??
-          currentOngoingSession ??
-          sessions?.find(u => u.id === paramId))
-      : sessions?.find(u => u.id === editingMatch.session)
-  )
+  const isCreating = !inputMatch.id
+  const initialUser1: UserInfo | null =
+    users?.find(u => u.id === inputMatch.user1) ?? null
+  const initialUser2: UserInfo | null =
+    users?.find(u => u.id === inputMatch.user2) ?? null
+  const initialTrack: Track | null = isCreating
+    ? (tracks?.find(t => t.id === (inputMatch.track ?? paramId)) ?? null)
+    : (tracks?.find(t => t.id === inputMatch.track) ?? null)
+  const initialSession: SessionWithSignups | null = isCreating
+    ? (sessions?.find(u => u.id === inputMatch.session) ??
+      currentOngoingSession ??
+      sessions?.find(u => u.id === paramId) ??
+      null)
+    : (sessions?.find(u => u.id === inputMatch.session) ?? null)
+  const initialWinner: string | null = inputMatch.winner ?? null
+  const initialStatus: MatchStatus = inputMatch.status ?? 'planned'
+  const initialStage: MatchStage | null = inputMatch.stage ?? null
 
-  const [winner, setWinner] = useState<string | undefined>(
-    editingMatch.winner ?? undefined
-  )
-  const [status, setStatus] = useState<MatchStatus>(
-    editingMatch.status ?? 'planned'
-  )
-  const [stage, setStage] = useState<MatchStage | undefined>(
-    editingMatch.stage ?? undefined
-  )
-  const [comment, setComment] = useState(editingMatch.comment ?? '')
+  const [user1, setUser1] = useState(initialUser1)
+  const [user2, setUser2] = useState(initialUser2)
+  const [track, setTrack] = useState(initialTrack)
+
+  const [session, setSession] = useState(initialSession)
+  const [winner, setWinner] = useState(initialWinner)
+  const [status, setStatus] = useState(initialStatus)
+  const [stage, setStage] = useState(initialStage)
+  const [comment, setComment] = useState(inputMatch.comment ?? '')
+
+  const request = useMemo(() => {
+    if (isCreating) {
+      if (!track) return undefined
+
+      return {
+        user1: user1?.id ?? null,
+        user2: user2?.id ?? null,
+        track: track.id,
+        session: session?.id ?? null,
+        winner: !winner || winner === 'none' ? null : winner,
+        status: status ?? null,
+        stage: stage ?? null,
+        comment: comment?.trim() === '' ? null : comment?.trim(),
+      }
+    }
+  }, [user1, user2, track, session, isCreating])
 
   function handleCreate(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    if (!track) {
-      toast.error(loc.no.match.toast.validationError)
-      return
-    }
+    if (!request) return toast.error(loc.no.match.toast.validationError)
 
     toast.promise(
       socket
         .emitWithAck('create_match', {
           type: 'CreateMatchRequest',
-          user1: user1?.id ?? null,
-          user2: user2?.id ?? null,
-          track: track.id,
-          session: session?.id,
-          winner: !winner || winner === 'none' ? null : winner,
-          status: status,
-          stage: stage,
-          comment: comment?.trim() === '' ? undefined : comment?.trim(),
+          ...request,
         })
         .then(r => {
           onSubmitResponse?.(r.success)
@@ -116,21 +120,14 @@ export default function MatchInput({
 
   function handleUpdate(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    if (!editingMatch.id) return
+    if (!inputMatch?.id) return
 
     toast.promise(
       socket
         .emitWithAck('edit_match', {
           type: 'EditMatchRequest',
-          id: editingMatch.id,
-          user1: user1?.id ?? null,
-          user2: user2?.id ?? null,
-          track: track?.id,
-          session: session?.id ?? null,
-          winner: !winner || winner === 'none' ? null : winner,
-          status: status,
-          stage: stage,
-          comment: comment?.trim() === '' ? undefined : comment?.trim(),
+          id: inputMatch?.id,
+          ...request,
         })
         .then(r => {
           onSubmitResponse?.(r.success)
@@ -170,7 +167,7 @@ export default function MatchInput({
               required
               disabled={disabled}
               selected={user1}
-              setSelected={setUser1}
+              setSelected={value => setUser1(value ?? null)}
               items={users.map(userToLookupItem)}
               CustomRow={UserRow}
               placeholder={loc.no.match.placeholder.selectUser1}
@@ -189,7 +186,7 @@ export default function MatchInput({
               required
               disabled={disabled}
               selected={user2}
-              setSelected={setUser2}
+              setSelected={value => setUser2(value ?? null)}
               items={users.map(userToLookupItem)}
               CustomRow={UserRow}
               placeholder={loc.no.match.placeholder.selectUser2}
@@ -205,7 +202,7 @@ export default function MatchInput({
             required
             disabled={disabled}
             selected={track}
-            setSelected={setTrack}
+            setSelected={value => setTrack(value ?? null)}
             items={tracks.map(trackToLookupItem)}
             CustomRow={TrackRow}
             placeholder={loc.no.match.placeholder.selectTrack}
@@ -216,7 +213,7 @@ export default function MatchInput({
             className='w-full'
             disabled={disabled}
             selected={session}
-            setSelected={setSession}
+            setSelected={value => setSession(value ?? null)}
             items={sessions.map(sessionToLookupItem)}
             CustomRow={SessionRow}
             placeholder={loc.no.match.placeholder.selectSession}
@@ -229,7 +226,7 @@ export default function MatchInput({
           <Label>{loc.no.match.form.stage}</Label>
           <div className='flex items-center gap-2'>
             <Select
-              value={stage}
+              value={stage ?? undefined}
               onValueChange={v => setStage(v as MatchStage)}
               disabled={disabled}>
               <SelectTrigger>
@@ -291,7 +288,7 @@ export default function MatchInput({
         <div className='flex flex-col gap-1'>
           <Label>{loc.no.match.form.winner}</Label>
           <Select
-            value={winner}
+            value={winner ?? undefined}
             onValueChange={handleSetWinner}
             disabled={disabled || status !== 'completed'}>
             <SelectTrigger>
