@@ -138,7 +138,7 @@ export function TimeEntryList({
   }
 
   return (
-    <div className='flex flex-col gap-3'>
+    <div className='flex flex-col gap-2'>
       <div className='flex w-full flex-wrap justify-between gap-2'>
         <ToggleGroup
           type='single'

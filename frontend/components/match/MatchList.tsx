@@ -44,24 +44,21 @@ export default function MatchList({
   }
 
   return (
-    <div className='flex flex-col gap-3'>
-      <div className='bg-background-secondary flex flex-col rounded-sm'>
-        {matches.map(match => (
-          <MatchRow
-            key={match.id}
-            item={match}
-            highlight={
-              match.status !== 'cancelled' &&
-              isLoggedIn &&
-              (match.user1 === loggedInUser.id ||
-                match.user2 === loggedInUser.id)
-            }
-            className='py-2 first:pt-4 last:pb-4'
-            onClick={() => openMatch(match)}
-            hideTrack={hideTrack}
-          />
-        ))}
-      </div>
+    <div className='flex flex-col gap-2'>
+      {matches.map(match => (
+        <MatchRow
+          key={match.id}
+          item={match}
+          highlight={
+            match.status !== 'cancelled' &&
+            isLoggedIn &&
+            (match.user1 === loggedInUser.id || match.user2 === loggedInUser.id)
+          }
+          className='bg-background-secondary rounded-sm p-2'
+          onClick={() => openMatch(match)}
+          hideTrack={hideTrack}
+        />
+      ))}
 
       {isLoggedIn && (
         <Button
