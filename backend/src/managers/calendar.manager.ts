@@ -87,7 +87,9 @@ export default class CalendarManager {
       location: session.location ?? undefined,
       url: `${baseUrl}/${session.id}`,
       uid: `${session.id}@chugmania`,
-      sequence: CalendarManager.toSequence(session.updatedAt ?? session.createdAt),
+      sequence: CalendarManager.toSequence(
+        session.updatedAt ?? session.createdAt
+      ),
       productId: CalendarManager.PRODUCT_ID,
       calName: calendarName,
       classification: 'PRIVATE',
