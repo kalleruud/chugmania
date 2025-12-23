@@ -182,27 +182,14 @@ export default function TimeEntryInput({
 
   function handleCreate(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    const uid = selectedUser?.id
-    const tid = selectedTrack?.id
-
-    if (!uid) {
-      return toast.error(loc.no.timeEntry.input.noUser)
-    }
-    if (!tid) {
-      return toast.error(loc.no.timeEntry.input.noTrack)
-    }
-
-    const durationInput = inputListToMs(digits)
+    if (!request) return toast.error(loc.no.timeEntry.input.noUser)
+    if (!request) return toast.error(loc.no.timeEntry.input.noTrack)
 
     toast.promise(
       socket
         .emitWithAck('post_time_entry', {
           type: 'CreateTimeEntryRequest',
-          duration: durationInput === 0 ? null : durationInput,
-          user: uid,
-          track: tid,
-          session: selectedSession?.id,
-          comment: comment?.trim() === '' ? undefined : comment?.trim(),
+          ...request,
         })
         .then(r => {
           onSubmitResponse?.(r.success)
@@ -211,7 +198,7 @@ export default function TimeEntryInput({
       {
         ...loc.no.timeEntry.input.createRequest,
         success: loc.no.timeEntry.input.createRequest.success(
-          formatTime(durationInput)
+          formatTime(request.duration ?? 0)
         ),
       }
     )
