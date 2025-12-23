@@ -21,7 +21,7 @@ type TimeEntryRowProps = BaseRowProps<TimeEntry> & {
   onChangeGapType: () => void
 }
 
-export const breakpoints = {
+const breakpoints = {
   none: 0,
   sm: 180,
   md: 270,
@@ -100,7 +100,7 @@ function GapPart({
   return (
     <div
       className={
-        'font-f1-italic text-muted-foreground flex w-24 items-center justify-end text-sm uppercase tabular-nums'
+        'font-f1-italic text-muted-foreground flex items-center justify-end truncate text-sm uppercase tabular-nums'
       }>
       {label}
     </div>
@@ -168,10 +168,7 @@ export default function TimeEntryRow({
       <NameCellPart
         name={name}
         hasComment={!!lapTime.comment}
-        className={twMerge(
-          'mr-auto',
-          isDNF ? 'text-muted-foreground' : undefined
-        )}
+        className={twMerge('mr-auto', isDNF && 'text-muted-foreground')}
       />
 
       {show.gap && gap && (

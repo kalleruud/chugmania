@@ -80,10 +80,10 @@ export default function MatchRow({
   return (
     <div
       className={twMerge(
-        'hover:bg-foreground/5 group relative flex cursor-pointer items-center justify-between rounded-sm p-2 transition-colors',
+        'hover:bg-foreground/15 group relative flex cursor-pointer items-center justify-between rounded-sm p-2 transition-colors',
         isCancelled && 'text-muted-foreground opacity-33',
         className,
-        highlight && 'bg-foreground/5 hover:bg-foreground/7'
+        highlight && 'bg-foreground/10 hover:bg-foreground/7'
       )}
       {...rest}>
       <div className='flex w-full flex-col items-center gap-1'>
