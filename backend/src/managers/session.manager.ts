@@ -11,7 +11,7 @@ import { and, asc, desc, eq, isNull } from 'drizzle-orm'
 import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
 import { sessions, sessionSignups, users } from '../../database/schema'
-import { broadcast, type TypedSocket } from '../server'
+import { notifySubscribers, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import SessionScheduler from './session.scheduler'
 import UserManager from './user.manager'
@@ -66,6 +66,7 @@ export default class SessionManager {
   ): Promise<SessionSignup[]> {
     const signupRows = await db
       .select({
+        id: sessionSignups.id,
         createdAt: sessionSignups.createdAt,
         updatedAt: sessionSignups.updatedAt,
         deletedAt: sessionSignups.deletedAt,
@@ -107,10 +108,13 @@ export default class SessionManager {
     await AuthManager.checkAuth(socket, ['admin', 'moderator'])
 
     const { type, createdAt, updatedAt, deletedAt, ...sessionData } = request
-    await db.insert(sessions).values({
-      ...sessionData,
-      date: new Date(sessionData.date),
-    })
+    const [inserted] = await db
+      .insert(sessions)
+      .values({
+        ...sessionData,
+        date: new Date(sessionData.date),
+      })
+      .returning()
 
     console.debug(
       new Date().toISOString(),
@@ -119,7 +123,10 @@ export default class SessionManager {
       request.name
     )
 
-    broadcast('all_sessions', await SessionManager.getAllSessions())
+    const fullSession = await SessionManager.getSession(inserted.id)
+    if (fullSession) {
+      notifySubscribers('sessions', 'create', inserted.id, fullSession)
+    }
     await SessionScheduler.reschedule()
 
     return { success: true }
@@ -154,12 +161,20 @@ export default class SessionManager {
         deletedAt: updates.deletedAt ? new Date(updates.deletedAt) : undefined,
       })
       .where(eq(sessions.id, session.id))
+      .returning()
 
-    if (res.changes === 0) throw new Error('Update failed')
+    if (res.length === 0) throw new Error('Update failed')
 
     console.debug(new Date().toISOString(), socket.id, 'Updated session', id)
 
-    broadcast('all_sessions', await SessionManager.getAllSessions())
+    if (updates.deletedAt) {
+      notifySubscribers('sessions', 'delete', session.id)
+    } else {
+      const fullSession = await SessionManager.getSession(session.id)
+      if (fullSession) {
+        notifySubscribers('sessions', 'update', session.id, fullSession)
+      }
+    }
     await SessionScheduler.reschedule()
 
     return { success: true }
@@ -214,7 +229,10 @@ export default class SessionManager {
       session.id
     )
 
-    broadcast('all_sessions', await SessionManager.getAllSessions())
+    const fullSession = await SessionManager.getSession(session.id)
+    if (fullSession) {
+      notifySubscribers('sessions', 'update', session.id, fullSession)
+    }
     await SessionScheduler.reschedule()
 
     return { success: true }

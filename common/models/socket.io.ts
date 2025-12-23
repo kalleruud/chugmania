@@ -36,18 +36,33 @@ export type ErrorResponse = {
   message: string
 }
 
+export type Resource = 'sessions' | 'time_entries' | 'tracks' | 'users'
+
+export type DataAction = 'create' | 'update' | 'delete'
+
+export interface ResourceUpdate<T = any> {
+  resource: Resource
+  action: DataAction
+  id: string
+  data?: T
+}
+
 export interface ServerToClientEvents {
   user_data: (r: EventRes<'get_user_data'>) => void
   all_users: (r: UserInfo[]) => void
   all_tracks: (r: Track[]) => void
   all_time_entries: (r: TimeEntry[]) => void
   all_sessions: (r: SessionWithSignups[]) => void
+  resource_initial_data: (resource: Resource, data: any[]) => void
+  resource_updated: (update: ResourceUpdate) => void
 }
 
 export interface ClientToServerEvents {
   connect: () => void
   disconnect: () => void
   connect_error: (err: Error) => void
+  subscribe: (resources: Resource[]) => void
+  unsubscribe: (resources: Resource[]) => void
   login: (
     r: LoginRequest,
     callback: (r: LoginResponse | ErrorResponse) => void

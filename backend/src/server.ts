@@ -6,6 +6,8 @@ import type {
   InterServerEvents,
   ServerToClientEvents,
   SocketData,
+  Resource,
+  DataAction,
 } from '@common/models/socket.io'
 import express from 'express'
 import { Server, Socket } from 'socket.io'
@@ -47,6 +49,43 @@ export const broadcast: typeof io.emit = (ev, ...args) => {
   return io.emit(ev, ...args)
 }
 
+export const notifySubscribers = (
+  resource: Resource,
+  action: DataAction,
+  id: string,
+  data?: any
+) => {
+  io.to(`subscription:${resource}`).emit('resource_updated', {
+    resource,
+    action,
+    id,
+    data,
+  })
+}
+
+export const notifyRefresh = async (resource: Resource) => {
+  let data: any[] = []
+  switch (resource) {
+    case 'users':
+      data = await UserManager.getAllUsers()
+      break
+    case 'tracks':
+      data = await TrackManager.getAllTracks()
+      break
+    case 'time_entries':
+      data = await TimeEntryManager.getAllTimeEntries()
+      break
+    case 'sessions':
+      data = await SessionManager.getAllSessions()
+      break
+  }
+  io.to(`subscription:${resource}`).emit(
+    'resource_initial_data',
+    resource,
+    data
+  )
+}
+
 app.get('/api/sessions/calendar.ics', (req, res) =>
   ApiManager.onGetCalendar(ORIGIN, req, res)
 )
@@ -60,10 +99,52 @@ async function Connect(s: TypedSocket) {
   console.debug(new Date().toISOString(), s.id, 'Connected')
 
   s.emit('user_data', await AuthManager.refreshToken(s))
-  s.emit('all_users', await UserManager.getAllUsers())
-  s.emit('all_tracks', await TrackManager.getAllTracks())
-  s.emit('all_time_entries', await TimeEntryManager.getAllTimeEntries())
-  s.emit('all_sessions', await SessionManager.getAllSessions())
+  // s.emit('all_users', await UserManager.getAllUsers())
+  // s.emit('all_tracks', await TrackManager.getAllTracks())
+  // s.emit('all_time_entries', await TimeEntryManager.getAllTimeEntries())
+  // s.emit('all_sessions', await SessionManager.getAllSessions())
+
+  s.on('subscribe', async resources => {
+    for (const resource of resources) {
+      s.join(`subscription:${resource}`)
+      switch (resource) {
+        case 'users':
+          s.emit(
+            'resource_initial_data',
+            'users',
+            await UserManager.getAllUsers()
+          )
+          break
+        case 'tracks':
+          s.emit(
+            'resource_initial_data',
+            'tracks',
+            await TrackManager.getAllTracks()
+          )
+          break
+        case 'time_entries':
+          s.emit(
+            'resource_initial_data',
+            'time_entries',
+            await TimeEntryManager.getAllTimeEntries()
+          )
+          break
+        case 'sessions':
+          s.emit(
+            'resource_initial_data',
+            'sessions',
+            await SessionManager.getAllSessions()
+          )
+          break
+      }
+    }
+  })
+
+  s.on('unsubscribe', resources => {
+    for (const resource of resources) {
+      s.leave(`subscription:${resource}`)
+    }
+  })
 
   s.on('disconnect', () =>
     console.debug(new Date().toISOString(), s.id, 'Disconnected')

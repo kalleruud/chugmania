@@ -23,7 +23,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import UserForm from '@/components/user/UserForm'
 import UserRow from '@/components/user/UserRow'
 import { useAuth } from '@/contexts/AuthContext'
-import { useData } from '@/contexts/DataContext'
+import { useData, useDataSubscription } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
 import type { UserInfo } from '@common/models/user'
 import { PlusIcon } from '@heroicons/react/24/solid'
@@ -81,6 +81,7 @@ export function UsersContent({
   showAll,
   showLink,
 }: Readonly<UsersPageProps>) {
+  useDataSubscription(['users'])
   const { users: ud } = useData()
   const { isLoggedIn, loggedInUser, isLoading } = useAuth()
   const isModerator = isLoggedIn && loggedInUser.role !== 'user'

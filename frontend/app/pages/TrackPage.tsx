@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/breadcrumb'
 import { Spinner } from '@/components/ui/spinner'
 import { useAuth } from '@/contexts/AuthContext'
-import { useData } from '@/contexts/DataContext'
+import { useData, useDataSubscription } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
 import { formatTrackName } from '@common/utils/track'
 import { useParams } from 'react-router-dom'
@@ -18,6 +18,7 @@ import { useParams } from 'react-router-dom'
 export default function TrackPage() {
   const { id } = useParams()
   const { isLoggedIn, loggedInUser } = useAuth()
+  useDataSubscription(['tracks', 'timeEntries'])
   const { timeEntries, tracks, isLoadingData } = useData()
 
   if (isLoadingData) {

@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/breadcrumb'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/contexts/AuthContext'
-import { useData } from '@/contexts/DataContext'
+import { useData, useDataSubscription } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
 import { isOngoing, isPast, isUpcoming } from '@common/utils/date'
 import { CalendarIcon } from '@heroicons/react/24/solid'
@@ -43,6 +43,7 @@ export function SessionsContent({
   showLink,
   ...props
 }: Readonly<{ showLink?: boolean } & ComponentProps<'div'>>) {
+  useDataSubscription(['sessions'])
   const { loggedInUser, isLoggedIn } = useAuth()
   const { sessions } = useData()
 

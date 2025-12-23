@@ -6,7 +6,7 @@ import {
 import type { EventReq, EventRes } from '@common/models/socket.io'
 import { eq } from 'drizzle-orm'
 import type { SQLiteTable } from 'drizzle-orm/sqlite-core'
-import type { Socket } from 'socket.io'
+import { notifyRefresh, type TypedSocket } from '../server'
 import loc from '../../../frontend/lib/locales'
 import db, { database } from '../../database/database'
 import {
@@ -83,7 +83,7 @@ export default class AdminManager {
   }
 
   static async onImportCsv(
-    socket: Socket,
+    socket: TypedSocket,
     request: EventReq<'import_csv'>
   ): Promise<EventRes<'import_csv'>> {
     if (!isImportCsvRequest(request))
@@ -99,6 +99,24 @@ export default class AdminManager {
     )
     const data = await CsvParser.toObjects(request.content)
     const results = await AdminManager.importRows(request.table, data)
+
+    switch (request.table) {
+      case 'users':
+        await notifyRefresh('users')
+        break
+      case 'tracks':
+        await notifyRefresh('tracks')
+        break
+      case 'sessions':
+        await notifyRefresh('sessions')
+        break
+      case 'timeEntries':
+        await notifyRefresh('time_entries')
+        break
+      case 'sessionSignups':
+        await notifyRefresh('sessions')
+        break
+    }
 
     console.info(
       new Date().toISOString(),
@@ -131,7 +149,7 @@ export default class AdminManager {
   }
 
   static async onExportCsv(
-    socket: Socket,
+    socket: TypedSocket,
     request: EventReq<'export_csv'>
   ): Promise<EventRes<'export_csv'>> {
     if (!isExportCsvRequest(request))
