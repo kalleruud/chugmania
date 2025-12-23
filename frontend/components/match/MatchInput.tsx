@@ -98,7 +98,7 @@ export default function MatchInput({
         comment: comment?.trim() === '' ? null : comment?.trim(),
       }
     }
-  }, [user1, user2, track, session, isCreating])
+  }, [user1, user2, track, session, isCreating, winner, status, stage, comment])
 
   function handleCreate(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
