@@ -66,6 +66,7 @@ export default class SessionManager {
   ): Promise<SessionSignup[]> {
     const signupRows = await db
       .select({
+        id: sessionSignups.id,
         createdAt: sessionSignups.createdAt,
         updatedAt: sessionSignups.updatedAt,
         deletedAt: sessionSignups.deletedAt,

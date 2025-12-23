@@ -86,17 +86,24 @@ function Signup({
 
   function handleRsvp(response: SessionResponse) {
     if (!isLoggedIn) return
-    socket
-      .emitWithAck('rsvp_session', {
-        type: 'RsvpSessionRequest',
-        session: session.id,
-        user: loggedInUser.id,
-        response,
-      })
-      .then(res => {
-        if (res.success) setMyResponse(response)
-        else toast.error(res.message)
-      })
+    toast.promise(
+      socket
+        .emitWithAck('rsvp_session', {
+          type: 'RsvpSessionRequest',
+          session: session.id,
+          user: loggedInUser.id,
+          response,
+        })
+        .then(res => {
+          if (res.success) setMyResponse(response)
+          else throw new Error(res.message)
+        }),
+      {
+        loading: loc.no.session.rsvp.response.loading,
+        success: loc.no.session.rsvp.response.success(response),
+        error: loc.no.session.rsvp.response.error,
+      }
+    )
   }
 
   return (
