@@ -46,18 +46,18 @@ export default class CsvParser {
       const char = csv[state.i]
 
       if (char === '"') {
-        this.handleQuote(csv, state)
+        CsvParser.handleQuote(csv, state)
       } else if (char === ',' && !state.inQuotes) {
-        this.handleFieldDelimiter(state)
+        CsvParser.handleFieldDelimiter(state)
       } else if ((char === '\n' || char === '\r') && !state.inQuotes) {
-        this.handleLineDelimiter(csv, state)
+        CsvParser.handleLineDelimiter(csv, state)
       } else {
         state.currentField += char
         state.i++
       }
     }
 
-    this.finalizeParsing(state)
+    CsvParser.finalizeParsing(state)
     return state.lines
   }
 

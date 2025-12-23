@@ -77,7 +77,7 @@ export default class CalendarManager {
 
     const attendees = await Promise.all(
       accumulateSignups(session.id, session.signups, timeEntries, matches).map(
-        this.createEventAttendee
+        CalendarManager.createEventAttendee
       )
     )
 
@@ -87,7 +87,7 @@ export default class CalendarManager {
       location: session.location ?? undefined,
       url: `${baseUrl}/${session.id}`,
       uid: `${session.id}@chugmania`,
-      sequence: this.toSequence(session.updatedAt ?? session.createdAt),
+      sequence: CalendarManager.toSequence(session.updatedAt ?? session.createdAt),
       productId: CalendarManager.PRODUCT_ID,
       calName: calendarName,
       classification: 'PRIVATE',

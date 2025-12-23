@@ -239,7 +239,7 @@ export default class SessionManager {
       )
     }
 
-    await this.onEditSession(socket, {
+    await SessionManager.onEditSession(socket, {
       ...request,
       type: 'EditSessionRequest',
       deletedAt: new Date(),
