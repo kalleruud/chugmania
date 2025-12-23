@@ -1,3 +1,4 @@
+import type { Match } from '@common/models/match'
 import type { SessionWithSignups } from '@common/models/session'
 import type { TimeEntry } from '@common/models/timeEntry'
 import type { Track } from '@common/models/track'
@@ -19,6 +20,7 @@ type DataContextType =
       timeEntries: TimeEntry[]
       users: UserInfo[]
       sessions: SessionWithSignups[]
+      matches: Match[]
     }
   | {
       isLoadingData: true
@@ -26,6 +28,7 @@ type DataContextType =
       timeEntries?: never
       users?: never
       sessions?: never
+      matches?: never
     }
 
 const DataContext = createContext<DataContextType | undefined>(undefined)
@@ -67,6 +70,7 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [users, setUsers] = useState<DataContextType['users']>(undefined)
   const [sessions, setSessions] =
     useState<DataContextType['sessions']>(undefined)
+  const [matches, setMatches] = useState<DataContextType['matches']>(undefined)
 
   useEffect(() => {
     socket.on('all_sessions', data => {
@@ -85,11 +89,16 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
       setUsers(parseDatesArray(data))
     })
 
+    socket.on('all_matches', data => {
+      setMatches(parseDatesArray(data))
+    })
+
     return () => {
       socket.off('all_sessions')
       socket.off('all_time_entries')
       socket.off('all_tracks')
       socket.off('all_users')
+      socket.off('all_matches')
     }
   }, [])
 
@@ -98,7 +107,8 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
       tracks === undefined ||
       timeEntries === undefined ||
       users === undefined ||
-      sessions === undefined
+      sessions === undefined ||
+      matches === undefined
     ) {
       return { isLoadingData: true }
     }
@@ -108,8 +118,9 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
       sessions,
       tracks,
       users,
+      matches,
     }
-  }, [tracks, timeEntries, users, sessions])
+  }, [tracks, timeEntries, users, sessions, matches])
 
   return <DataContext.Provider value={context}>{children}</DataContext.Provider>
 }

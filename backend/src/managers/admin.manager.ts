@@ -10,6 +10,7 @@ import type { Socket } from 'socket.io'
 import loc from '../../../frontend/lib/locales'
 import db, { database } from '../../database/database'
 import {
+  matches,
   sessions,
   sessionSignups,
   timeEntries,
@@ -26,6 +27,7 @@ export default class AdminManager {
     sessions: new Set(),
     timeEntries: new Set(),
     sessionSignups: new Set(),
+    matches: new Set(),
   } satisfies Record<ExportCsvRequest['table'], Set<string>>
 
   private static readonly TABLE_MAP = {
@@ -34,6 +36,7 @@ export default class AdminManager {
     sessions: sessions,
     timeEntries: timeEntries,
     sessionSignups: sessionSignups,
+    matches: matches,
   } satisfies Record<ExportCsvRequest['table'], SQLiteTable>
 
   private static async importRows<T extends Record<string, any>>(

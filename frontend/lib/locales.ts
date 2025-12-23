@@ -2,6 +2,8 @@ import { getRandomItem } from '@/app/utils/utils'
 import type { GapType } from '@/components/timeentries/TimeEntryRow'
 import type { ExportCsvRequest } from '@common/models/importCsv'
 import type {
+  MatchStage,
+  MatchStatus,
   SessionResponse,
   SessionStatus,
   TrackLevel,
@@ -38,6 +40,7 @@ const no = {
       timeEntries: 'Rundetider',
       tracks: 'Baner',
       users: 'Spillere',
+      matches: 'Matcher',
     } satisfies Record<ExportCsvRequest['table'], string>,
   },
   user: {
@@ -165,6 +168,76 @@ const no = {
       no_edit_historical: 'Du kan ikke endre svar på en session tilbake i tid.',
     },
   },
+  match: {
+    cancel: 'Avlys',
+    vs: 'vs',
+    title: 'Matcher',
+    description: '1v1 Konkurranser',
+    edit: 'Rediger match',
+    new: 'Ny match',
+    noMatches: 'Ingen matcher funnet.',
+    unknownUser: 'Ukjent',
+    status: {
+      planned: 'Planlagt',
+      completed: 'Ferdig',
+      cancelled: 'Avlyst',
+    } as Record<MatchStatus, string>,
+    stage: {
+      group: 'Gruppespill',
+      eight: 'Åttendelsfinale',
+      quarter: 'Kvartfinale',
+      semi: 'Semifinale',
+      bronze: 'Bronsefinale',
+      final: 'Finale',
+      loser_eight: 'Taperåttendelsfinale',
+      loser_quarter: 'Taperkvartfinale',
+      loser_semi: 'Tapersemifinale',
+      loser_bronze: 'Taperbronsefinale',
+      loser_final: 'Taperfinale',
+    } as Record<MatchStage, string>,
+    form: {
+      user1: 'Spiller 1',
+      user2: 'Spiller 2',
+      track: 'Bane',
+      session: 'Session',
+      status: 'Status',
+      winner: 'Vinner',
+      stage: 'Nivå',
+      comment: 'Kommentar',
+    },
+    placeholder: {
+      selectUser1: 'Velg spiller 1',
+      selectUser2: 'Velg spiller 2',
+      selectTrack: 'Velg bane',
+      selectSession: 'Velg session',
+      selectWinner: 'Velg vinner',
+      none: 'Ingen',
+    },
+    toast: {
+      validationError: 'Du må fylle ut alle feltene...',
+      create: {
+        loading: 'Oppretter match...',
+        success: 'Match opprettet!',
+        error: 'Klarte ikke opprette match',
+      },
+      update: {
+        loading: 'Oppdaterer match...',
+        success: 'Match oppdatert!',
+        error: 'Klarte ikke oppdatere match',
+      },
+      delete: {
+        loading: 'Sletter match...',
+        success: 'Match slettet!',
+        error: 'Klarte ikke slette match',
+      },
+    },
+    error: {
+      planned_winner:
+        'Du kan ikke sette en vinner på en match før den er ferdig.',
+      invalid_winner: 'Vinneren må være en av deltakerne.',
+      same_user: 'Begge deltakerne kan ikke være den samme spilleren.',
+    },
+  },
   error: {
     title: 'Noe gikk galt 🥵',
     description: getRandomItem([
@@ -198,15 +271,19 @@ const no = {
         `Svetlana mottok noe søppel av en '${type}' som gir null mening, prøv igjen.`,
       email_already_exists:
         'E-posten er allerede registrert, prøv med en annen mail din idiot.',
+      update_failed: 'Oppdatering feilet, prøv igjen.',
     },
   },
   timeEntry: {
+    title: 'Rundetider',
     receivedUpdate: 'Rundetidene ble oppdatert',
+    dnf: 'DNF',
     gap: {
       leader: 'Leader',
       interval: 'Interval',
     } as Record<GapType, string>,
     input: {
+      validationError: 'Du må fylle ut alle feltene...',
       create: {
         title: 'Registrer tid',
         description: 'Tiden din publiseres asap zulu.',

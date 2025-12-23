@@ -1,4 +1,5 @@
 import { useData } from '@/contexts/DataContext'
+import loc from '@/lib/locales'
 import type { LeaderboardEntryGap, TimeEntry } from '@common/models/timeEntry'
 import { formatTime } from '@common/utils/time'
 import { MinusIcon } from '@heroicons/react/24/solid'
@@ -37,7 +38,7 @@ function PositionBadgePart({
       className={twMerge(
         'font-kh-interface flex w-6 flex-none items-center justify-center rounded-sm uppercase'
       )}
-      aria-label={position ? `#${position}` : 'DNF'}>
+      aria-label={position ? `#${position}` : loc.no.timeEntry.dnf}>
       {position ? (
         <span className='text-primary'>{position}</span>
       ) : (
@@ -47,15 +48,20 @@ function PositionBadgePart({
   )
 }
 
-function NameCellPart({
+export function NameCellPart({
   name,
   hasComment = false,
   className,
   ...props
-}: Readonly<{ name: string; hasComment: boolean } & ComponentProps<'div'>>) {
+}: Readonly<
+  {
+    name: string
+    hasComment?: boolean
+  } & ComponentProps<'div'>
+>) {
   return (
     <div
-      className={twMerge('font-f1-bold mr-auto truncate uppercase', className)}
+      className={twMerge('font-f1-bold truncate uppercase', className)}
       {...props}>
       {name}
       {hasComment && <span className='text-primary'> *</span>}
@@ -65,7 +71,9 @@ function NameCellPart({
 
 function TimePart({ duration }: Readonly<{ duration?: number | null }>) {
   const isDNF = !duration
-  const label = duration ? formatTime(duration).replace(/^0/, '') : 'DNF'
+  const label = duration
+    ? formatTime(duration).replace(/^0/, '')
+    : loc.no.timeEntry.dnf
   return (
     <div
       className={twMerge(
@@ -95,7 +103,7 @@ function GapPart({
   return (
     <div
       className={
-        'font-f1-italic text-muted-foreground flex w-24 items-center justify-end text-sm uppercase tabular-nums'
+        'font-f1-italic text-muted-foreground flex items-center justify-end truncate text-sm uppercase tabular-nums'
       }>
       {label}
     </div>
@@ -153,8 +161,7 @@ export default function TimeEntryRow({
       ref={containerRef}
       className={twMerge(
         'hover:bg-foreground/5 flex cursor-pointer items-center gap-4 rounded-md',
-        highlight &&
-          'bg-primary-background hover:bg-primary/25 ring-primary/50 ring-1',
+        highlight && 'bg-foreground/3',
         isDNF && 'opacity-50',
         className
       )}
@@ -164,7 +171,7 @@ export default function TimeEntryRow({
       <NameCellPart
         name={name}
         hasComment={!!lapTime.comment}
-        className={isDNF ? 'text-muted-foreground' : undefined}
+        className={twMerge('mr-auto', isDNF && 'text-muted-foreground')}
       />
 
       {show.gap && gap && (

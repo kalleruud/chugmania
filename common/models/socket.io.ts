@@ -6,6 +6,12 @@ import type {
 } from '@common/models/importCsv'
 import type { LoginRequest, RegisterRequest } from './auth'
 import type {
+  CreateMatchRequest,
+  DeleteMatchRequest,
+  EditMatchRequest,
+  Match,
+} from './match'
+import type {
   CreateSessionRequest,
   DeleteSessionRequest,
   EditSessionRequest,
@@ -42,6 +48,7 @@ export interface ServerToClientEvents {
   all_tracks: (r: Track[]) => void
   all_time_entries: (r: TimeEntry[]) => void
   all_sessions: (r: SessionWithSignups[]) => void
+  all_matches: (r: Match[]) => void
 }
 
 export interface ClientToServerEvents {
@@ -100,6 +107,18 @@ export interface ClientToServerEvents {
   get_absolute_time_entries: (
     r: AbsoluteTimeEntriesRequest,
     callback: (r: AbsoluteTimeEntriesResponse | ErrorResponse) => void
+  ) => void
+  create_match: (
+    r: CreateMatchRequest,
+    callback: (r: SuccessResponse | ErrorResponse) => void
+  ) => void
+  edit_match: (
+    r: EditMatchRequest,
+    callback: (r: SuccessResponse | ErrorResponse) => void
+  ) => void
+  delete_match: (
+    r: DeleteMatchRequest,
+    callback: (r: SuccessResponse | ErrorResponse) => void
   ) => void
 }
 

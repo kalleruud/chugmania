@@ -146,8 +146,8 @@ export default function UserForm({
           name={loc.no.user.form.shortName}
           type='text'
           disabled={disabled && canEdit}
-          minLength={3}
-          maxLength={3}
+          minLength={2}
+          maxLength={4}
           required
           hidden={isLoggingIn}
           value={shortName}

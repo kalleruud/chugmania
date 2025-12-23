@@ -1,4 +1,7 @@
+import MatchList from '@/components/match/MatchList'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useData } from '@/contexts/DataContext'
+import loc from '@/lib/locales'
 import type { Track } from '@common/models/track'
 import type { ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -11,14 +14,18 @@ import { TrackRow } from './TrackRow'
 
 type TrackLeaderboardProps = {
   track: Track
+  hideTrack?: boolean
 } & Omit<TimeEntryListProps, 'track' | 'entries'>
 
 export default function TrackLeaderboard({
   className,
   track,
+  user,
+  session,
+  hideTrack,
   ...rest
 }: Readonly<TrackLeaderboardProps & ComponentProps<'div'>>) {
-  const { timeEntries, isLoadingData } = useData()
+  const { timeEntries, matches, isLoadingData } = useData()
 
   if (isLoadingData)
     return (
@@ -28,11 +35,20 @@ export default function TrackLeaderboard({
     )
 
   const entries = timeEntries
-    ?.filter(te => !rest.session || rest.session === te.session)
-    .filter(te => !rest.user || rest.user === te.user)
+    .filter(te => !session || session === te.session)
+    .filter(te => !user || user === te.user)
     .filter(te => !track || track.id === te.track)
 
-  if (entries.length === 0) return undefined
+  const filteredMatches = matches
+    .filter(m => !session || session === m.session)
+    .filter(m => !user || user === m.user1 || user === m.user2)
+    .filter(m => !track || track.id === m.track)
+
+  if (
+    (!entries || entries.length === 0) &&
+    (!filteredMatches || filteredMatches.length === 0)
+  )
+    return undefined
 
   return (
     <div
@@ -41,7 +57,30 @@ export default function TrackLeaderboard({
         className
       )}>
       <TrackRow item={track} />
-      <TimeEntryList track={track.id} entries={entries} {...rest} />
+      <Tabs defaultValue={entries.length > 0 ? 'laptimes' : 'matches'}>
+        <TabsList className='bg-background-secondary w-full'>
+          <TabsTrigger value='laptimes'>{loc.no.timeEntry.title}</TabsTrigger>
+          <TabsTrigger value='matches'>{loc.no.match.title}</TabsTrigger>
+        </TabsList>
+        <TabsContent value='laptimes'>
+          <TimeEntryList
+            track={track.id}
+            user={user}
+            session={session}
+            entries={entries ?? []}
+            {...rest}
+          />
+        </TabsContent>
+        <TabsContent value='matches'>
+          <MatchList
+            track={track.id}
+            user={user}
+            session={session}
+            matches={filteredMatches}
+            hideTrack={hideTrack}
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
