@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
 import type { SessionWithSignups } from '@common/models/session'
-import { PlusIcon } from '@heroicons/react/24/solid'
+import { Plus } from 'lucide-react'
 import { useState, type ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { PageSubheader } from '../PageHeader'
@@ -56,7 +56,7 @@ export default function SessionsList({
 
   return (
     <div className={twMerge('flex flex-col', className)} {...rest}>
-      <PageSubheader title={header} />
+      <PageSubheader title={header} description={sessions.length.toString()} />
       {sessions.length > 0 ? (
         <div className={twMerge('bg-background-secondary rounded-sm')}>
           {sessions.map(session => (
@@ -80,7 +80,7 @@ export default function SessionsList({
               variant='ghost'
               size='sm'
               className='text-muted-foreground mt-2 w-fit'>
-              <PlusIcon />
+              <Plus />
               {loc.no.session.create.title}
             </Button>
           </DialogTrigger>

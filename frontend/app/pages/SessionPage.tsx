@@ -306,7 +306,7 @@ export default function SessionPage() {
               variant='destructive'
               onClick={() => handleDeleteSession(session.id)}
               disabled={isLoading}>
-              <Trash2 className='mr-2 size-4' />
+              <Trash2 className='size-4' />
               {loc.no.common.delete}
             </ConfirmationButton>
           </>
