@@ -15,6 +15,7 @@ export type Localization = typeof no
 export type Locale = 'no'
 
 const no = {
+  chugmania: 'Chugmania',
   admin: {
     title: 'Admin',
     description: 'Det som skjer i admin panelet, blir i admin panelet.',

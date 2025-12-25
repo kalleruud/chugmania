@@ -21,7 +21,7 @@ export default class CalendarManager {
     return await CalendarManager.createIcsCalendar(
       await SessionManager.getAllSessions(),
       baseUrl,
-      'Chugmania Sessions'
+      loc.no.chugmania
     )
   }
 
@@ -51,8 +51,6 @@ export default class CalendarManager {
     baseUrl: URL,
     calendarName: string
   ): Promise<EventAttributes> {
-    const descriptionText = session.description?.trim()
-
     const timeEntries = (await TimeEntryManager.getAllTimeEntries()).filter(
       te => te.session === session.id
     )
@@ -83,7 +81,7 @@ export default class CalendarManager {
 
     return {
       title: '🍺 ' + session.name,
-      description: descriptionText,
+      description: session.description?.trim(),
       location: session.location ?? undefined,
       url: `${baseUrl}/${session.id}`,
       uid: `${session.id}@chugmania`,
@@ -107,14 +105,14 @@ export default class CalendarManager {
       lastModified: session.updatedAt
         ? CalendarManager.toUtcArray(session.updatedAt)
         : undefined,
-      attendees,
+      attendees: attendees,
     }
   }
 
   private static async createEventAttendee(signup: {
     user: string
     response: SessionResponse
-  }) {
+  }): Promise<Attendee> {
     let partstat: ParticipationStatus
     switch (signup.response) {
       case 'yes':
@@ -135,11 +133,12 @@ export default class CalendarManager {
 
     return {
       name: `${user.firstName} ${user.lastName}`,
+      email: user.email.split('@')[0] + '@chugmania.no',
       rsvp: true,
       partstat: partstat,
       role: 'OPT-PARTICIPANT',
       cutype: 'INDIVIDUAL',
-    } satisfies Attendee
+    }
   }
 
   private static toSequence(date: Date) {
