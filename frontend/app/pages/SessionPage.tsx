@@ -71,10 +71,7 @@ function Signup({
       accumulateSignups(session, timeEntries ?? [], matches ?? [])
         .map(s => {
           const user = users?.find(u => u.id === s.user)
-          if (!user) {
-            toast.error(loc.no.error.messages.not_in_db(s.user))
-            return undefined
-          }
+          if (!user) return undefined
           return {
             user,
             response: s.response,
