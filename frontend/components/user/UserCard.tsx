@@ -84,7 +84,7 @@ export default function UserCard({
             size='sm'
             disabled={isSelf || isLoading}
             onClick={handleDeleteUser}>
-            <Trash2 className='mr-2 size-4' />
+            <Trash2 />
             {loc.no.common.delete}
           </ConfirmationButton>
 
