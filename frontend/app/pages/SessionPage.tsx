@@ -38,8 +38,14 @@ import loc from '@/lib/locales'
 import type { SessionWithSignups } from '@common/models/session'
 import { isUpcoming } from '@common/utils/date'
 import accumulateSignups from '@common/utils/signupAccumulator'
-import { CheckCircleIcon } from '@heroicons/react/24/solid'
-import { PencilIcon, Trash2 } from 'lucide-react'
+import {
+  CircleCheck,
+  CircleQuestionMark,
+  CircleX,
+  PencilIcon,
+  Trash2,
+  type LucideIcon,
+} from 'lucide-react'
 import { useMemo, useState, type ComponentProps } from 'react'
 import { useParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -64,7 +70,11 @@ function Signup({
   )
 
   const isAdmin = isLoggedIn && loggedInUser.role !== 'user'
-  const responses: SessionResponse[] = ['yes', 'maybe', 'no']
+  const responses: { response: SessionResponse; Icon: LucideIcon }[] = [
+    { response: 'yes', Icon: CircleCheck },
+    { response: 'maybe', Icon: CircleQuestionMark },
+    { response: 'no', Icon: CircleX },
+  ]
 
   const accumulatedSignups = useMemo(
     () =>
@@ -129,8 +139,9 @@ function Signup({
                 <SelectValue placeholder={loc.no.session.rsvp.change} />
               </SelectTrigger>
               <SelectContent>
-                {responses.map(response => (
+                {responses.map(({ response, Icon }) => (
                   <SelectItem key={response} value={response}>
+                    <Icon className='size-4' />
                     {loc.no.session.rsvp.responses[response]}
                   </SelectItem>
                 ))}
@@ -141,13 +152,13 @@ function Signup({
           {isUpcoming(session) &&
             isLoggedIn &&
             !myResponse &&
-            responses.map(response => (
+            responses.map(({ response, Icon }) => (
               <Button
                 key={response}
                 size='sm'
                 onClick={() => handleRsvp(response)}
                 disabled={disabled}>
-                <CheckCircleIcon />
+                <Icon className='size-4' />
                 {loc.no.session.rsvp.responses[response]}
               </Button>
             ))}
@@ -160,7 +171,7 @@ function Signup({
         </Empty>
       )}
 
-      {responses.map(response => {
+      {responses.map(({ response }) => {
         const responses = accumulatedSignups.filter(
           s => s.response === response
         )
