@@ -213,7 +213,7 @@ export default class SessionManager {
       })
       .onConflictDoUpdate({
         target: [sessionSignups.id],
-        set: { response: requestData.response },
+        set: { response: requestData.response, deletedAt: null },
       })
 
     console.debug(
