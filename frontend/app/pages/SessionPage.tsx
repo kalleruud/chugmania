@@ -129,7 +129,7 @@ function Signup({
             : loc.no.session.attendees}
         </h3>
 
-        <div className='flex items-center gap-1'>
+        <div>
           {(isUpcoming(session) || isAdmin) && isLoggedIn && myResponse && (
             <Select
               disabled={disabled}
@@ -148,21 +148,22 @@ function Signup({
               </SelectContent>
             </Select>
           )}
-
-          {isUpcoming(session) &&
-            isLoggedIn &&
-            !myResponse &&
-            responses.map(({ response, Icon }) => (
-              <Button
-                key={response}
-                size='sm'
-                onClick={() => handleRsvp(response)}
-                disabled={disabled}>
-                <Icon className='size-4' />
-                {loc.no.session.rsvp.responses[response]}
-              </Button>
-            ))}
         </div>
+      </div>
+
+      <div
+        className='flex items-center justify-center gap-2'
+        hidden={!isUpcoming(session) || !isLoggedIn || !!myResponse}>
+        {responses.map(({ response, Icon }) => (
+          <Button
+            key={response}
+            size='sm'
+            onClick={() => handleRsvp(response)}
+            disabled={disabled}>
+            <Icon className='size-4' />
+            {loc.no.session.rsvp.responses[response]}
+          </Button>
+        ))}
       </div>
 
       {accumulatedSignups.length === 0 && (
