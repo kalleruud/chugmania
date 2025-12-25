@@ -1,6 +1,8 @@
 import loc from '@/lib/locales'
 import type { SessionResponse } from '@backend/database/schema'
+import type { Match } from '@common/models/match'
 import type { SessionWithSignups } from '@common/models/session'
+import type { TimeEntry } from '@common/models/timeEntry'
 import { getEndOfDate } from '@common/utils/date'
 import accumulateSignups from '@common/utils/signupAccumulator'
 import {
@@ -14,6 +16,8 @@ import SessionManager from './session.manager'
 import TimeEntryManager from './timeEntry.manager'
 import UserManager from './user.manager'
 
+const isProduction = process.env.NODE_ENV === 'production'
+
 export default class CalendarManager {
   public static readonly PRODUCT_ID = 'chugmania/sessions'
 
@@ -21,7 +25,7 @@ export default class CalendarManager {
     return await CalendarManager.createIcsCalendar(
       await SessionManager.getAllSessions(),
       baseUrl,
-      loc.no.chugmania
+      isProduction ? loc.no.chugmania : loc.no.chugmania + ' (dev)'
     )
   }
 
@@ -30,9 +34,18 @@ export default class CalendarManager {
     baseUrl: URL,
     calendarName: string
   ): Promise<string> {
+    const allTimeEntries = await TimeEntryManager.getAllTimeEntries()
+    const allMatches = await MatchManager.getAllMatches()
+
     const events = await Promise.all(
       sessionList.map(session =>
-        CalendarManager.createSessionEvent(session, baseUrl, calendarName)
+        CalendarManager.createSessionEvent(
+          session,
+          baseUrl,
+          calendarName,
+          allTimeEntries.filter(te => te.session === session.id),
+          allMatches.filter(m => m.session === session.id)
+        )
       )
     )
 
@@ -49,16 +62,10 @@ export default class CalendarManager {
   private static async createSessionEvent(
     session: SessionWithSignups,
     baseUrl: URL,
-    calendarName: string
+    calendarName: string,
+    sessionTimeEntries: TimeEntry[],
+    sessionMatches: Match[]
   ): Promise<EventAttributes> {
-    const timeEntries = (await TimeEntryManager.getAllTimeEntries()).filter(
-      te => te.session === session.id
-    )
-
-    const matches = (await MatchManager.getAllMatches()).filter(
-      m => m.session === session.id
-    )
-
     let status: EventAttributes['status']
     switch (session.status) {
       case 'cancelled':
@@ -74,7 +81,7 @@ export default class CalendarManager {
     baseUrl.pathname = `sessions`
 
     const attendees = await Promise.all(
-      accumulateSignups(session.id, session.signups, timeEntries, matches).map(
+      accumulateSignups(session, sessionTimeEntries, sessionMatches).map(
         CalendarManager.createEventAttendee
       )
     )

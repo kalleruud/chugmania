@@ -67,13 +67,7 @@ function Signup({
   const responses: SessionResponse[] = ['yes', 'maybe', 'no']
 
   const accumulatedSignups = useMemo(
-    () =>
-      accumulateSignups(
-        session.id,
-        session.signups,
-        timeEntries ?? [],
-        matches ?? []
-      ),
+    () => accumulateSignups(session, timeEntries ?? [], matches ?? []),
     [session.id, session.signups, timeEntries, matches]
   )
 

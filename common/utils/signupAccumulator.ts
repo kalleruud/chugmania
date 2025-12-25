@@ -11,18 +11,17 @@ type AccumulatedSignup = {
 const YES_RES: SessionResponse = 'yes'
 
 export default function accumulateSignups(
-  sessionId: string,
-  signups: SessionSignup[],
+  session: { id: string; signups: SessionSignup[] },
   te: TimeEntry[],
   ma: Match[]
 ): AccumulatedSignup[] {
   const accumulatedSignups = new Set([
-    ...te.filter(te => te.session === sessionId).map(te => te.user),
-    ...ma.filter(m => m.session === sessionId && m.user1).map(m => m.user1!),
-    ...ma.filter(m => m.session === sessionId && m.user2).map(m => m.user2!),
+    ...te.filter(te => te.session === session.id).map(te => te.user),
+    ...ma.filter(m => m.session === session.id && m.user1).map(m => m.user1!),
+    ...ma.filter(m => m.session === session.id && m.user2).map(m => m.user2!),
   ])
 
-  const existingSignups = signups
+  const existingSignups = session.signups
     .filter(s => !accumulatedSignups.has(s.user.id))
     .map(s => ({ user: s.user.id, response: s.response }))
 
