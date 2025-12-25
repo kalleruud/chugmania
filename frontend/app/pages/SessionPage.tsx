@@ -93,7 +93,7 @@ function Signup({
 
   if (isLoadingData)
     return (
-      <div className='items-center-safe justify-center-safe flex h-dvh w-full'>
+      <div className='items-center-safe justify-center-safe border-border flex h-32 w-full rounded-sm border'>
         <Spinner className='size-6' />
       </div>
     )
