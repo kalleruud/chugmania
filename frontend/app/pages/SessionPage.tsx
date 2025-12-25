@@ -67,8 +67,21 @@ function Signup({
   const responses: SessionResponse[] = ['yes', 'maybe', 'no']
 
   const accumulatedSignups = useMemo(
-    () => accumulateSignups(session, timeEntries ?? [], matches ?? []),
-    [session.id, session.signups, timeEntries, matches]
+    () =>
+      accumulateSignups(session, timeEntries ?? [], matches ?? [])
+        .map(s => {
+          const user = users?.find(u => u.id === s.user)
+          if (!user) {
+            toast.error(loc.no.error.messages.not_in_db(s.user))
+            return undefined
+          }
+          return {
+            user,
+            response: s.response,
+          }
+        })
+        .filter(s => s !== undefined),
+    [session, timeEntries, matches, users]
   )
 
   if (isLoadingData)
@@ -164,10 +177,10 @@ function Signup({
             <div className='bg-background-secondary rounded-sm'>
               {accumulatedSignups
                 .filter(s => s.response === response)
-                .map(signup => (
+                .map(({ user }) => (
                   <UserRow
-                    key={signup.user}
-                    item={users.find(u => u.id === signup.user)!}
+                    key={user.id}
+                    item={user}
                     className='py-3 first:pt-4 last:pb-4'
                   />
                 ))}
