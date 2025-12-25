@@ -4,7 +4,7 @@ import loc from '@/lib/locales'
 import { type UserInfo } from '@common/models/user'
 import { formatYear } from '@common/utils/date'
 import { PencilIcon } from '@heroicons/react/24/solid'
-import { Trash2 } from 'lucide-react'
+import { LogOut, Trash2 } from 'lucide-react'
 import { useState, type ComponentProps } from 'react'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
@@ -84,7 +84,7 @@ export default function UserCard({
             size='sm'
             disabled={isSelf || isLoading}
             onClick={handleDeleteUser}>
-            <Trash2 className='mr-2 size-4' />
+            <Trash2 />
             {loc.no.common.delete}
           </ConfirmationButton>
 
@@ -129,6 +129,7 @@ export default function UserCard({
 
           {isSelf && (
             <Button onClick={logout} variant='destructive' size='sm'>
+              <LogOut />
               {loc.no.user.logout.title}
             </Button>
           )}

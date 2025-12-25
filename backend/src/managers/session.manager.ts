@@ -66,6 +66,7 @@ export default class SessionManager {
   ): Promise<SessionSignup[]> {
     const signupRows = await db
       .select({
+        id: sessionSignups.id,
         createdAt: sessionSignups.createdAt,
         updatedAt: sessionSignups.updatedAt,
         deletedAt: sessionSignups.deletedAt,
@@ -175,20 +176,29 @@ export default class SessionManager {
       )
     }
 
+    const { type, ...requestData } = request
+
     const actor = await AuthManager.checkAuth(socket)
     const isModerator = actor.role !== 'user'
-    const isSelf = actor.id === request.user
+    const isSelf = actor.id === requestData.user
+
+    const existingSignup = await db.query.sessionSignups.findFirst({
+      where: and(
+        eq(sessionSignups.session, requestData.session),
+        eq(sessionSignups.user, requestData.user)
+      ),
+    })
 
     if (!isModerator && !isSelf) {
       throw new Error(loc.no.error.messages.insufficient_permissions)
     }
 
     const session = await db.query.sessions.findFirst({
-      where: eq(sessions.id, request.session),
+      where: eq(sessions.id, requestData.session),
     })
 
     if (!session) {
-      throw new Error(loc.no.error.messages.not_in_db(request.session))
+      throw new Error(loc.no.error.messages.not_in_db(requestData.session))
     }
 
     if (session.date.getTime() < Date.now() && !isModerator) {
@@ -198,19 +208,18 @@ export default class SessionManager {
     await db
       .insert(sessionSignups)
       .values({
-        session: session.id,
-        user: actor.id,
-        response: request.response,
+        id: existingSignup?.id,
+        ...requestData,
       })
       .onConflictDoUpdate({
-        target: [sessionSignups.session, sessionSignups.user],
-        set: { response: request.response },
+        target: [sessionSignups.id],
+        set: { response: requestData.response, deletedAt: null },
       })
 
     console.debug(
       new Date().toISOString(),
       socket.id,
-      `Signed up for session with response: ${request.response}`,
+      `Signed up for session with response: ${requestData.response}`,
       session.id
     )
 
@@ -230,7 +239,7 @@ export default class SessionManager {
       )
     }
 
-    await this.onEditSession(socket, {
+    await SessionManager.onEditSession(socket, {
       ...request,
       type: 'EditSessionRequest',
       deletedAt: new Date(),

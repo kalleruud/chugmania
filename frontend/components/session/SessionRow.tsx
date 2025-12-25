@@ -10,7 +10,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useTimeAgoStrict as useDistanceToNow } from '@/hooks/useTimeAgoStrict'
 import loc from '@/lib/locales'
 import type { SessionWithSignups } from '@common/models/session'
-import { isOngoing } from '@common/utils/date'
+import { isOngoing, isUpcoming } from '@common/utils/date'
 import { ChevronRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { twMerge } from 'tailwind-merge'
@@ -52,7 +52,7 @@ export function SessionRow({
         <Badge variant='outline'>
           {loc.no.session.statusOptions[session.status]}
         </Badge>
-        {isLoggedIn && !isSignedUp && !isCancelled && (
+        {isLoggedIn && !isSignedUp && !isCancelled && isUpcoming(session) && (
           <Badge>{loc.no.common.new}</Badge>
         )}
         {!hideLink && <ChevronRight className='size-4' />}

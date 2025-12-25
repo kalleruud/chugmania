@@ -1,31 +1,52 @@
-import type { SessionSignup, SessionWithSignups } from '@common/models/session'
+import loc from '@/lib/locales'
+import type { SessionResponse } from '@backend/database/schema'
+import type { Match } from '@common/models/match'
+import type { SessionWithSignups } from '@common/models/session'
+import type { TimeEntry } from '@common/models/timeEntry'
 import { getEndOfDate } from '@common/utils/date'
+import accumulateSignups from '@common/utils/signupAccumulator'
 import {
   type Attendee,
   createEvents,
   type EventAttributes,
   type ParticipationStatus,
 } from 'ics'
+import MatchManager from './match.manager'
 import SessionManager from './session.manager'
+import TimeEntryManager from './timeEntry.manager'
+import UserManager from './user.manager'
+
+const isProduction = process.env.NODE_ENV === 'production'
 
 export default class CalendarManager {
   public static readonly PRODUCT_ID = 'chugmania/sessions'
 
   public static async getAllSessionsCalendar(baseUrl: URL): Promise<string> {
-    return CalendarManager.createIcsCalendar(
+    return await CalendarManager.createIcsCalendar(
       await SessionManager.getAllSessions(),
       baseUrl,
-      'Chugmania Sessions'
+      isProduction ? loc.no.chugmania : loc.no.chugmania + ' (dev)'
     )
   }
 
-  private static createIcsCalendar(
+  private static async createIcsCalendar(
     sessionList: SessionWithSignups[],
     baseUrl: URL,
     calendarName: string
-  ): string {
-    const events = sessionList.map(session =>
-      CalendarManager.createSessionEvent(session, baseUrl, calendarName)
+  ): Promise<string> {
+    const allTimeEntries = await TimeEntryManager.getAllTimeEntries()
+    const allMatches = await MatchManager.getAllMatches()
+
+    const events = await Promise.all(
+      sessionList.map(session =>
+        CalendarManager.createSessionEvent(
+          session,
+          baseUrl,
+          calendarName,
+          allTimeEntries.filter(te => te.session === session.id),
+          allMatches.filter(m => m.session === session.id)
+        )
+      )
     )
 
     const { error, value } = createEvents(events, {
@@ -38,13 +59,13 @@ export default class CalendarManager {
     return value
   }
 
-  private static createSessionEvent(
+  private static async createSessionEvent(
     session: SessionWithSignups,
     baseUrl: URL,
-    calendarName: string
-  ): EventAttributes {
-    const descriptionText = session.description?.trim()
-
+    calendarName: string,
+    sessionTimeEntries: TimeEntry[],
+    sessionMatches: Match[]
+  ): Promise<EventAttributes> {
     let status: EventAttributes['status']
     switch (session.status) {
       case 'cancelled':
@@ -59,13 +80,21 @@ export default class CalendarManager {
 
     baseUrl.pathname = `sessions`
 
+    const attendees = await Promise.all(
+      accumulateSignups(session, sessionTimeEntries, sessionMatches).map(
+        CalendarManager.createEventAttendee
+      )
+    )
+
     return {
       title: '🍺 ' + session.name,
-      description: descriptionText,
+      description: session.description?.trim(),
       location: session.location ?? undefined,
       url: `${baseUrl}/${session.id}`,
       uid: `${session.id}@chugmania`,
-      sequence: this.toSequence(session.updatedAt ?? session.createdAt),
+      sequence: CalendarManager.toSequence(
+        session.updatedAt ?? session.createdAt
+      ),
       productId: CalendarManager.PRODUCT_ID,
       calName: calendarName,
       classification: 'PRIVATE',
@@ -83,11 +112,14 @@ export default class CalendarManager {
       lastModified: session.updatedAt
         ? CalendarManager.toUtcArray(session.updatedAt)
         : undefined,
-      attendees: session.signups.map(this.createEventAttendee),
+      attendees: attendees,
     }
   }
 
-  private static createEventAttendee(signup: SessionSignup) {
+  private static async createEventAttendee(signup: {
+    user: string
+    response: SessionResponse
+  }): Promise<Attendee> {
     let partstat: ParticipationStatus
     switch (signup.response) {
       case 'yes':
@@ -103,14 +135,17 @@ export default class CalendarManager {
         partstat = 'NEEDS-ACTION'
     }
 
+    const user = await UserManager.getUserById(signup.user)
+    if (!user) throw new Error(loc.no.error.messages.not_in_db(signup.user))
+
     return {
-      name: `${signup.user.firstName} ${signup.user.lastName}`,
-      email: signup.user.email,
+      name: `${user.firstName} ${user.lastName}`,
+      email: user.email.split('@')[0] + '@chugmania.no',
       rsvp: true,
       partstat: partstat,
       role: 'OPT-PARTICIPANT',
       cutype: 'INDIVIDUAL',
-    } satisfies Attendee
+    }
   }
 
   private static toSequence(date: Date) {

@@ -38,7 +38,7 @@ export default class UserManager {
 
   static async updateUser(
     id: User['id'],
-    updates: Partial<typeof this.table.$inferInsert>
+    updates: Partial<typeof UserManager.table.$inferInsert>
   ): Promise<User> {
     const entries = Object.entries({
       ...updates,

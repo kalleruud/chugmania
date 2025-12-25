@@ -37,9 +37,16 @@ import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
 import type { SessionWithSignups } from '@common/models/session'
 import { isUpcoming } from '@common/utils/date'
-import { CheckCircleIcon } from '@heroicons/react/24/solid'
-import { PencilIcon, Trash2 } from 'lucide-react'
-import { useState, type ComponentProps } from 'react'
+import accumulateSignups from '@common/utils/signupAccumulator'
+import {
+  CircleCheck,
+  CircleQuestionMark,
+  CircleX,
+  PencilIcon,
+  Trash2,
+  type LucideIcon,
+} from 'lucide-react'
+import { useMemo, useState, type ComponentProps } from 'react'
 import { useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
@@ -56,26 +63,61 @@ function Signup({
 >) {
   const { socket } = useConnection()
   const { loggedInUser, isLoggedIn } = useAuth()
+  const { timeEntries, matches, users, isLoadingData } = useData()
+
   const [myResponse, setMyResponse] = useState<SessionResponse | undefined>(
     session.signups.find(s => s.user.id === loggedInUser?.id)?.response
   )
 
   const isAdmin = isLoggedIn && loggedInUser.role !== 'user'
-  const responses: SessionResponse[] = ['yes', 'maybe', 'no']
+  const responses: { response: SessionResponse; Icon: LucideIcon }[] = [
+    { response: 'yes', Icon: CircleCheck },
+    { response: 'maybe', Icon: CircleQuestionMark },
+    { response: 'no', Icon: CircleX },
+  ]
+
+  const accumulatedSignups = useMemo(
+    () =>
+      accumulateSignups(session, timeEntries ?? [], matches ?? [])
+        .map(s => {
+          const user = users?.find(u => u.id === s.user)
+          if (!user) return undefined
+          return {
+            user,
+            response: s.response,
+          }
+        })
+        .filter(s => s !== undefined),
+    [session, timeEntries, matches, users]
+  )
+
+  if (isLoadingData)
+    return (
+      <div className='items-center-safe justify-center-safe border-border flex h-32 w-full rounded-sm border'>
+        <Spinner className='size-6' />
+      </div>
+    )
 
   function handleRsvp(response: SessionResponse) {
     if (!isLoggedIn) return
-    socket
-      .emitWithAck('rsvp_session', {
-        type: 'RsvpSessionRequest',
-        session: session.id,
-        user: loggedInUser.id,
-        response,
-      })
-      .then(res => {
-        if (res.success) setMyResponse(response)
-        else toast.error(res.message)
-      })
+    toast.promise(
+      socket
+        .emitWithAck('rsvp_session', {
+          type: 'RsvpSessionRequest',
+          session: session.id,
+          user: loggedInUser.id,
+          response,
+        })
+        .then(res => {
+          if (res.success) setMyResponse(response)
+          else throw new Error(res.message)
+        }),
+      {
+        loading: loc.no.session.rsvp.response.loading,
+        success: loc.no.session.rsvp.response.success(response),
+        error: loc.no.session.rsvp.response.error,
+      }
+    )
   }
 
   return (
@@ -87,7 +129,7 @@ function Signup({
             : loc.no.session.attendees}
         </h3>
 
-        <div className='flex items-center gap-1'>
+        <div>
           {(isUpcoming(session) || isAdmin) && isLoggedIn && myResponse && (
             <Select
               disabled={disabled}
@@ -97,35 +139,43 @@ function Signup({
                 <SelectValue placeholder={loc.no.session.rsvp.change} />
               </SelectTrigger>
               <SelectContent>
-                {responses.map(response => (
+                {responses.map(({ response, Icon }) => (
                   <SelectItem key={response} value={response}>
+                    <Icon className='size-4' />
                     {loc.no.session.rsvp.responses[response]}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           )}
-
-          {isUpcoming(session) && isLoggedIn && !myResponse && (
-            <Button
-              size='sm'
-              onClick={() => handleRsvp('yes')}
-              disabled={disabled}>
-              <CheckCircleIcon />
-              {loc.no.session.rsvp.responses.yes}
-            </Button>
-          )}
         </div>
       </div>
 
-      {session.signups.length === 0 && (
+      <div
+        className='flex items-center justify-center gap-2'
+        hidden={!isUpcoming(session) || !isLoggedIn || !!myResponse}>
+        {responses.map(({ response, Icon }) => (
+          <Button
+            key={response}
+            size='sm'
+            onClick={() => handleRsvp(response)}
+            disabled={disabled}>
+            <Icon className='size-4' />
+            {loc.no.session.rsvp.responses[response]}
+          </Button>
+        ))}
+      </div>
+
+      {accumulatedSignups.length === 0 && (
         <Empty className='border-input text-muted-foreground border text-sm'>
           {loc.no.common.noItems}
         </Empty>
       )}
 
-      {responses.map(response => {
-        const responses = session.signups.filter(s => s.response === response)
+      {responses.map(({ response }) => {
+        const responses = accumulatedSignups.filter(
+          s => s.response === response
+        )
         if (responses.length === 0) return undefined
         return (
           <div key={response} className='flex flex-col'>
@@ -134,13 +184,15 @@ function Signup({
               description={responses.length.toString()}
             />
             <div className='bg-background-secondary rounded-sm'>
-              {responses.map(signup => (
-                <UserRow
-                  key={signup.user.id}
-                  item={signup.user}
-                  className='py-3 first:pt-4 last:pb-4'
-                />
-              ))}
+              {accumulatedSignups
+                .filter(s => s.response === response)
+                .map(({ user }) => (
+                  <UserRow
+                    key={user.id}
+                    item={user}
+                    className='py-3 first:pt-4 last:pb-4'
+                  />
+                ))}
             </div>
           </div>
         )
@@ -255,7 +307,7 @@ export default function SessionPage() {
               variant='destructive'
               onClick={() => handleDeleteSession(session.id)}
               disabled={isLoading}>
-              <Trash2 className='mr-2 size-4' />
+              <Trash2 />
               {loc.no.common.delete}
             </ConfirmationButton>
           </>
