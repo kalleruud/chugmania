@@ -209,11 +209,7 @@ export default class SessionManager {
         .set({ response: request.response })
         .where(eq(sessionSignups.id, existingSignup.id))
     } else {
-      await db.insert(sessionSignups).values({
-        session: session.id,
-        user: actor.id,
-        response: request.response,
-      })
+      await db.insert(sessionSignups).values(request)
     }
 
     console.debug(

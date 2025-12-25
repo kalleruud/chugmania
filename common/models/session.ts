@@ -1,4 +1,8 @@
-import type { sessionSignups, sessions } from '../../backend/database/schema'
+import type {
+  SessionResponse,
+  sessionSignups,
+  sessions,
+} from '../../backend/database/schema'
 import { type UserInfo } from './user'
 
 export type Session = typeof sessions.$inferSelect
@@ -34,8 +38,11 @@ export function isEditSessionRequest(data: any): data is EditSessionRequest {
   return data.type === 'EditSessionRequest' && typeof data.id === 'string'
 }
 
-export type RsvpSessionRequest = CreateSessionSignup & {
+export type RsvpSessionRequest = {
   type: 'RsvpSessionRequest'
+  session: Session['id']
+  user: UserInfo['id']
+  response: SessionResponse
 }
 
 export function isRsvpSessionRequest(data: any): data is RsvpSessionRequest {
