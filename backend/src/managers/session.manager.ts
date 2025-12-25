@@ -176,14 +176,16 @@ export default class SessionManager {
       )
     }
 
+    const { type, ...requestData } = request
+
     const actor = await AuthManager.checkAuth(socket)
     const isModerator = actor.role !== 'user'
-    const isSelf = actor.id === request.user
+    const isSelf = actor.id === requestData.user
 
     const existingSignup = await db.query.sessionSignups.findFirst({
       where: and(
-        eq(sessionSignups.session, request.session),
-        eq(sessionSignups.user, request.user)
+        eq(sessionSignups.session, requestData.session),
+        eq(sessionSignups.user, requestData.user)
       ),
     })
 
@@ -192,30 +194,32 @@ export default class SessionManager {
     }
 
     const session = await db.query.sessions.findFirst({
-      where: eq(sessions.id, request.session),
+      where: eq(sessions.id, requestData.session),
     })
 
     if (!session) {
-      throw new Error(loc.no.error.messages.not_in_db(request.session))
+      throw new Error(loc.no.error.messages.not_in_db(requestData.session))
     }
 
     if (session.date.getTime() < Date.now() && !isModerator) {
       throw new Error(loc.no.session.errorMessages.no_edit_historical)
     }
 
-    if (existingSignup) {
-      await db
-        .update(sessionSignups)
-        .set({ response: request.response })
-        .where(eq(sessionSignups.id, existingSignup.id))
-    } else {
-      await db.insert(sessionSignups).values(request)
-    }
+    await db
+      .insert(sessionSignups)
+      .values({
+        id: existingSignup?.id,
+        ...requestData,
+      })
+      .onConflictDoUpdate({
+        target: [sessionSignups.id],
+        set: { response: requestData.response },
+      })
 
     console.debug(
       new Date().toISOString(),
       socket.id,
-      `Signed up for session with response: ${request.response}`,
+      `Signed up for session with response: ${requestData.response}`,
       session.id
     )
 
