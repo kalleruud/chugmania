@@ -4,7 +4,7 @@ export const RATING_CONSTANTS = {
   MATCH_K_FACTOR: 32, // Standard ELO K-factor
 
   // Lap Rating Constants
-  LAP_RATING_SCALE: 400, // Scale factor for logarithmic performance score
+  LAP_RATING_SCALE: 800, // Increased scale for wider spread (was 400)
   TRACK_STATS_EMA_ALPHA_MAX: 0.1, // Max alpha for track average EMA
   USER_TRACK_EMA_ALPHA: 0.3, // Alpha for user's per-track rating EMA
 
@@ -17,5 +17,5 @@ export const RATING_CONSTANTS = {
   LAP_WEIGHT: 0.5,
 
   // Dampening
-  LAP_NORMALIZATION_FACTOR: 0.6, // Dampen variance of LapRating before mixing
+  LAP_NORMALIZATION_FACTOR: 0.8, // Reduced dampening (was 0.6) to allow more spread
 }

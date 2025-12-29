@@ -105,7 +105,32 @@ export class RatingCalculator {
       userRatings.get(trackId) ?? RATING_CONSTANTS.INITIAL_RATING
 
     const k = RATING_CONSTANTS.USER_TRACK_EMA_ALPHA
-    const newTrackRating = currentTrackRating * (1 - k) + performanceScore * k
+
+    // Only update if new rating is better or equal, OR if it's the first few laps (to establish baseline)
+    // Actually user requirement: "only increase player rating, not subtract" for track ratings?
+    // "We may need to adjust the rating to only increase player rating, not subtract."
+    // Let's implement a ratchet mechanism:
+    // If performanceScore > currentTrackRating, use EMA to pull up.
+    // If performanceScore < currentTrackRating, ignore or use very small k?
+    // Strict ratchet: newTrackRating = Math.max(currentTrackRating, currentTrackRating * (1 - k) + performanceScore * k)
+    // But this prevents regression if a player gets worse or if early luck was high.
+    // However, for "Best Lap" style ratings, we often only care about peak performance.
+    // Let's try: Performance Score acts as a target.
+    // If Performance Score > Current Rating, standard update.
+    // If Performance Score < Current Rating, do nothing (or very slow decay).
+    // The prompt says "only increase". Let's stick to that strictly for now to widen spread at top.
+
+    let newTrackRating = currentTrackRating
+    if (performanceScore > currentTrackRating) {
+      newTrackRating = currentTrackRating * (1 - k) + performanceScore * k
+    } else {
+      // Optional: Very slow decay or no change.
+      // If we strictly don't subtract, rating only goes up.
+      // This might inflate ratings indefinitely if averages drop.
+      // But "Track Average" updates independently.
+      // Let's stick to "no subtraction" from the *User's Track Rating*.
+      newTrackRating = currentTrackRating
+    }
 
     userRatings.set(trackId, newTrackRating)
     this.userTrackRatings.set(userId, userRatings)
