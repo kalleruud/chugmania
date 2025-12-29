@@ -107,7 +107,7 @@ export default class UserManager {
       throw new Error(loc.no.error.messages.invalid_request('EditUserRequest'))
     }
 
-    const actor = await AuthManager.checkAuth(socket)
+    const actor = await AuthManager.checkAuth(socket, undefined, true)
 
     const isSelf = actor.id === request.id
     const isAdmin = actor.role === 'admin'

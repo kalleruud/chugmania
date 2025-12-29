@@ -1,10 +1,5 @@
 import { isLoginRequest } from '@common/models/auth'
-import type {
-  ErrorResponse,
-  EventReq,
-  EventRes,
-  SocketData,
-} from '@common/models/socket.io'
+import type { EventReq, EventRes, SocketData } from '@common/models/socket.io'
 import { type User, type UserInfo } from '@common/models/user'
 import { tryCatch, tryCatchAsync } from '@common/utils/try-catch'
 import jwt, { type JwtPayload } from 'jsonwebtoken'
@@ -73,7 +68,8 @@ export default class AuthManager {
 
   static async checkAuth(
     socket: TypedSocket,
-    allowedRoles?: UserInfo['role'][]
+    allowedRoles?: UserInfo['role'][],
+    allowDefaultEmail?: boolean
   ): Promise<UserInfo> {
     const { userId } = await AuthManager.verify(socket.handshake.auth.token)
     const user = await UserManager.getUserById(userId)
@@ -82,7 +78,7 @@ export default class AuthManager {
       throw new Error(loc.no.error.messages.insufficient_permissions)
     }
 
-    if (user.email.includes('@chugmania.no')) {
+    if (user.email.includes('@chugmania.no') && !allowDefaultEmail) {
       throw new Error(loc.no.error.messages.update_email)
     }
 
@@ -130,24 +126,19 @@ export default class AuthManager {
   static async refreshToken(
     socket: TypedSocket
   ): Promise<EventRes<'get_user_data'>> {
-    try {
-      const { userId } = await AuthManager.verify(socket.handshake.auth.token)
-      const user = await UserManager.getUserById(userId)
-
-      return {
-        success: true,
-        token: socket.handshake.auth.token,
-        userId: user.id,
-      }
-    } catch (error) {
-      if (!error || typeof error !== 'object' || !(error instanceof Error)) {
-        console.error(new Date().toISOString(), socket.id, error)
-        throw new Error(loc.no.error.messages.unknown_error)
-      }
+    const { data: user, error } = await tryCatchAsync(
+      AuthManager.checkAuth(socket, undefined, true)
+    )
+    if (error) {
       return {
         success: false,
         message: error.message,
-      } satisfies ErrorResponse
+      }
+    }
+    return {
+      success: true,
+      token: AuthManager.sign(user.id),
+      userId: user.id,
     }
   }
 }
