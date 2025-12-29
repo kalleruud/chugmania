@@ -82,6 +82,10 @@ export default class AuthManager {
       throw new Error(loc.no.error.messages.insufficient_permissions)
     }
 
+    if (user.email.includes('@chugmania.no')) {
+      throw new Error(loc.no.error.messages.update_email)
+    }
+
     return UserManager.toUserInfo(user).userInfo
   }
 
@@ -126,20 +130,24 @@ export default class AuthManager {
   static async refreshToken(
     socket: TypedSocket
   ): Promise<EventRes<'get_user_data'>> {
-    const { data: user, error } = await tryCatchAsync(
-      AuthManager.checkAuth(socket)
-    )
-    if (error) {
+    try {
+      const { userId } = await AuthManager.verify(socket.handshake.auth.token)
+      const user = await UserManager.getUserById(userId)
+
+      return {
+        success: true,
+        token: socket.handshake.auth.token,
+        userId: user.id,
+      }
+    } catch (error) {
+      if (!error || typeof error !== 'object' || !(error instanceof Error)) {
+        console.error(new Date().toISOString(), socket.id, error)
+        throw new Error(loc.no.error.messages.unknown_error)
+      }
       return {
         success: false,
         message: error.message,
       } satisfies ErrorResponse
-    }
-
-    return {
-      success: true,
-      token: socket.handshake.auth.token,
-      userId: user.id,
     }
   }
 }
