@@ -179,7 +179,7 @@ export class RatingCalculator {
 
     return (
       RATING_CONSTANTS.MATCH_WEIGHT * matchElo +
-      RATING_CONSTANTS.LAP_WEIGHT * lapRating
+      (1 - RATING_CONSTANTS.MATCH_WEIGHT) * lapRating
     )
   }
 
