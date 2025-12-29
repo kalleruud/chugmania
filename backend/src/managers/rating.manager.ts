@@ -42,7 +42,7 @@ export class RatingCalculator {
     for (const userId of uniqueUsers) {
       rankings.push({
         user: userId,
-        rating: this.calculateTotalRating(userId),
+        totalRating: this.calculateTotalRating(userId),
         matchRating:
           this.matchElo.get(userId) ?? RATING_CONSTANTS.INITIAL_RATING,
         trackRating: this.calculateLapRating(userId),
@@ -50,7 +50,7 @@ export class RatingCalculator {
       })
     }
 
-    rankings.sort((a, b) => b.rating - a.rating)
+    rankings.sort((a, b) => b.totalRating - a.totalRating)
 
     return rankings.map((r, index) => ({
       ...r,
