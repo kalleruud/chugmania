@@ -19,6 +19,7 @@ import {
 } from '../../database/schema'
 import CsvParser from '../utils/csv-parser'
 import AuthManager from './auth.manager'
+import RatingManager from './rating.manager'
 
 export default class AdminManager {
   private static readonly EXCLUDED_COL_EXPORT = {
@@ -108,6 +109,10 @@ export default class AdminManager {
       socket.id,
       `Imported ${data.length} ${request.table}`
     )
+
+    // Recalculate ratings after any import to ensure consistency
+    // This is especially important for imports of matches or timeEntries
+    await RatingManager.initialize()
 
     return {
       success: true,

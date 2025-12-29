@@ -1,8 +1,8 @@
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
+import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
 import { type UserInfo } from '@common/models/user'
-import { formatYear } from '@common/utils/date'
 import { PencilIcon } from '@heroicons/react/24/solid'
 import { LogOut, Trash2 } from 'lucide-react'
 import { useState, type ComponentProps } from 'react'
@@ -20,6 +20,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '../ui/dialog'
+import { Spinner } from '../ui/spinner'
 import UserForm from './UserForm'
 
 type UserCardProps = {
@@ -32,8 +33,15 @@ export default function UserCard({
   ...props
 }: Readonly<UserCardProps>) {
   const { logout, isLoading, loggedInUser } = useAuth()
+  const { rankings, isLoadingData } = useData()
   const { socket } = useConnection()
   const [open, setOpen] = useState(false)
+
+  if (isLoadingData) {
+    return <Spinner className='size-4' />
+  }
+
+  const ranking = rankings.find(r => r.user === user.id)
 
   const isSelf = loggedInUser?.id === user.id
   const isAdmin = loggedInUser?.role === 'admin'
@@ -73,7 +81,13 @@ export default function UserCard({
           <span className='border-r' />
           <span className='text-sm'>{loc.no.user.role[user.role]}</span>
           <span className='border-r' />
-          <span className='text-sm'>{`${loc.no.user.joined} ${formatYear(user.createdAt)}`}</span>
+          <span className='text-sm'>
+            Match ELO: {ranking?.matchRating.toFixed()}
+          </span>
+          <span className='border-r' />
+          <span className='text-sm'>
+            Track ELO: {ranking?.trackRating.toFixed()}
+          </span>
         </div>
       </div>
 

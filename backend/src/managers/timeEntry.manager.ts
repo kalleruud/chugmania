@@ -12,6 +12,7 @@ import { timeEntries } from '../../database/schema'
 import type { TypedSocket } from '../server'
 import { broadcast } from '../server'
 import AuthManager from './auth.manager'
+import RatingManager from './rating.manager'
 
 export default class TimeEntryManager {
   static readonly table = timeEntries
@@ -55,6 +56,8 @@ export default class TimeEntryManager {
     )
 
     broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
+
+    RatingManager.processNewTimeEntry(request as unknown as TimeEntry)
 
     return {
       success: true,
@@ -119,6 +122,8 @@ export default class TimeEntryManager {
 
     broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
 
+    await RatingManager.initialize()
+
     return {
       success: true,
     }
@@ -130,6 +135,8 @@ export default class TimeEntryManager {
       .update(timeEntries)
       .set({ deletedAt })
       .where(eq(timeEntries.user, userId))
+
+    await RatingManager.initialize()
   }
 
   static async getAllTimeEntries(): Promise<TimeEntry[]> {

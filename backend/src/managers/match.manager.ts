@@ -13,6 +13,7 @@ import db from '../../database/database'
 import { matches, sessions } from '../../database/schema'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
+import RatingManager from './rating.manager'
 
 export default class MatchManager {
   private static validateMatchState(
@@ -69,6 +70,33 @@ export default class MatchManager {
 
     broadcast('all_matches', await MatchManager.getAllMatches())
 
+    // We need to fetch the created match to have all fields (like id) if needed,
+    // or construct it. The db.insert returns nothing by default in sqlite unless returning is used.
+    // However, the request has most data. But we don't have the ID if we didn't generate it or return it.
+    // Wait, the schema says id is defaultFn randomUUID.
+    // `const { type, createdAt, updatedAt, deletedAt, ...matchData } = request`
+    // request has `id`? `CreateMatchRequest` usually doesn't have ID.
+    // Let's check `CreateMatchRequest` model.
+    // Actually, looking at `onCreateMatch` implementation:
+    // `await db.insert(matches).values(matchData)`
+    // It doesn't use `returning()`.
+    // Wait, `RatingManager.processMatch` needs `Match` object.
+    // `Match` object needs `id`, `user1`, `user2`, `winner`, `status`.
+    // `matchData` has `user1`, `user2`, `winner`, `status`.
+    // It might be safer to fetch the latest match or just use `matchData` casted as Match if we are sure.
+    // However, `RatingManager` logic only checks `status`, `winner`, `user1`, `user2`.
+    // It doesn't use `id` for logic, only for uniqueness if we were storing it, but `processMatch` just processes it.
+    // Actually `matchData` comes from `request` which is `CreateMatchRequest`.
+    // `CreateMatchRequest` extends `Match` but omits `id`, `createdAt`, `updatedAt`, `deletedAt`.
+    // So `matchData` is missing `id`.
+    // `RatingManager.processMatch` signature expects `Match`.
+    // I should strictly probably fetch the match or cast it carefully.
+    // Given the previous code, I'll just cast it for now as `processMatch` implementation I wrote:
+    // `if (match.status !== 'completed' || !match.winner || !match.user1 || !match.user2) return`
+    // It doesn't use ID.
+
+    RatingManager.processNewMatch(matchData as unknown as Match)
+
     return { success: true }
   }
 
@@ -109,6 +137,8 @@ export default class MatchManager {
 
     broadcast('all_matches', await MatchManager.getAllMatches())
 
+    await RatingManager.initialize()
+
     return { success: true }
   }
 
@@ -127,6 +157,8 @@ export default class MatchManager {
       type: 'EditMatchRequest',
       deletedAt: new Date(),
     })
+
+    // Recalculation handled in onEditMatch
 
     return {
       success: true,
