@@ -68,11 +68,13 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
       type: 'LoginRequest',
       ...r,
     })
-    toast.info(
-      response.success
-        ? loc.no.user.login.request.success
-        : loc.no.user.login.request.error(new Error(response.message))
-    )
+
+    if (response.success) {
+      toast.info(loc.no.user.login.request.success)
+    } else {
+      toast.error(loc.no.user.login.request.error(new Error(response.message)))
+    }
+
     handleResponse(response)
     return response
   }

@@ -252,6 +252,7 @@ const no = {
     ]),
     retryAction: 'Gå tilbake',
     messages: {
+      update_email: 'Du må oppdatere e-post og passord før du kan gjøre noe.',
       missing_files: 'Du har ikke valgt noen filer',
       missing_data: 'Ingen data ble sendt',
       missing_jwt: 'Du har ingen JWT token... Går det an å være mer idiot?',
@@ -263,7 +264,7 @@ const no = {
       insufficient_permissions:
         'Du får ikke lov til å gjøre dette din hårete faen.',
       invalid_jwt:
-        'Jeg vet ikke hvordan du har fått til dette, men jwt tokenen inneholder ikke brukerdata...',
+        'Jeg vet ikke hvordan du har fått til dette, men jwt-en din inneholder ikke brukerdata...',
       connection_failed: (error: Error) =>
         `Klarer ikke koble til Svetlana '${error.name} - ${error.message}'`,
       not_in_db: (item: string) => `Fant ikke '${item}' på mainframen`,
