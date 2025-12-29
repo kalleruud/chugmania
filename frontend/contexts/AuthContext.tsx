@@ -74,7 +74,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     } else {
       toast.error(loc.no.user.login.request.error(new Error(response.message)))
     }
-    
+
     handleResponse(response)
     return response
   }
