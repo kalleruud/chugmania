@@ -52,9 +52,9 @@ export default class RatingManager {
     const rankings: Ranking[] = []
     for (const userId of users) {
       const matchRating =
-        matchRatings.get(userId) ?? RATING_CONSTANTS.INITIAL_RATING
+        matchRatings.get(userId) ?? RATING_CONSTANTS.NO_DATA_RATING
       const trackRating =
-        trackRatings.get(userId) ?? RATING_CONSTANTS.INITIAL_RATING
+        trackRatings.get(userId) ?? RATING_CONSTANTS.NO_DATA_RATING
 
       const totalRating =
         matchRating * RATING_CONSTANTS.MATCH_WEIGHT +

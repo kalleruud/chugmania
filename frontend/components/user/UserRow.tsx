@@ -36,7 +36,7 @@ export default function UserRow({
             <span className='font-bold'>{user.lastName}</span>
           </ItemTitle>
 
-          {isAdmin && (
+          {isAdmin && ranking && (
             <div className='flex w-32 items-center gap-2 tabular-nums'>
               <div className='flex items-center gap-1'>
                 <Trophy className='size-4' />
