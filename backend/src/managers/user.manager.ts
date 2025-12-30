@@ -262,23 +262,10 @@ export default class UserManager {
 
   static async getAllUsers(): Promise<UserInfo[]> {
     const data = await db.select().from(users).where(isNull(users.deletedAt))
-    if (data.length === 0)
+    if (data.length === 0) {
       throw new Error(loc.no.error.messages.not_in_db(loc.no.users.title))
+    }
 
-    const rankings = await RatingManager.onGetRatings()
-    const usersInfo = data.map(r => UserManager.toUserInfo(r).userInfo)
-
-    return usersInfo.sort((a, b) => {
-      const rankA =
-        rankings.find(r => r.user === a.id)?.ranking ?? Number.MAX_SAFE_INTEGER
-      const rankB =
-        rankings.find(r => r.user === b.id)?.ranking ?? Number.MAX_SAFE_INTEGER
-
-      if (rankA !== rankB) {
-        return rankA - rankB
-      }
-
-      return a.firstName.localeCompare(b.firstName)
-    })
+    return data.map(r => UserManager.toUserInfo(r).userInfo)
   }
 }
