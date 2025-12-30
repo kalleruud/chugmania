@@ -6,7 +6,7 @@ import {
   isEditTimeEntryRequest,
 } from '@common/models/timeEntry'
 import type { User } from '@common/models/user'
-import { and, asc, eq, isNull, sql } from 'drizzle-orm'
+import { and, asc, eq, getTableColumns, isNull, sql } from 'drizzle-orm'
 import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
 import { timeEntries } from '../../database/schema'
@@ -65,18 +65,7 @@ export default class TimeEntryManager {
       .as('latest_best')
 
     return await db
-      .select({
-        duration: timeEntries.duration,
-        user: timeEntries.user,
-        id: timeEntries.id,
-        updatedAt: timeEntries.updatedAt,
-        createdAt: timeEntries.createdAt,
-        deletedAt: timeEntries.deletedAt,
-        session: timeEntries.session,
-        track: timeEntries.track,
-        amount: timeEntries.amount,
-        comment: timeEntries.comment,
-      })
+      .select({ ...getTableColumns(timeEntries) })
       .from(timeEntries)
       .innerJoin(
         latestBestPerUser,
