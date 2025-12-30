@@ -195,6 +195,7 @@ const no = {
       loser_semi: 'Tapersemifinale',
       loser_bronze: 'Taperbronsefinale',
       loser_final: 'Taperfinale',
+      grand_final: 'Grand finale',
     } as Record<MatchStage, string>,
     form: {
       user1: 'Spiller 1',
