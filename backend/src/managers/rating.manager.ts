@@ -11,7 +11,6 @@ import {
 } from './rating.calculator'
 import SessionManager from './session.manager'
 import TimeEntryManager from './timeEntry.manager'
-import UserManager from './user.manager'
 
 export default class RatingManager {
   private static readonly matchCalculator: MatchRatingCalculator =
@@ -54,26 +53,28 @@ export default class RatingManager {
 
   // Returns all users with their ratings, sorted by ranking.
   static async onGetRatings(): Promise<Ranking[]> {
-    const users = await UserManager.getAllUsers()
     const matchRatings = RatingManager.matchCalculator.getAllRatings()
     const trackRatings = RatingManager.trackCalculator.getAllRatings()
+    const users = Array.from(
+      new Set([...matchRatings.keys(), ...trackRatings.keys()])
+    )
 
     const rankings: Ranking[] = []
-    for (const user of users) {
-      const matchRating = matchRatings.get(user.id) ?? 0
-      const trackRating = trackRatings.get(user.id) ?? 0
+    for (const userId of users) {
+      const matchRating = matchRatings.get(userId) ?? 0
+      const trackRating = trackRatings.get(userId) ?? 0
 
       const totalRating =
         matchRating * RATING_CONSTANTS.MATCH_WEIGHT +
         trackRating * (1 - RATING_CONSTANTS.MATCH_WEIGHT)
 
       rankings.push({
-        user: user.id,
+        user: userId,
         totalRating,
         matchRating,
         trackRating,
         ranking: 0, // Will be updated later
-      })
+      } satisfies Ranking)
     }
 
     rankings.sort((a, b) => b.totalRating - a.totalRating)
