@@ -81,7 +81,7 @@ export function UsersContent({
   showAll,
   showLink,
 }: Readonly<UsersPageProps>) {
-  const { users: ud } = useData()
+  const { users: ud, rankings } = useData()
   const { isLoggedIn, loggedInUser, isLoading } = useAuth()
   const isModerator = isLoggedIn && loggedInUser.role !== 'user'
 
@@ -109,7 +109,15 @@ export function UsersContent({
     )
   }
 
-  const users = ud.filter(u => !u.email.endsWith('@chugmania.no') || showAll)
+  const users = ud
+    .filter(u => !u.email.endsWith('@chugmania.no') || showAll)
+    .toSorted((a, b) => {
+      const rankA =
+        rankings.find(r => r.user === a.id)?.ranking ?? Number.MAX_SAFE_INTEGER
+      const rankB =
+        rankings.find(r => r.user === b.id)?.ranking ?? Number.MAX_SAFE_INTEGER
+      return rankA - rankB
+    })
 
   return (
     <div className={twMerge('flex flex-col', className)}>

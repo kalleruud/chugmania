@@ -1,12 +1,11 @@
-import type { LoginRequest, RegisterRequest } from '../models/auth'
-import type { LoginResponse } from '../models/user'
+// Rating System Constants
+export const RATING_CONSTANTS = {
+  INITIAL_RATING: 1500,
+  NO_DATA_RATING: 600,
 
-export type WS_EVENT = {
-  connect: () => void
-  disconnect: () => void
-  connect_error: () => Error
-  login: (r: LoginRequest) => LoginResponse
-  register: (r: RegisterRequest) => LoginResponse
+  // Penalty for high deviation, prevents players with few entries from dominating the rankings
+  DEVIATION_PENALTY: 2,
+
+  // Weighting match vs. laptime ratings
+  MATCH_WEIGHT: 2 / 3,
 }
-
-export const AUTH_KEY = 'auth'

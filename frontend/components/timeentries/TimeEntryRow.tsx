@@ -137,16 +137,6 @@ export default function TimeEntryRow({
     return () => ro.disconnect()
   }, [])
 
-  const name = useMemo(() => {
-    if (width <= breakpoints.md)
-      return (
-        userInfo?.shortName ??
-        (userInfo?.lastName ?? userInfo?.firstName)?.slice(0, 3) ??
-        'N/A'
-      )
-    return userInfo?.lastName ?? userInfo?.firstName ?? 'N/A'
-  }, [width])
-
   const show = useMemo(() => {
     return {
       time: width >= breakpoints.none,
@@ -169,7 +159,12 @@ export default function TimeEntryRow({
       {...rest}>
       {show.pos && <PositionBadgePart position={gap?.position} />}
       <NameCellPart
-        name={name}
+        name={
+          userInfo?.shortName ??
+          userInfo?.lastName ??
+          userInfo?.firstName ??
+          loc.no.match.unknownUser
+        }
         hasComment={!!lapTime.comment}
         className={twMerge('mr-auto', isDNF && 'text-muted-foreground')}
       />

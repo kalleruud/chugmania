@@ -42,6 +42,8 @@ export type ErrorResponse = {
   message: string
 }
 
+import type { Ranking } from './ranking'
+
 export interface ServerToClientEvents {
   user_data: (r: EventRes<'get_user_data'>) => void
   all_users: (r: UserInfo[]) => void
@@ -49,6 +51,7 @@ export interface ServerToClientEvents {
   all_time_entries: (r: TimeEntry[]) => void
   all_sessions: (r: SessionWithSignups[]) => void
   all_matches: (r: Match[]) => void
+  all_rankings: (r: Ranking[]) => void
 }
 
 export interface ClientToServerEvents {

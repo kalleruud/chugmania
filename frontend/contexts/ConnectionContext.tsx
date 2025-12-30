@@ -3,7 +3,6 @@ import {
   type ClientToServerEvents,
   type ServerToClientEvents,
 } from '@common/models/socket.io'
-import { AUTH_KEY } from '@common/utils/constants'
 import {
   createContext,
   useContext,
@@ -14,6 +13,8 @@ import {
 } from 'react'
 import { io, Socket } from 'socket.io-client'
 import { toast } from 'sonner'
+
+const AUTH_KEY = 'auth'
 
 type ConnectionContextType = {
   socket: typeof socket

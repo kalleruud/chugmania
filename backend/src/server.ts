@@ -14,6 +14,7 @@ import AdminManager from './managers/admin.manager'
 import ApiManager from './managers/api.manager'
 import AuthManager from './managers/auth.manager'
 import MatchManager from './managers/match.manager'
+import RatingManager from './managers/rating.manager'
 import SessionManager from './managers/session.manager'
 import SessionScheduler from './managers/session.scheduler'
 import TimeEntryManager from './managers/timeEntry.manager'
@@ -57,15 +58,19 @@ io.on('connect', s => Connect(s))
 // Initialize session scheduler when server starts
 await SessionScheduler.scheduleNext()
 
+// Calculate ratings
+await RatingManager.recalculate()
+
 async function Connect(s: TypedSocket) {
   console.debug(new Date().toISOString(), s.id, 'Connected')
 
   s.emit('user_data', await AuthManager.refreshToken(s))
   s.emit('all_users', await UserManager.getAllUsers())
   s.emit('all_tracks', await TrackManager.getAllTracks())
-  s.emit('all_time_entries', await TimeEntryManager.getAllTimeEntries())
   s.emit('all_sessions', await SessionManager.getAllSessions())
+  s.emit('all_time_entries', await TimeEntryManager.getAllTimeEntries())
   s.emit('all_matches', await MatchManager.getAllMatches())
+  s.emit('all_rankings', await RatingManager.onGetRatings())
 
   s.on('disconnect', () =>
     console.debug(new Date().toISOString(), s.id, 'Disconnected')

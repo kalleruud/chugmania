@@ -223,7 +223,12 @@ function UserCell({
           isCancelled && 'line-through'
         )}>
         <NameCellPart
-          name={user?.lastName ?? user?.firstName ?? loc.no.match.unknownUser}
+          name={
+            user?.shortName ??
+            user?.lastName ??
+            user?.firstName ??
+            loc.no.match.unknownUser
+          }
         />
       </button>
     </div>

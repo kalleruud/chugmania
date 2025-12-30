@@ -1,10 +1,10 @@
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
+import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
 import { type UserInfo } from '@common/models/user'
-import { formatYear } from '@common/utils/date'
 import { PencilIcon } from '@heroicons/react/24/solid'
-import { LogOut, Trash2 } from 'lucide-react'
+import { Award, LogOut, Minus, Trash2 } from 'lucide-react'
 import { useState, type ComponentProps } from 'react'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
@@ -20,6 +20,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '../ui/dialog'
+import { Spinner } from '../ui/spinner'
 import UserForm from './UserForm'
 
 type UserCardProps = {
@@ -32,8 +33,15 @@ export default function UserCard({
   ...props
 }: Readonly<UserCardProps>) {
   const { logout, isLoading, loggedInUser } = useAuth()
+  const { rankings, isLoadingData } = useData()
   const { socket } = useConnection()
   const [open, setOpen] = useState(false)
+
+  if (isLoadingData) {
+    return <Spinner className='size-4' />
+  }
+
+  const ranking = rankings.find(r => r.user === user.id)
 
   const isSelf = loggedInUser?.id === user.id
   const isAdmin = loggedInUser?.role === 'admin'
@@ -68,12 +76,38 @@ export default function UserCard({
           <h1 className='font-f1 uppercase'>{user.lastName}</h1>
         </div>
 
-        <div className='text-muted-foreground flex gap-2'>
-          <span className='text-sm'>{user.shortName ?? '-'}</span>
+        <div className='text-muted-foreground font-f1 flex gap-2 font-bold'>
+          <span>{user.shortName ?? '-'}</span>
+
           <span className='border-r' />
-          <span className='text-sm'>{loc.no.user.role[user.role]}</span>
+
+          <div
+            className={twMerge(
+              'font-kh-interface text-muted-foreground -mb-0.5 flex items-center justify-end gap-0.5 tabular-nums',
+              ranking?.ranking === 1 && 'text-yellow-400',
+              ranking?.ranking === 2 && 'text-gray-300',
+              ranking?.ranking === 3 && 'text-amber-600'
+            )}>
+            <span>#</span>
+            {ranking?.ranking ? (
+              <span className='font-black'>{ranking.ranking}</span>
+            ) : (
+              <Minus className='size-4' />
+            )}
+          </div>
+
           <span className='border-r' />
-          <span className='text-sm'>{`${loc.no.user.joined} ${formatYear(user.createdAt)}`}</span>
+
+          <div className='flex items-center gap-1'>
+            <Award className='size-4' />
+            {ranking?.totalRating ? (
+              <span className='truncate text-sm'>
+                {ranking?.totalRating.toFixed()}
+              </span>
+            ) : (
+              <Minus className='size-4' />
+            )}
+          </div>
         </div>
       </div>
 

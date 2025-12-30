@@ -7,12 +7,13 @@ import {
   type Match,
 } from '@common/models/match'
 import type { EventReq, EventRes } from '@common/models/socket.io'
-import { desc, eq, getTableColumns, isNull, sql } from 'drizzle-orm'
+import { and, desc, eq, getTableColumns, isNull, sql } from 'drizzle-orm'
 import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
 import { matches, sessions } from '../../database/schema'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
+import RatingManager from './rating.manager'
 
 export default class MatchManager {
   private static validateMatchState(
@@ -48,6 +49,15 @@ export default class MatchManager {
     return matchRows
   }
 
+  // Returns matches sorted by creation date, most recent first.
+  public static async getAllBySession(sessionId: string): Promise<Match[]> {
+    return await db
+      .select({ ...getTableColumns(matches) })
+      .from(matches)
+      .where(and(eq(matches.session, sessionId), isNull(matches.deletedAt)))
+      .orderBy(desc(matches.createdAt))
+  }
+
   static async onCreateMatch(
     socket: TypedSocket,
     request: EventReq<'create_match'>
@@ -67,7 +77,9 @@ export default class MatchManager {
 
     console.debug(new Date().toISOString(), socket.id, 'Created match')
 
+    RatingManager.recalculate()
     broadcast('all_matches', await MatchManager.getAllMatches())
+    broadcast('all_rankings', await RatingManager.onGetRatings())
 
     return { success: true }
   }
@@ -107,7 +119,9 @@ export default class MatchManager {
 
     console.debug(new Date().toISOString(), socket.id, 'Updated match', id)
 
+    await RatingManager.recalculate()
     broadcast('all_matches', await MatchManager.getAllMatches())
+    broadcast('all_rankings', await RatingManager.onGetRatings())
 
     return { success: true }
   }

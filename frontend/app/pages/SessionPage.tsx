@@ -63,7 +63,7 @@ function Signup({
 >) {
   const { socket } = useConnection()
   const { loggedInUser, isLoggedIn } = useAuth()
-  const { timeEntries, matches, users, isLoadingData } = useData()
+  const { timeEntries, matches, users, rankings, isLoadingData } = useData()
 
   const [myResponse, setMyResponse] = useState<SessionResponse | undefined>(
     session.signups.find(s => s.user.id === loggedInUser?.id)?.response
@@ -87,8 +87,17 @@ function Signup({
             response: s.response,
           }
         })
-        .filter(s => s !== undefined),
-    [session, timeEntries, matches, users]
+        .filter(s => s !== undefined)
+        .toSorted((a, b) => {
+          const rankA =
+            rankings?.find(r => r.user === a.user.id)?.ranking ??
+            Number.MAX_SAFE_INTEGER
+          const rankB =
+            rankings?.find(r => r.user === b.user.id)?.ranking ??
+            Number.MAX_SAFE_INTEGER
+          return rankA - rankB
+        }),
+    [session, timeEntries, matches, users, rankings]
   )
 
   if (isLoadingData)

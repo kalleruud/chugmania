@@ -1,3 +1,4 @@
+import type { Session } from '@common/models/session'
 import type { EventReq, EventRes } from '@common/models/socket.io'
 import type { TimeEntry } from '@common/models/timeEntry'
 import {
@@ -5,13 +6,14 @@ import {
   isEditTimeEntryRequest,
 } from '@common/models/timeEntry'
 import type { User } from '@common/models/user'
-import { asc, eq, isNull, sql } from 'drizzle-orm'
+import { and, asc, eq, getTableColumns, isNull, sql } from 'drizzle-orm'
 import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
 import { timeEntries } from '../../database/schema'
 import type { TypedSocket } from '../server'
 import { broadcast } from '../server'
 import AuthManager from './auth.manager'
+import RatingManager from './rating.manager'
 
 export default class TimeEntryManager {
   static readonly table = timeEntries
@@ -26,6 +28,53 @@ export default class TimeEntryManager {
     )
 
     return (await Promise.all(tasks)).flat()
+  }
+
+  // Returns all latest lap times for each user after a session.
+  static async getAllLatestAfterSession(
+    sessionId: Session['id']
+  ): Promise<TimeEntry[]> {
+    const latestDatePerUser = db
+      .select({
+        user: timeEntries.user,
+        maxDate: sql<Date>`max(${timeEntries.createdAt})`.as('maxDate'),
+      })
+      .from(timeEntries)
+      .where(eq(timeEntries.session, sessionId))
+      .groupBy(timeEntries.user)
+      .as('latest_date')
+
+    const latestBestPerUser = db
+      .select({
+        user: timeEntries.user,
+        createdAt: timeEntries.createdAt,
+        minDuration: sql<number>`min(${timeEntries.duration})`.as(
+          'minDuration'
+        ),
+      })
+      .from(timeEntries)
+      .innerJoin(
+        latestDatePerUser,
+        and(
+          eq(timeEntries.user, latestDatePerUser.user),
+          eq(timeEntries.createdAt, latestDatePerUser.maxDate)
+        )
+      )
+      .groupBy(timeEntries.user, timeEntries.createdAt)
+      .as('latest_best')
+
+    return await db
+      .select({ ...getTableColumns(timeEntries) })
+      .from(timeEntries)
+      .innerJoin(
+        latestBestPerUser,
+        and(
+          eq(timeEntries.user, latestBestPerUser.user),
+          eq(timeEntries.createdAt, latestBestPerUser.createdAt),
+          eq(timeEntries.duration, latestBestPerUser.minDuration)
+        )
+      )
+      .where(eq(timeEntries.session, sessionId))
   }
 
   static async onPostTimeEntry(
@@ -54,7 +103,9 @@ export default class TimeEntryManager {
       request.duration
     )
 
+    RatingManager.recalculate()
     broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
+    broadcast('all_rankings', await RatingManager.onGetRatings())
 
     return {
       success: true,
@@ -117,7 +168,10 @@ export default class TimeEntryManager {
       request.id
     )
 
+    await RatingManager.recalculate()
+
     broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
+    broadcast('all_rankings', await RatingManager.onGetRatings())
 
     return {
       success: true,
