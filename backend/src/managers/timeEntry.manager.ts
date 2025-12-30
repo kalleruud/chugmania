@@ -14,7 +14,6 @@ import type { TypedSocket } from '../server'
 import { broadcast } from '../server'
 import AuthManager from './auth.manager'
 import RatingManager from './rating.manager'
-import UserManager from './user.manager'
 
 export default class TimeEntryManager {
   static readonly table = timeEntries
@@ -106,7 +105,6 @@ export default class TimeEntryManager {
 
     RatingManager.recalculate()
     broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
-    broadcast('all_users', await UserManager.getAllUsers())
     broadcast('all_rankings', await RatingManager.onGetRatings())
 
     return {
