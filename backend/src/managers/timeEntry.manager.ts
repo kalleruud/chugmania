@@ -5,7 +5,7 @@ import {
   isEditTimeEntryRequest,
 } from '@common/models/timeEntry'
 import type { User } from '@common/models/user'
-import { asc, eq, isNull, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, isNull, sql } from 'drizzle-orm'
 import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
 import { timeEntries } from '../../database/schema'
@@ -29,6 +29,16 @@ export default class TimeEntryManager {
     return (await Promise.all(tasks)).flat()
   }
 
+  static async getAllBySession(sessionId: string): Promise<TimeEntry[]> {
+    return await db
+      .select()
+      .from(timeEntries)
+      .where(
+        and(eq(timeEntries.session, sessionId), isNull(timeEntries.deletedAt))
+      )
+      .orderBy(desc(timeEntries.duration))
+  }
+
   static async onPostTimeEntry(
     socket: TypedSocket,
     request: EventReq<'post_time_entry'>
@@ -46,7 +56,7 @@ export default class TimeEntryManager {
       throw new Error(loc.no.error.messages.insufficient_permissions)
     }
 
-    await db.insert(timeEntries).values(request)
+    const timeEntry = await db.insert(timeEntries).values(request).returning()
 
     console.debug(
       new Date().toISOString(),
@@ -55,9 +65,9 @@ export default class TimeEntryManager {
       request.duration
     )
 
+    RatingManager.processTimeEntries(timeEntry)
     broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
-
-    RatingManager.processNewTimeEntry(request as unknown as TimeEntry)
+    broadcast('all_rankings', await RatingManager.onGetRatings())
 
     return {
       success: true,
@@ -120,9 +130,10 @@ export default class TimeEntryManager {
       request.id
     )
 
-    broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
+    await RatingManager.recalculate()
 
-    await RatingManager.initialize()
+    broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
+    broadcast('all_rankings', await RatingManager.onGetRatings())
 
     return {
       success: true,
@@ -135,8 +146,6 @@ export default class TimeEntryManager {
       .update(timeEntries)
       .set({ deletedAt })
       .where(eq(timeEntries.user, userId))
-
-    await RatingManager.initialize()
   }
 
   static async getAllTimeEntries(): Promise<TimeEntry[]> {

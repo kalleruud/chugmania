@@ -7,7 +7,7 @@ import {
   type Match,
 } from '@common/models/match'
 import type { EventReq, EventRes } from '@common/models/socket.io'
-import { desc, eq, getTableColumns, isNull, sql } from 'drizzle-orm'
+import { and, desc, eq, getTableColumns, isNull, sql } from 'drizzle-orm'
 import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
 import { matches, sessions } from '../../database/schema'
@@ -49,6 +49,15 @@ export default class MatchManager {
     return matchRows
   }
 
+  // Returns matches sorted by creation date, most recent first.
+  public static async getAllBySession(sessionId: string): Promise<Match[]> {
+    return await db
+      .select({ ...getTableColumns(matches) })
+      .from(matches)
+      .where(and(eq(matches.session, sessionId), isNull(matches.deletedAt)))
+      .orderBy(desc(matches.createdAt))
+  }
+
   static async onCreateMatch(
     socket: TypedSocket,
     request: EventReq<'create_match'>
@@ -64,38 +73,13 @@ export default class MatchManager {
     MatchManager.validateMatchState(request)
 
     const { type, createdAt, updatedAt, deletedAt, ...matchData } = request
-    await db.insert(matches).values(matchData)
+    const matchResults = await db.insert(matches).values(matchData).returning()
 
     console.debug(new Date().toISOString(), socket.id, 'Created match')
 
+    RatingManager.processMatches(matchResults)
     broadcast('all_matches', await MatchManager.getAllMatches())
-
-    // We need to fetch the created match to have all fields (like id) if needed,
-    // or construct it. The db.insert returns nothing by default in sqlite unless returning is used.
-    // However, the request has most data. But we don't have the ID if we didn't generate it or return it.
-    // Wait, the schema says id is defaultFn randomUUID.
-    // `const { type, createdAt, updatedAt, deletedAt, ...matchData } = request`
-    // request has `id`? `CreateMatchRequest` usually doesn't have ID.
-    // Let's check `CreateMatchRequest` model.
-    // Actually, looking at `onCreateMatch` implementation:
-    // `await db.insert(matches).values(matchData)`
-    // It doesn't use `returning()`.
-    // Wait, `RatingManager.processMatch` needs `Match` object.
-    // `Match` object needs `id`, `user1`, `user2`, `winner`, `status`.
-    // `matchData` has `user1`, `user2`, `winner`, `status`.
-    // It might be safer to fetch the latest match or just use `matchData` casted as Match if we are sure.
-    // However, `RatingManager` logic only checks `status`, `winner`, `user1`, `user2`.
-    // It doesn't use `id` for logic, only for uniqueness if we were storing it, but `processMatch` just processes it.
-    // Actually `matchData` comes from `request` which is `CreateMatchRequest`.
-    // `CreateMatchRequest` extends `Match` but omits `id`, `createdAt`, `updatedAt`, `deletedAt`.
-    // So `matchData` is missing `id`.
-    // `RatingManager.processMatch` signature expects `Match`.
-    // I should strictly probably fetch the match or cast it carefully.
-    // Given the previous code, I'll just cast it for now as `processMatch` implementation I wrote:
-    // `if (match.status !== 'completed' || !match.winner || !match.user1 || !match.user2) return`
-    // It doesn't use ID.
-
-    RatingManager.processNewMatch(matchData as unknown as Match)
+    broadcast('all_rankings', await RatingManager.onGetRatings())
 
     return { success: true }
   }
@@ -135,9 +119,9 @@ export default class MatchManager {
 
     console.debug(new Date().toISOString(), socket.id, 'Updated match', id)
 
+    await RatingManager.recalculate()
     broadcast('all_matches', await MatchManager.getAllMatches())
-
-    await RatingManager.initialize()
+    broadcast('all_rankings', await RatingManager.onGetRatings())
 
     return { success: true }
   }
@@ -157,8 +141,6 @@ export default class MatchManager {
       type: 'EditMatchRequest',
       deletedAt: new Date(),
     })
-
-    // Recalculation handled in onEditMatch
 
     return {
       success: true,

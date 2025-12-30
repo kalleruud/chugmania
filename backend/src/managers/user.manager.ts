@@ -13,6 +13,7 @@ import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
 import { users } from '../../database/schema'
 import { broadcast, type TypedSocket } from '../server'
+import AuthManager from './auth.manager'
 import RatingManager from './rating.manager'
 import TimeEntryManager from './timeEntry.manager'
 
@@ -199,8 +200,10 @@ export default class UserManager {
       `Deleted user '${deletedUser.email}' and their time entries`
     )
 
+    await RatingManager.recalculate()
     broadcast('all_users', await UserManager.getAllUsers())
     broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
+    broadcast('all_rankings', await RatingManager.onGetRatings())
 
     return {
       success: true,
@@ -262,7 +265,7 @@ export default class UserManager {
     if (data.length === 0)
       throw new Error(loc.no.error.messages.not_in_db(loc.no.users.title))
 
-    const rankings = RatingManager.getRankings()
+    const rankings = await RatingManager.onGetRatings()
     const usersInfo = data.map(r => UserManager.toUserInfo(r).userInfo)
 
     return usersInfo.sort((a, b) => {

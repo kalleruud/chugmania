@@ -17,9 +17,15 @@ import {
   tracks,
   users,
 } from '../../database/schema'
+import { broadcast } from '../server'
 import CsvParser from '../utils/csv-parser'
 import AuthManager from './auth.manager'
+import MatchManager from './match.manager'
 import RatingManager from './rating.manager'
+import SessionManager from './session.manager'
+import TimeEntryManager from './timeEntry.manager'
+import TrackManager from './track.manager'
+import UserManager from './user.manager'
 
 export default class AdminManager {
   private static readonly EXCLUDED_COL_EXPORT = {
@@ -110,9 +116,14 @@ export default class AdminManager {
       `Imported ${data.length} ${request.table}`
     )
 
-    // Recalculate ratings after any import to ensure consistency
-    // This is especially important for imports of matches or timeEntries
-    await RatingManager.initialize()
+    await RatingManager.recalculate()
+
+    broadcast('all_users', await UserManager.getAllUsers())
+    broadcast('all_tracks', await TrackManager.getAllTracks())
+    broadcast('all_sessions', await SessionManager.getAllSessions())
+    broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
+    broadcast('all_matches', await MatchManager.getAllMatches())
+    broadcast('all_rankings', await RatingManager.onGetRatings())
 
     return {
       success: true,

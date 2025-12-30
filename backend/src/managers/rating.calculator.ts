@@ -1,22 +1,17 @@
+import type { Match } from '@common/models/match'
 import type { TimeEntry } from '@common/models/timeEntry'
 import type { Track } from '@common/models/track'
 import type { UserInfo } from '@common/models/user'
 import { RATING_CONSTANTS } from '@common/utils/constants'
 import { Glicko2, type Player } from 'glicko2'
 
-export class TrackRatingCalculator {
-  private glicko2: Glicko2
-  private readonly players: Map<string, Player>
+abstract class RatingCalculator {
+  protected glicko2: Glicko2
+  protected readonly players: Map<UserInfo['id'], Player>
 
-  constructor(userIds: string[]) {
+  constructor() {
     this.glicko2 = new Glicko2({ rating: RATING_CONSTANTS.INITIAL_RATING })
     this.players = new Map()
-    for (const userId of userIds) {
-      this.players.set(
-        userId,
-        this.glicko2.makePlayer(RATING_CONSTANTS.INITIAL_RATING)
-      )
-    }
   }
 
   public reset() {
@@ -24,7 +19,26 @@ export class TrackRatingCalculator {
     this.players.clear()
   }
 
-  public getRating(userId: string): number {
+  // Returns all ratings in the calculator, sorted by rating.
+  public getAllRatings(): Map<UserInfo['id'], number> {
+    return new Map(
+      Array.from(this.players.keys()).map(userId => [
+        userId,
+        this.getRating(userId),
+      ])
+    )
+  }
+
+  protected getPlayer(userId: UserInfo['id']): Player {
+    let player = this.players.get(userId)
+    if (player) return player
+
+    player = this.glicko2.makePlayer(RATING_CONSTANTS.INITIAL_RATING)
+    this.players.set(userId, player)
+    return player
+  }
+
+  public getRating(userId: UserInfo['id']): number {
     return (
       this.players.get(userId)?.getRating() ?? RATING_CONSTANTS.INITIAL_RATING
     )
@@ -58,7 +72,32 @@ export class TrackRatingCalculator {
       p2Odds: 1 / (1 - p1WinProbability),
     }
   }
+}
 
+export class MatchRatingCalculator extends RatingCalculator {
+  public processMatches(matches: Match[]) {
+    const matchEvents: Parameters<typeof this.glicko2.addMatch>[] = []
+
+    for (const match of matches) {
+      if (match.status !== 'completed') continue
+      if (!match.user1 || !match.user2 || !match.winner) {
+        console.warn(`Match is not completed, skipping (${match.id})`)
+        continue
+      }
+
+      matchEvents.push([
+        this.getPlayer(match.user1),
+        this.getPlayer(match.user2),
+        match.winner === match.user1 ? 1 : 0,
+      ])
+    }
+    if (matchEvents.length === 0) return
+    this.glicko2.updateRatings(matchEvents)
+    console.log('  - Match ratings:', this.getAllRatings())
+  }
+}
+
+export class TrackRatingCalculator extends RatingCalculator {
   public processTimeEntries(timeEntries: TimeEntry[]) {
     const entriesByTrack = timeEntries.reduce(
       (acc, entry) => {
@@ -68,11 +107,13 @@ export class TrackRatingCalculator {
       {} as Record<Track['id'], TimeEntry[]>
     )
 
-    for (const [_, entries] of Object.entries(entriesByTrack)) {
+    for (const entries of Object.values(entriesByTrack)) {
       const leaderboard = this.getLeaderboard(entries)
       const race = this.glicko2.makeRace(leaderboard)
       this.glicko2.updateRatings(race)
     }
+
+    console.log('  - Track ratings:', this.getAllRatings())
   }
 
   // Returns a list of players sorted by lap time.
@@ -86,12 +127,12 @@ export class TrackRatingCalculator {
 
     const leaderboard: Player[][] = []
     let lastDuration: number | undefined = undefined
+
     for (const entry of sortedEntries) {
-      const player = this.players.get(entry.user)
-      if (!player) continue
+      const player = this.getPlayer(entry.user)
       const duration = entry.duration ?? Number.MAX_SAFE_INTEGER
 
-      if (lastDuration && lastDuration === duration) {
+      if (lastDuration === duration) {
         leaderboard.at(-1)?.push(player)
       } else {
         lastDuration = duration

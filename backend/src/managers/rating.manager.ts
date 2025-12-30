@@ -1,170 +1,86 @@
 import type { Match } from '@common/models/match'
 import type { Ranking } from '@common/models/ranking'
+import type { Session } from '@common/models/session'
 import type { TimeEntry } from '@common/models/timeEntry'
 import { RATING_CONSTANTS } from '@common/utils/constants'
-import { broadcast } from '../server'
+import { formatDateWithYear } from '@common/utils/date'
 import MatchManager from './match.manager'
-import { MatchRatingCalculator } from './matchRating.manager'
+import {
+  MatchRatingCalculator,
+  TrackRatingCalculator,
+} from './rating.calculator'
+import SessionManager from './session.manager'
 import TimeEntryManager from './timeEntry.manager'
-import { TrackRatingCalculator } from './trackRating.manager'
+import UserManager from './user.manager'
 
-export class RatingCalculator {
-  private matchCalculator = new MatchRatingCalculator()
-  private trackCalculator = new TrackRatingCalculator()
+export default class RatingManager {
+  private static readonly matchCalculator: MatchRatingCalculator =
+    new MatchRatingCalculator()
+  private static readonly trackCalculator: TrackRatingCalculator =
+    new TrackRatingCalculator()
 
-  constructor() {
-    this.reset()
+  private static reset() {
+    RatingManager.matchCalculator.reset()
+    RatingManager.trackCalculator.reset()
   }
 
-  public reset() {
-    this.matchCalculator.reset()
-    this.trackCalculator.reset()
+  static async recalculate() {
+    RatingManager.reset()
+
+    const sessions = await SessionManager.getAllSessions()
+    for (const session of sessions.toReversed()) {
+      console.log(
+        `Processing session ${session.name} (${formatDateWithYear(session.date)})`
+      )
+      await RatingManager.processSession(session.id)
+    }
   }
 
-  public getRankings(allUserIds?: string[]): Ranking[] {
-    // If external user list provided, use it. Otherwise try to gather from calculators (need to expose keys).
-    // Let's modify calculators to expose keys or just track them here?
-    // Tracking here duplicates logic.
-    // Let's just assume we pass `allUserIds` or we implement `getUsers` on calculators.
-    // For now, I'll implement `getUsers` on calculators via `any` cast or fix them later.
-    // Actually, I can just use the public `getRating` to check existence? No.
-    // Let's assume the callers (initialize) know the users?
-    // Or better: RatingManager.getAllUsers() helper.
+  private static async processSession(sessionId: Session['id']) {
+    const matches = await MatchManager.getAllBySession(sessionId)
+    RatingManager.matchCalculator.processMatches(matches)
 
-    // For now, let's collect unique users by peeking into private maps (via casting) or adding methods.
-    // I'll add methods to the calculator classes in a fix-up if needed.
-    // But since I control the files, I can just rely on the fact I *will* add `getUserIds` to them.
+    const timeEntries = await TimeEntryManager.getAllBySession(sessionId)
+    RatingManager.trackCalculator.processTimeEntries(timeEntries)
+  }
 
-    const uniqueUsers = new Set<string>()
-    // @ts-ignore
-    for (const user of this.matchCalculator.elo.keys()) uniqueUsers.add(user)
-    // @ts-ignore
-    for (const user of this.trackCalculator.userTrackRatings.keys())
-      uniqueUsers.add(user)
+  static processMatches(matches: Match[]) {
+    RatingManager.matchCalculator.processMatches(matches)
+  }
+
+  static processTimeEntries(timeEntries: TimeEntry[]) {
+    RatingManager.trackCalculator.processTimeEntries(timeEntries)
+  }
+
+  // Returns all users with their ratings, sorted by ranking.
+  static async onGetRatings(): Promise<Ranking[]> {
+    const users = await UserManager.getAllUsers()
+    const matchRatings = RatingManager.matchCalculator.getAllRatings()
+    const trackRatings = RatingManager.trackCalculator.getAllRatings()
 
     const rankings: Ranking[] = []
+    for (const user of users) {
+      const matchRating = matchRatings.get(user.id) ?? 0
+      const trackRating = trackRatings.get(user.id) ?? 0
 
-    for (const userId of uniqueUsers) {
+      const totalRating =
+        matchRating * RATING_CONSTANTS.MATCH_WEIGHT +
+        trackRating * (1 - RATING_CONSTANTS.MATCH_WEIGHT)
+
       rankings.push({
-        user: userId,
-        totalRating: this.calculateTotalRating(userId),
-        matchRating: this.matchCalculator.getRating(userId),
-        trackRating: this.trackCalculator.getRating(userId),
-        ranking: 0,
+        user: user.id,
+        totalRating,
+        matchRating,
+        trackRating,
+        ranking: 0, // Will be updated later
       })
     }
 
     rankings.sort((a, b) => b.totalRating - a.totalRating)
-
-    return rankings.map((r, index) => ({
-      ...r,
-      ranking: index + 1,
-    }))
-  }
-
-  public processTimeEntry(entry: TimeEntry) {
-    this.trackCalculator.processTimeEntry(entry)
-  }
-
-  public processMatch(match: Match) {
-    // Pass a callback to get the CURRENT track rating for the users involved
-    this.matchCalculator.processMatch(match, userId =>
-      this.trackCalculator.getRating(userId)
-    )
-  }
-
-  private calculateTotalRating(userId: string): number {
-    const matchElo = this.matchCalculator.getRating(userId)
-    const lapRating = this.trackCalculator.getRating(userId)
-
-    return (
-      RATING_CONSTANTS.MATCH_WEIGHT * matchElo +
-      (1 - RATING_CONSTANTS.MATCH_WEIGHT) * lapRating
-    )
-  }
-}
-
-export default class RatingManager {
-  private static calculator = new RatingCalculator()
-
-  static async initialize() {
-    const calculator = RatingManager.calculator
-    calculator.reset()
-
-    const matches = await MatchManager.getAllMatches()
-    const timeEntries = await TimeEntryManager.getAllTimeEntries()
-
-    // Sort chronologically
-    const events = [
-      ...matches.map(m => ({
-        type: 'match' as const,
-        date: m.createdAt ? new Date(m.createdAt).getTime() : 0,
-        data: m,
-      })),
-      ...timeEntries.map(t => ({
-        type: 'timeEntry' as const,
-        date: t.createdAt ? new Date(t.createdAt).getTime() : 0,
-        data: t,
-      })),
-    ].sort((a, b) => a.date - b.date)
-
-    for (const event of events) {
-      if (event.type === 'match') {
-        calculator.processMatch(event.data as Match)
-      } else {
-        calculator.processTimeEntry(event.data as TimeEntry)
-      }
+    for (let i = 0; i < rankings.length; i++) {
+      rankings[i].ranking = i + 1
     }
 
-    RatingManager.emitRankings()
-  }
-
-  static processNewMatch(match: Match) {
-    RatingManager.calculator.processMatch(match)
-    RatingManager.emitRankings()
-  }
-
-  static processNewTimeEntry(entry: TimeEntry) {
-    RatingManager.calculator.processTimeEntry(entry)
-    RatingManager.emitRankings()
-  }
-
-  static getRankings(): Ranking[] {
-    return RatingManager.calculator.getRankings()
-  }
-
-  static emitRankings() {
-    broadcast('all_rankings', RatingManager.getRankings())
-  }
-
-  // Ad-hoc calculation for session
-  static calculateSessionRankings(
-    matches: Match[],
-    timeEntries: TimeEntry[]
-  ): Ranking[] {
-    const calculator = new RatingCalculator()
-
-    const events = [
-      ...matches.map(m => ({
-        type: 'match' as const,
-        date: m.createdAt ? new Date(m.createdAt).getTime() : 0,
-        data: m,
-      })),
-      ...timeEntries.map(t => ({
-        type: 'timeEntry' as const,
-        date: t.createdAt ? new Date(t.createdAt).getTime() : 0,
-        data: t,
-      })),
-    ].sort((a, b) => a.date - b.date)
-
-    for (const event of events) {
-      if (event.type === 'match') {
-        calculator.processMatch(event.data as Match)
-      } else {
-        calculator.processTimeEntry(event.data as TimeEntry)
-      }
-    }
-
-    return calculator.getRankings()
+    return rankings
   }
 }
