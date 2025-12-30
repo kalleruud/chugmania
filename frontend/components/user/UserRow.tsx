@@ -2,7 +2,7 @@ import { Item, ItemActions, ItemContent, ItemTitle } from '@/components/ui/item'
 import { useAuth } from '@/contexts/AuthContext'
 import { useData } from '@/contexts/DataContext'
 import { type UserInfo } from '@common/models/user'
-import { Award, ChevronRight, Map, MedalIcon, Trophy } from 'lucide-react'
+import { ChevronRight, Map, Minus, Trophy } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { twMerge } from 'tailwind-merge'
 import type { BaseRowProps } from '../row/RowProps'
@@ -53,20 +53,19 @@ export default function UserRow({
             </div>
           )}
 
-          {ranking && (
+          {ranking ? (
             <div
               className={twMerge(
-                'font-kh-interface text-muted-foreground flex items-center justify-end gap-1 tabular-nums',
+                'font-kh-interface text-muted-foreground flex items-center justify-end gap-0.5 tabular-nums',
                 ranking.ranking === 1 && 'text-yellow-400',
                 ranking.ranking === 2 && 'text-gray-300',
                 ranking.ranking === 3 && 'text-amber-600'
               )}>
-              {ranking.ranking === 1 && <Trophy className='size-4' />}
-              {ranking.ranking === 2 && <MedalIcon className='size-4' />}
-              {ranking.ranking === 3 && <Award className='size-4' />}
-              {ranking.ranking > 3 && <span className='w-4 text-end'>#</span>}
+              <span className='w-2 text-end'>#</span>
               <span className='w-4 font-black'>{ranking.ranking}</span>
             </div>
+          ) : (
+            <Minus className='text-muted-foreground size-4' />
           )}
         </div>
       </ItemContent>
