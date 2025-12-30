@@ -1,91 +1,88 @@
 import type { Match } from '@common/models/match'
 import { RATING_CONSTANTS } from '@common/utils/constants'
+import { Glicko2, type Player } from 'glicko2'
 
 export class MatchRatingCalculator {
-  private readonly elo: Map<string, number> = new Map()
+  private glicko2: Glicko2
+  private readonly players: Map<string, Player>
 
-  constructor() {
-    this.reset()
+  constructor(userIds: string[]) {
+    this.glicko2 = new Glicko2({ rating: RATING_CONSTANTS.INITIAL_RATING })
+    this.players = new Map()
+    for (const userId of userIds) {
+      this.players.set(
+        userId,
+        this.glicko2.makePlayer(RATING_CONSTANTS.INITIAL_RATING)
+      )
+    }
   }
 
   public reset() {
-    this.elo.clear()
+    this.glicko2 = new Glicko2()
+    this.players.clear()
   }
 
   public getRating(userId: string): number {
-    return this.elo.get(userId) ?? RATING_CONSTANTS.INITIAL_RATING
+    return (
+      this.players.get(userId)?.getRating() ?? RATING_CONSTANTS.INITIAL_RATING
+    )
   }
 
-  public processMatch(
-    match: Match,
-    getTrackRating: (userId: string) => number
-  ) {
-    if (
-      match.status !== 'completed' ||
-      !match.winner ||
-      !match.user1 ||
-      !match.user2
-    )
-      return
+  public predict(match: {
+    user1: Match['user1']
+    user2: Match['user2']
+  }): number | undefined {
+    if (!match.user1 || !match.user2) return undefined
 
-    // Ensure both users have an ELO entry
-    if (!this.elo.has(match.user1)) {
-      this.elo.set(match.user1, RATING_CONSTANTS.INITIAL_RATING)
-    }
-    if (!this.elo.has(match.user2)) {
-      this.elo.set(match.user2, RATING_CONSTANTS.INITIAL_RATING)
+    const p1 = this.players.get(match.user1)
+    const p2 = this.players.get(match.user2)
+
+    if (!p1 || !p2) {
+      console.warn('Player(s) has no rating', match.user1, match.user2)
+      return undefined
     }
 
-    // Use total rating for expected score calculation to prevent farming
-    // We need to inject the aggregation logic or call back to a shared calculator.
-    // However, the prompt says "separate managers".
-    // To keep ELO math correct according to the plan ("TotalRating ... used to calculate win probabilities"),
-    // this manager needs access to TotalRating.
-    // TotalRating = Weight * MatchRating + Weight * TrackRating.
-    // So we need TrackRating here.
+    return this.glicko2.predict(p1, p2)
+  }
 
-    const user1MatchRating = this.getRating(match.user1)
-    const user2MatchRating = this.getRating(match.user2)
+  public getOdds(match: {
+    user1: Match['user1']
+    user2: Match['user2']
+  }): { p1Odds: number; p2Odds: number } | undefined {
+    const p1WinProbability = this.predict(match)
+    if (p1WinProbability === undefined) return undefined
+    return {
+      p1Odds: 1 / p1WinProbability,
+      p2Odds: 1 / (1 - p1WinProbability),
+    }
+  }
 
-    const user1TrackRating = getTrackRating(match.user1)
-    const user2TrackRating = getTrackRating(match.user2)
+  public processMatches(matches: Match[]) {
+    const matchEvents: Parameters<typeof this.glicko2.addMatch>[] = []
 
-    // Calculate Total Rating dynamically
-    // Total = M_W * Match + L_W * Lap
-    // Note: LAP_WEIGHT is implicit 1 - MATCH_WEIGHT usually, but we have explicit constants.
-    // Let's use constants directly.
+    for (const match of matches) {
+      if (match.status !== 'completed') continue
+      if (!match.user1 || !match.user2 || !match.winner) {
+        console.warn(`Match is not completed, skipping (${match.id})`)
+        continue
+      }
 
-    // We need to normalize track rating before mixing if required?
-    // "NormalizedLap = 1200 + (LapRating - 1200) * 0.6" - this logic was in RatingManager.
-    // We should move this logic to a shared utility or duplicate it here?
-    // The requirement "individually tuned" suggests separation.
+      const p1 = this.players.get(match.user1)
+      const p2 = this.players.get(match.user2)
 
-    // Let's implement calculateTotalRating helper here or pass it in.
-    // Passing `getTrackRating` callback is cleaner.
-
-    const user1Total =
-      RATING_CONSTANTS.MATCH_WEIGHT * user1MatchRating +
-      (1 - RATING_CONSTANTS.MATCH_WEIGHT) * user1TrackRating
-
-    const user2Total =
-      RATING_CONSTANTS.MATCH_WEIGHT * user2MatchRating +
-      (1 - RATING_CONSTANTS.MATCH_WEIGHT) * user2TrackRating
-
-    const winnerId = match.winner
-    const user1Score = winnerId === match.user1 ? 1 : 0
-    const user2Score = winnerId === match.user2 ? 1 : 0
-
-    const expected1 = 1 / (1 + Math.pow(10, (user2Total - user1Total) / 400))
-    const expected2 = 1 / (1 + Math.pow(10, (user1Total - user2Total) / 400))
-
-    const k = RATING_CONSTANTS.MATCH_K_FACTOR
-
-    const delta1 = k * (user1Score - expected1)
-    const delta2 = k * (user2Score - expected2)
-
-    this.elo.set(match.user1, user1MatchRating + delta1)
-    this.elo.set(match.user2, user2MatchRating + delta2)
+      if (!p1 || !p2) {
+        console.warn(
+          'Player(s) has no rating, skipping',
+          JSON.stringify({
+            id: match.id,
+            user1: match.user1,
+            user2: match.user2,
+          })
+        )
+        continue
+      }
+      matchEvents.push([p1, p2, match.winner === match.user1 ? 1 : 0])
+    }
+    this.glicko2.updateRatings(matchEvents)
   }
 }
-
-export default new MatchRatingCalculator()

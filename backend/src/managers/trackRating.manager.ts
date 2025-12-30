@@ -1,114 +1,104 @@
 import type { TimeEntry } from '@common/models/timeEntry'
+import type { Track } from '@common/models/track'
+import type { UserInfo } from '@common/models/user'
 import { RATING_CONSTANTS } from '@common/utils/constants'
-
-type TrackStats = {
-  count: number
-  average: number
-}
+import { Glicko2, type Player } from 'glicko2'
 
 export class TrackRatingCalculator {
-  // Map<UserId, Map<TrackId, Rating>>
-  private userTrackRatings: Map<string, Map<string, number>> = new Map()
-  // Map<TrackId, TrackStats>
-  private trackStats: Map<string, TrackStats> = new Map()
-  // Map<TrackId, lapsCount> for weight calculation
-  private trackLapsCount: Map<string, number> = new Map()
+  private glicko2: Glicko2
+  private readonly players: Map<string, Player>
 
-  constructor() {
-    this.reset()
+  constructor(userIds: string[]) {
+    this.glicko2 = new Glicko2({ rating: RATING_CONSTANTS.INITIAL_RATING })
+    this.players = new Map()
+    for (const userId of userIds) {
+      this.players.set(
+        userId,
+        this.glicko2.makePlayer(RATING_CONSTANTS.INITIAL_RATING)
+      )
+    }
   }
 
   public reset() {
-    this.userTrackRatings.clear()
-    this.trackStats.clear()
-    this.trackLapsCount.clear()
-  }
-
-  public processTimeEntry(entry: TimeEntry) {
-    if (!entry.duration) return
-
-    const trackId = entry.track
-    const userId = entry.user
-    const lapTime = entry.duration
-
-    // 1. Update Track Stats
-    const currentStats = this.trackStats.get(trackId) ?? {
-      count: 0,
-      average: 0,
-    }
-    const trackCount = currentStats.count
-    const alpha = Math.min(
-      RATING_CONSTANTS.TRACK_STATS_EMA_ALPHA_MAX,
-      2 / (trackCount + 1)
-    )
-
-    // Initial average is the first lap time
-    const newAverage =
-      trackCount === 0
-        ? lapTime
-        : currentStats.average * (1 - alpha) + lapTime * alpha
-
-    this.trackStats.set(trackId, {
-      count: trackCount + 1,
-      average: newAverage,
-    })
-
-    // Also track total laps for this track for weighting
-    const currentLaps = this.trackLapsCount.get(trackId) ?? 0
-    this.trackLapsCount.set(trackId, currentLaps + 1)
-
-    // 2. Calculate Performance
-    const ratio = newAverage / lapTime
-    const performanceScore =
-      RATING_CONSTANTS.INITIAL_RATING +
-      RATING_CONSTANTS.LAP_RATING_SCALE * Math.log10(ratio)
-
-    // 3. Update User's Track Rating (EMA)
-    const userRatings = this.userTrackRatings.get(userId) ?? new Map()
-    const currentTrackRating =
-      userRatings.get(trackId) ?? RATING_CONSTANTS.INITIAL_RATING
-
-    const k = RATING_CONSTANTS.USER_TRACK_EMA_ALPHA
-
-    // Ratchet mechanism: only increase rating (or maintain)
-    let newTrackRating = currentTrackRating
-    if (performanceScore > currentTrackRating) {
-      newTrackRating = currentTrackRating * (1 - k) + performanceScore * k
-    } else {
-      newTrackRating = currentTrackRating
-    }
-
-    userRatings.set(trackId, newTrackRating)
-    this.userTrackRatings.set(userId, userRatings)
+    this.glicko2 = new Glicko2()
+    this.players.clear()
   }
 
   public getRating(userId: string): number {
-    const userRatings = this.userTrackRatings.get(userId)
+    return (
+      this.players.get(userId)?.getRating() ?? RATING_CONSTANTS.INITIAL_RATING
+    )
+  }
 
-    if (!userRatings || userRatings.size === 0) {
-      return RATING_CONSTANTS.INITIAL_RATING
+  public predict(
+    user1: UserInfo['id'],
+    user2: UserInfo['id']
+  ): number | undefined {
+    if (!user1 || !user2) return undefined
+
+    const p1 = this.players.get(user1)
+    const p2 = this.players.get(user2)
+
+    if (!p1 || !p2) {
+      console.warn('Player(s) has no rating', user1, user2)
+      return undefined
     }
 
-    let sumWeightedRatings = 0
-    let sumWeights = 0
+    return this.glicko2.predict(p1, p2)
+  }
 
-    for (const [trackId, rating] of userRatings.entries()) {
-      const trackLaps = this.trackLapsCount.get(trackId) ?? 0
+  public getOdds(
+    user1: UserInfo['id'],
+    user2: UserInfo['id']
+  ): { p1Odds: number; p2Odds: number } | undefined {
+    const p1WinProbability = this.predict(user1, user2)
+    if (p1WinProbability === undefined) return undefined
+    return {
+      p1Odds: 1 / p1WinProbability,
+      p2Odds: 1 / (1 - p1WinProbability),
+    }
+  }
 
-      const weight =
-        1 - Math.exp(-trackLaps / RATING_CONSTANTS.TRACK_MATURITY_LAPS)
+  public processTimeEntries(timeEntries: TimeEntry[]) {
+    const entriesByTrack = timeEntries.reduce(
+      (acc, entry) => {
+        acc[entry.track] = [...(acc[entry.track] || []), entry]
+        return acc
+      },
+      {} as Record<Track['id'], TimeEntry[]>
+    )
 
-      sumWeightedRatings += rating * weight
-      sumWeights += weight
+    for (const [_, entries] of Object.entries(entriesByTrack)) {
+      const leaderboard = this.getLeaderboard(entries)
+      const race = this.glicko2.makeRace(leaderboard)
+      this.glicko2.updateRatings(race)
+    }
+  }
+
+  // Returns a list of players sorted by lap time.
+  // Players with the same lap time are grouped together.
+  private getLeaderboard(entries: TimeEntry[]): Player[][] {
+    const sortedEntries = entries.toSorted(
+      (a, b) =>
+        (a.duration ?? Number.MAX_SAFE_INTEGER) -
+        (b.duration ?? Number.MAX_SAFE_INTEGER)
+    )
+
+    const leaderboard: Player[][] = []
+    let lastDuration: number | undefined = undefined
+    for (const entry of sortedEntries) {
+      const player = this.players.get(entry.user)
+      if (!player) continue
+      const duration = entry.duration ?? Number.MAX_SAFE_INTEGER
+
+      if (lastDuration && lastDuration === duration) {
+        leaderboard.at(-1)?.push(player)
+      } else {
+        lastDuration = duration
+        leaderboard.push([player])
+      }
     }
 
-    // Add Bayesian Prior
-    sumWeightedRatings +=
-      RATING_CONSTANTS.INITIAL_RATING * RATING_CONSTANTS.PRIOR_WEIGHT
-    sumWeights += RATING_CONSTANTS.PRIOR_WEIGHT
-
-    return sumWeightedRatings / sumWeights
+    return leaderboard
   }
 }
-
-export default new TrackRatingCalculator()
