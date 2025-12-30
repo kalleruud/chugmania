@@ -4,7 +4,7 @@ import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
 import { type UserInfo } from '@common/models/user'
 import { PencilIcon } from '@heroicons/react/24/solid'
-import { LogOut, Trash2 } from 'lucide-react'
+import { LogOut, Map, Minus, Trash2, Trophy } from 'lucide-react'
 import { useState, type ComponentProps } from 'react'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
@@ -76,18 +76,51 @@ export default function UserCard({
           <h1 className='font-f1 uppercase'>{user.lastName}</h1>
         </div>
 
-        <div className='text-muted-foreground flex gap-2'>
-          <span className='text-sm'>{user.shortName ?? '-'}</span>
+        <div className='text-muted-foreground font-f1 flex gap-2 font-bold'>
+          <span>{user.shortName ?? '-'}</span>
+
           <span className='border-r' />
-          <span className='text-sm'>{loc.no.user.role[user.role]}</span>
+
+          <div
+            className={twMerge(
+              'font-kh-interface text-muted-foreground -mb-0.5 flex items-center justify-end gap-0.5 tabular-nums',
+              ranking?.ranking === 1 && 'text-yellow-400',
+              ranking?.ranking === 2 && 'text-gray-300',
+              ranking?.ranking === 3 && 'text-amber-600'
+            )}>
+            <span>#</span>
+            {ranking?.ranking ? (
+              <span className='font-black'>{ranking.ranking}</span>
+            ) : (
+              <Minus className='size-4' />
+            )}
+          </div>
+
           <span className='border-r' />
-          <span className='text-sm'>
-            Match ELO: {ranking?.matchRating.toFixed()}
-          </span>
+
+          <div className='flex items-center gap-1'>
+            <Trophy className='size-4' />
+            {ranking?.matchRating ? (
+              <span className='truncate text-sm'>
+                {ranking?.matchRating.toFixed()}
+              </span>
+            ) : (
+              <Minus className='size-4' />
+            )}
+          </div>
+
           <span className='border-r' />
-          <span className='text-sm'>
-            Track ELO: {ranking?.trackRating.toFixed()}
-          </span>
+
+          <div className='flex items-center gap-1'>
+            <Map className='size-4' />
+            {ranking?.trackRating ? (
+              <span className='truncate text-sm'>
+                {ranking?.trackRating.toFixed()}
+              </span>
+            ) : (
+              <Minus className='size-4' />
+            )}
+          </div>
         </div>
       </div>
 
