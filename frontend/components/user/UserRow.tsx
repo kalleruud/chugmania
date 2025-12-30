@@ -2,7 +2,7 @@ import { Item, ItemActions, ItemContent, ItemTitle } from '@/components/ui/item'
 import { useAuth } from '@/contexts/AuthContext'
 import { useData } from '@/contexts/DataContext'
 import { type UserInfo } from '@common/models/user'
-import { ChevronRight, Map, Minus, Trophy } from 'lucide-react'
+import { Award, ChevronRight, Map, Minus, Trophy } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { twMerge } from 'tailwind-merge'
 import type { BaseRowProps } from '../row/RowProps'
@@ -37,17 +37,25 @@ export default function UserRow({
           </ItemTitle>
 
           {isAdmin && ranking && (
-            <div className='flex w-32 items-center gap-2 tabular-nums'>
+            <div className='hidden w-48 items-center gap-2 tabular-nums sm:flex'>
               <div className='flex items-center gap-1'>
                 <Trophy className='size-4' />
                 <span className='truncate text-sm'>
                   {ranking?.matchRating.toFixed()}
                 </span>
               </div>
+
               <div className='flex items-center gap-1'>
                 <Map className='size-4' />
                 <span className='truncate text-sm'>
                   {ranking?.trackRating.toFixed()}
+                </span>
+              </div>
+
+              <div className='flex items-center gap-1'>
+                <Award className='size-4' />
+                <span className='truncate text-sm'>
+                  {ranking?.totalRating.toFixed()}
                 </span>
               </div>
             </div>

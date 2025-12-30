@@ -7,5 +7,5 @@ export const RATING_CONSTANTS = {
   DEVIATION_PENALTY: 2,
 
   // Weighting match vs. laptime ratings
-  MATCH_WEIGHT: 0.5,
+  MATCH_WEIGHT: 2 / 3,
 }

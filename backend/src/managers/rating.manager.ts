@@ -37,7 +37,8 @@ export default class RatingManager {
     const matches = await MatchManager.getAllBySession(sessionId)
     RatingManager.matchCalculator.processMatches(matches)
 
-    const timeEntries = await TimeEntryManager.getAllBySession(sessionId)
+    const timeEntries =
+      await TimeEntryManager.getAllLatestAfterSession(sessionId)
     RatingManager.trackCalculator.processTimeEntries(timeEntries)
   }
 

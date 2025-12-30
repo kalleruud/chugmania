@@ -4,7 +4,7 @@ import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
 import { type UserInfo } from '@common/models/user'
 import { PencilIcon } from '@heroicons/react/24/solid'
-import { LogOut, Map, Minus, Trash2, Trophy } from 'lucide-react'
+import { Award, LogOut, Minus, Trash2 } from 'lucide-react'
 import { useState, type ComponentProps } from 'react'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
@@ -99,23 +99,10 @@ export default function UserCard({
           <span className='border-r' />
 
           <div className='flex items-center gap-1'>
-            <Trophy className='size-4' />
-            {ranking?.matchRating ? (
+            <Award className='size-4' />
+            {ranking?.totalRating ? (
               <span className='truncate text-sm'>
-                {ranking?.matchRating.toFixed()}
-              </span>
-            ) : (
-              <Minus className='size-4' />
-            )}
-          </div>
-
-          <span className='border-r' />
-
-          <div className='flex items-center gap-1'>
-            <Map className='size-4' />
-            {ranking?.trackRating ? (
-              <span className='truncate text-sm'>
-                {ranking?.trackRating.toFixed()}
+                {ranking?.totalRating.toFixed()}
               </span>
             ) : (
               <Minus className='size-4' />
