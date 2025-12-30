@@ -43,6 +43,13 @@
       "when": 1766436744329,
       "tag": "0005_hesitant_chameleon",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1767104748372,
+      "tag": "0006_big_lightspeed",
+      "breakpoints": true
     }
   ]
 }

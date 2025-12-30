@@ -23,6 +23,7 @@ export type MatchStage =
   | 'semi'
   | 'bronze'
   | 'final'
+  | 'grand_final'
   | 'loser_eight'
   | 'loser_quarter'
   | 'loser_semi'
@@ -93,9 +94,7 @@ export const matches = sqliteTable('matches', {
   ...metadata,
   user1: text().references(() => users.id),
   user2: text().references(() => users.id),
-  track: text()
-    .notNull()
-    .references(() => tracks.id),
+  track: text().references(() => tracks.id),
   session: text().references(() => sessions.id),
   winner: text().references(() => users.id),
   duration: integer('duration_ms'),
