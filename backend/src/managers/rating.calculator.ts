@@ -39,8 +39,10 @@ abstract class RatingCalculator {
   }
 
   public getRating(userId: UserInfo['id']): number {
+    const player = this.players.get(userId)
+    if (!player) return 0
     return (
-      this.players.get(userId)?.getRating() ?? RATING_CONSTANTS.INITIAL_RATING
+      player.getRating() - RATING_CONSTANTS.DEVIATION_PENALTY * player.getRd()
     )
   }
 
