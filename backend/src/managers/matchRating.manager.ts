@@ -2,7 +2,7 @@ import type { Match } from '@common/models/match'
 import { RATING_CONSTANTS } from '@common/utils/constants'
 
 export class MatchRatingCalculator {
-  private elo: Map<string, number> = new Map()
+  private readonly elo: Map<string, number> = new Map()
 
   constructor() {
     this.reset()
