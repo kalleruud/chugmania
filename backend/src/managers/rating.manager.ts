@@ -1,7 +1,5 @@
-import type { Match } from '@common/models/match'
 import type { Ranking } from '@common/models/ranking'
 import type { Session } from '@common/models/session'
-import type { TimeEntry } from '@common/models/timeEntry'
 import { RATING_CONSTANTS } from '@common/utils/constants'
 import { formatDateWithYear } from '@common/utils/date'
 import MatchManager from './match.manager'
@@ -43,14 +41,6 @@ export default class RatingManager {
     RatingManager.trackCalculator.processTimeEntries(timeEntries)
   }
 
-  static processMatches(matches: Match[]) {
-    RatingManager.matchCalculator.processMatches(matches)
-  }
-
-  static processTimeEntries(timeEntries: TimeEntry[]) {
-    RatingManager.trackCalculator.processTimeEntries(timeEntries)
-  }
-
   // Returns all users with their ratings, sorted by ranking.
   static async onGetRatings(): Promise<Ranking[]> {
     const matchRatings = RatingManager.matchCalculator.getAllRatings()
@@ -61,8 +51,10 @@ export default class RatingManager {
 
     const rankings: Ranking[] = []
     for (const userId of users) {
-      const matchRating = matchRatings.get(userId) ?? 0
-      const trackRating = trackRatings.get(userId) ?? 0
+      const matchRating =
+        matchRatings.get(userId) ?? RATING_CONSTANTS.INITIAL_RATING
+      const trackRating =
+        trackRatings.get(userId) ?? RATING_CONSTANTS.INITIAL_RATING
 
       const totalRating =
         matchRating * RATING_CONSTANTS.MATCH_WEIGHT +

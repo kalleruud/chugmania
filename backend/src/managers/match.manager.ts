@@ -14,6 +14,7 @@ import { matches, sessions } from '../../database/schema'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import RatingManager from './rating.manager'
+import UserManager from './user.manager'
 
 export default class MatchManager {
   private static validateMatchState(
@@ -73,13 +74,14 @@ export default class MatchManager {
     MatchManager.validateMatchState(request)
 
     const { type, createdAt, updatedAt, deletedAt, ...matchData } = request
-    const matchResults = await db.insert(matches).values(matchData).returning()
+    await db.insert(matches).values(matchData)
 
     console.debug(new Date().toISOString(), socket.id, 'Created match')
 
-    RatingManager.processMatches(matchResults)
+    RatingManager.recalculate()
     broadcast('all_matches', await MatchManager.getAllMatches())
     broadcast('all_rankings', await RatingManager.onGetRatings())
+    broadcast('all_users', await UserManager.getAllUsers())
 
     return { success: true }
   }
@@ -122,6 +124,7 @@ export default class MatchManager {
     await RatingManager.recalculate()
     broadcast('all_matches', await MatchManager.getAllMatches())
     broadcast('all_rankings', await RatingManager.onGetRatings())
+    broadcast('all_users', await UserManager.getAllUsers())
 
     return { success: true }
   }

@@ -13,6 +13,7 @@ import type { TypedSocket } from '../server'
 import { broadcast } from '../server'
 import AuthManager from './auth.manager'
 import RatingManager from './rating.manager'
+import UserManager from './user.manager'
 
 export default class TimeEntryManager {
   static readonly table = timeEntries
@@ -56,7 +57,7 @@ export default class TimeEntryManager {
       throw new Error(loc.no.error.messages.insufficient_permissions)
     }
 
-    const timeEntry = await db.insert(timeEntries).values(request).returning()
+    await db.insert(timeEntries).values(request)
 
     console.debug(
       new Date().toISOString(),
@@ -65,8 +66,9 @@ export default class TimeEntryManager {
       request.duration
     )
 
-    RatingManager.processTimeEntries(timeEntry)
+    RatingManager.recalculate()
     broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
+    broadcast('all_users', await UserManager.getAllUsers())
     broadcast('all_rankings', await RatingManager.onGetRatings())
 
     return {
