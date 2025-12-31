@@ -42,6 +42,10 @@ const no = {
       tracks: 'Baner',
       users: 'Spillere',
       matches: 'Matcher',
+      tournaments: 'Turneringer',
+      groups: 'Turneringsgrupper',
+      groupPlayers: 'Turneringsspillere',
+      tournamentMatches: 'Turneringsmatcher',
     } satisfies Record<ExportCsvRequest['table'], string>,
   },
   user: {
