@@ -3,6 +3,8 @@ import { PageSubheader } from '@/components/PageHeader'
 import SessionCard from '@/components/session/SessionCard'
 import SessionForm from '@/components/session/SessionForm'
 import TrackLeaderboard from '@/components/track/TrackLeaderboard'
+import { TournamentCard } from '@/components/tournament/TournamentCard'
+import { TournamentForm } from '@/components/tournament/TournamentForm'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -44,6 +46,7 @@ import {
   CircleX,
   PencilIcon,
   Trash2,
+  Trophy,
   type LucideIcon,
 } from 'lucide-react'
 import { useMemo, useState, type ComponentProps } from 'react'
@@ -213,9 +216,10 @@ function Signup({
 export default function SessionPage() {
   const { id } = useParams()
   const { socket } = useConnection()
-  const { sessions, tracks, isLoadingData } = useData()
+  const { sessions, tracks, tournaments, isLoadingData } = useData()
   const { loggedInUser, isLoggedIn, isLoading } = useAuth()
   const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [createTournamentOpen, setCreateTournamentOpen] = useState(false)
 
   const isAdmin = isLoggedIn && loggedInUser.role === 'admin'
   const isModerator = isLoggedIn && loggedInUser.role === 'moderator'
@@ -253,6 +257,7 @@ export default function SessionPage() {
     throw new Error(loc.no.error.messages.not_in_db('sessions/' + id))
 
   const isCancelled = session?.status === 'cancelled'
+  const sessionTournaments = tournaments?.filter(t => t.session === session.id) || []
 
   return (
     <div className='flex flex-col gap-6'>
@@ -321,6 +326,35 @@ export default function SessionPage() {
             </ConfirmationButton>
           </>
         )}
+      </div>
+
+      {/* Tournaments Section */}
+      <div className="space-y-4">
+          <div className="flex justify-between items-center px-2">
+               <h3 className="text-lg font-bold">Tournaments</h3>
+               {canEdit && (
+                   <Dialog open={createTournamentOpen} onOpenChange={setCreateTournamentOpen}>
+                       <DialogTrigger asChild>
+                           <Button size="sm">
+                               <Trophy className="mr-2 size-4" />
+                               New Tournament
+                           </Button>
+                       </DialogTrigger>
+                       <DialogContent>
+                           <DialogHeader>
+                               <DialogTitle>Create Tournament</DialogTitle>
+                           </DialogHeader>
+                           <TournamentForm sessionId={session.id} onSuccess={() => setCreateTournamentOpen(false)} />
+                       </DialogContent>
+                   </Dialog>
+               )}
+          </div>
+          {sessionTournaments.map(t => (
+              <TournamentCard key={t.id} tournament={t} />
+          ))}
+          {sessionTournaments.length === 0 && (
+              <Empty>No tournaments yet</Empty>
+          )}
       </div>
 
       <Signup

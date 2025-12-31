@@ -32,6 +32,11 @@ import type {
   LoginResponse,
   UserInfo,
 } from './user'
+import type { 
+    CreateTournamentRequest,
+    DeleteTournamentRequest,
+    TournamentData 
+} from './tournament'
 
 export type SuccessResponse = {
   success: true
@@ -52,6 +57,7 @@ export interface ServerToClientEvents {
   all_sessions: (r: SessionWithSignups[]) => void
   all_matches: (r: Match[]) => void
   all_rankings: (r: Ranking[]) => void
+  all_tournaments: (r: TournamentData[]) => void
 }
 
 export interface ClientToServerEvents {
@@ -121,6 +127,14 @@ export interface ClientToServerEvents {
   ) => void
   delete_match: (
     r: DeleteMatchRequest,
+    callback: (r: SuccessResponse | ErrorResponse) => void
+  ) => void
+  create_tournament: (
+    r: CreateTournamentRequest,
+    callback: (r: SuccessResponse | ErrorResponse) => void
+  ) => void
+  delete_tournament: (
+    r: DeleteTournamentRequest,
     callback: (r: SuccessResponse | ErrorResponse) => void
   ) => void
 }

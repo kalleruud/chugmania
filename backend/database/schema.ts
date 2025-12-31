@@ -1,4 +1,4 @@
-import { blob, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import { blob, integer, sqliteTable, text, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core'
 import { randomUUID } from 'node:crypto'
 
 const metadata = {
@@ -104,4 +104,63 @@ export const matches = sqliteTable('matches', {
     .$type<MatchStatus>()
     .notNull()
     .$default(() => 'planned'),
+})
+
+export type TournamentEliminationType = 'single' | 'double'
+export type TournamentBracketType = 'group' | 'upper' | 'lower'
+export type TournamentProgressionType = 'winner' | 'loser'
+
+export const tournaments = sqliteTable('tournaments', {
+  ...metadata,
+  session: text()
+    .notNull()
+    .references(() => sessions.id, { onDelete: 'cascade' }),
+  name: text().notNull(),
+  description: text(),
+  groupsCount: integer('groups_count').notNull(),
+  advancementCount: integer('advancement_count').notNull(),
+  eliminationType: text('elimination_type')
+    .$type<TournamentEliminationType>()
+    .notNull(),
+})
+
+export const groups = sqliteTable('groups', {
+  ...metadata,
+  tournament: text()
+    .notNull()
+    .references(() => tournaments.id, { onDelete: 'cascade' }),
+  name: text().notNull(),
+})
+
+export const groupPlayers = sqliteTable('group_players', {
+  ...metadata,
+  group: text()
+    .notNull()
+    .references(() => groups.id, { onDelete: 'cascade' }),
+  user: text()
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  seed: integer().notNull(),
+})
+
+export const tournamentMatches = sqliteTable('tournament_matches', {
+  ...metadata,
+  tournament: text()
+    .notNull()
+    .references(() => tournaments.id, { onDelete: 'cascade' }),
+  name: text().notNull(),
+  bracket: text().$type<TournamentBracketType>().notNull(),
+  round: integer().notNull(),
+  match: text().references(() => matches.id, { onDelete: 'set null' }),
+  completedAt: integer('completed_at', { mode: 'timestamp_ms' }),
+  
+  // Dependencies
+  sourceGroupA: text('source_group_a').references(() => groups.id),
+  sourceGroupARank: integer('source_group_a_rank'),
+  sourceGroupB: text('source_group_b').references(() => groups.id),
+  sourceGroupBRank: integer('source_group_b_rank'),
+  sourceMatchA: text('source_match_a').references((): AnySQLiteColumn => tournamentMatches.id),
+  sourceMatchAProgression: text('source_match_a_progression').$type<TournamentProgressionType>(),
+  sourceMatchB: text('source_match_b').references((): AnySQLiteColumn => tournamentMatches.id),
+  sourceMatchBProgression: text('source_match_b_progression').$type<TournamentProgressionType>(),
 })

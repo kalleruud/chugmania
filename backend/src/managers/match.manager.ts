@@ -58,6 +58,13 @@ export default class MatchManager {
       .orderBy(desc(matches.createdAt))
   }
 
+  public static async createMatchInternal(
+    matchData: typeof matches.$inferInsert
+  ): Promise<string> {
+    const [match] = await db.insert(matches).values(matchData).returning()
+    return match.id
+  }
+
   static async onCreateMatch(
     socket: TypedSocket,
     request: EventReq<'create_match'>
@@ -120,6 +127,9 @@ export default class MatchManager {
     console.debug(new Date().toISOString(), socket.id, 'Updated match', id)
 
     await RatingManager.recalculate()
+    // Trigger tournament progression
+    await import('./tournament.manager').then(m => m.default.onMatchCompleted(match.id))
+    
     broadcast('all_matches', await MatchManager.getAllMatches())
     broadcast('all_rankings', await RatingManager.onGetRatings())
 
