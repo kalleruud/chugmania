@@ -2,10 +2,12 @@ import { getRandomItem } from '@/app/utils/utils'
 import type { GapType } from '@/components/timeentries/TimeEntryRow'
 import type { ExportCsvRequest } from '@common/models/importCsv'
 import type {
+  EliminationType,
   MatchStage,
   MatchStatus,
   SessionResponse,
   SessionStatus,
+  TournamentBracket,
   TrackLevel,
   TrackType,
   UserRole,
@@ -42,6 +44,10 @@ const no = {
       tracks: 'Baner',
       users: 'Spillere',
       matches: 'Matcher',
+      tournaments: 'Turneringer',
+      groups: 'Grupper',
+      groupPlayers: 'Gruppespillere',
+      tournamentMatches: 'Turneringsmatcher',
     } satisfies Record<ExportCsvRequest['table'], string>,
   },
   user: {
@@ -240,6 +246,73 @@ const no = {
       same_user: 'Begge deltakerne kan ikke være den samme spilleren.',
     },
   },
+  tournament: {
+    title: 'Turneringer',
+    description: 'Single og Double Elimination turneringer',
+    new: 'Ny turnering',
+    edit: 'Rediger turnering',
+    delete: 'Slett turnering',
+    noTournaments: 'Ingen turneringer funnet.',
+    groupStage: 'Gruppespill',
+    bracket: 'Sluttspill',
+    pending: 'Venter',
+    form: {
+      name: 'Navn',
+      description: 'Beskrivelse',
+      groupsCount: 'Antall grupper',
+      advancementCount: 'Antall som går videre',
+      eliminationType: 'Type',
+      groupStageTracks: 'Baner for gruppespill',
+      groupStageTracksHint:
+        'Velg en eller flere baner. Matcher fordeles jevnt.',
+      bracketTracks: 'Baner for sluttspill',
+      bracketTracksHint: 'Velg én bane for hver runde.',
+      selectTrack: 'Velg bane',
+      trackDistribution: (matches: number, tracks: number) =>
+        `${matches} matcher fordelt på ${tracks} bane${tracks > 1 ? 'r' : ''} (~${Math.round(matches / tracks)} per bane)`,
+    },
+    preview: {
+      totalMatches: 'Totalt antall matcher',
+      groups: 'Grupper',
+      groupMatches: 'gruppespillmatcher',
+      bracket: 'Sluttspill',
+      bracketMatches: 'sluttspillmatcher',
+      selectTracks: 'Velg baner',
+    },
+    eliminationType: {
+      single: 'Single Elimination',
+      double: 'Double Elimination',
+    } as Record<EliminationType, string>,
+    bracketType: {
+      group: 'Gruppespill',
+      upper: 'Upper Bracket',
+      lower: 'Lower Bracket',
+    } as Record<TournamentBracket, string>,
+    toast: {
+      create: {
+        loading: 'Oppretter turnering...',
+        success: 'Turnering opprettet!',
+        error: (err: Error) => `Klarte ikke opprette turnering: ${err.message}`,
+      },
+      update: {
+        loading: 'Oppdaterer turnering...',
+        success: 'Turnering oppdatert!',
+        error: (err: Error) =>
+          `Klarte ikke oppdatere turnering: ${err.message}`,
+      },
+      delete: {
+        loading: 'Sletter turnering...',
+        success: 'Turnering slettet!',
+        error: (err: Error) => `Klarte ikke slette turnering: ${err.message}`,
+      },
+    },
+    source: {
+      groupWinner: (group: string) => `Vinner ${group}`,
+      groupRank: (group: string, rank: number) => `${rank}. plass ${group}`,
+      matchWinner: (match: string) => `Vinner ${match}`,
+      matchLoser: (match: string) => `Taper ${match}`,
+    },
+  },
   error: {
     title: 'Noe gikk galt 🥵',
     description: getRandomItem([
@@ -364,6 +437,7 @@ const no = {
     hide: 'Skjul',
     home: 'Hjem',
     continue: 'Kjør',
+    back: 'Tilbake',
     cancel: getRandomItem([
       'Abort mission',
       'Avbryt',

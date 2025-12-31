@@ -1,0 +1,1 @@
+ALTER TABLE `tournament_matches` ADD `track` text REFERENCES tracks(id);

@@ -14,6 +14,7 @@ import { matches, sessions } from '../../database/schema'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import RatingManager from './rating.manager'
+import TournamentManager from './tournament.manager'
 
 export default class MatchManager {
   private static validateMatchState(
@@ -122,6 +123,10 @@ export default class MatchManager {
     await RatingManager.recalculate()
     broadcast('all_matches', await MatchManager.getAllMatches())
     broadcast('all_rankings', await RatingManager.onGetRatings())
+
+    if (updates.status === 'completed' || updates.winner) {
+      await TournamentManager.onMatchCompleted(match.id)
+    }
 
     return { success: true }
   }

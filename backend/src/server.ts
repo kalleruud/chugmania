@@ -18,6 +18,7 @@ import RatingManager from './managers/rating.manager'
 import SessionManager from './managers/session.manager'
 import SessionScheduler from './managers/session.scheduler'
 import TimeEntryManager from './managers/timeEntry.manager'
+import TournamentManager from './managers/tournament.manager'
 import TrackManager from './managers/track.manager'
 import UserManager from './managers/user.manager'
 
@@ -71,6 +72,7 @@ async function Connect(s: TypedSocket) {
   s.emit('all_time_entries', await TimeEntryManager.getAllTimeEntries())
   s.emit('all_matches', await MatchManager.getAllMatches())
   s.emit('all_rankings', await RatingManager.onGetRatings())
+  s.emit('all_tournaments', await TournamentManager.getAllTournaments())
 
   s.on('disconnect', () =>
     console.debug(new Date().toISOString(), s.id, 'Disconnected')
@@ -97,6 +99,10 @@ async function Connect(s: TypedSocket) {
 
   setup(s, 'import_csv', AdminManager.onImportCsv)
   setup(s, 'export_csv', AdminManager.onExportCsv)
+
+  setup(s, 'create_tournament', TournamentManager.onCreateTournament)
+  setup(s, 'edit_tournament', TournamentManager.onEditTournament)
+  setup(s, 'delete_tournament', TournamentManager.onDeleteTournament)
 }
 
 function setup<Ev extends keyof ClientToServerEvents>(
