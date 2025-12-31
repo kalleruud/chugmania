@@ -2,6 +2,7 @@ import ConfirmationButton from '@/components/ConfirmationButton'
 import { PageSubheader } from '@/components/PageHeader'
 import SessionCard from '@/components/session/SessionCard'
 import SessionForm from '@/components/session/SessionForm'
+import TournamentCard from '@/components/tournament/TournamentCard'
 import TrackLeaderboard from '@/components/track/TrackLeaderboard'
 import {
   Breadcrumb,
@@ -213,7 +214,7 @@ function Signup({
 export default function SessionPage() {
   const { id } = useParams()
   const { socket } = useConnection()
-  const { sessions, tracks, isLoadingData } = useData()
+  const { sessions, tracks, tournaments, isLoadingData } = useData()
   const { loggedInUser, isLoggedIn, isLoading } = useAuth()
   const [editDialogOpen, setEditDialogOpen] = useState(false)
 
@@ -328,6 +329,12 @@ export default function SessionPage() {
         disabled={isCancelled}
         session={session}
       />
+
+      {tournaments
+        ?.filter(t => t.session === session.id)
+        .map(tournament => (
+          <TournamentCard key={tournament.id} tournament={tournament} />
+        ))}
 
       {tracks.map(track => (
         <TrackLeaderboard

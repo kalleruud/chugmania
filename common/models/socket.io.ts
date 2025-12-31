@@ -25,6 +25,12 @@ import type {
   EditTimeEntryRequest,
   TimeEntry,
 } from './timeEntry'
+import type {
+  CreateTournamentRequest,
+  DeleteTournamentRequest,
+  EditTournamentRequest,
+  TournamentWithDetails,
+} from './tournament'
 import type { Track } from './track'
 import type {
   DeleteUserRequest,
@@ -52,6 +58,7 @@ export interface ServerToClientEvents {
   all_sessions: (r: SessionWithSignups[]) => void
   all_matches: (r: Match[]) => void
   all_rankings: (r: Ranking[]) => void
+  all_tournaments: (r: TournamentWithDetails[]) => void
 }
 
 export interface ClientToServerEvents {
@@ -121,6 +128,18 @@ export interface ClientToServerEvents {
   ) => void
   delete_match: (
     r: DeleteMatchRequest,
+    callback: (r: SuccessResponse | ErrorResponse) => void
+  ) => void
+  create_tournament: (
+    r: CreateTournamentRequest,
+    callback: (r: SuccessResponse | ErrorResponse) => void
+  ) => void
+  edit_tournament: (
+    r: EditTournamentRequest,
+    callback: (r: SuccessResponse | ErrorResponse) => void
+  ) => void
+  delete_tournament: (
+    r: DeleteTournamentRequest,
     callback: (r: SuccessResponse | ErrorResponse) => void
   ) => void
 }

@@ -2,6 +2,7 @@ import type { Match } from '@common/models/match'
 import type { Ranking } from '@common/models/ranking'
 import type { SessionWithSignups } from '@common/models/session'
 import type { TimeEntry } from '@common/models/timeEntry'
+import type { TournamentWithDetails } from '@common/models/tournament'
 import type { Track } from '@common/models/track'
 import type { UserInfo } from '@common/models/user'
 import {
@@ -23,6 +24,7 @@ type DataContextType =
       sessions: SessionWithSignups[]
       matches: Match[]
       rankings: Ranking[]
+      tournaments: TournamentWithDetails[]
     }
   | {
       isLoadingData: true
@@ -32,16 +34,23 @@ type DataContextType =
       sessions?: never
       matches?: never
       rankings?: never
+      tournaments?: never
     }
 
 const DataContext = createContext<DataContextType | undefined>(undefined)
 
 /**
  * Automatically converts timestamp fields to Date objects.
- * Handles: createdAt, updatedAt, deletedAt, date
+ * Handles: createdAt, updatedAt, deletedAt, date, completedAt
  */
 export function parseDates<T extends Record<string, any>>(obj: T): T {
-  const dateFields = ['createdAt', 'updatedAt', 'deletedAt', 'date']
+  const dateFields = [
+    'createdAt',
+    'updatedAt',
+    'deletedAt',
+    'date',
+    'completedAt',
+  ]
   const result: any = { ...obj }
 
   for (const field of dateFields) {
@@ -52,6 +61,20 @@ export function parseDates<T extends Record<string, any>>(obj: T): T {
     ) {
       result[field] = new Date(result[field])
     }
+  }
+
+  if (Array.isArray(result.groups)) {
+    result.groups = result.groups.map((g: any) => parseDates(g))
+  }
+
+  if (Array.isArray(result.tournamentMatches)) {
+    result.tournamentMatches = result.tournamentMatches.map((tm: any) => {
+      const parsed = parseDates(tm)
+      if (parsed.match) {
+        parsed.match = parseDates(parsed.match)
+      }
+      return parsed
+    })
   }
 
   return result
@@ -76,6 +99,8 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [matches, setMatches] = useState<DataContextType['matches']>(undefined)
   const [rankings, setRankings] =
     useState<DataContextType['rankings']>(undefined)
+  const [tournaments, setTournaments] =
+    useState<DataContextType['tournaments']>(undefined)
 
   useEffect(() => {
     socket.on('all_sessions', data => {
@@ -102,6 +127,10 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
       setRankings(data)
     })
 
+    socket.on('all_tournaments', data => {
+      setTournaments(parseDatesArray(data))
+    })
+
     return () => {
       socket.off('all_sessions')
       socket.off('all_time_entries')
@@ -109,6 +138,7 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
       socket.off('all_users')
       socket.off('all_matches')
       socket.off('all_rankings')
+      socket.off('all_tournaments')
     }
   }, [])
 
@@ -119,7 +149,8 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
       users === undefined ||
       sessions === undefined ||
       matches === undefined ||
-      rankings === undefined
+      rankings === undefined ||
+      tournaments === undefined
     ) {
       return { isLoadingData: true }
     }
@@ -131,8 +162,9 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
       users,
       matches,
       rankings,
+      tournaments,
     }
-  }, [tracks, timeEntries, users, sessions, matches, rankings])
+  }, [tracks, timeEntries, users, sessions, matches, rankings, tournaments])
 
   return <DataContext.Provider value={context}>{children}</DataContext.Provider>
 }
