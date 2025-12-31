@@ -10,10 +10,14 @@ import type { Socket } from 'socket.io'
 import loc from '../../../frontend/lib/locales'
 import db, { database } from '../../database/database'
 import {
+  groupPlayers,
+  groups,
   matches,
   sessions,
   sessionSignups,
   timeEntries,
+  tournamentMatches,
+  tournaments,
   tracks,
   users,
 } from '../../database/schema'
@@ -24,6 +28,7 @@ import MatchManager from './match.manager'
 import RatingManager from './rating.manager'
 import SessionManager from './session.manager'
 import TimeEntryManager from './timeEntry.manager'
+import TournamentManager from './tournament.manager'
 import TrackManager from './track.manager'
 import UserManager from './user.manager'
 
@@ -35,6 +40,10 @@ export default class AdminManager {
     timeEntries: new Set(),
     sessionSignups: new Set(),
     matches: new Set(),
+    tournaments: new Set(),
+    groups: new Set(),
+    groupPlayers: new Set(),
+    tournamentMatches: new Set(),
   } satisfies Record<ExportCsvRequest['table'], Set<string>>
 
   private static readonly TABLE_MAP = {
@@ -44,6 +53,10 @@ export default class AdminManager {
     timeEntries: timeEntries,
     sessionSignups: sessionSignups,
     matches: matches,
+    tournaments: tournaments,
+    groups: groups,
+    groupPlayers: groupPlayers,
+    tournamentMatches: tournamentMatches,
   } satisfies Record<ExportCsvRequest['table'], SQLiteTable>
 
   private static async importRows<T extends Record<string, any>>(
@@ -124,6 +137,7 @@ export default class AdminManager {
     broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
     broadcast('all_matches', await MatchManager.getAllMatches())
     broadcast('all_rankings', await RatingManager.onGetRatings())
+    broadcast('all_tournaments', await TournamentManager.getAllTournaments())
 
     return {
       success: true,
