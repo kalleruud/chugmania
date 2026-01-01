@@ -19,18 +19,18 @@ import type {
   SessionWithSignups,
 } from './session'
 import type {
-  CreateTournamentRequest,
-  DeleteTournamentRequest,
-  EditTournamentRequest,
-  TournamentWithStructure,
-} from './tournament'
-import type {
   AbsoluteTimeEntriesRequest,
   AbsoluteTimeEntriesResponse,
   CreateTimeEntryRequest,
   EditTimeEntryRequest,
   TimeEntry,
 } from './timeEntry'
+import type {
+  CreateTournamentRequest,
+  DeleteTournamentRequest,
+  EditTournamentRequest,
+  TournamentWithStructure,
+} from './tournament'
 import type { Track } from './track'
 import type {
   DeleteUserRequest,

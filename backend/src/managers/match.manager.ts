@@ -14,6 +14,7 @@ import { matches, sessions } from '../../database/schema'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import RatingManager from './rating.manager'
+import TournamentManager from './tournament.manager'
 
 export default class MatchManager {
   private static validateMatchState(
@@ -118,6 +119,16 @@ export default class MatchManager {
     if (res.changes === 0) throw new Error(loc.no.error.messages.update_failed)
 
     console.debug(new Date().toISOString(), socket.id, 'Updated match', id)
+
+    const newStatus = request.status ?? match.status
+    const newWinner =
+      request.winner === undefined ? match.winner : request.winner
+    const shouldTriggerTournamentProgression =
+      newStatus === 'completed' && !!newWinner && match.status !== 'completed'
+
+    if (shouldTriggerTournamentProgression) {
+      await TournamentManager.onMatchCompleted(match.id)
+    }
 
     await RatingManager.recalculate()
     broadcast('all_matches', await MatchManager.getAllMatches())

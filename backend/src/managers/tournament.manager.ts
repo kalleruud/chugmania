@@ -1,12 +1,20 @@
+import type { EventReq, EventRes } from '@common/models/socket.io'
 import {
   isCreateTournamentRequest,
   isDeleteTournamentRequest,
   isEditTournamentRequest,
   type TournamentWithStructure,
 } from '@common/models/tournament'
-import type { EventReq, EventRes } from '@common/models/socket.io'
 import type { UserInfo } from '@common/models/user'
-import { and, asc, desc, eq, getTableColumns, inArray, isNull } from 'drizzle-orm'
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  getTableColumns,
+  inArray,
+  isNull,
+} from 'drizzle-orm'
 import { randomUUID } from 'node:crypto'
 import loc from '../../../frontend/lib/locales'
 import db, { database } from '../../database/database'
@@ -85,7 +93,10 @@ export default class TournamentManager {
               isNull(tournamentMatches.deletedAt)
             )
           )
-          .orderBy(desc(tournamentMatches.bracket), desc(tournamentMatches.round))
+          .orderBy(
+            desc(tournamentMatches.bracket),
+            desc(tournamentMatches.round)
+          )
 
         return {
           ...t,
@@ -109,7 +120,8 @@ export default class TournamentManager {
     const session = await db.query.sessions.findFirst({
       where: and(eq(sessions.id, request.session), isNull(sessions.deletedAt)),
     })
-    if (!session) throw new Error(loc.no.error.messages.not_in_db(request.session))
+    if (!session)
+      throw new Error(loc.no.error.messages.not_in_db(request.session))
 
     const tournamentId = request.id ?? randomUUID()
 
@@ -194,11 +206,11 @@ export default class TournamentManager {
     return { success: true }
   }
 
-  static async onMatchCompleted(matchId: string) {
+  static async onMatchCompleted(matchId: string): Promise<boolean> {
     const tMatch = await db.query.tournamentMatches.findFirst({
       where: eq(tournamentMatches.match, matchId),
     })
-    if (!tMatch) return
+    if (!tMatch) return false
 
     if (!tMatch.completedAt) {
       await db
@@ -209,7 +221,7 @@ export default class TournamentManager {
 
     await TournamentManager.refreshTournament(tMatch.tournament)
     broadcast('all_tournaments', await TournamentManager.getAllTournaments())
-    broadcast('all_matches', await MatchManager.getAllMatches())
+    return true
   }
 
   private static async softDeleteTournament(tournamentId: string) {
@@ -224,7 +236,9 @@ export default class TournamentManager {
       .from(tournamentMatches)
       .where(eq(tournamentMatches.tournament, tournamentId))
 
-    const matchIds = tMatches.map(m => m.match).filter((id): id is string => !!id)
+    const matchIds = tMatches
+      .map(m => m.match)
+      .filter((id): id is string => !!id)
 
     const now = new Date()
     await database.transaction(() => {
@@ -258,20 +272,27 @@ export default class TournamentManager {
 
   private static async regenerateStructure(tournamentId: string) {
     const tournament = await db.query.tournaments.findFirst({
-      where: and(eq(tournaments.id, tournamentId), isNull(tournaments.deletedAt)),
+      where: and(
+        eq(tournaments.id, tournamentId),
+        isNull(tournaments.deletedAt)
+      ),
     })
-    if (!tournament) throw new Error(loc.no.error.messages.not_in_db(tournamentId))
+    if (!tournament)
+      throw new Error(loc.no.error.messages.not_in_db(tournamentId))
 
     await TournamentManager.softDeleteTournamentStructureOnly(tournamentId)
 
-    const players = await TournamentManager.getAttendingPlayers(tournament.session)
+    const players = await TournamentManager.getAttendingPlayers(
+      tournament.session
+    )
     if (players.length === 0) throw new Error('No attending players')
 
     if (tournament.groupsCount <= 0) throw new Error('groupsCount must be > 0')
     if (tournament.advancementCount <= 0)
       throw new Error('advancementCount must be > 0')
 
-    const requiredAdvancers = tournament.groupsCount * tournament.advancementCount
+    const requiredAdvancers =
+      tournament.groupsCount * tournament.advancementCount
     if (players.length < requiredAdvancers) {
       throw new Error(
         `Not enough players for ${tournament.groupsCount} groups with ${tournament.advancementCount} advancing`
@@ -290,7 +311,10 @@ export default class TournamentManager {
     )
 
     await TournamentManager.createGroupsAndPlayers(tournamentId, groupsData)
-    await TournamentManager.createGroupStageMatches(tournamentId, tournament.session)
+    await TournamentManager.createGroupStageMatches(
+      tournamentId,
+      tournament.session
+    )
     await TournamentManager.createEliminationSlots(tournamentId, bracketSize)
 
     await TournamentManager.refreshTournament(tournamentId)
@@ -308,7 +332,9 @@ export default class TournamentManager {
       .from(tournamentMatches)
       .where(eq(tournamentMatches.tournament, tournamentId))
 
-    const matchIds = tMatches.map(m => m.match).filter((id): id is string => !!id)
+    const matchIds = tMatches
+      .map(m => m.match)
+      .filter((id): id is string => !!id)
     const now = new Date()
 
     await database.transaction(() => {
@@ -336,7 +362,9 @@ export default class TournamentManager {
     })()
   }
 
-  private static async getAttendingPlayers(sessionId: string): Promise<UserInfo['id'][]> {
+  private static async getAttendingPlayers(
+    sessionId: string
+  ): Promise<UserInfo['id'][]> {
     const rows = await db
       .select({ userId: sessionSignups.user })
       .from(sessionSignups)
@@ -354,7 +382,9 @@ export default class TournamentManager {
     return rows.map(r => r.userId)
   }
 
-  private static async seedPlayers(userIds: UserInfo['id'][]): Promise<SeededUser[]> {
+  private static async seedPlayers(
+    userIds: UserInfo['id'][]
+  ): Promise<SeededUser[]> {
     const rankings = await RatingManager.onGetRatings()
     const rankByUser = new Map(rankings.map(r => [r.user, r.ranking]))
 
@@ -400,7 +430,9 @@ export default class TournamentManager {
     groupData: SeededUser[][]
   ) {
     const groupIds = groupData.map(() => randomUUID())
-    const groupNames = groupIds.map((_, i) => `Group ${String.fromCharCode(65 + i)}`)
+    const groupNames = groupIds.map(
+      (_, i) => `Group ${String.fromCharCode(65 + i)}`
+    )
 
     await database.transaction(() => {
       db.insert(groups)
@@ -428,7 +460,10 @@ export default class TournamentManager {
     })()
   }
 
-  private static async createGroupStageMatches(tournamentId: string, sessionId: string) {
+  private static async createGroupStageMatches(
+    tournamentId: string,
+    sessionId: string
+  ) {
     const groupRows = await db
       .select()
       .from(groups)
@@ -438,7 +473,9 @@ export default class TournamentManager {
       const players = await db
         .select()
         .from(groupPlayers)
-        .where(and(eq(groupPlayers.group, group.id), isNull(groupPlayers.deletedAt)))
+        .where(
+          and(eq(groupPlayers.group, group.id), isNull(groupPlayers.deletedAt))
+        )
         .orderBy(asc(groupPlayers.seed))
 
       const userIds = players.map(p => p.user)
@@ -492,7 +529,10 @@ export default class TournamentManager {
     return order
   }
 
-  private static async createEliminationSlots(tournamentId: string, bracketSize: number) {
+  private static async createEliminationSlots(
+    tournamentId: string,
+    bracketSize: number
+  ) {
     const groupRows = await db
       .select()
       .from(groups)
@@ -502,7 +542,8 @@ export default class TournamentManager {
     const tournament = await db.query.tournaments.findFirst({
       where: eq(tournaments.id, tournamentId),
     })
-    if (!tournament) throw new Error(loc.no.error.messages.not_in_db(tournamentId))
+    if (!tournament)
+      throw new Error(loc.no.error.messages.not_in_db(tournamentId))
 
     const placeholders: Array<{ groupId: string; rank: number }> = []
     for (let rank = 1; rank <= tournament.advancementCount; rank++) {
@@ -515,7 +556,11 @@ export default class TournamentManager {
     const upperByRound = new Map<number, string[]>()
 
     await database.transaction(() => {
-      for (let roundMatches = bracketSize / 2; roundMatches >= 1; roundMatches /= 2) {
+      for (
+        let roundMatches = bracketSize / 2;
+        roundMatches >= 1;
+        roundMatches /= 2
+      ) {
         const ids: string[] = []
         for (let i = 0; i < roundMatches; i++) {
           ids.push(randomUUID())
@@ -645,7 +690,10 @@ export default class TournamentManager {
 
   private static async refreshTournament(tournamentId: string) {
     const tournament = await db.query.tournaments.findFirst({
-      where: and(eq(tournaments.id, tournamentId), isNull(tournaments.deletedAt)),
+      where: and(
+        eq(tournaments.id, tournamentId),
+        isNull(tournaments.deletedAt)
+      ),
     })
     if (!tournament) return
 
@@ -661,7 +709,9 @@ export default class TournamentManager {
       .orderBy(desc(tournamentMatches.createdAt))
 
     const byId = new Map(tMatches.map(m => [m.id, m]))
-    const matchIds = tMatches.map(m => m.match).filter((id): id is string => !!id)
+    const matchIds = tMatches
+      .map(m => m.match)
+      .filter((id): id is string => !!id)
     const matchRows =
       matchIds.length === 0
         ? []
@@ -780,7 +830,9 @@ export default class TournamentManager {
     const players = await db
       .select()
       .from(groupPlayers)
-      .where(and(eq(groupPlayers.group, groupId), isNull(groupPlayers.deletedAt)))
+      .where(
+        and(eq(groupPlayers.group, groupId), isNull(groupPlayers.deletedAt))
+      )
       .orderBy(asc(groupPlayers.seed))
 
     if (players.length < rank) return null
@@ -801,7 +853,9 @@ export default class TournamentManager {
         )
       )
 
-    const completed = groupMatchRows.filter(m => m.status === 'completed' && !!m.winner)
+    const completed = groupMatchRows.filter(
+      m => m.status === 'completed' && !!m.winner
+    )
     if (completed.length < totalMatches) return null
 
     const wins = new Map<string, number>(userIds.map(id => [id, 0]))
@@ -840,4 +894,3 @@ export default class TournamentManager {
     return match.winner === match.user1 ? match.user2 : match.user1
   }
 }
-

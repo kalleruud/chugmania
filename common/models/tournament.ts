@@ -55,7 +55,9 @@ export type EditTournamentRequest = Partial<CreateTournamentRequest> & {
   id: Tournament['id']
 }
 
-export function isEditTournamentRequest(data: any): data is EditTournamentRequest {
+export function isEditTournamentRequest(
+  data: any
+): data is EditTournamentRequest {
   if (typeof data !== 'object' || data === null) return false
   return data.type === 'EditTournamentRequest' && typeof data.id === 'string'
 }
@@ -75,4 +77,3 @@ export function isDeleteTournamentRequest(
 export type TournamentMatchDisplayData =
   | { kind: 'active'; match: Match }
   | { kind: 'pending'; labelA: string; labelB: string }
-

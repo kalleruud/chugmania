@@ -168,9 +168,13 @@ export const tournamentMatches = sqliteTable('tournament_matches', {
   sourceMatchA: text('source_match_a').references(() => tournamentMatches.id, {
     onDelete: 'set null',
   }),
-  sourceMatchAProgression: text('source_match_a_progression').$type<TournamentSourceProgression>(),
+  sourceMatchAProgression: text(
+    'source_match_a_progression'
+  ).$type<TournamentSourceProgression>(),
   sourceMatchB: text('source_match_b').references(() => tournamentMatches.id, {
     onDelete: 'set null',
   }),
-  sourceMatchBProgression: text('source_match_b_progression').$type<TournamentSourceProgression>(),
+  sourceMatchBProgression: text(
+    'source_match_b_progression'
+  ).$type<TournamentSourceProgression>(),
 })

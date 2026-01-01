@@ -2,6 +2,7 @@ import ConfirmationButton from '@/components/ConfirmationButton'
 import { PageSubheader } from '@/components/PageHeader'
 import SessionCard from '@/components/session/SessionCard'
 import SessionForm from '@/components/session/SessionForm'
+import TournamentCard from '@/components/tournament/TournamentCard'
 import TrackLeaderboard from '@/components/track/TrackLeaderboard'
 import {
   Breadcrumb,
@@ -22,6 +23,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Empty } from '@/components/ui/empty'
+import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
@@ -30,6 +32,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Spinner } from '@/components/ui/spinner'
+import { Textarea } from '@/components/ui/textarea'
 import UserRow from '@/components/user/UserRow'
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
@@ -213,9 +216,18 @@ function Signup({
 export default function SessionPage() {
   const { id } = useParams()
   const { socket } = useConnection()
-  const { sessions, tracks, isLoadingData } = useData()
+  const { sessions, tracks, tournaments, isLoadingData } = useData()
   const { loggedInUser, isLoggedIn, isLoading } = useAuth()
   const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [createTournamentOpen, setCreateTournamentOpen] = useState(false)
+  const [tournamentName, setTournamentName] = useState('')
+  const [tournamentDescription, setTournamentDescription] = useState('')
+  const [tournamentGroupsCount, setTournamentGroupsCount] = useState(4)
+  const [tournamentAdvancementCount, setTournamentAdvancementCount] =
+    useState(1)
+  const [tournamentEliminationType, setTournamentEliminationType] = useState<
+    'single' | 'double'
+  >('single')
 
   const isAdmin = isLoggedIn && loggedInUser.role === 'admin'
   const isModerator = isLoggedIn && loggedInUser.role === 'moderator'
@@ -253,6 +265,33 @@ export default function SessionPage() {
     throw new Error(loc.no.error.messages.not_in_db('sessions/' + id))
 
   const isCancelled = session?.status === 'cancelled'
+  const sessionTournaments = tournaments.filter(t => t.session === session.id)
+
+  const handleCreateTournament = () => {
+    toast.promise(
+      socket
+        .emitWithAck('create_tournament', {
+          type: 'CreateTournamentRequest',
+          session: session.id,
+          name: tournamentName.trim(),
+          description: tournamentDescription.trim() || null,
+          groupsCount: tournamentGroupsCount,
+          advancementCount: tournamentAdvancementCount,
+          eliminationType: tournamentEliminationType,
+        })
+        .then(r => {
+          if (!r.success) throw new Error(r.message)
+          setCreateTournamentOpen(false)
+          setTournamentName('')
+          setTournamentDescription('')
+        }),
+      {
+        loading: 'Oppretter turnering...',
+        success: 'Turnering opprettet',
+        error: (e: Error) => `Oppretting feilet: ${e.message}`,
+      }
+    )
+  }
 
   return (
     <div className='flex flex-col gap-6'>
@@ -280,6 +319,103 @@ export default function SessionPage() {
         <SubscribeButton className='flex-1' />
         {canEdit && (
           <>
+            <Dialog
+              open={createTournamentOpen}
+              onOpenChange={setCreateTournamentOpen}>
+              <DialogTrigger asChild>
+                <Button variant='outline' disabled={isCancelled}>
+                  + Tournament
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Create tournament</DialogTitle>
+                </DialogHeader>
+                <div className='grid gap-3'>
+                  <div className='grid gap-2'>
+                    <label className='text-sm font-semibold'>Name</label>
+                    <Input
+                      value={tournamentName}
+                      onChange={e => setTournamentName(e.target.value)}
+                      placeholder='Tournament name'
+                    />
+                  </div>
+                  <div className='grid gap-2'>
+                    <label className='text-sm font-semibold'>Description</label>
+                    <Textarea
+                      value={tournamentDescription}
+                      onChange={e => setTournamentDescription(e.target.value)}
+                      placeholder='Optional description'
+                    />
+                  </div>
+                  <div className='grid grid-cols-2 gap-3'>
+                    <div className='grid gap-2'>
+                      <label className='text-sm font-semibold'>Groups</label>
+                      <Input
+                        type='number'
+                        min={1}
+                        value={tournamentGroupsCount}
+                        onChange={e =>
+                          setTournamentGroupsCount(
+                            Number.parseInt(e.target.value || '0')
+                          )
+                        }
+                      />
+                    </div>
+                    <div className='grid gap-2'>
+                      <label className='text-sm font-semibold'>
+                        Advancers / group
+                      </label>
+                      <Input
+                        type='number'
+                        min={1}
+                        value={tournamentAdvancementCount}
+                        onChange={e =>
+                          setTournamentAdvancementCount(
+                            Number.parseInt(e.target.value || '0')
+                          )
+                        }
+                      />
+                    </div>
+                  </div>
+                  <div className='grid gap-2'>
+                    <label className='text-sm font-semibold'>
+                      Elimination type
+                    </label>
+                    <Select
+                      value={tournamentEliminationType}
+                      onValueChange={v =>
+                        setTournamentEliminationType(v as 'single' | 'double')
+                      }>
+                      <SelectTrigger className='w-full'>
+                        <SelectValue placeholder='Elimination type' />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value='single'>
+                          Single elimination
+                        </SelectItem>
+                        <SelectItem value='double'>
+                          Double elimination
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button variant='outline' disabled={isLoading}>
+                      {loc.no.common.cancel}
+                    </Button>
+                  </DialogClose>
+                  <Button
+                    onClick={handleCreateTournament}
+                    disabled={isLoading || tournamentName.trim().length === 0}>
+                    {loc.no.common.save}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
             <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
               <DialogTrigger asChild>
                 <Button variant='outline'>
@@ -320,6 +456,24 @@ export default function SessionPage() {
               {loc.no.common.delete}
             </ConfirmationButton>
           </>
+        )}
+      </div>
+
+      <div className='grid gap-2'>
+        <PageSubheader
+          title='Tournaments'
+          description={`${sessionTournaments.length}`}
+        />
+        {sessionTournaments.length === 0 ? (
+          <Empty className='border-input text-muted-foreground border text-sm'>
+            {loc.no.common.noItems}
+          </Empty>
+        ) : (
+          <div className='grid gap-4'>
+            {sessionTournaments.map(t => (
+              <TournamentCard key={t.id} tournament={t} />
+            ))}
+          </div>
         )}
       </div>
 
