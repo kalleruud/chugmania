@@ -43,13 +43,25 @@ export default function TournamentForm({
       return
     }
 
+    if (!name.trim()) {
+      toast.error('Navn er påkrevd')
+      return
+    }
+
+    const validGroupsCount =
+      Number.isInteger(groupsCount) && groupsCount > 0 ? groupsCount : 2
+    const validAdvancementCount =
+      Number.isInteger(advancementCount) && advancementCount > 0
+        ? advancementCount
+        : 2
+
     const payload: CreateTournamentRequest = {
       type: 'CreateTournamentRequest',
       session: sessionId,
-      name,
-      description: description || undefined,
-      groupsCount,
-      advancementCount,
+      name: name.trim(),
+      description: description?.trim() || undefined,
+      groupsCount: validGroupsCount,
+      advancementCount: validAdvancementCount,
       eliminationType,
     }
 
@@ -105,8 +117,13 @@ export default function TournamentForm({
         required
         min={1}
         max={10}
-        value={groupsCount}
-        onChange={e => setGroupsCount(Number.parseInt(e.target.value) || 1)}
+        value={groupsCount.toString()}
+        onChange={e => {
+          const val = Number.parseInt(e.target.value, 10)
+          if (!Number.isNaN(val) && val >= 1 && val <= 10) {
+            setGroupsCount(val)
+          }
+        }}
       />
 
       <Field
@@ -117,10 +134,13 @@ export default function TournamentForm({
         required
         min={1}
         max={10}
-        value={advancementCount}
-        onChange={e =>
-          setAdvancementCount(Number.parseInt(e.target.value) || 1)
-        }
+        value={advancementCount.toString()}
+        onChange={e => {
+          const val = Number.parseInt(e.target.value, 10)
+          if (!Number.isNaN(val) && val >= 1 && val <= 10) {
+            setAdvancementCount(val)
+          }
+        }}
       />
 
       <SelectField

@@ -492,6 +492,17 @@ export default class TournamentManager {
 
     await AuthManager.checkAuth(socket, ['admin', 'moderator'])
 
+    if (
+      typeof request.advancementCount !== 'number' ||
+      request.advancementCount < 1
+    ) {
+      throw new Error('advancementCount must be a positive number')
+    }
+
+    if (typeof request.groupsCount !== 'number' || request.groupsCount < 1) {
+      throw new Error('groupsCount must be a positive number')
+    }
+
     const session = await SessionManager.getSession(request.session)
     if (!session) {
       throw new Error(loc.no.error.messages.not_in_db(request.session))
