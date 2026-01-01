@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { useConnection } from '@/contexts/ConnectionContext'
-import { CreateTournamentRequest } from '@common/models/tournament'
+import { type CreateTournamentRequest } from '@common/models/tournament'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
