@@ -3,6 +3,7 @@ import { PageSubheader } from '@/components/PageHeader'
 import SessionCard from '@/components/session/SessionCard'
 import SessionForm from '@/components/session/SessionForm'
 import TournamentCard from '@/components/tournament/TournamentCard'
+import TournamentForm from '@/components/tournament/TournamentForm'
 import TrackLeaderboard from '@/components/track/TrackLeaderboard'
 import {
   Breadcrumb,
@@ -217,6 +218,8 @@ export default function SessionPage() {
   const { sessions, tracks, tournaments, isLoadingData } = useData()
   const { loggedInUser, isLoggedIn, isLoading } = useAuth()
   const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [createTournamentDialogOpen, setCreateTournamentDialogOpen] =
+    useState(false)
 
   const isAdmin = isLoggedIn && loggedInUser.role === 'admin'
   const isModerator = isLoggedIn && loggedInUser.role === 'moderator'
@@ -330,11 +333,101 @@ export default function SessionPage() {
         session={session}
       />
 
-      {tournaments
-        .filter(t => t.session === session.id)
-        .map(tournament => (
-          <TournamentCard key={tournament.id} tournament={tournament} />
-        ))}
+      {tournaments.filter(t => t.session === session.id).length > 0 && (
+        <div className='space-y-4'>
+          <div className='flex items-center justify-between'>
+            <h2 className='font-f1-bold text-xl uppercase'>Tournaments</h2>
+            {canEdit && (
+              <Dialog
+                open={createTournamentDialogOpen}
+                onOpenChange={setCreateTournamentDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant='outline' size='sm'>
+                    <PencilIcon className='size-4' />
+                    Create Tournament
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Create Tournament</DialogTitle>
+                  </DialogHeader>
+                  <TournamentForm
+                    id='createTournamentForm'
+                    sessionId={session.id}
+                    onSubmitResponse={success => {
+                      if (success) {
+                        setCreateTournamentDialogOpen(false)
+                      }
+                    }}
+                  />
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <Button variant='outline' disabled={isLoading}>
+                        {loc.no.common.cancel}
+                      </Button>
+                    </DialogClose>
+                    <ConfirmationButton
+                      form='createTournamentForm'
+                      disabled={isLoading}>
+                      {loc.no.common.continue}
+                    </ConfirmationButton>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            )}
+          </div>
+          {tournaments
+            .filter(t => t.session === session.id)
+            .map(tournament => (
+              <TournamentCard key={tournament.id} tournament={tournament} />
+            ))}
+        </div>
+      )}
+
+      {tournaments.filter(t => t.session === session.id).length === 0 &&
+        canEdit && (
+          <div className='bg-background flex flex-col items-center gap-4 rounded-sm border p-8'>
+            <p className='text-muted-foreground text-center text-sm'>
+              No tournaments yet. Create one to get started!
+            </p>
+            <Dialog
+              open={createTournamentDialogOpen}
+              onOpenChange={setCreateTournamentDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <PencilIcon className='size-4' />
+                  Create Tournament
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Create Tournament</DialogTitle>
+                </DialogHeader>
+                <TournamentForm
+                  id='createTournamentForm'
+                  sessionId={session.id}
+                  onSubmitResponse={success => {
+                    if (success) {
+                      setCreateTournamentDialogOpen(false)
+                    }
+                  }}
+                />
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button variant='outline' disabled={isLoading}>
+                      {loc.no.common.cancel}
+                    </Button>
+                  </DialogClose>
+                  <ConfirmationButton
+                    form='createTournamentForm'
+                    disabled={isLoading}>
+                    {loc.no.common.continue}
+                  </ConfirmationButton>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+        )}
 
       {tracks.map(track => (
         <TrackLeaderboard
