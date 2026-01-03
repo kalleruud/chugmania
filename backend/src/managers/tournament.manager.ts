@@ -219,11 +219,11 @@ export default class TournamentManager {
     } satisfies CreateTournament
 
     database.transaction(() => {
-      db.insert(tournaments).values(tournamentDraft)
-      db.insert(groups).values(groupDrafts)
-      db.insert(groupPlayers).values(groupPlayerDrafts)
-      db.insert(tournamentMatches).values(tournamentMatchDrafts)
-      db.insert(matches).values(matchDrafts)
+      db.insert(tournaments).values(tournamentDraft).run()
+      db.insert(groups).values(groupDrafts).run()
+      db.insert(groupPlayers).values(groupPlayerDrafts).run()
+      db.insert(matches).values(matchDrafts).run()
+      db.insert(tournamentMatches).values(tournamentMatchDrafts).run()
     })()
 
     console.debug(
@@ -387,9 +387,11 @@ export default class TournamentManager {
         status: 'planned',
       })
 
+      const matchNumber = (i % groups.length) + 1
+
       tournamentMatches.push({
         tournament: tournamentId,
-        name: loc.no.tournament.matchName(pairing.group.name, i + 1),
+        name: loc.no.tournament.matchName(pairing.group.name, matchNumber),
         bracket: 'group',
         match: matchId,
       })
@@ -570,7 +572,8 @@ export default class TournamentManager {
       matches.push({
         id,
         tournament: tournamentId,
-        name: `Taper Runde ${lowerRound} - ${i + 1}`,
+        name:
+          TournamentManager.getRoundName(lowerRound, true) + ' - ' + (i + 1),
         bracket: 'lower',
         round: lowerRound,
         track,

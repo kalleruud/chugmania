@@ -8,8 +8,14 @@ import type {
   TournamentPreview,
 } from '@common/models/tournament'
 import { Users } from 'lucide-react'
-import { useEffect, useMemo, useState, type ComponentProps } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type ComponentProps,
+  type FormEvent,
+} from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import Combobox from '../combobox'
 import { Field, SelectField, TextField } from '../FormFields'
@@ -55,6 +61,7 @@ function calculateMaxMatchesPerPlayer(
 
 export default function TournamentForm(props: Readonly<TournamentFormProps>) {
   const { socket } = useConnection()
+  const navigate = useNavigate()
   const { sessions, rankings, users, tracks, isLoadingData } = useData()
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -124,8 +131,10 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
       })
   }
 
-  const handleSubmit = () => {
-    if (!selectedSessionId) return toast.error('Session is required')
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    if (!selectedSessionId)
+      return toast.error(loc.no.error.messages.session_not_selected)
     toast.promise(
       socket
         .emitWithAck('create_tournament', {
@@ -139,6 +148,7 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
         })
         .then(r => {
           if (!r.success) throw new Error(r.message)
+          navigate(`/sessions/${selectedSessionId}`)
         }),
       loc.no.tournament.toast.create
     )
