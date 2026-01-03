@@ -61,7 +61,7 @@ export default class SessionManager {
     }
   }
 
-  private static async getSessionSignups(
+  public static async getSessionSignups(
     sessionId: string
   ): Promise<SessionSignup[]> {
     const signupRows = await db

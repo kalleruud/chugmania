@@ -5,7 +5,7 @@ import { twMerge } from 'tailwind-merge'
 
 type PageHeaderProps = {
   title: string
-  description?: string
+  description?: string | null
   icon?: keyof typeof HeroIcons
   to?: string
 } & ComponentProps<'div'>
