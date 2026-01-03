@@ -31,7 +31,12 @@ export default function GroupCard({
         className
       )}
       {...props}>
-      <h5 className='font-f1-bold uppercase'>{group.name}</h5>
+      <div className='flex items-baseline justify-between'>
+        <h3 className='text-lg'>{group.name}</h3>
+        <p className='text-muted-foreground text-sm'>
+          {sortedPlayers.length} spillere
+        </p>
+      </div>
 
       <div className='flex flex-col gap-1'>
         <div className='text-muted-foreground flex items-center justify-between gap-2 px-2 text-sm'>

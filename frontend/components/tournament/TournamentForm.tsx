@@ -13,12 +13,45 @@ import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import Combobox from '../combobox'
 import { Field, SelectField, TextField } from '../FormFields'
+import { PageHeader, PageSubheader } from '../PageHeader'
 import { SessionRow } from '../session/SessionRow'
 import { Alert, AlertTitle } from '../ui/alert'
 import { Spinner } from '../ui/spinner'
 import GroupCard from './GroupCard'
 
 type TournamentFormProps = Partial<CreateTournament> & ComponentProps<'form'>
+
+function calculateMaxMatchesPerPlayer(
+  playersPerGroup: number,
+  totalAdvancingPlayers: number,
+  eliminationType: EliminationType
+): number {
+  if (playersPerGroup < 2) {
+    return 0
+  }
+
+  // Group stage (round-robin)
+  const groupStageMatches = playersPerGroup - 1
+
+  // Normalize advancing players to next power of two
+  const bracketSize = Math.pow(
+    2,
+    Math.ceil(Math.log2(Math.max(1, totalAdvancingPlayers)))
+  )
+
+  const rounds = Math.log2(bracketSize)
+
+  let knockoutMatches: number
+
+  if (eliminationType === 'single') {
+    knockoutMatches = rounds
+  } else {
+    // Matches your actual double-elimination structure
+    knockoutMatches = rounds + 2
+  }
+
+  return groupStageMatches + knockoutMatches
+}
 
 export default function TournamentForm(props: Readonly<TournamentFormProps>) {
   const { socket } = useConnection()
@@ -46,6 +79,14 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
       .map(s => users.find(u => u.id === s.user.id))
       .filter(u => u !== undefined)
   }, [session, users])
+
+  const maxMatchesPerPlayer = useMemo(() => {
+    return calculateMaxMatchesPerPlayer(
+      preview?.groups.at(-1)?.players.length ?? 0,
+      advancementCount * groupsCount,
+      eliminationType
+    )
+  }, [preview, advancementCount, groupsCount, eliminationType])
 
   function handleSessionChange(sessionId: string) {
     if (sessionId) {
@@ -185,9 +226,25 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
 
       {preview && (
         <div className='bg-background flex flex-col gap-4 rounded-sm border p-4'>
-          <h2 className='text-lg font-bold'>Forhåndsvisning</h2>
-          <p>{preview.name}</p>
-          <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3'>
+          <PageSubheader className='p-0' title={'Forhåndsvisning'} />
+          <PageHeader
+            className='p-0'
+            title={preview.name}
+            description={preview.description}
+          />
+
+          <div className='flex flex-col gap-2'>
+            <div className='flex items-center justify-between'>
+              <span>Totalt antall matcher</span>
+              <span>{preview.matches.length}</span>
+            </div>
+            <div className='flex items-center justify-between'>
+              <span>Antal matcher per spiller</span>
+              <span>{`${(preview.groups.at(0)?.players.length ?? 0) - 1} - ${maxMatchesPerPlayer}`}</span>
+            </div>
+          </div>
+
+          <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
             {preview.groups.map(group => (
               <GroupCard
                 key={group.id}

@@ -38,22 +38,31 @@ export default function CreateTournamentPage() {
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>{loc.no.tournament.title}</BreadcrumbPage>
+            <BreadcrumbPage>{loc.no.tournament.new}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
 
       <PageHeader
-        title={loc.no.tournament.title}
+        title={loc.no.tournament.new}
         description={loc.no.tournament.description}
         icon='TrophyIcon'
       />
 
       <TournamentForm id='createTournamentForm' />
 
-      <Button type='submit' form='createTournamentForm'>
-        {loc.no.common.continue}
-      </Button>
+      <div className='flex justify-end gap-2'>
+        <Button variant='outline' size='lg' className='w-fit'>
+          {loc.no.common.cancel}
+        </Button>
+        <Button
+          type='submit'
+          form='createTournamentForm'
+          size='lg'
+          className='w-fit'>
+          {loc.no.common.continue}
+        </Button>
+      </div>
     </div>
   )
 }
