@@ -26,7 +26,6 @@ import {
   matches,
   tournamentMatches,
   tournaments,
-  users,
   type EliminationType,
   type MatchProgression,
   type TournamentBracket,
@@ -36,7 +35,6 @@ import AuthManager from './auth.manager'
 import MatchManager from './match.manager'
 import RatingManager from './rating.manager'
 import SessionManager from './session.manager'
-import UserManager from './user.manager'
 
 type TournamentStructure = {
   tournament: Tournament
@@ -86,115 +84,9 @@ export default class TournamentManager {
   private static async getTournamentWithDetails(
     tournamentId: string
   ): Promise<TournamentWithDetails> {
-    const tournament = await db.query.tournaments.findFirst({
-      where: eq(tournaments.id, tournamentId),
-    })
-
-    if (!tournament) {
-      throw new Error(loc.no.error.messages.not_in_db(tournamentId))
-    }
-
-    const groupRows = await db
-      .select()
-      .from(groups)
-      .where(and(eq(groups.tournament, tournamentId), isNull(groups.deletedAt)))
-
-    const groupsWithPlayers: GroupWithPlayers[] = await Promise.all(
-      groupRows.map(async group => {
-        const playerRows = await db
-          .select({
-            id: groupPlayers.id,
-            createdAt: groupPlayers.createdAt,
-            updatedAt: groupPlayers.updatedAt,
-            deletedAt: groupPlayers.deletedAt,
-            group: groupPlayers.group,
-            seed: groupPlayers.seed,
-            user: users,
-          })
-          .from(groupPlayers)
-          .innerJoin(users, eq(groupPlayers.user, users.id))
-          .where(
-            and(
-              eq(groupPlayers.group, group.id),
-              isNull(groupPlayers.deletedAt)
-            )
-          )
-          .orderBy(groupPlayers.seed)
-
-        const groupMatchRows = await db
-          .select()
-          .from(tournamentMatches)
-          .innerJoin(matches, eq(tournamentMatches.match, matches.id))
-          .where(
-            and(
-              eq(tournamentMatches.tournament, tournamentId),
-              eq(tournamentMatches.bracket, 'group'),
-              isNull(tournamentMatches.deletedAt)
-            )
-          )
-
-        const players: GroupPlayerWithUser[] = playerRows.map(row => {
-          const userInfo = UserManager.toUserInfo(row.user).userInfo
-          let wins = 0
-          let losses = 0
-
-          for (const gm of groupMatchRows) {
-            if (gm.matches.status !== 'completed') continue
-            const isUser1 = gm.matches.user1 === row.user.id
-            const isUser2 = gm.matches.user2 === row.user.id
-            if (!isUser1 && !isUser2) continue
-
-            if (gm.matches.winner === row.user.id) {
-              wins++
-            } else if (gm.matches.winner) {
-              losses++
-            }
-          }
-
-          return {
-            id: row.id,
-            createdAt: row.createdAt,
-            updatedAt: row.updatedAt,
-            deletedAt: row.deletedAt,
-            group: row.group,
-            seed: row.seed,
-            user: userInfo,
-            wins,
-            losses,
-          }
-        })
-
-        return {
-          ...group,
-          players,
-        }
-      })
-    )
-
-    const matchRows = await db
-      .select()
-      .from(tournamentMatches)
-      .leftJoin(matches, eq(tournamentMatches.match, matches.id))
-      .where(
-        and(
-          eq(tournamentMatches.tournament, tournamentId),
-          isNull(tournamentMatches.deletedAt)
-        )
-      )
-      .orderBy(tournamentMatches.bracket, tournamentMatches.round)
-
-    const matchesWithDetails: TournamentMatchWithDetails[] = matchRows.map(
-      row => ({
-        ...row.tournament_matches,
-        matchDetails: row.matches,
-      })
-    )
-
-    return {
-      ...tournament,
-      groups: groupsWithPlayers,
-      matches: matchesWithDetails,
-    }
+    const structure =
+      await TournamentManager.getTournamentStructure(tournamentId)
+    return TournamentManager.toTournamentWithDetails(structure)
   }
 
   private static async getTournamentStructure(
@@ -249,13 +141,13 @@ export default class TournamentManager {
     }
   }
 
-  private static async toTournamentWithDetails(
-    tournament: Tournament,
-    groups: Group[],
-    groupPlayers: GroupPlayer[],
-    tournamentMatches: TournamentMatch[],
-    matches: Match[]
-  ): Promise<TournamentWithDetails> {
+  private static async toTournamentWithDetails({
+    tournament,
+    groups,
+    groupPlayers,
+    tournamentMatches,
+    matches,
+  }: TournamentStructure): Promise<TournamentWithDetails> {
     const groupMatches = tournamentMatches
       .filter(tm => tm.bracket === 'group')
       .map(tm => matches.find(m => m.id === tm.match))
@@ -438,7 +330,7 @@ export default class TournamentManager {
       groupPlayers.push({
         group: group.id,
         user: sortedPlayers[i],
-        seed: RatingManager.getUserRatings(sortedPlayers[i])?.ranking ?? 0,
+        seed: RatingManager.getUserRatings(sortedPlayers[i])?.totalRating ?? 0,
       })
     }
 
@@ -1447,23 +1339,20 @@ export default class TournamentManager {
     } satisfies CreateTournament
 
     const tournamentWithDetails =
-      await TournamentManager.toTournamentWithDetails(
-        tournamentDraft as Tournament,
-        groups as Group[],
-        groupPlayers as GroupPlayer[],
-        tournamentMatches as TournamentMatch[],
-        matches as Match[]
-      )
+      await TournamentManager.toTournamentWithDetails({
+        tournament: tournamentDraft as Tournament,
+        groups: groups as Group[],
+        groupPlayers: groupPlayers as GroupPlayer[],
+        tournamentMatches: tournamentMatches as TournamentMatch[],
+        matches: matches as Match[],
+      })
 
     console.debug(
       new Date().toISOString(),
       socket.id,
-      'Created tournament',
+      'Created tournament preview of:',
       request.name
     )
-
-    broadcast('all_tournaments', await TournamentManager.getAllTournaments())
-    broadcast('all_matches', await MatchManager.getAllMatches())
 
     return { success: true, tournament: tournamentWithDetails }
   }

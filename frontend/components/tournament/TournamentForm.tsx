@@ -16,6 +16,7 @@ import { Field, SelectField, TextField } from '../FormFields'
 import { SessionRow } from '../session/SessionRow'
 import { Alert, AlertTitle } from '../ui/alert'
 import { Spinner } from '../ui/spinner'
+import GroupCard from './GroupCard'
 
 type TournamentFormProps = Partial<CreateTournament> & ComponentProps<'form'>
 
@@ -186,6 +187,15 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
         <div className='bg-background flex flex-col gap-4 rounded-sm border p-4'>
           <h2 className='text-lg font-bold'>Forhåndsvisning</h2>
           <p>{preview.name}</p>
+          <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3'>
+            {preview.groups.map(group => (
+              <GroupCard
+                key={group.id}
+                group={group}
+                advancementCount={preview.advancementCount}
+              />
+            ))}
+          </div>
         </div>
       )}
     </form>

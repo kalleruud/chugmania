@@ -18,44 +18,7 @@ export type CreateGroup = typeof groups.$inferInsert
 export type GroupPlayer = typeof groupPlayers.$inferSelect
 export type CreateGroupPlayer = typeof groupPlayers.$inferInsert
 
-type TournamentMatchBase = typeof tournamentMatches.$inferSelect
-export type TournamentMatch = Omit<
-  TournamentMatchBase,
-  | 'sourceGroupA'
-  | 'sourceGroupB'
-  | 'sourceGroupARank'
-  | 'sourceGroupBRank'
-  | 'sourceMatchA'
-  | 'sourceMatchB'
-  | 'sourceMatchAProgression'
-  | 'sourceMatchBProgression'
-  | 'bracket'
-  | 'round'
-> &
-  (
-    | {
-        bracket: 'group'
-        round: undefined
-      }
-    | {
-        bracket: Omit<TournamentMatchBase['bracket'], 'group'>
-        round: number
-      }
-  ) &
-  (
-    | {
-        sourceGroupIdA: TournamentMatchBase['sourceGroupA']
-        sourceGroupIdB: TournamentMatchBase['sourceGroupB']
-        sourceGroupRankA: TournamentMatchBase['sourceGroupARank']
-        sourceGroupRankB: TournamentMatchBase['sourceGroupBRank']
-      }
-    | {
-        sourceMatchIdA: TournamentMatchBase['sourceMatchA']
-        sourceMatchIdB: TournamentMatchBase['sourceMatchB']
-        sourceMatchProgressionA: TournamentMatchBase['sourceMatchAProgression']
-        sourceMatchProgressionB: TournamentMatchBase['sourceMatchBProgression']
-      }
-  )
+export type TournamentMatch = typeof tournamentMatches.$inferSelect
 export type CreateTournamentMatch = typeof tournamentMatches.$inferInsert
 
 export type TournamentWithDetails = Tournament & {

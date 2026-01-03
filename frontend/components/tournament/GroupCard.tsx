@@ -1,84 +1,80 @@
-import { useTimeEntryInput } from '@/hooks/TimeEntryInputProvider'
+import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
-import type { Match } from '@common/models/match'
-import type { GroupWithPlayers } from '@common/models/tournament'
+import type { TournamentWithDetails } from '@common/models/tournament'
+import type { ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
-import MatchRow from '../match/MatchRow'
 
 type GroupCardProps = {
-  group: GroupWithPlayers
-  matches: Match[]
+  group: TournamentWithDetails['groups'][number]
+  advancementCount: TournamentWithDetails['advancementCount']
   className?: string
-}
+} & ComponentProps<'div'>
 
 export default function GroupCard({
   group,
-  matches,
+  advancementCount,
   className,
+  ...props
 }: Readonly<GroupCardProps>) {
-  const { openMatch } = useTimeEntryInput()
+  const { users } = useData()
 
-  const sortedPlayers = [...group.players].sort((a, b) => {
+  const sortedPlayers = group.players.toSorted((a, b) => {
     if (b.wins !== a.wins) return b.wins - a.wins
     if (a.losses !== b.losses) return a.losses - b.losses
-    return a.seed - b.seed
+    return 0
   })
 
   return (
     <div
       className={twMerge(
-        'bg-background flex flex-col gap-3 rounded-lg border p-3',
+        'bg-background flex flex-col gap-2 rounded-lg border p-4',
         className
-      )}>
-      <h5 className='font-f1-bold text-sm uppercase'>{group.name}</h5>
+      )}
+      {...props}>
+      <h5 className='font-f1-bold uppercase'>{group.name}</h5>
 
       <div className='flex flex-col gap-1'>
-        <div className='text-muted-foreground grid grid-cols-[1fr_auto_auto] gap-2 px-2 text-xs'>
+        <div className='text-muted-foreground flex items-center justify-between gap-2 px-2 text-sm'>
           <span>Spiller</span>
-          <span className='w-8 text-center'>S</span>
-          <span className='w-8 text-center'>T</span>
+          <div className='flex items-center gap-4'>
+            <span className='w-8 text-end'>S</span>
+            <span className='w-4 text-end'>W</span>
+            <span className='w-4 text-end'>L</span>
+          </div>
         </div>
-        {sortedPlayers.map((player, index) => (
+
+        {sortedPlayers.map(({ user, wins, losses, seed }, index) => (
           <div
-            key={player.id}
+            key={user}
             className={twMerge(
-              'grid grid-cols-[1fr_auto_auto] items-center gap-2 rounded-sm px-2 py-1',
-              index < 2 && 'bg-primary/10'
+              'flex items-center justify-between px-2 py-1 text-sm',
+              index < advancementCount && 'bg-primary/10 rounded-sm'
             )}>
-            <div className='flex items-center gap-2'>
-              <span className='text-muted-foreground w-4 text-xs'>
+            <div className='flex items-center gap-1'>
+              <span className='text-muted-foreground font-kh-interface w-4 tabular-nums'>
                 {index + 1}.
               </span>
-              <span className='font-kh-interface truncate text-sm'>
-                {player.user.shortName ??
-                  player.user.firstName ??
+              <span className='font-f1 truncate'>
+                {users?.find(u => u.id === user)?.shortName ??
                   loc.no.match.unknownUser}
               </span>
             </div>
-            <span className='text-primary w-8 text-center text-sm font-medium'>
-              {player.wins}
-            </span>
-            <span className='text-muted-foreground w-8 text-center text-sm'>
-              {player.losses}
-            </span>
+
+            <div className='flex items-center gap-4'>
+              <div className='text-muted-foreground font-kh-interface w-8 text-end tabular-nums'>
+                {seed.toFixed()}
+              </div>
+
+              <span className='text-primary font-kh-interface w-4 text-end tabular-nums'>
+                {wins}
+              </span>
+              <span className='text-muted-foreground font-kh-interface w-4 text-end tabular-nums'>
+                {losses}
+              </span>
+            </div>
           </div>
         ))}
       </div>
-
-      {matches.length > 0 && (
-        <div className='flex flex-col gap-1'>
-          <span className='text-muted-foreground px-2 text-xs'>Matcher</span>
-          {matches.map(match => (
-            <MatchRow
-              key={match.id}
-              item={match}
-              className='bg-background-secondary rounded-sm p-1'
-              onClick={() => openMatch(match)}
-              hideTrack
-            />
-          ))}
-        </div>
-      )}
     </div>
   )
 }
