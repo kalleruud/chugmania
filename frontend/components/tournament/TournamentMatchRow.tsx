@@ -40,12 +40,6 @@ export default function TournamentMatchRow({
         <span className='text-muted-foreground truncate text-sm'>
           {item.name}
         </span>
-        {/* <span className='text-muted-foreground/50 font-kh-interface text-xs font-black'>
-          {loc.no.match.vs}
-        </span>
-        <span className='text-muted-foreground truncate text-sm'>
-          {sourceB}
-        </span> */}
       </div>
     </div>
   )
