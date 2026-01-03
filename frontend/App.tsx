@@ -4,6 +4,7 @@ import { ErrorBoundary } from 'react-error-boundary'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import Layout from './app/Layout'
 import AdminPage from './app/pages/AdminPage'
+import CreateTournamentPage from './app/pages/CreateTournamentPage'
 import { ErrorPage } from './app/pages/ErrorPage'
 import Home from './app/pages/HomePage'
 import SessionPage from './app/pages/SessionPage'
@@ -40,6 +41,10 @@ createRoot(document.getElementById('root')!).render(
                       <Route path='sessions' element={<SessionsPage />} />
                       <Route path='sessions/:id' element={<SessionPage />} />
                       <Route path='admin' element={<AdminPage />} />
+                      <Route
+                        path='tournaments/create'
+                        element={<CreateTournamentPage />}
+                      />
                     </Route>
                   </Routes>
                   <Toaster />

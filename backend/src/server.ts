@@ -103,6 +103,7 @@ async function Connect(s: TypedSocket) {
   setup(s, 'create_tournament', TournamentManager.onCreateTournament)
   setup(s, 'edit_tournament', TournamentManager.onEditTournament)
   setup(s, 'delete_tournament', TournamentManager.onDeleteTournament)
+  setup(s, 'get_tournament_preview', TournamentManager.onGetTournamentPreview)
 }
 
 function setup<Ev extends keyof ClientToServerEvents>(

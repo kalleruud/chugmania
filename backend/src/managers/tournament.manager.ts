@@ -1,21 +1,29 @@
+import type { CreateMatch, Match } from '@common/models/match'
 import type { EventReq, EventRes } from '@common/models/socket.io'
 import {
   isCreateTournamentRequest,
   isDeleteTournamentRequest,
   isEditTournamentRequest,
-  type GroupPlayerWithUser,
+  isTournamentPreviewRequest,
+  type CreateGroup,
+  type CreateGroupPlayer,
+  type CreateTournament,
+  type CreateTournamentMatch,
+  type Group,
+  type GroupPlayer,
   type GroupWithPlayers,
-  type TournamentMatchWithDetails,
+  type Tournament,
+  type TournamentMatch,
   type TournamentWithDetails,
 } from '@common/models/tournament'
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, inArray, isNull } from 'drizzle-orm'
+import { randomUUID } from 'node:crypto'
 import loc from '../../../frontend/lib/locales'
-import db from '../../database/database'
+import db, { database } from '../../database/database'
 import {
   groupPlayers,
   groups,
   matches,
-  sessionSignups,
   tournamentMatches,
   tournaments,
   users,
@@ -27,7 +35,26 @@ import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import MatchManager from './match.manager'
 import RatingManager from './rating.manager'
+import SessionManager from './session.manager'
 import UserManager from './user.manager'
+
+type TournamentStructure = {
+  tournament: Tournament
+  groups: Group[]
+  groupPlayers: GroupPlayer[]
+  tournamentMatches: TournamentMatch[]
+  matches: Match[]
+}
+
+type UpperMatchMeta = {
+  id: string
+  round: number
+  position: number
+}
+
+type LowerMatchMeta = UpperMatchMeta & {
+  isDropIn: boolean
+}
 
 export default class TournamentManager {
   public static async getAllTournaments(): Promise<TournamentWithDetails[]> {
@@ -170,6 +197,99 @@ export default class TournamentManager {
     }
   }
 
+  private static async getTournamentStructure(
+    tournamentId: string
+  ): Promise<TournamentStructure> {
+    const tournament = await db.query.tournaments.findFirst({
+      where: eq(tournaments.id, tournamentId),
+    })
+
+    if (!tournament) {
+      throw new Error(loc.no.error.messages.not_in_db(tournamentId))
+    }
+
+    const groupRows = await db.query.groups.findMany({
+      where: and(eq(groups.tournament, tournamentId), isNull(groups.deletedAt)),
+    })
+
+    const groupPlayerRows = await db.query.groupPlayers.findMany({
+      where: and(
+        inArray(
+          groupPlayers.group,
+          groupRows.map(g => g.id)
+        ),
+        isNull(groupPlayers.deletedAt)
+      ),
+    })
+
+    const tournamentMatchRows = await db.query.tournamentMatches.findMany({
+      where: and(
+        eq(tournamentMatches.tournament, tournamentId),
+        isNull(tournamentMatches.deletedAt)
+      ),
+    })
+
+    const matchRows: Match[] = await Promise.all(
+      tournamentMatchRows
+        .filter(tm => tm.match)
+        .map(async tm => {
+          const match = await db.query.matches.findFirst({
+            where: and(eq(matches.id, tm.match!), isNull(matches.deletedAt)),
+          })
+          return match!
+        })
+    )
+
+    return {
+      tournament,
+      groups: groupRows,
+      groupPlayers: groupPlayerRows,
+      tournamentMatches: tournamentMatchRows,
+      matches: matchRows,
+    }
+  }
+
+  private static async toTournamentWithDetails(
+    tournament: Tournament,
+    groups: Group[],
+    groupPlayers: GroupPlayer[],
+    tournamentMatches: TournamentMatch[],
+    matches: Match[]
+  ): Promise<TournamentWithDetails> {
+    const groupMatches = tournamentMatches
+      .filter(tm => tm.bracket === 'group')
+      .map(tm => matches.find(m => m.id === tm.match))
+      .filter(m => m?.winner)
+
+    const groupsWithPlayers: GroupWithPlayers[] = groups.map(group => {
+      return {
+        ...group,
+        players: groupPlayers
+          .filter(gp => gp.group === group.id)
+          .toSorted((a, b) => b.seed - a.seed)
+          .map(gp => ({
+            ...gp,
+            wins: groupMatches.filter(m => m?.winner === gp.user).length,
+            losses: groupMatches.filter(
+              m =>
+                (m?.user1 === gp.user || m?.user2 === gp.user) &&
+                m?.winner !== gp.user
+            ).length,
+          })),
+      }
+    })
+
+    return {
+      ...tournament,
+      groups: groupsWithPlayers,
+      matches: tournamentMatches.toSorted(
+        (a, b) =>
+          (b.round ?? Number.MAX_SAFE_INTEGER) -
+          (a.round ?? Number.MAX_SAFE_INTEGER)
+      ),
+    }
+  }
+
   static async onCreateTournament(
     socket: TypedSocket,
     request: EventReq<'create_tournament'>
@@ -182,35 +302,14 @@ export default class TournamentManager {
 
     await AuthManager.checkAuth(socket, ['admin', 'moderator'])
 
-    const signupRows = await db
-      .select({ user: sessionSignups.user })
-      .from(sessionSignups)
-      .where(
-        and(
-          eq(sessionSignups.session, request.session),
-          eq(sessionSignups.response, 'yes'),
-          isNull(sessionSignups.deletedAt)
-        )
-      )
-
-    const playerIds = signupRows.map(r => r.user)
-
-    const [tournament] = await db
-      .insert(tournaments)
-      .values({
-        session: request.session,
-        name: request.name,
-        description: request.description,
-        groupsCount: request.groupsCount,
-        advancementCount: request.advancementCount,
-        eliminationType: request.eliminationType,
-      })
-      .returning()
-
-    await TournamentManager.generateTournamentStructure(
-      tournament.id,
-      tournament.session,
-      playerIds,
+    const {
+      id: tournamentId,
+      groups: groupDrafts,
+      groupPlayers: groupPlayerDrafts,
+      tournamentMatches: tournamentMatchDrafts,
+      matches: matchDrafts,
+    } = await TournamentManager.createTournament(
+      request.session,
       request.groupsCount,
       request.advancementCount,
       request.eliminationType,
@@ -218,11 +317,29 @@ export default class TournamentManager {
       request.bracketTracks
     )
 
+    const tournamentDraft = {
+      id: tournamentId,
+      session: request.session,
+      name: request.name,
+      description: request.description,
+      groupsCount: request.groupsCount,
+      advancementCount: request.advancementCount,
+      eliminationType: request.eliminationType,
+    } satisfies CreateTournament
+
+    database.transaction(() => {
+      db.insert(tournaments).values(tournamentDraft)
+      db.insert(groups).values(groupDrafts)
+      db.insert(groupPlayers).values(groupPlayerDrafts)
+      db.insert(tournamentMatches).values(tournamentMatchDrafts)
+      db.insert(matches).values(matchDrafts)
+    })()
+
     console.debug(
       new Date().toISOString(),
       socket.id,
       'Created tournament',
-      tournament.name
+      request.name
     )
 
     broadcast('all_tournaments', await TournamentManager.getAllTournaments())
@@ -231,46 +348,82 @@ export default class TournamentManager {
     return { success: true }
   }
 
-  private static async generateTournamentStructure(
-    tournamentId: string,
+  private static async createTournament(
     sessionId: string,
-    playerIds: string[],
     groupsCount: number,
     advancementCount: number,
     eliminationType: EliminationType,
     groupStageTracks: string[],
     bracketTracks: { stage: string; trackId: string }[]
   ) {
-    // Get player ratings for seeding
-    const rankings = await RatingManager.onGetRatings()
-    const ratingMap = new Map(rankings.map(r => [r.user, r.totalRating]))
+    const tournamentId = randomUUID()
 
+    const playerIds = (await SessionManager.getSessionSignups(sessionId))
+      .filter(s => s.response === 'yes')
+      .map(s => s.user.id)
+
+    const { groups, groupPlayers } = await TournamentManager.createGroups(
+      tournamentId,
+      groupsCount,
+      playerIds
+    )
+
+    const { tournamentMatches, matches } =
+      await TournamentManager.createGroupMatches(
+        tournamentId,
+        sessionId,
+        groups,
+        groupPlayers,
+        groupStageTracks
+      )
+
+    const totalAdvancing = groupsCount * advancementCount
+    const bracketTournamentMatches = TournamentManager.generateBracketSlots(
+      tournamentId,
+      groups,
+      advancementCount,
+      totalAdvancing,
+      eliminationType,
+      bracketTracks
+    )
+
+    return {
+      id: tournamentId,
+      groups,
+      groupPlayers,
+      tournamentMatches: [...tournamentMatches, ...bracketTournamentMatches],
+      matches,
+    }
+  }
+
+  private static async createGroups(
+    tournamentId: string,
+    groupsCount: number,
+    playerIds: string[]
+  ) {
     // Sort players by rating (descending) - highest rated first
     const sortedPlayers = [...playerIds].sort((a, b) => {
-      const ratingA = ratingMap.get(a) ?? 0
-      const ratingB = ratingMap.get(b) ?? 0
+      const ratingA = RatingManager.getUserRatings(a)?.totalRating ?? 0
+      const ratingB = RatingManager.getUserRatings(b)?.totalRating ?? 0
       return ratingB - ratingA
     })
 
-    const groupNames = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
-    const createdGroups: { id: string; name: string }[] = []
-
-    for (let i = 0; i < groupsCount; i++) {
-      const [group] = await db
-        .insert(groups)
-        .values({
-          tournament: tournamentId,
-          name: `Gruppe ${groupNames[i]}`,
-        })
-        .returning()
-      createdGroups.push(group)
-    }
+    // Generate an ID for relating group players to groups
+    const groups: (Omit<CreateGroup, 'id'> & { id: string })[] = Array.from(
+      { length: groupsCount },
+      (_, i) => ({
+        id: randomUUID(),
+        name: loc.no.tournament.groupName(String.fromCodePoint(65 + i)),
+        tournament: tournamentId,
+      })
+    )
 
     // Snake seeding: alternate direction every row
     // Row 0: A B C D (left to right)
     // Row 1: D C B A (right to left)
     // Row 2: A B C D (left to right)
     // etc.
+    const groupPlayers: CreateGroupPlayer[] = []
     for (let i = 0; i < sortedPlayers.length; i++) {
       const row = Math.floor(i / groupsCount)
       const positionInRow = i % groupsCount
@@ -280,81 +433,90 @@ export default class TournamentManager {
         ? groupsCount - 1 - positionInRow
         : positionInRow
 
-      const group = createdGroups[groupIndex]
-      const seed = row + 1
+      const group = groups[groupIndex]
 
-      await db.insert(groupPlayers).values({
+      groupPlayers.push({
         group: group.id,
         user: sortedPlayers[i],
-        seed,
+        seed: RatingManager.getUserRatings(sortedPlayers[i])?.ranking ?? 0,
       })
     }
 
-    // Collect all group match pairings first
-    const groupMatchPairings: {
-      group: { id: string; name: string }
+    return {
+      groups,
+      groupPlayers,
+    }
+  }
+
+  private static async createGroupMatches(
+    tournamentId: string,
+    sessionId: string,
+    groups: { id: string; name: string }[],
+    groupPlayers: CreateGroupPlayer[],
+    groupStageTracks: string[]
+  ) {
+    const groupWithPlayers = groups.map(group => ({
+      ...group,
+      players: groupPlayers
+        .filter(gp => gp.group === group.id)
+        .map(p => p.user),
+    }))
+
+    const pairings: {
+      group: { id: Group['id']; name: Group['name'] }
       user1: string
       user2: string
     }[] = []
 
-    for (const group of createdGroups) {
-      const players = await db
-        .select()
-        .from(groupPlayers)
-        .where(eq(groupPlayers.group, group.id))
-
-      for (let i = 0; i < players.length; i++) {
-        for (let j = i + 1; j < players.length; j++) {
-          groupMatchPairings.push({
-            group,
-            user1: players[i].user,
-            user2: players[j].user,
+    // TODO: Use a more efficient algorithm for generating group match pairings
+    // to avoid players playing back to back matches.
+    for (const group of groupWithPlayers) {
+      for (let i = 0; i < group.players.length; i++) {
+        for (let j = i + 1; j < group.players.length; j++) {
+          pairings.push({
+            group: { id: group.id, name: group.name },
+            user1: group.players[i],
+            user2: group.players[j],
           })
         }
       }
     }
 
-    // Distribute tracks evenly across group matches
+    // TODO: Distribute tracks evenly across group matches
     const distributedTracks = TournamentManager.distributeTracksBalanced(
-      groupMatchPairings.length,
+      pairings.length,
       groupStageTracks
     )
 
     // Create group matches with assigned tracks
-    for (let i = 0; i < groupMatchPairings.length; i++) {
-      const pairing = groupMatchPairings[i]
+    const matches: CreateMatch[] = []
+    const tournamentMatches: CreateTournamentMatch[] = []
+
+    for (let i = 0; i < pairings.length; i++) {
+      const pairing = pairings[i]
       const trackId = distributedTracks[i]
+      const matchId = randomUUID()
 
-      const [match] = await db
-        .insert(matches)
-        .values({
-          user1: pairing.user1,
-          user2: pairing.user2,
-          track: trackId,
-          session: sessionId,
-          stage: 'group',
-          status: 'planned',
-        })
-        .returning()
+      matches.push({
+        id: matchId,
+        user1: pairing.user1,
+        user2: pairing.user2,
+        track: trackId,
+        session: sessionId,
+        stage: 'group',
+        status: 'planned',
+      })
 
-      await db.insert(tournamentMatches).values({
+      tournamentMatches.push({
         tournament: tournamentId,
-        name: `${pairing.group.name} Match`,
+        name: loc.no.tournament.matchName(pairing.group.name, i + 1),
         bracket: 'group',
-        round: 0,
-        match: match.id,
+        track: trackId,
+        match: matchId,
       })
     }
 
-    const totalAdvancing = groupsCount * advancementCount
-    await TournamentManager.generateBracketSlots(
-      tournamentId,
-      createdGroups,
-      advancementCount,
-      totalAdvancing,
-      eliminationType,
-      bracketTracks
-    )
+    return { tournamentMatches, matches }
   }
 
   private static distributeTracksBalanced(
@@ -390,259 +552,309 @@ export default class TournamentManager {
     return result
   }
 
-  private static async generateBracketSlots(
+  static generateBracketSlots(
     tournamentId: string,
     createdGroups: { id: string; name: string }[],
     advancementCount: number,
     totalAdvancing: number,
     eliminationType: EliminationType,
     bracketTracks: { stage: string; trackId: string }[]
-  ) {
-    const bracketTrackMap = new Map(
-      bracketTracks.map(bt => [bt.stage, bt.trackId])
-    )
-    const bracketSize = Math.pow(2, Math.ceil(Math.log2(totalAdvancing)))
+  ): CreateTournamentMatch[] {
+    const trackMap = new Map(bracketTracks.map(b => [b.stage, b.trackId]))
+    const bracketSize = 2 ** Math.ceil(Math.log2(totalAdvancing))
 
-    const upperBracketMatches: {
-      id: string
-      round: number
-      position: number
-    }[] = []
+    const { matches: upperMatches, meta: upperMeta } =
+      TournamentManager.buildUpperBracket(
+        tournamentId,
+        createdGroups,
+        advancementCount,
+        totalAdvancing,
+        bracketSize,
+        trackMap
+      )
+
+    const allMatches = [...upperMatches]
+
+    if (eliminationType === 'double') {
+      const { matches: lowerMatches, meta: lowerMeta } =
+        TournamentManager.buildLowerBracket(
+          tournamentId,
+          upperMeta,
+          bracketSize,
+          trackMap
+        )
+
+      allMatches.push(...lowerMatches)
+
+      const grandFinal = TournamentManager.buildGrandFinal(
+        tournamentId,
+        upperMeta,
+        lowerMeta,
+        trackMap
+      )
+
+      if (grandFinal) {
+        allMatches.push(grandFinal)
+      }
+    }
+
+    return allMatches
+  }
+
+  private static buildUpperBracket(
+    tournamentId: string,
+    groups: { id: string }[],
+    advancementCount: number,
+    totalAdvancing: number,
+    bracketSize: number,
+    trackMap: Map<string, string>
+  ): { matches: CreateTournamentMatch[]; meta: UpperMatchMeta[] } {
+    const matches: CreateTournamentMatch[] = []
+    const meta: UpperMatchMeta[] = []
+
     let roundNum = bracketSize
-    let matchPosition = 0
 
     while (roundNum >= 2) {
       const matchesInRound = roundNum / 2
+      const roundName = TournamentManager.getRoundName(roundNum, false)
+      const track = trackMap.get(roundName) ?? null
 
       for (let i = 0; i < matchesInRound; i++) {
-        const roundName = TournamentManager.getRoundName(roundNum, false)
-
+        const id = randomUUID()
         const isFirstRound = roundNum === bracketSize
 
-        let sourceGroupA: string | null = null
-        let sourceGroupARank: number | null = null
-        let sourceGroupB: string | null = null
-        let sourceGroupBRank: number | null = null
-        let sourceMatchA: string | null = null
-        let sourceMatchAProgression: MatchProgression | null = null
-        let sourceMatchB: string | null = null
-        let sourceMatchBProgression: MatchProgression | null = null
+        const draft: CreateTournamentMatch = {
+          id,
+          tournament: tournamentId,
+          name: `${roundName} ${i + 1}`,
+          bracket: 'upper',
+          round: roundNum,
+          track,
+        }
 
         if (isFirstRound) {
-          const seedA = i * 2
-          const seedB = i * 2 + 1
-
-          if (seedA < totalAdvancing) {
-            const groupIndexA = seedA % createdGroups.length
-            const rankA = Math.floor(seedA / createdGroups.length) + 1
-            if (rankA <= advancementCount) {
-              sourceGroupA = createdGroups[groupIndexA].id
-              sourceGroupARank = rankA
-            }
-          }
-
-          if (seedB < totalAdvancing) {
-            const groupIndexB = seedB % createdGroups.length
-            const rankB = Math.floor(seedB / createdGroups.length) + 1
-            if (rankB <= advancementCount) {
-              sourceGroupB = createdGroups[groupIndexB].id
-              sourceGroupBRank = rankB
-            }
-          }
-        } else {
-          const prevRoundMatches = upperBracketMatches.filter(
-            m => m.round === roundNum * 2
+          TournamentManager.assignGroupSources(
+            draft,
+            i,
+            groups,
+            advancementCount,
+            totalAdvancing
           )
-          if (prevRoundMatches[i * 2]) {
-            sourceMatchA = prevRoundMatches[i * 2].id
-            sourceMatchAProgression = 'winner'
-          }
-          if (prevRoundMatches[i * 2 + 1]) {
-            sourceMatchB = prevRoundMatches[i * 2 + 1].id
-            sourceMatchBProgression = 'winner'
-          }
+        } else {
+          TournamentManager.assignWinnerSources(draft, meta, roundNum, i)
         }
 
-        const trackId = bracketTrackMap.get(roundName) ?? null
-
-        const [tm] = await db
-          .insert(tournamentMatches)
-          .values({
-            tournament: tournamentId,
-            name: `${roundName} ${i + 1}`,
-            bracket: 'upper',
-            round: roundNum,
-            track: trackId,
-            sourceGroupA,
-            sourceGroupARank,
-            sourceGroupB,
-            sourceGroupBRank,
-            sourceMatchA,
-            sourceMatchAProgression,
-            sourceMatchB,
-            sourceMatchBProgression,
-          })
-          .returning()
-
-        upperBracketMatches.push({ id: tm.id, round: roundNum, position: i })
-        matchPosition++
+        matches.push(draft)
+        meta.push({ id, round: roundNum, position: i })
       }
 
-      roundNum = roundNum / 2
+      roundNum /= 2
     }
 
-    if (eliminationType === 'double') {
-      const lowerBracketMatches: {
-        id: string
-        round: number
-        position: number
-        isDropIn: boolean
-      }[] = []
+    return { matches, meta }
+  }
 
-      // Double elimination lower bracket structure:
-      // - First lower round: losers from first upper round play each other
-      // - Subsequent rounds alternate between:
-      //   1. "Survivor" rounds: lower bracket winners play each other
-      //   2. "Drop-in" rounds: lower survivors vs new losers from upper bracket
+  private static assignGroupSources(
+    draft: CreateTournamentMatch,
+    index: number,
+    groups: { id: string }[],
+    advancementCount: number,
+    totalAdvancing: number
+  ) {
+    const assign = (
+      seed: number,
+      set: (groupId: string, rank: number) => void
+    ) => {
+      if (seed >= totalAdvancing) return
 
-      // First lower bracket round: losers from first upper bracket round
-      const firstUpperRound = upperBracketMatches.filter(
-        m => m.round === bracketSize
-      )
-      const firstLowerRoundMatches = Math.floor(firstUpperRound.length / 2)
+      const groupIndex = seed % groups.length
+      const rank = Math.floor(seed / groups.length) + 1
 
-      let lowerRoundCounter = 1
-
-      const lowerBracketTrack = bracketTrackMap.get('Lower Bracket') ?? null
-
-      for (let i = 0; i < firstLowerRoundMatches; i++) {
-        const [tm] = await db
-          .insert(tournamentMatches)
-          .values({
-            tournament: tournamentId,
-            name: `Taper Runde ${lowerRoundCounter} - ${i + 1}`,
-            bracket: 'lower',
-            round: lowerRoundCounter,
-            track: lowerBracketTrack,
-            sourceMatchA: firstUpperRound[i * 2]?.id ?? null,
-            sourceMatchAProgression: 'loser',
-            sourceMatchB: firstUpperRound[i * 2 + 1]?.id ?? null,
-            sourceMatchBProgression: 'loser',
-          })
-          .returning()
-
-        lowerBracketMatches.push({
-          id: tm.id,
-          round: lowerRoundCounter,
-          position: i,
-          isDropIn: false,
-        })
+      if (rank <= advancementCount) {
+        set(groups[groupIndex].id, rank)
       }
+    }
 
-      // Continue building lower bracket rounds
-      let upperRoundNum = bracketSize / 2
-      lowerRoundCounter++
+    assign(index * 2, (g, r) => {
+      draft.sourceGroupA = g
+      draft.sourceGroupARank = r
+    })
 
-      while (upperRoundNum >= 2) {
-        const prevLowerMatches = lowerBracketMatches.filter(
-          m => m.round === lowerRoundCounter - 1
-        )
-        const upperLosers = upperBracketMatches.filter(
-          m => m.round === upperRoundNum
-        )
+    assign(index * 2 + 1, (g, r) => {
+      draft.sourceGroupB = g
+      draft.sourceGroupBRank = r
+    })
+  }
 
-        // Drop-in round: lower survivors vs upper bracket losers
-        const dropInMatches = Math.min(
-          prevLowerMatches.length,
-          upperLosers.length
-        )
+  private static assignWinnerSources(
+    draft: CreateTournamentMatch,
+    meta: UpperMatchMeta[],
+    roundNum: number,
+    index: number
+  ) {
+    const prev = meta.filter(m => m.round === roundNum * 2)
 
-        for (let i = 0; i < dropInMatches; i++) {
-          const [tm] = await db
-            .insert(tournamentMatches)
-            .values({
-              tournament: tournamentId,
-              name: `Taper Runde ${lowerRoundCounter} - ${i + 1}`,
-              bracket: 'lower',
-              round: lowerRoundCounter,
-              track: lowerBracketTrack,
-              sourceMatchA: prevLowerMatches[i]?.id ?? null,
-              sourceMatchAProgression: 'winner',
-              sourceMatchB: upperLosers[i]?.id ?? null,
-              sourceMatchBProgression: 'loser',
-            })
-            .returning()
+    if (prev[index * 2]) {
+      draft.sourceMatchA = prev[index * 2].id
+      draft.sourceMatchAProgression = 'winner'
+    }
 
-          lowerBracketMatches.push({
-            id: tm.id,
-            round: lowerRoundCounter,
-            position: i,
-            isDropIn: true,
-          })
-        }
+    if (prev[index * 2 + 1]) {
+      draft.sourceMatchB = prev[index * 2 + 1].id
+      draft.sourceMatchBProgression = 'winner'
+    }
+  }
 
-        lowerRoundCounter++
+  private static buildLowerBracket(
+    tournamentId: string,
+    upperMeta: UpperMatchMeta[],
+    bracketSize: number,
+    trackMap: Map<string, string>
+  ): { matches: CreateTournamentMatch[]; meta: LowerMatchMeta[] } {
+    const matches: CreateTournamentMatch[] = []
+    const meta: LowerMatchMeta[] = []
 
-        // Survivor round: lower bracket winners play each other (if more than 1 match in prev round)
-        const currentLowerMatches = lowerBracketMatches.filter(
-          m => m.round === lowerRoundCounter - 1
-        )
+    const track = trackMap.get('Lower Bracket') ?? null
+    let lowerRound = 1
 
-        if (currentLowerMatches.length > 1) {
-          const survivorMatches = Math.floor(currentLowerMatches.length / 2)
+    const firstUpper = upperMeta.filter(m => m.round === bracketSize)
+    for (let i = 0; i < Math.floor(firstUpper.length / 2); i++) {
+      const id = randomUUID()
 
-          for (let i = 0; i < survivorMatches; i++) {
-            const [tm] = await db
-              .insert(tournamentMatches)
-              .values({
-                tournament: tournamentId,
-                name: `Taper Runde ${lowerRoundCounter} - ${i + 1}`,
-                bracket: 'lower',
-                round: lowerRoundCounter,
-                track: lowerBracketTrack,
-                sourceMatchA: currentLowerMatches[i * 2]?.id ?? null,
-                sourceMatchAProgression: 'winner',
-                sourceMatchB: currentLowerMatches[i * 2 + 1]?.id ?? null,
-                sourceMatchBProgression: 'winner',
-              })
-              .returning()
+      matches.push({
+        id,
+        tournament: tournamentId,
+        name: `Taper Runde ${lowerRound} - ${i + 1}`,
+        bracket: 'lower',
+        round: lowerRound,
+        track,
+        sourceMatchA: firstUpper[i * 2].id,
+        sourceMatchAProgression: 'loser',
+        sourceMatchB: firstUpper[i * 2 + 1].id,
+        sourceMatchBProgression: 'loser',
+      })
 
-            lowerBracketMatches.push({
-              id: tm.id,
-              round: lowerRoundCounter,
-              position: i,
-              isDropIn: false,
-            })
-          }
+      meta.push({ id, round: lowerRound, position: i, isDropIn: false })
+    }
 
-          lowerRoundCounter++
-        }
+    let upperRound = bracketSize / 2
+    lowerRound++
 
-        upperRoundNum = upperRoundNum / 2
-      }
-
-      // Grand Final: upper bracket winner vs lower bracket winner
-      const upperFinal = upperBracketMatches.find(m => m.round === 2)
-      const lastLowerRound = Math.max(...lowerBracketMatches.map(m => m.round))
-      const lowerFinal = lowerBracketMatches.find(
-        m => m.round === lastLowerRound
+    while (upperRound >= 2) {
+      TournamentManager.buildLowerDropInRound(
+        tournamentId,
+        matches,
+        meta,
+        upperMeta,
+        upperRound,
+        lowerRound,
+        track
       )
 
-      const grandFinalTrack = bracketTrackMap.get('Grand Finale') ?? null
+      lowerRound++
+      TournamentManager.buildLowerSurvivorRound(
+        tournamentId,
+        matches,
+        meta,
+        lowerRound,
+        track
+      )
 
-      if (upperFinal && lowerFinal) {
-        await db.insert(tournamentMatches).values({
-          tournament: tournamentId,
-          name: 'Grand Finale',
-          bracket: 'upper',
-          round: 1,
-          track: grandFinalTrack,
-          sourceMatchA: upperFinal.id,
-          sourceMatchAProgression: 'winner',
-          sourceMatchB: lowerFinal.id,
-          sourceMatchBProgression: 'winner',
-        })
-      }
+      lowerRound++
+      upperRound /= 2
+    }
+
+    return { matches, meta }
+  }
+
+  private static buildLowerDropInRound(
+    tournamentId: string,
+    matches: CreateTournamentMatch[],
+    meta: LowerMatchMeta[],
+    upperMeta: UpperMatchMeta[],
+    upperRound: number,
+    lowerRound: number,
+    track: string | null
+  ) {
+    const prevLower = meta.filter(m => m.round === lowerRound - 1)
+    const upperLosers = upperMeta.filter(m => m.round === upperRound)
+
+    const count = Math.min(prevLower.length, upperLosers.length)
+
+    for (let i = 0; i < count; i++) {
+      const id = randomUUID()
+
+      matches.push({
+        id,
+        tournament: tournamentId,
+        name: `Taper Runde ${lowerRound} - ${i + 1}`,
+        bracket: 'lower',
+        round: lowerRound,
+        track,
+        sourceMatchA: prevLower[i].id,
+        sourceMatchAProgression: 'winner',
+        sourceMatchB: upperLosers[i].id,
+        sourceMatchBProgression: 'loser',
+      })
+
+      meta.push({ id, round: lowerRound, position: i, isDropIn: true })
+    }
+  }
+
+  private static buildLowerSurvivorRound(
+    tournamentId: string,
+    matches: CreateTournamentMatch[],
+    meta: LowerMatchMeta[],
+    lowerRound: number,
+    track: string | null
+  ) {
+    const prev = meta.filter(m => m.round === lowerRound - 1)
+    if (prev.length <= 1) return
+
+    for (let i = 0; i < Math.floor(prev.length / 2); i++) {
+      const id = randomUUID()
+
+      matches.push({
+        id,
+        tournament: tournamentId,
+        name: `Taper Runde ${lowerRound} - ${i + 1}`,
+        bracket: 'lower',
+        round: lowerRound,
+        track,
+        sourceMatchA: prev[i * 2].id,
+        sourceMatchAProgression: 'winner',
+        sourceMatchB: prev[i * 2 + 1].id,
+        sourceMatchBProgression: 'winner',
+      })
+
+      meta.push({ id, round: lowerRound, position: i, isDropIn: false })
+    }
+  }
+
+  private static buildGrandFinal(
+    tournamentId: string,
+    upperMeta: UpperMatchMeta[],
+    lowerMeta: LowerMatchMeta[],
+    trackMap: Map<string, string>
+  ): CreateTournamentMatch | null {
+    const upperFinal = upperMeta.find(m => m.round === 2)
+    if (!upperFinal) return null
+
+    const lastLowerRound = Math.max(...lowerMeta.map(m => m.round))
+    const lowerFinal = lowerMeta.find(m => m.round === lastLowerRound)
+    if (!lowerFinal) return null
+
+    return {
+      id: randomUUID(),
+      tournament: tournamentId,
+      name: 'Grand Finale',
+      bracket: 'upper',
+      round: 1,
+      track: trackMap.get('Grand Finale') ?? null,
+      sourceMatchA: upperFinal.id,
+      sourceMatchAProgression: 'winner',
+      sourceMatchB: lowerFinal.id,
+      sourceMatchBProgression: 'winner',
     }
   }
 
@@ -665,73 +877,7 @@ export default class TournamentManager {
       )
     }
 
-    await AuthManager.checkAuth(socket, ['admin', 'moderator'])
-
-    const tournament = await db.query.tournaments.findFirst({
-      where: eq(tournaments.id, request.id),
-    })
-
-    if (!tournament) {
-      throw new Error(loc.no.error.messages.not_in_db(request.id))
-    }
-
-    const structuralChange =
-      (request.groupsCount !== undefined &&
-        request.groupsCount !== tournament.groupsCount) ||
-      (request.advancementCount !== undefined &&
-        request.advancementCount !== tournament.advancementCount) ||
-      (request.eliminationType !== undefined &&
-        request.eliminationType !== tournament.eliminationType)
-
-    if (structuralChange) {
-      await TournamentManager.deleteTournamentStructure(tournament.id)
-
-      const signupRows = await db
-        .select({ user: sessionSignups.user })
-        .from(sessionSignups)
-        .where(
-          and(
-            eq(sessionSignups.session, tournament.session),
-            eq(sessionSignups.response, 'yes'),
-            isNull(sessionSignups.deletedAt)
-          )
-        )
-
-      const playerIds = signupRows.map(r => r.user)
-
-      await TournamentManager.generateTournamentStructure(
-        tournament.id,
-        tournament.session,
-        playerIds,
-        request.groupsCount ?? tournament.groupsCount,
-        request.advancementCount ?? tournament.advancementCount,
-        request.eliminationType ?? tournament.eliminationType
-      )
-    }
-
-    const { type, id, ...updates } = request
-    await db
-      .update(tournaments)
-      .set({
-        name: updates.name,
-        description: updates.description,
-        groupsCount: updates.groupsCount,
-        advancementCount: updates.advancementCount,
-        eliminationType: updates.eliminationType,
-      })
-      .where(eq(tournaments.id, tournament.id))
-
-    console.debug(
-      new Date().toISOString(),
-      socket.id,
-      'Updated tournament',
-      request.id
-    )
-
-    broadcast('all_tournaments', await TournamentManager.getAllTournaments())
-    broadcast('all_matches', await MatchManager.getAllMatches())
-
-    return { success: true }
+    return { success: false, message: 'Not implemented' }
   }
 
   private static async deleteTournamentStructure(tournamentId: string) {
@@ -1261,5 +1407,64 @@ export default class TournamentManager {
     if (round === 16) return 'eight'
 
     return 'group'
+  }
+
+  static async onGetTournamentPreview(
+    socket: TypedSocket,
+    request: EventReq<'get_tournament_preview'>
+  ): Promise<EventRes<'get_tournament_preview'>> {
+    if (!isTournamentPreviewRequest(request)) {
+      throw new Error(
+        loc.no.error.messages.invalid_request('GetTournamentPreviewRequest')
+      )
+    }
+
+    await AuthManager.checkAuth(socket, ['admin', 'moderator'])
+
+    const {
+      id: tournamentId,
+      groups,
+      groupPlayers,
+      tournamentMatches,
+      matches,
+    } = await TournamentManager.createTournament(
+      request.session,
+      request.groupsCount,
+      request.advancementCount,
+      request.eliminationType,
+      request.groupStageTracks,
+      request.bracketTracks
+    )
+
+    const tournamentDraft = {
+      id: tournamentId,
+      session: request.session,
+      name: request.name,
+      description: request.description,
+      groupsCount: request.groupsCount,
+      advancementCount: request.advancementCount,
+      eliminationType: request.eliminationType,
+    } satisfies CreateTournament
+
+    const tournamentWithDetails =
+      await TournamentManager.toTournamentWithDetails(
+        tournamentDraft as Tournament,
+        groups as Group[],
+        groupPlayers as GroupPlayer[],
+        tournamentMatches as TournamentMatch[],
+        matches as Match[]
+      )
+
+    console.debug(
+      new Date().toISOString(),
+      socket.id,
+      'Created tournament',
+      request.name
+    )
+
+    broadcast('all_tournaments', await TournamentManager.getAllTournaments())
+    broadcast('all_matches', await MatchManager.getAllMatches())
+
+    return { success: true, tournament: tournamentWithDetails }
   }
 }

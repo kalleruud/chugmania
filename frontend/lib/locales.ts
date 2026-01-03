@@ -256,11 +256,15 @@ const no = {
     groupStage: 'Gruppespill',
     bracket: 'Sluttspill',
     pending: 'Venter',
+    matchName: (group: string, match: number) => `${group} Match ${match}`,
+    groupName: (group: string) => `Gruppe ${group}`,
     form: {
       name: 'Navn',
+      session: 'Velg session',
       description: 'Beskrivelse',
       groupsCount: 'Antall grupper',
-      advancementCount: 'Antall som går videre',
+      groupsCountHint: (players: number) => `~${players} per gruppe`,
+      advancementCount: 'Antall som går videre per gruppe',
       eliminationType: 'Type',
       groupStageTracks: 'Baner for gruppespill',
       groupStageTracksHint:
@@ -326,6 +330,8 @@ const no = {
     ]),
     retryAction: 'Gå tilbake',
     messages: {
+      session_not_selected:
+        'Du må velge en session, vennligst ikke reproduser.',
       update_email: 'Du må oppdatere e-post og passord før du kan gjøre noe.',
       missing_files: 'Du har ikke valgt noen filer',
       missing_data: 'Ingen data ble sendt',
@@ -449,7 +455,7 @@ const no = {
       'Vil ikke',
     ]),
     noItems: getRandomItem([
-      'Finner ikke 🥵',
+      'Det finnes ikke en dritt her 🥵',
       'Her var det tomt...',
       'Har du gått feil?',
     ]),

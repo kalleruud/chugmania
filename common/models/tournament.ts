@@ -7,8 +7,7 @@ import type {
   tournamentMatches,
   tournaments,
 } from '../../backend/database/schema'
-import type { Match } from './match'
-import type { UserInfo } from './user'
+import type { SuccessResponse } from './socket.io'
 
 export type Tournament = typeof tournaments.$inferSelect
 export type CreateTournament = typeof tournaments.$inferInsert
@@ -19,26 +18,60 @@ export type CreateGroup = typeof groups.$inferInsert
 export type GroupPlayer = typeof groupPlayers.$inferSelect
 export type CreateGroupPlayer = typeof groupPlayers.$inferInsert
 
-export type TournamentMatch = typeof tournamentMatches.$inferSelect
+type TournamentMatchBase = typeof tournamentMatches.$inferSelect
+export type TournamentMatch = Omit<
+  TournamentMatchBase,
+  | 'sourceGroupA'
+  | 'sourceGroupB'
+  | 'sourceGroupARank'
+  | 'sourceGroupBRank'
+  | 'sourceMatchA'
+  | 'sourceMatchB'
+  | 'sourceMatchAProgression'
+  | 'sourceMatchBProgression'
+  | 'bracket'
+  | 'round'
+> &
+  (
+    | {
+        bracket: 'group'
+        round: undefined
+      }
+    | {
+        bracket: Omit<TournamentMatchBase['bracket'], 'group'>
+        round: number
+      }
+  ) &
+  (
+    | {
+        sourceGroupIdA: TournamentMatchBase['sourceGroupA']
+        sourceGroupIdB: TournamentMatchBase['sourceGroupB']
+        sourceGroupRankA: TournamentMatchBase['sourceGroupARank']
+        sourceGroupRankB: TournamentMatchBase['sourceGroupBRank']
+      }
+    | {
+        sourceMatchIdA: TournamentMatchBase['sourceMatchA']
+        sourceMatchIdB: TournamentMatchBase['sourceMatchB']
+        sourceMatchProgressionA: TournamentMatchBase['sourceMatchAProgression']
+        sourceMatchProgressionB: TournamentMatchBase['sourceMatchBProgression']
+      }
+  )
 export type CreateTournamentMatch = typeof tournamentMatches.$inferInsert
-
-export type GroupPlayerWithUser = Omit<GroupPlayer, 'user'> & {
-  user: UserInfo
-  wins: number
-  losses: number
-}
-
-export type GroupWithPlayers = Group & {
-  players: GroupPlayerWithUser[]
-}
-
-export type TournamentMatchWithDetails = TournamentMatch & {
-  matchDetails: Match | null
-}
 
 export type TournamentWithDetails = Tournament & {
   groups: GroupWithPlayers[]
-  matches: TournamentMatchWithDetails[]
+  matches: TournamentMatch[]
+}
+
+export type GroupWithPlayers = Group & {
+  players: GroupPlayerWithStats[]
+}
+
+export type GroupPlayerWithStats = {
+  user: GroupPlayer['user']
+  seed: GroupPlayer['seed']
+  wins: number
+  losses: number
 }
 
 export type TournamentTrackAssignment = {
@@ -72,15 +105,31 @@ export function isCreateTournamentRequest(
   )
 }
 
-export type TournamentPreview = {
-  groups: {
-    name: string
-    players: { id: string; name: string; rating: number; seed: number }[]
-  }[]
-  bracketStages: { stage: string; matchCount: number }[]
-  groupMatchCount: number
-  bracketMatchCount: number
-  totalMatchCount: number
+export type TournamentPreview = Omit<
+  TournamentWithDetails,
+  'id' | 'createdAt' | 'updatedAt' | 'deletedAt'
+>
+
+export type TournamentPreviewResponse = SuccessResponse & {
+  tournament: TournamentPreview
+}
+
+export type TournamentPreviewRequest = Omit<CreateTournamentRequest, 'type'> & {
+  type: 'TournamentPreviewRequest'
+}
+
+export function isTournamentPreviewRequest(
+  data: any
+): data is TournamentPreviewRequest {
+  if (typeof data !== 'object' || data === null || data === undefined)
+    return false
+  return (
+    data.type === 'TournamentPreviewRequest' &&
+    typeof data.name === 'string' &&
+    typeof data.groupsCount === 'number' &&
+    typeof data.advancementCount === 'number' &&
+    typeof data.eliminationType === 'string'
+  )
 }
 
 export type EditTournamentRequest = {

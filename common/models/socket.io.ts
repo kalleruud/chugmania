@@ -29,6 +29,8 @@ import type {
   CreateTournamentRequest,
   DeleteTournamentRequest,
   EditTournamentRequest,
+  TournamentPreviewRequest,
+  TournamentPreviewResponse,
   TournamentWithDetails,
 } from './tournament'
 import type { Track } from './track'
@@ -141,6 +143,10 @@ export interface ClientToServerEvents {
   delete_tournament: (
     r: DeleteTournamentRequest,
     callback: (r: SuccessResponse | ErrorResponse) => void
+  ) => void
+  get_tournament_preview: (
+    r: TournamentPreviewRequest,
+    callback: (r: TournamentPreviewResponse | ErrorResponse) => void
   ) => void
 }
 

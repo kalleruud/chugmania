@@ -150,7 +150,7 @@ export const tournamentMatches = sqliteTable('tournament_matches', {
     .references(() => tournaments.id, { onDelete: 'cascade' }),
   name: text().notNull(),
   bracket: text().$type<TournamentBracket>().notNull(),
-  round: integer().notNull(),
+  round: integer(),
   match: text().references(() => matches.id),
   track: text().references(() => tracks.id),
   completedAt: integer('completed_at', { mode: 'timestamp_ms' }),
