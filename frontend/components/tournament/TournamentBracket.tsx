@@ -7,7 +7,7 @@ import type {
 } from '@common/models/tournament'
 import { twMerge } from 'tailwind-merge'
 import MatchRow from '../match/MatchRow'
-import TournamentMatchPlaceholder from './TournamentMatchPlaceholder'
+import TournamentMatchPlaceholder from './TournamentMatchRow'
 
 type TournamentBracketProps = {
   matches: TournamentMatchWithDetails[]

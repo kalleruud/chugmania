@@ -2,9 +2,9 @@ import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
 import { sessionToLookupItem } from '@/lib/lookup-utils'
-import type { EliminationType } from '@backend/database/schema'
 import type {
   CreateTournament,
+  TournamentEliminationType,
   TournamentPreview,
 } from '@common/models/tournament'
 import { Users } from 'lucide-react'
@@ -24,7 +24,7 @@ type TournamentFormProps = Partial<CreateTournament> & ComponentProps<'form'>
 function calculateMaxMatchesPerPlayer(
   playersPerGroup: number,
   totalAdvancingPlayers: number,
-  eliminationType: EliminationType
+  eliminationType: TournamentEliminationType
 ): number {
   if (playersPerGroup < 2) {
     return 0
@@ -69,7 +69,7 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
   const [groupsCount, setGroupsCount] = useState(2)
   const [advancementCount, setAdvancementCount] = useState(1)
   const [eliminationType, setEliminationType] =
-    useState<EliminationType>('single')
+    useState<TournamentEliminationType>('single')
 
   const session = sessions?.find(s => s.id === selectedSessionId)
   const signedUpPlayers = useMemo(() => {
@@ -117,8 +117,6 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
         groupsCount,
         advancementCount,
         eliminationType,
-        groupStageTracks: [],
-        bracketTracks: [],
       })
       .then(r => {
         if (!r.success) return toast.error(r.message)
@@ -127,7 +125,23 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
   }
 
   const handleSubmit = () => {
-    // TODO: Sends the current form state to the backend to create the tournament
+    if (!selectedSessionId) return toast.error('Session is required')
+    toast.promise(
+      socket
+        .emitWithAck('create_tournament', {
+          type: 'CreateTournamentRequest',
+          session: selectedSessionId,
+          name,
+          description,
+          groupsCount,
+          advancementCount,
+          eliminationType,
+        })
+        .then(r => {
+          if (!r.success) throw new Error(r.message)
+        }),
+      loc.no.tournament.toast.create
+    )
   }
 
   if (isLoadingData)
@@ -218,11 +232,11 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
             })
           )}
           value={eliminationType}
-          onValueChange={value => setEliminationType(value as EliminationType)}
+          onValueChange={value =>
+            setEliminationType(value as TournamentEliminationType)
+          }
         />
       </div>
-
-      {/* TODO: Display group preview */}
 
       {preview && (
         <div className='bg-background flex flex-col gap-4 rounded-sm border p-4'>

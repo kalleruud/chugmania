@@ -37,11 +37,6 @@ export type GroupPlayerWithStats = {
   losses: number
 }
 
-export type TournamentTrackAssignment = {
-  stage: string
-  trackId: string
-}
-
 export type CreateTournamentRequest = {
   type: 'CreateTournamentRequest'
   session: string
@@ -50,8 +45,6 @@ export type CreateTournamentRequest = {
   groupsCount: number
   advancementCount: number
   eliminationType: EliminationType
-  groupStageTracks: string[]
-  bracketTracks: TournamentTrackAssignment[]
 }
 
 export function isCreateTournamentRequest(
@@ -62,9 +55,7 @@ export function isCreateTournamentRequest(
   return (
     d.type === 'CreateTournamentRequest' &&
     typeof d.session === 'string' &&
-    typeof d.name === 'string' &&
-    Array.isArray(d.groupStageTracks) &&
-    Array.isArray(d.bracketTracks)
+    typeof d.name === 'string'
   )
 }
 

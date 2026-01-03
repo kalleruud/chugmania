@@ -28,6 +28,7 @@ import {
   tournaments,
   type EliminationType,
   type MatchProgression,
+  type MatchStage,
   type TournamentBracket,
 } from '../../database/schema'
 import { broadcast, type TypedSocket } from '../server'
@@ -204,9 +205,7 @@ export default class TournamentManager {
       request.session,
       request.groupsCount,
       request.advancementCount,
-      request.eliminationType,
-      request.groupStageTracks,
-      request.bracketTracks
+      request.eliminationType
     )
 
     const tournamentDraft = {
@@ -244,9 +243,7 @@ export default class TournamentManager {
     sessionId: string,
     groupsCount: number,
     advancementCount: number,
-    eliminationType: EliminationType,
-    groupStageTracks: string[],
-    bracketTracks: { stage: string; trackId: string }[]
+    eliminationType: EliminationType
   ) {
     const tournamentId = randomUUID()
 
@@ -265,8 +262,7 @@ export default class TournamentManager {
         tournamentId,
         sessionId,
         groups,
-        groupPlayers,
-        groupStageTracks
+        groupPlayers
       )
 
     const totalAdvancing = groupsCount * advancementCount
@@ -275,8 +271,7 @@ export default class TournamentManager {
       groups,
       advancementCount,
       totalAdvancing,
-      eliminationType,
-      bracketTracks
+      eliminationType
     )
 
     return {
@@ -344,8 +339,7 @@ export default class TournamentManager {
     tournamentId: string,
     sessionId: string,
     groups: { id: string; name: string }[],
-    groupPlayers: CreateGroupPlayer[],
-    groupStageTracks: string[]
+    groupPlayers: CreateGroupPlayer[]
   ) {
     const groupWithPlayers = groups.map(group => ({
       ...group,
@@ -375,10 +369,6 @@ export default class TournamentManager {
     }
 
     // TODO: Distribute tracks evenly across group matches
-    const distributedTracks = TournamentManager.distributeTracksBalanced(
-      pairings.length,
-      groupStageTracks
-    )
 
     // Create group matches with assigned tracks
     const matches: CreateMatch[] = []
@@ -386,14 +376,12 @@ export default class TournamentManager {
 
     for (let i = 0; i < pairings.length; i++) {
       const pairing = pairings[i]
-      const trackId = distributedTracks[i]
       const matchId = randomUUID()
 
       matches.push({
         id: matchId,
         user1: pairing.user1,
         user2: pairing.user2,
-        track: trackId,
         session: sessionId,
         stage: 'group',
         status: 'planned',
@@ -403,45 +391,11 @@ export default class TournamentManager {
         tournament: tournamentId,
         name: loc.no.tournament.matchName(pairing.group.name, i + 1),
         bracket: 'group',
-        track: trackId,
         match: matchId,
       })
     }
 
     return { tournamentMatches, matches }
-  }
-
-  private static distributeTracksBalanced(
-    matchCount: number,
-    trackIds: string[]
-  ): string[] {
-    if (trackIds.length === 0) return []
-    if (trackIds.length === 1) return Array(matchCount).fill(trackIds[0])
-
-    const result: string[] = []
-    const trackUsage = new Map<string, number>()
-
-    for (const trackId of trackIds) {
-      trackUsage.set(trackId, 0)
-    }
-
-    for (let i = 0; i < matchCount; i++) {
-      let minUsage = Infinity
-      let selectedTrack = trackIds[0]
-
-      for (const trackId of trackIds) {
-        const usage = trackUsage.get(trackId) ?? 0
-        if (usage < minUsage) {
-          minUsage = usage
-          selectedTrack = trackId
-        }
-      }
-
-      result.push(selectedTrack)
-      trackUsage.set(selectedTrack, (trackUsage.get(selectedTrack) ?? 0) + 1)
-    }
-
-    return result
   }
 
   static generateBracketSlots(
@@ -450,7 +404,7 @@ export default class TournamentManager {
     advancementCount: number,
     totalAdvancing: number,
     eliminationType: EliminationType,
-    bracketTracks: { stage: string; trackId: string }[]
+    bracketTracks: { stage: string; trackId: string }[] = []
   ): CreateTournamentMatch[] {
     const trackMap = new Map(bracketTracks.map(b => [b.stage, b.trackId]))
     const bracketSize = 2 ** Math.ceil(Math.log2(totalAdvancing))
@@ -769,6 +723,13 @@ export default class TournamentManager {
       )
     }
 
+    console.log(
+      new Date().toISOString(),
+      socket.id,
+      'Edited tournament',
+      request.id
+    )
+
     return { success: false, message: 'Not implemented' }
   }
 
@@ -847,7 +808,7 @@ export default class TournamentManager {
       where: eq(matches.id, matchId),
     })
 
-    if (!match || match.status !== 'completed' || !match.winner) {
+    if (match?.status !== 'completed' || !match.winner) {
       return
     }
 
@@ -921,10 +882,10 @@ export default class TournamentManager {
         )
 
       const relevantMatches = groupMatchRows.filter(gm => {
-        const playerIds = playerRows.map(p => p.user)
+        const playerIds = new Set(playerRows.map(p => p.user))
         return (
-          playerIds.includes(gm.matches.user1 ?? '') ||
-          playerIds.includes(gm.matches.user2 ?? '')
+          playerIds.has(gm.matches.user1 ?? '') ||
+          playerIds.has(gm.matches.user2 ?? '')
         )
       })
 
@@ -1184,7 +1145,7 @@ export default class TournamentManager {
     }
 
     const stage = TournamentManager.getBracketStage(
-      pendingMatch.bracket as TournamentBracket,
+      pendingMatch.bracket,
       pendingMatch.round
     )
 
@@ -1234,11 +1195,11 @@ export default class TournamentManager {
         )
       )
 
-    const playerIds = playerRows.map(p => p.user)
+    const playerIds = new Set(playerRows.map(p => p.user))
     const relevantMatches = groupMatchRows.filter(
       gm =>
-        playerIds.includes(gm.matches.user1 ?? '') ||
-        playerIds.includes(gm.matches.user2 ?? '')
+        playerIds.has(gm.matches.user1 ?? '') ||
+        playerIds.has(gm.matches.user2 ?? '')
     )
 
     const allCompleted = relevantMatches.every(
@@ -1282,8 +1243,8 @@ export default class TournamentManager {
 
   private static getBracketStage(
     bracket: TournamentBracket,
-    round: number
-  ): string {
+    round: number | null
+  ): MatchStage {
     if (bracket === 'group') return 'group'
 
     if (bracket === 'lower') {
@@ -1323,9 +1284,7 @@ export default class TournamentManager {
       request.session,
       request.groupsCount,
       request.advancementCount,
-      request.eliminationType,
-      request.groupStageTracks,
-      request.bracketTracks
+      request.eliminationType
     )
 
     const tournamentDraft = {
