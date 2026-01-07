@@ -3,10 +3,18 @@
 ## Commands
 
 - `npm run dev` – dev mode (port 6996)
-- `npm run check` – typecheck + Prettier format check (run before commits)
+- `npm run check` – typecheck + Prettier + Drizzle validation (run before commits)
 - `npm run build` – build frontend + backend
 - `npm run db:gen` – generate Drizzle migration after schema changes
+- `npm run db:migrate` – apply pending migrations
+- `npm run db:studio` – open Drizzle Studio UI
 - No test framework yet; place tests as `*.spec.ts` (backend) or `*.test.tsx` (frontend) next to sources
+
+## Tech Stack
+
+- **Backend:** Express 5, Socket.IO, Drizzle ORM (SQLite), JWT auth
+- **Frontend:** React 19, Vite, Tailwind CSS, shadcn/ui, Luxon (dates)
+- **Shared:** TypeScript strict mode, `@common/*` path alias
 
 ## Code Style
 
@@ -16,20 +24,17 @@
 - Avoid `as const` assertions; rely on type inference or explicit type annotations
 - Avoid nested ternary operations; extract to helper functions or variables for readability
 - Naming: `name.manager.ts` (backend), `PascalCase.tsx` (React), camelCase vars/funcs
-- Imports: use relative paths `@common/*` for shared code
-- Error handling: use `Result<T>` pattern from `common/utils/try-catch.ts` with `{ data, error }` structure
+- Imports: use path aliases `@common/*`, `@/*` (frontend), `@backend/*`
 - No comments unless required; code should be self-documenting
 
 ## Implementation Rules
 
 - Match existing patterns before introducing new ones
 - Implement the simplest solution; avoid unnecessary abstractions
-- Reuse existing components (Button, SearchableDropdown, etc.)
-  - Use `NativeSelect` from `components/ui/native-select.tsx` for dropdowns
-  - Use `Calendar` from `components/ui/calendar.tsx` for date picking
+- Reuse existing components from `frontend/components/`
+  - Use shadcn/ui components where possible from `frontend/components/ui/`
 - Use Tailwind CSS utilities; follow Formula 1 inspired dark-mode design system
-- Use `date-fns` for Calendar component internals, but prefer `luxon` for general date formatting/manipulation in the app
-- After schema changes, run `npm run db:gen` to generate Drizzle migrations
+- Avoid making schema changes unless specifically requested. After schema changes, run `npm run db:gen` to generate Drizzle migrations
 - When adding new database tables, include them in the CSV import/export functionality by updating `AdminManager` in `backend/src/managers/admin.manager.ts` (add table to `TABLE_MAP` and `EXCLUDED_COL_EXPORT`)
 
 ## Reactive Contract
@@ -43,8 +48,19 @@
 ## Project Structure
 
 - `backend/`: Express + Socket.IO server, managers in `src/managers/`, database in `database/`
-- `frontend/`: React + Vite, components in `app/components/`, pages in `app/pages/`
+- `frontend/`: React + Vite, components in `components/`, pages in `app/pages/`
 - `common/`: Shared models/utils consumed by both sides
+- `data/db.sqlite`: SQLite database (auto-created, git-ignored)
+
+## Key Patterns
+
+**Manager Pattern:** Each domain (User, Track, Session, Tournament) has a manager class in `backend/src/managers/` with static methods handling database queries, business logic, and Socket.IO events.
+
+**Global State:** React Context API with three main contexts:
+
+- `ConnectionContext` – Socket.IO connection
+- `DataContext` – Application data (users, tracks, sessions)
+- `AuthContext` – Login state and current user
 
 ## Issue Creation & Formatting
 
@@ -52,45 +68,10 @@ All GitHub issues must follow a consistent, concise format:
 
 **Structure:**
 
-1. **Overview** (1-2 sentences): What is being built and why
+1. **Overview** (1 short paragraph): What is being built and why. If applicable, include a user story.
 2. **Acceptance Requirements** (bullet list): Clear, testable requirements
-3. **Implementation Plan** (checkbox list): Actionable steps organized by phase/area
-
-**Example:**
-
-```markdown
-## Overview
-
-Brief description of what and why in 1-2 sentences.
-
-## Acceptance Requirements
-
-- Feature/fix is testable and verifiable
-- Code follows existing patterns
-- All edge cases handled
-- Tests pass with `npm run check`
-
-## Implementation Steps
-
-### Backend
-
-- [ ] Step 1
-- [ ] Step 2
-
-### Frontend
-
-- [ ] Step 3
-- [ ] Step 4
-
-### Testing
-
-- [ ] Test scenario 1
-- [ ] Test scenario 2
-```
+3. **Flow** (if applicable): Description of the flow of the feature/fix.
+4. **Implementation Plan** (checkbox list): Description of how the different files will be changed to implement the acceptance requirements.
+   - For each file, describe the changes that will be made to it.
 
 Keep descriptions concise—avoid lengthy explanations of current state or background unless critical to understanding.
-
-## Tools
-
-- When needing to search docs, use `context7` tools.
-- If you are unsure how to do something, use `gh_grep` to search code examples from github.
