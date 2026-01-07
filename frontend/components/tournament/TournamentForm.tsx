@@ -79,9 +79,7 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
   const [advancementCount, setAdvancementCount] = useState(1)
   const [eliminationType, setEliminationType] =
     useState<TournamentEliminationType>('single')
-  const [groupStageTracksByRound, setGroupStageTracksByRound] = useState<
-    Record<number, string>
-  >({})
+  const [groupStageTracks, setGroupStageTracks] = useState<string[]>([])
 
   const session = sessions?.find(s => s.id === selectedSessionId)
   const signedUpPlayers = useMemo(() => {
@@ -99,6 +97,12 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
       eliminationType
     )
   }, [preview, advancementCount, groupsCount, eliminationType])
+
+  // Calculate recommended number of tracks so each is used ~2 times
+  const recommendedTrackCount = useMemo(() => {
+    if (!preview?.groupStageRounds) return 0
+    return Math.ceil(preview.groupStageRounds / 2)
+  }, [preview?.groupStageRounds])
 
   function handleSessionChange(sessionId: string) {
     if (sessionId) {
@@ -150,10 +154,8 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
           groupsCount,
           advancementCount,
           eliminationType,
-          groupStageTracksByRound:
-            Object.keys(groupStageTracksByRound).length > 0
-              ? groupStageTracksByRound
-              : undefined,
+          groupStageTracks:
+            groupStageTracks.length > 0 ? groupStageTracks : undefined,
         })
         .then(r => {
           if (!r.success) throw new Error(r.message)
@@ -256,17 +258,22 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
           }
         />
 
-        {preview && preview.groupStageRounds > 0 && (
+        {preview && preview.groupStageRounds > 0 && recommendedTrackCount > 0 && (
           <div className='flex flex-col gap-2'>
-            <Label>{loc.no.tournament.form.trackPerRound}</Label>
-            {Array.from({ length: preview.groupStageRounds }, (_, i) => {
-              const roundNum = i + 1
+            <Label>{loc.no.tournament.form.groupStageTracks}</Label>
+            <p className='text-muted-foreground text-xs'>
+              {loc.no.tournament.form.groupStageTracksHint} (
+              {preview.groupStageRounds} runder, anbefalt {recommendedTrackCount}{' '}
+              baner)
+            </p>
+            {Array.from({ length: recommendedTrackCount }, (_, i) => {
+              const trackIndex = i
               const selectedTrack = tracks?.find(
-                t => t.id === groupStageTracksByRound[roundNum]
+                t => t.id === groupStageTracks[trackIndex]
               )
               return (
-                <div key={roundNum} className='flex flex-col gap-1'>
-                  <Label className='text-xs'>Runde {roundNum}</Label>
+                <div key={trackIndex} className='flex flex-col gap-1'>
+                  <Label className='text-xs'>Bane {trackIndex + 1}</Label>
                   <Combobox
                     className='w-full'
                     placeholder={loc.no.tournament.form.selectTrack}
@@ -275,13 +282,21 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
                       selectedTrack ? trackToLookupItem(selectedTrack) : null
                     }
                     setSelected={value => {
-                      setGroupStageTracksByRound(prev => {
+                      setGroupStageTracks(prev => {
+                        const next = [...prev]
                         if (value?.id) {
-                          return { ...prev, [roundNum]: value.id }
+                          next[trackIndex] = value.id
                         } else {
-                          const { [roundNum]: _, ...rest } = prev
-                          return rest
+                          next.splice(trackIndex, 1)
                         }
+                        // Remove trailing empty entries
+                        while (
+                          next.length > 0 &&
+                          next[next.length - 1] === undefined
+                        ) {
+                          next.pop()
+                        }
+                        return next
                       })
                     }}
                     limit={2}

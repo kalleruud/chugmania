@@ -209,7 +209,7 @@ export default class TournamentManager {
       request.groupsCount,
       request.advancementCount,
       request.eliminationType,
-      request.groupStageTracksByRound
+      request.groupStageTracks
     )
 
     const tournamentDraft = {
@@ -248,7 +248,7 @@ export default class TournamentManager {
     groupsCount: number,
     advancementCount: number,
     eliminationType: EliminationType,
-    groupStageTracksByRound?: Record<number, string>
+    groupStageTracks?: string[]
   ) {
     const tournamentId = randomUUID()
 
@@ -268,7 +268,7 @@ export default class TournamentManager {
         sessionId,
         groups,
         groupPlayers,
-        groupStageTracksByRound
+        groupStageTracks
       )
 
     const totalAdvancing = groupsCount * advancementCount
@@ -347,7 +347,7 @@ export default class TournamentManager {
     sessionId: string,
     groups: { id: string; name: string }[],
     groupPlayers: CreateGroupPlayer[],
-    tracksByRound?: Record<number, string>
+    tracks?: string[] // tracks to cycle through rounds
   ) {
     const groupWithPlayers = groups.map(group => ({
       ...group,
@@ -426,7 +426,14 @@ export default class TournamentManager {
 
     for (const pairing of pairings) {
       const matchId = randomUUID()
-      const trackId = tracksByRound?.[pairing.round] ?? null
+      // Distribute tracks consecutively to minimize track changes
+      // E.g., with 6 rounds and 3 tracks: A,A,B,B,C,C instead of A,B,C,A,B,C
+      let trackId: string | null = null
+      if (tracks && tracks.length > 0) {
+        const roundsPerTrack = Math.ceil(maxRounds / tracks.length)
+        const trackIndex = Math.floor((pairing.round - 1) / roundsPerTrack)
+        trackId = tracks[Math.min(trackIndex, tracks.length - 1)]
+      }
 
       matches.push({
         id: matchId,
