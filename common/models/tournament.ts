@@ -21,9 +21,16 @@ export type CreateGroupPlayer = typeof groupPlayers.$inferInsert
 export type TournamentMatch = typeof tournamentMatches.$inferSelect
 export type CreateTournamentMatch = typeof tournamentMatches.$inferInsert
 
+export type BracketRound = {
+  bracket: TournamentMatch['bracket']
+  round: number
+  matches: TournamentMatch[]
+}
+
 export type TournamentWithDetails = Tournament & {
   groups: GroupWithPlayers[]
   matches: TournamentMatch[]
+  matchesByRound: BracketRound[]
 }
 
 export type GroupWithPlayers = Group & {

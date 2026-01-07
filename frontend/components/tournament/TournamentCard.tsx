@@ -3,10 +3,7 @@ import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
 import type { TournamentBracket } from '@backend/database/schema'
-import type {
-  TournamentMatch,
-  TournamentWithDetails,
-} from '@common/models/tournament'
+import type { TournamentWithDetails } from '@common/models/tournament'
 import { ChevronDownIcon, ChevronUpIcon, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -20,96 +17,6 @@ import TournamentMatchRow from './TournamentMatchRow'
 type TournamentCardProps = {
   tournament: TournamentWithDetails
   className?: string
-}
-
-export type GroupedBracket = {
-  name: string // The value from the 'bracket' column
-  rounds: {
-    roundNumber: number
-    matches: TournamentMatch[]
-  }[]
-}
-
-export function MatchesGroupedByBracket(
-  matches: TournamentMatch[]
-): GroupedBracket[] {
-  // keywords to help sort "Upper" brackets before "Lower" brackets
-  const upperKeywords = ['winner', 'upper', 'group']
-  const lowerKeywords = ['loser', 'lower']
-
-  // Step 1: Group by Bracket Name, then by Round
-  const groupedMap = matches.reduce((acc, match) => {
-    const bracketName = match.bracket
-    const roundNum = match.round ?? 0 // Handle null rounds if necessary, default to 0
-
-    if (!acc.has(bracketName)) {
-      acc.set(bracketName, new Map<number, TournamentMatch[]>())
-    }
-
-    const bracketRounds = acc.get(bracketName)!
-
-    if (!bracketRounds.has(roundNum)) {
-      bracketRounds.set(roundNum, [])
-    }
-
-    bracketRounds.get(roundNum)!.push(match)
-    return acc
-  }, new Map<string, Map<number, TournamentMatch[]>>())
-
-  // Step 2: Convert Map to Array and Sort
-  const result: GroupedBracket[] = Array.from(groupedMap.entries()).map(
-    ([bracketName, roundsMap]) => {
-      // Convert rounds map to array
-      const rounds = Array.from(roundsMap.entries()).map(
-        ([roundNumber, roundMatches]) => {
-          // Sort matches within a specific round (optional, e.g., by ID or SourceRank)
-          // Here we keep them as is or sort by ID for determinism
-          return {
-            roundNumber,
-            matches: roundMatches,
-          }
-        }
-      )
-
-      // Sort rounds ascending (Top to Bottom: Round 1, Round 2...)
-      rounds.sort((a, b) => a.roundNumber - b.roundNumber)
-
-      return {
-        name: bracketName,
-        rounds,
-      }
-    }
-  )
-
-  // Step 3: Sort the Brackets (Upper/Winners first, then Lower/Losers, Grand Final last)
-  result.sort((a, b) => {
-    const nameA = a.name.toLowerCase()
-    const nameB = b.name.toLowerCase()
-
-    const isAUpper = upperKeywords.some(k => nameA.includes(k))
-    const isBUpper = upperKeywords.some(k => nameB.includes(k))
-    const isALower = lowerKeywords.some(k => nameA.includes(k))
-    const isBLower = lowerKeywords.some(k => nameB.includes(k))
-    const isAGrandFinal = nameA.includes('grand')
-    const isBGrandFinal = nameB.includes('grand')
-
-    // Grand Final always comes last
-    if (isAGrandFinal && !isBGrandFinal) return 1
-    if (!isAGrandFinal && isBGrandFinal) return -1
-
-    // If one is Upper and the other isn't, Upper comes first
-    if (isAUpper && !isBUpper) return -1
-    if (!isAUpper && isBUpper) return 1
-
-    // If one is Lower and the other isn't, Lower comes last
-    if (isALower && !isBLower) return 1
-    if (!isALower && isBLower) return -1
-
-    // Fallback: Alphabetical sort
-    return nameA.localeCompare(nameB)
-  })
-
-  return result
 }
 
 export default function TournamentCard({
@@ -219,27 +126,19 @@ export default function TournamentCard({
             ))}
           </div>
 
-          {MatchesGroupedByBracket(tournament.matches).map(bracket => (
-            <div key={bracket.name}>
-              <h4 className='font-f1-bold text-sm uppercase'>
-                {
-                  loc.no.tournament.bracketType[
-                    bracket.name as TournamentBracket
-                  ]
-                }
-              </h4>
-              {bracket.rounds.map(round => (
-                <div key={round.roundNumber} className='flex flex-col gap-1'>
-                  <h5 className='font-f1-bold text-xs uppercase'>
-                    {round.roundNumber}
-                  </h5>
-                  {round.matches.map(match => (
-                    <TournamentMatchRow key={match.id} item={match} />
-                  ))}
-                </div>
-              ))}
-            </div>
-          ))}
+          {tournament.matchesByRound
+            .filter(br => br.bracket !== 'group')
+            .map((bracketRound, index) => (
+              <div key={`${bracketRound.bracket}-${bracketRound.round}-${index}`} className='flex flex-col gap-1'>
+                <h4 className='font-f1-bold text-sm uppercase'>
+                  {loc.no.tournament.bracketType[bracketRound.bracket as TournamentBracket]}{' '}
+                  - {bracketRound.round}
+                </h4>
+                {bracketRound.matches.map(match => (
+                  <TournamentMatchRow key={match.id} item={match} />
+                ))}
+              </div>
+            ))}
         </div>
       )}
     </div>

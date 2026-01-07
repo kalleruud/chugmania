@@ -115,12 +115,14 @@ export default class TournamentManager {
       ),
     })
 
-    const tournamentMatchRows = await db.query.tournamentMatches.findMany({
-      where: and(
-        eq(tournamentMatches.tournament, tournamentId),
-        isNull(tournamentMatches.deletedAt)
-      ),
-    })
+    const tournamentMatchRows = (
+      await db.query.tournamentMatches.findMany({
+        where: and(
+          eq(tournamentMatches.tournament, tournamentId),
+          isNull(tournamentMatches.deletedAt)
+        ),
+      })
+    ).sort((a, b) => (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0))
 
     const matchIds = tournamentMatchRows
       .filter(tm => tm.match)
@@ -175,15 +177,40 @@ export default class TournamentManager {
       }
     })
 
+    // Group matches by bracket+round, preserving createdAt order
+    const matchesByRound = TournamentManager.groupMatchesByRound(tournamentMatches)
+
     return {
       ...tournament,
       groups: groupsWithPlayers,
-      matches: tournamentMatches.toSorted(
-        (a, b) =>
-          (b.round ?? Number.MAX_SAFE_INTEGER) -
-          (a.round ?? Number.MAX_SAFE_INTEGER)
-      ),
+      matches: tournamentMatches,
+      matchesByRound,
     }
+  }
+
+  private static groupMatchesByRound(
+    matches: TournamentMatch[]
+  ): { bracket: TournamentMatch['bracket']; round: number; matches: TournamentMatch[] }[] {
+    const result: { bracket: TournamentMatch['bracket']; round: number; matches: TournamentMatch[] }[] = []
+    let currentGroup: { bracket: TournamentMatch['bracket']; round: number; matches: TournamentMatch[] } | null = null
+
+    for (const match of matches) {
+      const bracket = match.bracket
+      const round = match.round ?? 0
+
+      if (
+        currentGroup &&
+        currentGroup.bracket === bracket &&
+        currentGroup.round === round
+      ) {
+        currentGroup.matches.push(match)
+      } else {
+        currentGroup = { bracket, round, matches: [match] }
+        result.push(currentGroup)
+      }
+    }
+
+    return result
   }
 
   static async onCreateTournament(
@@ -424,7 +451,8 @@ export default class TournamentManager {
     // Track match numbers per group
     const groupMatchCounts = new Map<string, number>()
 
-    for (const pairing of pairings) {
+    for (let i = 0; i < pairings.length; i++) {
+      const pairing = pairings[i]
       const matchId = randomUUID()
       // Cycle tracks for equal distribution across rounds
       // E.g., with 4 rounds and 2 tracks: A,B,A,B (2 matches per track)
@@ -540,32 +568,84 @@ export default class TournamentManager {
         trackMap
       )
 
-    const allMatches = [...upperMatches]
+    if (eliminationType === 'single') {
+      // Single elimination: return in order
+      return upperMatches
+    }
 
-    if (eliminationType === 'double') {
-      const { matches: lowerMatches, meta: lowerMeta } =
-        TournamentManager.buildLowerBracket(
-          tournamentId,
-          upperMeta,
-          bracketSize,
-          trackMap
-        )
-
-      allMatches.push(...lowerMatches)
-
-      const grandFinal = TournamentManager.buildGrandFinal(
+    // Double elimination: interleave upper and lower brackets
+    const { matches: lowerMatches, meta: lowerMeta } =
+      TournamentManager.buildLowerBracket(
         tournamentId,
         upperMeta,
-        lowerMeta,
+        bracketSize,
         trackMap
       )
 
-      if (grandFinal) {
-        allMatches.push(grandFinal)
-      }
+    const grandFinal = TournamentManager.buildGrandFinal(
+      tournamentId,
+      upperMeta,
+      lowerMeta,
+      trackMap
+    )
+
+    // Group upper matches by round
+    const upperByRound = new Map<number, CreateTournamentMatch[]>()
+    for (const m of upperMatches) {
+      const round = m.round ?? 0
+      if (!upperByRound.has(round)) upperByRound.set(round, [])
+      upperByRound.get(round)!.push(m)
     }
 
-    return allMatches
+    // Group lower matches by round
+    const lowerByRound = new Map<number, CreateTournamentMatch[]>()
+    for (const m of lowerMatches) {
+      const round = m.round ?? 0
+      if (!lowerByRound.has(round)) lowerByRound.set(round, [])
+      lowerByRound.get(round)!.push(m)
+    }
+
+    // Interleave: upper round -> corresponding lower rounds -> repeat
+    // Upper rounds go: bracketSize, bracketSize/2, ..., 2
+    // Lower round 1 follows upper round bracketSize
+    // Lower rounds 2,3 follow upper round bracketSize/2
+    // Lower rounds 4,5 follow upper round bracketSize/4
+    // etc.
+    const orderedMatches: CreateTournamentMatch[] = []
+    let lowerRoundIndex = 1
+
+    let upperRound = bracketSize
+    while (upperRound >= 2) {
+      // Add upper round matches
+      const upperRoundMatches = upperByRound.get(upperRound) ?? []
+      orderedMatches.push(...upperRoundMatches)
+
+      // Add corresponding lower round(s)
+      if (upperRound === bracketSize) {
+        // First upper round -> single lower round (losers play each other)
+        const lowerRoundMatches = lowerByRound.get(lowerRoundIndex) ?? []
+        orderedMatches.push(...lowerRoundMatches)
+        lowerRoundIndex++
+      } else {
+        // Subsequent upper rounds -> drop-in round + survivor round
+        const dropInMatches = lowerByRound.get(lowerRoundIndex) ?? []
+        orderedMatches.push(...dropInMatches)
+        lowerRoundIndex++
+
+        const survivorMatches = lowerByRound.get(lowerRoundIndex) ?? []
+        orderedMatches.push(...survivorMatches)
+        lowerRoundIndex++
+      }
+
+      upperRound /= 2
+    }
+
+    // Add grand final last
+    if (grandFinal) {
+      orderedMatches.push(grandFinal)
+    }
+
+    return orderedMatches
   }
 
   private static buildUpperBracket(
