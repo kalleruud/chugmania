@@ -228,7 +228,7 @@ export default function TournamentCard({
                   ]
                 }
               </h4>
-              {bracket.rounds.toReversed().map(round => (
+              {bracket.rounds.map(round => (
                 <div key={round.roundNumber} className='flex flex-col gap-1'>
                   <h5 className='font-f1-bold text-xs uppercase'>
                     {round.roundNumber}

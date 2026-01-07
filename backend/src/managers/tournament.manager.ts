@@ -426,13 +426,12 @@ export default class TournamentManager {
 
     for (const pairing of pairings) {
       const matchId = randomUUID()
-      // Distribute tracks consecutively to minimize track changes
-      // E.g., with 6 rounds and 3 tracks: A,A,B,B,C,C instead of A,B,C,A,B,C
+      // Cycle tracks for equal distribution across rounds
+      // E.g., with 4 rounds and 2 tracks: A,B,A,B (2 matches per track)
       let trackId: string | null = null
       if (tracks && tracks.length > 0) {
-        const roundsPerTrack = Math.ceil(maxRounds / tracks.length)
-        const trackIndex = Math.floor((pairing.round - 1) / roundsPerTrack)
-        trackId = tracks[Math.min(trackIndex, tracks.length - 1)]
+        const trackIndex = (pairing.round - 1) % tracks.length
+        trackId = tracks[trackIndex]
       }
 
       matches.push({
