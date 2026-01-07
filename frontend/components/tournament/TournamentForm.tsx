@@ -1,7 +1,7 @@
 import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
-import { sessionToLookupItem } from '@/lib/lookup-utils'
+import { sessionToLookupItem, trackToLookupItem } from '@/lib/lookup-utils'
 import type {
   CreateTournament,
   TournamentEliminationType,
@@ -21,7 +21,9 @@ import Combobox from '../combobox'
 import { Field, SelectField, TextField } from '../FormFields'
 import { PageHeader, PageSubheader } from '../PageHeader'
 import { SessionRow } from '../session/SessionRow'
+import { TrackRow } from '../track/TrackRow'
 import { Alert, AlertTitle } from '../ui/alert'
+import { Label } from '../ui/label'
 import { Spinner } from '../ui/spinner'
 import GroupCard from './GroupCard'
 
@@ -77,6 +79,9 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
   const [advancementCount, setAdvancementCount] = useState(1)
   const [eliminationType, setEliminationType] =
     useState<TournamentEliminationType>('single')
+  const [groupStageTracksByRound, setGroupStageTracksByRound] = useState<
+    Record<number, string>
+  >({})
 
   const session = sessions?.find(s => s.id === selectedSessionId)
   const signedUpPlayers = useMemo(() => {
@@ -145,6 +150,10 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
           groupsCount,
           advancementCount,
           eliminationType,
+          groupStageTracksByRound:
+            Object.keys(groupStageTracksByRound).length > 0
+              ? groupStageTracksByRound
+              : undefined,
         })
         .then(r => {
           if (!r.success) throw new Error(r.message)
@@ -246,6 +255,44 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
             setEliminationType(value as TournamentEliminationType)
           }
         />
+
+        {preview && preview.groupStageRounds > 0 && (
+          <div className='flex flex-col gap-2'>
+            <Label>{loc.no.tournament.form.trackPerRound}</Label>
+            {Array.from({ length: preview.groupStageRounds }, (_, i) => {
+              const roundNum = i + 1
+              const selectedTrack = tracks?.find(
+                t => t.id === groupStageTracksByRound[roundNum]
+              )
+              return (
+                <div key={roundNum} className='flex flex-col gap-1'>
+                  <Label className='text-xs'>Runde {roundNum}</Label>
+                  <Combobox
+                    className='w-full'
+                    placeholder={loc.no.tournament.form.selectTrack}
+                    items={tracks?.map(trackToLookupItem)}
+                    selected={
+                      selectedTrack ? trackToLookupItem(selectedTrack) : null
+                    }
+                    setSelected={value => {
+                      setGroupStageTracksByRound(prev => {
+                        if (value?.id) {
+                          return { ...prev, [roundNum]: value.id }
+                        } else {
+                          const { [roundNum]: _, ...rest } = prev
+                          return rest
+                        }
+                      })
+                    }}
+                    limit={2}
+                    align='start'
+                    CustomRow={TrackRow}
+                  />
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       {preview && (
@@ -265,6 +312,10 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
             <div className='flex items-center justify-between'>
               <span>Antal matcher per spiller</span>
               <span>{`${Math.max(0, (preview.groups.at(0)?.players.length ?? 0) - 1)} - ${maxMatchesPerPlayer}`}</span>
+            </div>
+            <div className='flex items-center justify-between'>
+              <span>Antall runder i gruppespill</span>
+              <span>{preview.groupStageRounds}</span>
             </div>
           </div>
 

@@ -208,7 +208,8 @@ export default class TournamentManager {
       request.session,
       request.groupsCount,
       request.advancementCount,
-      request.eliminationType
+      request.eliminationType,
+      request.groupStageTracksByRound
     )
 
     const tournamentDraft = {
@@ -246,7 +247,8 @@ export default class TournamentManager {
     sessionId: string,
     groupsCount: number,
     advancementCount: number,
-    eliminationType: EliminationType
+    eliminationType: EliminationType,
+    groupStageTracksByRound?: Record<number, string>
   ) {
     const tournamentId = randomUUID()
 
@@ -260,12 +262,13 @@ export default class TournamentManager {
       playerIds
     )
 
-    const { tournamentMatches, matches } =
+    const { tournamentMatches, matches, groupStageRounds } =
       await TournamentManager.createGroupMatches(
         tournamentId,
         sessionId,
         groups,
-        groupPlayers
+        groupPlayers,
+        groupStageTracksByRound
       )
 
     const totalAdvancing = groupsCount * advancementCount
@@ -283,6 +286,7 @@ export default class TournamentManager {
       groupPlayers,
       tournamentMatches: [...tournamentMatches, ...bracketTournamentMatches],
       matches,
+      groupStageRounds,
     }
   }
 
@@ -342,7 +346,8 @@ export default class TournamentManager {
     tournamentId: string,
     sessionId: string,
     groups: { id: string; name: string }[],
-    groupPlayers: CreateGroupPlayer[]
+    groupPlayers: CreateGroupPlayer[],
+    tracksByRound?: Record<number, string>
   ) {
     const groupWithPlayers = groups.map(group => ({
       ...group,
@@ -357,13 +362,16 @@ export default class TournamentManager {
       group: { id: Group['id']; name: Group['name'] }
       user1: string
       user2: string
+      round: number
     }[][] = []
 
+    let maxRounds = 0
     for (const group of groupWithPlayers) {
       const rounds = TournamentManager.generateRoundRobinRounds(
         group.players,
         group
       )
+      maxRounds = Math.max(maxRounds, rounds.length)
       groupRounds.push(rounds.flat())
     }
 
@@ -373,6 +381,7 @@ export default class TournamentManager {
       group: { id: Group['id']; name: Group['name'] }
       user1: string
       user2: string
+      round: number
     }[] = []
 
     const maxMatchesPerGroup = Math.max(...groupRounds.map(r => r.length))
@@ -408,8 +417,6 @@ export default class TournamentManager {
       pairings.push(match)
     }
 
-    // TODO: Distribute tracks evenly across group matches
-
     // Create group matches with assigned tracks
     const matches: CreateMatch[] = []
     const tournamentMatches: CreateTournamentMatch[] = []
@@ -419,6 +426,7 @@ export default class TournamentManager {
 
     for (const pairing of pairings) {
       const matchId = randomUUID()
+      const trackId = tracksByRound?.[pairing.round] ?? null
 
       matches.push({
         id: matchId,
@@ -427,6 +435,7 @@ export default class TournamentManager {
         session: sessionId,
         stage: 'group',
         status: 'planned',
+        track: trackId,
       })
 
       // Increment match number for this group
@@ -438,11 +447,13 @@ export default class TournamentManager {
         tournament: tournamentId,
         name: loc.no.tournament.matchName(pairing.group.name, matchNumber),
         bracket: 'group',
+        round: pairing.round,
         match: matchId,
+        track: trackId,
       })
     }
 
-    return { tournamentMatches, matches }
+    return { tournamentMatches, matches, groupStageRounds: maxRounds }
   }
 
   /**
@@ -455,7 +466,7 @@ export default class TournamentManager {
   >(
     players: string[],
     group: T
-  ): { group: T; user1: string; user2: string }[][] {
+  ): { group: T; user1: string; user2: string; round: number }[][] {
     if (players.length < 2) return []
 
     // Add a "bye" placeholder if odd number of players
@@ -466,11 +477,17 @@ export default class TournamentManager {
     }
 
     const n = participants.length
-    const rounds: { group: T; user1: string; user2: string }[][] = []
+    const rounds: { group: T; user1: string; user2: string; round: number }[][] =
+      []
 
     // Circle method: fix first player, rotate the rest
     for (let round = 0; round < n - 1; round++) {
-      const roundMatches: { group: T; user1: string; user2: string }[] = []
+      const roundMatches: {
+        group: T
+        user1: string
+        user2: string
+        round: number
+      }[] = []
 
       for (let i = 0; i < n / 2; i++) {
         const home = i === 0 ? 0 : ((round + i - 1) % (n - 1)) + 1
@@ -485,6 +502,7 @@ export default class TournamentManager {
             group,
             user1: player1,
             user2: player2,
+            round: round + 1, // 1-indexed round number
           })
         }
       }
@@ -1403,6 +1421,7 @@ export default class TournamentManager {
       groupPlayers,
       tournamentMatches,
       matches,
+      groupStageRounds,
     } = await TournamentManager.createTournament(
       request.session,
       request.groupsCount,
@@ -1436,6 +1455,9 @@ export default class TournamentManager {
       request.name
     )
 
-    return { success: true, tournament: tournamentWithDetails }
+    return {
+      success: true,
+      tournament: { ...tournamentWithDetails, groupStageRounds },
+    }
   }
 }

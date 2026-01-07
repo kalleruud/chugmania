@@ -45,6 +45,7 @@ export type CreateTournamentRequest = {
   groupsCount: number
   advancementCount: number
   eliminationType: EliminationType
+  groupStageTracksByRound?: Record<number, string> // round number -> track id
 }
 
 export function isCreateTournamentRequest(
@@ -62,7 +63,9 @@ export function isCreateTournamentRequest(
 export type TournamentPreview = Omit<
   TournamentWithDetails,
   'id' | 'createdAt' | 'updatedAt' | 'deletedAt'
->
+> & {
+  groupStageRounds: number
+}
 
 export type TournamentPreviewResponse = SuccessResponse & {
   tournament: TournamentPreview

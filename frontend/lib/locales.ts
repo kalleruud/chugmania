@@ -272,6 +272,7 @@ const no = {
       bracketTracks: 'Baner for sluttspill',
       bracketTracksHint: 'Velg én bane for hver runde.',
       selectTrack: 'Velg bane',
+      trackPerRound: 'Bane per runde i gruppespill',
       trackDistribution: (matches: number, tracks: number) =>
         `${matches} matcher fordelt på ${tracks} bane${tracks > 1 ? 'r' : ''} (~${Math.round(matches / tracks)} per bane)`,
     },
