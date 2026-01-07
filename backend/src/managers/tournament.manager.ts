@@ -368,20 +368,44 @@ export default class TournamentManager {
     }
 
     // Interleave matches from all groups to maximize rest time
-    // Take one match from each group's round in sequence
+    // Spread each group's matches proportionally so all groups finish together
     const pairings: {
       group: { id: Group['id']; name: Group['name'] }
       user1: string
       user2: string
     }[] = []
 
-    const maxMatches = Math.max(...groupRounds.map(r => r.length))
-    for (let i = 0; i < maxMatches; i++) {
-      for (const groupMatches of groupRounds) {
-        if (i < groupMatches.length) {
-          pairings.push(groupMatches[i])
-        }
+    const maxMatchesPerGroup = Math.max(...groupRounds.map(r => r.length))
+
+    // Assign each match a target position to spread evenly across the timeline
+    const matchesWithPosition: {
+      match: (typeof groupRounds)[0][0]
+      targetPosition: number
+    }[] = []
+
+    for (let g = 0; g < groupRounds.length; g++) {
+      const groupMatches = groupRounds[g]
+      const groupMatchCount = groupMatches.length
+
+      for (let m = 0; m < groupMatchCount; m++) {
+        // Normalize match index to [0, 1] range, then scale to max timeline
+        // Add small group offset to interleave groups at similar positions
+        const progress = groupMatchCount > 1 ? m / (groupMatchCount - 1) : 0
+        const targetPosition =
+          progress * maxMatchesPerGroup + g / groupRounds.length
+
+        matchesWithPosition.push({
+          match: groupMatches[m],
+          targetPosition,
+        })
       }
+    }
+
+    // Sort by target position to get final ordering
+    matchesWithPosition.sort((a, b) => a.targetPosition - b.targetPosition)
+
+    for (const { match } of matchesWithPosition) {
+      pairings.push(match)
     }
 
     // TODO: Distribute tracks evenly across group matches
