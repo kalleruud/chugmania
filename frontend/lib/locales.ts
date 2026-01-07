@@ -291,6 +291,7 @@ const no = {
       group: 'Gruppespill',
       upper: 'Upper Bracket',
       lower: 'Lower Bracket',
+      grand_final: 'Grand Finale',
     } as Record<TournamentBracket, string>,
     toast: {
       create: {
@@ -315,6 +316,15 @@ const no = {
       groupRank: (group: string, rank: number) => `${rank}. plass ${group}`,
       matchWinner: (match: string) => `Vinner ${match}`,
       matchLoser: (match: string) => `Taper ${match}`,
+    },
+    lowerRoundName: (round: number) => `Taper Runde ${round}`,
+    roundName: (size: number, isLower: boolean) => {
+      const prefix = isLower ? 'Taper ' : ''
+      if (size === 2) return `${prefix}Finale`
+      if (size === 4) return `${prefix}Semifinale`
+      if (size === 8) return `${prefix}Kvartfinale`
+      if (size === 16) return `${prefix}Åttendelsfinale`
+      return `${prefix}Runde ${size}`
     },
   },
   error: {

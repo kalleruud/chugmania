@@ -81,7 +81,7 @@ export function MatchesGroupedByBracket(
     }
   )
 
-  // Step 3: Sort the Brackets (Upper/Winners first, then Lower/Losers)
+  // Step 3: Sort the Brackets (Upper/Winners first, then Lower/Losers, Grand Final last)
   result.sort((a, b) => {
     const nameA = a.name.toLowerCase()
     const nameB = b.name.toLowerCase()
@@ -90,6 +90,12 @@ export function MatchesGroupedByBracket(
     const isBUpper = upperKeywords.some(k => nameB.includes(k))
     const isALower = lowerKeywords.some(k => nameA.includes(k))
     const isBLower = lowerKeywords.some(k => nameB.includes(k))
+    const isAGrandFinal = nameA.includes('grand')
+    const isBGrandFinal = nameB.includes('grand')
+
+    // Grand Final always comes last
+    if (isAGrandFinal && !isBGrandFinal) return 1
+    if (!isAGrandFinal && isBGrandFinal) return -1
 
     // If one is Upper and the other isn't, Upper comes first
     if (isAUpper && !isBUpper) return -1

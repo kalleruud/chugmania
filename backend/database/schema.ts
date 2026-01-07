@@ -30,7 +30,7 @@ export type MatchStage =
   | 'loser_bronze'
   | 'loser_final'
 export type EliminationType = 'single' | 'double'
-export type TournamentBracket = 'group' | 'upper' | 'lower'
+export type TournamentBracket = 'group' | 'upper' | 'lower' | 'grand_final'
 export type MatchProgression = 'winner' | 'loser'
 
 export const users = sqliteTable('users', {

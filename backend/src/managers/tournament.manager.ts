@@ -122,16 +122,19 @@ export default class TournamentManager {
       ),
     })
 
-    const matchRows: Match[] = await Promise.all(
-      tournamentMatchRows
-        .filter(tm => tm.match)
-        .map(async tm => {
-          const match = await db.query.matches.findFirst({
-            where: and(eq(matches.id, tm.match!), isNull(matches.deletedAt)),
+    const matchIds = tournamentMatchRows
+      .filter(tm => tm.match)
+      .map(tm => tm.match!)
+
+    const matchRows: Match[] =
+      matchIds.length > 0
+        ? await db.query.matches.findMany({
+            where: and(
+              inArray(matches.id, matchIds),
+              isNull(matches.deletedAt)
+            ),
           })
-          return match!
-        })
-    )
+        : []
 
     return {
       tournament,
@@ -348,22 +351,35 @@ export default class TournamentManager {
         .map(p => p.user),
     }))
 
+    // Generate round-robin rounds for each group using circle method
+    // This ensures each player plays at most once per round
+    const groupRounds: {
+      group: { id: Group['id']; name: Group['name'] }
+      user1: string
+      user2: string
+    }[][] = []
+
+    for (const group of groupWithPlayers) {
+      const rounds = TournamentManager.generateRoundRobinRounds(
+        group.players,
+        group
+      )
+      groupRounds.push(rounds.flat())
+    }
+
+    // Interleave matches from all groups to maximize rest time
+    // Take one match from each group's round in sequence
     const pairings: {
       group: { id: Group['id']; name: Group['name'] }
       user1: string
       user2: string
     }[] = []
 
-    // TODO: Use a more efficient algorithm for generating group match pairings
-    // to avoid players playing back to back matches.
-    for (const group of groupWithPlayers) {
-      for (let i = 0; i < group.players.length; i++) {
-        for (let j = i + 1; j < group.players.length; j++) {
-          pairings.push({
-            group: { id: group.id, name: group.name },
-            user1: group.players[i],
-            user2: group.players[j],
-          })
+    const maxMatches = Math.max(...groupRounds.map(r => r.length))
+    for (let i = 0; i < maxMatches; i++) {
+      for (const groupMatches of groupRounds) {
+        if (i < groupMatches.length) {
+          pairings.push(groupMatches[i])
         }
       }
     }
@@ -374,8 +390,10 @@ export default class TournamentManager {
     const matches: CreateMatch[] = []
     const tournamentMatches: CreateTournamentMatch[] = []
 
-    for (let i = 0; i < pairings.length; i++) {
-      const pairing = pairings[i]
+    // Track match numbers per group
+    const groupMatchCounts = new Map<string, number>()
+
+    for (const pairing of pairings) {
       const matchId = randomUUID()
 
       matches.push({
@@ -387,7 +405,10 @@ export default class TournamentManager {
         status: 'planned',
       })
 
-      const matchNumber = (i % groups.length) + 1
+      // Increment match number for this group
+      const currentCount = groupMatchCounts.get(pairing.group.id) ?? 0
+      const matchNumber = currentCount + 1
+      groupMatchCounts.set(pairing.group.id, matchNumber)
 
       tournamentMatches.push({
         tournament: tournamentId,
@@ -398,6 +419,56 @@ export default class TournamentManager {
     }
 
     return { tournamentMatches, matches }
+  }
+
+  /**
+   * Generates round-robin pairings using the circle method.
+   * Each round has floor(n/2) matches where each player plays at most once.
+   * This maximizes rest time between a player's consecutive matches.
+   */
+  private static generateRoundRobinRounds<
+    T extends { id: string; name: string },
+  >(
+    players: string[],
+    group: T
+  ): { group: T; user1: string; user2: string }[][] {
+    if (players.length < 2) return []
+
+    // Add a "bye" placeholder if odd number of players
+    const participants = [...players]
+    const hasBye = participants.length % 2 === 1
+    if (hasBye) {
+      participants.push('BYE')
+    }
+
+    const n = participants.length
+    const rounds: { group: T; user1: string; user2: string }[][] = []
+
+    // Circle method: fix first player, rotate the rest
+    for (let round = 0; round < n - 1; round++) {
+      const roundMatches: { group: T; user1: string; user2: string }[] = []
+
+      for (let i = 0; i < n / 2; i++) {
+        const home = i === 0 ? 0 : ((round + i - 1) % (n - 1)) + 1
+        const away = ((round + (n - 1) - i - 1) % (n - 1)) + 1
+
+        const player1 = participants[home]
+        const player2 = participants[away]
+
+        // Skip matches involving the "bye" placeholder
+        if (player1 !== 'BYE' && player2 !== 'BYE') {
+          roundMatches.push({
+            group,
+            user1: player1,
+            user2: player2,
+          })
+        }
+      }
+
+      rounds.push(roundMatches)
+    }
+
+    return rounds
   }
 
   static generateBracketSlots(
@@ -562,18 +633,19 @@ export default class TournamentManager {
     const matches: CreateTournamentMatch[] = []
     const meta: LowerMatchMeta[] = []
 
-    const track = trackMap.get('Lower Bracket') ?? null
     let lowerRound = 1
 
     const firstUpper = upperMeta.filter(m => m.round === bracketSize)
+    const roundName = TournamentManager.getRoundName(lowerRound, true)
+    const track = trackMap.get(roundName) ?? null
+
     for (let i = 0; i < Math.floor(firstUpper.length / 2); i++) {
       const id = randomUUID()
 
       matches.push({
         id,
         tournament: tournamentId,
-        name:
-          TournamentManager.getRoundName(lowerRound, true) + ' - ' + (i + 1),
+        name: `${roundName} - ${i + 1}`,
         bracket: 'lower',
         round: lowerRound,
         track,
@@ -597,7 +669,7 @@ export default class TournamentManager {
         upperMeta,
         upperRound,
         lowerRound,
-        track
+        trackMap
       )
 
       lowerRound++
@@ -606,7 +678,7 @@ export default class TournamentManager {
         matches,
         meta,
         lowerRound,
-        track
+        trackMap
       )
 
       lowerRound++
@@ -623,12 +695,14 @@ export default class TournamentManager {
     upperMeta: UpperMatchMeta[],
     upperRound: number,
     lowerRound: number,
-    track: string | null
+    trackMap: Map<string, string>
   ) {
     const prevLower = meta.filter(m => m.round === lowerRound - 1)
     const upperLosers = upperMeta.filter(m => m.round === upperRound)
 
     const count = Math.min(prevLower.length, upperLosers.length)
+    const roundName = loc.no.tournament.lowerRoundName(lowerRound)
+    const track = trackMap.get(roundName) ?? null
 
     for (let i = 0; i < count; i++) {
       const id = randomUUID()
@@ -636,7 +710,7 @@ export default class TournamentManager {
       matches.push({
         id,
         tournament: tournamentId,
-        name: `Taper Runde ${lowerRound} - ${i + 1}`,
+        name: `${roundName} - ${i + 1}`,
         bracket: 'lower',
         round: lowerRound,
         track,
@@ -655,10 +729,13 @@ export default class TournamentManager {
     matches: CreateTournamentMatch[],
     meta: LowerMatchMeta[],
     lowerRound: number,
-    track: string | null
+    trackMap: Map<string, string>
   ) {
     const prev = meta.filter(m => m.round === lowerRound - 1)
     if (prev.length <= 1) return
+
+    const roundName = loc.no.tournament.lowerRoundName(lowerRound)
+    const track = trackMap.get(roundName) ?? null
 
     for (let i = 0; i < Math.floor(prev.length / 2); i++) {
       const id = randomUUID()
@@ -666,7 +743,7 @@ export default class TournamentManager {
       matches.push({
         id,
         tournament: tournamentId,
-        name: `Taper Runde ${lowerRound} - ${i + 1}`,
+        name: `${roundName} - ${i + 1}`,
         bracket: 'lower',
         round: lowerRound,
         track,
@@ -697,7 +774,7 @@ export default class TournamentManager {
       id: randomUUID(),
       tournament: tournamentId,
       name: 'Grand Finale',
-      bracket: 'upper',
+      bracket: 'grand_final',
       round: 1,
       track: trackMap.get('Grand Finale') ?? null,
       sourceMatchA: upperFinal.id,
@@ -708,12 +785,7 @@ export default class TournamentManager {
   }
 
   private static getRoundName(size: number, isLower: boolean): string {
-    const prefix = isLower ? 'Taper ' : ''
-    if (size === 2) return `${prefix}Finale`
-    if (size === 4) return `${prefix}Semifinale`
-    if (size === 8) return `${prefix}Kvartfinale`
-    if (size === 16) return `${prefix}Åttendelsfinale`
-    return `${prefix}Runde ${size}`
+    return loc.no.tournament.roundName(size, isLower)
   }
 
   static async onEditTournament(
@@ -887,7 +959,7 @@ export default class TournamentManager {
       const relevantMatches = groupMatchRows.filter(gm => {
         const playerIds = new Set(playerRows.map(p => p.user))
         return (
-          playerIds.has(gm.matches.user1 ?? '') ||
+          playerIds.has(gm.matches.user1 ?? '') &&
           playerIds.has(gm.matches.user2 ?? '')
         )
       })
@@ -1147,9 +1219,26 @@ export default class TournamentManager {
       return
     }
 
+    // Get total lower rounds for proper stage assignment
+    let totalLowerRounds: number | undefined
+    if (pendingMatch.bracket === 'lower') {
+      const lowerMatches = await db
+        .select({ round: tournamentMatches.round })
+        .from(tournamentMatches)
+        .where(
+          and(
+            eq(tournamentMatches.tournament, pendingMatch.tournament),
+            eq(tournamentMatches.bracket, 'lower'),
+            isNull(tournamentMatches.deletedAt)
+          )
+        )
+      totalLowerRounds = Math.max(...lowerMatches.map(m => m.round ?? 0))
+    }
+
     const stage = TournamentManager.getBracketStage(
       pendingMatch.bracket,
-      pendingMatch.round
+      pendingMatch.round,
+      totalLowerRounds
     )
 
     const [newMatch] = await db
@@ -1201,7 +1290,7 @@ export default class TournamentManager {
     const playerIds = new Set(playerRows.map(p => p.user))
     const relevantMatches = groupMatchRows.filter(
       gm =>
-        playerIds.has(gm.matches.user1 ?? '') ||
+        playerIds.has(gm.matches.user1 ?? '') &&
         playerIds.has(gm.matches.user2 ?? '')
     )
 
@@ -1246,13 +1335,20 @@ export default class TournamentManager {
 
   private static getBracketStage(
     bracket: TournamentBracket,
-    round: number | null
+    round: number | null,
+    totalLowerRounds?: number
   ): MatchStage {
     if (bracket === 'group') return 'group'
 
-    if (bracket === 'lower') {
+    if (bracket === 'lower' && round !== null && totalLowerRounds) {
       // Lower bracket uses sequential round numbers
-      return 'group' // Use 'group' as generic stage for lower bracket matches
+      // Map to appropriate loser bracket stage based on position from final
+      const roundsFromEnd = totalLowerRounds - round
+      if (roundsFromEnd === 0) return 'loser_final'
+      if (roundsFromEnd === 1) return 'loser_semi'
+      if (roundsFromEnd === 2 || roundsFromEnd === 3) return 'loser_quarter'
+      if (roundsFromEnd === 4 || roundsFromEnd === 5) return 'loser_eight'
+      return 'group'
     }
 
     // Upper bracket uses bitwise round numbers

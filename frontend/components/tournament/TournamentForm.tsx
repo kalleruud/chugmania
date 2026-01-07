@@ -114,12 +114,12 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
   }, [selectedSessionId, groupsCount, advancementCount, eliminationType])
 
   const requestPreview = () => {
-    if (!selectedSessionId || name === '') return
+    if (!selectedSessionId) return
     socket
       .emitWithAck('get_tournament_preview', {
         type: 'TournamentPreviewRequest',
         session: selectedSessionId,
-        name,
+        name: name || 'Forhåndsvisning',
         description: description === '' ? undefined : description,
         groupsCount,
         advancementCount,
@@ -264,7 +264,7 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
             </div>
             <div className='flex items-center justify-between'>
               <span>Antal matcher per spiller</span>
-              <span>{`${(preview.groups.at(0)?.players.length ?? 0) - 1} - ${maxMatchesPerPlayer}`}</span>
+              <span>{`${Math.max(0, (preview.groups.at(0)?.players.length ?? 0) - 1)} - ${maxMatchesPerPlayer}`}</span>
             </div>
           </div>
 

@@ -26,6 +26,7 @@ export default function TournamentBracket({
 
   const upperBracketMatches = matches.filter(m => m.bracket === 'upper')
   const lowerBracketMatches = matches.filter(m => m.bracket === 'lower')
+  const grandFinalMatches = matches.filter(m => m.bracket === 'grand_final')
 
   // Upper bracket: higher round numbers are earlier (16->8->4->2->1)
   const upperRounds = [...new Set(upperBracketMatches.map(m => m.round))].sort(
@@ -154,6 +155,17 @@ export default function TournamentBracket({
                 round
               )
             )}
+          </div>
+        </div>
+      )}
+
+      {grandFinalMatches.length > 0 && (
+        <div className='flex flex-col gap-2'>
+          <span className='text-muted-foreground text-xs uppercase'>
+            {loc.no.tournament.bracketType.grand_final}
+          </span>
+          <div className='grid auto-cols-fr grid-flow-col gap-4 overflow-x-auto'>
+            {renderRound(grandFinalMatches, 1)}
           </div>
         </div>
       )}
