@@ -1630,23 +1630,42 @@ export default class TournamentManager {
         )
       }
 
-      // If we have both players and a match, simulate it
-      if (user1 && user2 && tm.match && tm.id) {
-        const match = matches.find(m => m.id === tm.match)
-        if (match) {
+      // If we have both players, create/simulate the match
+      if (user1 && user2) {
+        let match = tm.match ? matches.find(m => m.id === tm.match) : undefined
+
+        // If no match exists yet (bracket matches aren't created initially), create one
+        if (!match && tm.match) {
+          // Match ID was set but not found - unexpected state
+          continue
+        } else if (!match) {
+          // Create a new match for this bracket slot
+          const newMatch: CreateMatch = {
+            id: randomUUID(),
+            user1,
+            user2,
+            status: 'completed',
+          }
+          matches.push(newMatch)
+          tm.match = newMatch.id
+          match = newMatch
+        } else {
+          // Update existing match with resolved players
           match.user1 = user1
           match.user2 = user2
-          const winner = TournamentManager.simulateMatchWinner(user1, user2)
-          if (winner) {
-            const loser = user1 === winner ? user2 : user1
+        }
 
-            match.winner = winner
-            match.status = 'completed'
+        // Simulate the match
+        const winner = TournamentManager.simulateMatchWinner(user1, user2)
+        if (winner) {
+          const loser = user1 === winner ? user2 : user1
 
-            matchWinners.set(tm.id, winner)
-            if (loser) {
-              matchLosers.set(tm.id, loser)
-            }
+          match.winner = winner
+          match.status = 'completed'
+
+          matchWinners.set(tm.id!, winner)
+          if (loser) {
+            matchLosers.set(tm.id!, loser)
           }
         }
       }
