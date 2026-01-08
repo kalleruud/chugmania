@@ -77,6 +77,7 @@ export type TournamentPreview = Omit<
   'id' | 'createdAt' | 'updatedAt' | 'deletedAt'
 > & {
   groupStageRounds: number
+  previewMatches: Match[]
 }
 
 export type TournamentPreviewResponse = SuccessResponse & {

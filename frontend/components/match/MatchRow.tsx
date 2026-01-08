@@ -14,24 +14,32 @@ import { NameCellPart } from '../timeentries/TimeEntryRow'
 import { Badge } from '../ui/badge'
 import { Label } from '../ui/label'
 
-export type MatchRowProps = BaseRowProps<Match> & { hideTrack?: boolean }
+export type MatchRowProps = BaseRowProps<Match> & {
+  hideTrack?: boolean
+  user1Override?: UserInfo
+  user2Override?: UserInfo
+  readonly?: boolean
+}
 
 export default function MatchRow({
   className,
   item: match,
   highlight,
   hideTrack,
+  user1Override,
+  user2Override,
+  readonly,
   ...rest
 }: Readonly<MatchRowProps>) {
   const { users, tracks, sessions } = useData()
   const { socket } = useConnection()
   const { isLoggedIn, loggedInUser } = useAuth()
-  const user1 = users?.find(u => u.id === match.user1)
-  const user2 = users?.find(u => u.id === match.user2)
+  const user1 = user1Override ?? users?.find(u => u.id === match.user1)
+  const user2 = user2Override ?? users?.find(u => u.id === match.user2)
   const track = tracks?.find(t => t.id === match.track)
   const session = sessions?.find(s => s.id === match.session)
 
-  const canEdit = isLoggedIn && loggedInUser.role !== 'user'
+  const canEdit = !readonly && isLoggedIn && loggedInUser.role !== 'user'
 
   const isCancelled = match.status === 'cancelled'
   const isCompleted = match.status === 'completed'

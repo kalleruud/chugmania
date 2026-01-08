@@ -1,7 +1,9 @@
 import { useData } from '@/contexts/DataContext'
 import { useTimeEntryInput } from '@/hooks/TimeEntryInputProvider'
 import loc from '@/lib/locales'
+import type { Match } from '@common/models/match'
 import type { TournamentMatch } from '@common/models/tournament'
+import type { UserInfo } from '@common/models/user'
 import { twMerge } from 'tailwind-merge'
 import MatchRow from '../match/MatchRow'
 
@@ -9,17 +11,31 @@ type TournamentMatchRowProps = {
   item: TournamentMatch
   groupName?: string
   className?: string
+  previewMatches?: Match[]
+  readonly?: boolean
 }
 
 export default function TournamentMatchRow({
   item,
   groupName,
   className,
+  previewMatches,
+  readonly,
 }: Readonly<TournamentMatchRowProps>) {
-  const { matches } = useData()
+  const { matches, users } = useData()
   const { openMatch } = useTimeEntryInput()
   if (!item) return undefined
-  const match = matches?.find(m => m.id === item.match)
+
+  const match = previewMatches
+    ? previewMatches.find(m => m.id === item.match)
+    : matches?.find(m => m.id === item.match)
+
+  const user1: UserInfo | undefined = match
+    ? users?.find(u => u.id === match.user1)
+    : undefined
+  const user2: UserInfo | undefined = match
+    ? users?.find(u => u.id === match.user2)
+    : undefined
   const displayName = loc.no.tournament.bracketRoundName(
     item.bracket,
     item.round,
@@ -33,7 +49,10 @@ export default function TournamentMatchRow({
         <MatchRow
           item={match}
           className='w-full'
-          onClick={() => openMatch(match)}
+          onClick={readonly ? undefined : () => openMatch(match)}
+          user1Override={user1}
+          user2Override={user2}
+          readonly={readonly}
         />
       </div>
     )

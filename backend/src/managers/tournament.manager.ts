@@ -1567,7 +1567,11 @@ export default class TournamentManager {
 
     return {
       success: true,
-      tournament: { ...tournamentWithDetails, groupStageRounds },
+      tournament: {
+        ...tournamentWithDetails,
+        groupStageRounds,
+        previewMatches: matches as Match[],
+      },
     }
   }
 }

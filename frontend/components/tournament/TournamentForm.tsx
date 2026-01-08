@@ -26,6 +26,7 @@ import { Alert, AlertTitle } from '../ui/alert'
 import { Label } from '../ui/label'
 import { Spinner } from '../ui/spinner'
 import GroupCard from './GroupCard'
+import TournamentMatchRow from './TournamentMatchRow'
 
 type TournamentFormProps = Partial<CreateTournament> & ComponentProps<'form'>
 
@@ -345,6 +346,34 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
               />
             ))}
           </div>
+
+          {preview.matchesByRound.map((bracketRound, index) => {
+            const group = preview.groups.find(
+              g => g.id === bracketRound.matches[0]?.group
+            )
+            return (
+              <div
+                key={`${bracketRound.bracket}-${bracketRound.round}-${index}`}
+                className='flex flex-col gap-1'>
+                <h4 className='font-f1-bold text-sm uppercase'>
+                  {loc.no.tournament.bracketRoundName(
+                    bracketRound.bracket,
+                    bracketRound.round,
+                    bracketRound.bracket === 'group' ? undefined : undefined
+                  )}
+                </h4>
+                {bracketRound.matches.map(match => (
+                  <TournamentMatchRow
+                    key={match.id}
+                    item={match}
+                    previewMatches={preview.previewMatches}
+                    groupName={group?.name}
+                    readonly
+                  />
+                ))}
+              </div>
+            )
+          })}
         </div>
       )}
     </form>
