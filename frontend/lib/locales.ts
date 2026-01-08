@@ -318,7 +318,6 @@ const no = {
       matchWinner: (match: string) => `Vinner ${match}`,
       matchLoser: (match: string) => `Taper ${match}`,
     },
-    lowerRoundName: (round: number) => `Taper Runde ${round}`,
     roundName: (size: number, isLower: boolean) => {
       const prefix = isLower ? 'Taper ' : ''
       if (size === 2) return `${prefix}Finale`
@@ -326,6 +325,21 @@ const no = {
       if (size === 8) return `${prefix}Kvartfinale`
       if (size === 16) return `${prefix}Åttendelsfinale`
       return `${prefix}Runde ${size}`
+    },
+    bracketRoundName: (
+      bracket: TournamentBracket,
+      round: number,
+      groupName?: string
+    ) => {
+      if (bracket === 'grand_final') return 'Grand Finale'
+      if (bracket === 'group')
+        return groupName ? `${groupName} Runde ${round}` : `Runde ${round}`
+
+      const prefix = bracket === 'lower' ? 'Taper ' : ''
+      if (round === 1) return `${prefix}Finale`
+      if (round === 2) return `${prefix}Semifinale`
+      if (round === 3) return `${prefix}Kvartfinale`
+      return `${prefix}Runde ${round}`
     },
   },
   error: {

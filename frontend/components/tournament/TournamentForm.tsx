@@ -258,56 +258,58 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
           }
         />
 
-        {preview && preview.groupStageRounds > 0 && recommendedTrackCount > 0 && (
-          <div className='flex flex-col gap-2'>
-            <Label>{loc.no.tournament.form.groupStageTracks}</Label>
-            <p className='text-muted-foreground text-xs'>
-              {loc.no.tournament.form.groupStageTracksHint} (
-              {preview.groupStageRounds} runder, anbefalt {recommendedTrackCount}{' '}
-              baner)
-            </p>
-            {Array.from({ length: recommendedTrackCount }, (_, i) => {
-              const trackIndex = i
-              const selectedTrack = tracks?.find(
-                t => t.id === groupStageTracks[trackIndex]
-              )
-              return (
-                <div key={trackIndex} className='flex flex-col gap-1'>
-                  <Label className='text-xs'>Bane {trackIndex + 1}</Label>
-                  <Combobox
-                    className='w-full'
-                    placeholder={loc.no.tournament.form.selectTrack}
-                    items={tracks?.map(trackToLookupItem)}
-                    selected={
-                      selectedTrack ? trackToLookupItem(selectedTrack) : null
-                    }
-                    setSelected={value => {
-                      setGroupStageTracks(prev => {
-                        const next = [...prev]
-                        if (value?.id) {
-                          next[trackIndex] = value.id
-                        } else {
-                          next.splice(trackIndex, 1)
-                        }
-                        // Remove trailing empty entries
-                        while (
-                          next.length > 0 &&
-                          next[next.length - 1] === undefined
-                        ) {
-                          next.pop()
-                        }
-                        return next
-                      })
-                    }}
-                    limit={2}
-                    align='start'
-                    CustomRow={TrackRow}
-                  />
-                </div>
-              )
-            })}
-          </div>
-        )}
+        {preview &&
+          preview.groupStageRounds > 0 &&
+          recommendedTrackCount > 0 && (
+            <div className='flex flex-col gap-2'>
+              <Label>{loc.no.tournament.form.groupStageTracks}</Label>
+              <p className='text-muted-foreground text-xs'>
+                {loc.no.tournament.form.groupStageTracksHint} (
+                {preview.groupStageRounds} runder, anbefalt{' '}
+                {recommendedTrackCount} baner)
+              </p>
+              {Array.from({ length: recommendedTrackCount }, (_, i) => {
+                const trackIndex = i
+                const selectedTrack = tracks?.find(
+                  t => t.id === groupStageTracks[trackIndex]
+                )
+                return (
+                  <div key={trackIndex} className='flex flex-col gap-1'>
+                    <Label className='text-xs'>Bane {trackIndex + 1}</Label>
+                    <Combobox
+                      className='w-full'
+                      placeholder={loc.no.tournament.form.selectTrack}
+                      items={tracks?.map(trackToLookupItem)}
+                      selected={
+                        selectedTrack ? trackToLookupItem(selectedTrack) : null
+                      }
+                      setSelected={value => {
+                        setGroupStageTracks(prev => {
+                          const next = [...prev]
+                          if (value?.id) {
+                            next[trackIndex] = value.id
+                          } else {
+                            next.splice(trackIndex, 1)
+                          }
+                          // Remove trailing empty entries
+                          while (
+                            next.length > 0 &&
+                            next[next.length - 1] === undefined
+                          ) {
+                            next.pop()
+                          }
+                          return next
+                        })
+                      }}
+                      limit={2}
+                      align='start'
+                      CustomRow={TrackRow}
+                    />
+                  </div>
+                )
+              })}
+            </div>
+          )}
       </div>
 
       {preview && (

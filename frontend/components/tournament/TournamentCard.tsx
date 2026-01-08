@@ -2,7 +2,6 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
-import type { TournamentBracket } from '@backend/database/schema'
 import type { TournamentWithDetails } from '@common/models/tournament'
 import { ChevronDownIcon, ChevronUpIcon, Trash2 } from 'lucide-react'
 import { useState } from 'react'
@@ -127,12 +126,43 @@ export default function TournamentCard({
           </div>
 
           {tournament.matchesByRound
+            .filter(br => br.bracket === 'group')
+            .map((bracketRound, index) => (
+              <div
+                key={`${bracketRound.bracket}-${bracketRound.round}-${index}`}
+                className='flex flex-col gap-1'>
+                <h4 className='font-f1-bold text-sm uppercase'>
+                  {loc.no.tournament.bracketRoundName(
+                    bracketRound.bracket,
+                    bracketRound.round
+                  )}
+                </h4>
+                {bracketRound.matches.map(match => {
+                  const group = tournament.groups.find(
+                    g => g.id === match.group
+                  )
+                  return (
+                    <TournamentMatchRow
+                      key={match.id}
+                      item={match}
+                      groupName={group?.name}
+                    />
+                  )
+                })}
+              </div>
+            ))}
+
+          {tournament.matchesByRound
             .filter(br => br.bracket !== 'group')
             .map((bracketRound, index) => (
-              <div key={`${bracketRound.bracket}-${bracketRound.round}-${index}`} className='flex flex-col gap-1'>
+              <div
+                key={`${bracketRound.bracket}-${bracketRound.round}-${index}`}
+                className='flex flex-col gap-1'>
                 <h4 className='font-f1-bold text-sm uppercase'>
-                  {loc.no.tournament.bracketType[bracketRound.bracket as TournamentBracket]}{' '}
-                  - {bracketRound.round}
+                  {loc.no.tournament.bracketRoundName(
+                    bracketRound.bracket,
+                    bracketRound.round
+                  )}
                 </h4>
                 {bracketRound.matches.map(match => (
                   <TournamentMatchRow key={match.id} item={match} />

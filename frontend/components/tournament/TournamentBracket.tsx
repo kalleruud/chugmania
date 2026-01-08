@@ -7,7 +7,6 @@ import type {
 } from '@common/models/tournament'
 import { twMerge } from 'tailwind-merge'
 import MatchRow from '../match/MatchRow'
-import TournamentMatchPlaceholder from './TournamentMatchRow'
 
 type TournamentBracketProps = {
   matches: TournamentMatchWithDetails[]
@@ -32,9 +31,9 @@ export default function TournamentBracket({
   const upperRounds = [...new Set(upperBracketMatches.map(m => m.round))].sort(
     (a, b) => b - a
   )
-  // Lower bracket: sequential round numbers, lower is earlier (1->2->3->4...)
+  // Lower bracket: higher round numbers are earlier (same as upper bracket)
   const lowerRounds = [...new Set(lowerBracketMatches.map(m => m.round))].sort(
-    (a, b) => a - b
+    (a, b) => b - a
   )
 
   function getSourceDescription(match: TournamentMatchWithDetails): {
@@ -58,10 +57,14 @@ export default function TournamentBracket({
     } else if (match.sourceMatchA) {
       const sourceMatch = matches.find(m => m.id === match.sourceMatchA)
       if (sourceMatch) {
+        const sourceName = loc.no.tournament.bracketRoundName(
+          sourceMatch.bracket,
+          sourceMatch.round
+        )
         sourceA =
           match.sourceMatchAProgression === 'winner'
-            ? loc.no.tournament.source.matchWinner(sourceMatch.name)
-            : loc.no.tournament.source.matchLoser(sourceMatch.name)
+            ? loc.no.tournament.source.matchWinner(sourceName)
+            : loc.no.tournament.source.matchLoser(sourceName)
       }
     }
 
@@ -79,10 +82,14 @@ export default function TournamentBracket({
     } else if (match.sourceMatchB) {
       const sourceMatch = matches.find(m => m.id === match.sourceMatchB)
       if (sourceMatch) {
+        const sourceName = loc.no.tournament.bracketRoundName(
+          sourceMatch.bracket,
+          sourceMatch.round
+        )
         sourceB =
           match.sourceMatchBProgression === 'winner'
-            ? loc.no.tournament.source.matchWinner(sourceMatch.name)
-            : loc.no.tournament.source.matchLoser(sourceMatch.name)
+            ? loc.no.tournament.source.matchWinner(sourceName)
+            : loc.no.tournament.source.matchLoser(sourceName)
       }
     }
 
@@ -93,10 +100,15 @@ export default function TournamentBracket({
     roundMatches: TournamentMatchWithDetails[],
     roundNum: number
   ) {
+    const firstMatch = roundMatches[0]
+    const roundName = firstMatch
+      ? loc.no.tournament.bracketRoundName(firstMatch.bracket, firstMatch.round)
+      : `Runde ${roundNum}`
+
     return (
       <div key={roundNum} className='flex flex-col gap-2'>
         <span className='text-muted-foreground text-xs font-medium'>
-          {roundMatches[0]?.name.replace(/\s\d+$/, '') ?? `Runde ${roundNum}`}
+          {roundName}
         </span>
         {roundMatches.map(match => {
           if (match.matchDetails) {
@@ -113,12 +125,19 @@ export default function TournamentBracket({
 
           const { sourceA, sourceB } = getSourceDescription(match)
           return (
-            <TournamentMatchPlaceholder
+            <div
               key={match.id}
-              name={match.name}
-              sourceA={sourceA}
-              sourceB={sourceB}
-            />
+              className='bg-background/50 flex flex-col gap-1 rounded-sm border border-dashed p-3'>
+              <span className='text-muted-foreground text-center text-xs'>
+                {sourceA}
+              </span>
+              <span className='text-muted-foreground text-center text-xs'>
+                vs
+              </span>
+              <span className='text-muted-foreground text-center text-xs'>
+                {sourceB}
+              </span>
+            </div>
           )
         })}
       </div>
@@ -165,7 +184,7 @@ export default function TournamentBracket({
             {loc.no.tournament.bracketType.grand_final}
           </span>
           <div className='grid auto-cols-fr grid-flow-col gap-4 overflow-x-auto'>
-            {renderRound(grandFinalMatches, 1)}
+            {renderRound(grandFinalMatches, 0)}
           </div>
         </div>
       )}

@@ -7,6 +7,7 @@ import type {
   tournamentMatches,
   tournaments,
 } from '../../backend/database/schema'
+import type { Match } from './match'
 import type { SuccessResponse } from './socket.io'
 
 export type Tournament = typeof tournaments.$inferSelect
@@ -20,6 +21,10 @@ export type CreateGroupPlayer = typeof groupPlayers.$inferInsert
 
 export type TournamentMatch = typeof tournamentMatches.$inferSelect
 export type CreateTournamentMatch = typeof tournamentMatches.$inferInsert
+
+export type TournamentMatchWithDetails = TournamentMatch & {
+  matchDetails?: Match
+}
 
 export type BracketRound = {
   bracket: TournamentMatch['bracket']
