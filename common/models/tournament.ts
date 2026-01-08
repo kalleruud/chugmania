@@ -86,6 +86,7 @@ export type TournamentPreviewResponse = SuccessResponse & {
 
 export type TournamentPreviewRequest = Omit<CreateTournamentRequest, 'type'> & {
   type: 'TournamentPreviewRequest'
+  simulate?: boolean
 }
 
 export function isTournamentPreviewRequest(

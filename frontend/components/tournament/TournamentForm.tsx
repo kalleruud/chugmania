@@ -23,6 +23,7 @@ import { PageHeader, PageSubheader } from '../PageHeader'
 import { SessionRow } from '../session/SessionRow'
 import { TrackRow } from '../track/TrackRow'
 import { Alert, AlertTitle } from '../ui/alert'
+import { Checkbox } from '../ui/checkbox'
 import { Label } from '../ui/label'
 import { Spinner } from '../ui/spinner'
 import GroupCard from './GroupCard'
@@ -81,6 +82,7 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
   const [eliminationType, setEliminationType] =
     useState<TournamentEliminationType>('single')
   const [groupStageTracks, setGroupStageTracks] = useState<string[]>([])
+  const [simulate, setSimulate] = useState(false)
 
   const session = sessions?.find(s => s.id === selectedSessionId)
   const signedUpPlayers = useMemo(() => {
@@ -121,7 +123,13 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
 
   useEffect(() => {
     requestPreview()
-  }, [selectedSessionId, groupsCount, advancementCount, eliminationType])
+  }, [
+    selectedSessionId,
+    groupsCount,
+    advancementCount,
+    eliminationType,
+    simulate,
+  ])
 
   const requestPreview = () => {
     if (!selectedSessionId) return
@@ -134,6 +142,7 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
         groupsCount,
         advancementCount,
         eliminationType,
+        simulate,
       })
       .then(r => {
         if (!r.success) return toast.error(r.message)
@@ -259,6 +268,25 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
           }
         />
 
+        <Label className='hover:bg-accent/20 has-aria-checked:border-blue-600 has-aria-checked:bg-blue-50 dark:has-aria-checked:border-primary dark:has-aria-checked:bg-primary/20 flex items-start gap-3 rounded-lg border p-3 hover:cursor-pointer'>
+          <Checkbox
+            id='simulate'
+            checked={simulate}
+            onCheckedChange={(checked: boolean | 'indeterminate') =>
+              setSimulate(checked === true)
+            }
+            defaultChecked
+          />
+          <div className='grid gap-1.5 font-normal'>
+            <p className='text-sm font-medium leading-none'>
+              {loc.no.tournament.form.simulate}
+            </p>
+            <p className='text-muted-foreground text-sm'>
+              {loc.no.tournament.form.simulateHint}
+            </p>
+          </div>
+        </Label>
+
         {preview &&
           preview.groupStageRounds > 0 &&
           recommendedTrackCount > 0 && (
@@ -316,6 +344,7 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
       {preview && (
         <div className='bg-background flex flex-col gap-4 rounded-sm border p-4'>
           <PageSubheader className='p-0' title={'Forhåndsvisning'} />
+
           <PageHeader
             className='p-0'
             title={preview.name}

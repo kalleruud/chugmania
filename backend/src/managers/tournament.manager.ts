@@ -1513,6 +1513,178 @@ export default class TournamentManager {
     return 'group'
   }
 
+  private static simulateMatchWinner(
+    user1Id: string | null | undefined,
+    user2Id: string | null | undefined
+  ): string | null {
+    if (!user1Id || !user2Id) return null
+
+    // Get ratings for both players
+    const rating1 = RatingManager.getUserRatings(user1Id)?.totalRating ?? 100
+    const rating2 = RatingManager.getUserRatings(user2Id)?.totalRating ?? 100
+
+    // Ensure minimum rating floor to prevent edge cases
+    const r1 = Math.max(rating1, 100)
+    const r2 = Math.max(rating2, 100)
+
+    // Win probability proportional to rating
+    // Player with equal rating has 50% chance
+    // Player with 2x rating has ~67% chance
+    const probability = r1 / (r1 + r2)
+
+    return Math.random() < probability ? user1Id : user2Id
+  }
+
+  private static simulateTournament(
+    groupPlayers: CreateGroupPlayer[],
+    tournamentMatches: CreateTournamentMatch[],
+    matches: CreateMatch[]
+  ): void {
+    // Track winners and losers for bracket progression using tournament match IDs
+    const matchWinners = new Map<string, string>() // tmId -> winnerId
+    const matchLosers = new Map<string, string>() // tmId -> loserId
+
+    // Step 1: Simulate all group stage matches
+    const groupTMs = tournamentMatches.filter(tm => tm.bracket === 'group')
+
+    for (const tm of groupTMs) {
+      if (tm.match) {
+        const match = matches.find(m => m.id === tm.match)
+        if (match && match.user1 && match.user2) {
+          const winner = TournamentManager.simulateMatchWinner(
+            match.user1,
+            match.user2
+          )
+          if (winner) {
+            const loser = match.user1 === winner ? match.user2 : match.user1
+
+            match.winner = winner
+            match.status = 'completed'
+
+            matchWinners.set(tm.id, winner)
+            if (loser) {
+              matchLosers.set(tm.id, loser)
+            }
+          }
+        }
+      }
+    }
+
+    // Step 2: Process bracket matches in position order
+    const bracketMatches = tournamentMatches
+      .filter(tm => tm.bracket !== 'group')
+      .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+
+    for (const tm of bracketMatches) {
+      let user1: string | undefined
+      let user2: string | undefined
+
+      // Resolve user1 from sourceGroupA or sourceMatchA
+      if (tm.sourceGroupA && typeof tm.sourceGroupARank === 'number') {
+        user1 = TournamentManager.resolveGroupRankedPlayer(
+          tm.sourceGroupA,
+          tm.sourceGroupARank,
+          groupPlayers,
+          tournamentMatches,
+          matches
+        )
+      } else if (tm.sourceMatchA && tm.sourceMatchAProgression) {
+        user1 = TournamentManager.resolveMatchProgressedPlayer(
+          tm.sourceMatchA,
+          tm.sourceMatchAProgression,
+          matchWinners,
+          matchLosers
+        )
+      }
+
+      // Resolve user2 from sourceGroupB or sourceMatchB
+      if (tm.sourceGroupB && typeof tm.sourceGroupBRank === 'number') {
+        user2 = TournamentManager.resolveGroupRankedPlayer(
+          tm.sourceGroupB,
+          tm.sourceGroupBRank,
+          groupPlayers,
+          tournamentMatches,
+          matches
+        )
+      } else if (tm.sourceMatchB && tm.sourceMatchBProgression) {
+        user2 = TournamentManager.resolveMatchProgressedPlayer(
+          tm.sourceMatchB,
+          tm.sourceMatchBProgression,
+          matchWinners,
+          matchLosers
+        )
+      }
+
+      // If we have both players and a match, simulate it
+      if (user1 && user2 && tm.match) {
+        const match = matches.find(m => m.id === tm.match)
+        if (match) {
+          match.user1 = user1
+          match.user2 = user2
+          const winner = TournamentManager.simulateMatchWinner(user1, user2)
+          if (winner) {
+            const loser = user1 === winner ? user2 : user1
+
+            match.winner = winner
+            match.status = 'completed'
+
+            matchWinners.set(tm.id, winner)
+            if (loser) {
+              matchLosers.set(tm.id, loser)
+            }
+          }
+        }
+      }
+    }
+  }
+
+  private static resolveGroupRankedPlayer(
+    groupId: string,
+    rank: number,
+    groupPlayers: CreateGroupPlayer[],
+    tournamentMatches: CreateTournamentMatch[],
+    matches: CreateMatch[]
+  ): string | undefined {
+    const groupPlayerRecords = groupPlayers.filter(gp => gp.group === groupId)
+
+    // Find all group stage matches for this group
+    const groupTMs = tournamentMatches.filter(
+      tm => tm.group === groupId && tm.bracket === 'group'
+    )
+
+    const groupMatches = groupTMs
+      .map(tm => matches.find(m => m.id === tm.match))
+      .filter((m): m is CreateMatch => m !== undefined)
+      .map(m => ({
+        user1: m.user1 ?? null,
+        user2: m.user2 ?? null,
+        winner: m.winner ?? null,
+      }))
+
+    // Calculate standings
+    const standings = TournamentManager.calculateGroupStandings(
+      groupPlayerRecords,
+      groupMatches
+    )
+
+    return standings[rank - 1]?.user
+  }
+
+  private static resolveMatchProgressedPlayer(
+    sourceMatchId: string,
+    progression: MatchProgression,
+    matchWinners: Map<string, string>,
+    matchLosers: Map<string, string>
+  ): string | undefined {
+    if (progression === 'winner') {
+      return matchWinners.get(sourceMatchId)
+    } else if (progression === 'loser') {
+      return matchLosers.get(sourceMatchId)
+    }
+
+    return undefined
+  }
+
   static async onGetTournamentPreview(
     socket: TypedSocket,
     request: EventReq<'get_tournament_preview'>
@@ -1548,6 +1720,15 @@ export default class TournamentManager {
       advancementCount: request.advancementCount,
       eliminationType: request.eliminationType,
     } satisfies CreateTournament
+
+    // Simulate tournament if requested
+    if (request.simulate) {
+      TournamentManager.simulateTournament(
+        groupPlayers,
+        tournamentMatches,
+        matches
+      )
+    }
 
     const tournamentWithDetails =
       await TournamentManager.toTournamentWithDetails({

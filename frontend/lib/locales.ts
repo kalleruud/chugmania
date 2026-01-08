@@ -275,6 +275,8 @@ const no = {
       trackPerRound: 'Bane per runde i gruppespill',
       trackDistribution: (matches: number, tracks: number) =>
         `${matches} matcher fordelt på ${tracks} bane${tracks > 1 ? 'r' : ''} (~${Math.round(matches / tracks)} per bane)`,
+      simulate: 'Simuler resultat',
+      simulateHint: 'Genererer vinnere for alle matcher i turneringen.',
     },
     preview: {
       totalMatches: 'Totalt antall matcher',
