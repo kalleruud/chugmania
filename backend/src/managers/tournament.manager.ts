@@ -1519,18 +1519,34 @@ export default class TournamentManager {
   ): string | null {
     if (!user1Id || !user2Id) return null
 
-    // Get ratings for both players
-    const rating1 = RatingManager.getUserRatings(user1Id)?.totalRating ?? 100
-    const rating2 = RatingManager.getUserRatings(user2Id)?.totalRating ?? 100
+    // Get ratings for both players (ratings range from ~600 to 1600, or 0 if no rating)
+    const rating1 = RatingManager.getUserRatings(user1Id)?.totalRating ?? 0
+    const rating2 = RatingManager.getUserRatings(user2Id)?.totalRating ?? 0
 
-    // Ensure minimum rating floor to prevent edge cases
-    const r1 = Math.max(rating1, 100)
-    const r2 = Math.max(rating2, 100)
+    // Handle players with no rating
+    const hasRating1 = rating1 > 0
+    const hasRating2 = rating2 > 0
 
-    // Win probability proportional to rating
-    // Player with equal rating has 50% chance
-    // Player with 2x rating has ~67% chance
-    const probability = r1 / (r1 + r2)
+    // If both have no rating, 50/50 chance
+    if (!hasRating1 && !hasRating2) {
+      return Math.random() < 0.5 ? user1Id : user2Id
+    }
+
+    // If only one has a rating, that player always wins
+    if (hasRating1 && !hasRating2) {
+      return user1Id
+    }
+    if (!hasRating1 && hasRating2) {
+      return user2Id
+    }
+
+    // Both have ratings - use rating-based probability
+    // With ratings 600-1600, we want 1600 to beat 600 with 90%+ probability
+    // Using formula: P(player1 wins) = rating1^2.5 / (rating1^2.5 + rating2^2.5)
+    // This gives: 1600^2.5 / (1600^2.5 + 600^2.5) ≈ 0.915 (~91.5%)
+    const r1Power = Math.pow(rating1, 2.5)
+    const r2Power = Math.pow(rating2, 2.5)
+    const probability = r1Power / (r1Power + r2Power)
 
     return Math.random() < probability ? user1Id : user2Id
   }
@@ -1548,23 +1564,22 @@ export default class TournamentManager {
     const groupTMs = tournamentMatches.filter(tm => tm.bracket === 'group')
 
     for (const tm of groupTMs) {
-      if (tm.match) {
-        const match = matches.find(m => m.id === tm.match)
-        if (match && match.user1 && match.user2) {
-          const winner = TournamentManager.simulateMatchWinner(
-            match.user1,
-            match.user2
-          )
-          if (winner) {
-            const loser = match.user1 === winner ? match.user2 : match.user1
+      if (!(tm.match && tm.id)) continue
+      const match = matches.find(m => m.id === tm.match)
+      if (match?.user1 && match.user2) {
+        const winner = TournamentManager.simulateMatchWinner(
+          match.user1,
+          match.user2
+        )
+        if (winner) {
+          const loser = match.user1 === winner ? match.user2 : match.user1
 
-            match.winner = winner
-            match.status = 'completed'
+          match.winner = winner
+          match.status = 'completed'
 
-            matchWinners.set(tm.id, winner)
-            if (loser) {
-              matchLosers.set(tm.id, loser)
-            }
+          matchWinners.set(tm.id, winner)
+          if (loser) {
+            matchLosers.set(tm.id, loser)
           }
         }
       }
@@ -1616,7 +1631,7 @@ export default class TournamentManager {
       }
 
       // If we have both players and a match, simulate it
-      if (user1 && user2 && tm.match) {
+      if (user1 && user2 && tm.match && tm.id) {
         const match = matches.find(m => m.id === tm.match)
         if (match) {
           match.user1 = user1
