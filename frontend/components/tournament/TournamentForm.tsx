@@ -22,7 +22,6 @@ import { Field, SelectField, TextField } from '../FormFields'
 import { SessionRow } from '../session/SessionRow'
 import { TrackRow } from '../track/TrackRow'
 import { Alert, AlertTitle } from '../ui/alert'
-import { Checkbox } from '../ui/checkbox'
 import { Label } from '../ui/label'
 import { Spinner } from '../ui/spinner'
 import TournamentCard from './TournamentCard'
@@ -48,7 +47,6 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
   const [eliminationType, setEliminationType] =
     useState<TournamentEliminationType>('single')
   const [groupStageTracks, setGroupStageTracks] = useState<string[]>([])
-  const [simulate, setSimulate] = useState(false)
 
   const session = sessions?.find(s => s.id === selectedSessionId)
   const signedUpPlayers = useMemo(() => {
@@ -80,7 +78,7 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
     groupsCount,
     advancementCount,
     eliminationType,
-    simulate,
+    groupStageTracks,
   ])
 
   const requestPreview = () => {
@@ -94,7 +92,6 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
         groupsCount,
         advancementCount,
         eliminationType,
-        simulate,
       })
       .then(r => {
         if (!r.success) return toast.error(r.message)
@@ -222,25 +219,6 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
             setEliminationType(value as TournamentEliminationType)
           }
         />
-
-        <Label className='hover:bg-accent/20 has-aria-checked:border-blue-600 has-aria-checked:bg-blue-50 dark:has-aria-checked:border-primary dark:has-aria-checked:bg-primary/20 flex items-start gap-3 rounded-lg border p-3 hover:cursor-pointer'>
-          <Checkbox
-            id='simulate'
-            checked={simulate}
-            onCheckedChange={(checked: boolean | 'indeterminate') =>
-              setSimulate(checked === true)
-            }
-            defaultChecked
-          />
-          <div className='grid gap-1.5 font-normal'>
-            <p className='text-sm font-medium leading-none'>
-              {loc.no.tournament.form.simulate}
-            </p>
-            <p className='text-muted-foreground text-sm'>
-              {loc.no.tournament.form.simulateHint}
-            </p>
-          </div>
-        </Label>
 
         {preview &&
           preview.groups.length > 0 &&
