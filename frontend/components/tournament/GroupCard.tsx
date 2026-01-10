@@ -18,6 +18,12 @@ export default function GroupCard({
 }: Readonly<GroupCardProps>) {
   const { users } = useData()
 
+  const totalMatches = (group.players.length * (group.players.length - 1)) / 2
+  const totalPlayedMatches = group.players.reduce(
+    (acc, player) => acc + player.wins,
+    0
+  )
+
   const sortedPlayers = group.players.toSorted((a, b) => {
     if (b.wins !== a.wins) return b.wins - a.wins
     if (a.losses !== b.losses) return a.losses - b.losses
@@ -34,7 +40,7 @@ export default function GroupCard({
       <div className='flex items-baseline justify-between'>
         <h3 className='text-lg'>{loc.no.tournament.groupName(group.number)}</h3>
         <p className='text-muted-foreground text-sm'>
-          {sortedPlayers.length} spillere
+          {totalPlayedMatches} / {totalMatches}
         </p>
       </div>
 

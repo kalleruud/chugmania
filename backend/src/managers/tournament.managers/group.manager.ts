@@ -44,7 +44,7 @@ export default class GroupManager {
       (_, i) =>
         ({
           id: randomUUID(),
-          number: i + 1,
+          number: i,
           tournament: tournamentId,
           updatedAt: null,
           createdAt: new Date(),

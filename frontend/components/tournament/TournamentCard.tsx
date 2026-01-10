@@ -8,6 +8,7 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
 import ConfirmationButton from '../ConfirmationButton'
+import { PageSubheader } from '../PageHeader'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
 import GroupCard from './GroupCard'
@@ -111,14 +112,11 @@ export default function TournamentCard({
 
       {expanded && (
         <div className='flex flex-col gap-4'>
-          <div className='flex items-center justify-between px-2'>
-            <h4 className='font-f1-bold text-sm uppercase'>
-              {loc.no.tournament.groupStage}
-            </h4>
-            <span className='text-muted-foreground text-xs'>
-              {completedGroupMatches}/{totalGroupMatches} matcher
-            </span>
-          </div>
+          <PageSubheader
+            title={loc.no.tournament.groupStage}
+            description={`${completedGroupMatches} / ${totalGroupMatches} matcher`}
+          />
+
           <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
             {tournament.groups.map(group => (
               <GroupCard
