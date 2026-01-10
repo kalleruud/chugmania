@@ -186,7 +186,7 @@ export default function Combobox<T extends ComboboxLookupItem>({
                 {emptyLabel ?? 'No results'}
               </div>
             ) : (
-              <ul className='max-h-64 w-full overflow-y-auto overflow-x-hidden p-1'>
+              <ul className='max-h-40 w-full overflow-y-auto overflow-x-hidden p-1'>
                 {results.map(item => (
                   <li key={item.id} className='list-none'>
                     <Button

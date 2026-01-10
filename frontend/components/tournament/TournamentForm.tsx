@@ -166,7 +166,6 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
               .map(sessionToLookupItem)}
             selected={session ? sessionToLookupItem(session) : null}
             setSelected={value => handleSessionChange(value?.id ?? '')}
-            limit={2}
             CustomRow={SessionRow}
           />
           {session && (
