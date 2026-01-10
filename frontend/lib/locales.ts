@@ -258,7 +258,7 @@ const no = {
     pending: 'Venter',
     matchName: (group: string, match: number) => `${group} Match ${match}`,
     groupName: (number: number) =>
-      `Gruppe ${String.fromCodePoint(number + 0x30)}`,
+      `Gruppe ${String.fromCodePoint(number + 64)}`,
     form: {
       name: 'Navn',
       session: 'Velg session',

@@ -149,7 +149,6 @@ export default function TournamentCard({
                     <TournamentMatchRow
                       key={match.id}
                       item={match}
-                      match={matches?.find(m => m.id === match.match)}
                       groupName={loc.no.tournament.groupName(
                         group?.number ?? 0
                       )}

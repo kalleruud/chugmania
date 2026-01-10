@@ -29,42 +29,10 @@ import TournamentCard from './TournamentCard'
 
 type TournamentFormProps = Partial<CreateTournament> & ComponentProps<'form'>
 
-function calculateMaxMatchesPerPlayer(
-  playersPerGroup: number,
-  totalAdvancingPlayers: number,
-  eliminationType: TournamentEliminationType
-): number {
-  if (playersPerGroup < 2) {
-    return 0
-  }
-
-  // Group stage (round-robin)
-  const groupStageMatches = playersPerGroup - 1
-
-  // Normalize advancing players to next power of two
-  const bracketSize = Math.pow(
-    2,
-    Math.ceil(Math.log2(Math.max(1, totalAdvancingPlayers)))
-  )
-
-  const rounds = Math.log2(bracketSize)
-
-  let knockoutMatches: number
-
-  if (eliminationType === 'single') {
-    knockoutMatches = rounds
-  } else {
-    // Matches your actual double-elimination structure
-    knockoutMatches = rounds + 2
-  }
-
-  return groupStageMatches + knockoutMatches
-}
-
 export default function TournamentForm(props: Readonly<TournamentFormProps>) {
   const { socket } = useConnection()
   const navigate = useNavigate()
-  const { sessions, rankings, users, tracks, isLoadingData } = useData()
+  const { sessions, users, tracks, isLoadingData } = useData()
   const [searchParams, setSearchParams] = useSearchParams()
 
   const selectedSessionId = searchParams.get('session')
@@ -90,20 +58,6 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
       .map(s => users.find(u => u.id === s.user.id))
       .filter(u => u !== undefined)
   }, [session, users])
-
-  const maxMatchesPerPlayer = useMemo(() => {
-    return calculateMaxMatchesPerPlayer(
-      preview?.groups.at(-1)?.players.length ?? 0,
-      advancementCount * groupsCount,
-      eliminationType
-    )
-  }, [preview, advancementCount, groupsCount, eliminationType])
-
-  // Calculate recommended number of tracks so each is used ~2 times
-  const recommendedTrackCount = useMemo(() => {
-    if (!preview?.groups.length) return 0
-    return Math.ceil(preview.groups.length / 2)
-  }, [preview?.groups.length])
 
   function handleSessionChange(sessionId: string) {
     if (sessionId) {
@@ -288,53 +242,55 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
           </div>
         </Label>
 
-        {preview && preview.groups.length > 0 && recommendedTrackCount > 0 && (
-          <div className='flex flex-col gap-2'>
-            <Label>{loc.no.tournament.form.groupStageTracks}</Label>
-            <p className='text-muted-foreground text-xs'>
-              {loc.no.tournament.form.groupStageTracksHint} (
-              {preview.groups.length} runder, anbefalt {recommendedTrackCount}{' '}
-              baner)
-            </p>
-            {Array.from({ length: recommendedTrackCount }, (_, i) => {
-              const trackIndex = i
-              const selectedTrack = tracks?.find(
-                t => t.id === groupStageTracks[trackIndex]
-              )
-              return (
-                <div key={trackIndex} className='flex flex-col gap-1'>
-                  <Label className='text-xs'>Bane {trackIndex + 1}</Label>
-                  <Combobox
-                    className='w-full'
-                    placeholder={loc.no.tournament.form.selectTrack}
-                    items={tracks?.map(trackToLookupItem)}
-                    selected={
-                      selectedTrack ? trackToLookupItem(selectedTrack) : null
-                    }
-                    setSelected={value => {
-                      setGroupStageTracks(prev => {
-                        const next = [...prev]
-                        if (value?.id) {
-                          next[trackIndex] = value.id
-                        } else {
-                          next.splice(trackIndex, 1)
-                        }
-                        // Remove trailing empty entries
-                        while (next.length > 0 && next.at(-1) === undefined) {
-                          next.pop()
-                        }
-                        return next
-                      })
-                    }}
-                    limit={2}
-                    align='start'
-                    CustomRow={TrackRow}
-                  />
-                </div>
-              )
-            })}
-          </div>
-        )}
+        {preview &&
+          preview.groups.length > 0 &&
+          preview.groupStageTrackCount > 0 && (
+            <div className='flex flex-col gap-2'>
+              <Label>{loc.no.tournament.form.groupStageTracks}</Label>
+              <p className='text-muted-foreground text-xs'>
+                {loc.no.tournament.form.groupStageTracksHint} (
+                {preview.rounds.filter(r => r.bracket === 'group').length}{' '}
+                runder, anbefalt {preview.groupStageTrackCount} baner)
+              </p>
+              {Array.from({ length: preview.groupStageTrackCount }, (_, i) => {
+                const trackIndex = i
+                const selectedTrack = tracks?.find(
+                  t => t.id === groupStageTracks[trackIndex]
+                )
+                return (
+                  <div key={trackIndex} className='flex flex-col gap-1'>
+                    <Label className='text-xs'>Bane {trackIndex + 1}</Label>
+                    <Combobox
+                      className='w-full'
+                      placeholder={loc.no.tournament.form.selectTrack}
+                      items={tracks?.map(trackToLookupItem)}
+                      selected={
+                        selectedTrack ? trackToLookupItem(selectedTrack) : null
+                      }
+                      setSelected={value => {
+                        setGroupStageTracks(prev => {
+                          const next = [...prev]
+                          if (value?.id) {
+                            next[trackIndex] = value.id
+                          } else {
+                            next.splice(trackIndex, 1)
+                          }
+                          // Remove trailing empty entries
+                          while (next.length > 0 && next.at(-1) === undefined) {
+                            next.pop()
+                          }
+                          return next
+                        })
+                      }}
+                      limit={2}
+                      align='start'
+                      CustomRow={TrackRow}
+                    />
+                  </div>
+                )
+              })}
+            </div>
+          )}
       </form>
 
       {preview && <TournamentCard tournament={preview} />}

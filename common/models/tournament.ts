@@ -33,6 +33,9 @@ export type TournamentRound = {
 }
 
 export type TournamentWithDetails = Tournament & {
+  maxMatchesPerPlayer: number
+  minMatchesPerPlayer: number
+  groupStageTrackCount: number
   groups: GroupWithPlayers[]
   rounds: TournamentRound[]
 }

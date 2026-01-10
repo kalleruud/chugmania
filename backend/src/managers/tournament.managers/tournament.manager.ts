@@ -121,8 +121,25 @@ export default class TournamentManager {
       matches
     )
 
+    // Calculate min and max matches per player
+    const { min, max } = TournamentMatchManager.calculateMinMaxMatchesPerPlayer(
+      {
+        groups: groupsWithPlayers,
+        advancementCount: tournament.advancementCount,
+        eliminationType: tournament.eliminationType,
+      }
+    )
+
+    // Calculate recommended number of tracks so each is used ~2 times
+    const groupStageTrackCount = Math.ceil(
+      matchesByRound.filter(r => r.bracket === 'group').length / 2
+    )
+
     return {
       ...tournament,
+      maxMatchesPerPlayer: max,
+      minMatchesPerPlayer: min,
+      groupStageTrackCount,
       groups: groupsWithPlayers,
       rounds: matchesByRound,
     }

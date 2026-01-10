@@ -9,6 +9,7 @@ import type {
   CreateGroupPlayer,
   CreateTournamentMatch,
   Group,
+  GroupWithPlayers,
   TournamentMatch,
 } from '@common/models/tournament'
 import { and, asc, eq, inArray, isNull } from 'drizzle-orm'
@@ -760,5 +761,43 @@ export default class TournamentMatchManager {
 
       await MatchManager.setPlayer(dependentMatchId, side, userId)
     }
+  }
+
+  static calculateMinMaxMatchesPerPlayer(tournament: {
+    groups: GroupWithPlayers[]
+    advancementCount: number
+    eliminationType: EliminationType
+  }): { min: number; max: number } {
+    const largestGroup = tournament.groups.reduce(
+      (max, group) => Math.max(max, group.players.length),
+      0
+    )
+
+    if (largestGroup < 2) return { min: 0, max: 0 }
+
+    // Group stage (round-robin)
+    const groupStageMatches = largestGroup - 1
+
+    // Normalize advancing players to next power of two
+    const totalAdvancingPlayers =
+      tournament.advancementCount * tournament.groups.length
+    const bracketSize = Math.pow(
+      2,
+      Math.ceil(Math.log2(Math.max(1, totalAdvancingPlayers)))
+    )
+
+    const rounds = Math.log2(bracketSize)
+
+    let knockoutMatches: number
+
+    if (tournament.eliminationType === 'single') {
+      knockoutMatches = rounds
+    } else {
+      // Matches your actual double-elimination structure
+      knockoutMatches = rounds + 2
+    }
+
+    // TOOD: Include tiebreaker matches
+    return { min: groupStageMatches, max: groupStageMatches + knockoutMatches }
   }
 }
