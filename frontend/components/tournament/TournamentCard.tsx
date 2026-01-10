@@ -43,8 +43,12 @@ export default function TournamentCard({
     )
   }
 
-  const groupMatches = tournament.matches.filter(m => m.bracket === 'group')
-  const bracketMatches = tournament.matches.filter(m => m.bracket !== 'group')
+  const groupMatches = tournament.rounds
+    .filter(m => m.bracket === 'group')
+    .flatMap(r => r.matches)
+  const bracketMatches = tournament.rounds
+    .filter(m => m.bracket !== 'group')
+    .flatMap(r => r.matches)
 
   const completedGroupMatches = groupMatches.filter(
     gm =>
@@ -125,7 +129,7 @@ export default function TournamentCard({
             ))}
           </div>
 
-          {tournament.matchesByRound
+          {tournament.rounds
             .filter(br => br.bracket === 'group')
             .map((bracketRound, index) => (
               <div
@@ -145,6 +149,7 @@ export default function TournamentCard({
                     <TournamentMatchRow
                       key={match.id}
                       item={match}
+                      match={matches?.find(m => m.id === match.match)}
                       groupName={loc.no.tournament.groupName(
                         group?.number ?? 0
                       )}
@@ -154,7 +159,7 @@ export default function TournamentCard({
               </div>
             ))}
 
-          {tournament.matchesByRound
+          {tournament.rounds
             .filter(br => br.bracket !== 'group')
             .map((bracketRound, index) => (
               <div

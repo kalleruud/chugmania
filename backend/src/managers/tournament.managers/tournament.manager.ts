@@ -14,7 +14,6 @@ import {
   isDeleteTournamentRequest,
   isEditTournamentRequest,
   isTournamentPreviewRequest,
-  type BracketRound,
   type CreateGroup,
   type CreateGroupPlayer,
   type CreateTournament,
@@ -23,6 +22,7 @@ import {
   type GroupWithPlayers,
   type Tournament,
   type TournamentMatch,
+  type TournamentRound,
   type TournamentWithDetails,
 } from '@common/models/tournament'
 import { and, eq, isNull } from 'drizzle-orm'
@@ -116,23 +116,25 @@ export default class TournamentManager {
     })
 
     // Sort matches in correct display order, then group by bracket+round
-    const matchesByRound =
-      TournamentManager.groupMatchesByRound(tournamentMatches)
+    const matchesByRound = TournamentManager.generateRounds(
+      tournamentMatches,
+      matches
+    )
 
     return {
       ...tournament,
       groups: groupsWithPlayers,
-      matches: tournamentMatches,
-      matchesByRound,
+      rounds: matchesByRound,
     }
   }
 
-  private static groupMatchesByRound(
-    matches: TournamentMatch[]
-  ): BracketRound[] {
-    const groups = new Map<string, BracketRound>()
+  private static generateRounds(
+    tournamentMatches: TournamentMatch[],
+    matches: Match[]
+  ): TournamentRound[] {
+    const groups = new Map<string, TournamentRound>()
 
-    for (const match of matches) {
+    for (const match of tournamentMatches) {
       const key = `${match.bracket}-${match.round ?? 0}`
 
       if (!groups.has(key)) {
@@ -144,7 +146,10 @@ export default class TournamentManager {
       }
 
       const group = groups.get(key)!
-      group.matches.push(match)
+      group.matches.push({
+        ...match,
+        matchDetails: matches.find(m => m.id === match.match) ?? null,
+      })
     }
 
     return Array.from(groups.values())

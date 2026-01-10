@@ -1,55 +1,54 @@
 import { useData } from '@/contexts/DataContext'
 import { useTimeEntryInput } from '@/hooks/TimeEntryInputProvider'
 import loc from '@/lib/locales'
-import type { Match } from '@common/models/match'
-import type { TournamentMatch } from '@common/models/tournament'
+import type { TournamentMatchWithDetails } from '@common/models/tournament'
 import type { UserInfo } from '@common/models/user'
 import { twMerge } from 'tailwind-merge'
 import MatchRow from '../match/MatchRow'
 
 type TournamentMatchRowProps = {
-  item: TournamentMatch
+  item: TournamentMatchWithDetails
   groupName?: string
   className?: string
-  previewMatches?: Match[]
   readonly?: boolean
 }
 
 export default function TournamentMatchRow({
-  item,
+  item: tournamentMatch,
   groupName,
   className,
-  previewMatches,
   readonly,
 }: Readonly<TournamentMatchRowProps>) {
-  const { matches, users } = useData()
+  const { users } = useData()
   const { openMatch } = useTimeEntryInput()
-  if (!item) return undefined
+  if (!tournamentMatch) return undefined
 
-  const match = previewMatches
-    ? previewMatches.find(m => m.id === item.match)
-    : matches?.find(m => m.id === item.match)
+  const user1: UserInfo | undefined = tournamentMatch.matchDetails
+    ? users?.find(u => u.id === tournamentMatch.matchDetails?.user1)
+    : undefined
 
-  const user1: UserInfo | undefined = match
-    ? users?.find(u => u.id === match.user1)
+  const user2: UserInfo | undefined = tournamentMatch.matchDetails
+    ? users?.find(u => u.id === tournamentMatch.matchDetails?.user2)
     : undefined
-  const user2: UserInfo | undefined = match
-    ? users?.find(u => u.id === match.user2)
-    : undefined
+
   const displayName = loc.no.tournament.bracketRoundName(
-    item.bracket,
-    item.round ?? 0,
+    tournamentMatch.bracket,
+    tournamentMatch.round ?? 0,
     groupName
   )
 
-  if (match)
+  if (tournamentMatch.matchDetails)
     return (
       <div className='bg-background/50 flex w-full flex-col items-center justify-center rounded-sm border p-2'>
         <span>{displayName}</span>
         <MatchRow
-          item={match}
+          item={tournamentMatch.matchDetails}
           className='w-full'
-          onClick={readonly ? undefined : () => openMatch(match)}
+          onClick={
+            readonly
+              ? undefined
+              : () => openMatch(tournamentMatch.matchDetails!)
+          }
           user1Override={user1}
           user2Override={user2}
           readonly={readonly}
