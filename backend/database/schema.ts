@@ -129,7 +129,7 @@ export const groups = sqliteTable('groups', {
   tournament: text()
     .notNull()
     .references(() => tournaments.id, { onDelete: 'cascade' }),
-  name: text().notNull(),
+  number: integer().notNull(),
 })
 
 export const groupPlayers = sqliteTable('group_players', {
@@ -140,6 +140,9 @@ export const groupPlayers = sqliteTable('group_players', {
   user: text()
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),
+  totalMatches: integer().notNull().default(0),
+  wins: integer().notNull().default(0),
+  losses: integer().notNull().default(0),
   seed: integer().notNull(),
 })
 

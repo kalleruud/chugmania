@@ -28,8 +28,8 @@ export type TournamentMatchWithDetails = TournamentMatch & {
 
 export type BracketRound = {
   bracket: TournamentMatch['bracket']
-  round: number
   matches: TournamentMatch[]
+  round: number
 }
 
 export type TournamentWithDetails = Tournament & {
@@ -72,16 +72,8 @@ export function isCreateTournamentRequest(
   )
 }
 
-export type TournamentPreview = Omit<
-  TournamentWithDetails,
-  'id' | 'createdAt' | 'updatedAt' | 'deletedAt'
-> & {
-  groupStageRounds: number
-  previewMatches: Match[]
-}
-
 export type TournamentPreviewResponse = SuccessResponse & {
-  tournament: TournamentPreview
+  tournament: TournamentWithDetails
 }
 
 export type TournamentPreviewRequest = Omit<CreateTournamentRequest, 'type'> & {

@@ -5,7 +5,7 @@ import { sessionToLookupItem, trackToLookupItem } from '@/lib/lookup-utils'
 import type {
   CreateTournament,
   TournamentEliminationType,
-  TournamentPreview,
+  TournamentWithDetails,
 } from '@common/models/tournament'
 import { Users } from 'lucide-react'
 import {
@@ -71,7 +71,7 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
 
   const selectedSessionId = searchParams.get('session')
 
-  const [preview, setPreview] = useState<TournamentPreview | undefined>(
+  const [preview, setPreview] = useState<TournamentWithDetails | undefined>(
     undefined
   )
 

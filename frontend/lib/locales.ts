@@ -257,7 +257,8 @@ const no = {
     bracket: 'Sluttspill',
     pending: 'Venter',
     matchName: (group: string, match: number) => `${group} Match ${match}`,
-    groupName: (group: string) => `Gruppe ${group}`,
+    groupName: (number: number) =>
+      `Gruppe ${String.fromCodePoint(number + 0x30)}`,
     form: {
       name: 'Navn',
       session: 'Velg session',
@@ -357,6 +358,8 @@ const no = {
     ]),
     retryAction: 'Gå tilbake',
     messages: {
+      loser_not_found:
+        'Taper mangler! Matchen har fått en vinner selv om ikke to spillere var involvert.',
       session_not_selected:
         'Du må velge en session, vennligst ikke reproduser.',
       update_email: 'Du må oppdatere e-post og passord før du kan gjøre noe.',

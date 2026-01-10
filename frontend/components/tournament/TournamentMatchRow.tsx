@@ -38,7 +38,7 @@ export default function TournamentMatchRow({
     : undefined
   const displayName = loc.no.tournament.bracketRoundName(
     item.bracket,
-    item.round,
+    item.round ?? 0,
     groupName
   )
 

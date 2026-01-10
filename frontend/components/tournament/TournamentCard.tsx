@@ -134,7 +134,7 @@ export default function TournamentCard({
                 <h4 className='font-f1-bold text-sm uppercase'>
                   {loc.no.tournament.bracketRoundName(
                     bracketRound.bracket,
-                    bracketRound.round
+                    bracketRound.matches.at(0)?.round!
                   )}
                 </h4>
                 {bracketRound.matches.map(match => {
@@ -145,7 +145,9 @@ export default function TournamentCard({
                     <TournamentMatchRow
                       key={match.id}
                       item={match}
-                      groupName={group?.name}
+                      groupName={loc.no.tournament.groupName(
+                        group?.number ?? 0
+                      )}
                     />
                   )
                 })}

@@ -4,6 +4,7 @@ export type Match = typeof matches.$inferSelect
 export type CreateMatch = typeof matches.$inferInsert
 
 export type MatchStatus = 'planned' | 'completed' | 'cancelled'
+export type MatchSide = 'A' | 'B'
 
 export type CreateMatchRequest = {
   type: 'CreateMatchRequest'

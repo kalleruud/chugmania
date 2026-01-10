@@ -2,19 +2,21 @@ import {
   isCreateMatchRequest,
   isDeleteMatchRequest,
   isEditMatchRequest,
+  type CreateMatch,
   type CreateMatchRequest,
   type EditMatchRequest,
   type Match,
+  type MatchSide,
 } from '@common/models/match'
 import type { EventReq, EventRes } from '@common/models/socket.io'
 import { and, desc, eq, getTableColumns, isNull, sql } from 'drizzle-orm'
 import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
-import { matches, sessions } from '../../database/schema'
+import { matches, sessions, type MatchProgression } from '../../database/schema'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import RatingManager from './rating.manager'
-import TournamentManager from './tournament.manager'
+import TournamentManager from './tournament.managers/tournament.manager'
 
 export default class MatchManager {
   private static validateMatchState(
@@ -59,6 +61,46 @@ export default class MatchManager {
       .orderBy(desc(matches.createdAt))
   }
 
+  static async createMatch(sessionId: string | null, trackId: string | null) {
+    const [match] = await db
+      .insert(matches)
+      .values({
+        session: sessionId,
+        track: trackId,
+      } satisfies CreateMatch)
+      .returning()
+    return match.id
+  }
+
+  static async setPlayer(matchId: string, side: MatchSide, userId: string) {
+    await db
+      .update(matches)
+      .set({ [side === 'A' ? matches.user1.name : matches.user2.name]: userId })
+      .where(eq(matches.id, matchId))
+  }
+
+  static async getProgressedUser(
+    matchId: string,
+    progression: MatchProgression
+  ) {
+    const match = await db.query.matches.findFirst({
+      where: eq(matches.id, matchId),
+    })
+    if (!match) throw new Error(loc.no.error.messages.not_in_db(matchId))
+    if (!match.winner) {
+      throw new Error(
+        `Tried to get ${progression} for match ${matchId} but it has no winner`
+      )
+    }
+
+    const loser = match.user1 === match.winner ? match.user2 : match.user1
+    if (!loser) {
+      throw new Error(loc.no.error.messages.loser_not_found)
+    }
+
+    return progression === 'winner' ? match.winner : loser
+  }
+
   static async onCreateMatch(
     socket: TypedSocket,
     request: EventReq<'create_match'>
@@ -82,7 +124,10 @@ export default class MatchManager {
     broadcast('all_matches', await MatchManager.getAllMatches())
     broadcast('all_rankings', await RatingManager.onGetRatings())
 
-    if (match.winner) await TournamentManager.onMatchCompleted(match.id)
+    if (match.winner) {
+      await TournamentManager.onMatchUpdated(match, match.createdAt)
+    }
+
     return { success: true }
   }
 
@@ -115,18 +160,22 @@ export default class MatchManager {
           ? new Date(updates.deletedAt)
           : updates.deletedAt,
       })
-      .where(eq(matches.id, preImageMatch.id))
+      .where(eq(matches.id, id))
       .returning()
 
     console.debug(new Date().toISOString(), socket.id, 'Updated match', id)
+
+    if (
+      (preImageMatch.winner || res.winner) &&
+      preImageMatch.winner !== res.winner
+    ) {
+      await TournamentManager.onMatchUpdated(res, res.updatedAt!)
+    }
 
     await RatingManager.recalculate()
     broadcast('all_matches', await MatchManager.getAllMatches())
     broadcast('all_rankings', await RatingManager.onGetRatings())
 
-    if (res.winner && preImageMatch.winner !== res.winner) {
-      await TournamentManager.onMatchCompleted(res.id)
-    }
     return { success: true }
   }
 
