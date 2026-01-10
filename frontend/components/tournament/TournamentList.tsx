@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom'
 import { PageSubheader } from '../PageHeader'
 import { Button } from '../ui/button'
 import { Empty } from '../ui/empty'
-import TournamentView from './TournamentCard'
+import TournamentView from './TournamentView'
 
 type TournamentListProps = {
   sessionId: string

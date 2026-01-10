@@ -24,7 +24,7 @@ import { TrackRow } from '../track/TrackRow'
 import { Alert, AlertTitle } from '../ui/alert'
 import { Label } from '../ui/label'
 import { Spinner } from '../ui/spinner'
-import TournamentView from './TournamentCard'
+import TournamentView from './TournamentView'
 
 type TournamentFormProps = Partial<CreateTournament> & ComponentProps<'form'>
 

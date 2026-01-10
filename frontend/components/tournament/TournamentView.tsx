@@ -11,7 +11,6 @@ import { PageSubheader } from '../PageHeader'
 import { Badge } from '../ui/badge'
 import GroupCard from './GroupCard'
 import TournamentMatchRow from './TournamentMatchRow'
-import { Label } from '../ui/label'
 
 type TournamentViewProps = {
   tournament: TournamentWithDetails
@@ -85,7 +84,7 @@ export default function TournamentView({
         </div>
       </div>
 
-      <div className='flex flex-col gap-4'>
+      <div className='flex flex-col gap-8'>
         <div className='grid grid-cols-1 gap-2 pb-4 sm:grid-cols-2'>
           {tournament.groups.map(group => (
             <GroupCard
@@ -106,7 +105,7 @@ export default function TournamentView({
           .map((bracketRound, index) => (
             <div
               key={`${bracketRound.bracket}-${bracketRound.round}-${index}`}
-              className='flex flex-col gap-1'>
+              className='flex flex-col gap-2'>
               {bracketRound.matches.map(match => {
                 const group = tournament.groups.find(g => g.id === match.group)
                 return (
