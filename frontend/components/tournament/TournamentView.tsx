@@ -7,7 +7,7 @@ import { Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
 import ConfirmationButton from '../ConfirmationButton'
-import { PageSubheader } from '../PageHeader'
+import { PageHeader } from '../PageHeader'
 import { Badge } from '../ui/badge'
 import GroupCard from './GroupCard'
 import TournamentMatchRow from './TournamentMatchRow'
@@ -84,8 +84,8 @@ export default function TournamentView({
         </div>
       </div>
 
-      <div className='flex flex-col gap-8'>
-        <div className='grid grid-cols-1 gap-2 pb-4 sm:grid-cols-2'>
+      <div className='flex flex-col gap-4'>
+        <div className='grid grid-cols-1 gap-2 sm:grid-cols-2'>
           {tournament.groups.map(group => (
             <GroupCard
               key={group.id}
@@ -95,29 +95,36 @@ export default function TournamentView({
           ))}
         </div>
 
-        <PageSubheader
-          title={loc.no.tournament.groupStage}
-          description={`${completedGroupMatches} / ${totalGroupMatches} matcher`}
-        />
+        <div className='flex flex-col'>
+          <PageHeader
+            className='py-0'
+            title={loc.no.tournament.groupStage}
+            description={`${completedGroupMatches} / ${totalGroupMatches} matcher`}
+          />
 
-        {tournament.rounds
-          .filter(br => br.bracket === 'group')
-          .map((bracketRound, index) => (
-            <div
-              key={`${bracketRound.bracket}-${bracketRound.round}-${index}`}
-              className='flex flex-col gap-2'>
-              {bracketRound.matches.map(match => {
-                const group = tournament.groups.find(g => g.id === match.group)
-                return (
-                  <TournamentMatchRow
-                    key={match.id}
-                    item={match}
-                    groupName={loc.no.tournament.groupName(group?.number ?? 0)}
-                  />
-                )
-              })}
-            </div>
-          ))}
+          {tournament.rounds
+            .filter(br => br.bracket === 'group')
+            .map((bracketRound, index) => (
+              <div
+                key={`${bracketRound.bracket}-${bracketRound.round}-${index}`}
+                className='flex flex-col gap-2'>
+                {bracketRound.matches.map(match => {
+                  const group = tournament.groups.find(
+                    g => g.id === match.group
+                  )
+                  return (
+                    <TournamentMatchRow
+                      key={match.id}
+                      item={match}
+                      groupName={loc.no.tournament.groupName(
+                        group?.number ?? 0
+                      )}
+                    />
+                  )
+                })}
+              </div>
+            ))}
+        </div>
 
         {tournament.rounds
           .filter(br => br.bracket !== 'group')

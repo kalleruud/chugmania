@@ -206,7 +206,7 @@ export default class TournamentManager {
       playerIds
     )
 
-    const { tournamentMatches, matches, groupStageRounds } =
+    const { tournamentMatches, matches } =
       await TournamentMatchManager.createGroupMatches(
         tournament.id,
         session,
@@ -228,7 +228,7 @@ export default class TournamentManager {
       tournament,
       groups,
       groupPlayers,
-      tournamentMatches,
+      tournamentMatches: tournamentMatches.concat(bracketTournamentMatches),
       matches,
     }
   }

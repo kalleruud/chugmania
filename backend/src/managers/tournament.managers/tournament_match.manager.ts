@@ -105,13 +105,11 @@ export default class TournamentMatchManager {
       round: number
     }[][] = []
 
-    let maxRounds = 0
     for (const group of groupWithPlayers) {
       const rounds = TournamentMatchManager.generateRoundRobinRounds(
         group.players,
         group
       )
-      maxRounds = Math.max(maxRounds, rounds.length)
       groupRounds.push(rounds.flat())
     }
 
@@ -212,7 +210,7 @@ export default class TournamentMatchManager {
       })
     }
 
-    return { tournamentMatches, matches, groupStageRounds: maxRounds }
+    return { tournamentMatches, matches }
   }
 
   static generateBracketSlots(
