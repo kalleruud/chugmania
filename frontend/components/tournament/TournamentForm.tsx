@@ -19,15 +19,13 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import Combobox from '../combobox'
 import { Field, SelectField, TextField } from '../FormFields'
-import { PageHeader, PageSubheader } from '../PageHeader'
 import { SessionRow } from '../session/SessionRow'
 import { TrackRow } from '../track/TrackRow'
 import { Alert, AlertTitle } from '../ui/alert'
 import { Checkbox } from '../ui/checkbox'
 import { Label } from '../ui/label'
 import { Spinner } from '../ui/spinner'
-import GroupCard from './GroupCard'
-import TournamentMatchRow from './TournamentMatchRow'
+import TournamentCard from './TournamentCard'
 
 type TournamentFormProps = Partial<CreateTournament> & ComponentProps<'form'>
 
@@ -103,9 +101,9 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
 
   // Calculate recommended number of tracks so each is used ~2 times
   const recommendedTrackCount = useMemo(() => {
-    if (!preview?.groupStageRounds) return 0
-    return Math.ceil(preview.groupStageRounds / 2)
-  }, [preview?.groupStageRounds])
+    if (!preview?.groups.length) return 0
+    return Math.ceil(preview.groups.length / 2)
+  }, [preview?.groups.length])
 
   function handleSessionChange(sessionId: string) {
     if (sessionId) {
@@ -137,7 +135,7 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
       .emitWithAck('get_tournament_preview', {
         type: 'TournamentPreviewRequest',
         session: selectedSessionId,
-        name: name || 'Forhåndsvisning',
+        name: 'Forhåndsvisning',
         description: description === '' ? undefined : description,
         groupsCount,
         advancementCount,
@@ -183,8 +181,11 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
     )
 
   return (
-    <form className='flex flex-col gap-4' onSubmit={handleSubmit} {...props}>
-      <div className='bg-background flex flex-col gap-4 rounded-sm border p-4'>
+    <div className='flex flex-col gap-4'>
+      <form
+        className='bg-background flex flex-col gap-4 rounded-sm border p-4'
+        onSubmit={handleSubmit}
+        {...props}>
         <Field
           id='name'
           name={loc.no.tournament.form.name}
@@ -287,124 +288,56 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
           </div>
         </Label>
 
-        {preview &&
-          preview.groupStageRounds > 0 &&
-          recommendedTrackCount > 0 && (
-            <div className='flex flex-col gap-2'>
-              <Label>{loc.no.tournament.form.groupStageTracks}</Label>
-              <p className='text-muted-foreground text-xs'>
-                {loc.no.tournament.form.groupStageTracksHint} (
-                {preview.groupStageRounds} runder, anbefalt{' '}
-                {recommendedTrackCount} baner)
-              </p>
-              {Array.from({ length: recommendedTrackCount }, (_, i) => {
-                const trackIndex = i
-                const selectedTrack = tracks?.find(
-                  t => t.id === groupStageTracks[trackIndex]
-                )
-                return (
-                  <div key={trackIndex} className='flex flex-col gap-1'>
-                    <Label className='text-xs'>Bane {trackIndex + 1}</Label>
-                    <Combobox
-                      className='w-full'
-                      placeholder={loc.no.tournament.form.selectTrack}
-                      items={tracks?.map(trackToLookupItem)}
-                      selected={
-                        selectedTrack ? trackToLookupItem(selectedTrack) : null
-                      }
-                      setSelected={value => {
-                        setGroupStageTracks(prev => {
-                          const next = [...prev]
-                          if (value?.id) {
-                            next[trackIndex] = value.id
-                          } else {
-                            next.splice(trackIndex, 1)
-                          }
-                          // Remove trailing empty entries
-                          while (
-                            next.length > 0 &&
-                            next[next.length - 1] === undefined
-                          ) {
-                            next.pop()
-                          }
-                          return next
-                        })
-                      }}
-                      limit={2}
-                      align='start'
-                      CustomRow={TrackRow}
-                    />
-                  </div>
-                )
-              })}
-            </div>
-          )}
-      </div>
-
-      {preview && (
-        <div className='bg-background flex flex-col gap-4 rounded-sm border p-4'>
-          <PageSubheader className='p-0' title={'Forhåndsvisning'} />
-
-          <PageHeader
-            className='p-0'
-            title={preview.name}
-            description={preview.description}
-          />
-
+        {preview && preview.groups.length > 0 && recommendedTrackCount > 0 && (
           <div className='flex flex-col gap-2'>
-            <div className='flex items-center justify-between'>
-              <span>Totalt antall matcher</span>
-              <span>{preview.matches.length}</span>
-            </div>
-            <div className='flex items-center justify-between'>
-              <span>Antal matcher per spiller</span>
-              <span>{`${Math.max(0, (preview.groups.at(0)?.players.length ?? 0) - 1)} - ${maxMatchesPerPlayer}`}</span>
-            </div>
-            <div className='flex items-center justify-between'>
-              <span>Antall runder i gruppespill</span>
-              <span>{preview.groupStageRounds}</span>
-            </div>
-          </div>
-
-          <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
-            {preview.groups.map(group => (
-              <GroupCard
-                key={group.id}
-                group={group}
-                advancementCount={preview.advancementCount}
-              />
-            ))}
-          </div>
-
-          {preview.matchesByRound.map((bracketRound, index) => {
-            const group = preview.groups.find(
-              g => g.id === bracketRound.matches[0]?.group
-            )
-            return (
-              <div
-                key={`${bracketRound.bracket}-${bracketRound.round}-${index}`}
-                className='flex flex-col gap-1'>
-                <h4 className='font-f1-bold text-sm uppercase'>
-                  {loc.no.tournament.bracketRoundName(
-                    bracketRound.bracket,
-                    bracketRound.round,
-                    bracketRound.bracket === 'group' ? undefined : undefined
-                  )}
-                </h4>
-                {bracketRound.matches.map(match => (
-                  <TournamentMatchRow
-                    key={match.id}
-                    item={match}
-                    previewMatches={preview.previewMatches}
-                    groupName={group?.name}
-                    readonly
+            <Label>{loc.no.tournament.form.groupStageTracks}</Label>
+            <p className='text-muted-foreground text-xs'>
+              {loc.no.tournament.form.groupStageTracksHint} (
+              {preview.groups.length} runder, anbefalt {recommendedTrackCount}{' '}
+              baner)
+            </p>
+            {Array.from({ length: recommendedTrackCount }, (_, i) => {
+              const trackIndex = i
+              const selectedTrack = tracks?.find(
+                t => t.id === groupStageTracks[trackIndex]
+              )
+              return (
+                <div key={trackIndex} className='flex flex-col gap-1'>
+                  <Label className='text-xs'>Bane {trackIndex + 1}</Label>
+                  <Combobox
+                    className='w-full'
+                    placeholder={loc.no.tournament.form.selectTrack}
+                    items={tracks?.map(trackToLookupItem)}
+                    selected={
+                      selectedTrack ? trackToLookupItem(selectedTrack) : null
+                    }
+                    setSelected={value => {
+                      setGroupStageTracks(prev => {
+                        const next = [...prev]
+                        if (value?.id) {
+                          next[trackIndex] = value.id
+                        } else {
+                          next.splice(trackIndex, 1)
+                        }
+                        // Remove trailing empty entries
+                        while (next.length > 0 && next.at(-1) === undefined) {
+                          next.pop()
+                        }
+                        return next
+                      })
+                    }}
+                    limit={2}
+                    align='start'
+                    CustomRow={TrackRow}
                   />
-                ))}
-              </div>
-            )
-          })}
-        </div>
-      )}
-    </form>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </form>
+
+      {preview && <TournamentCard tournament={preview} />}
+    </div>
   )
 }
