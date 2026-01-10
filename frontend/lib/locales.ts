@@ -261,8 +261,10 @@ const no = {
       `Gruppe ${String.fromCodePoint(number + 65)}`,
     form: {
       name: 'Navn',
+      namePlaceholder: 'Chugmania World Championship 20**',
       session: 'Velg session',
       description: 'Beskrivelse',
+      descriptionPlaceholder: 'En jævel av en fest...',
       groupsCount: 'Antall grupper',
       groupsCountHint: (players: number) => `~${players} per gruppe`,
       advancementCount: 'Antall som går videre per gruppe',

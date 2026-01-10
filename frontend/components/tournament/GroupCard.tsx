@@ -33,7 +33,7 @@ export default function GroupCard({
   return (
     <div
       className={twMerge(
-        'bg-background flex flex-col gap-2 rounded-lg border p-4',
+        'bg-background flex flex-col gap-2 rounded border p-4',
         className
       )}
       {...props}>

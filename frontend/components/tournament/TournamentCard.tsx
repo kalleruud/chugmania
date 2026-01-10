@@ -3,32 +3,42 @@ import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
 import type { TournamentWithDetails } from '@common/models/tournament'
-import { ChevronDownIcon, ChevronUpIcon, Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import { Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
 import ConfirmationButton from '../ConfirmationButton'
 import { PageSubheader } from '../PageHeader'
 import { Badge } from '../ui/badge'
-import { Button } from '../ui/button'
 import GroupCard from './GroupCard'
 import TournamentMatchRow from './TournamentMatchRow'
+import { Label } from '../ui/label'
 
-type TournamentCardProps = {
+type TournamentViewProps = {
   tournament: TournamentWithDetails
+  isReadOnly?: boolean
   className?: string
 }
 
-export default function TournamentCard({
+export default function TournamentView({
   tournament,
+  isReadOnly = false,
   className,
-}: Readonly<TournamentCardProps>) {
+}: Readonly<TournamentViewProps>) {
   const { socket } = useConnection()
   const { isLoggedIn, loggedInUser } = useAuth()
   const { matches } = useData()
-  const [expanded, setExpanded] = useState(true)
 
-  const canEdit = isLoggedIn && loggedInUser.role !== 'user'
+  const canEdit = !isReadOnly && isLoggedIn && loggedInUser.role !== 'user'
+
+  const groupMatches = tournament.rounds
+    .filter(m => m.bracket === 'group')
+    .flatMap(r => r.matches)
+
+  const totalGroupMatches = groupMatches.length
+  const completedGroupMatches = groupMatches.filter(
+    gm =>
+      gm.match && matches?.find(m => m.id === gm.match)?.status === 'completed'
+  ).length
 
   const handleDelete = () => {
     toast.promise(
@@ -44,33 +54,8 @@ export default function TournamentCard({
     )
   }
 
-  const groupMatches = tournament.rounds
-    .filter(m => m.bracket === 'group')
-    .flatMap(r => r.matches)
-  const bracketMatches = tournament.rounds
-    .filter(m => m.bracket !== 'group')
-    .flatMap(r => r.matches)
-
-  const completedGroupMatches = groupMatches.filter(
-    gm =>
-      gm.match && matches?.find(m => m.id === gm.match)?.status === 'completed'
-  ).length
-  const totalGroupMatches = groupMatches.length
-
-  const completedBracketMatches = bracketMatches.filter(
-    bm =>
-      bm.match && matches?.find(m => m.id === bm.match)?.status === 'completed'
-  ).length
-  const totalBracketMatches = bracketMatches.filter(
-    bm => bm.match !== null
-  ).length
-
   return (
-    <div
-      className={twMerge(
-        'bg-background-secondary flex flex-col gap-4 rounded-lg border p-2',
-        className
-      )}>
+    <div className={twMerge('flex flex-col gap-4', className)}>
       <div className='flex items-center justify-between p-2'>
         <div className='flex flex-col gap-1'>
           <div className='flex items-center gap-2'>
@@ -97,84 +82,62 @@ export default function TournamentCard({
               {loc.no.common.delete}
             </ConfirmationButton>
           )}
-          <Button
-            variant='ghost'
-            size='icon'
-            onClick={() => setExpanded(!expanded)}>
-            {expanded ? (
-              <ChevronUpIcon className='size-4' />
-            ) : (
-              <ChevronDownIcon className='size-4' />
-            )}
-          </Button>
         </div>
       </div>
 
-      {expanded && (
-        <div className='flex flex-col gap-4'>
-          <PageSubheader
-            title={loc.no.tournament.groupStage}
-            description={`${completedGroupMatches} / ${totalGroupMatches} matcher`}
-          />
-
-          <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
-            {tournament.groups.map(group => (
-              <GroupCard
-                key={group.id}
-                group={group}
-                advancementCount={tournament.advancementCount}
-              />
-            ))}
-          </div>
-
-          {tournament.rounds
-            .filter(br => br.bracket === 'group')
-            .map((bracketRound, index) => (
-              <div
-                key={`${bracketRound.bracket}-${bracketRound.round}-${index}`}
-                className='flex flex-col gap-1'>
-                <h4 className='font-f1-bold text-sm uppercase'>
-                  {loc.no.tournament.bracketRoundName(
-                    bracketRound.bracket,
-                    bracketRound.matches.at(0)?.round!
-                  )}
-                </h4>
-                {bracketRound.matches.map(match => {
-                  const group = tournament.groups.find(
-                    g => g.id === match.group
-                  )
-                  return (
-                    <TournamentMatchRow
-                      key={match.id}
-                      item={match}
-                      groupName={loc.no.tournament.groupName(
-                        group?.number ?? 0
-                      )}
-                    />
-                  )
-                })}
-              </div>
-            ))}
-
-          {tournament.rounds
-            .filter(br => br.bracket !== 'group')
-            .map((bracketRound, index) => (
-              <div
-                key={`${bracketRound.bracket}-${bracketRound.round}-${index}`}
-                className='flex flex-col gap-1'>
-                <h4 className='font-f1-bold text-sm uppercase'>
-                  {loc.no.tournament.bracketRoundName(
-                    bracketRound.bracket,
-                    bracketRound.round
-                  )}
-                </h4>
-                {bracketRound.matches.map(match => (
-                  <TournamentMatchRow key={match.id} item={match} />
-                ))}
-              </div>
-            ))}
+      <div className='flex flex-col gap-4'>
+        <div className='grid grid-cols-1 gap-2 pb-4 sm:grid-cols-2'>
+          {tournament.groups.map(group => (
+            <GroupCard
+              key={group.id}
+              group={group}
+              advancementCount={tournament.advancementCount}
+            />
+          ))}
         </div>
-      )}
+
+        <PageSubheader
+          title={loc.no.tournament.groupStage}
+          description={`${completedGroupMatches} / ${totalGroupMatches} matcher`}
+        />
+
+        {tournament.rounds
+          .filter(br => br.bracket === 'group')
+          .map((bracketRound, index) => (
+            <div
+              key={`${bracketRound.bracket}-${bracketRound.round}-${index}`}
+              className='flex flex-col gap-1'>
+              {bracketRound.matches.map(match => {
+                const group = tournament.groups.find(g => g.id === match.group)
+                return (
+                  <TournamentMatchRow
+                    key={match.id}
+                    item={match}
+                    groupName={loc.no.tournament.groupName(group?.number ?? 0)}
+                  />
+                )
+              })}
+            </div>
+          ))}
+
+        {tournament.rounds
+          .filter(br => br.bracket !== 'group')
+          .map((bracketRound, index) => (
+            <div
+              key={`${bracketRound.bracket}-${bracketRound.round}-${index}`}
+              className='flex flex-col gap-1'>
+              <h4 className='font-f1-bold text-sm uppercase'>
+                {loc.no.tournament.bracketRoundName(
+                  bracketRound.bracket,
+                  bracketRound.round
+                )}
+              </h4>
+              {bracketRound.matches.map(match => (
+                <TournamentMatchRow key={match.id} item={match} />
+              ))}
+            </div>
+          ))}
+      </div>
     </div>
   )
 }

@@ -24,7 +24,7 @@ import { TrackRow } from '../track/TrackRow'
 import { Alert, AlertTitle } from '../ui/alert'
 import { Label } from '../ui/label'
 import { Spinner } from '../ui/spinner'
-import TournamentCard from './TournamentCard'
+import TournamentView from './TournamentCard'
 
 type TournamentFormProps = Partial<CreateTournament> & ComponentProps<'form'>
 
@@ -88,7 +88,7 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
         type: 'TournamentPreviewRequest',
         session: selectedSessionId,
         name: 'Forhåndsvisning',
-        description: description === '' ? undefined : description,
+        description: 'Forhåndsvisning av turnering',
         groupsCount,
         advancementCount,
         eliminationType,
@@ -132,7 +132,7 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
     )
 
   return (
-    <div className='flex flex-col gap-4'>
+    <div className='bg flex flex-col gap-4'>
       <form
         className='bg-background flex flex-col gap-4 rounded-sm border p-4'
         onSubmit={handleSubmit}
@@ -144,6 +144,7 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
           required
           value={name}
           onChange={e => setName(e.target.value)}
+          placeholder={loc.no.tournament.form.namePlaceholder}
         />
 
         <TextField
@@ -151,6 +152,7 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
           name={loc.no.tournament.form.description}
           value={description}
           onChange={e => setDescription(e.target.value)}
+          placeholder={loc.no.tournament.form.descriptionPlaceholder}
         />
 
         <div className='flex flex-col gap-2'>
@@ -271,7 +273,13 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
           )}
       </form>
 
-      {preview && <TournamentCard tournament={preview} />}
+      {preview && (
+        <TournamentView
+          className='bg-background rounded-sm border border-dashed p-4'
+          tournament={preview}
+          isReadOnly
+        />
+      )}
     </div>
   )
 }
