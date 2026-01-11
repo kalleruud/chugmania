@@ -114,7 +114,7 @@ export default function MatchRow({
         highlight && 'bg-foreground/13'
       )}
       {...rest}>
-      <div className='mt-1 grid w-full grid-cols-1 items-center gap-1 sm:grid-cols-2'>
+      <div className='mt-1 grid w-full items-center gap-1'>
         <div
           className={twMerge(
             'flex w-full items-center justify-center gap-2',
@@ -153,7 +153,7 @@ export default function MatchRow({
 
         <div
           className={twMerge(
-            'flex items-center justify-center gap-2 sm:justify-start',
+            'flex items-center justify-center gap-2',
             (!track || hideTrack) && !session && !match?.stage && 'hidden'
           )}>
           {track && !hideTrack && (
