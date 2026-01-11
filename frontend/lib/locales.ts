@@ -267,8 +267,10 @@ const no = {
       `${roundName}, match ${matchNumber}`,
     sourceGroupPlaceholder: (group: number, rank: number) =>
       `${rank}. plass fra ${loc.no.tournament.groupName(group)}`,
-    sourceMatchPlaceholder: (match: number, progression: MatchProgression) =>
-      `${progression === 'winner' ? 'Vinner' : 'Taper'} av ${match}`,
+    sourceMatchPlaceholder: (
+      matchName: string,
+      progression: MatchProgression
+    ) => `${progression === 'winner' ? 'Vinner' : 'Taper'} av ${matchName}`,
     form: {
       name: 'Navn',
       namePlaceholder: 'Chugmania World Championship 20**',

@@ -31,7 +31,7 @@ function getUserPlaceholderString(
   tournamentMatch: TournamentMatch | undefined,
   side: MatchSide,
   groupNumber: number | undefined,
-  sourceMatchPosition: number | undefined
+  sourceMatchName: string | undefined
 ): string {
   if (!tournamentMatch) return loc.no.match.unknownUser
 
@@ -41,8 +41,6 @@ function getUserPlaceholderString(
     side === 'A'
       ? tournamentMatch.sourceGroupARank
       : tournamentMatch.sourceGroupBRank
-  const sourceMatch =
-    side === 'A' ? tournamentMatch.sourceMatchA : tournamentMatch.sourceMatchB
   const sourceProgression =
     side === 'A'
       ? tournamentMatch.sourceMatchAProgression
@@ -55,9 +53,9 @@ function getUserPlaceholderString(
     )
   }
 
-  if (sourceMatch && sourceProgression && sourceMatchPosition !== undefined) {
+  if (sourceMatchName && sourceProgression) {
     return loc.no.tournament.sourceMatchPlaceholder(
-      sourceMatchPosition,
+      sourceMatchName,
       sourceProgression
     )
   }
@@ -117,10 +115,18 @@ export default function MatchRow({
   const sourceMatchB = allTournamentMatches?.find(
     m => m.id === tournamentMatch?.sourceMatchB
   )
-  const sourceMatchPositionA =
-    sourceMatchA?.position !== undefined ? sourceMatchA.position + 1 : undefined
-  const sourceMatchPositionB =
-    sourceMatchB?.position !== undefined ? sourceMatchB.position + 1 : undefined
+  const sourceMatchNameA = sourceMatchA
+    ? loc.no.tournament.bracketMatchName(
+        getRoundName(sourceMatchA.round ?? 0, sourceMatchA.bracket),
+        sourceMatchA.position + 1
+      )
+    : undefined
+  const sourceMatchNameB = sourceMatchB
+    ? loc.no.tournament.bracketMatchName(
+        getRoundName(sourceMatchB.round ?? 0, sourceMatchB.bracket),
+        sourceMatchB.position + 1
+      )
+    : undefined
 
   const canEdit = !isReadOnly && isLoggedIn && loggedInUser.role !== 'user'
 
@@ -197,7 +203,7 @@ export default function MatchRow({
               tournamentMatch,
               'A',
               groupNumberA,
-              sourceMatchPositionA
+              sourceMatchNameA
             )}
             isWinner={!!match?.winner && match?.winner === match?.user1}
             onClick={() => user1 && handleSetWinner(user1.id)}
@@ -221,7 +227,7 @@ export default function MatchRow({
               tournamentMatch,
               'B',
               groupNumberB,
-              sourceMatchPositionB
+              sourceMatchNameB
             )}
             isWinner={!!match?.winner && match?.winner === match?.user2}
             onClick={() => user2 && handleSetWinner(user2.id)}
