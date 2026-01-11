@@ -47,6 +47,7 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
   const [eliminationType, setEliminationType] =
     useState<TournamentEliminationType>('single')
   const [groupStageTracks, setGroupStageTracks] = useState<string[]>([])
+  const [bracketTracks, setBracketTracks] = useState<string[]>([])
 
   const session = sessions?.find(s => s.id === selectedSessionId)
   const signedUpPlayers = useMemo(() => {
@@ -79,6 +80,7 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
     advancementCount,
     eliminationType,
     groupStageTracks,
+    bracketTracks,
   ])
 
   const requestPreview = () => {
@@ -94,6 +96,7 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
         eliminationType,
         groupStageTracks:
           groupStageTracks.length > 0 ? groupStageTracks : undefined,
+        bracketTracks: bracketTracks.length > 0 ? bracketTracks : undefined,
       })
       .then(r => {
         if (!r.success) return toast.error(r.message)
@@ -117,6 +120,7 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
           eliminationType,
           groupStageTracks:
             groupStageTracks.length > 0 ? groupStageTracks : undefined,
+          bracketTracks: bracketTracks.length > 0 ? bracketTracks : undefined,
         })
         .then(r => {
           if (!r.success) throw new Error(r.message)
@@ -270,6 +274,67 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
                   </div>
                 )
               })}
+            </div>
+          )}
+
+        {preview &&
+          preview.rounds.filter(r => r.bracket !== 'group').length > 0 && (
+            <div className='flex flex-col gap-2'>
+              <Label>{loc.no.tournament.form.bracketTracks}</Label>
+              <p className='text-muted-foreground text-xs'>
+                {loc.no.tournament.form.bracketTracksHint} (
+                {preview.rounds.filter(r => r.bracket !== 'group').length}{' '}
+                runder)
+              </p>
+              {Array.from(
+                {
+                  length: Math.min(
+                    preview.rounds.filter(r => r.bracket !== 'group').length,
+                    8
+                  ),
+                },
+                (_, i) => {
+                  const trackIndex = i
+                  const selectedTrack = tracks?.find(
+                    t => t.id === bracketTracks[trackIndex]
+                  )
+                  return (
+                    <div key={trackIndex} className='flex flex-col gap-1'>
+                      <Label className='text-xs'>Bane {trackIndex + 1}</Label>
+                      <Combobox
+                        className='w-full'
+                        placeholder={loc.no.tournament.form.selectTrack}
+                        items={tracks?.map(trackToLookupItem)}
+                        selected={
+                          selectedTrack
+                            ? trackToLookupItem(selectedTrack)
+                            : null
+                        }
+                        setSelected={value => {
+                          setBracketTracks(prev => {
+                            const next = [...prev]
+                            if (value?.id) {
+                              next[trackIndex] = value.id
+                            } else {
+                              next.splice(trackIndex, 1)
+                            }
+                            while (
+                              next.length > 0 &&
+                              next.at(-1) === undefined
+                            ) {
+                              next.pop()
+                            }
+                            return next
+                          })
+                        }}
+                        limit={2}
+                        align='start'
+                        CustomRow={TrackRow}
+                      />
+                    </div>
+                  )
+                }
+              )}
             </div>
           )}
       </form>

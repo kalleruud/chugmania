@@ -52,7 +52,8 @@ export type CreateTournamentRequest = {
   groupsCount: number
   advancementCount: number
   eliminationType: EliminationType
-  groupStageTracks?: string[] // tracks to cycle through rounds
+  groupStageTracks?: string[]
+  bracketTracks?: string[]
 }
 
 export function isCreateTournamentRequest(

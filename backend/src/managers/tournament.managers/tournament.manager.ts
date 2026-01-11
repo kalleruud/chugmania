@@ -180,6 +180,7 @@ export default class TournamentManager {
     advancementCount,
     eliminationType,
     groupStageTracks,
+    bracketTracks,
   }:
     | EventReq<'create_tournament'>
     | EventReq<'get_tournament_preview'>): Promise<TournamentStructure> {
@@ -215,21 +216,25 @@ export default class TournamentManager {
         groupStageTracks
       )
 
-    const bracketTournamentMatches =
-      TournamentMatchManager.generateBracketSlots(
-        tournament.id,
-        groups,
-        advancementCount,
-        eliminationType,
-        tournamentMatches.length
-      )
+    const {
+      tournamentMatches: bracketTournamentMatches,
+      matches: bracketMatches,
+    } = TournamentMatchManager.generateBracketMatches(
+      tournament.id,
+      session,
+      groups,
+      advancementCount,
+      eliminationType,
+      tournamentMatches.length,
+      bracketTracks
+    )
 
     return {
       tournament,
       groups,
       groupPlayers,
       tournamentMatches: tournamentMatches.concat(bracketTournamentMatches),
-      matches,
+      matches: matches.concat(bracketMatches),
     }
   }
 
