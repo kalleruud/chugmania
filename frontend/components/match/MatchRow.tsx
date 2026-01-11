@@ -4,7 +4,10 @@ import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
 import { getRoundName } from '@/lib/utils'
 import type { EditMatchRequest, Match, MatchSide } from '@common/models/match'
-import type { TournamentMatch } from '@common/models/tournament'
+import type {
+  TournamentMatch,
+  TournamentWithDetails,
+} from '@common/models/tournament'
 import type { UserInfo } from '@common/models/user'
 import { formatTrackName } from '@common/utils/track'
 import { CalendarIcon, MinusIcon } from '@heroicons/react/24/solid'
@@ -18,6 +21,7 @@ import { Label } from '../ui/label'
 
 export type MatchRowProps = BaseRowProps<Match | undefined> & {
   tournamentMatch?: TournamentMatch
+  tournament?: TournamentWithDetails
   index?: number
   hideTrack?: boolean
   isReadOnly?: boolean
@@ -65,13 +69,14 @@ export default function MatchRow({
   className,
   item: match,
   tournamentMatch,
+  tournament,
   index,
   highlight,
   hideTrack,
   isReadOnly,
   ...rest
 }: Readonly<MatchRowProps>) {
-  const { users, tracks, sessions, tournaments } = useData()
+  const { users, tracks, sessions } = useData()
   const { socket } = useConnection()
   const { isLoggedIn, loggedInUser } = useAuth()
 
@@ -98,10 +103,6 @@ export default function MatchRow({
     ? users?.find(u => u.id === match?.user2)
     : undefined
 
-  const tournament = tournamentMatch
-    ? tournaments?.find(t => t.id === tournamentMatch.tournament)
-    : undefined
-
   const groupNumberA = tournament?.groups.find(
     g => g.id === tournamentMatch?.sourceGroupA
   )?.number
@@ -110,12 +111,16 @@ export default function MatchRow({
   )?.number
 
   const allTournamentMatches = tournament?.rounds.flatMap(r => r.matches)
-  const sourceMatchPositionA = allTournamentMatches?.find(
+  const sourceMatchA = allTournamentMatches?.find(
     m => m.id === tournamentMatch?.sourceMatchA
-  )?.position
-  const sourceMatchPositionB = allTournamentMatches?.find(
+  )
+  const sourceMatchB = allTournamentMatches?.find(
     m => m.id === tournamentMatch?.sourceMatchB
-  )?.position
+  )
+  const sourceMatchPositionA =
+    sourceMatchA?.position !== undefined ? sourceMatchA.position + 1 : undefined
+  const sourceMatchPositionB =
+    sourceMatchB?.position !== undefined ? sourceMatchB.position + 1 : undefined
 
   const canEdit = !isReadOnly && isLoggedIn && loggedInUser.role !== 'user'
 

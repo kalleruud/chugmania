@@ -130,6 +130,7 @@ export default function TournamentView({
                       index={groupRound.matches.length > 1 ? index : undefined}
                       item={match.matchDetails ?? undefined}
                       tournamentMatch={match}
+                      tournament={tournament}
                       isReadOnly={isReadOnly}
                     />
                   )
@@ -160,6 +161,7 @@ export default function TournamentView({
                     className='bg-background-secondary rounded-sm border p-2'
                     item={match.matchDetails ?? undefined}
                     tournamentMatch={match}
+                    tournament={tournament}
                     index={bracketRound.matches.length > 1 ? index : undefined}
                     isReadOnly={isReadOnly}
                   />

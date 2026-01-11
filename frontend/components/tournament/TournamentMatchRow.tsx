@@ -1,12 +1,16 @@
 import { useTimeEntryInput } from '@/hooks/TimeEntryInputProvider'
 import { getRoundName } from '@/lib/utils'
-import type { TournamentMatchWithDetails } from '@common/models/tournament'
+import type {
+  TournamentMatchWithDetails,
+  TournamentWithDetails,
+} from '@common/models/tournament'
 import type { ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
 import MatchRow from '../match/MatchRow'
 
 type TournamentMatchRowProps = {
   item: TournamentMatchWithDetails
+  tournament?: TournamentWithDetails
   index: number | undefined
   className?: string
   isReadOnly?: boolean
@@ -14,6 +18,7 @@ type TournamentMatchRowProps = {
 
 export default function TournamentMatchRow({
   item: tournamentMatch,
+  tournament,
   index,
   className,
   isReadOnly,
@@ -27,6 +32,7 @@ export default function TournamentMatchRow({
       <MatchRow
         item={tournamentMatch.matchDetails}
         tournamentMatch={tournamentMatch}
+        tournament={tournament}
         className={twMerge('w-full', className)}
         onClick={
           isReadOnly
