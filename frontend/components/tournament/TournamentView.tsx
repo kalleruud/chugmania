@@ -155,7 +155,7 @@ export default function TournamentView({
                 {bracketRound.matches.map((match, index) => (
                   <TournamentMatchRow
                     key={match.id}
-                    index={index}
+                    index={bracketRound.matches.length > 1 ? index : undefined}
                     item={match}
                     isReadOnly={isReadOnly}
                   />
