@@ -1,4 +1,3 @@
-import { useData } from '@/contexts/DataContext'
 import { useTimeEntryInput } from '@/hooks/TimeEntryInputProvider'
 import { getRoundName } from '@/lib/utils'
 import type { TournamentMatchWithDetails } from '@common/models/tournament'
@@ -18,18 +17,12 @@ export default function TournamentMatchRow({
   className,
   isReadOnly,
 }: Readonly<TournamentMatchRowProps>) {
-  const { tournaments } = useData()
   const { openMatch } = useTimeEntryInput()
   if (!tournamentMatch) return undefined
 
-  const tournament = tournaments?.find(t => t.id === tournamentMatch.tournament)
-  const group = tournament?.groups.find(g => g.id === tournamentMatch.group)
-
   const displayName = getRoundName(
     tournamentMatch.round ?? 0,
-    tournamentMatch.bracket,
-    tournament?.eliminationType === 'double',
-    group?.number
+    tournamentMatch.bracket
   )
 
   if (tournamentMatch.matchDetails)

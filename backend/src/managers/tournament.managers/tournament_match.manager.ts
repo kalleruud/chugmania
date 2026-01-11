@@ -273,13 +273,12 @@ export default class TournamentMatchManager {
     }
 
     // Interleave: upper round -> corresponding lower rounds -> repeat
-    // Upper displayRounds go: log2(bracketSize), log2(bracketSize)-1, ..., 1
-    // Lower displayRounds go: totalLowerRounds, totalLowerRounds-1, ..., 1
+    // Upper rounds go: log2(bracketSize), log2(bracketSize)-1, ..., 1
+    // Lower rounds go: 1, 2, 3, ... (sequential)
     const orderedMatches: TournamentMatch[] = []
-    const totalLowerRounds = 2 * Math.log2(bracketSize) - 1
     const maxUpperRound = Math.log2(bracketSize)
 
-    let lowerDisplayRound = totalLowerRounds
+    let lowerRound = 1
 
     for (
       let upperDisplayRound = maxUpperRound;
@@ -293,18 +292,18 @@ export default class TournamentMatchManager {
       // Add corresponding lower round(s)
       if (upperDisplayRound === maxUpperRound) {
         // First upper round -> single lower round (losers play each other)
-        const lowerRoundMatches = lowerByRound.get(lowerDisplayRound) ?? []
+        const lowerRoundMatches = lowerByRound.get(lowerRound) ?? []
         orderedMatches.push(...lowerRoundMatches)
-        lowerDisplayRound--
+        lowerRound++
       } else {
         // Subsequent upper rounds -> drop-in round + survivor round
-        const dropInMatches = lowerByRound.get(lowerDisplayRound) ?? []
+        const dropInMatches = lowerByRound.get(lowerRound) ?? []
         orderedMatches.push(...dropInMatches)
-        lowerDisplayRound--
+        lowerRound++
 
-        const survivorMatches = lowerByRound.get(lowerDisplayRound) ?? []
+        const survivorMatches = lowerByRound.get(lowerRound) ?? []
         orderedMatches.push(...survivorMatches)
-        lowerDisplayRound--
+        lowerRound++
       }
     }
 
@@ -433,15 +432,9 @@ export default class TournamentMatchManager {
     const matches: TournamentMatch[] = []
     const meta: LowerMatchMeta[] = []
 
-    // Calculate total lower rounds: 2 * log2(bracketSize) - 1
-    const totalLowerRounds = 2 * Math.log2(bracketSize) - 1
-
     let lowerRound = 1
 
     const firstUpper = upperMeta.filter(m => m.round === bracketSize)
-    // Convert to display round: totalLowerRounds - lowerRound + 1
-    // Lower final (lowerRound = totalLowerRounds) -> displayRound = 1
-    const displayRound = totalLowerRounds - lowerRound + 1
 
     for (let i = 0; i < Math.floor(firstUpper.length / 2); i++) {
       const id = randomUUID()
@@ -451,7 +444,7 @@ export default class TournamentMatchManager {
           id,
           tournament: tournamentId,
           bracket: 'lower',
-          round: displayRound,
+          round: lowerRound,
           sourceMatchA: firstUpper[i * 2].id,
           sourceMatchAProgression: 'loser',
           sourceMatchB: firstUpper[i * 2 + 1].id,
@@ -473,7 +466,6 @@ export default class TournamentMatchManager {
         upperMeta,
         upperRound,
         lowerRound,
-        totalLowerRounds,
         trackMap
       )
 
@@ -483,7 +475,6 @@ export default class TournamentMatchManager {
         matches,
         meta,
         lowerRound,
-        totalLowerRounds,
         trackMap
       )
 
@@ -501,13 +492,11 @@ export default class TournamentMatchManager {
     upperMeta: UpperMatchMeta[],
     upperRound: number,
     lowerRound: number,
-    totalLowerRounds: number,
     trackMap: Map<string, string>
   ) {
     const prevLower = meta.filter(m => m.round === lowerRound - 1)
     const upperLosers = upperMeta.filter(m => m.round === upperRound)
     const count = Math.min(prevLower.length, upperLosers.length)
-    const displayRound = totalLowerRounds - lowerRound + 1
 
     for (let i = 0; i < count; i++) {
       const id = randomUUID()
@@ -517,7 +506,7 @@ export default class TournamentMatchManager {
           id,
           tournament: tournamentId,
           bracket: 'lower',
-          round: displayRound,
+          round: lowerRound,
           sourceMatchA: prevLower[i].id,
           sourceMatchAProgression: 'winner',
           sourceMatchB: upperLosers[i].id,
@@ -534,13 +523,10 @@ export default class TournamentMatchManager {
     matches: TournamentMatch[],
     meta: LowerMatchMeta[],
     lowerRound: number,
-    totalLowerRounds: number,
     trackMap: Map<string, string>
   ) {
     const prev = meta.filter(m => m.round === lowerRound - 1)
     if (prev.length <= 1) return
-
-    const displayRound = totalLowerRounds - lowerRound + 1
 
     for (let i = 0; i < Math.floor(prev.length / 2); i++) {
       const id = randomUUID()
@@ -550,7 +536,7 @@ export default class TournamentMatchManager {
           id,
           tournament: tournamentId,
           bracket: 'lower',
-          round: displayRound,
+          round: lowerRound,
           sourceMatchA: prev[i * 2].id,
           sourceMatchAProgression: 'winner',
           sourceMatchB: prev[i * 2 + 1].id,

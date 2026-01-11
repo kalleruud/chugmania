@@ -120,14 +120,7 @@ export default function TournamentView({
                 key={`${groupRound.bracket}-${groupRound.round}-${index}`}
                 className='flex flex-col gap-2'>
                 <h4 className='font-f1-bold text-sm uppercase'>
-                  {getRoundName(
-                    groupRound.round ?? 0,
-                    groupRound.bracket,
-                    tournament.eliminationType === 'double',
-                    tournament.groups.find(
-                      g => g.id === groupRound.matches[0].group
-                    )?.number
-                  )}
+                  {getRoundName(groupRound.round ?? 0, groupRound.bracket)}
                 </h4>
                 {groupRound.matches.map(match => {
                   return (
@@ -157,14 +150,7 @@ export default function TournamentView({
                 key={`${bracketRound.bracket}-${bracketRound.round}-${index}`}
                 className='flex flex-col gap-1'>
                 <h4 className='font-f1-bold text-sm uppercase'>
-                  {getRoundName(
-                    bracketRound.round ?? 0,
-                    bracketRound.bracket,
-                    tournament.eliminationType === 'double',
-                    tournament.groups.find(
-                      g => g.id === bracketRound.matches[0].group
-                    )?.number
-                  )}
+                  {getRoundName(bracketRound.round ?? 0, bracketRound.bracket)}
                 </h4>
                 {bracketRound.matches.map((match, index) => (
                   <TournamentMatchRow
