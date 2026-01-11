@@ -106,13 +106,13 @@ export default function TournamentView({
           ))}
         </div>
 
-        <div className='flex flex-col gap-4'>
-          <PageHeader
-            className='py-0'
-            title={loc.no.tournament.groupStage}
-            description={`${completedGroupMatches} / ${totalGroupMatches} matcher`}
-          />
+        <PageHeader
+          className='py-0'
+          title={loc.no.tournament.groupStage}
+          description={`${completedGroupMatches} / ${totalGroupMatches} matcher`}
+        />
 
+        <div className='flex flex-col gap-8'>
           {tournament.rounds
             .filter(br => br.bracket === 'group')
             .map((groupRound, index) => (
@@ -125,6 +125,7 @@ export default function TournamentView({
                 {groupRound.matches.map(match => {
                   return (
                     <TournamentMatchRow
+                      className='bg-background-secondary rounded-sm border p-2'
                       key={match.id}
                       index={groupRound.matches.length > 1 ? index : undefined}
                       item={match}
@@ -136,19 +137,19 @@ export default function TournamentView({
             ))}
         </div>
 
-        <div>
-          <PageHeader
-            className='py-0'
-            title={loc.no.tournament.bracket}
-            description={`${completedEliminationMatches} / ${totalEliminationMatches} matcher`}
-          />
+        <PageHeader
+          className='py-0'
+          title={loc.no.tournament.bracket}
+          description={`${completedEliminationMatches} / ${totalEliminationMatches} matcher`}
+        />
 
+        <div className='flex flex-col gap-8'>
           {tournament.rounds
             .filter(br => br.bracket !== 'group')
             .map((bracketRound, index) => (
               <div
                 key={`${bracketRound.bracket}-${bracketRound.round}-${index}`}
-                className='flex flex-col gap-1'>
+                className='flex flex-col gap-2'>
                 <h4 className='font-f1-bold text-sm uppercase'>
                   {getRoundName(bracketRound.round ?? 0, bracketRound.bracket)}
                 </h4>

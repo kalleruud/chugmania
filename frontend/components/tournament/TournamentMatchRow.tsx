@@ -30,7 +30,7 @@ export default function TournamentMatchRow({
       <MatchRow
         item={tournamentMatch.matchDetails}
         tournamentMatch={tournamentMatch}
-        className='w-full'
+        className={twMerge('w-full', className)}
         onClick={
           isReadOnly
             ? undefined
