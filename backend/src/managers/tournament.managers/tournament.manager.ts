@@ -25,7 +25,7 @@ import {
   type TournamentRound,
   type TournamentWithDetails,
 } from '@common/models/tournament'
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, inArray, isNull } from 'drizzle-orm'
 import { randomUUID } from 'node:crypto'
 import { broadcast, type TypedSocket } from '../../server'
 import AuthManager from '../auth.manager'
@@ -386,6 +386,65 @@ export default class TournamentManager {
       )
     }
 
-    return { success: false, message: 'Not implemented' }
+    AuthManager.checkAuth(socket, ['admin', 'moderator'])
+
+    const deletedAt = new Date()
+
+    const tournamentStructure = await TournamentManager.getTournamentStructure(
+      request.id
+    )
+
+    const groupIds = tournamentStructure.groups.map(g => g.id)
+    const matchIds = tournamentStructure.matches.map(m => m.id)
+
+    database.transaction(() => {
+      db.update(tournaments)
+        .set({ deletedAt })
+        .where(
+          and(eq(tournaments.id, request.id), isNull(tournaments.deletedAt))
+        )
+        .run()
+
+      db.update(groups)
+        .set({ deletedAt })
+        .where(and(eq(groups.tournament, request.id), isNull(groups.deletedAt)))
+        .run()
+
+      db.update(groupPlayers)
+        .set({ deletedAt })
+        .where(
+          and(
+            inArray(groupPlayers.group, groupIds),
+            isNull(groupPlayers.deletedAt)
+          )
+        )
+        .run()
+
+      db.update(matches)
+        .set({ deletedAt })
+        .where(and(inArray(matches.id, matchIds), isNull(matches.deletedAt)))
+        .run()
+
+      db.update(tournamentMatches)
+        .set({ deletedAt })
+        .where(
+          and(
+            eq(tournamentMatches.tournament, request.id),
+            isNull(tournamentMatches.deletedAt)
+          )
+        )
+        .run()
+    })()
+
+    console.info(
+      new Date().toISOString(),
+      socket.id,
+      `Deleted tournament '${request.id}' with ${groupIds.length} groups and ${matchIds.length} matches`
+    )
+
+    broadcast('all_tournaments', await TournamentManager.getAll())
+    broadcast('all_matches', await MatchManager.getAllMatches())
+
+    return { success: true }
   }
 }
