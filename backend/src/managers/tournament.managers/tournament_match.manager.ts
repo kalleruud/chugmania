@@ -1,15 +1,22 @@
 import db from '@backend/database/database'
 import {
+  matchDependencies,
   matches,
+  stages,
   tournamentMatches,
+  type DependencySlot,
   type EliminationType,
 } from '@backend/database/schema'
 import type { Match, MatchSide } from '@common/models/match'
 import type {
   CreateGroupPlayer,
+  CreateMatchDependency,
+  CreateStage,
   CreateTournamentMatch,
   Group,
   GroupWithPlayers,
+  MatchDependency,
+  Stage,
   TournamentMatch,
 } from '@common/models/tournament'
 import { and, asc, eq, inArray, isNull } from 'drizzle-orm'
@@ -18,7 +25,7 @@ import MatchManager from '../match.manager'
 import GroupManager from './group.manager'
 
 type UpperMatchMeta = {
-  id: string
+  tournamentMatchId: string
   round: number
   position: number
 }
@@ -27,25 +34,47 @@ type LowerMatchMeta = UpperMatchMeta & {
   isDropIn: boolean
 }
 
+type GeneratedStructure = {
+  stages: Stage[]
+  tournamentMatches: TournamentMatch[]
+  matches: Match[]
+  matchDependencies: MatchDependency[]
+}
+
 export default class TournamentMatchManager {
   static async getAll(tournamentId: string): Promise<{
+    stages: Stage[]
     tournamentMatches: TournamentMatch[]
     matches: Match[]
   }> {
-    const tournamentMatchRows = await db.query.tournamentMatches.findMany({
-      where: and(
-        eq(tournamentMatches.tournament, tournamentId),
-        isNull(tournamentMatches.deletedAt)
-      ),
-      orderBy: asc(tournamentMatches.position),
+    // Get all stages for this tournament
+    const stageRows = await db.query.stages.findMany({
+      where: and(eq(stages.tournament, tournamentId), isNull(stages.deletedAt)),
+      orderBy: [asc(stages.bracket), asc(stages.index)],
     })
 
-    const matchIds = tournamentMatchRows
-      .filter(tm => tm.match)
-      .map(tm => tm.match!)
+    if (stageRows.length === 0) {
+      return { stages: [], tournamentMatches: [], matches: [] }
+    }
+
+    const stageIds = stageRows.map(s => s.id)
+
+    const tournamentMatchRows = await db.query.tournamentMatches.findMany({
+      where: and(
+        inArray(tournamentMatches.stage, stageIds),
+        isNull(tournamentMatches.deletedAt)
+      ),
+      orderBy: asc(tournamentMatches.index),
+    })
+
+    const matchIds = tournamentMatchRows.map(tm => tm.match)
 
     if (matchIds.length === 0) {
-      return { tournamentMatches: tournamentMatchRows, matches: [] }
+      return {
+        stages: stageRows,
+        tournamentMatches: tournamentMatchRows,
+        matches: [],
+      }
     }
 
     const matchRows: Match[] = await db.query.matches.findMany({
@@ -53,7 +82,21 @@ export default class TournamentMatchManager {
       orderBy: asc(matches.createdAt),
     })
 
-    return { tournamentMatches: tournamentMatchRows, matches: matchRows }
+    return {
+      stages: stageRows,
+      tournamentMatches: tournamentMatchRows,
+      matches: matchRows,
+    }
+  }
+
+  private static newStage(draft: CreateStage): Stage {
+    return {
+      id: randomUUID(),
+      updatedAt: null,
+      createdAt: new Date(),
+      deletedAt: null,
+      ...draft,
+    }
   }
 
   private static newTournamentMatch(
@@ -64,30 +107,55 @@ export default class TournamentMatchManager {
       updatedAt: null,
       createdAt: new Date(),
       deletedAt: null,
-      match: null,
-      completedAt: null,
-      sourceGroupA: null,
-      sourceGroupARank: null,
-      sourceGroupB: null,
-      sourceGroupBRank: null,
-      sourceMatchA: null,
-      sourceMatchAProgression: null,
-      sourceMatchB: null,
-      sourceMatchBProgression: null,
-      group: null,
-      round: null,
-      position: 0,
       ...draft,
     }
   }
 
-  static async createGroupMatches(
+  private static newMatchDependency(
+    draft: CreateMatchDependency
+  ): MatchDependency {
+    return {
+      id: randomUUID(),
+      updatedAt: null,
+      createdAt: new Date(),
+      deletedAt: null,
+      fromMatch: draft.fromMatch ?? null,
+      fromGroup: draft.fromGroup ?? null,
+      toMatch: draft.toMatch,
+      fromPosition: draft.fromPosition,
+      toSlot: draft.toSlot,
+    }
+  }
+
+  private static newMatch(
+    sessionId: string,
+    trackId: string | null,
+    userA: string | null = null,
+    userB: string | null = null
+  ): Match {
+    return {
+      id: randomUUID(),
+      duration: null,
+      status: 'planned',
+      updatedAt: null,
+      createdAt: new Date(),
+      deletedAt: null,
+      userA,
+      userB,
+      winner: null,
+      comment: null,
+      session: sessionId,
+      track: trackId ?? '',
+    }
+  }
+
+  static createGroupMatches(
     tournamentId: string,
     sessionId: string,
     groups: { id: string }[],
     groupPlayers: CreateGroupPlayer[],
-    tracks?: string[] // tracks to cycle through rounds
-  ) {
+    tracks?: string[]
+  ): GeneratedStructure {
     const groupWithPlayers = groups.map(group => ({
       ...group,
       players: groupPlayers
@@ -96,11 +164,10 @@ export default class TournamentMatchManager {
     }))
 
     // Generate round-robin rounds for each group using circle method
-    // This ensures each player plays at most once per round
     const groupRounds: {
       group: { id: Group['id'] }
-      user1: string
-      user2: string
+      userA: string
+      userB: string
       round: number
     }[][] = []
 
@@ -113,11 +180,10 @@ export default class TournamentMatchManager {
     }
 
     // Interleave matches from all groups to maximize rest time
-    // Spread each group's matches proportionally so all groups finish together
     const pairings: {
       group: { id: Group['id'] }
-      user1: string
-      user2: string
+      userA: string
+      userB: string
       round: number
     }[] = []
 
@@ -134,8 +200,6 @@ export default class TournamentMatchManager {
       const groupMatchCount = groupMatches.length
 
       for (let m = 0; m < groupMatchCount; m++) {
-        // Normalize match index to [0, 1] range, then scale to max timeline
-        // Add small group offset to interleave groups at similar positions
         const progress = groupMatchCount > 1 ? m / (groupMatchCount - 1) : 0
         const targetPosition =
           progress * maxMatchesPerGroup + g / groupRounds.length
@@ -147,68 +211,68 @@ export default class TournamentMatchManager {
       }
     }
 
-    // Sort by target position to get final ordering
     matchesWithPosition.sort((a, b) => a.targetPosition - b.targetPosition)
 
     for (const { match } of matchesWithPosition) {
       pairings.push(match)
     }
 
-    // Create group matches with assigned tracks
-    const matches: Match[] = []
-    const tournamentMatches: TournamentMatch[] = []
+    // Create stages (one per round)
+    const roundNumbers = [...new Set(pairings.map(p => p.round))].sort(
+      (a, b) => a - b
+    )
+    const stagesMap = new Map<number, Stage>()
+
+    for (let i = 0; i < roundNumbers.length; i++) {
+      const roundNum = roundNumbers[i]
+      stagesMap.set(
+        roundNum,
+        TournamentMatchManager.newStage({
+          tournament: tournamentId,
+          bracket: 'group',
+          index: i,
+        })
+      )
+    }
+
+    // Create matches and tournament matches
+    const generatedMatches: Match[] = []
+    const generatedTournamentMatches: TournamentMatch[] = []
 
     for (let i = 0; i < pairings.length; i++) {
       const pairing = pairings[i]
-      const matchId = randomUUID()
-      // Cycle tracks for equal distribution across rounds
-      // E.g., with 4 rounds and 2 tracks: A,B,A,B (2 matches per track)
+      const stage = stagesMap.get(pairing.round)!
+
+      // Get track for this round (cycling through tracks)
       let trackId: string | null = null
       if (tracks && tracks.length > 0) {
         const trackIndex = (pairing.round - 1) % tracks.length
         trackId = tracks[trackIndex]
       }
 
-      matches.push({
-        id: matchId,
-        duration: null,
-        status: 'planned',
-        updatedAt: null,
-        createdAt: new Date(),
-        deletedAt: null,
-        user1: pairing.user1,
-        user2: pairing.user2,
-        winner: null,
-        comment: null,
-        session: sessionId,
-        stage: 'group',
-        track: trackId,
+      const match = TournamentMatchManager.newMatch(
+        sessionId,
+        trackId,
+        pairing.userA,
+        pairing.userB
+      )
+
+      const tournamentMatch = TournamentMatchManager.newTournamentMatch({
+        match: match.id,
+        stage: stage.id,
+        index: i,
       })
 
-      tournamentMatches.push({
-        id: randomUUID(),
-        updatedAt: null,
-        createdAt: new Date(),
-        deletedAt: null,
-        tournament: tournamentId,
-        bracket: 'group',
-        round: pairing.round,
-        position: i,
-        group: pairing.group.id,
-        match: matchId,
-        completedAt: null,
-        sourceGroupA: null,
-        sourceGroupARank: null,
-        sourceGroupB: null,
-        sourceGroupBRank: null,
-        sourceMatchA: null,
-        sourceMatchAProgression: null,
-        sourceMatchB: null,
-        sourceMatchBProgression: null,
-      })
+      generatedMatches.push(match)
+      generatedTournamentMatches.push(tournamentMatch)
     }
 
-    return { tournamentMatches, matches }
+    return {
+      stages: Array.from(stagesMap.values()),
+      tournamentMatches: generatedTournamentMatches,
+      matches: generatedMatches,
+      matchDependencies: [], // Group matches have no dependencies
+    }
   }
 
   static generateBracketMatches(
@@ -217,425 +281,505 @@ export default class TournamentMatchManager {
     groups: Group[],
     advancementCount: number,
     eliminationType: EliminationType,
-    startPosition: number = 0,
+    groupStageCount: number,
     bracketTracks: string[] = []
-  ): { tournamentMatches: TournamentMatch[]; matches: Match[] } {
+  ): GeneratedStructure {
     const totalAdvancing = groups.length * advancementCount
     const bracketSize = 2 ** Math.ceil(Math.log2(totalAdvancing))
 
-    const { matches: upperTournamentMatches, meta: upperMeta } =
-      TournamentMatchManager.buildUpperBracket(
-        tournamentId,
-        groups,
-        advancementCount,
-        totalAdvancing,
-        bracketSize
-      )
-
-    if (eliminationType === 'single') {
-      // Single elimination: assign positions, create matches with tracks by round
-      upperTournamentMatches.forEach((m, i) => {
-        m.position = startPosition + i
-      })
-      const matches = TournamentMatchManager.createMatchesForTournamentMatches(
-        upperTournamentMatches,
-        sessionId,
-        bracketTracks
-      )
-      return { tournamentMatches: upperTournamentMatches, matches }
-    }
-
-    // Double elimination: interleave upper and lower brackets
-    const { matches: lowerTournamentMatches, meta: lowerMeta } =
-      TournamentMatchManager.buildLowerBracket(
-        tournamentId,
-        upperMeta,
-        bracketSize
-      )
-
-    const grandFinal = TournamentMatchManager.buildGrandFinal(
+    const {
+      stages: upperStages,
+      tms: upperTMs,
+      metas: upperMeta,
+      deps: upperDeps,
+      matchList: upperMatches,
+    } = TournamentMatchManager.buildUpperBracket(
       tournamentId,
-      upperMeta,
-      lowerMeta
-    )
-
-    // Group upper matches by round
-    const upperByRound = new Map<number, TournamentMatch[]>()
-    for (const m of upperTournamentMatches) {
-      const round = m.round ?? 0
-      if (!upperByRound.has(round)) upperByRound.set(round, [])
-      upperByRound.get(round)!.push(m)
-    }
-
-    // Group lower matches by round
-    const lowerByRound = new Map<number, TournamentMatch[]>()
-    for (const m of lowerTournamentMatches) {
-      const round = m.round ?? 0
-      if (!lowerByRound.has(round)) lowerByRound.set(round, [])
-      lowerByRound.get(round)!.push(m)
-    }
-
-    // Interleave: upper round -> corresponding lower rounds -> repeat
-    // Upper rounds go: log2(bracketSize), log2(bracketSize)-1, ..., 1
-    // Lower rounds go: 1, 2, 3, ... (sequential)
-    const orderedTournamentMatches: TournamentMatch[] = []
-    const maxUpperRound = Math.log2(bracketSize)
-
-    let lowerRound = 1
-
-    for (
-      let upperDisplayRound = maxUpperRound;
-      upperDisplayRound >= 1;
-      upperDisplayRound--
-    ) {
-      // Add upper round matches
-      const upperRoundMatches = upperByRound.get(upperDisplayRound) ?? []
-      orderedTournamentMatches.push(...upperRoundMatches)
-
-      // Add corresponding lower round(s)
-      if (upperDisplayRound === maxUpperRound) {
-        // First upper round -> single lower round (losers play each other)
-        const lowerRoundMatches = lowerByRound.get(lowerRound) ?? []
-        orderedTournamentMatches.push(...lowerRoundMatches)
-        lowerRound++
-      } else {
-        // Subsequent upper rounds -> drop-in round + survivor round
-        const dropInMatches = lowerByRound.get(lowerRound) ?? []
-        orderedTournamentMatches.push(...dropInMatches)
-        lowerRound++
-
-        const survivorMatches = lowerByRound.get(lowerRound) ?? []
-        orderedTournamentMatches.push(...survivorMatches)
-        lowerRound++
-      }
-    }
-
-    // Add grand final last
-    if (grandFinal) {
-      orderedTournamentMatches.push(grandFinal)
-    }
-
-    // Assign positions
-    orderedTournamentMatches.forEach((m, i) => {
-      m.position = startPosition + i
-    })
-
-    // Create matches with tracks assigned by round
-    const matches = TournamentMatchManager.createMatchesForTournamentMatches(
-      orderedTournamentMatches,
       sessionId,
+      groups,
+      advancementCount,
+      totalAdvancing,
+      bracketSize,
+      groupStageCount,
       bracketTracks
     )
 
-    return { tournamentMatches: orderedTournamentMatches, matches }
-  }
-
-  private static createMatchesForTournamentMatches(
-    tournamentMatches: TournamentMatch[],
-    sessionId: string,
-    bracketTracks: string[]
-  ): Match[] {
-    const matches: Match[] = []
-
-    // Group by bracket+round to assign same track to all matches in a round
-    const roundGroups = new Map<string, TournamentMatch[]>()
-    for (const tm of tournamentMatches) {
-      const key = `${tm.bracket}-${tm.round ?? 0}`
-      if (!roundGroups.has(key)) roundGroups.set(key, [])
-      roundGroups.get(key)!.push(tm)
-    }
-
-    // Assign tracks by round order
-    const roundKeys = Array.from(roundGroups.keys())
-    for (let roundIndex = 0; roundIndex < roundKeys.length; roundIndex++) {
-      const key = roundKeys[roundIndex]
-      const tms = roundGroups.get(key)!
-      const trackId =
-        bracketTracks.length > 0
-          ? bracketTracks[roundIndex % bracketTracks.length]
-          : null
-
-      for (const tm of tms) {
-        const matchId = randomUUID()
-        tm.match = matchId
-
-        matches.push({
-          id: matchId,
-          duration: null,
-          status: 'planned',
-          updatedAt: null,
-          createdAt: new Date(),
-          deletedAt: null,
-          user1: null,
-          user2: null,
-          winner: null,
-          comment: null,
-          session: sessionId,
-          stage: tm.bracket === 'grand_final' ? 'grand_final' : null,
-          track: trackId,
-        })
+    if (eliminationType === 'single') {
+      return {
+        stages: upperStages,
+        tournamentMatches: upperTMs,
+        matches: upperMatches,
+        matchDependencies: upperDeps,
       }
     }
 
-    return matches
+    // Double elimination: add lower bracket and grand final
+    const {
+      stages: lowerStages,
+      tms: lowerTMs,
+      metas: lowerMeta,
+      deps: lowerDeps,
+      matchList: lowerMatches,
+    } = TournamentMatchManager.buildLowerBracket(
+      tournamentId,
+      sessionId,
+      upperMeta,
+      bracketSize,
+      groupStageCount + upperStages.length,
+      bracketTracks
+    )
+
+    const {
+      stage: grandFinalStage,
+      tm: grandFinalTM,
+      match: grandFinalMatch,
+      deps: grandFinalDeps,
+    } = TournamentMatchManager.buildGrandFinal(
+      tournamentId,
+      sessionId,
+      upperMeta,
+      lowerMeta,
+      groupStageCount + upperStages.length + lowerStages.length,
+      bracketTracks
+    )
+
+    return {
+      stages: [...upperStages, ...lowerStages, grandFinalStage],
+      tournamentMatches: [...upperTMs, ...lowerTMs, grandFinalTM],
+      matches: [...upperMatches, ...lowerMatches, grandFinalMatch],
+      matchDependencies: [...upperDeps, ...lowerDeps, ...grandFinalDeps],
+    }
   }
 
-  static buildUpperBracket(
+  private static buildUpperBracket(
     tournamentId: string,
+    sessionId: string,
     groups: { id: string }[],
     advancementCount: number,
     totalAdvancing: number,
-    bracketSize: number
-  ): { matches: TournamentMatch[]; meta: UpperMatchMeta[] } {
-    const matches: TournamentMatch[] = []
-    const meta: UpperMatchMeta[] = []
+    bracketSize: number,
+    stageOffset: number,
+    tracks: string[]
+  ): {
+    stages: Stage[]
+    tms: TournamentMatch[]
+    metas: UpperMatchMeta[]
+    deps: MatchDependency[]
+    matchList: Match[]
+  } {
+    const stagesList: Stage[] = []
+    const tmsList: TournamentMatch[] = []
+    const metaList: UpperMatchMeta[] = []
+    const depsList: MatchDependency[] = []
+    const matchList: Match[] = []
 
     let roundNum = bracketSize
+    let stageIndex = 0
 
     while (roundNum >= 2) {
       const matchesInRound = roundNum / 2
-      // Convert bracket size to display round: log2(roundNum)
-      // Final (roundNum=2) -> round 1, Semifinal (roundNum=4) -> round 2, etc.
-      const displayRound = Math.log2(roundNum)
+      const isFirstRound = roundNum === bracketSize
+
+      // Create stage for this round
+      const stage = TournamentMatchManager.newStage({
+        tournament: tournamentId,
+        bracket: 'upper',
+        index: stageOffset + stageIndex,
+      })
+      stagesList.push(stage)
+
+      // Get track for this round
+      const trackId =
+        tracks.length > 0 ? tracks[stageIndex % tracks.length] : null
 
       for (let i = 0; i < matchesInRound; i++) {
-        const id = randomUUID()
-        const isFirstRound = roundNum === bracketSize
+        const match = TournamentMatchManager.newMatch(sessionId, trackId)
+        const tm = TournamentMatchManager.newTournamentMatch({
+          match: match.id,
+          stage: stage.id,
+          index: i,
+        })
 
-        const draft = TournamentMatchManager.newTournamentMatch({
-          id,
-          tournament: tournamentId,
-          bracket: 'upper',
-          round: displayRound,
+        matchList.push(match)
+        tmsList.push(tm)
+        metaList.push({
+          tournamentMatchId: tm.id,
+          round: roundNum,
+          position: i,
         })
 
         if (isFirstRound) {
-          TournamentMatchManager.assignGroupSources(
-            draft,
-            i,
-            groups,
-            advancementCount,
-            totalAdvancing
-          )
+          // First round: source from groups
+          const depsForMatch =
+            TournamentMatchManager.createGroupSourceDependencies(
+              tm.id,
+              i,
+              groups,
+              advancementCount,
+              totalAdvancing
+            )
+          depsList.push(...depsForMatch)
         } else {
-          TournamentMatchManager.assignWinnerSources(draft, meta, roundNum, i)
+          // Later rounds: source from previous round winners
+          const depsForMatch =
+            TournamentMatchManager.createWinnerSourceDependencies(
+              tm.id,
+              metaList,
+              roundNum,
+              i
+            )
+          depsList.push(...depsForMatch)
         }
-
-        matches.push(draft)
-        meta.push({ id, round: roundNum, position: i })
       }
 
       roundNum /= 2
+      stageIndex++
     }
 
-    return { matches, meta }
+    return {
+      stages: stagesList,
+      tms: tmsList,
+      metas: metaList,
+      deps: depsList,
+      matchList,
+    }
   }
 
-  private static assignGroupSources(
-    draft: TournamentMatch,
+  private static createGroupSourceDependencies(
+    toMatchId: string,
     index: number,
     groups: { id: string }[],
     advancementCount: number,
     totalAdvancing: number
-  ) {
-    const assign = (
-      seed: number,
-      set: (groupId: string, rank: number) => void
-    ) => {
+  ): MatchDependency[] {
+    const deps: MatchDependency[] = []
+
+    const assignSlot = (seed: number, slot: DependencySlot) => {
       if (seed >= totalAdvancing) return
 
       const groupIndex = seed % groups.length
       const rank = Math.floor(seed / groups.length) + 1
 
       if (rank <= advancementCount) {
-        set(groups[groupIndex].id, rank)
+        deps.push(
+          TournamentMatchManager.newMatchDependency({
+            fromMatch: null,
+            fromGroup: groups[groupIndex].id,
+            toMatch: toMatchId,
+            fromPosition: rank,
+            toSlot: slot,
+          })
+        )
       }
     }
 
-    assign(index * 2, (g, r) => {
-      draft.sourceGroupA = g
-      draft.sourceGroupARank = r
-    })
+    assignSlot(index * 2, 'A')
+    assignSlot(index * 2 + 1, 'B')
 
-    assign(index * 2 + 1, (g, r) => {
-      draft.sourceGroupB = g
-      draft.sourceGroupBRank = r
-    })
+    return deps
   }
 
-  private static assignWinnerSources(
-    draft: TournamentMatch,
+  private static createWinnerSourceDependencies(
+    toMatchId: string,
     meta: UpperMatchMeta[],
     roundNum: number,
     index: number
-  ) {
+  ): MatchDependency[] {
+    const deps: MatchDependency[] = []
     const prev = meta.filter(m => m.round === roundNum * 2)
 
     if (prev[index * 2]) {
-      draft.sourceMatchA = prev[index * 2].id
-      draft.sourceMatchAProgression = 'winner'
+      deps.push(
+        TournamentMatchManager.newMatchDependency({
+          fromMatch: prev[index * 2].tournamentMatchId,
+          fromGroup: null,
+          toMatch: toMatchId,
+          fromPosition: 1, // winner
+          toSlot: 'A',
+        })
+      )
     }
 
     if (prev[index * 2 + 1]) {
-      draft.sourceMatchB = prev[index * 2 + 1].id
-      draft.sourceMatchBProgression = 'winner'
-    }
-  }
-
-  static buildLowerBracket(
-    tournamentId: string,
-    upperMeta: UpperMatchMeta[],
-    bracketSize: number
-  ): { matches: TournamentMatch[]; meta: LowerMatchMeta[] } {
-    const matches: TournamentMatch[] = []
-    const meta: LowerMatchMeta[] = []
-
-    let lowerRound = 1
-
-    const firstUpper = upperMeta.filter(m => m.round === bracketSize)
-
-    for (let i = 0; i < Math.floor(firstUpper.length / 2); i++) {
-      const id = randomUUID()
-
-      matches.push(
-        TournamentMatchManager.newTournamentMatch({
-          id,
-          tournament: tournamentId,
-          bracket: 'lower',
-          round: lowerRound,
-          sourceMatchA: firstUpper[i * 2].id,
-          sourceMatchAProgression: 'loser',
-          sourceMatchB: firstUpper[i * 2 + 1].id,
-          sourceMatchBProgression: 'loser',
+      deps.push(
+        TournamentMatchManager.newMatchDependency({
+          fromMatch: prev[index * 2 + 1].tournamentMatchId,
+          fromGroup: null,
+          toMatch: toMatchId,
+          fromPosition: 1, // winner
+          toSlot: 'B',
         })
       )
+    }
 
-      meta.push({ id, round: lowerRound, position: i, isDropIn: false })
+    return deps
+  }
+
+  private static buildLowerBracket(
+    tournamentId: string,
+    sessionId: string,
+    upperMeta: UpperMatchMeta[],
+    bracketSize: number,
+    stageOffset: number,
+    tracks: string[]
+  ): {
+    stages: Stage[]
+    tms: TournamentMatch[]
+    metas: LowerMatchMeta[]
+    deps: MatchDependency[]
+    matchList: Match[]
+  } {
+    const stagesList: Stage[] = []
+    const tmsList: TournamentMatch[] = []
+    const metaList: LowerMatchMeta[] = []
+    const depsList: MatchDependency[] = []
+    const matchList: Match[] = []
+
+    let lowerRound = 1
+    let stageIndex = 0
+
+    // First lower round: losers from first upper round play each other
+    const firstUpper = upperMeta.filter(m => m.round === bracketSize)
+    const stage1 = TournamentMatchManager.newStage({
+      tournament: tournamentId,
+      bracket: 'lower',
+      index: stageOffset + stageIndex,
+    })
+    stagesList.push(stage1)
+
+    const trackId1 =
+      tracks.length > 0 ? tracks[stageIndex % tracks.length] : null
+
+    for (let i = 0; i < Math.floor(firstUpper.length / 2); i++) {
+      const match = TournamentMatchManager.newMatch(sessionId, trackId1)
+      const tm = TournamentMatchManager.newTournamentMatch({
+        match: match.id,
+        stage: stage1.id,
+        index: i,
+      })
+
+      matchList.push(match)
+      tmsList.push(tm)
+      metaList.push({
+        tournamentMatchId: tm.id,
+        round: lowerRound,
+        position: i,
+        isDropIn: false,
+      })
+
+      // Source: losers from first upper round
+      depsList.push(
+        TournamentMatchManager.newMatchDependency({
+          fromMatch: firstUpper[i * 2].tournamentMatchId,
+          fromGroup: null,
+          toMatch: tm.id,
+          fromPosition: 2, // loser
+          toSlot: 'A',
+        }),
+        TournamentMatchManager.newMatchDependency({
+          fromMatch: firstUpper[i * 2 + 1].tournamentMatchId,
+          fromGroup: null,
+          toMatch: tm.id,
+          fromPosition: 2, // loser
+          toSlot: 'B',
+        })
+      )
     }
 
     let upperRound = bracketSize / 2
     lowerRound++
+    stageIndex++
 
     while (upperRound >= 2) {
-      TournamentMatchManager.buildLowerDropInRound(
-        tournamentId,
-        matches,
-        meta,
-        upperMeta,
-        upperRound,
-        lowerRound
-      )
+      // Drop-in round: lower bracket survivors vs upper bracket losers
+      const prevLower = metaList.filter(m => m.round === lowerRound - 1)
+      const upperLosers = upperMeta.filter(m => m.round === upperRound)
+      const count = Math.min(prevLower.length, upperLosers.length)
+
+      const dropInStage = TournamentMatchManager.newStage({
+        tournament: tournamentId,
+        bracket: 'lower',
+        index: stageOffset + stageIndex,
+      })
+      stagesList.push(dropInStage)
+
+      const dropInTrack =
+        tracks.length > 0 ? tracks[stageIndex % tracks.length] : null
+
+      for (let i = 0; i < count; i++) {
+        const match = TournamentMatchManager.newMatch(sessionId, dropInTrack)
+        const tm = TournamentMatchManager.newTournamentMatch({
+          match: match.id,
+          stage: dropInStage.id,
+          index: i,
+        })
+
+        matchList.push(match)
+        tmsList.push(tm)
+        metaList.push({
+          tournamentMatchId: tm.id,
+          round: lowerRound,
+          position: i,
+          isDropIn: true,
+        })
+
+        depsList.push(
+          TournamentMatchManager.newMatchDependency({
+            fromMatch: prevLower[i].tournamentMatchId,
+            fromGroup: null,
+            toMatch: tm.id,
+            fromPosition: 1, // winner
+            toSlot: 'A',
+          }),
+          TournamentMatchManager.newMatchDependency({
+            fromMatch: upperLosers[i].tournamentMatchId,
+            fromGroup: null,
+            toMatch: tm.id,
+            fromPosition: 2, // loser
+            toSlot: 'B',
+          })
+        )
+      }
 
       lowerRound++
-      TournamentMatchManager.buildLowerSurvivorRound(
-        tournamentId,
-        matches,
-        meta,
-        lowerRound
-      )
+      stageIndex++
 
-      lowerRound++
+      // Survivor round: lower bracket winners play each other
+      const prevDropIn = metaList.filter(m => m.round === lowerRound - 1)
+      if (prevDropIn.length > 1) {
+        const survivorStage = TournamentMatchManager.newStage({
+          tournament: tournamentId,
+          bracket: 'lower',
+          index: stageOffset + stageIndex,
+        })
+        stagesList.push(survivorStage)
+
+        const survivorTrack =
+          tracks.length > 0 ? tracks[stageIndex % tracks.length] : null
+
+        for (let i = 0; i < Math.floor(prevDropIn.length / 2); i++) {
+          const match = TournamentMatchManager.newMatch(
+            sessionId,
+            survivorTrack
+          )
+          const tm = TournamentMatchManager.newTournamentMatch({
+            match: match.id,
+            stage: survivorStage.id,
+            index: i,
+          })
+
+          matchList.push(match)
+          tmsList.push(tm)
+          metaList.push({
+            tournamentMatchId: tm.id,
+            round: lowerRound,
+            position: i,
+            isDropIn: false,
+          })
+
+          depsList.push(
+            TournamentMatchManager.newMatchDependency({
+              fromMatch: prevDropIn[i * 2].tournamentMatchId,
+              fromGroup: null,
+              toMatch: tm.id,
+              fromPosition: 1, // winner
+              toSlot: 'A',
+            }),
+            TournamentMatchManager.newMatchDependency({
+              fromMatch: prevDropIn[i * 2 + 1].tournamentMatchId,
+              fromGroup: null,
+              toMatch: tm.id,
+              fromPosition: 1, // winner
+              toSlot: 'B',
+            })
+          )
+        }
+
+        lowerRound++
+        stageIndex++
+      }
+
       upperRound /= 2
     }
 
-    return { matches, meta }
-  }
-
-  private static buildLowerDropInRound(
-    tournamentId: string,
-    matches: TournamentMatch[],
-    meta: LowerMatchMeta[],
-    upperMeta: UpperMatchMeta[],
-    upperRound: number,
-    lowerRound: number
-  ) {
-    const prevLower = meta.filter(m => m.round === lowerRound - 1)
-    const upperLosers = upperMeta.filter(m => m.round === upperRound)
-    const count = Math.min(prevLower.length, upperLosers.length)
-
-    for (let i = 0; i < count; i++) {
-      const id = randomUUID()
-
-      matches.push(
-        TournamentMatchManager.newTournamentMatch({
-          id,
-          tournament: tournamentId,
-          bracket: 'lower',
-          round: lowerRound,
-          sourceMatchA: prevLower[i].id,
-          sourceMatchAProgression: 'winner',
-          sourceMatchB: upperLosers[i].id,
-          sourceMatchBProgression: 'loser',
-        })
-      )
-
-      meta.push({ id, round: lowerRound, position: i, isDropIn: true })
+    return {
+      stages: stagesList,
+      tms: tmsList,
+      metas: metaList,
+      deps: depsList,
+      matchList,
     }
   }
 
-  private static buildLowerSurvivorRound(
+  private static buildGrandFinal(
     tournamentId: string,
-    matches: TournamentMatch[],
-    meta: LowerMatchMeta[],
-    lowerRound: number
-  ) {
-    const prev = meta.filter(m => m.round === lowerRound - 1)
-    if (prev.length <= 1) return
-
-    for (let i = 0; i < Math.floor(prev.length / 2); i++) {
-      const id = randomUUID()
-
-      matches.push(
-        TournamentMatchManager.newTournamentMatch({
-          id,
-          tournament: tournamentId,
-          bracket: 'lower',
-          round: lowerRound,
-          sourceMatchA: prev[i * 2].id,
-          sourceMatchAProgression: 'winner',
-          sourceMatchB: prev[i * 2 + 1].id,
-          sourceMatchBProgression: 'winner',
-        })
-      )
-
-      meta.push({ id, round: lowerRound, position: i, isDropIn: false })
-    }
-  }
-
-  static buildGrandFinal(
-    tournamentId: string,
+    sessionId: string,
     upperMeta: UpperMatchMeta[],
-    lowerMeta: LowerMatchMeta[]
-  ): TournamentMatch | null {
+    lowerMeta: LowerMatchMeta[],
+    stageOffset: number,
+    tracks: string[]
+  ): {
+    stage: Stage
+    tm: TournamentMatch
+    match: Match
+    deps: MatchDependency[]
+  } {
     const upperFinal = upperMeta.find(m => m.round === 2)
-    if (!upperFinal) return null
-
     const lastLowerRound = Math.max(...lowerMeta.map(m => m.round))
     const lowerFinal = lowerMeta.find(m => m.round === lastLowerRound)
-    if (!lowerFinal) return null
 
-    return TournamentMatchManager.newTournamentMatch({
+    const stage = TournamentMatchManager.newStage({
       tournament: tournamentId,
       bracket: 'grand_final',
-      sourceMatchA: upperFinal.id,
-      sourceMatchAProgression: 'winner',
-      sourceMatchB: lowerFinal.id,
-      sourceMatchBProgression: 'winner',
+      index: stageOffset,
     })
+
+    const trackId =
+      tracks.length > 0 ? tracks[stageOffset % tracks.length] : null
+    const match = TournamentMatchManager.newMatch(sessionId, trackId)
+
+    const tm = TournamentMatchManager.newTournamentMatch({
+      match: match.id,
+      stage: stage.id,
+      index: 0,
+    })
+
+    const deps: MatchDependency[] = []
+    if (upperFinal) {
+      deps.push(
+        TournamentMatchManager.newMatchDependency({
+          fromMatch: upperFinal.tournamentMatchId,
+          fromGroup: null,
+          toMatch: tm.id,
+          fromPosition: 1, // winner
+          toSlot: 'A',
+        })
+      )
+    }
+    if (lowerFinal) {
+      deps.push(
+        TournamentMatchManager.newMatchDependency({
+          fromMatch: lowerFinal.tournamentMatchId,
+          fromGroup: null,
+          toMatch: tm.id,
+          fromPosition: 1, // winner
+          toSlot: 'B',
+        })
+      )
+    }
+
+    return { stage, tm, match, deps }
   }
 
   /**
    * Generates round-robin pairings using the circle method.
-   * Each round has floor(n/2) matches where each player plays at most once.
-   * This maximizes rest time between a player's consecutive matches.
    */
   private static generateRoundRobinRounds<T extends { id: string }>(
     players: string[],
     group: T
-  ): { group: T; user1: string; user2: string; round: number }[][] {
+  ): { group: T; userA: string; userB: string; round: number }[][] {
     if (players.length < 2) return []
 
-    // Add a "bye" placeholder if odd number of players
     const participants = [...players]
     const hasBye = participants.length % 2 === 1
     if (hasBye) {
@@ -645,17 +789,16 @@ export default class TournamentMatchManager {
     const n = participants.length
     const rounds: {
       group: T
-      user1: string
-      user2: string
+      userA: string
+      userB: string
       round: number
     }[][] = []
 
-    // Circle method: fix first player, rotate the rest
     for (let round = 0; round < n - 1; round++) {
       const roundMatches: {
         group: T
-        user1: string
-        user2: string
+        userA: string
+        userB: string
         round: number
       }[] = []
 
@@ -666,13 +809,12 @@ export default class TournamentMatchManager {
         const player1 = participants[home]
         const player2 = participants[away]
 
-        // Skip matches involving the "bye" placeholder
         if (player1 !== 'BYE' && player2 !== 'BYE') {
           roundMatches.push({
             group,
-            user1: player1,
-            user2: player2,
-            round: round + 1, // 1-indexed round number
+            userA: player1,
+            userB: player2,
+            round: round + 1,
           })
         }
       }
@@ -683,110 +825,75 @@ export default class TournamentMatchManager {
     return rounds
   }
 
+  /**
+   * Resolve dependencies when a group is complete.
+   * Finds all dependencies from this group and assigns users to bracket matches.
+   */
   static async resolveGroupDependentMatches(
     groupId: string,
-    sessionId: string | null
+    _sessionId: string | null
   ) {
-    await Promise.all([
-      TournamentMatchManager.handleGroupDependencyResolution(
-        groupId,
-        sessionId,
-        'A'
-      ),
-      TournamentMatchManager.handleGroupDependencyResolution(
-        groupId,
-        sessionId,
-        'B'
-      ),
-    ])
-  }
-
-  private static async handleGroupDependencyResolution(
-    groupId: string,
-    _sessionId: string | null,
-    side: MatchSide
-  ) {
-    // Find all tournament matches that are dependent on this group
-    const tournamentMatchRows = await db.query.tournamentMatches.findMany({
+    // Find all dependencies from this group
+    const deps = await db.query.matchDependencies.findMany({
       where: and(
-        side === 'A'
-          ? eq(tournamentMatches.sourceGroupA, groupId)
-          : eq(tournamentMatches.sourceGroupB, groupId),
-        isNull(tournamentMatches.deletedAt)
+        eq(matchDependencies.fromGroup, groupId),
+        isNull(matchDependencies.deletedAt)
       ),
     })
 
-    for (const tournamentMatch of tournamentMatchRows) {
-      const rank =
-        side === 'A'
-          ? tournamentMatch.sourceGroupARank
-          : tournamentMatch.sourceGroupBRank
-      if (!rank) throw new Error(`Source group ${side} rank not found`)
+    for (const dep of deps) {
+      const userId = await GroupManager.getUserAt(groupId, dep.fromPosition)
 
-      const userId = await GroupManager.getUserAt(groupId, rank)
+      // Find the match linked to the target tournament match
+      const tm = await db.query.tournamentMatches.findFirst({
+        where: eq(tournamentMatches.id, dep.toMatch),
+      })
+      if (!tm) continue
 
-      const matchId = tournamentMatch.match
-      if (!matchId) {
-        throw new Error(
-          `Match not found for tournament match ${tournamentMatch.id}`
-        )
-      }
-
-      await MatchManager.setPlayer(matchId, side, userId)
+      await MatchManager.setPlayer(tm.match, dep.toSlot as MatchSide, userId)
     }
   }
 
+  /**
+   * Resolve dependencies when a match is completed.
+   * Finds all dependencies from this match and assigns users to next matches.
+   */
   static async resolveMatchDependentMatches(
-    matchId: string,
-    sessionId: string | null
+    tournamentMatchId: string,
+    _sessionId: string | null
   ) {
-    await Promise.all([
-      TournamentMatchManager.handleMatchDependencyResolution(
-        matchId,
-        sessionId,
-        'A'
-      ),
-      TournamentMatchManager.handleMatchDependencyResolution(
-        matchId,
-        sessionId,
-        'B'
-      ),
-    ])
-  }
-
-  private static async handleMatchDependencyResolution(
-    matchId: string,
-    _sessionId: string | null,
-    side: MatchSide
-  ) {
-    // Find all tournament matches that are dependent on this match
-    const tournamentMatchRows = await db.query.tournamentMatches.findMany({
+    // Find all dependencies from this tournament match
+    const deps = await db.query.matchDependencies.findMany({
       where: and(
-        side === 'A'
-          ? eq(tournamentMatches.sourceMatchA, matchId)
-          : eq(tournamentMatches.sourceMatchB, matchId),
-        isNull(tournamentMatches.deletedAt)
+        eq(matchDependencies.fromMatch, tournamentMatchId),
+        isNull(matchDependencies.deletedAt)
       ),
     })
 
-    for (const tournamentMatch of tournamentMatchRows) {
-      const progression =
-        side === 'A'
-          ? tournamentMatch.sourceMatchAProgression
-          : tournamentMatch.sourceMatchBProgression
-      if (!progression)
-        throw new Error(`Progression not found for match dependency`)
+    // Get the source tournament match to find its match
+    const sourceTM = await db.query.tournamentMatches.findFirst({
+      where: eq(tournamentMatches.id, tournamentMatchId),
+    })
+    if (!sourceTM) return
 
-      const userId = await MatchManager.getProgressedUser(matchId, progression)
+    for (const dep of deps) {
+      // Get user from the source match (position 1 = winner, 2 = loser)
+      const userId = await MatchManager.getProgressedUser(
+        sourceTM.match,
+        dep.fromPosition
+      )
 
-      const dependentMatchId = tournamentMatch.match
-      if (!dependentMatchId) {
-        throw new Error(
-          `Match not found for tournament match ${tournamentMatch.id}`
-        )
-      }
+      // Find the target match
+      const targetTM = await db.query.tournamentMatches.findFirst({
+        where: eq(tournamentMatches.id, dep.toMatch),
+      })
+      if (!targetTM) continue
 
-      await MatchManager.setPlayer(dependentMatchId, side, userId)
+      await MatchManager.setPlayer(
+        targetTM.match,
+        dep.toSlot as MatchSide,
+        userId
+      )
     }
   }
 
@@ -802,10 +909,8 @@ export default class TournamentMatchManager {
 
     if (largestGroup < 2) return { min: 0, max: 0 }
 
-    // Group stage (round-robin)
     const groupStageMatches = largestGroup - 1
 
-    // Normalize advancing players to next power of two
     const totalAdvancingPlayers =
       tournament.advancementCount * tournament.groups.length
     const bracketSize = Math.pow(
@@ -820,11 +925,9 @@ export default class TournamentMatchManager {
     if (tournament.eliminationType === 'single') {
       knockoutMatches = rounds
     } else {
-      // Matches your actual double-elimination structure
       knockoutMatches = rounds + 2
     }
 
-    // TOOD: Include tiebreaker matches
     return { min: groupStageMatches, max: groupStageMatches + knockoutMatches }
   }
 }

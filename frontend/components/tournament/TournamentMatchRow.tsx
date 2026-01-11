@@ -44,10 +44,8 @@ export default function TournamentMatchRow({
       />
     )
 
-  const displayName = getRoundName(
-    tournamentMatch.round ?? 0,
-    tournamentMatch.bracket
-  )
+  const stage = tournamentMatch.stage
+  const displayName = getRoundName(stage.index, stage.bracket)
 
   return (
     <div

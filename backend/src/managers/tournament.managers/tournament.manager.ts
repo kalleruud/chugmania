@@ -3,7 +3,9 @@ import db, { database } from '@backend/database/database'
 import {
   groupPlayers,
   groups,
+  matchDependencies,
   matches,
+  stages,
   tournamentMatches,
   tournaments,
 } from '@backend/database/schema'
@@ -16,13 +18,18 @@ import {
   isTournamentPreviewRequest,
   type CreateGroup,
   type CreateGroupPlayer,
+  type CreateMatchDependency,
+  type CreateStage,
   type CreateTournament,
   type Group,
   type GroupPlayer,
   type GroupWithPlayers,
+  type MatchDependency,
+  type Stage,
   type Tournament,
   type TournamentMatch,
-  type TournamentRound,
+  type TournamentMatchWithDetails,
+  type TournamentStage,
   type TournamentWithDetails,
 } from '@common/models/tournament'
 import { and, eq, inArray, isNull } from 'drizzle-orm'
@@ -38,8 +45,10 @@ type TournamentStructure = {
   tournament: Tournament
   groups: Group[]
   groupPlayers: GroupPlayer[]
+  stages: Stage[]
   tournamentMatches: TournamentMatch[]
   matches: Match[]
+  matchDependencies: MatchDependency[]
 }
 
 export default class TournamentManager {
@@ -74,15 +83,32 @@ export default class TournamentManager {
     }
 
     const { groups, groupPlayers } = await GroupManager.getAll(tournamentId)
-    const { tournamentMatches, matches } =
-      await TournamentMatchManager.getAll(tournamentId)
+    const {
+      stages: stageRows,
+      tournamentMatches: tmRows,
+      matches: matchRows,
+    } = await TournamentMatchManager.getAll(tournamentId)
+
+    // Get match dependencies
+    const tmIds = tmRows.map(tm => tm.id)
+    const deps =
+      tmIds.length > 0
+        ? await db.query.matchDependencies.findMany({
+            where: and(
+              inArray(matchDependencies.toMatch, tmIds),
+              isNull(matchDependencies.deletedAt)
+            ),
+          })
+        : []
 
     return {
       tournament,
       groups,
       groupPlayers,
-      tournamentMatches,
-      matches,
+      stages: stageRows,
+      tournamentMatches: tmRows,
+      matches: matchRows,
+      matchDependencies: deps,
     }
   }
 
@@ -90,33 +116,57 @@ export default class TournamentManager {
     tournament,
     groups,
     groupPlayers,
+    stages: stageRows,
     tournamentMatches,
     matches,
   }: TournamentStructure): Promise<TournamentWithDetails> {
+    // Find group stages and compute wins/losses for group players
+    const groupStages = stageRows.filter(s => s.bracket === 'group')
+    const groupStageIds = new Set(groupStages.map(s => s.id))
+
     const groupMatches = tournamentMatches
-      .filter(tm => tm.bracket === 'group')
+      .filter(tm => groupStageIds.has(tm.stage))
       .map(tm => matches.find(m => m.id === tm.match))
-      .filter(m => m?.winner)
+      .filter((m): m is Match => m !== undefined && m.winner !== null)
 
     const groupsWithPlayers: GroupWithPlayers[] = groups.map(group => {
+      const playersInGroup = groupPlayers.filter(gp => gp.group === group.id)
+      const groupUserIds = new Set(playersInGroup.map(gp => gp.user))
+
+      // Filter matches to only those within this group
+      const groupOnlyMatches = groupMatches.filter(
+        m =>
+          m.userA &&
+          m.userB &&
+          groupUserIds.has(m.userA) &&
+          groupUserIds.has(m.userB)
+      )
+
       return {
         ...group,
-        players: groupPlayers
-          .filter(gp => gp.group === group.id)
-          .map(gp => ({
+        players: playersInGroup.map(gp => {
+          const wins = groupOnlyMatches.filter(m => {
+            const winnerId = m.winner === 'A' ? m.userA : m.userB
+            return winnerId === gp.user
+          }).length
+
+          const losses = groupOnlyMatches.filter(m => {
+            const loserId = m.winner === 'A' ? m.userB : m.userA
+            return loserId === gp.user
+          }).length
+
+          return {
             ...gp,
-            wins: groupMatches.filter(m => m?.winner === gp.user).length,
-            losses: groupMatches.filter(
-              m =>
-                (m?.user1 === gp.user || m?.user2 === gp.user) &&
-                m?.winner !== gp.user
-            ).length,
-          })),
+            wins,
+            losses,
+          }
+        }),
       }
     })
 
-    // Sort matches in correct display order, then group by bracket+round
-    const matchesByRound = TournamentManager.generateRounds(
+    // Group tournament matches by stage
+    const stagesWithMatches = TournamentManager.generateStages(
+      stageRows,
       tournamentMatches,
       matches
     )
@@ -130,10 +180,8 @@ export default class TournamentManager {
       }
     )
 
-    // Calculate recommended number of tracks so each is used ~2 times
-    const groupStageTrackCount = Math.ceil(
-      matchesByRound.filter(r => r.bracket === 'group').length / 2
-    )
+    // Calculate recommended number of tracks for group stage
+    const groupStageTrackCount = Math.ceil(groupStages.length / 2)
 
     return {
       ...tournament,
@@ -141,35 +189,38 @@ export default class TournamentManager {
       minMatchesPerPlayer: min,
       groupStageTrackCount,
       groups: groupsWithPlayers,
-      rounds: matchesByRound,
+      stages: stagesWithMatches,
     }
   }
 
-  private static generateRounds(
+  private static generateStages(
+    stageRows: Stage[],
     tournamentMatches: TournamentMatch[],
     matches: Match[]
-  ): TournamentRound[] {
-    const groups = new Map<string, TournamentRound>()
+  ): TournamentStage[] {
+    return stageRows.map(stageRow => {
+      const tmsInStage = tournamentMatches.filter(
+        tm => tm.stage === stageRow.id
+      )
 
-    for (const match of tournamentMatches) {
-      const key = `${match.bracket}-${match.round ?? 0}`
-
-      if (!groups.has(key)) {
-        groups.set(key, {
-          bracket: match.bracket,
-          matches: [],
-          round: match.round ?? 0,
+      const matchesWithDetails: TournamentMatchWithDetails[] = tmsInStage.map(
+        tm => ({
+          id: tm.id,
+          updatedAt: tm.updatedAt,
+          createdAt: tm.createdAt,
+          deletedAt: tm.deletedAt,
+          match: tm.match,
+          stage: stageRow,
+          index: tm.index,
+          matchDetails: matches.find(m => m.id === tm.match) ?? null,
         })
+      )
+
+      return {
+        stage: stageRow,
+        matches: matchesWithDetails,
       }
-
-      const group = groups.get(key)!
-      group.matches.push({
-        ...match,
-        matchDetails: matches.find(m => m.id === match.match) ?? null,
-      })
-    }
-
-    return Array.from(groups.values())
+    })
   }
 
   private static async generateTournamentStructure({
@@ -207,25 +258,31 @@ export default class TournamentManager {
       playerIds
     )
 
-    const { tournamentMatches, matches } =
-      await TournamentMatchManager.createGroupMatches(
-        tournament.id,
-        session,
-        groups,
-        groupPlayers,
-        groupStageTracks
-      )
+    const {
+      stages: groupStages,
+      tournamentMatches: groupTMs,
+      matches: groupMatches,
+      matchDependencies: groupDeps,
+    } = TournamentMatchManager.createGroupMatches(
+      tournament.id,
+      session,
+      groups,
+      groupPlayers,
+      groupStageTracks
+    )
 
     const {
-      tournamentMatches: bracketTournamentMatches,
+      stages: bracketStages,
+      tournamentMatches: bracketTMs,
       matches: bracketMatches,
+      matchDependencies: bracketDeps,
     } = TournamentMatchManager.generateBracketMatches(
       tournament.id,
       session,
       groups,
       advancementCount,
       eliminationType,
-      tournamentMatches.length,
+      groupStages.length,
       bracketTracks
     )
 
@@ -233,8 +290,10 @@ export default class TournamentManager {
       tournament,
       groups,
       groupPlayers,
-      tournamentMatches: tournamentMatches.concat(bracketTournamentMatches),
-      matches: matches.concat(bracketMatches),
+      stages: [...groupStages, ...bracketStages],
+      tournamentMatches: [...groupTMs, ...bracketTMs],
+      matches: [...groupMatches, ...bracketMatches],
+      matchDependencies: [...groupDeps, ...bracketDeps],
     }
   }
 
@@ -242,19 +301,35 @@ export default class TournamentManager {
     tournamentDraft: CreateTournament,
     groupDrafts: CreateGroup[],
     groupPlayerDrafts: CreateGroupPlayer[],
+    stageDrafts: CreateStage[],
     matchDrafts: CreateMatch[],
-    tournamentMatchDrafts: TournamentMatch[]
+    tournamentMatchDrafts: TournamentMatch[],
+    matchDependencyDrafts: CreateMatchDependency[]
   ) {
     database.transaction(() => {
       db.insert(tournaments).values(tournamentDraft).run()
-      db.insert(groups).values(groupDrafts).run()
-      db.insert(groupPlayers).values(groupPlayerDrafts).run()
-      db.insert(matches).values(matchDrafts).run()
-      db.insert(tournamentMatches).values(tournamentMatchDrafts).run()
+      if (groupDrafts.length > 0) {
+        db.insert(groups).values(groupDrafts).run()
+      }
+      if (groupPlayerDrafts.length > 0) {
+        db.insert(groupPlayers).values(groupPlayerDrafts).run()
+      }
+      if (stageDrafts.length > 0) {
+        db.insert(stages).values(stageDrafts).run()
+      }
+      if (matchDrafts.length > 0) {
+        db.insert(matches).values(matchDrafts).run()
+      }
+      if (tournamentMatchDrafts.length > 0) {
+        db.insert(tournamentMatches).values(tournamentMatchDrafts).run()
+      }
+      if (matchDependencyDrafts.length > 0) {
+        db.insert(matchDependencies).values(matchDependencyDrafts).run()
+      }
     })()
   }
 
-  public static async onMatchUpdated(match: Match, date: Date) {
+  public static async onMatchUpdated(match: Match, _date: Date) {
     if (match.status !== 'completed') return
 
     const tournamentMatch = await db.query.tournamentMatches.findFirst({
@@ -271,34 +346,44 @@ export default class TournamentManager {
       throw new Error('Match has no winner')
     }
 
-    const loser = match.user1 === match.winner ? match.user2 : match.user1
-    if (!loser) throw new Error(loc.no.error.messages.loser_not_found)
+    // Find the stage to determine if this is a group stage match
+    const stage = await db.query.stages.findFirst({
+      where: eq(stages.id, tournamentMatch.stage),
+    })
 
-    await db
-      .update(tournamentMatches)
-      .set({ completedAt: date })
-      .where(eq(tournamentMatches.id, tournamentMatch.id))
+    if (!stage) return
 
-    if (tournamentMatch.group) {
-      const isGroupComplete = await GroupManager.incrementGroupWinLoseStats(
-        tournamentMatch.group,
-        {
-          ...match,
-          winner: match.winner,
-        }
-      )
+    if (stage.bracket === 'group') {
+      // Find the group for this match by looking at the players
+      const userA = match.userA
+      const userB = match.userB
+
+      if (!userA || !userB) return
+
+      // Find which group these players belong to
+      const gpA = await db.query.groupPlayers.findFirst({
+        where: and(
+          eq(groupPlayers.user, userA),
+          isNull(groupPlayers.deletedAt)
+        ),
+      })
+
+      if (!gpA) return
+
+      const isGroupComplete = await GroupManager.isGroupComplete(gpA.group)
 
       if (isGroupComplete) {
         return await TournamentMatchManager.resolveGroupDependentMatches(
-          tournamentMatch.group,
+          gpA.group,
           match.session
         )
       }
       return
     }
 
+    // Bracket match: resolve dependent matches
     return await TournamentMatchManager.resolveMatchDependentMatches(
-      match.id,
+      tournamentMatch.id,
       match.session
     )
   }
@@ -322,8 +407,10 @@ export default class TournamentManager {
       tournamentStructure.tournament,
       tournamentStructure.groups,
       tournamentStructure.groupPlayers,
+      tournamentStructure.stages,
       tournamentStructure.matches,
-      tournamentStructure.tournamentMatches
+      tournamentStructure.tournamentMatches,
+      tournamentStructure.matchDependencies
     )
 
     console.debug(
@@ -369,7 +456,7 @@ export default class TournamentManager {
   }
 
   static async onEditTournament(
-    socket: TypedSocket,
+    _socket: TypedSocket,
     request: EventReq<'edit_tournament'>
   ): Promise<EventRes<'edit_tournament'>> {
     if (!isEditTournamentRequest(request)) {
@@ -400,7 +487,9 @@ export default class TournamentManager {
     )
 
     const groupIds = tournamentStructure.groups.map(g => g.id)
+    const stageIds = tournamentStructure.stages.map(s => s.id)
     const matchIds = tournamentStructure.matches.map(m => m.id)
+    const tmIds = tournamentStructure.tournamentMatches.map(tm => tm.id)
 
     database.transaction(() => {
       db.update(tournaments)
@@ -410,35 +499,58 @@ export default class TournamentManager {
         )
         .run()
 
-      db.update(groups)
-        .set({ deletedAt })
-        .where(and(eq(groups.tournament, request.id), isNull(groups.deletedAt)))
-        .run()
+      if (groupIds.length > 0) {
+        db.update(groups)
+          .set({ deletedAt })
+          .where(and(inArray(groups.id, groupIds), isNull(groups.deletedAt)))
+          .run()
 
-      db.update(groupPlayers)
-        .set({ deletedAt })
-        .where(
-          and(
-            inArray(groupPlayers.group, groupIds),
-            isNull(groupPlayers.deletedAt)
+        db.update(groupPlayers)
+          .set({ deletedAt })
+          .where(
+            and(
+              inArray(groupPlayers.group, groupIds),
+              isNull(groupPlayers.deletedAt)
+            )
           )
-        )
-        .run()
+          .run()
+      }
 
-      db.update(matches)
-        .set({ deletedAt })
-        .where(and(inArray(matches.id, matchIds), isNull(matches.deletedAt)))
-        .run()
+      if (stageIds.length > 0) {
+        db.update(stages)
+          .set({ deletedAt })
+          .where(and(inArray(stages.id, stageIds), isNull(stages.deletedAt)))
+          .run()
+      }
 
-      db.update(tournamentMatches)
-        .set({ deletedAt })
-        .where(
-          and(
-            eq(tournamentMatches.tournament, request.id),
-            isNull(tournamentMatches.deletedAt)
+      if (matchIds.length > 0) {
+        db.update(matches)
+          .set({ deletedAt })
+          .where(and(inArray(matches.id, matchIds), isNull(matches.deletedAt)))
+          .run()
+      }
+
+      if (tmIds.length > 0) {
+        db.update(tournamentMatches)
+          .set({ deletedAt })
+          .where(
+            and(
+              inArray(tournamentMatches.id, tmIds),
+              isNull(tournamentMatches.deletedAt)
+            )
           )
-        )
-        .run()
+          .run()
+
+        db.update(matchDependencies)
+          .set({ deletedAt })
+          .where(
+            and(
+              inArray(matchDependencies.toMatch, tmIds),
+              isNull(matchDependencies.deletedAt)
+            )
+          )
+          .run()
+      }
     })()
 
     console.info(

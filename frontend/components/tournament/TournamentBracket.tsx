@@ -1,6 +1,6 @@
 import { useTimeEntryInput } from '@/hooks/TimeEntryInputProvider'
 import loc from '@/lib/locales'
-import type { Match } from '@common/models/match'
+import { getRoundName } from '@/lib/utils'
 import type {
   GroupWithPlayers,
   TournamentMatchWithDetails,
@@ -11,102 +11,41 @@ import MatchRow from '../match/MatchRow'
 type TournamentBracketProps = {
   matches: TournamentMatchWithDetails[]
   groups: GroupWithPlayers[]
-  allMatches: Match[]
   className?: string
 }
 
 export default function TournamentBracket({
   matches,
-  groups,
-  allMatches,
+  groups: _groups,
   className,
 }: Readonly<TournamentBracketProps>) {
   const { openMatch } = useTimeEntryInput()
 
-  const upperBracketMatches = matches.filter(m => m.bracket === 'upper')
-  const lowerBracketMatches = matches.filter(m => m.bracket === 'lower')
-  const grandFinalMatches = matches.filter(m => m.bracket === 'grand_final')
-
-  // Upper bracket: higher round numbers are earlier (16->8->4->2->1)
-  const upperRounds = [...new Set(upperBracketMatches.map(m => m.round))].sort(
-    (a, b) => b - a
-  )
-  // Lower bracket: higher round numbers are earlier (same as upper bracket)
-  const lowerRounds = [...new Set(lowerBracketMatches.map(m => m.round))].sort(
-    (a, b) => b - a
+  const upperBracketMatches = matches.filter(m => m.stage.bracket === 'upper')
+  const lowerBracketMatches = matches.filter(m => m.stage.bracket === 'lower')
+  const grandFinalMatches = matches.filter(
+    m => m.stage.bracket === 'grand_final'
   )
 
-  function getSourceDescription(match: TournamentMatchWithDetails): {
-    sourceA: string
-    sourceB: string
-  } {
-    let sourceA = loc.no.tournament.pending
-    let sourceB = loc.no.tournament.pending
-
-    if (match.sourceGroupA && match.sourceGroupARank) {
-      const group = groups.find(g => g.id === match.sourceGroupA)
-      if (group) {
-        sourceA =
-          match.sourceGroupARank === 1
-            ? loc.no.tournament.source.groupWinner(group.name)
-            : loc.no.tournament.source.groupRank(
-                group.name,
-                match.sourceGroupARank
-              )
-      }
-    } else if (match.sourceMatchA) {
-      const sourceMatch = matches.find(m => m.id === match.sourceMatchA)
-      if (sourceMatch) {
-        const sourceName = loc.no.tournament.bracketRoundName(
-          sourceMatch.bracket,
-          sourceMatch.round
-        )
-        sourceA =
-          match.sourceMatchAProgression === 'winner'
-            ? loc.no.tournament.source.matchWinner(sourceName)
-            : loc.no.tournament.source.matchLoser(sourceName)
-      }
-    }
-
-    if (match.sourceGroupB && match.sourceGroupBRank) {
-      const group = groups.find(g => g.id === match.sourceGroupB)
-      if (group) {
-        sourceB =
-          match.sourceGroupBRank === 1
-            ? loc.no.tournament.source.groupWinner(group.name)
-            : loc.no.tournament.source.groupRank(
-                group.name,
-                match.sourceGroupBRank
-              )
-      }
-    } else if (match.sourceMatchB) {
-      const sourceMatch = matches.find(m => m.id === match.sourceMatchB)
-      if (sourceMatch) {
-        const sourceName = loc.no.tournament.bracketRoundName(
-          sourceMatch.bracket,
-          sourceMatch.round
-        )
-        sourceB =
-          match.sourceMatchBProgression === 'winner'
-            ? loc.no.tournament.source.matchWinner(sourceName)
-            : loc.no.tournament.source.matchLoser(sourceName)
-      }
-    }
-
-    return { sourceA, sourceB }
-  }
+  // Group by stage index
+  const upperStageIndices = [
+    ...new Set(upperBracketMatches.map(m => m.stage.index)),
+  ].sort((a, b) => a - b)
+  const lowerStageIndices = [
+    ...new Set(lowerBracketMatches.map(m => m.stage.index)),
+  ].sort((a, b) => a - b)
 
   function renderRound(
     roundMatches: TournamentMatchWithDetails[],
-    roundNum: number
+    stageIndex: number
   ) {
     const firstMatch = roundMatches[0]
     const roundName = firstMatch
-      ? loc.no.tournament.bracketRoundName(firstMatch.bracket, firstMatch.round)
-      : `Runde ${roundNum}`
+      ? getRoundName(firstMatch.stage.index, firstMatch.stage.bracket)
+      : `Runde ${stageIndex + 1}`
 
     return (
-      <div key={roundNum} className='flex flex-col gap-2'>
+      <div key={stageIndex} className='flex flex-col gap-2'>
         <span className='text-muted-foreground text-xs font-medium'>
           {roundName}
         </span>
@@ -123,19 +62,18 @@ export default function TournamentBracket({
             )
           }
 
-          const { sourceA, sourceB } = getSourceDescription(match)
           return (
             <div
               key={match.id}
               className='bg-background/50 flex flex-col gap-1 rounded-sm border border-dashed p-3'>
               <span className='text-muted-foreground text-center text-xs'>
-                {sourceA}
+                {loc.no.tournament.pending}
               </span>
               <span className='text-muted-foreground text-center text-xs'>
                 vs
               </span>
               <span className='text-muted-foreground text-center text-xs'>
-                {sourceB}
+                {loc.no.tournament.pending}
               </span>
             </div>
           )
@@ -152,10 +90,10 @@ export default function TournamentBracket({
             {loc.no.tournament.bracketType.upper}
           </span>
           <div className='grid auto-cols-fr grid-flow-col gap-4 overflow-x-auto'>
-            {upperRounds.map(round =>
+            {upperStageIndices.map(stageIndex =>
               renderRound(
-                upperBracketMatches.filter(m => m.round === round),
-                round
+                upperBracketMatches.filter(m => m.stage.index === stageIndex),
+                stageIndex
               )
             )}
           </div>
@@ -168,10 +106,10 @@ export default function TournamentBracket({
             {loc.no.tournament.bracketType.lower}
           </span>
           <div className='grid auto-cols-fr grid-flow-col gap-4 overflow-x-auto'>
-            {lowerRounds.map(round =>
+            {lowerStageIndices.map(stageIndex =>
               renderRound(
-                lowerBracketMatches.filter(m => m.round === round),
-                round
+                lowerBracketMatches.filter(m => m.stage.index === stageIndex),
+                stageIndex
               )
             )}
           </div>

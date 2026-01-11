@@ -3,8 +3,6 @@ import type { GapType } from '@/components/timeentries/TimeEntryRow'
 import type { ExportCsvRequest } from '@common/models/importCsv'
 import type {
   EliminationType,
-  MatchProgression,
-  MatchStage,
   MatchStatus,
   SessionResponse,
   SessionStatus,
@@ -48,7 +46,9 @@ const no = {
       tournaments: 'Turneringer',
       groups: 'Grupper',
       groupPlayers: 'Gruppespillere',
+      stages: 'Stages',
       tournamentMatches: 'Turneringsmatcher',
+      matchDependencies: 'Match Dependencies',
     } satisfies Record<ExportCsvRequest['table'], string>,
   },
   user: {
@@ -192,7 +192,7 @@ const no = {
       completed: 'Ferdig',
       cancelled: 'Avlyst',
     } as Record<MatchStatus, string>,
-    stage: {
+    stageNames: {
       group: 'Gruppespill',
       eight: 'Åttendelsfinale',
       quarter: 'Kvartfinale',
@@ -205,7 +205,7 @@ const no = {
       loser_bronze: 'Taperbronsefinale',
       loser_final: 'Taperfinale',
       grand_final: 'Grand finale',
-    } as Record<MatchStage, string>,
+    },
     form: {
       user1: 'Spiller 1',
       user2: 'Spiller 2',
@@ -267,10 +267,8 @@ const no = {
       `${roundName}, match ${matchNumber}`,
     sourceGroupPlaceholder: (group: number, rank: number) =>
       `${rank}. plass fra ${loc.no.tournament.groupName(group)}`,
-    sourceMatchPlaceholder: (
-      matchName: string,
-      progression: MatchProgression
-    ) => `${progression === 'winner' ? 'Vinner' : 'Taper'} av ${matchName}`,
+    sourceMatchPlaceholder: (matchName: string, position: number) =>
+      `${position === 1 ? 'Vinner' : 'Taper'} av ${matchName}`,
     form: {
       name: 'Navn',
       namePlaceholder: 'Chugmania World Championship 20**',

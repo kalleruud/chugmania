@@ -235,7 +235,7 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
               <Label>{loc.no.tournament.form.groupStageTracks}</Label>
               <p className='text-muted-foreground text-xs'>
                 {loc.no.tournament.form.groupStageTracksHint} (
-                {preview.rounds.filter(r => r.bracket === 'group').length}{' '}
+                {preview.stages.filter(s => s.stage.bracket === 'group').length}{' '}
                 runder, anbefalt {preview.groupStageTrackCount} baner)
               </p>
               {Array.from({ length: preview.groupStageTrackCount }, (_, i) => {
@@ -280,20 +280,24 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
           )}
 
         {preview &&
-          preview.rounds.filter(r => r.bracket !== 'group').length > 0 && (
+          preview.stages.filter(s => s.stage.bracket !== 'group').length >
+            0 && (
             <div className='flex flex-col gap-2'>
               <Label>{loc.no.tournament.form.bracketTracks}</Label>
               <p className='text-muted-foreground text-xs'>
                 {loc.no.tournament.form.bracketTracksHint}
               </p>
-              {preview.rounds
-                .filter(r => r.bracket !== 'group')
-                .map((round, i) => {
+              {preview.stages
+                .filter(s => s.stage.bracket !== 'group')
+                .map((stageWithMatches, i) => {
                   const trackIndex = i
                   const selectedTrack = tracks?.find(
                     t => t.id === bracketTracks[trackIndex]
                   )
-                  const roundName = getRoundName(round.round, round.bracket)
+                  const roundName = getRoundName(
+                    stageWithMatches.stage.index,
+                    stageWithMatches.stage.bracket
+                  )
                   return (
                     <div key={trackIndex} className='flex flex-col gap-1'>
                       <Label className='text-xs'>{roundName}</Label>

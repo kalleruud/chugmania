@@ -30,20 +30,19 @@ export default function TournamentView({
 
   const canEdit = !isReadOnly && isLoggedIn && loggedInUser.role !== 'user'
 
-  const groupMatches = tournament.rounds
-    .filter(m => m.bracket === 'group')
-    .flatMap(r => r.matches)
+  const groupStages = tournament.stages.filter(s => s.stage.bracket === 'group')
+  const bracketStages = tournament.stages.filter(
+    s => s.stage.bracket !== 'group'
+  )
 
+  const groupMatches = groupStages.flatMap(s => s.matches)
   const totalGroupMatches = groupMatches.length
   const completedGroupMatches = groupMatches.filter(
     gm =>
       gm.match && matches?.find(m => m.id === gm.match)?.status === 'completed'
   ).length
 
-  const eliminationMatches = tournament.rounds
-    .filter(m => m.bracket !== 'group')
-    .flatMap(r => r.matches)
-
+  const eliminationMatches = bracketStages.flatMap(s => s.matches)
   const totalEliminationMatches = eliminationMatches.length
   const completedEliminationMatches = eliminationMatches.filter(
     gm =>
@@ -113,30 +112,35 @@ export default function TournamentView({
         />
 
         <div className='flex flex-col gap-8'>
-          {tournament.rounds
-            .filter(br => br.bracket === 'group')
-            .map((groupRound, index) => (
-              <div
-                key={`${groupRound.bracket}-${groupRound.round}-${index}`}
-                className='flex flex-col gap-2'>
-                <h4 className='font-f1-bold text-sm uppercase'>
-                  {getRoundName(groupRound.round ?? 0, groupRound.bracket)}
-                </h4>
-                {groupRound.matches.map((match, index) => {
-                  return (
-                    <MatchRow
-                      className='bg-background-secondary rounded-sm border p-2'
-                      key={match.id}
-                      index={groupRound.matches.length > 1 ? index : undefined}
-                      item={match.matchDetails ?? undefined}
-                      tournamentMatch={match}
-                      tournament={tournament}
-                      isReadOnly={isReadOnly}
-                    />
-                  )
-                })}
-              </div>
-            ))}
+          {groupStages.map((stageWithMatches, index) => (
+            <div
+              key={`${stageWithMatches.stage.bracket}-${stageWithMatches.stage.index}-${index}`}
+              className='flex flex-col gap-2'>
+              <h4 className='font-f1-bold text-sm uppercase'>
+                {getRoundName(
+                  stageWithMatches.stage.index,
+                  stageWithMatches.stage.bracket
+                )}
+              </h4>
+              {stageWithMatches.matches.map((match, matchIndex) => {
+                return (
+                  <MatchRow
+                    className='bg-background-secondary rounded-sm border p-2'
+                    key={match.id}
+                    index={
+                      stageWithMatches.matches.length > 1
+                        ? matchIndex
+                        : undefined
+                    }
+                    item={match.matchDetails ?? undefined}
+                    tournamentMatch={match}
+                    tournament={tournament}
+                    isReadOnly={isReadOnly}
+                  />
+                )
+              })}
+            </div>
+          ))}
         </div>
 
         <PageHeader
@@ -146,28 +150,31 @@ export default function TournamentView({
         />
 
         <div className='flex flex-col gap-8'>
-          {tournament.rounds
-            .filter(br => br.bracket !== 'group')
-            .map((bracketRound, index) => (
-              <div
-                key={`${bracketRound.bracket}-${bracketRound.round}-${index}`}
-                className='flex flex-col gap-2'>
-                <h4 className='font-f1-bold text-sm uppercase'>
-                  {getRoundName(bracketRound.round ?? 0, bracketRound.bracket)}
-                </h4>
-                {bracketRound.matches.map((match, index) => (
-                  <MatchRow
-                    key={match.id}
-                    className='bg-background-secondary rounded-sm border p-2'
-                    item={match.matchDetails ?? undefined}
-                    tournamentMatch={match}
-                    tournament={tournament}
-                    index={bracketRound.matches.length > 1 ? index : undefined}
-                    isReadOnly={isReadOnly}
-                  />
-                ))}
-              </div>
-            ))}
+          {bracketStages.map((stageWithMatches, index) => (
+            <div
+              key={`${stageWithMatches.stage.bracket}-${stageWithMatches.stage.index}-${index}`}
+              className='flex flex-col gap-2'>
+              <h4 className='font-f1-bold text-sm uppercase'>
+                {getRoundName(
+                  stageWithMatches.stage.index,
+                  stageWithMatches.stage.bracket
+                )}
+              </h4>
+              {stageWithMatches.matches.map((match, matchIndex) => (
+                <MatchRow
+                  key={match.id}
+                  className='bg-background-secondary rounded-sm border p-2'
+                  item={match.matchDetails ?? undefined}
+                  tournamentMatch={match}
+                  tournament={tournament}
+                  index={
+                    stageWithMatches.matches.length > 1 ? matchIndex : undefined
+                  }
+                  isReadOnly={isReadOnly}
+                />
+              ))}
+            </div>
+          ))}
         </div>
       </div>
     </div>

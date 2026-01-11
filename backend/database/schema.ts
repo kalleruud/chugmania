@@ -16,22 +16,9 @@ export type UserRole = 'admin' | 'moderator' | 'user'
 export type SessionResponse = 'yes' | 'no' | 'maybe'
 export type SessionStatus = 'confirmed' | 'tentative' | 'cancelled'
 export type MatchStatus = 'planned' | 'completed' | 'cancelled'
-export type MatchStage =
-  | 'group'
-  | 'eight'
-  | 'quarter'
-  | 'semi'
-  | 'bronze'
-  | 'final'
-  | 'grand_final'
-  | 'loser_eight'
-  | 'loser_quarter'
-  | 'loser_semi'
-  | 'loser_bronze'
-  | 'loser_final'
 export type EliminationType = 'single' | 'double'
 export type TournamentBracket = 'group' | 'upper' | 'lower' | 'grand_final'
-export type MatchProgression = 'winner' | 'loser'
+export type DependencySlot = 'A' | 'B'
 
 export const users = sqliteTable('users', {
   ...metadata,
@@ -95,18 +82,19 @@ export const timeEntries = sqliteTable('time_entries', {
 
 export const matches = sqliteTable('matches', {
   ...metadata,
-  user1: text().references(() => users.id),
-  user2: text().references(() => users.id),
-  track: text().references(() => tracks.id),
+  userA: text('user_a').references(() => users.id),
+  userB: text('user_b').references(() => users.id),
+  winner: text().$type<DependencySlot>(),
+  track: text()
+    .notNull()
+    .references(() => tracks.id),
   session: text().references(() => sessions.id),
-  winner: text().references(() => users.id),
-  duration: integer('duration_ms'),
-  stage: text().$type<MatchStage>(),
-  comment: text(),
   status: text()
     .$type<MatchStatus>()
     .notNull()
     .$default(() => 'planned'),
+  duration: integer('duration_ms'),
+  comment: text(),
 })
 
 export const tournaments = sqliteTable('tournaments', {
@@ -129,7 +117,7 @@ export const groups = sqliteTable('groups', {
   tournament: text()
     .notNull()
     .references(() => tournaments.id, { onDelete: 'cascade' }),
-  number: integer().notNull(),
+  index: integer().notNull(),
 })
 
 export const groupPlayers = sqliteTable('group_players', {
@@ -140,33 +128,36 @@ export const groupPlayers = sqliteTable('group_players', {
   user: text()
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),
-  totalMatches: integer().notNull().default(0),
-  wins: integer().notNull().default(0),
-  losses: integer().notNull().default(0),
   seed: integer().notNull(),
 })
 
-export const tournamentMatches = sqliteTable('tournament_matches', {
+export const stages = sqliteTable('stages', {
   ...metadata,
   tournament: text()
     .notNull()
     .references(() => tournaments.id, { onDelete: 'cascade' }),
   bracket: text().$type<TournamentBracket>().notNull(),
-  round: integer(),
-  position: integer().notNull().default(0),
-  group: text().references(() => groups.id),
-  match: text().references(() => matches.id),
-  completedAt: integer('completed_at', { mode: 'timestamp_ms' }),
-  sourceGroupA: text('source_group_a').references(() => groups.id),
-  sourceGroupARank: integer('source_group_a_rank'),
-  sourceGroupB: text('source_group_b').references(() => groups.id),
-  sourceGroupBRank: integer('source_group_b_rank'),
-  sourceMatchA: text('source_match_a'),
-  sourceMatchAProgression: text(
-    'source_match_a_progression'
-  ).$type<MatchProgression>(),
-  sourceMatchB: text('source_match_b'),
-  sourceMatchBProgression: text(
-    'source_match_b_progression'
-  ).$type<MatchProgression>(),
+  index: integer().notNull(),
+})
+
+export const tournamentMatches = sqliteTable('tournament_matches', {
+  ...metadata,
+  match: text()
+    .notNull()
+    .references(() => matches.id),
+  stage: text()
+    .notNull()
+    .references(() => stages.id, { onDelete: 'cascade' }),
+  index: integer().notNull(),
+})
+
+export const matchDependencies = sqliteTable('match_dependencies', {
+  ...metadata,
+  fromMatch: text('from_match').references(() => tournamentMatches.id),
+  fromGroup: text('from_group').references(() => groups.id),
+  toMatch: text('to_match')
+    .notNull()
+    .references(() => tournamentMatches.id),
+  fromPosition: integer('from_position').notNull(),
+  toSlot: text('to_slot').$type<DependencySlot>().notNull(),
 })

@@ -38,7 +38,7 @@ export default function GroupCard({
       )}
       {...props}>
       <div className='flex items-baseline justify-between'>
-        <h3 className='text-lg'>{loc.no.tournament.groupName(group.number)}</h3>
+        <h3 className='text-lg'>{loc.no.tournament.groupName(group.index)}</h3>
         <p className='text-muted-foreground text-sm'>
           {totalPlayedMatches} / {totalMatches}
         </p>

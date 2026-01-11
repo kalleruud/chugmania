@@ -1,9 +1,13 @@
-import loc from '@/lib/locales'
 import db from '@backend/database/database'
-import { groupPlayers, groups } from '@backend/database/schema'
-import type { Match } from '@common/models/match'
+import {
+  groupPlayers,
+  groups,
+  matches,
+  stages,
+  tournamentMatches,
+} from '@backend/database/schema'
 import type { Group, GroupPlayer } from '@common/models/tournament'
-import { and, asc, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm'
 import { randomUUID } from 'node:crypto'
 import RatingManager from '../rating.manager'
 import UserManager from '../user.manager'
@@ -14,7 +18,7 @@ export default class GroupManager {
   ): ReturnType<typeof GroupManager.generateGroups> {
     const groupRows = await db.query.groups.findMany({
       where: and(eq(groups.tournament, tournamentId), isNull(groups.deletedAt)),
-      orderBy: asc(groups.number),
+      orderBy: asc(groups.index),
     })
 
     const groupPlayerRows = await db.query.groupPlayers.findMany({
@@ -39,17 +43,16 @@ export default class GroupManager {
     groupsCount: number,
     playerIds: string[]
   ): Promise<{ groups: Group[]; groupPlayers: GroupPlayer[] }> {
-    const groups = Array.from(
+    const generatedGroups: Group[] = Array.from(
       { length: groupsCount },
-      (_, i) =>
-        ({
-          id: randomUUID(),
-          number: i,
-          tournament: tournamentId,
-          updatedAt: null,
-          createdAt: new Date(),
-          deletedAt: null,
-        }) satisfies Group
+      (_, i) => ({
+        id: randomUUID(),
+        index: i,
+        tournament: tournamentId,
+        updatedAt: null,
+        createdAt: new Date(),
+        deletedAt: null,
+      })
     )
 
     const playersWithSeed = await Promise.all(
@@ -61,76 +64,224 @@ export default class GroupManager {
       }))
     )
 
-    const groupPlayers = GroupManager.snakeSeed(playersWithSeed, groups).map(
-      gi =>
-        ({
-          id: randomUUID(),
-          group: gi.group,
-          user: gi.item,
-          seed: gi.seed,
-          totalMatches: gi.totalMatches[gi.group],
-          wins: 0,
-          losses: 0,
-          createdAt: new Date(),
-          updatedAt: null,
-          deletedAt: null,
-        }) satisfies GroupPlayer
-    )
+    const generatedGroupPlayers: GroupPlayer[] = GroupManager.snakeSeed(
+      playersWithSeed,
+      generatedGroups
+    ).map(gi => ({
+      id: randomUUID(),
+      group: gi.group,
+      user: gi.item,
+      seed: gi.seed,
+      createdAt: new Date(),
+      updatedAt: null,
+      deletedAt: null,
+    }))
 
     return {
-      groups,
-      groupPlayers,
+      groups: generatedGroups,
+      groupPlayers: generatedGroupPlayers,
     }
   }
 
-  static async incrementGroupWinLoseStats(
-    group: string,
-    match: Match & { winner: string }
-  ) {
-    await db
-      .update(groupPlayers)
-      .set({
-        wins: sql`${groupPlayers.wins} + 1`,
-      })
-      .where(
-        and(eq(groupPlayers.group, group), eq(groupPlayers.user, match.winner))
-      )
-
-    const loser = match.user1 === match.winner ? match.user2 : match.user1
-    if (!loser) throw new Error(loc.no.error.messages.loser_not_found)
-
-    await db
-      .update(groupPlayers)
-      .set({
-        losses: sql`${groupPlayers.losses} + 1`,
-      })
-      .where(and(eq(groupPlayers.group, group), eq(groupPlayers.user, loser)))
-
-    return await GroupManager.isGroupComplete(group)
-  }
-
-  private static async isGroupComplete(groupId: string): Promise<boolean> {
-    const groupPlayerRows = await db.query.groupPlayers.findMany({
-      where: eq(groupPlayers.group, groupId),
+  /**
+   * Get wins and losses for a group player by counting completed matches.
+   * Returns stats computed from matches rather than stored values.
+   */
+  static async getGroupPlayerStats(
+    _groupId: string,
+    userId: string
+  ): Promise<{ wins: number; losses: number; totalMatches: number }> {
+    // Find all group stage matches for this group
+    const groupStages = await db.query.stages.findMany({
+      where: and(eq(stages.bracket, 'group'), isNull(stages.deletedAt)),
     })
-    return groupPlayerRows.every(gp => gp.wins + gp.losses === gp.totalMatches)
-  }
 
-  static async getUserAt(groupId: string, rank: number) {
-    // TODO: Implement tie-breaker logic
-    const groupPlayerRows = await db
-      .select({ userId: groupPlayers.user })
-      .from(groupPlayers)
-      .where(eq(groupPlayers.group, groupId))
-      .orderBy(asc(groupPlayers.wins), desc(groupPlayers.losses))
-      .offset(rank - 1)
-      .limit(1)
-
-    if (!groupPlayerRows.length) {
-      throw new Error(`User not found at rank ${rank} in group ${groupId}`)
+    if (groupStages.length === 0) {
+      return { wins: 0, losses: 0, totalMatches: 0 }
     }
 
-    return groupPlayerRows[0].userId
+    const stageIds = groupStages.map(s => s.id)
+    const tmRows = await db.query.tournamentMatches.findMany({
+      where: and(
+        inArray(tournamentMatches.stage, stageIds),
+        isNull(tournamentMatches.deletedAt)
+      ),
+    })
+
+    const matchIds = tmRows.map(tm => tm.match)
+    const matchRows = await db.query.matches.findMany({
+      where: and(inArray(matches.id, matchIds), isNull(matches.deletedAt)),
+    })
+
+    // Filter to matches involving this user in this group
+    // Note: We need to identify which matches belong to which group
+    // For now, we count all matches where the user participated
+    let wins = 0
+    let losses = 0
+    let totalMatches = 0
+
+    for (const match of matchRows) {
+      const isUserA = match.userA === userId
+      const isUserB = match.userB === userId
+      if (!isUserA && !isUserB) continue
+
+      totalMatches++
+      if (match.winner) {
+        const userWon =
+          (isUserA && match.winner === 'A') || (isUserB && match.winner === 'B')
+        if (userWon) wins++
+        else losses++
+      }
+    }
+
+    return { wins, losses, totalMatches }
+  }
+
+  /**
+   * Check if all matches in a group are complete by querying matches.
+   */
+  static async isGroupComplete(groupId: string): Promise<boolean> {
+    // Get group players
+    const gpRows = await db.query.groupPlayers.findMany({
+      where: and(
+        eq(groupPlayers.group, groupId),
+        isNull(groupPlayers.deletedAt)
+      ),
+    })
+
+    if (gpRows.length < 2) return true
+
+    // Expected matches in round-robin = n*(n-1)/2
+    const expectedMatches = (gpRows.length * (gpRows.length - 1)) / 2
+
+    // Find group stage for this group's tournament
+    const group = await db.query.groups.findFirst({
+      where: eq(groups.id, groupId),
+    })
+    if (!group) return false
+
+    const groupStageRows = await db.query.stages.findMany({
+      where: and(
+        eq(stages.tournament, group.tournament),
+        eq(stages.bracket, 'group'),
+        isNull(stages.deletedAt)
+      ),
+    })
+
+    if (groupStageRows.length === 0) return false
+
+    const stageIds = groupStageRows.map(s => s.id)
+
+    // Get tournament matches for these stages
+    const tmRows = await db.query.tournamentMatches.findMany({
+      where: and(
+        inArray(tournamentMatches.stage, stageIds),
+        isNull(tournamentMatches.deletedAt)
+      ),
+    })
+
+    const matchIds = tmRows.map(tm => tm.match)
+    const matchRows = await db.query.matches.findMany({
+      where: and(inArray(matches.id, matchIds), isNull(matches.deletedAt)),
+    })
+
+    // Count completed matches involving players from this group
+    const groupUserIds = new Set(gpRows.map(gp => gp.user))
+    let completedMatches = 0
+
+    for (const match of matchRows) {
+      if (
+        match.userA &&
+        match.userB &&
+        groupUserIds.has(match.userA) &&
+        groupUserIds.has(match.userB) &&
+        match.winner
+      ) {
+        completedMatches++
+      }
+    }
+
+    return completedMatches >= expectedMatches
+  }
+
+  /**
+   * Get the user at a specific rank in a group.
+   * Rank is 1-indexed (1 = first place).
+   */
+  static async getUserAt(groupId: string, rank: number): Promise<string> {
+    // Get group players with their stats
+    const gpRows = await db.query.groupPlayers.findMany({
+      where: and(
+        eq(groupPlayers.group, groupId),
+        isNull(groupPlayers.deletedAt)
+      ),
+    })
+
+    // Get all matches for this group to compute standings
+    const group = await db.query.groups.findFirst({
+      where: eq(groups.id, groupId),
+    })
+    if (!group) throw new Error(`Group ${groupId} not found`)
+
+    const groupStageRows = await db.query.stages.findMany({
+      where: and(
+        eq(stages.tournament, group.tournament),
+        eq(stages.bracket, 'group'),
+        isNull(stages.deletedAt)
+      ),
+    })
+
+    const stageIds = groupStageRows.map(s => s.id)
+    const tmRows = await db.query.tournamentMatches.findMany({
+      where: and(
+        inArray(tournamentMatches.stage, stageIds),
+        isNull(tournamentMatches.deletedAt)
+      ),
+    })
+
+    const matchIds = tmRows.map(tm => tm.match)
+    const matchRows = await db.query.matches.findMany({
+      where: and(inArray(matches.id, matchIds), isNull(matches.deletedAt)),
+    })
+
+    // Compute wins for each group player
+    const groupUserIds = new Set(gpRows.map(gp => gp.user))
+    const winsMap = new Map<string, number>()
+
+    for (const gp of gpRows) {
+      winsMap.set(gp.user, 0)
+    }
+
+    for (const match of matchRows) {
+      if (
+        match.userA &&
+        match.userB &&
+        groupUserIds.has(match.userA) &&
+        groupUserIds.has(match.userB) &&
+        match.winner
+      ) {
+        const winnerId = match.winner === 'A' ? match.userA : match.userB
+        winsMap.set(winnerId, (winsMap.get(winnerId) ?? 0) + 1)
+      }
+    }
+
+    // Sort by wins descending, then by seed descending for tiebreaker
+    const sortedPlayers = gpRows
+      .map(gp => ({
+        user: gp.user,
+        wins: winsMap.get(gp.user) ?? 0,
+        seed: gp.seed,
+      }))
+      .sort((a, b) => {
+        if (b.wins !== a.wins) return b.wins - a.wins
+        return b.seed - a.seed // Higher seed wins tiebreaker
+      })
+
+    if (rank < 1 || rank > sortedPlayers.length) {
+      throw new Error(`Invalid rank ${rank} for group ${groupId}`)
+    }
+
+    return sortedPlayers[rank - 1].user
   }
 
   /**
@@ -145,7 +296,7 @@ export default class GroupManager {
    */
   private static snakeSeed<
     T extends { id: string },
-    G extends { id: string; number: number },
+    G extends { id: string; index: number },
   >(
     items: (T & { seed: number })[],
     groups: G[]
@@ -153,16 +304,14 @@ export default class GroupManager {
     group: G['id']
     item: T['id']
     seed: number
-    totalMatches: Record<G['id'], number>
   }[] {
     const sortedItems = items.toSorted((a, b) => b.seed - a.seed)
-    const sortedGroups = groups.toSorted((a, b) => a.number - b.number)
+    const sortedGroups = groups.toSorted((a, b) => a.index - b.index)
 
     const groupItems: {
       group: G['id']
       item: T['id']
       seed: number
-      totalMatches: Record<G['id'], number>
     }[] = []
     for (let i = 0; i < sortedItems.length; i++) {
       const row = Math.floor(i / sortedGroups.length)
@@ -178,13 +327,6 @@ export default class GroupManager {
         group: group.id,
         item: sortedItems[i].id,
         seed: sortedItems[i].seed,
-        totalMatches: groupItems.reduce(
-          (acc, item) => ({
-            ...acc,
-            [item.group]: item.totalMatches[item.group] + 1,
-          }),
-          {} as Record<G['id'], number>
-        ),
       })
     }
 

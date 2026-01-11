@@ -1,8 +1,10 @@
 import type {
+  DependencySlot,
   EliminationType,
   groupPlayers,
   groups,
-  MatchProgression,
+  matchDependencies,
+  stages,
   TournamentBracket,
   tournamentMatches,
   tournaments,
@@ -19,17 +21,32 @@ export type CreateGroup = typeof groups.$inferInsert
 export type GroupPlayer = typeof groupPlayers.$inferSelect
 export type CreateGroupPlayer = typeof groupPlayers.$inferInsert
 
+export type Stage = typeof stages.$inferSelect
+export type CreateStage = typeof stages.$inferInsert
+
 export type TournamentMatch = typeof tournamentMatches.$inferSelect
 export type CreateTournamentMatch = typeof tournamentMatches.$inferInsert
 
-export type TournamentMatchWithDetails = TournamentMatch & {
+export type MatchDependency = typeof matchDependencies.$inferSelect
+export type CreateMatchDependency = typeof matchDependencies.$inferInsert
+
+export type TournamentMatchWithDetails = Omit<TournamentMatch, 'stage'> & {
+  stage: Stage
   matchDetails: Match | null
 }
 
-export type TournamentRound = {
-  bracket: TournamentMatch['bracket']
-  round: number
+export type TournamentStage = {
+  stage: Stage
   matches: TournamentMatchWithDetails[]
+}
+
+export type GroupPlayerWithStats = GroupPlayer & {
+  wins: number
+  losses: number
+}
+
+export type GroupWithPlayers = Group & {
+  players: GroupPlayerWithStats[]
 }
 
 export type TournamentWithDetails = Tournament & {
@@ -37,11 +54,7 @@ export type TournamentWithDetails = Tournament & {
   minMatchesPerPlayer: number
   groupStageTrackCount: number
   groups: GroupWithPlayers[]
-  rounds: TournamentRound[]
-}
-
-export type GroupWithPlayers = Group & {
-  players: GroupPlayer[]
+  stages: TournamentStage[]
 }
 
 export type CreateTournamentRequest = {
@@ -123,4 +136,4 @@ export function isDeleteTournamentRequest(
 
 export type TournamentBracketType = TournamentBracket
 export type TournamentEliminationType = EliminationType
-export type TournamentMatchProgressionType = MatchProgression
+export type TournamentDependencySlot = DependencySlot

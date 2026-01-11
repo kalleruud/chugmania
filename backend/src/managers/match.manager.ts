@@ -2,7 +2,6 @@ import {
   isCreateMatchRequest,
   isDeleteMatchRequest,
   isEditMatchRequest,
-  type CreateMatch,
   type CreateMatchRequest,
   type EditMatchRequest,
   type Match,
@@ -12,7 +11,7 @@ import type { EventReq, EventRes } from '@common/models/socket.io'
 import { and, desc, eq, getTableColumns, isNull, sql } from 'drizzle-orm'
 import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
-import { matches, sessions, type MatchProgression } from '../../database/schema'
+import { matches, sessions } from '../../database/schema'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import RatingManager from './rating.manager'
@@ -23,8 +22,8 @@ export default class MatchManager {
     request: CreateMatchRequest | EditMatchRequest,
     match?: Match
   ) {
-    const user1 = request.user1 === undefined ? match?.user1 : request.user1
-    const user2 = request.user2 === undefined ? match?.user2 : request.user2
+    const userA = request.userA === undefined ? match?.userA : request.userA
+    const userB = request.userB === undefined ? match?.userB : request.userB
     const winner = request.winner === undefined ? match?.winner : request.winner
     const status = request.status ?? match?.status
 
@@ -32,11 +31,12 @@ export default class MatchManager {
       throw new Error(loc.no.match.error.planned_winner)
     }
 
-    if (user1 && user2 && user1 === user2) {
+    if (userA && userB && userA === userB) {
       throw new Error(loc.no.match.error.same_user)
     }
 
-    if (winner && winner !== user1 && winner !== user2) {
+    // Winner must be 'A' or 'B' slot, not a user ID
+    if (winner && winner !== 'A' && winner !== 'B') {
       throw new Error(loc.no.match.error.invalid_winner)
     }
   }
@@ -61,13 +61,13 @@ export default class MatchManager {
       .orderBy(desc(matches.createdAt))
   }
 
-  static async createMatch(sessionId: string | null, trackId: string | null) {
+  static async createMatch(sessionId: string | null, trackId: string) {
     const [match] = await db
       .insert(matches)
       .values({
         session: sessionId,
         track: trackId,
-      } satisfies CreateMatch)
+      })
       .returning()
     return match.id
   }
@@ -75,30 +75,33 @@ export default class MatchManager {
   static async setPlayer(matchId: string, side: MatchSide, userId: string) {
     await db
       .update(matches)
-      .set({ [side === 'A' ? matches.user1.name : matches.user2.name]: userId })
+      .set({ [side === 'A' ? matches.userA.name : matches.userB.name]: userId })
       .where(eq(matches.id, matchId))
   }
 
-  static async getProgressedUser(
-    matchId: string,
-    progression: MatchProgression
-  ) {
+  /**
+   * Get the user who progressed from a match based on position.
+   * Position 1 = winner, Position 2 = loser
+   */
+  static async getProgressedUser(matchId: string, position: number) {
     const match = await db.query.matches.findFirst({
       where: eq(matches.id, matchId),
     })
     if (!match) throw new Error(loc.no.error.messages.not_in_db(matchId))
     if (!match.winner) {
       throw new Error(
-        `Tried to get ${progression} for match ${matchId} but it has no winner`
+        `Tried to get position ${position} for match ${matchId} but it has no winner`
       )
     }
 
-    const loser = match.user1 === match.winner ? match.user2 : match.user1
-    if (!loser) {
+    const winnerUserId = match.winner === 'A' ? match.userA : match.userB
+    const loserUserId = match.winner === 'A' ? match.userB : match.userA
+
+    if (!winnerUserId || !loserUserId) {
       throw new Error(loc.no.error.messages.loser_not_found)
     }
 
-    return progression === 'winner' ? match.winner : loser
+    return position === 1 ? winnerUserId : loserUserId
   }
 
   static async onCreateMatch(
