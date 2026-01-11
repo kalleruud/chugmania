@@ -2,6 +2,7 @@ import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
 import { sessionToLookupItem, trackToLookupItem } from '@/lib/lookup-utils'
+import { getRoundName } from '@/lib/utils'
 import type {
   CreateTournament,
   TournamentEliminationType,
@@ -242,9 +243,10 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
                 const selectedTrack = tracks?.find(
                   t => t.id === groupStageTracks[trackIndex]
                 )
+                const roundName = getRoundName(trackIndex + 1, 'group')
                 return (
                   <div key={trackIndex} className='flex flex-col gap-1'>
-                    <Label className='text-xs'>Bane {trackIndex + 1}</Label>
+                    <Label className='text-xs'>{roundName}</Label>
                     <Combobox
                       className='w-full'
                       placeholder={loc.no.tournament.form.selectTrack}
@@ -282,25 +284,19 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
             <div className='flex flex-col gap-2'>
               <Label>{loc.no.tournament.form.bracketTracks}</Label>
               <p className='text-muted-foreground text-xs'>
-                {loc.no.tournament.form.bracketTracksHint} (
-                {preview.rounds.filter(r => r.bracket !== 'group').length}{' '}
-                runder)
+                {loc.no.tournament.form.bracketTracksHint}
               </p>
-              {Array.from(
-                {
-                  length: Math.min(
-                    preview.rounds.filter(r => r.bracket !== 'group').length,
-                    8
-                  ),
-                },
-                (_, i) => {
+              {preview.rounds
+                .filter(r => r.bracket !== 'group')
+                .map((round, i) => {
                   const trackIndex = i
                   const selectedTrack = tracks?.find(
                     t => t.id === bracketTracks[trackIndex]
                   )
+                  const roundName = getRoundName(round.round, round.bracket)
                   return (
                     <div key={trackIndex} className='flex flex-col gap-1'>
-                      <Label className='text-xs'>Bane {trackIndex + 1}</Label>
+                      <Label className='text-xs'>{roundName}</Label>
                       <Combobox
                         className='w-full'
                         placeholder={loc.no.tournament.form.selectTrack}
@@ -333,8 +329,7 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
                       />
                     </div>
                   )
-                }
-              )}
+                })}
             </div>
           )}
       </form>
