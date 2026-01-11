@@ -3,6 +3,7 @@ import type { GapType } from '@/components/timeentries/TimeEntryRow'
 import type { ExportCsvRequest } from '@common/models/importCsv'
 import type {
   EliminationType,
+  MatchProgression,
   MatchStage,
   MatchStatus,
   SessionResponse,
@@ -184,6 +185,8 @@ const no = {
     new: 'Ny match',
     noMatches: 'Ingen matcher funnet.',
     unknownUser: 'Ukjent',
+    unknownGroup: 'Ukjent gruppe',
+    unknownMatch: 'Ukjent match',
     status: {
       planned: 'Planlagt',
       completed: 'Ferdig',
@@ -256,9 +259,16 @@ const no = {
     groupStage: 'Gruppespill',
     bracket: 'Sluttspill',
     pending: 'Venter',
-    matchName: (group: string, match: number) => `${group} Match ${match}`,
+    bracketMatchName: (bracket: TournamentBracket, round: number) =>
+      `${bracket} ${round}`,
     groupName: (number: number) =>
       `Gruppe ${String.fromCodePoint(number + 65)}`,
+    groupMatchName: (group: number, match: number) =>
+      `${loc.no.tournament.groupName(group)}, match ${match}`,
+    sourceGroupPlaceholder: (group: number, rank: number) =>
+      `${rank}. plass fra ${loc.no.tournament.groupName(group)}`,
+    sourceMatchPlaceholder: (match: number, progression: MatchProgression) =>
+      `${progression === 'winner' ? 'Vinner' : 'Taper'} av ${match}`,
     form: {
       name: 'Navn',
       namePlaceholder: 'Chugmania World Championship 20**',
@@ -318,33 +328,29 @@ const no = {
       },
     },
     source: {
-      groupWinner: (group: string) => `Vinner ${group}`,
-      groupRank: (group: string, rank: number) => `${rank}. plass ${group}`,
-      matchWinner: (match: string) => `Vinner ${match}`,
-      matchLoser: (match: string) => `Taper ${match}`,
+      groupWinner: (group: string) => `Vinner av ${group}`,
+      groupRank: (group: string, rank: number) => `${rank}. plass av ${group}`,
+      matchWinner: (match: string) => `Vinner av ${match}`,
+      matchLoser: (match: string) => `Taper av ${match}`,
     },
-    roundName: (size: number, isLower: boolean) => {
-      const prefix = isLower ? 'Taper ' : ''
-      if (size === 2) return `${prefix}Finale`
-      if (size === 4) return `${prefix}Semifinale`
-      if (size === 8) return `${prefix}Kvartfinale`
-      if (size === 16) return `${prefix}Åttendelsfinale`
-      return `${prefix}Runde ${size}`
-    },
-    bracketRoundName: (
-      bracket: TournamentBracket,
-      round: number,
-      groupName?: string
-    ) => {
-      if (bracket === 'grand_final') return 'Grand Finale'
-      if (bracket === 'group')
-        return groupName ? `${groupName} Runde ${round}` : `Runde ${round}`
-
-      const prefix = bracket === 'lower' ? 'Taper ' : ''
-      if (round === 1) return `${prefix}Finale`
-      if (round === 2) return `${prefix}Semifinale`
-      if (round === 3) return `${prefix}Kvartfinale`
-      return `${prefix}Runde ${round}`
+    roundNames: {
+      grand_final: 'Grand Finale',
+      upper: {
+        final: 'Finale',
+        semi: 'Semifinale',
+        quarter: 'Kvartfinale',
+        eight: 'Åttendelsfinale',
+        sixteen: 'Sekstendelsfinale',
+        round: 'Runde',
+      },
+      lower: {
+        final: 'Taperfinale',
+        semi: 'Tapersemifinale',
+        quarter: 'Taperkvartfinale',
+        eight: 'Taperåttendelsfinale',
+        sixteen: 'Tapersekstendelsfinale',
+        round: 'Taperrunde',
+      },
     },
   },
   error: {

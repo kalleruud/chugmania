@@ -34,7 +34,10 @@ export function SessionRow({
   const matches = allMatches?.filter(m => m.session === session.id) ?? []
 
   const participants = useMemo(
-    () => accumulateSignups(session, timeEntries, matches).length,
+    () =>
+      accumulateSignups(session, timeEntries, matches).filter(
+        s => s.response === 'yes'
+      ).length,
     [session, timeEntries, matches]
   )
   const isCancelled = session.status === 'cancelled'

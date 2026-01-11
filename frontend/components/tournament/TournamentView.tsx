@@ -2,6 +2,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
+import { getRoundName } from '@/lib/utils'
 import type { TournamentWithDetails } from '@common/models/tournament'
 import { Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -35,6 +36,16 @@ export default function TournamentView({
 
   const totalGroupMatches = groupMatches.length
   const completedGroupMatches = groupMatches.filter(
+    gm =>
+      gm.match && matches?.find(m => m.id === gm.match)?.status === 'completed'
+  ).length
+
+  const eliminationMatches = tournament.rounds
+    .filter(m => m.bracket !== 'group')
+    .flatMap(r => r.matches)
+
+  const totalEliminationMatches = eliminationMatches.length
+  const completedEliminationMatches = eliminationMatches.filter(
     gm =>
       gm.match && matches?.find(m => m.id === gm.match)?.status === 'completed'
   ).length
@@ -95,7 +106,7 @@ export default function TournamentView({
           ))}
         </div>
 
-        <div className='flex flex-col'>
+        <div className='flex flex-col gap-4'>
           <PageHeader
             className='py-0'
             title={loc.no.tournament.groupStage}
@@ -104,21 +115,27 @@ export default function TournamentView({
 
           {tournament.rounds
             .filter(br => br.bracket === 'group')
-            .map((bracketRound, index) => (
+            .map((groupRound, index) => (
               <div
-                key={`${bracketRound.bracket}-${bracketRound.round}-${index}`}
+                key={`${groupRound.bracket}-${groupRound.round}-${index}`}
                 className='flex flex-col gap-2'>
-                {bracketRound.matches.map(match => {
-                  const group = tournament.groups.find(
-                    g => g.id === match.group
-                  )
+                <h4 className='font-f1-bold text-sm uppercase'>
+                  {getRoundName(
+                    groupRound.round ?? 0,
+                    groupRound.bracket,
+                    tournament.eliminationType === 'double',
+                    tournament.groups.find(
+                      g => g.id === groupRound.matches[0].group
+                    )?.number
+                  )}
+                </h4>
+                {groupRound.matches.map(match => {
                   return (
                     <TournamentMatchRow
                       key={match.id}
+                      index={groupRound.matches.length > 1 ? index : undefined}
                       item={match}
-                      groupName={loc.no.tournament.groupName(
-                        group?.number ?? 0
-                      )}
+                      isReadOnly={isReadOnly}
                     />
                   )
                 })}
@@ -126,23 +143,40 @@ export default function TournamentView({
             ))}
         </div>
 
-        {tournament.rounds
-          .filter(br => br.bracket !== 'group')
-          .map((bracketRound, index) => (
-            <div
-              key={`${bracketRound.bracket}-${bracketRound.round}-${index}`}
-              className='flex flex-col gap-1'>
-              <h4 className='font-f1-bold text-sm uppercase'>
-                {loc.no.tournament.bracketRoundName(
-                  bracketRound.bracket,
-                  bracketRound.round
-                )}
-              </h4>
-              {bracketRound.matches.map(match => (
-                <TournamentMatchRow key={match.id} item={match} />
-              ))}
-            </div>
-          ))}
+        <div>
+          <PageHeader
+            className='py-0'
+            title={loc.no.tournament.bracket}
+            description={`${completedEliminationMatches} / ${totalEliminationMatches} matcher`}
+          />
+
+          {tournament.rounds
+            .filter(br => br.bracket !== 'group')
+            .map((bracketRound, index) => (
+              <div
+                key={`${bracketRound.bracket}-${bracketRound.round}-${index}`}
+                className='flex flex-col gap-1'>
+                <h4 className='font-f1-bold text-sm uppercase'>
+                  {getRoundName(
+                    bracketRound.round ?? 0,
+                    bracketRound.bracket,
+                    tournament.eliminationType === 'double',
+                    tournament.groups.find(
+                      g => g.id === bracketRound.matches[0].group
+                    )?.number
+                  )}
+                </h4>
+                {bracketRound.matches.map((match, index) => (
+                  <TournamentMatchRow
+                    key={match.id}
+                    index={index}
+                    item={match}
+                    isReadOnly={isReadOnly}
+                  />
+                ))}
+              </div>
+            ))}
+        </div>
       </div>
     </div>
   )

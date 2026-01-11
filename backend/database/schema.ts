@@ -156,7 +156,6 @@ export const tournamentMatches = sqliteTable('tournament_matches', {
   position: integer().notNull().default(0),
   group: text().references(() => groups.id),
   match: text().references(() => matches.id),
-  track: text().references(() => tracks.id),
   completedAt: integer('completed_at', { mode: 'timestamp_ms' }),
   sourceGroupA: text('source_group_a').references(() => groups.id),
   sourceGroupARank: integer('source_group_a_rank'),

@@ -75,7 +75,6 @@ export default class TournamentMatchManager {
       sourceMatchB: null,
       sourceMatchBProgression: null,
       group: null,
-      track: null,
       round: null,
       position: 0,
       ...draft,
@@ -197,7 +196,6 @@ export default class TournamentMatchManager {
         position: i,
         group: pairing.group.id,
         match: matchId,
-        track: trackId,
         completedAt: null,
         sourceGroupA: null,
         sourceGroupARank: null,
@@ -255,8 +253,7 @@ export default class TournamentMatchManager {
     const grandFinal = TournamentMatchManager.buildGrandFinal(
       tournamentId,
       upperMeta,
-      lowerMeta,
-      trackMap
+      lowerMeta
     )
 
     // Group upper matches by round
@@ -568,8 +565,7 @@ export default class TournamentMatchManager {
   static buildGrandFinal(
     tournamentId: string,
     upperMeta: UpperMatchMeta[],
-    lowerMeta: LowerMatchMeta[],
-    trackMap: Map<string, string>
+    lowerMeta: LowerMatchMeta[]
   ): TournamentMatch | null {
     const upperFinal = upperMeta.find(m => m.round === 2)
     if (!upperFinal) return null
@@ -581,7 +577,6 @@ export default class TournamentMatchManager {
     return TournamentMatchManager.newTournamentMatch({
       tournament: tournamentId,
       bracket: 'grand_final',
-      track: trackMap.get('Grand Finale'),
       sourceMatchA: upperFinal.id,
       sourceMatchAProgression: 'winner',
       sourceMatchB: lowerFinal.id,

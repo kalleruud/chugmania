@@ -2,7 +2,8 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
-import type { EditMatchRequest, Match } from '@common/models/match'
+import type { EditMatchRequest, Match, MatchSide } from '@common/models/match'
+import type { TournamentMatch } from '@common/models/tournament'
 import type { UserInfo } from '@common/models/user'
 import { formatTrackName } from '@common/utils/track'
 import { CalendarIcon, MinusIcon } from '@heroicons/react/24/solid'
@@ -14,39 +15,57 @@ import { NameCellPart } from '../timeentries/TimeEntryRow'
 import { Badge } from '../ui/badge'
 import { Label } from '../ui/label'
 
-export type MatchRowProps = BaseRowProps<Match> & {
+export type MatchRowProps = BaseRowProps<Match | undefined> & {
+  tournamentMatch?: TournamentMatch
   hideTrack?: boolean
-  user1Override?: UserInfo
-  user2Override?: UserInfo
-  readonly?: boolean
+  isReadOnly?: boolean
+}
+
+function getUserPlaceholderString(
+  tournamentMatch: TournamentMatch | undefined,
+  side: MatchSide
+) {
+  // TODO: Implement fetching the name of the source match or group to indicate
+  // who will play in this match upon resolving the dependency
+
+  return loc.no.match.unknownUser
 }
 
 export default function MatchRow({
   className,
   item: match,
+  tournamentMatch,
   highlight,
   hideTrack,
-  user1Override,
-  user2Override,
-  readonly,
+  isReadOnly,
   ...rest
 }: Readonly<MatchRowProps>) {
   const { users, tracks, sessions } = useData()
   const { socket } = useConnection()
   const { isLoggedIn, loggedInUser } = useAuth()
-  const user1 = user1Override ?? users?.find(u => u.id === match.user1)
-  const user2 = user2Override ?? users?.find(u => u.id === match.user2)
-  const track = tracks?.find(t => t.id === match.track)
-  const session = sessions?.find(s => s.id === match.session)
 
-  const canEdit = !readonly && isLoggedIn && loggedInUser.role !== 'user'
+  const track = match?.track
+    ? tracks?.find(t => t.id === match?.track)
+    : undefined
+  const session = match?.session
+    ? sessions?.find(s => s.id === match?.session)
+    : undefined
 
-  const isCancelled = match.status === 'cancelled'
-  const isCompleted = match.status === 'completed'
-  const isPlanned = match.status === 'planned'
+  const user1 = match?.user1
+    ? users?.find(u => u.id === match?.user1)
+    : undefined
+  const user2 = match?.user2
+    ? users?.find(u => u.id === match?.user2)
+    : undefined
+
+  const canEdit = !isReadOnly && isLoggedIn && loggedInUser.role !== 'user'
+
+  const isCancelled = match?.status === 'cancelled'
+  const isCompleted = match?.status === 'completed'
+  const isPlanned = match?.status === 'planned'
 
   function handleSetWinner(userId: string) {
-    if (!canEdit) return
+    if (!canEdit || !match || isReadOnly) return
 
     const isWinner = match.winner === userId
     const newWinner = isWinner ? null : userId
@@ -68,7 +87,7 @@ export default function MatchRow({
   }
 
   function handleCancel() {
-    if (!canEdit) return
+    if (!canEdit || !match || isReadOnly) return
 
     const payload: EditMatchRequest = {
       type: 'EditMatchRequest',
@@ -88,7 +107,8 @@ export default function MatchRow({
   return (
     <div
       className={twMerge(
-        'hover:bg-foreground/15 group relative flex cursor-pointer items-center justify-between rounded-sm p-2 transition-colors',
+        'group relative flex items-center justify-between rounded-sm p-2 transition-colors',
+        !isReadOnly && 'hover:bg-foreground/15 hover:cursor-pointer',
         isCancelled && 'text-muted-foreground opacity-33',
         className,
         highlight && 'bg-foreground/13'
@@ -103,9 +123,10 @@ export default function MatchRow({
           <UserCell
             className='flex-1 text-right'
             user={user1}
-            isWinner={!!match.winner && match.winner === match.user1}
+            placeholder={getUserPlaceholderString(tournamentMatch, 'A')}
+            isWinner={!!match?.winner && match?.winner === match?.user1}
             onClick={() => user1 && handleSetWinner(user1.id)}
-            disabled={!canEdit || isCancelled || match.status !== 'planned'}
+            disabled={!canEdit || isCancelled || match?.status !== 'planned'}
             isCancelled={isCancelled}
             isCompleted={isCompleted}
           />
@@ -121,9 +142,10 @@ export default function MatchRow({
           <UserCell
             className='flex-1'
             user={user2}
-            isWinner={!!match.winner && match.winner === match.user2}
+            placeholder={getUserPlaceholderString(tournamentMatch, 'B')}
+            isWinner={!!match?.winner && match?.winner === match?.user2}
             onClick={() => user2 && handleSetWinner(user2.id)}
-            disabled={!canEdit || isCancelled || match.status !== 'planned'}
+            disabled={!canEdit || isCancelled || match?.status !== 'planned'}
             isCancelled={isCancelled}
             isCompleted={isCompleted}
           />
@@ -132,7 +154,7 @@ export default function MatchRow({
         <div
           className={twMerge(
             'flex items-center justify-center gap-2 sm:justify-start',
-            (!track || hideTrack) && !session && !match.stage && 'hidden'
+            (!track || hideTrack) && !session && !match?.stage && 'hidden'
           )}>
           {track && !hideTrack && (
             <div className='flex items-center gap-2'>
@@ -157,7 +179,7 @@ export default function MatchRow({
             </div>
           )}
 
-          {match.stage && (
+          {match?.stage && (
             <Badge
               variant='outline'
               className={twMerge(
@@ -174,7 +196,11 @@ export default function MatchRow({
         {canEdit && isPlanned && (
           <button
             title={loc.no.match.cancel}
-            className='text-muted-foreground hover:text-primary-foreground hover:bg-muted m-2 hidden p-2 transition-colors hover:rounded-sm group-hover:block'
+            className={twMerge(
+              'text-muted-foreground m-2 hidden p-2 transition-colors',
+              !isReadOnly &&
+                'hover:text-primary-foreground hover:bg-muted hover:cursor-pointer hover:rounded-sm group-hover:block'
+            )}
             onClick={e => {
               e.stopPropagation()
               handleCancel()
@@ -184,7 +210,12 @@ export default function MatchRow({
         )}
 
         {isPlanned && (
-          <span className='bg-primary mr-5 size-2 animate-pulse rounded-full group-hover:hidden' />
+          <span
+            className={twMerge(
+              'bg-primary mr-5 size-2 animate-pulse rounded-full',
+              !isReadOnly && 'group-hover:hidden'
+            )}
+          />
         )}
       </div>
     </div>
@@ -194,6 +225,7 @@ export default function MatchRow({
 function UserCell({
   user,
   isWinner,
+  placeholder,
   onClick,
   disabled,
   isCancelled,
@@ -202,6 +234,7 @@ function UserCell({
 }: Readonly<
   {
     user: UserInfo | undefined
+    placeholder?: string
     isWinner: boolean
     onClick?: () => void
     disabled?: boolean
@@ -235,6 +268,7 @@ function UserCell({
             user?.shortName ??
             user?.lastName ??
             user?.firstName ??
+            placeholder ??
             loc.no.match.unknownUser
           }
         />

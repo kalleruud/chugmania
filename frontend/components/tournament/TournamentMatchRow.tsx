@@ -1,72 +1,61 @@
 import { useData } from '@/contexts/DataContext'
 import { useTimeEntryInput } from '@/hooks/TimeEntryInputProvider'
-import loc from '@/lib/locales'
+import { getRoundName } from '@/lib/utils'
 import type { TournamentMatchWithDetails } from '@common/models/tournament'
-import type { UserInfo } from '@common/models/user'
 import { twMerge } from 'tailwind-merge'
 import MatchRow from '../match/MatchRow'
 
 type TournamentMatchRowProps = {
   item: TournamentMatchWithDetails
-  groupName?: string
+  index: number | undefined
   className?: string
-  readonly?: boolean
+  isReadOnly?: boolean
 }
 
 export default function TournamentMatchRow({
   item: tournamentMatch,
-  groupName,
+  index,
   className,
-  readonly,
+  isReadOnly,
 }: Readonly<TournamentMatchRowProps>) {
-  const { users } = useData()
+  const { tournaments } = useData()
   const { openMatch } = useTimeEntryInput()
   if (!tournamentMatch) return undefined
 
-  const user1: UserInfo | undefined = tournamentMatch.matchDetails
-    ? users?.find(u => u.id === tournamentMatch.matchDetails?.user1)
-    : undefined
+  const tournament = tournaments?.find(t => t.id === tournamentMatch.tournament)
+  const group = tournament?.groups.find(g => g.id === tournamentMatch.group)
 
-  const user2: UserInfo | undefined = tournamentMatch.matchDetails
-    ? users?.find(u => u.id === tournamentMatch.matchDetails?.user2)
-    : undefined
-
-  const displayName = loc.no.tournament.bracketRoundName(
-    tournamentMatch.bracket,
+  const displayName = getRoundName(
     tournamentMatch.round ?? 0,
-    groupName
+    tournamentMatch.bracket,
+    tournament?.eliminationType === 'double',
+    group?.number
   )
 
   if (tournamentMatch.matchDetails)
     return (
-      <div className='bg-background/50 flex w-full flex-col items-center justify-center rounded-sm border p-2'>
-        <span>{displayName}</span>
-        <MatchRow
-          item={tournamentMatch.matchDetails}
-          className='w-full'
-          onClick={
-            readonly
-              ? undefined
-              : () => openMatch(tournamentMatch.matchDetails!)
-          }
-          user1Override={user1}
-          user2Override={user2}
-          readonly={readonly}
-        />
-      </div>
+      <MatchRow
+        item={tournamentMatch.matchDetails}
+        tournamentMatch={tournamentMatch}
+        className='w-full'
+        onClick={
+          isReadOnly
+            ? undefined
+            : () => openMatch(tournamentMatch.matchDetails!)
+        }
+        isReadOnly={isReadOnly}
+      />
     )
 
   return (
     <div
       className={twMerge(
-        'bg-background/50 flex flex-col gap-2 rounded-sm border border-dashed p-3',
+        'bg-background/50 flex flex-col items-center justify-center gap-2 rounded-sm border border-dashed py-4',
         className
       )}>
-      <div className='flex items-center justify-center gap-2'>
-        <span className='text-muted-foreground truncate text-sm'>
-          {displayName}
-        </span>
-      </div>
+      <span className='text-muted-foreground truncate text-sm'>
+        {displayName + (index === undefined ? '' : `, match ${index + 1}`)}
+      </span>
     </div>
   )
 }
