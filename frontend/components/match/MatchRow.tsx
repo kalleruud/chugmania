@@ -108,25 +108,22 @@ export default function MatchRow({
     g => g.id === tournamentMatch?.sourceGroupB
   )?.number
 
-  const allTournamentMatches = tournament?.rounds.flatMap(r => r.matches)
-  const sourceMatchA = allTournamentMatches?.find(
-    m => m.id === tournamentMatch?.sourceMatchA
-  )
-  const sourceMatchB = allTournamentMatches?.find(
-    m => m.id === tournamentMatch?.sourceMatchB
-  )
-  const sourceMatchNameA = sourceMatchA
-    ? loc.no.tournament.bracketMatchName(
-        getRoundName(sourceMatchA.round ?? 0, sourceMatchA.bracket),
-        sourceMatchA.position + 1
-      )
-    : undefined
-  const sourceMatchNameB = sourceMatchB
-    ? loc.no.tournament.bracketMatchName(
-        getRoundName(sourceMatchB.round ?? 0, sourceMatchB.bracket),
-        sourceMatchB.position + 1
-      )
-    : undefined
+  const getSourceMatchName = (sourceMatchId: string | null | undefined) => {
+    if (!sourceMatchId || !tournament) return undefined
+    const round = tournament.rounds.find(r =>
+      r.matches.some(m => m.id === sourceMatchId)
+    )
+    if (!round) return undefined
+    const indexInRound = round.matches.findIndex(m => m.id === sourceMatchId)
+    if (indexInRound === -1) return undefined
+    const roundName = getRoundName(round.round ?? 0, round.bracket)
+    return round.matches.length > 1
+      ? loc.no.tournament.bracketMatchName(roundName, indexInRound + 1)
+      : roundName
+  }
+
+  const sourceMatchNameA = getSourceMatchName(tournamentMatch?.sourceMatchA)
+  const sourceMatchNameB = getSourceMatchName(tournamentMatch?.sourceMatchB)
 
   const canEdit = !isReadOnly && isLoggedIn && loggedInUser.role !== 'user'
 
@@ -357,6 +354,7 @@ function UserCell({
             placeholder ??
             loc.no.match.unknownUser
           }
+          isPlaceholder={!user}
         />
       </button>
     </div>
