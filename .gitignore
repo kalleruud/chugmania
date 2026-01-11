@@ -2,6 +2,11 @@
 .output
 /build
 
+# LLMs
+.opencode
+.cursor
+.claude
+
 # OS
 .DS_Store
 Thumbs.db
