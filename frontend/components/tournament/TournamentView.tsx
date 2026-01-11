@@ -8,10 +8,10 @@ import { Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
 import ConfirmationButton from '../ConfirmationButton'
+import MatchRow from '../match/MatchRow'
 import { PageHeader } from '../PageHeader'
 import { Badge } from '../ui/badge'
 import GroupCard from './GroupCard'
-import TournamentMatchRow from './TournamentMatchRow'
 
 type TournamentViewProps = {
   tournament: TournamentWithDetails
@@ -122,13 +122,14 @@ export default function TournamentView({
                 <h4 className='font-f1-bold text-sm uppercase'>
                   {getRoundName(groupRound.round ?? 0, groupRound.bracket)}
                 </h4>
-                {groupRound.matches.map(match => {
+                {groupRound.matches.map((match, index) => {
                   return (
-                    <TournamentMatchRow
+                    <MatchRow
                       className='bg-background-secondary rounded-sm border p-2'
                       key={match.id}
                       index={groupRound.matches.length > 1 ? index : undefined}
-                      item={match}
+                      item={match.matchDetails ?? undefined}
+                      tournamentMatch={match}
                       isReadOnly={isReadOnly}
                     />
                   )
@@ -154,10 +155,12 @@ export default function TournamentView({
                   {getRoundName(bracketRound.round ?? 0, bracketRound.bracket)}
                 </h4>
                 {bracketRound.matches.map((match, index) => (
-                  <TournamentMatchRow
+                  <MatchRow
                     key={match.id}
+                    className='bg-background-secondary rounded-sm border p-2'
+                    item={match.matchDetails ?? undefined}
+                    tournamentMatch={match}
                     index={bracketRound.matches.length > 1 ? index : undefined}
-                    item={match}
                     isReadOnly={isReadOnly}
                   />
                 ))}

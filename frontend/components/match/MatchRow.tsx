@@ -2,6 +2,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
+import { getRoundName } from '@/lib/utils'
 import type { EditMatchRequest, Match, MatchSide } from '@common/models/match'
 import type { TournamentMatch } from '@common/models/tournament'
 import type { UserInfo } from '@common/models/user'
@@ -17,16 +18,45 @@ import { Label } from '../ui/label'
 
 export type MatchRowProps = BaseRowProps<Match | undefined> & {
   tournamentMatch?: TournamentMatch
+  index?: number
   hideTrack?: boolean
   isReadOnly?: boolean
 }
 
 function getUserPlaceholderString(
   tournamentMatch: TournamentMatch | undefined,
-  side: MatchSide
-) {
-  // TODO: Implement fetching the name of the source match or group to indicate
-  // who will play in this match upon resolving the dependency
+  side: MatchSide,
+  groupNumber: number | undefined,
+  sourceMatchPosition: number | undefined
+): string {
+  if (!tournamentMatch) return loc.no.match.unknownUser
+
+  const sourceGroup =
+    side === 'A' ? tournamentMatch.sourceGroupA : tournamentMatch.sourceGroupB
+  const sourceGroupRank =
+    side === 'A'
+      ? tournamentMatch.sourceGroupARank
+      : tournamentMatch.sourceGroupBRank
+  const sourceMatch =
+    side === 'A' ? tournamentMatch.sourceMatchA : tournamentMatch.sourceMatchB
+  const sourceProgression =
+    side === 'A'
+      ? tournamentMatch.sourceMatchAProgression
+      : tournamentMatch.sourceMatchBProgression
+
+  if (sourceGroup && sourceGroupRank !== null && groupNumber !== undefined) {
+    return loc.no.tournament.sourceGroupPlaceholder(
+      groupNumber,
+      sourceGroupRank
+    )
+  }
+
+  if (sourceMatch && sourceProgression && sourceMatchPosition !== undefined) {
+    return loc.no.tournament.sourceMatchPlaceholder(
+      sourceMatchPosition,
+      sourceProgression
+    )
+  }
 
   return loc.no.match.unknownUser
 }
@@ -35,14 +65,24 @@ export default function MatchRow({
   className,
   item: match,
   tournamentMatch,
+  index,
   highlight,
   hideTrack,
   isReadOnly,
   ...rest
 }: Readonly<MatchRowProps>) {
-  const { users, tracks, sessions } = useData()
+  const { users, tracks, sessions, tournaments } = useData()
   const { socket } = useConnection()
   const { isLoggedIn, loggedInUser } = useAuth()
+
+  const roundName = tournamentMatch
+    ? getRoundName(tournamentMatch.round ?? 0, tournamentMatch.bracket)
+    : undefined
+
+  const matchName =
+    index === undefined || !roundName
+      ? undefined
+      : loc.no.tournament.bracketMatchName(roundName, index + 1)
 
   const track = match?.track
     ? tracks?.find(t => t.id === match?.track)
@@ -57,6 +97,25 @@ export default function MatchRow({
   const user2 = match?.user2
     ? users?.find(u => u.id === match?.user2)
     : undefined
+
+  const tournament = tournamentMatch
+    ? tournaments?.find(t => t.id === tournamentMatch.tournament)
+    : undefined
+
+  const groupNumberA = tournament?.groups.find(
+    g => g.id === tournamentMatch?.sourceGroupA
+  )?.number
+  const groupNumberB = tournament?.groups.find(
+    g => g.id === tournamentMatch?.sourceGroupB
+  )?.number
+
+  const allTournamentMatches = tournament?.rounds.flatMap(r => r.matches)
+  const sourceMatchPositionA = allTournamentMatches?.find(
+    m => m.id === tournamentMatch?.sourceMatchA
+  )?.position
+  const sourceMatchPositionB = allTournamentMatches?.find(
+    m => m.id === tournamentMatch?.sourceMatchB
+  )?.position
 
   const canEdit = !isReadOnly && isLoggedIn && loggedInUser.role !== 'user'
 
@@ -114,7 +173,13 @@ export default function MatchRow({
         highlight && 'bg-foreground/13'
       )}
       {...rest}>
-      <div className='mt-1 grid w-full items-center gap-1'>
+      <div className='grid w-full items-center gap-1'>
+        {matchName && (
+          <span className='text-muted-foreground w-full text-center text-xs font-medium'>
+            {matchName}
+          </span>
+        )}
+
         <div
           className={twMerge(
             'flex w-full items-center justify-center gap-2',
@@ -123,7 +188,12 @@ export default function MatchRow({
           <UserCell
             className='flex-1 text-right'
             user={user1}
-            placeholder={getUserPlaceholderString(tournamentMatch, 'A')}
+            placeholder={getUserPlaceholderString(
+              tournamentMatch,
+              'A',
+              groupNumberA,
+              sourceMatchPositionA
+            )}
             isWinner={!!match?.winner && match?.winner === match?.user1}
             onClick={() => user1 && handleSetWinner(user1.id)}
             disabled={!canEdit || isCancelled || match?.status !== 'planned'}
@@ -142,7 +212,12 @@ export default function MatchRow({
           <UserCell
             className='flex-1'
             user={user2}
-            placeholder={getUserPlaceholderString(tournamentMatch, 'B')}
+            placeholder={getUserPlaceholderString(
+              tournamentMatch,
+              'B',
+              groupNumberB,
+              sourceMatchPositionB
+            )}
             isWinner={!!match?.winner && match?.winner === match?.user2}
             onClick={() => user2 && handleSetWinner(user2.id)}
             disabled={!canEdit || isCancelled || match?.status !== 'planned'}
@@ -252,7 +327,7 @@ function UserCell({
           onClick?.()
         }}
         className={twMerge(
-          'border-b-2 border-transparent px-1 transition-all',
+          'border-b-2 px-1 transition-all',
           !isCancelled &&
             !isCompleted &&
             user &&

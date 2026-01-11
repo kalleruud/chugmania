@@ -259,12 +259,12 @@ const no = {
     groupStage: 'Gruppespill',
     bracket: 'Sluttspill',
     pending: 'Venter',
-    bracketMatchName: (bracket: TournamentBracket, round: number) =>
-      `${bracket} ${round}`,
     groupName: (number: number) =>
       `Gruppe ${String.fromCodePoint(number + 65)}`,
     groupMatchName: (group: number, match: number) =>
       `${loc.no.tournament.groupName(group)}, match ${match}`,
+    bracketMatchName: (roundName: string, matchNumber: number) =>
+      `${roundName}, match ${matchNumber}`,
     sourceGroupPlaceholder: (group: number, rank: number) =>
       `${rank}. plass fra ${loc.no.tournament.groupName(group)}`,
     sourceMatchPlaceholder: (match: number, progression: MatchProgression) =>
