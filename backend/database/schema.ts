@@ -85,9 +85,7 @@ export const matches = sqliteTable('matches', {
   userA: text('user_a').references(() => users.id),
   userB: text('user_b').references(() => users.id),
   winner: text().$type<DependencySlot>(),
-  track: text()
-    .notNull()
-    .references(() => tracks.id),
+  track: text().references(() => tracks.id),
   session: text().references(() => sessions.id),
   status: text()
     .$type<MatchStatus>()

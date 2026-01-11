@@ -145,7 +145,7 @@ export default class TournamentMatchManager {
       winner: null,
       comment: null,
       session: sessionId,
-      track: trackId ?? '',
+      track: trackId,
     }
   }
 

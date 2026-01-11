@@ -71,6 +71,13 @@
       "when": 1767445073684,
       "tag": "0009_nappy_centennial",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1768166273170,
+      "tag": "0010_broad_hex",
+      "breakpoints": true
     }
   ]
 }
