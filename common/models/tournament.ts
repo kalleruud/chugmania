@@ -1,11 +1,9 @@
 import type {
-  DependencySlot,
   EliminationType,
   groupPlayers,
   groups,
   matchDependencies,
   stages,
-  TournamentBracket,
   tournamentMatches,
   tournaments,
 } from '../../backend/database/schema'
@@ -32,7 +30,11 @@ export type CreateMatchDependency = typeof matchDependencies.$inferInsert
 
 export type TournamentMatchWithDetails = Omit<TournamentMatch, 'stage'> & {
   stage: Stage
-  matchDetails: Match | null
+  matchDetails: Match
+  dependencyNames: {
+    A: string
+    B: string
+  } | null
 }
 
 export type TournamentStage = {
@@ -133,7 +135,3 @@ export function isDeleteTournamentRequest(
   const d = data as Record<string, unknown>
   return d.type === 'DeleteTournamentRequest' && typeof d.id === 'string'
 }
-
-export type TournamentBracketType = TournamentBracket
-export type TournamentEliminationType = EliminationType
-export type TournamentDependencySlot = DependencySlot

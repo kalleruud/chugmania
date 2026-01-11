@@ -2,7 +2,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
-import { getRoundName } from '@/lib/utils'
+import { getStageName } from '@/lib/utils'
 import type { TournamentWithDetails } from '@common/models/tournament'
 import { Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -56,8 +56,8 @@ export default function TournamentView({
           type: 'DeleteTournamentRequest',
           id: tournament.id,
         })
-        .then(r => {
-          if (!r.success) throw new Error(r.message)
+        .then(result => {
+          if (!result.success) throw new Error(result.message)
         }),
       loc.no.tournament.toast.delete
     )
@@ -66,35 +66,43 @@ export default function TournamentView({
   return (
     <div className={twMerge('flex flex-col gap-4', className)}>
       <div className='flex items-center justify-between p-2'>
-        <div className='flex flex-col gap-1'>
-          <div className='flex items-center gap-2'>
-            <h3 className='font-f1-bold text-lg uppercase'>
-              {tournament.name}
-            </h3>
+        <div className='flex flex-col gap-2'>
+          <h2 className='font-f1-bold text-xl font-bold'>{tournament.name}</h2>
+
+          <div className='flex gap-2'>
             <Badge variant='outline'>
               {loc.no.tournament.eliminationType[tournament.eliminationType]}
             </Badge>
+            <Badge variant='outline'>
+              {tournament.groupsCount} {loc.no.tournament.preview.groups}
+            </Badge>
           </div>
+
           {tournament.description && (
             <p className='text-muted-foreground text-sm'>
               {tournament.description}
             </p>
           )}
         </div>
-        <div className='flex items-center gap-2'>
-          {canEdit && (
-            <ConfirmationButton
-              onClick={handleDelete}
-              variant='destructive'
-              size='sm'>
-              <Trash2 className='size-4' />
-              {loc.no.common.delete}
-            </ConfirmationButton>
-          )}
-        </div>
+
+        {canEdit && (
+          <ConfirmationButton
+            onClick={handleDelete}
+            variant='destructive'
+            size='sm'>
+            <Trash2 className='size-4' />
+            {loc.no.common.delete}
+          </ConfirmationButton>
+        )}
       </div>
 
       <div className='flex flex-col gap-4'>
+        <PageHeader
+          className='py-0'
+          title={loc.no.tournament.groupStage}
+          description={`${completedGroupMatches} / ${totalGroupMatches} matcher`}
+        />
+
         <div className='grid grid-cols-1 gap-2 sm:grid-cols-2'>
           {tournament.groups.map(group => (
             <GroupCard
@@ -117,9 +125,9 @@ export default function TournamentView({
               key={`${stageWithMatches.stage.bracket}-${stageWithMatches.stage.index}-${index}`}
               className='flex flex-col gap-2'>
               <h4 className='font-f1-bold text-sm uppercase'>
-                {getRoundName(
-                  stageWithMatches.stage.index,
-                  stageWithMatches.stage.bracket
+                {getStageName(
+                  stageWithMatches.stage.name,
+                  stageWithMatches.stage.index
                 )}
               </h4>
               {stageWithMatches.matches.map((match, matchIndex) => {
@@ -150,31 +158,35 @@ export default function TournamentView({
         />
 
         <div className='flex flex-col gap-8'>
-          {bracketStages.map((stageWithMatches, index) => (
-            <div
-              key={`${stageWithMatches.stage.bracket}-${stageWithMatches.stage.index}-${index}`}
-              className='flex flex-col gap-2'>
-              <h4 className='font-f1-bold text-sm uppercase'>
-                {getRoundName(
-                  stageWithMatches.stage.index,
-                  stageWithMatches.stage.bracket
-                )}
-              </h4>
-              {stageWithMatches.matches.map((match, matchIndex) => (
-                <MatchRow
-                  key={match.id}
-                  className='bg-background-secondary rounded-sm border p-2'
-                  item={match.matchDetails ?? undefined}
-                  tournamentMatch={match}
-                  tournament={tournament}
-                  index={
-                    stageWithMatches.matches.length > 1 ? matchIndex : undefined
-                  }
-                  isReadOnly={isReadOnly}
-                />
-              ))}
-            </div>
-          ))}
+          {bracketStages.map((stageWithMatches, index) => {
+            return (
+              <div
+                key={`${stageWithMatches.stage.bracket}-${stageWithMatches.stage.index}-${index}`}
+                className='flex flex-col gap-2'>
+                <h4 className='font-f1-bold text-sm uppercase'>
+                  {getStageName(
+                    stageWithMatches.stage.name,
+                    stageWithMatches.stage.index
+                  )}
+                </h4>
+                {stageWithMatches.matches.map((match, matchIndex) => (
+                  <MatchRow
+                    key={match.id}
+                    className='bg-background-secondary rounded-sm border p-2'
+                    item={match.matchDetails ?? undefined}
+                    tournamentMatch={match}
+                    tournament={tournament}
+                    index={
+                      stageWithMatches.matches.length > 1
+                        ? matchIndex
+                        : undefined
+                    }
+                    isReadOnly={isReadOnly}
+                  />
+                ))}
+              </div>
+            )
+          })}
         </div>
       </div>
     </div>

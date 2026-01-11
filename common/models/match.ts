@@ -1,11 +1,7 @@
-import type { DependencySlot, matches } from '../../backend/database/schema'
+import type { matches } from '../../backend/database/schema'
 
 export type Match = typeof matches.$inferSelect
 export type CreateMatch = typeof matches.$inferInsert
-
-export type MatchStatus = 'planned' | 'completed' | 'cancelled'
-export type MatchSide = 'A' | 'B'
-export type { DependencySlot }
 
 export type CreateMatchRequest = {
   type: 'CreateMatchRequest'

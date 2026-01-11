@@ -4,10 +4,11 @@ import {
   matches,
   stages,
   tournamentMatches,
-  type DependencySlot,
   type EliminationType,
+  type MatchSide,
+  type StageLevel,
 } from '@backend/database/schema'
-import type { Match, MatchSide } from '@common/models/match'
+import type { Match } from '@common/models/match'
 import type {
   CreateGroupPlayer,
   CreateMatchDependency,
@@ -42,6 +43,23 @@ type GeneratedStructure = {
 }
 
 export default class TournamentMatchManager {
+  static getStageLevel(matchesInRound: number): StageLevel {
+    switch (matchesInRound) {
+      case 1:
+        return 'final'
+      case 2:
+        return 'semi'
+      case 4:
+        return 'quarter'
+      case 8:
+        return 'eight'
+      case 16:
+        return 'sixteen'
+      default:
+        throw new Error(`Invalid matches in round: ${matchesInRound}`)
+    }
+  }
+
   static async getAll(tournamentId: string): Promise<{
     stages: Stage[]
     tournamentMatches: TournamentMatch[]
@@ -95,7 +113,10 @@ export default class TournamentMatchManager {
       updatedAt: null,
       createdAt: new Date(),
       deletedAt: null,
-      ...draft,
+      level: draft.level ?? null,
+      tournament: draft.tournament,
+      bracket: draft.bracket ?? null,
+      index: draft.index,
     }
   }
 
@@ -229,7 +250,7 @@ export default class TournamentMatchManager {
         roundNum,
         TournamentMatchManager.newStage({
           tournament: tournamentId,
-          bracket: 'group',
+          level: 'group',
           index: i,
         })
       )
@@ -385,6 +406,7 @@ export default class TournamentMatchManager {
         tournament: tournamentId,
         bracket: 'upper',
         index: stageOffset + stageIndex,
+        level: TournamentMatchManager.getStageLevel(matchesInRound),
       })
       stagesList.push(stage)
 
@@ -454,7 +476,7 @@ export default class TournamentMatchManager {
   ): MatchDependency[] {
     const deps: MatchDependency[] = []
 
-    const assignSlot = (seed: number, slot: DependencySlot) => {
+    const assignSlot = (seed: number, slot: MatchSide) => {
       if (seed >= totalAdvancing) return
 
       const groupIndex = seed % groups.length
@@ -544,6 +566,7 @@ export default class TournamentMatchManager {
       tournament: tournamentId,
       bracket: 'lower',
       index: stageOffset + stageIndex,
+      level: null,
     })
     stagesList.push(stage1)
 
@@ -647,6 +670,7 @@ export default class TournamentMatchManager {
       // Survivor round: lower bracket winners play each other
       const prevDropIn = metaList.filter(m => m.round === lowerRound - 1)
       if (prevDropIn.length > 1) {
+        const survivorMatchCount = Math.floor(prevDropIn.length / 2)
         const survivorStage = TournamentMatchManager.newStage({
           tournament: tournamentId,
           bracket: 'lower',
@@ -730,8 +754,8 @@ export default class TournamentMatchManager {
 
     const stage = TournamentMatchManager.newStage({
       tournament: tournamentId,
-      bracket: 'grand_final',
       index: stageOffset,
+      level: 'grand_final',
     })
 
     const trackId =

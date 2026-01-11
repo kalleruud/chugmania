@@ -119,9 +119,10 @@ export default class TournamentManager {
     stages: stageRows,
     tournamentMatches,
     matches,
+    matchDependencies: deps,
   }: TournamentStructure): Promise<TournamentWithDetails> {
     // Find group stages and compute wins/losses for group players
-    const groupStages = stageRows.filter(s => s.bracket === 'group')
+    const groupStages = stageRows.filter(s => s.level === 'group')
     const groupStageIds = new Set(groupStages.map(s => s.id))
 
     const groupMatches = tournamentMatches
@@ -168,7 +169,9 @@ export default class TournamentManager {
     const stagesWithMatches = TournamentManager.generateStages(
       stageRows,
       tournamentMatches,
-      matches
+      matches,
+      deps,
+      groups
     )
 
     // Calculate min and max matches per player
@@ -196,7 +199,9 @@ export default class TournamentManager {
   private static generateStages(
     stageRows: Stage[],
     tournamentMatches: TournamentMatch[],
-    matches: Match[]
+    matches: Match[],
+    dependencies: MatchDependency[],
+    groups: Group[]
   ): TournamentStage[] {
     return stageRows.map(stageRow => {
       const tmsInStage = tournamentMatches.filter(
@@ -204,16 +209,43 @@ export default class TournamentManager {
       )
 
       const matchesWithDetails: TournamentMatchWithDetails[] = tmsInStage.map(
-        tm => ({
-          id: tm.id,
-          updatedAt: tm.updatedAt,
-          createdAt: tm.createdAt,
-          deletedAt: tm.deletedAt,
-          match: tm.match,
-          stage: stageRow,
-          index: tm.index,
-          matchDetails: matches.find(m => m.id === tm.match) ?? null,
-        })
+        tm => {
+          const matchDetails = matches.find(m => m.id === tm.match)!
+
+          const depsForMatch = dependencies.filter(d => d.toMatch === tm.id)
+          const depA = depsForMatch.find(d => d.toSlot === 'A')
+          const depB = depsForMatch.find(d => d.toSlot === 'B')
+
+          const dependencyNames =
+            depA && depB
+              ? {
+                  A: TournamentManager.getDependencyName(
+                    depA,
+                    tournamentMatches,
+                    stageRows,
+                    groups
+                  )!,
+                  B: TournamentManager.getDependencyName(
+                    depB,
+                    tournamentMatches,
+                    stageRows,
+                    groups
+                  )!,
+                }
+              : null
+
+          return {
+            id: tm.id,
+            updatedAt: tm.updatedAt,
+            createdAt: tm.createdAt,
+            deletedAt: tm.deletedAt,
+            match: tm.match,
+            stage: stageRow,
+            index: tm.index,
+            matchDetails,
+            dependencyNames,
+          } satisfies TournamentMatchWithDetails
+        }
       )
 
       return {
@@ -221,6 +253,53 @@ export default class TournamentManager {
         matches: matchesWithDetails,
       }
     })
+  }
+
+  private static getDependencyName(
+    dep: MatchDependency | undefined,
+    tournamentMatches: TournamentMatch[],
+    stageRows: Stage[],
+    groups: Group[]
+  ): string | null {
+    if (!dep) return null
+
+    // Source from group
+    if (dep.fromGroup) {
+      const group = groups.find(g => g.id === dep.fromGroup)
+      const groupIndex = group?.index ?? 0
+      return loc.no.tournament.sourceGroupPlaceholder(
+        groupIndex,
+        dep.fromPosition
+      )
+    }
+
+    // Source from match
+    if (dep.fromMatch) {
+      const sourceTm = tournamentMatches.find(t => t.id === dep.fromMatch)
+      if (sourceTm) {
+        const sourceStage = stageRows.find(s => s.id === sourceTm.stage)
+        if (sourceStage) {
+          const stageName = TournamentManager.getStageName(sourceStage)
+          const matchName = loc.no.tournament.bracketMatchName(
+            stageName,
+            sourceTm.index + 1
+          )
+          return loc.no.tournament.sourceMatchPlaceholder(
+            matchName,
+            dep.fromPosition
+          )
+        }
+      }
+    }
+
+    return null
+  }
+
+  private static getStageName(stage: Stage): string {
+    if (stage.level) {
+      return loc.no.match.stageNames[stage.level]
+    }
+    return `${loc.no.match.round} ${stage.index + 1}`
   }
 
   private static async generateTournamentStructure({
@@ -353,7 +432,7 @@ export default class TournamentManager {
 
     if (!stage) return
 
-    if (stage.bracket === 'group') {
+    if (stage.level === 'group') {
       // Find the group for this match by looking at the players
       const userA = match.userA
       const userB = match.userB

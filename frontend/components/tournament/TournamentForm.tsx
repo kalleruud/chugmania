@@ -2,10 +2,9 @@ import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
 import { sessionToLookupItem, trackToLookupItem } from '@/lib/lookup-utils'
-import { getRoundName } from '@/lib/utils'
+import { getStageName } from '@/lib/utils'
 import type {
   CreateTournament,
-  TournamentEliminationType,
   TournamentWithDetails,
 } from '@common/models/tournament'
 import { Users } from 'lucide-react'
@@ -46,7 +45,7 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
   const [groupsCount, setGroupsCount] = useState(2)
   const [advancementCount, setAdvancementCount] = useState(1)
   const [eliminationType, setEliminationType] =
-    useState<TournamentEliminationType>('single')
+    useState<TournamentWithDetails['eliminationType']>('single')
   const [groupStageTracks, setGroupStageTracks] = useState<string[]>([])
   const [bracketTracks, setBracketTracks] = useState<string[]>([])
 
@@ -224,7 +223,9 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
           )}
           value={eliminationType}
           onValueChange={value =>
-            setEliminationType(value as TournamentEliminationType)
+            setEliminationType(
+              value as TournamentWithDetails['eliminationType']
+            )
           }
         />
 
@@ -243,7 +244,7 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
                 const selectedTrack = tracks?.find(
                   t => t.id === groupStageTracks[trackIndex]
                 )
-                const roundName = getRoundName(trackIndex + 1, 'group')
+                const roundName = `Runde ${trackIndex + 1}`
                 return (
                   <div key={trackIndex} className='flex flex-col gap-1'>
                     <Label className='text-xs'>{roundName}</Label>
@@ -294,9 +295,9 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
                   const selectedTrack = tracks?.find(
                     t => t.id === bracketTracks[trackIndex]
                   )
-                  const roundName = getRoundName(
-                    stageWithMatches.stage.index,
-                    stageWithMatches.stage.bracket
+                  const roundName = getStageName(
+                    stageWithMatches.stage.name,
+                    stageWithMatches.stage.index
                   )
                   return (
                     <div key={trackIndex} className='flex flex-col gap-1'>

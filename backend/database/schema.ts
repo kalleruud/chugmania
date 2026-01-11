@@ -17,8 +17,17 @@ export type SessionResponse = 'yes' | 'no' | 'maybe'
 export type SessionStatus = 'confirmed' | 'tentative' | 'cancelled'
 export type MatchStatus = 'planned' | 'completed' | 'cancelled'
 export type EliminationType = 'single' | 'double'
-export type TournamentBracket = 'group' | 'upper' | 'lower' | 'grand_final'
-export type DependencySlot = 'A' | 'B'
+export type TournamentBracket = 'upper' | 'lower'
+export type MatchSide = 'A' | 'B'
+
+export type StageLevel =
+  | 'grand_final'
+  | 'final'
+  | 'semi'
+  | 'quarter'
+  | 'eight'
+  | 'sixteen'
+  | 'group'
 
 export const users = sqliteTable('users', {
   ...metadata,
@@ -84,7 +93,7 @@ export const matches = sqliteTable('matches', {
   ...metadata,
   userA: text('user_a').references(() => users.id),
   userB: text('user_b').references(() => users.id),
-  winner: text().$type<DependencySlot>(),
+  winner: text().$type<MatchSide>(),
   track: text().references(() => tracks.id),
   session: text().references(() => sessions.id),
   status: text()
@@ -134,7 +143,8 @@ export const stages = sqliteTable('stages', {
   tournament: text()
     .notNull()
     .references(() => tournaments.id, { onDelete: 'cascade' }),
-  bracket: text().$type<TournamentBracket>().notNull(),
+  bracket: text().$type<TournamentBracket>(),
+  level: text().$type<StageLevel>(),
   index: integer().notNull(),
 })
 
@@ -157,5 +167,5 @@ export const matchDependencies = sqliteTable('match_dependencies', {
     .notNull()
     .references(() => tournamentMatches.id),
   fromPosition: integer('from_position').notNull(),
-  toSlot: text('to_slot').$type<DependencySlot>().notNull(),
+  toSlot: text('to_slot').$type<MatchSide>().notNull(),
 })

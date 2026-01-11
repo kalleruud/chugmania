@@ -2,13 +2,9 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
-import { getRoundName } from '@/lib/utils'
-import type {
-  DependencySlot,
-  EditMatchRequest,
-  Match,
-  MatchSide,
-} from '@common/models/match'
+import { getStageName } from '@/lib/utils'
+import type { MatchSide } from '@backend/database/schema'
+import type { EditMatchRequest, Match } from '@common/models/match'
 import type {
   TournamentMatchWithDetails,
   TournamentWithDetails,
@@ -31,17 +27,6 @@ export type MatchRowProps = BaseRowProps<Match | undefined> & {
   isReadOnly?: boolean
 }
 
-function getUserPlaceholderString(
-  _tournamentMatch: TournamentMatchWithDetails | undefined,
-  _side: MatchSide,
-  _tournament: TournamentWithDetails | undefined
-): string {
-  // With the new schema, dependency information is stored in matchDependencies table
-  // and isn't directly available on the tournament match. For now, show a generic placeholder.
-  // TODO: Load and display dependency information if needed
-  return loc.no.tournament.pending
-}
-
 export default function MatchRow({
   className,
   item: match,
@@ -58,12 +43,12 @@ export default function MatchRow({
   const { isLoggedIn, loggedInUser } = useAuth()
 
   const stage = tournamentMatch?.stage
-  const roundName = stage ? getRoundName(stage.index, stage.bracket) : undefined
+  const stageName = stage ? getStageName(stage.level, stage.index) : undefined
 
   const matchName =
-    index === undefined || !roundName
+    index === undefined || !stageName
       ? undefined
-      : loc.no.tournament.bracketMatchName(roundName, index + 1)
+      : loc.no.tournament.bracketMatchName(stageName, index + 1)
 
   const track = match?.track
     ? tracks?.find(t => t.id === match?.track)
@@ -85,7 +70,7 @@ export default function MatchRow({
   const isCompleted = match?.status === 'completed'
   const isPlanned = match?.status === 'planned'
 
-  function handleSetWinner(side: DependencySlot) {
+  function handleSetWinner(side: MatchSide) {
     if (!canEdit || !match || isReadOnly) return
 
     const isWinner = match.winner === side
@@ -150,11 +135,7 @@ export default function MatchRow({
           <UserCell
             className='flex-1 text-right'
             user={userA}
-            placeholder={getUserPlaceholderString(
-              tournamentMatch,
-              'A',
-              tournament
-            )}
+            placeholder={tournamentMatch?.dependencyNames?.A}
             isWinner={!!match?.winner && match?.winner === 'A'}
             onClick={() => userA && handleSetWinner('A')}
             disabled={!canEdit || isCancelled || match?.status !== 'planned'}
@@ -173,11 +154,7 @@ export default function MatchRow({
           <UserCell
             className='flex-1'
             user={userB}
-            placeholder={getUserPlaceholderString(
-              tournamentMatch,
-              'B',
-              tournament
-            )}
+            placeholder={tournamentMatch?.dependencyNames?.B}
             isWinner={!!match?.winner && match?.winner === 'B'}
             onClick={() => userB && handleSetWinner('B')}
             disabled={!canEdit || isCancelled || match?.status !== 'planned'}
