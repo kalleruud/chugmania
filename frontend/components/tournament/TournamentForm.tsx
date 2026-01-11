@@ -92,6 +92,8 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
         groupsCount,
         advancementCount,
         eliminationType,
+        groupStageTracks:
+          groupStageTracks.length > 0 ? groupStageTracks : undefined,
       })
       .then(r => {
         if (!r.success) return toast.error(r.message)
