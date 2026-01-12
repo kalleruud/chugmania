@@ -455,7 +455,6 @@ export default class TournamentManager {
     if (!tournamentMatch) return
 
     if (!match.winner) {
-      // TODO: Handle removal of winner, if any
       throw new Error('Match has no winner')
     }
 

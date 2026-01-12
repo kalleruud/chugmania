@@ -44,6 +44,7 @@ export default function MatchRow({
   const { socket } = useConnection()
   const { isLoggedIn, loggedInUser } = useAuth()
 
+  // Derived values
   const stage = tournamentMatch?.stage
   const stageName = stage
     ? getStageName(stage.level, stage.bracket, stageDisplayIndex ?? stage.index)
@@ -74,19 +75,25 @@ export default function MatchRow({
   const isCompleted = match?.status === 'completed'
   const isPlanned = match?.status === 'planned'
 
-  function handleSetWinner(side: MatchSide) {
+  const handleSetWinner = (side: MatchSide) => {
     if (!canEdit || !match || isReadOnly) return
+    emitMatchUpdate(match.id, {
+      winner: match.winner === side ? null : side,
+      status: match.winner === side ? 'planned' : 'completed',
+    })
+  }
 
-    const isWinner = match.winner === side
-    const newWinner = isWinner ? null : side
-    const newStatus = isWinner ? 'planned' : 'completed'
+  const handleCancel = () => {
+    if (!canEdit || !match || isReadOnly) return
+    emitMatchUpdate(match.id, { status: 'cancelled', winner: null })
+  }
 
+  const emitMatchUpdate = (id: string, updates: Partial<EditMatchRequest>) => {
     const payload: EditMatchRequest = {
       type: 'EditMatchRequest',
-      id: match.id,
-      winner: newWinner,
-      status: newStatus,
-    }
+      id,
+      ...updates,
+    } as EditMatchRequest
 
     toast.promise(
       socket.emitWithAck('edit_match', payload).then(r => {
@@ -96,34 +103,16 @@ export default function MatchRow({
     )
   }
 
-  function handleCancel() {
-    if (!canEdit || !match || isReadOnly) return
-
-    const payload: EditMatchRequest = {
-      type: 'EditMatchRequest',
-      id: match.id,
-      status: 'cancelled',
-      winner: null,
-    }
-
-    toast.promise(
-      socket.emitWithAck('edit_match', payload).then(r => {
-        if (!r.success) throw new Error(r.message)
-      }),
-      loc.no.match.toast.update
-    )
-  }
+  const containerClasses = twMerge(
+    'group relative flex items-center justify-between rounded-sm p-2 transition-colors',
+    !isReadOnly && 'hover:bg-foreground/15 hover:cursor-pointer',
+    isCancelled && 'text-muted-foreground opacity-33',
+    className,
+    highlight && 'bg-foreground/13'
+  )
 
   return (
-    <div
-      className={twMerge(
-        'group relative flex items-center justify-between rounded-sm p-2 transition-colors',
-        !isReadOnly && 'hover:bg-foreground/15 hover:cursor-pointer',
-        isCancelled && 'text-muted-foreground opacity-33',
-        className,
-        highlight && 'bg-foreground/13'
-      )}
-      {...rest}>
+    <div className={containerClasses} {...rest}>
       <div className='grid w-full items-center gap-1'>
         {matchName && (
           <span className='text-muted-foreground w-full text-center text-xs font-medium'>
@@ -167,62 +156,103 @@ export default function MatchRow({
           />
         </div>
 
-        <div
-          className={twMerge(
-            'flex items-center justify-center gap-2',
-            (!track || hideTrack) && !session && 'hidden'
-          )}>
-          {track && !hideTrack && (
-            <div className='flex items-center gap-2'>
-              <span
-                className={twMerge(
-                  'font-kh-interface tabular-nums',
-                  isCancelled && 'line-through'
-                )}>
-                <span className='text-primary mr-1'>#</span>
-                {formatTrackName(track.number)}
-              </span>
-            </div>
-          )}
-
-          {session && (
-            <div className='text-muted-foreground flex items-center gap-1'>
-              <CalendarIcon className='size-3' />
-              <Label
-                className={twMerge('text-xs', isCancelled && 'line-through')}>
-                {session.name}
-              </Label>
-            </div>
-          )}
-        </div>
+        <MatchMetadata
+          track={track}
+          hideTrack={hideTrack}
+          session={session}
+          isCancelled={isCancelled}
+        />
       </div>
 
-      <div className='absolute right-0 flex items-center'>
-        {canEdit && isPlanned && (
-          <button
-            title={loc.no.match.cancel}
-            className={twMerge(
-              'text-muted-foreground m-2 hidden p-2 transition-colors',
-              !isReadOnly &&
-                'hover:text-primary-foreground hover:bg-muted hover:cursor-pointer hover:rounded-sm group-hover:block'
-            )}
-            onClick={e => {
-              e.stopPropagation()
-              handleCancel()
-            }}>
-            <MinusIcon className='size-4' />
-          </button>
-        )}
+      <MatchActions
+        canEdit={canEdit}
+        isPlanned={isPlanned}
+        isReadOnly={isReadOnly}
+        onCancel={handleCancel}
+      />
+    </div>
+  )
+}
 
-        {isPlanned && (
+function MatchMetadata({
+  track,
+  hideTrack,
+  session,
+  isCancelled,
+}: Readonly<{
+  track: any
+  hideTrack?: boolean
+  session: any
+  isCancelled: boolean
+}>) {
+  const showMetadata = (track && !hideTrack) || session
+
+  if (!showMetadata) return null
+
+  return (
+    <div className='flex items-center justify-center gap-2'>
+      {track && !hideTrack && (
+        <div className='flex items-center gap-2'>
           <span
             className={twMerge(
-              'bg-primary mr-5 size-2 animate-pulse rounded-full',
-              !isReadOnly && 'group-hover:hidden'
-            )}
-          />
-        )}
-      </div>
+              'font-kh-interface tabular-nums',
+              isCancelled && 'line-through'
+            )}>
+            <span className='text-primary mr-1'>#</span>
+            {formatTrackName(track.number)}
+          </span>
+        </div>
+      )}
+
+      {session && (
+        <div className='text-muted-foreground flex items-center gap-1'>
+          <CalendarIcon className='size-3' />
+          <Label className={twMerge('text-xs', isCancelled && 'line-through')}>
+            {session.name}
+          </Label>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function MatchActions({
+  canEdit,
+  isPlanned,
+  isReadOnly,
+  onCancel,
+}: Readonly<{
+  canEdit: boolean
+  isPlanned: boolean
+  isReadOnly?: boolean
+  onCancel: () => void
+}>) {
+  return (
+    <div className='absolute right-0 flex items-center'>
+      {canEdit && isPlanned && (
+        <button
+          title={loc.no.match.cancel}
+          className={twMerge(
+            'text-muted-foreground m-2 hidden p-2 transition-colors',
+            !isReadOnly &&
+              'hover:text-primary-foreground hover:bg-muted hover:cursor-pointer hover:rounded-sm group-hover:block'
+          )}
+          onClick={e => {
+            e.stopPropagation()
+            onCancel()
+          }}>
+          <MinusIcon className='size-4' />
+        </button>
+      )}
+
+      {isPlanned && (
+        <span
+          className={twMerge(
+            'bg-primary mr-5 size-2 animate-pulse rounded-full',
+            !isReadOnly && 'group-hover:hidden'
+          )}
+        />
+      )}
     </div>
   )
 }

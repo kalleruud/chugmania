@@ -840,8 +840,7 @@ export default class TournamentMatchManager {
     let lowerFinal: LowerMatchMeta | undefined
     if (lowerMeta.length > 0) {
       const lastLowerRound = Math.max(...lowerMeta.map(m => m.round))
-      const lastRoundMatches = lowerMeta.filter(m => m.round === lastLowerRound)
-      lowerFinal = lastRoundMatches[0]
+      lowerFinal = lowerMeta.find(m => m.round === lastLowerRound)
     }
 
     const stage = TournamentMatchManager.newStage({

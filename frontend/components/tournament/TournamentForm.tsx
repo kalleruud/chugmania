@@ -280,71 +280,65 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
             </div>
           )}
 
-        {preview &&
-          preview.stages.filter(s => s.stage.level !== 'group').length > 0 && (
-            <div className='flex flex-col gap-2'>
-              <Label>{loc.no.tournament.form.bracketTracks}</Label>
-              <p className='text-muted-foreground text-xs'>
-                {loc.no.tournament.form.bracketTracksHint}
-              </p>
-              {preview.stages
-                .filter(s => s.stage.level !== 'group')
-                .map((stageWithMatches, i, arr) => {
-                  const trackIndex = i
-                  const selectedTrack = tracks?.find(
-                    t => t.id === bracketTracks[trackIndex]
-                  )
-                  // Count lower bracket stages up to this point
-                  const lowerBracketIndex = arr
-                    .slice(0, i)
-                    .filter(s => s.stage.bracket === 'lower').length
-                  const displayIndex =
-                    stageWithMatches.stage.bracket === 'lower'
-                      ? lowerBracketIndex
-                      : i
-                  const roundName = getStageName(
-                    stageWithMatches.stage.level,
-                    stageWithMatches.stage.bracket,
-                    displayIndex
-                  )
-                  return (
-                    <div key={trackIndex} className='flex flex-col gap-1'>
-                      <Label className='text-xs'>{roundName}</Label>
-                      <Combobox
-                        className='w-full'
-                        placeholder={loc.no.tournament.form.selectTrack}
-                        items={tracks?.map(trackToLookupItem)}
-                        selected={
-                          selectedTrack
-                            ? trackToLookupItem(selectedTrack)
-                            : null
-                        }
-                        setSelected={value => {
-                          setBracketTracks(prev => {
-                            const next = [...prev]
-                            if (value?.id) {
-                              next[trackIndex] = value.id
-                            } else {
-                              next.splice(trackIndex, 1)
-                            }
-                            while (
-                              next.length > 0 &&
-                              next.at(-1) === undefined
-                            ) {
-                              next.pop()
-                            }
-                            return next
-                          })
-                        }}
-                        limit={2}
-                        align='start'
-                        CustomRow={TrackRow}
-                      />
-                    </div>
-                  )
-                })}
-            </div>
-          )}
+        {preview && preview.stages.some(s => s.stage.level !== 'group') && (
+          <div className='flex flex-col gap-2'>
+            <Label>{loc.no.tournament.form.bracketTracks}</Label>
+            <p className='text-muted-foreground text-xs'>
+              {loc.no.tournament.form.bracketTracksHint}
+            </p>
+            {preview.stages
+              .filter(s => s.stage.level !== 'group')
+              .map((stageWithMatches, i, arr) => {
+                const trackIndex = i
+                const selectedTrack = tracks?.find(
+                  t => t.id === bracketTracks[trackIndex]
+                )
+                // Count lower bracket stages up to this point
+                const lowerBracketIndex = arr
+                  .slice(0, i)
+                  .filter(s => s.stage.bracket === 'lower').length
+                const displayIndex =
+                  stageWithMatches.stage.bracket === 'lower'
+                    ? lowerBracketIndex
+                    : i
+                const roundName = getStageName(
+                  stageWithMatches.stage.level,
+                  stageWithMatches.stage.bracket,
+                  displayIndex
+                )
+                return (
+                  <div key={trackIndex} className='flex flex-col gap-1'>
+                    <Label className='text-xs'>{roundName}</Label>
+                    <Combobox
+                      className='w-full'
+                      placeholder={loc.no.tournament.form.selectTrack}
+                      items={tracks?.map(trackToLookupItem)}
+                      selected={
+                        selectedTrack ? trackToLookupItem(selectedTrack) : null
+                      }
+                      setSelected={value => {
+                        setBracketTracks(prev => {
+                          const next = [...prev]
+                          if (value?.id) {
+                            next[trackIndex] = value.id
+                          } else {
+                            next.splice(trackIndex, 1)
+                          }
+                          while (next.length > 0 && next.at(-1) === undefined) {
+                            next.pop()
+                          }
+                          return next
+                        })
+                      }}
+                      limit={2}
+                      align='start'
+                      CustomRow={TrackRow}
+                    />
+                  </div>
+                )
+              })}
+          </div>
+        )}
       </form>
 
       {preview && (
