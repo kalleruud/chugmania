@@ -93,7 +93,7 @@ export default class GroupManager {
   ): Promise<{ wins: number; losses: number; totalMatches: number }> {
     // Find all group stage matches for this group
     const groupStages = await db.query.stages.findMany({
-      where: and(eq(stages.bracket, 'group'), isNull(stages.deletedAt)),
+      where: and(isNull(stages.bracket), isNull(stages.deletedAt)),
     })
 
     if (groupStages.length === 0) {
@@ -163,7 +163,7 @@ export default class GroupManager {
     const groupStageRows = await db.query.stages.findMany({
       where: and(
         eq(stages.tournament, group.tournament),
-        eq(stages.bracket, 'group'),
+        isNull(stages.bracket),
         isNull(stages.deletedAt)
       ),
     })
@@ -226,7 +226,7 @@ export default class GroupManager {
     const groupStageRows = await db.query.stages.findMany({
       where: and(
         eq(stages.tournament, group.tournament),
-        eq(stages.bracket, 'group'),
+        isNull(stages.bracket),
         isNull(stages.deletedAt)
       ),
     })
