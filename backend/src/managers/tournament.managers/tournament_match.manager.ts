@@ -361,7 +361,8 @@ export default class TournamentMatchManager {
     )
 
     // Interleave upper and lower stages for proper ordering
-    // After each upper bracket round, its corresponding loser round should follow
+    // Structure: Group → Upper R1 → Lower R1 → Upper R2 → Lower R2a → Lower R2b → ...
+    // After each upper bracket round, include all dependent lower bracket stages
     const interleavedStages: Stage[] = []
     const interleavedTMs: TournamentMatch[] = []
     const interleavedMatches: Match[] = []
@@ -385,45 +386,64 @@ export default class TournamentMatchManager {
     upperMatches.forEach(m => matchesById.set(m.id, m))
     lowerMatches.forEach(m => matchesById.set(m.id, m))
 
-    // Interleave: Upper bracket round followed by corresponding lower bracket rounds
-    // Lower bracket typically has more stages than upper bracket
-    const maxStages = Math.max(upperStages.length, lowerStages.length)
-    for (let i = 0; i < maxStages; i++) {
-      // Add upper bracket stage if it exists
-      if (i < upperStages.length) {
-        const upperStage = upperStages[i]
-        interleavedStages.push(upperStage)
+    // Add all upper bracket stages, and after each one add its dependent lower bracket stages
+    // Lower bracket has multiple stages per upper bracket round (drop-in + survivor)
+    const addStageToInterleaved = (
+      stage: Stage,
+      stageMap: Map<string, TournamentMatch[]>,
+      deps: MatchDependency[]
+    ) => {
+      interleavedStages.push(stage)
+      const tmsForStage = stageMap.get(stage.id) || []
+      interleavedTMs.push(...tmsForStage)
+      tmsForStage.forEach(tm => {
+        const match = matchesById.get(tm.match)
+        if (match) interleavedMatches.push(match)
+      })
+      interleavedDeps.push(
+        ...deps.filter(d => tmsForStage.some(tm => tm.id === d.toMatch))
+      )
+    }
 
-        const upperTMsForStage = upperTMsByStage.get(upperStage.id) || []
-        interleavedTMs.push(...upperTMsForStage)
-        upperTMsForStage.forEach(tm => {
-          const match = matchesById.get(tm.match)
-          if (match) interleavedMatches.push(match)
-        })
-        interleavedDeps.push(
-          ...upperDeps.filter(d =>
-            upperTMsForStage.some(tm => tm.id === d.toMatch)
+    // Process stages in order created (which creates proper dependencies)
+    let lowerStageIndex = 0
+    for (let i = 0; i < upperStages.length; i++) {
+      // Add upper bracket stage
+      addStageToInterleaved(upperStages[i], upperTMsByStage, upperDeps)
+
+      // For the first upper bracket round, just add the first lower round
+      // For subsequent rounds, add all lower stages that follow this upper stage
+      if (i === 0) {
+        // First upper round: only Lower R1 follows
+        if (lowerStageIndex < lowerStages.length) {
+          addStageToInterleaved(
+            lowerStages[lowerStageIndex],
+            lowerTMsByStage,
+            lowerDeps
           )
-        )
-      }
-
-      // Add corresponding lower bracket stage if it exists
-      if (i < lowerStages.length) {
-        const lowerStage = lowerStages[i]
-        interleavedStages.push(lowerStage)
-
-        const lowerTMsForStage = lowerTMsByStage.get(lowerStage.id) || []
-        interleavedTMs.push(...lowerTMsForStage)
-        lowerTMsForStage.forEach(tm => {
-          const match = matchesById.get(tm.match)
-          if (match) interleavedMatches.push(match)
-        })
-        interleavedDeps.push(
-          ...lowerDeps.filter(d =>
-            lowerTMsForStage.some(tm => tm.id === d.toMatch)
+          lowerStageIndex++
+        }
+      } else {
+        // Subsequent upper rounds: add drop-in and survivor stages (2 per round)
+        for (let j = 0; j < 2 && lowerStageIndex < lowerStages.length; j++) {
+          addStageToInterleaved(
+            lowerStages[lowerStageIndex],
+            lowerTMsByStage,
+            lowerDeps
           )
-        )
+          lowerStageIndex++
+        }
       }
+    }
+
+    // Add any remaining lower bracket stages (shouldn't happen but just in case)
+    while (lowerStageIndex < lowerStages.length) {
+      addStageToInterleaved(
+        lowerStages[lowerStageIndex],
+        lowerTMsByStage,
+        lowerDeps
+      )
+      lowerStageIndex++
     }
 
     // Add grand final
