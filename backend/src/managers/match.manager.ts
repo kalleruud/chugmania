@@ -5,13 +5,12 @@ import {
   type CreateMatchRequest,
   type EditMatchRequest,
   type Match,
-  type MatchSide,
 } from '@common/models/match'
 import type { EventReq, EventRes } from '@common/models/socket.io'
 import { and, desc, eq, getTableColumns, isNull, sql } from 'drizzle-orm'
 import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
-import { matches, sessions } from '../../database/schema'
+import { matches, sessions, type MatchSide } from '../../database/schema'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import RatingManager from './rating.manager'
@@ -75,7 +74,7 @@ export default class MatchManager {
   static async setPlayer(matchId: string, side: MatchSide, userId: string) {
     await db
       .update(matches)
-      .set({ [side === 'A' ? matches.userA.name : matches.userB.name]: userId })
+      .set(side === 'A' ? { userA: userId } : { userB: userId })
       .where(eq(matches.id, matchId))
   }
 
@@ -123,13 +122,14 @@ export default class MatchManager {
 
     console.debug(new Date().toISOString(), socket.id, 'Created match')
 
-    RatingManager.recalculate()
-    broadcast('all_matches', await MatchManager.getAllMatches())
-    broadcast('all_rankings', await RatingManager.onGetRatings())
-
     if (match.winner) {
       await TournamentManager.onMatchUpdated(match, match.createdAt)
     }
+
+    RatingManager.recalculate()
+    broadcast('all_matches', await MatchManager.getAllMatches())
+    broadcast('all_rankings', await RatingManager.onGetRatings())
+    broadcast('all_tournaments', await TournamentManager.getAll())
 
     return { success: true }
   }
@@ -168,24 +168,17 @@ export default class MatchManager {
 
     console.debug(new Date().toISOString(), socket.id, 'Updated match', id)
 
-    let shouldBroadcastTournaments = false
     if (
       (preImageMatch.winner || res.winner) &&
       preImageMatch.winner !== res.winner
     ) {
-      shouldBroadcastTournaments = true
-      // Note: onMatchUpdated may also broadcast tournaments, but we'll do it here to be sure
       await TournamentManager.onMatchUpdated(res, res.updatedAt!)
     }
 
     await RatingManager.recalculate()
     broadcast('all_matches', await MatchManager.getAllMatches())
     broadcast('all_rankings', await RatingManager.onGetRatings())
-
-    // Always broadcast tournaments if any match was part of a tournament
-    if (shouldBroadcastTournaments) {
-      broadcast('all_tournaments', await TournamentManager.getAll())
-    }
+    broadcast('all_tournaments', await TournamentManager.getAll())
 
     return { success: true }
   }

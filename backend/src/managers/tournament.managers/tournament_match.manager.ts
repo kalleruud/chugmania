@@ -431,25 +431,29 @@ export default class TournamentMatchManager {
     interleavedMatches.push(grandFinalMatch)
     interleavedDeps.push(...grandFinalDeps)
 
-    // Reassign tracks based on the final interleaved stage order
-    if (bracketTracks.length > 0) {
-      const stageToTrackId = new Map<string, string>()
-      interleavedStages.forEach((stage, idx) => {
+    // Reassign stage indices and tracks based on the final interleaved stage order
+    const stageToTrackId = new Map<string, string>()
+    interleavedStages.forEach((stage, idx) => {
+      // Update stage index to match position in interleaved order
+      stage.index = groupStageCount + idx
+
+      // Assign track if provided
+      if (bracketTracks.length > 0) {
         const trackId = bracketTracks[idx % bracketTracks.length]
         stageToTrackId.set(stage.id, trackId)
-      })
+      }
+    })
 
-      // Update all matches to use the correct track for their stage
-      interleavedMatches.forEach(match => {
-        const stageId = interleavedTMs.find(tm => tm.match === match.id)?.stage
-        if (stageId) {
-          const trackId = stageToTrackId.get(stageId)
-          if (trackId) {
-            match.track = trackId
-          }
+    // Update all matches to use the correct track for their stage
+    interleavedMatches.forEach(match => {
+      const stageId = interleavedTMs.find(tm => tm.match === match.id)?.stage
+      if (stageId) {
+        const trackId = stageToTrackId.get(stageId)
+        if (trackId) {
+          match.track = trackId
         }
-      })
-    }
+      }
+    })
 
     return {
       stages: interleavedStages,

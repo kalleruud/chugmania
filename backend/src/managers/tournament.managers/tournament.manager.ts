@@ -489,9 +489,6 @@ export default class TournamentManager {
           gpA.group,
           match.session
         )
-        // Notify clients of match updates
-        broadcast('all_matches', await MatchManager.getAllMatches())
-        broadcast('all_tournaments', await TournamentManager.getAll())
       }
       return
     }
@@ -501,9 +498,6 @@ export default class TournamentManager {
       tournamentMatch.id,
       match.session
     )
-    // Notify clients of match updates
-    broadcast('all_matches', await MatchManager.getAllMatches())
-    broadcast('all_tournaments', await TournamentManager.getAll())
   }
 
   static async onCreateTournament(
