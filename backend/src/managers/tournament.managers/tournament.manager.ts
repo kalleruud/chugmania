@@ -491,6 +491,7 @@ export default class TournamentManager {
         )
         // Notify clients of match updates
         broadcast('all_matches', await MatchManager.getAllMatches())
+        broadcast('all_tournaments', await TournamentManager.getAll())
       }
       return
     }
@@ -502,6 +503,7 @@ export default class TournamentManager {
     )
     // Notify clients of match updates
     broadcast('all_matches', await MatchManager.getAllMatches())
+    broadcast('all_tournaments', await TournamentManager.getAll())
   }
 
   static async onCreateTournament(
