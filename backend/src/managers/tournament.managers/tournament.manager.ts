@@ -485,19 +485,23 @@ export default class TournamentManager {
       const isGroupComplete = await GroupManager.isGroupComplete(gpA.group)
 
       if (isGroupComplete) {
-        return await TournamentMatchManager.resolveGroupDependentMatches(
+        await TournamentMatchManager.resolveGroupDependentMatches(
           gpA.group,
           match.session
         )
+        // Notify clients of match updates
+        broadcast('all_matches', await MatchManager.getAllMatches())
       }
       return
     }
 
     // Bracket match: resolve dependent matches
-    return await TournamentMatchManager.resolveMatchDependentMatches(
+    await TournamentMatchManager.resolveMatchDependentMatches(
       tournamentMatch.id,
       match.session
     )
+    // Notify clients of match updates
+    broadcast('all_matches', await MatchManager.getAllMatches())
   }
 
   static async onCreateTournament(
