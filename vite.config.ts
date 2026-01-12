@@ -19,6 +19,19 @@ export default defineConfig({
     environment: 'node',
     include: ['**/*.test.ts*', '**/*.spec.ts*'],
     exclude: ['node_modules/**', 'dist/**', '.**'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'lcov'],
+      reportsDirectory: './coverage',
+      include: ['backend/**/*.ts', 'common/**/*.ts', 'frontend/**/*.ts'],
+      exclude: [
+        'node_modules/**',
+        'dist/**',
+        '**/*.spec.ts',
+        '**/*.test.ts',
+        '**/*.d.ts',
+      ],
+    },
   },
   resolve: {
     alias: {
