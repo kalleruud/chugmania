@@ -236,7 +236,7 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
               <Label>{loc.no.tournament.form.groupStageTracks}</Label>
               <p className='text-muted-foreground text-xs'>
                 {loc.no.tournament.form.groupStageTracksHint} (
-                {preview.stages.filter(s => s.stage.bracket === 'group').length}{' '}
+                {preview.stages.filter(s => s.stage.level === 'group').length}{' '}
                 runder, anbefalt {preview.groupStageTrackCount} baner)
               </p>
               {Array.from({ length: preview.groupStageTrackCount }, (_, i) => {
@@ -281,23 +281,31 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
           )}
 
         {preview &&
-          preview.stages.filter(s => s.stage.bracket !== 'group').length >
-            0 && (
+          preview.stages.filter(s => s.stage.level !== 'group').length > 0 && (
             <div className='flex flex-col gap-2'>
               <Label>{loc.no.tournament.form.bracketTracks}</Label>
               <p className='text-muted-foreground text-xs'>
                 {loc.no.tournament.form.bracketTracksHint}
               </p>
               {preview.stages
-                .filter(s => s.stage.bracket !== 'group')
-                .map((stageWithMatches, i) => {
+                .filter(s => s.stage.level !== 'group')
+                .map((stageWithMatches, i, arr) => {
                   const trackIndex = i
                   const selectedTrack = tracks?.find(
                     t => t.id === bracketTracks[trackIndex]
                   )
+                  // Count lower bracket stages up to this point
+                  const lowerBracketIndex = arr
+                    .slice(0, i)
+                    .filter(s => s.stage.bracket === 'lower').length
+                  const displayIndex =
+                    stageWithMatches.stage.bracket === 'lower'
+                      ? lowerBracketIndex
+                      : i
                   const roundName = getStageName(
-                    stageWithMatches.stage.name,
-                    stageWithMatches.stage.index
+                    stageWithMatches.stage.level,
+                    stageWithMatches.stage.bracket,
+                    displayIndex
                   )
                   return (
                     <div key={trackIndex} className='flex flex-col gap-1'>

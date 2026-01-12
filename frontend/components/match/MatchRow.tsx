@@ -25,6 +25,7 @@ export type MatchRowProps = BaseRowProps<Match | undefined> & {
   index?: number
   hideTrack?: boolean
   isReadOnly?: boolean
+  stageDisplayIndex?: number
 }
 
 export default function MatchRow({
@@ -36,6 +37,7 @@ export default function MatchRow({
   highlight,
   hideTrack,
   isReadOnly,
+  stageDisplayIndex,
   ...rest
 }: Readonly<MatchRowProps>) {
   const { users, tracks, sessions } = useData()
@@ -43,7 +45,9 @@ export default function MatchRow({
   const { isLoggedIn, loggedInUser } = useAuth()
 
   const stage = tournamentMatch?.stage
-  const stageName = stage ? getStageName(stage.level, stage.index) : undefined
+  const stageName = stage
+    ? getStageName(stage.level, stage.bracket, stageDisplayIndex ?? stage.index)
+    : undefined
 
   const matchName =
     index === undefined || !stageName

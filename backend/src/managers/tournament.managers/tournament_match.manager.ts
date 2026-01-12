@@ -364,11 +364,78 @@ export default class TournamentMatchManager {
       bracketTracks
     )
 
+    // Interleave upper and lower stages for proper ordering
+    // After each upper bracket round, its corresponding loser round should follow
+    const interleavedStages: Stage[] = []
+    const interleavedTMs: TournamentMatch[] = []
+    const interleavedMatches: Match[] = []
+    const interleavedDeps: MatchDependency[] = []
+
+    // Build lookup maps for easy filtering
+    const upperTMsByStage = new Map<string, TournamentMatch[]>()
+    const lowerTMsByStage = new Map<string, TournamentMatch[]>()
+    const matchesById = new Map<string, Match>()
+
+    upperTMs.forEach(tm => {
+      if (!upperTMsByStage.has(tm.stage)) upperTMsByStage.set(tm.stage, [])
+      upperTMsByStage.get(tm.stage)!.push(tm)
+    })
+
+    lowerTMs.forEach(tm => {
+      if (!lowerTMsByStage.has(tm.stage)) lowerTMsByStage.set(tm.stage, [])
+      lowerTMsByStage.get(tm.stage)!.push(tm)
+    })
+
+    upperMatches.forEach(m => matchesById.set(m.id, m))
+    lowerMatches.forEach(m => matchesById.set(m.id, m))
+
+    // Interleave: Upper bracket round followed by its corresponding lower bracket rounds
+    for (let i = 0; i < upperStages.length; i++) {
+      const upperStage = upperStages[i]
+      interleavedStages.push(upperStage)
+
+      const upperTMsForStage = upperTMsByStage.get(upperStage.id) || []
+      interleavedTMs.push(...upperTMsForStage)
+      upperTMsForStage.forEach(tm => {
+        const match = matchesById.get(tm.match)
+        if (match) interleavedMatches.push(match)
+      })
+      interleavedDeps.push(
+        ...upperDeps.filter(d =>
+          upperTMsForStage.some(tm => tm.id === d.toMatch)
+        )
+      )
+
+      // Add corresponding lower bracket round if it exists
+      if (i < lowerStages.length) {
+        const lowerStage = lowerStages[i]
+        interleavedStages.push(lowerStage)
+
+        const lowerTMsForStage = lowerTMsByStage.get(lowerStage.id) || []
+        interleavedTMs.push(...lowerTMsForStage)
+        lowerTMsForStage.forEach(tm => {
+          const match = matchesById.get(tm.match)
+          if (match) interleavedMatches.push(match)
+        })
+        interleavedDeps.push(
+          ...lowerDeps.filter(d =>
+            lowerTMsForStage.some(tm => tm.id === d.toMatch)
+          )
+        )
+      }
+    }
+
+    // Add grand final
+    interleavedStages.push(grandFinalStage)
+    interleavedTMs.push(grandFinalTM)
+    interleavedMatches.push(grandFinalMatch)
+    interleavedDeps.push(...grandFinalDeps)
+
     return {
-      stages: [...upperStages, ...lowerStages, grandFinalStage],
-      tournamentMatches: [...upperTMs, ...lowerTMs, grandFinalTM],
-      matches: [...upperMatches, ...lowerMatches, grandFinalMatch],
-      matchDependencies: [...upperDeps, ...lowerDeps, ...grandFinalDeps],
+      stages: interleavedStages,
+      tournamentMatches: interleavedTMs,
+      matches: interleavedMatches,
+      matchDependencies: interleavedDeps,
     }
   }
 
@@ -670,7 +737,6 @@ export default class TournamentMatchManager {
       // Survivor round: lower bracket winners play each other
       const prevDropIn = metaList.filter(m => m.round === lowerRound - 1)
       if (prevDropIn.length > 1) {
-        const survivorMatchCount = Math.floor(prevDropIn.length / 2)
         const survivorStage = TournamentMatchManager.newStage({
           tournament: tournamentId,
           bracket: 'lower',

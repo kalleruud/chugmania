@@ -30,10 +30,8 @@ export default function TournamentView({
 
   const canEdit = !isReadOnly && isLoggedIn && loggedInUser.role !== 'user'
 
-  const groupStages = tournament.stages.filter(s => s.stage.bracket === 'group')
-  const bracketStages = tournament.stages.filter(
-    s => s.stage.bracket !== 'group'
-  )
+  const groupStages = tournament.stages.filter(s => s.stage.level === 'group')
+  const bracketStages = tournament.stages.filter(s => s.stage.level !== 'group')
 
   const groupMatches = groupStages.flatMap(s => s.matches)
   const totalGroupMatches = groupMatches.length
@@ -126,8 +124,9 @@ export default function TournamentView({
               className='flex flex-col gap-2'>
               <h4 className='font-f1-bold text-sm uppercase'>
                 {getStageName(
-                  stageWithMatches.stage.name,
-                  stageWithMatches.stage.index
+                  stageWithMatches.stage.level,
+                  stageWithMatches.stage.bracket,
+                  index
                 )}
               </h4>
               {stageWithMatches.matches.map((match, matchIndex) => {
@@ -143,6 +142,7 @@ export default function TournamentView({
                     item={match.matchDetails ?? undefined}
                     tournamentMatch={match}
                     tournament={tournament}
+                    stageDisplayIndex={index}
                     isReadOnly={isReadOnly}
                   />
                 )
@@ -159,14 +159,22 @@ export default function TournamentView({
 
         <div className='flex flex-col gap-8'>
           {bracketStages.map((stageWithMatches, index) => {
+            // Count lower bracket stages up to this point
+            const lowerBracketIndex = bracketStages
+              .slice(0, index)
+              .filter(s => s.stage.bracket === 'lower').length
+            const isLowerBracket = stageWithMatches.stage.bracket === 'lower'
+            const displayIndex = isLowerBracket ? lowerBracketIndex : index
+
             return (
               <div
                 key={`${stageWithMatches.stage.bracket}-${stageWithMatches.stage.index}-${index}`}
                 className='flex flex-col gap-2'>
                 <h4 className='font-f1-bold text-sm uppercase'>
                   {getStageName(
-                    stageWithMatches.stage.name,
-                    stageWithMatches.stage.index
+                    stageWithMatches.stage.level,
+                    stageWithMatches.stage.bracket,
+                    displayIndex
                   )}
                 </h4>
                 {stageWithMatches.matches.map((match, matchIndex) => (
@@ -181,6 +189,7 @@ export default function TournamentView({
                         ? matchIndex
                         : undefined
                     }
+                    stageDisplayIndex={displayIndex}
                     isReadOnly={isReadOnly}
                   />
                 ))}
