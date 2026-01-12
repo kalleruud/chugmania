@@ -283,20 +283,8 @@ export default class TournamentManager {
     // Source from match
     if (dep.fromMatch) {
       const sourceTm = tournamentMatches.find(t => t.id === dep.fromMatch)
-      if (!sourceTm) {
-        console.debug('getDependencyName: sourceTm not found', {
-          fromMatch: dep.fromMatch,
-          tournamentMatchIds: tournamentMatches.map(t => t.id),
-        })
-      }
       if (sourceTm) {
         const sourceStage = stageRows.find(s => s.id === sourceTm.stage)
-        if (!sourceStage) {
-          console.debug('getDependencyName: sourceStage not found', {
-            stageId: sourceTm.stage,
-            stageIds: stageRows.map(s => s.id),
-          })
-        }
         if (sourceStage) {
           const stageName = TournamentManager.getStageName(
             sourceStage,
@@ -304,18 +292,6 @@ export default class TournamentManager {
           )
           const matchName = loc.no.tournament.bracketMatchName(
             stageName,
-            sourceTm.index + 1
-          )
-          return loc.no.tournament.sourceMatchPlaceholder(
-            matchName,
-            dep.fromPosition
-          )
-        } else {
-          // Fallback: stage not found, but we have the tournament match
-          // Use a generic match name
-          const fallbackStageName = `${loc.no.match.round} 1`
-          const matchName = loc.no.tournament.bracketMatchName(
-            fallbackStageName,
             sourceTm.index + 1
           )
           return loc.no.tournament.sourceMatchPlaceholder(

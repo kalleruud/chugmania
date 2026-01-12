@@ -5,7 +5,6 @@ import {
   stages,
   tournamentMatches,
   type EliminationType,
-  type MatchSide,
   type StageLevel,
 } from '@backend/database/schema'
 import type { Match } from '@common/models/match'
@@ -319,7 +318,6 @@ export default class TournamentMatchManager {
       sessionId,
       groups,
       advancementCount,
-      totalAdvancing,
       bracketSize,
       groupStageCount,
       bracketTracks
@@ -449,7 +447,6 @@ export default class TournamentMatchManager {
     sessionId: string,
     groups: { id: string }[],
     advancementCount: number,
-    totalAdvancing: number,
     bracketSize: number,
     stageOffset: number,
     tracks: string[]
@@ -509,8 +506,7 @@ export default class TournamentMatchManager {
               tm.id,
               i,
               groups,
-              advancementCount,
-              totalAdvancing
+              advancementCount
             )
           depsList.push(...depsForMatch)
         } else {
@@ -543,32 +539,48 @@ export default class TournamentMatchManager {
     toMatchId: string,
     index: number,
     groups: { id: string }[],
-    advancementCount: number,
-    totalAdvancing: number
+    advancementCount: number
   ): MatchDependency[] {
     const deps: MatchDependency[] = []
+    const groupCount = groups.length
 
-    const assignSlot = (seed: number, slot: MatchSide) => {
-      if (seed >= totalAdvancing) return
+    // Snake-style seeding: best players face worst advancing players
+    // This ensures balanced matchups in the first bracket round
 
-      const groupIndex = seed % groups.length
-      const rank = Math.floor(seed / groups.length) + 1
+    // Determine which two groups are pairing in this match
+    const groupAIndex = Math.floor(index / advancementCount) % groupCount
+    const groupBIndex = (groupAIndex + 1) % groupCount
 
-      if (rank <= advancementCount) {
-        deps.push(
-          TournamentMatchManager.newMatchDependency({
-            fromMatch: null,
-            fromGroup: groups[groupIndex].id,
-            toMatch: toMatchId,
-            fromPosition: rank,
-            toSlot: slot,
-          })
-        )
-      }
+    // Determine which rank within each group
+    const rankWithinPairing = index % advancementCount
+    const slotAPosition = rankWithinPairing + 1 // 1st, 2nd, 3rd, 4th, etc.
+    const slotBPosition = advancementCount - rankWithinPairing // Reverse order from other group
+
+    // Slot A: from group A, in order
+    if (slotAPosition <= advancementCount) {
+      deps.push(
+        TournamentMatchManager.newMatchDependency({
+          fromMatch: null,
+          fromGroup: groups[groupAIndex].id,
+          toMatch: toMatchId,
+          fromPosition: slotAPosition,
+          toSlot: 'A',
+        })
+      )
     }
 
-    assignSlot(index * 2, 'A')
-    assignSlot(index * 2 + 1, 'B')
+    // Slot B: from group B, in reverse order (worst to best as A goes from best to worst)
+    if (slotBPosition >= 1 && slotBPosition <= advancementCount) {
+      deps.push(
+        TournamentMatchManager.newMatchDependency({
+          fromMatch: null,
+          fromGroup: groups[groupBIndex].id,
+          toMatch: toMatchId,
+          fromPosition: slotBPosition,
+          toSlot: 'B',
+        })
+      )
+    }
 
     return deps
   }
@@ -819,30 +831,14 @@ export default class TournamentMatchManager {
     match: Match
     deps: MatchDependency[]
   } {
-    // Find the upper bracket final - this is the match where round === 2
-    // (meaning 2 players remain, so there's 1 match)
     const upperFinal = upperMeta.find(m => m.round === 2)
 
-    // Find the lower bracket final match - the last match(es) in the lower bracket
-    // In a proper double elimination, this should be a single match (the lower final)
     let lowerFinal: LowerMatchMeta | undefined
     if (lowerMeta.length > 0) {
       const lastLowerRound = Math.max(...lowerMeta.map(m => m.round))
-      // Get all matches from the last round
       const lastRoundMatches = lowerMeta.filter(m => m.round === lastLowerRound)
-      // If there's exactly one match, that's the lower final
-      // If there are multiple, take the first one (shouldn't happen in proper double elim)
       lowerFinal = lastRoundMatches[0]
     }
-
-    console.debug('buildGrandFinal:', {
-      upperMetaLength: upperMeta.length,
-      upperMetaRounds: upperMeta.map(m => m.round),
-      upperFinal: upperFinal?.tournamentMatchId,
-      lowerMetaLength: lowerMeta.length,
-      lowerMetaRounds: lowerMeta.map(m => m.round),
-      lowerFinal: lowerFinal?.tournamentMatchId,
-    })
 
     const stage = TournamentMatchManager.newStage({
       tournament: tournamentId,
@@ -861,18 +857,6 @@ export default class TournamentMatchManager {
     })
 
     const deps: MatchDependency[] = []
-
-    // For double elimination grand final, we need BOTH upper and lower finals
-    // If either is missing, something went wrong in bracket generation
-    if (!upperFinal || !lowerFinal) {
-      console.warn(
-        'Grand final missing bracket finals: upperFinal=',
-        !!upperFinal,
-        'lowerFinal=',
-        !!lowerFinal
-      )
-    }
-
     if (upperFinal) {
       deps.push(
         TournamentMatchManager.newMatchDependency({
