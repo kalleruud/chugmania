@@ -8,6 +8,8 @@
     "start": "npm run db:migrate && node dist/server/server.js",
     "dev": "tsx watch --env-file .env backend/src/server.ts",
     "check": "drizzle-kit check && tsc --noEmit && prettier -c .",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "build": "npm run build:frontend && npm run build:backend",
     "build:frontend": "vite build",
     "build:backend": "tsup backend/src/server.ts --format esm --target node20 --out-dir dist/server --clean",
