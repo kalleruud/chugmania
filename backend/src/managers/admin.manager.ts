@@ -12,9 +12,11 @@ import db, { database } from '../../database/database'
 import {
   groupPlayers,
   groups,
+  matchDependencies,
   matches,
   sessions,
   sessionSignups,
+  stages,
   timeEntries,
   tournamentMatches,
   tournaments,
@@ -42,7 +44,9 @@ export default class AdminManager {
     tournaments: new Set(),
     groups: new Set(),
     groupPlayers: new Set(),
+    stages: new Set(),
     tournamentMatches: new Set(),
+    matchDependencies: new Set(),
   } satisfies Record<ExportCsvRequest['table'], Set<string>>
 
   private static readonly TABLE_MAP = {
@@ -55,10 +59,12 @@ export default class AdminManager {
     tournaments: tournaments,
     groups: groups,
     groupPlayers: groupPlayers,
+    stages: stages,
     tournamentMatches: tournamentMatches,
+    matchDependencies: matchDependencies,
   } satisfies Record<ExportCsvRequest['table'], SQLiteTable>
 
-  private static async importRows<T extends Record<string, any>>(
+  private static async importRows<T extends Record<string, unknown>>(
     tableName: ExportCsvRequest['table'],
     data: T[]
   ): Promise<{ created: number; updated: number }> {
@@ -69,10 +75,11 @@ export default class AdminManager {
     const existingIds = new Set(existingRecords.map(r => r.id))
 
     const toCreate: T[] = []
-    const toUpdate: T[] = []
+    const toUpdate: Array<T & { id: string }> = []
     for (const item of data) {
-      if (existingIds.has(item.id)) {
-        toUpdate.push(item)
+      const itemId = item.id as string
+      if (existingIds.has(itemId)) {
+        toUpdate.push(item as T & { id: string })
       } else {
         toCreate.push({
           ...item,
