@@ -168,16 +168,24 @@ export default class MatchManager {
 
     console.debug(new Date().toISOString(), socket.id, 'Updated match', id)
 
+    let shouldBroadcastTournaments = false
     if (
       (preImageMatch.winner || res.winner) &&
       preImageMatch.winner !== res.winner
     ) {
+      shouldBroadcastTournaments = true
+      // Note: onMatchUpdated may also broadcast tournaments, but we'll do it here to be sure
       await TournamentManager.onMatchUpdated(res, res.updatedAt!)
     }
 
     await RatingManager.recalculate()
     broadcast('all_matches', await MatchManager.getAllMatches())
     broadcast('all_rankings', await RatingManager.onGetRatings())
+
+    // Always broadcast tournaments if any match was part of a tournament
+    if (shouldBroadcastTournaments) {
+      broadcast('all_tournaments', await TournamentManager.getAll())
+    }
 
     return { success: true }
   }
