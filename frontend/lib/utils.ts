@@ -13,6 +13,11 @@ export function getStageName(
   lowerBracketIndex: number,
   locale: Locale = 'no'
 ): string {
+  // For group stages, always use round numbering
+  if (name === 'group') {
+    return `${loc[locale].match.round} ${lowerBracketIndex + 1}`
+  }
+
   // If it has a specific stage level, return its name
   if (name) return loc[locale].match.stageNames[name]
 
@@ -21,6 +26,6 @@ export function getStageName(
     return `${loc[locale].tournament.roundNames.lower.round} ${lowerBracketIndex + 1}`
   }
 
-  // Default: generic round numbering (for group stage)
+  // Default: generic round numbering
   return `${loc[locale].match.round} ${lowerBracketIndex + 1}`
 }

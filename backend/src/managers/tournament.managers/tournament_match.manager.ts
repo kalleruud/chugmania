@@ -940,7 +940,7 @@ export default class TournamentMatchManager {
       })
       if (!tm) continue
 
-      await MatchManager.setPlayer(tm.match, dep.toSlot as MatchSide, userId)
+      await MatchManager.setPlayer(tm.match, dep.toSlot, userId)
     }
   }
 
@@ -979,11 +979,7 @@ export default class TournamentMatchManager {
       })
       if (!targetTM) continue
 
-      await MatchManager.setPlayer(
-        targetTM.match,
-        dep.toSlot as MatchSide,
-        userId
-      )
+      await MatchManager.setPlayer(targetTM.match, dep.toSlot, userId)
     }
   }
 
