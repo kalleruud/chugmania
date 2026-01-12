@@ -8,12 +8,15 @@
 - `npm run db:gen` – generate Drizzle migration after schema changes
 - `npm run db:migrate` – apply pending migrations
 - `npm run db:studio` – open Drizzle Studio UI
-- No test framework yet; place tests as `*.spec.ts` (backend) or `*.test.tsx` (frontend) next to sources
+- `npm run test` – run all tests with Vitest
+- `npm run test:watch` – run tests in watch mode
+- `npm run test:coverage` – run tests with coverage reporting for SonarQube
 
 ## Tech Stack
 
 - **Backend:** Express 5, Socket.IO, Drizzle ORM (SQLite), JWT auth
 - **Frontend:** React 19, Vite, Tailwind CSS, shadcn/ui, Luxon (dates)
+- **Testing:** Vitest with v8 coverage provider, LCOV reporting for SonarQube
 - **Shared:** TypeScript strict mode, `@common/*` path alias
 
 ## Code Style
@@ -36,6 +39,9 @@
 - Use Tailwind CSS utilities; follow Formula 1 inspired dark-mode design system
 - Avoid making schema changes unless specifically requested. After schema changes, run `npm run db:gen` to generate Drizzle migrations
 - When adding new database tables, include them in the CSV import/export functionality by updating `AdminManager` in `backend/src/managers/admin.manager.ts` (add table to `TABLE_MAP` and `EXCLUDED_COL_EXPORT`)
+- Write tests for new features: place tests as `*.spec.ts` (backend) or `*.test.tsx` (frontend) next to sources
+- Run `npm run test` to verify tests pass before committing
+- Coverage is tracked via SonarQube; use `npm run test:coverage` to generate local coverage reports
 
 ## Reactive Contract
 
