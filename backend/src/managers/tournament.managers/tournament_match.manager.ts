@@ -319,8 +319,7 @@ export default class TournamentMatchManager {
       groups,
       advancementCount,
       bracketSize,
-      groupStageCount,
-      bracketTracks
+      groupStageCount
     )
 
     if (eliminationType === 'single') {
@@ -344,8 +343,7 @@ export default class TournamentMatchManager {
       sessionId,
       upperMeta,
       bracketSize,
-      groupStageCount + upperStages.length,
-      bracketTracks
+      groupStageCount + upperStages.length
     )
 
     const {
@@ -358,8 +356,7 @@ export default class TournamentMatchManager {
       sessionId,
       upperMeta,
       lowerMeta,
-      groupStageCount + upperStages.length + lowerStages.length,
-      bracketTracks
+      groupStageCount + upperStages.length + lowerStages.length
     )
 
     // Interleave upper and lower stages for proper ordering
@@ -434,6 +431,26 @@ export default class TournamentMatchManager {
     interleavedMatches.push(grandFinalMatch)
     interleavedDeps.push(...grandFinalDeps)
 
+    // Reassign tracks based on the final interleaved stage order
+    if (bracketTracks.length > 0) {
+      const stageToTrackId = new Map<string, string>()
+      interleavedStages.forEach((stage, idx) => {
+        const trackId = bracketTracks[idx % bracketTracks.length]
+        stageToTrackId.set(stage.id, trackId)
+      })
+
+      // Update all matches to use the correct track for their stage
+      interleavedMatches.forEach(match => {
+        const stageId = interleavedTMs.find(tm => tm.match === match.id)?.stage
+        if (stageId) {
+          const trackId = stageToTrackId.get(stageId)
+          if (trackId) {
+            match.track = trackId
+          }
+        }
+      })
+    }
+
     return {
       stages: interleavedStages,
       tournamentMatches: interleavedTMs,
@@ -448,8 +465,7 @@ export default class TournamentMatchManager {
     groups: { id: string }[],
     advancementCount: number,
     bracketSize: number,
-    stageOffset: number,
-    tracks: string[]
+    stageOffset: number
   ): {
     stages: Stage[]
     tms: TournamentMatch[]
@@ -479,12 +495,11 @@ export default class TournamentMatchManager {
       })
       stagesList.push(stage)
 
-      // Get track for this round
-      const trackId =
-        tracks.length > 0 ? tracks[stageIndex % tracks.length] : null
-
+      // Get track for this round (continue from trackIndexStart)
+      // Track will be assigned after interleaving in generateBracketMatches
+      // For now, create matches without a track
       for (let i = 0; i < matchesInRound; i++) {
-        const match = TournamentMatchManager.newMatch(sessionId, trackId)
+        const match = TournamentMatchManager.newMatch(sessionId, null)
         const tm = TournamentMatchManager.newTournamentMatch({
           match: match.id,
           stage: stage.id,
@@ -626,8 +641,7 @@ export default class TournamentMatchManager {
     sessionId: string,
     upperMeta: UpperMatchMeta[],
     bracketSize: number,
-    stageOffset: number,
-    tracks: string[]
+    stageOffset: number
   ): {
     stages: Stage[]
     tms: TournamentMatch[]
@@ -654,11 +668,9 @@ export default class TournamentMatchManager {
     })
     stagesList.push(stage1)
 
-    const trackId1 =
-      tracks.length > 0 ? tracks[stageIndex % tracks.length] : null
-
+    // Track will be assigned after interleaving
     for (let i = 0; i < Math.floor(firstUpper.length / 2); i++) {
-      const match = TournamentMatchManager.newMatch(sessionId, trackId1)
+      const match = TournamentMatchManager.newMatch(sessionId, null)
       const tm = TournamentMatchManager.newTournamentMatch({
         match: match.id,
         stage: stage1.id,
@@ -710,11 +722,9 @@ export default class TournamentMatchManager {
       })
       stagesList.push(dropInStage)
 
-      const dropInTrack =
-        tracks.length > 0 ? tracks[stageIndex % tracks.length] : null
-
+      // Track will be assigned after interleaving
       for (let i = 0; i < count; i++) {
-        const match = TournamentMatchManager.newMatch(sessionId, dropInTrack)
+        const match = TournamentMatchManager.newMatch(sessionId, null)
         const tm = TournamentMatchManager.newTournamentMatch({
           match: match.id,
           stage: dropInStage.id,
@@ -761,14 +771,9 @@ export default class TournamentMatchManager {
         })
         stagesList.push(survivorStage)
 
-        const survivorTrack =
-          tracks.length > 0 ? tracks[stageIndex % tracks.length] : null
-
+        // Track will be assigned after interleaving
         for (let i = 0; i < Math.floor(prevDropIn.length / 2); i++) {
-          const match = TournamentMatchManager.newMatch(
-            sessionId,
-            survivorTrack
-          )
+          const match = TournamentMatchManager.newMatch(sessionId, null)
           const tm = TournamentMatchManager.newTournamentMatch({
             match: match.id,
             stage: survivorStage.id,
@@ -823,8 +828,7 @@ export default class TournamentMatchManager {
     sessionId: string,
     upperMeta: UpperMatchMeta[],
     lowerMeta: LowerMatchMeta[],
-    stageOffset: number,
-    tracks: string[]
+    stageOffset: number
   ): {
     stage: Stage
     tm: TournamentMatch
@@ -846,9 +850,8 @@ export default class TournamentMatchManager {
       level: 'grand_final',
     })
 
-    const trackId =
-      tracks.length > 0 ? tracks[stageOffset % tracks.length] : null
-    const match = TournamentMatchManager.newMatch(sessionId, trackId)
+    // Track will be assigned after interleaving
+    const match = TournamentMatchManager.newMatch(sessionId, null)
 
     const tm = TournamentMatchManager.newTournamentMatch({
       match: match.id,
