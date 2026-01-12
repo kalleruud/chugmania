@@ -64,10 +64,11 @@ export default class TournamentMatchManager {
     tournamentMatches: TournamentMatch[]
     matches: Match[]
   }> {
-    // Get all stages for this tournament
+    // Get all stages for this tournament, ordered by their display index
+    // (bracket field is for identification only, index determines display order)
     const stageRows = await db.query.stages.findMany({
       where: and(eq(stages.tournament, tournamentId), isNull(stages.deletedAt)),
-      orderBy: [asc(stages.bracket), asc(stages.index)],
+      orderBy: asc(stages.index),
     })
 
     if (stageRows.length === 0) {
