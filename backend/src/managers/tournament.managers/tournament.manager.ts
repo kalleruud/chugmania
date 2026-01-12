@@ -216,21 +216,28 @@ export default class TournamentManager {
           const depA = depsForMatch.find(d => d.toSlot === 'A')
           const depB = depsForMatch.find(d => d.toSlot === 'B')
 
+          const nameA = depA
+            ? TournamentManager.getDependencyName(
+                depA,
+                tournamentMatches,
+                stageRows,
+                groups
+              )
+            : null
+          const nameB = depB
+            ? TournamentManager.getDependencyName(
+                depB,
+                tournamentMatches,
+                stageRows,
+                groups
+              )
+            : null
+
           const dependencyNames =
-            depA && depB
+            nameA && nameB
               ? {
-                  A: TournamentManager.getDependencyName(
-                    depA,
-                    tournamentMatches,
-                    stageRows,
-                    groups
-                  )!,
-                  B: TournamentManager.getDependencyName(
-                    depB,
-                    tournamentMatches,
-                    stageRows,
-                    groups
-                  )!,
+                  A: nameA,
+                  B: nameB,
                 }
               : null
 
@@ -276,12 +283,39 @@ export default class TournamentManager {
     // Source from match
     if (dep.fromMatch) {
       const sourceTm = tournamentMatches.find(t => t.id === dep.fromMatch)
+      if (!sourceTm) {
+        console.debug('getDependencyName: sourceTm not found', {
+          fromMatch: dep.fromMatch,
+          tournamentMatchIds: tournamentMatches.map(t => t.id),
+        })
+      }
       if (sourceTm) {
         const sourceStage = stageRows.find(s => s.id === sourceTm.stage)
+        if (!sourceStage) {
+          console.debug('getDependencyName: sourceStage not found', {
+            stageId: sourceTm.stage,
+            stageIds: stageRows.map(s => s.id),
+          })
+        }
         if (sourceStage) {
-          const stageName = TournamentManager.getStageName(sourceStage)
+          const stageName = TournamentManager.getStageName(
+            sourceStage,
+            stageRows
+          )
           const matchName = loc.no.tournament.bracketMatchName(
             stageName,
+            sourceTm.index + 1
+          )
+          return loc.no.tournament.sourceMatchPlaceholder(
+            matchName,
+            dep.fromPosition
+          )
+        } else {
+          // Fallback: stage not found, but we have the tournament match
+          // Use a generic match name
+          const fallbackStageName = `${loc.no.match.round} 1`
+          const matchName = loc.no.tournament.bracketMatchName(
+            fallbackStageName,
             sourceTm.index + 1
           )
           return loc.no.tournament.sourceMatchPlaceholder(
@@ -295,10 +329,34 @@ export default class TournamentManager {
     return null
   }
 
-  private static getStageName(stage: Stage): string {
+  private static getStageName(stage: Stage, allStages: Stage[] = []): string {
+    // For group stages, use round numbering
+    if (stage.level === 'group') {
+      return `${loc.no.match.round} ${stage.index + 1}`
+    }
+
+    // If it has a specific stage level, return its name
     if (stage.level) {
       return loc.no.match.stageNames[stage.level]
     }
+
+    // For lower bracket stages without a specific level, use Taperrunde numbering
+    if (stage.bracket === 'lower') {
+      // Count how many lower bracket stages come before this one
+      const lowerBracketStages = allStages.filter(s => s.bracket === 'lower')
+      if (lowerBracketStages.length > 0) {
+        const lowerBracketIndex = lowerBracketStages.findIndex(
+          s => s.id === stage.id
+        )
+        if (lowerBracketIndex >= 0) {
+          return `${loc.no.tournament.roundNames.lower.round} ${lowerBracketIndex + 1}`
+        }
+      }
+      // Fallback if stage not found in allStages
+      return `${loc.no.tournament.roundNames.lower.round} 1`
+    }
+
+    // Default: generic round numbering
     return `${loc.no.match.round} ${stage.index + 1}`
   }
 

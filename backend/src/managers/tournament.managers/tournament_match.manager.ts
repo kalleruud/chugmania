@@ -389,24 +389,29 @@ export default class TournamentMatchManager {
     upperMatches.forEach(m => matchesById.set(m.id, m))
     lowerMatches.forEach(m => matchesById.set(m.id, m))
 
-    // Interleave: Upper bracket round followed by its corresponding lower bracket rounds
-    for (let i = 0; i < upperStages.length; i++) {
-      const upperStage = upperStages[i]
-      interleavedStages.push(upperStage)
+    // Interleave: Upper bracket round followed by corresponding lower bracket rounds
+    // Lower bracket typically has more stages than upper bracket
+    const maxStages = Math.max(upperStages.length, lowerStages.length)
+    for (let i = 0; i < maxStages; i++) {
+      // Add upper bracket stage if it exists
+      if (i < upperStages.length) {
+        const upperStage = upperStages[i]
+        interleavedStages.push(upperStage)
 
-      const upperTMsForStage = upperTMsByStage.get(upperStage.id) || []
-      interleavedTMs.push(...upperTMsForStage)
-      upperTMsForStage.forEach(tm => {
-        const match = matchesById.get(tm.match)
-        if (match) interleavedMatches.push(match)
-      })
-      interleavedDeps.push(
-        ...upperDeps.filter(d =>
-          upperTMsForStage.some(tm => tm.id === d.toMatch)
+        const upperTMsForStage = upperTMsByStage.get(upperStage.id) || []
+        interleavedTMs.push(...upperTMsForStage)
+        upperTMsForStage.forEach(tm => {
+          const match = matchesById.get(tm.match)
+          if (match) interleavedMatches.push(match)
+        })
+        interleavedDeps.push(
+          ...upperDeps.filter(d =>
+            upperTMsForStage.some(tm => tm.id === d.toMatch)
+          )
         )
-      )
+      }
 
-      // Add corresponding lower bracket round if it exists
+      // Add corresponding lower bracket stage if it exists
       if (i < lowerStages.length) {
         const lowerStage = lowerStages[i]
         interleavedStages.push(lowerStage)
@@ -814,9 +819,30 @@ export default class TournamentMatchManager {
     match: Match
     deps: MatchDependency[]
   } {
+    // Find the upper bracket final - this is the match where round === 2
+    // (meaning 2 players remain, so there's 1 match)
     const upperFinal = upperMeta.find(m => m.round === 2)
-    const lastLowerRound = Math.max(...lowerMeta.map(m => m.round))
-    const lowerFinal = lowerMeta.find(m => m.round === lastLowerRound)
+
+    // Find the lower bracket final match - the last match(es) in the lower bracket
+    // In a proper double elimination, this should be a single match (the lower final)
+    let lowerFinal: LowerMatchMeta | undefined
+    if (lowerMeta.length > 0) {
+      const lastLowerRound = Math.max(...lowerMeta.map(m => m.round))
+      // Get all matches from the last round
+      const lastRoundMatches = lowerMeta.filter(m => m.round === lastLowerRound)
+      // If there's exactly one match, that's the lower final
+      // If there are multiple, take the first one (shouldn't happen in proper double elim)
+      lowerFinal = lastRoundMatches[0]
+    }
+
+    console.debug('buildGrandFinal:', {
+      upperMetaLength: upperMeta.length,
+      upperMetaRounds: upperMeta.map(m => m.round),
+      upperFinal: upperFinal?.tournamentMatchId,
+      lowerMetaLength: lowerMeta.length,
+      lowerMetaRounds: lowerMeta.map(m => m.round),
+      lowerFinal: lowerFinal?.tournamentMatchId,
+    })
 
     const stage = TournamentMatchManager.newStage({
       tournament: tournamentId,
@@ -835,6 +861,18 @@ export default class TournamentMatchManager {
     })
 
     const deps: MatchDependency[] = []
+
+    // For double elimination grand final, we need BOTH upper and lower finals
+    // If either is missing, something went wrong in bracket generation
+    if (!upperFinal || !lowerFinal) {
+      console.warn(
+        'Grand final missing bracket finals: upperFinal=',
+        !!upperFinal,
+        'lowerFinal=',
+        !!lowerFinal
+      )
+    }
+
     if (upperFinal) {
       deps.push(
         TournamentMatchManager.newMatchDependency({
