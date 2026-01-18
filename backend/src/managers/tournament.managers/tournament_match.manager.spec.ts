@@ -167,8 +167,9 @@ describe('calculateMinMaxMatchesPerPlayer', () => {
 // Helper functions
 
 function createGroup(playerCount: number): GroupWithPlayers {
+  const groupId = `group-${Math.random()}`
   return {
-    id: `group-${Math.random()}`,
+    id: groupId,
     tournament: 'test-tournament',
     index: 0,
     createdAt: new Date(),
@@ -176,7 +177,7 @@ function createGroup(playerCount: number): GroupWithPlayers {
     deletedAt: null,
     players: Array.from({ length: playerCount }, (_, idx) => ({
       id: `player-${idx}`,
-      group: `group-${idx}`,
+      group: groupId,
       user: `user-${idx}`,
       seed: playerCount - idx,
       createdAt: new Date(),
