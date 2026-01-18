@@ -56,11 +56,13 @@ app.get('/api/sessions/calendar.ics', (req, res) =>
 
 io.on('connect', s => Connect(s))
 
-// Initialize session scheduler when server starts
-await SessionScheduler.scheduleNext()
+// Initialize session scheduler when server starts (skip during tests)
+if (process.env.NODE_ENV !== 'test') {
+  await SessionScheduler.scheduleNext()
 
-// Calculate ratings
-await RatingManager.recalculate()
+  // Calculate ratings
+  await RatingManager.recalculate()
+}
 
 async function Connect(s: TypedSocket) {
   console.debug(new Date().toISOString(), s.id, 'Connected')
