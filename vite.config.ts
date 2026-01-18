@@ -20,8 +20,8 @@ export default defineConfig({
     include: ['**/*.test.ts*', '**/*.spec.ts*'],
     exclude: ['node_modules/**', 'dist/**', '.**'],
     env: {
-      SECRET: "test",
-      NODE_ENV: "test"
+      SECRET: 'test',
+      NODE_ENV: 'test',
     },
     coverage: {
       provider: 'v8',
