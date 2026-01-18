@@ -10,13 +10,13 @@ const testDbMap = new Map<string, any>()
 /**
  * Create a fresh in-memory test database with schema migrated
  */
-export async function createTestDb() {
+export function createTestDb() {
   const database = new Database(':memory:')
   database.pragma('journal_mode = WAL')
   const db = drizzle(database, { schema })
 
   // Run migrations from drizzle/ folder
-  await migrate(db, {
+  migrate(db, {
     migrationsFolder: path.resolve('./drizzle'),
   })
 
