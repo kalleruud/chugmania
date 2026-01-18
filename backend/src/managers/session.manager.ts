@@ -241,7 +241,6 @@ export default class SessionManager {
     )
 
     broadcast('all_sessions', await SessionManager.getAllSessions())
-    await SessionScheduler.reschedule()
 
     return { success: true }
   }
