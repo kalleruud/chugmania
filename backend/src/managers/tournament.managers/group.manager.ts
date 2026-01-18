@@ -83,7 +83,7 @@ export default class GroupManager {
     const groupIds = (
       await db.query.groups.findMany({
         columns: { id: true },
-        where: eq(groups.id, tournamentId),
+        where: eq(groups.tournament, tournamentId),
       })
     ).map(g => g.id)
 
