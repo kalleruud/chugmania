@@ -17,7 +17,7 @@ export default class RatingManager {
   private static readonly trackCalculator: TrackRatingCalculator =
     new TrackRatingCalculator()
 
-  private static ratings: Map<User['id'], Ranking> = new Map()
+  private static ratings: Map<User['id'], Ranking> | undefined
 
   private static reset() {
     RatingManager.matchCalculator.reset()
@@ -49,7 +49,7 @@ export default class RatingManager {
   }
 
   static getUserRatings(userId: string): Ranking | undefined {
-    if (RatingManager.ratings.size === 0) {
+    if (!RatingManager.ratings) {
       throw new Error('Ratings not calculated')
     }
     return RatingManager.ratings.get(userId)
@@ -57,8 +57,7 @@ export default class RatingManager {
 
   // Returns all users with their ratings, sorted by ranking.
   static async onGetRatings(): Promise<Ranking[]> {
-    if (RatingManager.ratings.size === 0)
-      RatingManager.ratings = await RatingManager.calculateRatings()
+    RatingManager.ratings ??= await RatingManager.calculateRatings()
 
     return Array.from(RatingManager.ratings.values()).toSorted(
       (a, b) => b.ranking - a.ranking
