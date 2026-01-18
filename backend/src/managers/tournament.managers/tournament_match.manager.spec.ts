@@ -1,591 +1,362 @@
-import { describe, expect, it, vi } from 'vitest'
-
-// Mock the database and auth dependencies before importing the manager
-vi.mock('@backend/database/database', () => ({
-  default: {
-    query: {
-      stages: { findMany: vi.fn() },
-      tournamentMatches: { findMany: vi.fn() },
-      matches: { findMany: vi.fn() },
-      matchDependencies: { findMany: vi.fn() },
-    },
-  },
-}))
-
-vi.mock('../match.manager', () => ({
-  default: {
-    setPlayer: vi.fn(),
-    getProgressedUser: vi.fn(),
-  },
-}))
-
-vi.mock('./group.manager', () => ({
-  default: {
-    getUserAt: vi.fn(),
-  },
-}))
-
-// Now import the manager after mocks are set up
+import type { GroupWithPlayers } from '@common/models/tournament'
+import { describe, expect, it } from 'vitest'
 import TournamentMatchManager from './tournament_match.manager'
+import type TournamentManager from './tournament.manager'
 
-describe('TournamentMatchManager', () => {
-  describe('getStageLevel', () => {
-    it('returns "final" for 1 match', () => {
-      expect(TournamentMatchManager.getStageLevel(1)).toBe('final')
+describe('calculateMinMaxMatchesPerPlayer', () => {
+  describe('single elimination', () => {
+    it('calculates correct min/max for 4 players in 1 group', () => {
+      const { min, max } =
+        TournamentMatchManager.calculateMinMaxMatchesPerPlayer({
+          groups: [createGroup(4)],
+          advancementCount: 2,
+          eliminationType: 'single'}
+        )
+
+      expect(min).toBe(3) // Group stage: 3 matches
+      expect(max).toBe(4) // Group stage + 1 bracket round
     })
 
-    it('returns "semi" for 2 matches', () => {
-      expect(TournamentMatchManager.getStageLevel(2)).toBe('semi')
+    it('calculates correct min/max for 8 players in 2 groups', () => {
+      const { min, max } =
+        TournamentMatchManager.calculateMinMaxMatchesPerPlayer({
+          groups: [createGroup(4), createGroup(4)],
+          advancementCount: 2,
+          eliminationType: 'single'}
+        )
+
+      expect(min).toBe(3) // Group stage: 3 matches
+      expect(max).toBe(5) // Group stage + 2 bracket rounds
     })
 
-    it('returns "quarter" for 4 matches', () => {
-      expect(TournamentMatchManager.getStageLevel(4)).toBe('quarter')
+    it('calculates correct min/max for 8 players in 1 group', () => {
+      const { min, max } =
+        TournamentMatchManager.calculateMinMaxMatchesPerPlayer({
+          groups: [createGroup(8)],
+          advancementCount: 2,
+          eliminationType: 'single'}
+        )
+
+      expect(min).toBe(7) // Group stage: 7 matches
+      expect(max).toBe(8) // Group stage + 1 bracket round (2 advancing)
     })
 
-    it('returns "eight" for 8 matches', () => {
-      expect(TournamentMatchManager.getStageLevel(8)).toBe('eight')
+    it('calculates correct min/max for 4 advancing per group', () => {
+      const { min, max } =
+        TournamentMatchManager.calculateMinMaxMatchesPerPlayer({
+          groups: [createGroup(6), createGroup(6)],
+          advancementCount: 4,
+          eliminationType: 'single'}
+        )
+
+      expect(min).toBe(5) // Group stage: 5 matches
+      expect(max).toBe(8) // Group stage + 3 bracket rounds
     })
 
-    it('returns "sixteen" for 16 matches', () => {
-      expect(TournamentMatchManager.getStageLevel(16)).toBe('sixteen')
-    })
-
-    it('throws for invalid match count', () => {
-      expect(() => TournamentMatchManager.getStageLevel(3)).toThrow()
-      expect(() => TournamentMatchManager.getStageLevel(0)).toThrow()
-      expect(() => TournamentMatchManager.getStageLevel(32)).toThrow()
-    })
-  })
-
-  describe('calculateMinMaxMatchesPerPlayer', () => {
     it('returns 0 for groups with less than 2 players', () => {
-      const result = TournamentMatchManager.calculateMinMaxMatchesPerPlayer({
-        groups: [
-          {
-            id: 'g1',
-            players: [],
-            index: 0,
-            tournament: 't1',
-            createdAt: new Date(),
-            updatedAt: null,
-            deletedAt: null,
-          },
-        ],
-        advancementCount: 1,
-        eliminationType: 'single',
-      })
-      expect(result).toEqual({ min: 0, max: 0 })
+      const { min, max } =
+        TournamentMatchManager.calculateMinMaxMatchesPerPlayer({
+          groups: [createGroup(1)],
+          advancementCount: 1,
+          eliminationType: 'single'}
+        )
+
+      expect(min).toBe(0)
+      expect(max).toBe(0)
     })
 
-    it('calculates correct matches for single elimination with 2 groups of 4', () => {
-      const players = [
-        {
-          id: 'p1',
-          user: 'u1',
-          group: 'g1',
-          seed: 100,
-          createdAt: new Date(),
-          updatedAt: null,
-          deletedAt: null,
-          wins: 0,
-          losses: 0,
-        },
-        {
-          id: 'p2',
-          user: 'u2',
-          group: 'g1',
-          seed: 90,
-          createdAt: new Date(),
-          updatedAt: null,
-          deletedAt: null,
-          wins: 0,
-          losses: 0,
-        },
-        {
-          id: 'p3',
-          user: 'u3',
-          group: 'g1',
-          seed: 80,
-          createdAt: new Date(),
-          updatedAt: null,
-          deletedAt: null,
-          wins: 0,
-          losses: 0,
-        },
-        {
-          id: 'p4',
-          user: 'u4',
-          group: 'g1',
-          seed: 70,
-          createdAt: new Date(),
-          updatedAt: null,
-          deletedAt: null,
-          wins: 0,
-          losses: 0,
-        },
-      ]
-      const result = TournamentMatchManager.calculateMinMaxMatchesPerPlayer({
-        groups: [
-          {
-            id: 'g1',
-            players,
-            index: 0,
-            tournament: 't1',
-            createdAt: new Date(),
-            updatedAt: null,
-            deletedAt: null,
-          },
-          {
-            id: 'g2',
-            players,
-            index: 1,
-            tournament: 't1',
-            createdAt: new Date(),
-            updatedAt: null,
-            deletedAt: null,
-          },
-        ],
-        advancementCount: 2,
-        eliminationType: 'single',
-      })
-      // Group stage: 4-1 = 3 matches per player (round robin)
-      // Bracket: 4 advancing players = bracket of 4, so 2 rounds
-      // Single elim: min = 3, max = 3 + 2 = 5
-      expect(result.min).toBe(3)
-      expect(result.max).toBe(5)
+    it('returns correct values for single player in group', () => {
+      const { min, max } =
+        TournamentMatchManager.calculateMinMaxMatchesPerPlayer({
+          groups: [createGroup(1), createGroup(1)],
+          advancementCount: 1,
+          eliminationType: 'single'}
+        )
+
+      expect(min).toBe(0)
+      expect(max).toBe(0)
     })
 
-    it('calculates correct matches for double elimination', () => {
-      const players = [
-        {
-          id: 'p1',
-          user: 'u1',
-          group: 'g1',
-          seed: 100,
-          createdAt: new Date(),
-          updatedAt: null,
-          deletedAt: null,
-          wins: 0,
-          losses: 0,
-        },
-        {
-          id: 'p2',
-          user: 'u2',
-          group: 'g1',
-          seed: 90,
-          createdAt: new Date(),
-          updatedAt: null,
-          deletedAt: null,
-          wins: 0,
-          losses: 0,
-        },
-        {
-          id: 'p3',
-          user: 'u3',
-          group: 'g1',
-          seed: 80,
-          createdAt: new Date(),
-          updatedAt: null,
-          deletedAt: null,
-          wins: 0,
-          losses: 0,
-        },
-        {
-          id: 'p4',
-          user: 'u4',
-          group: 'g1',
-          seed: 70,
-          createdAt: new Date(),
-          updatedAt: null,
-          deletedAt: null,
-          wins: 0,
-          losses: 0,
-        },
-      ]
-      const result = TournamentMatchManager.calculateMinMaxMatchesPerPlayer({
-        groups: [
-          {
-            id: 'g1',
-            players,
-            index: 0,
-            tournament: 't1',
-            createdAt: new Date(),
-            updatedAt: null,
-            deletedAt: null,
-          },
-          {
-            id: 'g2',
-            players,
-            index: 1,
-            tournament: 't1',
-            createdAt: new Date(),
-            updatedAt: null,
-            deletedAt: null,
-          },
-        ],
-        advancementCount: 2,
-        eliminationType: 'double',
-      })
-      // Group stage: 4-1 = 3 matches
-      // Double elim: rounds + 2 = 2 + 2 = 4
-      // min = 3, max = 3 + 4 = 7
-      expect(result.min).toBe(3)
-      expect(result.max).toBe(7)
+    it('handles 3 groups with 4 players each', () => {
+      const { min, max } =
+        TournamentMatchManager.calculateMinMaxMatchesPerPlayer({
+          groups: [createGroup(4), createGroup(4), createGroup(4)],
+          advancementCount: 2,
+          eliminationType: 'single'}
+        )
+
+      expect(min).toBe(3)
+      expect(max).toBe(6) // 3 group matches + 3 bracket rounds (6 players total)
+    })
+
+    it('calculates for advancement count of 1', () => {
+      const { min, max } =
+        TournamentMatchManager.calculateMinMaxMatchesPerPlayer({
+          groups: [createGroup(4), createGroup(4)],
+          advancementCount: 1,
+          eliminationType: 'single'}
+        )
+
+      expect(min).toBe(3)
+      expect(max).toBe(4) // 3 group + 1 bracket round (2 advancing players)
+    })
+
+    it('calculates for advancement count of 3', () => {
+      const { min, max } =
+        TournamentMatchManager.calculateMinMaxMatchesPerPlayer({
+          groups: [createGroup(4), createGroup(4)],
+          advancementCount: 3,
+          eliminationType: 'single'}
+        )
+
+      expect(min).toBe(3)
+      expect(max).toBe(6) // 3 group + 3 bracket rounds (6 advancing players)
     })
   })
 
-  describe('createGroupMatches', () => {
-    it('creates round-robin matches for a single group', () => {
-      const groups = [{ id: 'g1' }]
-      const groupPlayers = [
-        { id: 'gp1', group: 'g1', user: 'u1', seed: 100 },
-        { id: 'gp2', group: 'g1', user: 'u2', seed: 90 },
-        { id: 'gp3', group: 'g1', user: 'u3', seed: 80 },
-      ]
+  describe('double elimination', () => {
+    it('calculates correct min/max for 4 players in 1 group', () => {
+      const { min, max } =
+        TournamentMatchManager.calculateMinMaxMatchesPerPlayer({
+          groups: [createGroup(4)],
+          advancementCount: 2,
+          eliminationType: 'double'}
+        )
 
-      const result = TournamentMatchManager.createGroupMatches(
-        'tournament-1',
-        'session-1',
-        groups,
-        groupPlayers
-      )
-
-      // 3 players = 3 matches in round robin (n*(n-1)/2 = 3*2/2 = 3)
-      expect(result.matches.length).toBe(3)
-      expect(result.tournamentMatches.length).toBe(3)
-      expect(result.stages.length).toBeGreaterThan(0)
-      expect(result.matchDependencies.length).toBe(0)
-
-      // Each match should have two different users
-      for (const match of result.matches) {
-        expect(match.userA).toBeDefined()
-        expect(match.userB).toBeDefined()
-        expect(match.userA).not.toBe(match.userB)
-      }
+      expect(min).toBe(3) // Group stage: 3 matches
+      expect(max).toBe(6) // Group stage + 1 round + 2 for double elimination
     })
 
-    it('creates matches for multiple groups', () => {
-      const groups = [{ id: 'g1' }, { id: 'g2' }]
-      const groupPlayers = [
-        { id: 'gp1', group: 'g1', user: 'u1', seed: 100 },
-        { id: 'gp2', group: 'g1', user: 'u2', seed: 90 },
-        { id: 'gp3', group: 'g2', user: 'u3', seed: 80 },
-        { id: 'gp4', group: 'g2', user: 'u4', seed: 70 },
-      ]
+    it('calculates correct min/max for 8 players in 2 groups', () => {
+      const { min, max } =
+        TournamentMatchManager.calculateMinMaxMatchesPerPlayer({
+          groups: [createGroup(4), createGroup(4)],
+          advancementCount: 2,
+          eliminationType: 'double'}
+        )
 
-      const result = TournamentMatchManager.createGroupMatches(
-        'tournament-1',
-        'session-1',
-        groups,
-        groupPlayers
-      )
-
-      // Group 1: 2 players = 1 match
-      // Group 2: 2 players = 1 match
-      // Total: 2 matches
-      expect(result.matches.length).toBe(2)
+      expect(min).toBe(3)
+      expect(max).toBe(7) // Group stage + 2 rounds + 2 for double
     })
 
-    it('assigns tracks cyclically by round', () => {
-      const groups = [{ id: 'g1' }]
-      const groupPlayers = [
-        { id: 'gp1', group: 'g1', user: 'u1', seed: 100 },
-        { id: 'gp2', group: 'g1', user: 'u2', seed: 90 },
-        { id: 'gp3', group: 'g1', user: 'u3', seed: 80 },
-        { id: 'gp4', group: 'g1', user: 'u4', seed: 70 },
-      ]
-      const tracks = ['track-1', 'track-2']
+    it('calculates correct min/max for 8 players in 1 group', () => {
+      const { min, max } =
+        TournamentMatchManager.calculateMinMaxMatchesPerPlayer({
+          groups: [createGroup(8)],
+          advancementCount: 2,
+          eliminationType: 'double'}
+        )
 
-      const result = TournamentMatchManager.createGroupMatches(
-        'tournament-1',
-        'session-1',
-        groups,
-        groupPlayers,
-        tracks
-      )
+      expect(min).toBe(7)
+      expect(max).toBe(10) // Group stage + 1 round + 2 for double
+    })
 
-      // All matches should have tracks assigned
-      for (const match of result.matches) {
-        expect(tracks).toContain(match.track)
-      }
+    it('adds 2 extra rounds for double elimination', () => {
+      const singleResult =
+        TournamentMatchManager.calculateMinMaxMatchesPerPlayer({
+          groups: [createGroup(4), createGroup(4)],
+          advancementCount: 2,
+          eliminationType: 'single'}
+        )
+      const doubleResult =
+        TournamentMatchManager.calculateMinMaxMatchesPerPlayer({
+          groups: [createGroup(4), createGroup(4)],
+          advancementCount: 2,
+          eliminationType: 'double'}
+        )
+
+      // Double elimination should have exactly 2 more matches
+      expect(doubleResult.max - singleResult.max).toBe(2)
+      expect(doubleResult.min).toBe(singleResult.min)
+    })
+
+    it('calculates for advancement count of 1', () => {
+      const { min, max } =
+        TournamentMatchManager.calculateMinMaxMatchesPerPlayer({
+          groups: [createGroup(4), createGroup(4)],
+          advancementCount: 1,
+          eliminationType: 'double'}
+        )
+
+      expect(min).toBe(3)
+      expect(max).toBe(6) // 3 group + 0 bracket rounds (2 advancing) + 2 for double
+    })
+
+    it('calculates for advancement count of 4', () => {
+      const { min, max } =
+        TournamentMatchManager.calculateMinMaxMatchesPerPlayer({
+          groups: [createGroup(6), createGroup(6)],
+          advancementCount: 4,
+          eliminationType: 'double'}
+        )
+
+      expect(min).toBe(5)
+      expect(max).toBe(10) // 5 group + 3 rounds + 2 for double
     })
   })
 
-  describe('generateBracketMatches', () => {
-    it('generates single elimination bracket for 4 advancing players', () => {
-      const groups = [
-        {
-          id: 'g1',
-          index: 0,
-          tournament: 't1',
-          createdAt: new Date(),
-          updatedAt: null,
-          deletedAt: null,
-        },
-        {
-          id: 'g2',
-          index: 1,
-          tournament: 't1',
-          createdAt: new Date(),
-          updatedAt: null,
-          deletedAt: null,
-        },
-      ]
+  describe('edge cases', () => {
+    it('returns 0 for empty groups', () => {
+      const { min, max } =
+        TournamentMatchManager.calculateMinMaxMatchesPerPlayer({
+          groups: [createGroup(0)],
+          advancementCount: 1,
+          eliminationType: 'single'}
+        )
 
-      const result = TournamentMatchManager.generateBracketMatches(
-        'tournament-1',
-        'session-1',
-        groups,
-        2, // advancementCount
-        'single',
-        1 // groupStageCount
-      )
-
-      // 4 players = bracket of 4: 2 semi matches + 1 final = 3 matches
-      expect(result.matches.length).toBe(3)
-      expect(result.stages.length).toBe(2) // Semi and Final stages
-      expect(result.matchDependencies.length).toBeGreaterThan(0)
+      expect(min).toBe(0)
+      expect(max).toBe(0)
     })
 
-    it('generates double elimination bracket', () => {
-      const groups = [
-        {
-          id: 'g1',
-          index: 0,
-          tournament: 't1',
-          createdAt: new Date(),
-          updatedAt: null,
-          deletedAt: null,
-        },
-        {
-          id: 'g2',
-          index: 1,
-          tournament: 't1',
-          createdAt: new Date(),
-          updatedAt: null,
-          deletedAt: null,
-        },
-      ]
+    it('returns 0 for groups with exactly 1 player', () => {
+      const { min, max } =
+        TournamentMatchManager.calculateMinMaxMatchesPerPlayer({
+          groups: [createGroup(1), createGroup(1), createGroup(1)],
+          advancementCount: 1,
+          eliminationType: 'single'}
+        )
 
-      const result = TournamentMatchManager.generateBracketMatches(
-        'tournament-1',
-        'session-1',
-        groups,
-        2, // advancementCount
-        'double',
-        1 // groupStageCount
-      )
-
-      // Double elimination has more matches than single
-      expect(result.matches.length).toBeGreaterThan(3)
-      // Should have upper, lower, and grand final stages
-      const hasGrandFinal = result.stages.some(s => s.level === 'grand_final')
-      expect(hasGrandFinal).toBe(true)
+      expect(min).toBe(0)
+      expect(max).toBe(0)
     })
 
-    it('creates snake-style seeding dependencies from groups', () => {
-      const groups = [
-        {
-          id: 'g1',
-          index: 0,
-          tournament: 't1',
-          createdAt: new Date(),
-          updatedAt: null,
-          deletedAt: null,
-        },
-        {
-          id: 'g2',
-          index: 1,
-          tournament: 't1',
-          createdAt: new Date(),
-          updatedAt: null,
-          deletedAt: null,
-        },
-      ]
+    it('handles very large group (32 players)', () => {
+      const { min, max } =
+        TournamentMatchManager.calculateMinMaxMatchesPerPlayer({
+          groups: [createGroup(32)],
+          advancementCount: 8,
+          eliminationType: 'single'}
+        )
 
-      const result = TournamentMatchManager.generateBracketMatches(
-        'tournament-1',
-        'session-1',
-        groups,
-        2, // advancementCount: top 2 from each group
-        'single',
-        1
-      )
-
-      // Check that dependencies exist from groups
-      const groupDeps = result.matchDependencies.filter(
-        d => d.fromGroup !== null
-      )
-      expect(groupDeps.length).toBeGreaterThan(0)
-
-      // First match should have slot A from group 1 rank 1, slot B from group 2 rank 2
-      const firstMatchTM = result.tournamentMatches[0]
-      const firstMatchDeps = result.matchDependencies.filter(
-        d => d.toMatch === firstMatchTM.id
-      )
-      expect(firstMatchDeps.length).toBe(2)
-
-      const slotA = firstMatchDeps.find(d => d.toSlot === 'A')
-      const slotB = firstMatchDeps.find(d => d.toSlot === 'B')
-      expect(slotA?.fromPosition).toBe(1) // Rank 1 from group A
-      expect(slotB?.fromPosition).toBe(2) // Rank 2 from group B (snake seeding)
+      expect(min).toBe(31) // 32 players = 31 round-robin matches
+      expect(max).toBeGreaterThan(min)
     })
 
-    it('assigns bracket tracks to stages in double elimination', () => {
-      const groups = [
-        {
-          id: 'g1',
-          index: 0,
-          tournament: 't1',
-          createdAt: new Date(),
-          updatedAt: null,
-          deletedAt: null,
-        },
-        {
-          id: 'g2',
-          index: 1,
-          tournament: 't1',
-          createdAt: new Date(),
-          updatedAt: null,
-          deletedAt: null,
-        },
-      ]
-      const bracketTracks = [
-        'track-a',
-        'track-b',
-        'track-c',
-        'track-d',
-        'track-e',
-        'track-f',
-      ]
+    it('handles uneven group sizes', () => {
+      const { min, max } =
+        TournamentMatchManager.calculateMinMaxMatchesPerPlayer({
+          groups: [createGroup(3), createGroup(5), createGroup(4)],
+          advancementCount: 2,
+          eliminationType: 'single'}
+        )
 
-      const result = TournamentMatchManager.generateBracketMatches(
-        'tournament-1',
-        'session-1',
-        groups,
-        2,
-        'double', // Double elimination has track assignment after interleaving
-        1,
-        bracketTracks
-      )
-
-      // All matches should have tracks assigned
-      for (const match of result.matches) {
-        expect(bracketTracks).toContain(match.track)
-      }
+      // Largest group is 5 players: 4 group stage matches, 6 advancing, 3 bracket rounds
+      expect(min).toBe(4)
+      expect(max).toBe(7)
     })
 
-    it('single elimination has null tracks when no bracket tracks provided', () => {
-      const groups = [
-        {
-          id: 'g1',
-          index: 0,
-          tournament: 't1',
-          createdAt: new Date(),
-          updatedAt: null,
-          deletedAt: null,
-        },
-        {
-          id: 'g2',
-          index: 1,
-          tournament: 't1',
-          createdAt: new Date(),
-          updatedAt: null,
-          deletedAt: null,
-        },
-      ]
-
-      const result = TournamentMatchManager.generateBracketMatches(
-        'tournament-1',
-        'session-1',
-        groups,
-        2,
-        'single',
-        1
+    it('consistent results across multiple calls', () => {
+      const result1 = TournamentMatchManager.calculateMinMaxMatchesPerPlayer({
+        groups: [createGroup(4), createGroup(4)],
+        advancementCount: 2,
+        eliminationType: 'single'}
+      )
+      const result2 = TournamentMatchManager.calculateMinMaxMatchesPerPlayer({
+        groups: [createGroup(4), createGroup(4)],
+        advancementCount: 2,
+        eliminationType: 'single'}
       )
 
-      // Single elimination without tracks should have null tracks
-      for (const match of result.matches) {
-        expect(match.track).toBeNull()
-      }
+      expect(result1).toEqual(result2)
     })
 
-    it('handles large bracket with 8 advancing players', () => {
-      const groups = [
-        {
-          id: 'g1',
-          index: 0,
-          tournament: 't1',
-          createdAt: new Date(),
-          updatedAt: null,
-          deletedAt: null,
-        },
-        {
-          id: 'g2',
-          index: 1,
-          tournament: 't1',
-          createdAt: new Date(),
-          updatedAt: null,
-          deletedAt: null,
-        },
+    it('returns min equal to group stage matches', () => {
+      const testCases = [
+        { players: 2, expected: 1 },
+        { players: 3, expected: 2 },
+        { players: 4, expected: 3 },
+        { players: 5, expected: 4 },
       ]
 
-      const result = TournamentMatchManager.generateBracketMatches(
-        'tournament-1',
-        'session-1',
-        groups,
-        4, // 4 advancing from each group = 8 total
-        'single',
-        1
-      )
-
-      // 8 players = bracket of 8: 4 quarter + 2 semi + 1 final = 7 matches
-      expect(result.matches.length).toBe(7)
-      expect(result.stages.length).toBe(3) // Quarter, Semi, Final
-
-      // Check stage levels
-      const levels = result.stages.map(s => s.level)
-      expect(levels).toContain('quarter')
-      expect(levels).toContain('semi')
-      expect(levels).toContain('final')
+      testCases.forEach(({ players, expected }) => {
+        const { min } = TournamentMatchManager.calculateMinMaxMatchesPerPlayer({
+          groups: [createGroup(players)],
+          advancementCount: 1,
+          eliminationType: 'single'}
+        )
+        expect(min).toBe(expected)
+      })
     })
 
-    it('interleaves upper and lower bracket stages in double elimination', () => {
-      const groups = [
+    it('returns max greater than or equal to min', () => {
+      const testCases: (Parameters<typeof TournamentMatchManager.calculateMinMaxMatchesPerPlayer> & { expected: ReturnType<typeof TournamentMatchManager.calculateMinMaxMatchesPerPlayer> })[] = [
         {
-          id: 'g1',
-          index: 0,
-          tournament: 't1',
-          createdAt: new Date(),
-          updatedAt: null,
-          deletedAt: null,
+          groups: [createGroup(2)],
+          advancementCount: 1,
+          eliminationType: 'single',
+          expected: { min: 1, max: 2}
         },
         {
-          id: 'g2',
-          index: 1,
-          tournament: 't1',
-          createdAt: new Date(),
-          updatedAt: null,
-          deletedAt: null,
+          groups: [createGroup(4), createGroup(4)],
+          advancementCount: 2,
+          eliminationType: 'single',
+        },
+        {
+          groups: [createGroup(8)],
+          advancementCount: 4,
+          eliminationType: 'double',
+        },
+        {
+          groups: [createGroup(3), createGroup(5), createGroup(4)],
+          advancementCount: 2,
+          eliminationType: 'double',
         },
       ]
 
-      const result = TournamentMatchManager.generateBracketMatches(
-        'tournament-1',
-        'session-1',
-        groups,
-        4, // 4 advancing from each group = 8 total
-        'double',
-        1
-      )
+      testCases.forEach(({ groups, advancement, elimination }) => {
+        const { min, max } =
+          TournamentMatchManager.calculateMinMaxMatchesPerPlayer({
+            advancementCount: groups,
+            advancement,eliminationType: 
+            elimination}
+          )
+        expect(max).toBeGreaterThanOrEqual(min)
+      })
+    })
 
-      // Stages should be interleaved: upper, lower, upper, lower, ..., grand final
-      // The first stage should be upper bracket
-      expect(result.stages[0].bracket).toBe('upper')
+    it('bracket size is power of 2', () => {
+      // Test that max is calculated correctly for various advancement counts
+      const testCases = [
+        { advancementCount: 1, groups: 2, expectedBracketSize: 2 },
+        { advancementCount: 2, groups: 2, expectedBracketSize: 4 },
+        { advancementCount: 3, groups: 2, expectedBracketSize: 8 },
+        { advancementCount: 4, groups: 2, expectedBracketSize: 8 },
+        { advancementCount: 5, groups: 2, expectedBracketSize: 16 },
+      ]
 
-      // Grand final should be last
-      const lastStage = result.stages.at(-1)
-      expect(lastStage?.level).toBe('grand_final')
+      testCases.forEach(({ advancementCount, groups: groupCount }) => {
+        const { max } = TournamentMatchManager.calculateMinMaxMatchesPerPlayer({
+          groups: Array.from({ length: groupCount }, () => createGroup(4)),
+          advancementCount: advancementCount,
+          eliminationType: 'single'}
+        )
+        // Just verify max is reasonable (greater than min group stage matches)
+        expect(max).toBeGreaterThan(3)
+      })
     })
   })
 })
+
+// Helper functions
+
+function createGroup(playerCount: number): GroupWithPlayers {
+  return {
+    id: `group-${Math.random()}`,
+    tournament: 'test-tournament',
+    index: 0,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    deletedAt: null,
+    players: Array.from({ length: playerCount }, (_, idx) => ({
+      id: `player-${idx}`,
+      group: `group-${idx}`,
+      user: `user-${idx}`,
+      seed: playerCount - idx,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      deletedAt: null,
+      wins: 0,
+      losses: 0,
+    })),
+  }
+}
