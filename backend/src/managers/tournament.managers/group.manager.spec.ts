@@ -9,22 +9,6 @@ import SessionManager from '../session.manager'
 import GroupManager from './group.manager'
 import TournamentManager from './tournament.manager'
 
-/**
- * Blueprint Test for GroupManager.getAll()
- *
- * This test demonstrates the recommended pattern for testing managers with the test database:
- * 1. Use beforeEach to reset the database
- * 2. Use existing manager public APIs (onRegister, onCreateSession, etc.) to create test data
- * 3. Test the public API only
- * 4. Mirror production workflows exactly
- *
- * This pattern should be used as a template for all future manager tests.
- */
-
-// ============================================================================
-// BLUEPRINT TEST - Copy this pattern for other managers
-// ============================================================================
-
 describe('GroupManager.getAll - Blueprint Test', () => {
   beforeEach(async () => {
     await clearDB()
