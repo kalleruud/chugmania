@@ -4,7 +4,6 @@ import type {
   groups,
   matchDependencies,
   stages,
-  tournamentMatches,
   tournaments,
 } from '../../backend/database/schema'
 import type { Match } from './match'
@@ -22,15 +21,12 @@ export type CreateGroupPlayer = typeof groupPlayers.$inferInsert
 export type Stage = typeof stages.$inferSelect
 export type CreateStage = typeof stages.$inferInsert
 
-export type TournamentMatch = typeof tournamentMatches.$inferSelect
-export type CreateTournamentMatch = typeof tournamentMatches.$inferInsert
-
 export type MatchDependency = typeof matchDependencies.$inferSelect
 export type CreateMatchDependency = typeof matchDependencies.$inferInsert
 
-export type TournamentMatchWithDetails = Omit<TournamentMatch, 'stage'> & {
-  stage: Stage
-  matchDetails: Match
+export type MatchWithTournamentDetails = Omit<Match, 'stage' | 'index'> & {
+  stage: string
+  index: number
   dependencyNames: {
     A: string
     B: string
@@ -39,7 +35,7 @@ export type TournamentMatchWithDetails = Omit<TournamentMatch, 'stage'> & {
 
 export type TournamentStage = {
   stage: Stage
-  matches: TournamentMatchWithDetails[]
+  matches: MatchWithTournamentDetails[]
 }
 
 export type GroupPlayerWithStats = GroupPlayer & {

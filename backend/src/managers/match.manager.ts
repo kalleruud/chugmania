@@ -2,12 +2,13 @@ import {
   isCreateMatchRequest,
   isDeleteMatchRequest,
   isEditMatchRequest,
+  type CreateMatch,
   type CreateMatchRequest,
   type EditMatchRequest,
   type Match,
 } from '@common/models/match'
 import type { EventReq, EventRes } from '@common/models/socket.io'
-import { and, desc, eq, getTableColumns, isNull, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, getTableColumns, isNull, sql } from 'drizzle-orm'
 import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
 import { matches, sessions, type MatchSide } from '../../database/schema'
@@ -33,11 +34,6 @@ export default class MatchManager {
     if (userA && userB && userA === userB) {
       throw new Error(loc.no.match.error.same_user)
     }
-
-    // Winner must be 'A' or 'B' slot, not a user ID
-    if (winner && winner !== 'A' && winner !== 'B') {
-      throw new Error(loc.no.match.error.invalid_winner)
-    }
   }
 
   public static async getAllMatches(): Promise<Match[]> {
@@ -54,20 +50,17 @@ export default class MatchManager {
   // Returns matches sorted by creation date, most recent first.
   public static async getAllBySession(sessionId: string): Promise<Match[]> {
     return await db
-      .select({ ...getTableColumns(matches) })
+      .select()
       .from(matches)
       .where(and(eq(matches.session, sessionId), isNull(matches.deletedAt)))
-      .orderBy(desc(matches.createdAt))
+      .orderBy(asc(matches.index), desc(matches.createdAt))
   }
 
-  static async createMatch(sessionId: string | null, trackId: string) {
+  static async createMatch(draft: CreateMatch) {
     const [match] = await db
       .insert(matches)
-      .values({
-        session: sessionId,
-        track: trackId,
-      })
-      .returning()
+      .values(draft)
+      .returning({ id: matches.id })
     return match.id
   }
 
@@ -114,16 +107,26 @@ export default class MatchManager {
     }
 
     await AuthManager.checkAuth(socket, ['admin', 'moderator'])
-
     MatchManager.validateMatchState(request)
 
+    const isCompleted = request.status === 'completed'
+
     const { type, createdAt, updatedAt, deletedAt, ...matchData } = request
-    const [match] = await db.insert(matches).values(matchData).returning()
+    const now = createdAt ? new Date(createdAt) : new Date()
+
+    const [match] = await db
+      .insert(matches)
+      .values({
+        ...matchData,
+        createdAt: now,
+        completedAt: isCompleted ? now : null,
+      })
+      .returning()
 
     console.debug(new Date().toISOString(), socket.id, 'Created match')
 
     if (match.winner) {
-      await TournamentManager.onMatchUpdated(match, match.createdAt)
+      await TournamentManager.onMatchUpdated(match)
     }
 
     RatingManager.recalculate()
@@ -154,14 +157,17 @@ export default class MatchManager {
 
     MatchManager.validateMatchState(request, preImageMatch)
 
+    const isCompleted = request.status === 'completed'
+    const now = request.updatedAt ? new Date(request.updatedAt) : new Date()
+
     const { type, id, createdAt, updatedAt, ...updates } = request
     const [res] = await db
       .update(matches)
       .set({
         ...updates,
-        deletedAt: updates.deletedAt
-          ? new Date(updates.deletedAt)
-          : updates.deletedAt,
+        deletedAt: updates.deletedAt ? new Date(updates.deletedAt) : null,
+        updatedAt: now,
+        completedAt: isCompleted ? now : null,
       })
       .where(eq(matches.id, id))
       .returning()
@@ -172,7 +178,7 @@ export default class MatchManager {
       (preImageMatch.winner || res.winner) &&
       preImageMatch.winner !== res.winner
     ) {
-      await TournamentManager.onMatchUpdated(res, res.updatedAt!)
+      await TournamentManager.onMatchUpdated(res)
     }
 
     await RatingManager.recalculate()

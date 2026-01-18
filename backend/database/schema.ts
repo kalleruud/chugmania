@@ -101,7 +101,10 @@ export const matches = sqliteTable('matches', {
     .notNull()
     .$default(() => 'planned'),
   duration: integer('duration_ms'),
+  completedAt: integer('completed_at', { mode: 'timestamp_ms' }),
   comment: text(),
+  index: integer(),
+  stage: text().references(() => stages.id, { onDelete: 'cascade' }),
 })
 
 export const tournaments = sqliteTable('tournaments', {
@@ -148,24 +151,17 @@ export const stages = sqliteTable('stages', {
   index: integer().notNull(),
 })
 
-export const tournamentMatches = sqliteTable('tournament_matches', {
-  ...metadata,
-  match: text()
-    .notNull()
-    .references(() => matches.id),
-  stage: text()
-    .notNull()
-    .references(() => stages.id, { onDelete: 'cascade' }),
-  index: integer().notNull(),
-})
-
 export const matchDependencies = sqliteTable('match_dependencies', {
   ...metadata,
-  fromMatch: text('from_match').references(() => tournamentMatches.id),
-  fromGroup: text('from_group').references(() => groups.id),
+  fromMatch: text('from_match').references(() => matches.id, {
+    onDelete: 'cascade',
+  }),
+  fromGroup: text('from_group').references(() => groups.id, {
+    onDelete: 'cascade',
+  }),
   toMatch: text('to_match')
     .notNull()
-    .references(() => tournamentMatches.id),
+    .references(() => matches.id, { onDelete: 'cascade' }),
   fromPosition: integer('from_position').notNull(),
   toSlot: text('to_slot').$type<MatchSide>().notNull(),
 })

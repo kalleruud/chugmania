@@ -383,7 +383,7 @@ describe('TournamentManager.onGetTournamentPreview - Integration Tests', () => {
 
       for (const stage of groupStages) {
         for (const match of stage.matches) {
-          expect(groupTracks).toContain(match.matchDetails.track)
+          expect(groupTracks).toContain(match.track)
         }
       }
     })
@@ -414,7 +414,7 @@ describe('TournamentManager.onGetTournamentPreview - Integration Tests', () => {
 
       for (const stage of bracketStages) {
         for (const match of stage.matches) {
-          expect(bracketTracks).toContain(match.matchDetails.track)
+          expect(bracketTracks).toContain(match.track)
         }
       }
     })
@@ -438,7 +438,7 @@ describe('TournamentManager.onGetTournamentPreview - Integration Tests', () => {
 
       for (const stage of tournament.stages) {
         for (const match of stage.matches) {
-          expect(match.matchDetails.track).toBeNull()
+          expect(match.track).toBeNull()
         }
       }
     })
