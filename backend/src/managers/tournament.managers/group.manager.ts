@@ -14,52 +14,69 @@ import { and, eq, getTableColumns } from 'drizzle-orm'
 export default class GroupManager {
   static async get(groupId: string): Promise<GroupWithPlayers> {
     const group = await GroupManager.getGroup(groupId)
-
     const groupPlayersData = await db.query.groupPlayers.findMany({
       where: eq(groupPlayers.group, groupId),
     })
-
-    // Fetch all matches for this group to calculate win/loss stats
     const matches = await GroupManager.getGroupMatches(groupId)
 
-    // Calculate wins and losses for each player
-    const playerStats = new Map<string, { wins: number; losses: number }>()
-    for (const player of groupPlayersData) {
-      playerStats.set(player.user, { wins: 0, losses: 0 })
-    }
-
-    // Count wins and losses
-    for (const match of matches) {
-      if (match.status === 'completed' && match.winner) {
-        const winnerUserId = match.winner === 'A' ? match.userA : match.userB
-        const loserUserId = match.winner === 'A' ? match.userB : match.userA
-
-        if (winnerUserId && playerStats.has(winnerUserId)) {
-          playerStats.get(winnerUserId)!.wins++
-        }
-        if (loserUserId && playerStats.has(loserUserId)) {
-          playerStats.get(loserUserId)!.losses++
-        }
-      }
-    }
-
-    // Sort players by wins/losses (descending)
-    const sortedPlayers = groupPlayersData
-      .map(player => ({
-        ...player,
-        wins: playerStats.get(player.user)?.wins ?? 0,
-        losses: playerStats.get(player.user)?.losses ?? 0,
-      }))
-      .sort((a, b) => {
-        // Sort by wins descending, then by losses ascending
-        if (b.wins !== a.wins) return b.wins - a.wins
-        return a.losses - b.losses
-      })
+    const playerStats = GroupManager.calculatePlayerStats(
+      groupPlayersData,
+      matches
+    )
+    const sortedPlayers = GroupManager.sortPlayersByStats(
+      groupPlayersData,
+      playerStats
+    )
 
     return {
       ...group,
       players: sortedPlayers,
     }
+  }
+
+  private static calculatePlayerStats(
+    players: (typeof groupPlayers.$inferSelect)[],
+    matches: MatchWithTournamentDetails[]
+  ): Map<string, { wins: number; losses: number }> {
+    const playerStats = new Map<string, { wins: number; losses: number }>()
+
+    // Initialize stats
+    for (const player of players) {
+      playerStats.set(player.user, { wins: 0, losses: 0 })
+    }
+
+    // Count wins and losses from completed matches
+    for (const match of matches) {
+      if (match.status !== 'completed' || !match.winner) continue
+
+      const winnerUserId = match.winner === 'A' ? match.userA : match.userB
+      const loserUserId = match.winner === 'A' ? match.userB : match.userA
+
+      if (winnerUserId && playerStats.has(winnerUserId)) {
+        playerStats.get(winnerUserId)!.wins++
+      }
+      if (loserUserId && playerStats.has(loserUserId)) {
+        playerStats.get(loserUserId)!.losses++
+      }
+    }
+
+    return playerStats
+  }
+
+  private static sortPlayersByStats(
+    players: (typeof groupPlayers.$inferSelect)[],
+    playerStats: Map<string, { wins: number; losses: number }>
+  ): GroupPlayerWithStats[] {
+    return players
+      .map(player => ({
+        ...player,
+        wins: playerStats.get(player.user)?.wins ?? 0,
+        losses: playerStats.get(player.user)?.losses ?? 0,
+      }))
+      .toSorted((a, b) => {
+        if (b.wins !== a.wins) return b.wins - a.wins
+        return a.losses - b.losses
+      })
   }
 
   static async getAll(tournamentId: string): Promise<GroupWithPlayers[]> {
