@@ -11,7 +11,7 @@ CREATE TABLE `__new_stages` (
 	FOREIGN KEY (`tournament`) REFERENCES `tournaments`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
-INSERT INTO `__new_stages`("id", "updated_at", "created_at", "deleted_at", "tournament", "bracket", "level", "index") SELECT "id", "updated_at", "created_at", "deleted_at", "tournament", "bracket", "level", "index" FROM `stages`;--> statement-breakpoint
+INSERT INTO `__new_stages`("id", "updated_at", "created_at", "deleted_at", "tournament", "bracket", "index") SELECT "id", "updated_at", "created_at", "deleted_at", "tournament", "bracket", "index" FROM `stages`;--> statement-breakpoint
 DROP TABLE `stages`;--> statement-breakpoint
 ALTER TABLE `__new_stages` RENAME TO `stages`;--> statement-breakpoint
 PRAGMA foreign_keys=ON;

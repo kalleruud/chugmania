@@ -85,6 +85,13 @@
       "when": 1768175145433,
       "tag": "0011_unknown_jack_flag",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1768764306086,
+      "tag": "0012_powerful_genesis",
+      "breakpoints": true
     }
   ]
 }
