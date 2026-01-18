@@ -28,12 +28,7 @@ describe('GroupManager - Snake Seeding Logic', () => {
     ]
 
     const result = GroupManager.snakeSeed(items, groups)
-
-    // Count items per group
-    const groupCounts = new Map<string, number>()
-    for (const item of result) {
-      groupCounts.set(item.group, (groupCounts.get(item.group) ?? 0) + 1)
-    }
+    const groupCounts = countItemsPerGroup(result)
 
     // Each group should have 2 items (6 items / 3 groups)
     expect(groupCounts.get('g1')).toBe(2)
@@ -123,14 +118,9 @@ describe('GroupManager - Snake Seeding Logic', () => {
     ]
 
     const result = GroupManager.snakeSeed(items, groups)
-
-    // Should distribute 2 to one group, 1 to another
-    const groupCounts = new Map<string, number>()
-    for (const item of result) {
-      groupCounts.set(item.group, (groupCounts.get(item.group) ?? 0) + 1)
-    }
-
+    const groupCounts = countItemsPerGroup(result)
     const counts = Array.from(groupCounts.values()).toSorted()
+
     expect(counts).toEqual([1, 2])
   })
 
@@ -172,12 +162,11 @@ describe('GroupManager - Snake Seeding Logic', () => {
     ]
 
     const result = GroupManager.snakeSeed(items, groups)
+    const resultIds = result.map(r => r.item).toSorted()
+    const inputIds = items.map(i => i.id).toSorted()
 
     // All items should be in the result
     expect(result).toHaveLength(items.length)
-
-    const resultIds = result.map(r => r.item).toSorted()
-    const inputIds = items.map(i => i.id).toSorted()
     expect(resultIds).toEqual(inputIds)
   })
 
@@ -209,13 +198,35 @@ describe('GroupManager - Snake Seeding Logic', () => {
     ]
 
     const result = GroupManager.snakeSeed(items, groups)
+    const group1Seeds = getGroupSeeds(result, 'g1')
+    const group2Seeds = getGroupSeeds(result, 'g2')
 
     // Group 1 should have p1 (highest) and p4 (lowest)
-    const group1 = result.filter(r => r.group === 'g1')
-    expect(group1.map(r => r.seed).toSorted((a, b) => b - a)).toEqual([100, 70])
+    expect(group1Seeds).toEqual([100, 70])
 
     // Group 2 should have p2 and p3 (middle)
-    const group2 = result.filter(r => r.group === 'g2')
-    expect(group2.map(r => r.seed).toSorted((a, b) => b - a)).toEqual([90, 80])
+    expect(group2Seeds).toEqual([90, 80])
   })
 })
+
+// Helper functions
+
+function countItemsPerGroup(
+  result: Array<{ group: string; item: string; seed: number }>
+): Map<string, number> {
+  const groupCounts = new Map<string, number>()
+  for (const item of result) {
+    groupCounts.set(item.group, (groupCounts.get(item.group) ?? 0) + 1)
+  }
+  return groupCounts
+}
+
+function getGroupSeeds(
+  result: Array<{ group: string; item: string; seed: number }>,
+  groupId: string
+): number[] {
+  return result
+    .filter(r => r.group === groupId)
+    .map(r => r.seed)
+    .toSorted((a, b) => b - a)
+}
