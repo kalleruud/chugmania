@@ -43,6 +43,84 @@
 - Run `npm run test` to verify tests pass before committing
 - Coverage is tracked via SonarQube; use `npm run test:coverage` to generate local coverage reports
 
+## Testing Best Practices
+
+### Blueprint Test Pattern
+
+Use the following pattern when writing manager tests with the in-memory test database:
+
+**ARRANGE-ACT-ASSERT Structure:**
+
+1. **ARRANGE**: Set up test data using public manager APIs (not direct database insertion)
+   - Use `clearDB()` to reset database state in `beforeEach`
+   - Use existing public APIs like `UserManager.onRegister()`, `SessionManager.onCreateSession()`, etc.
+   - Avoid bypassing registration workflows or validation
+2. **ACT**: Call the method under test
+3. **ASSERT**: Verify the results with specific assertions
+
+**Database Setup:**
+
+- Use in-memory SQLite (`:memory:` database in test mode via `NODE_ENV=test`)
+- `clearDB()` from test helpers handles sequential deletion respecting foreign key constraints
+- Database migrations auto-apply on test startup via Drizzle
+
+**Mocking Strategy:**
+
+- Mock only external dependencies (e.g., `RatingManager.getUserRatings()` if ratings aren't pre-calculated)
+- Use `vi.spyOn()` to mock specific static methods
+- Avoid mocking managers being tested or their direct dependencies
+- Example: `vi.spyOn(RatingManager, 'getUserRatings').mockImplementation((userId: string) => ({ user: userId, totalRating: 1000, matchRating: 500, trackRating: 500, ranking: 1 }))`
+
+**Socket Creation for Tests:**
+
+- Use `createMockAdmin()` or `createMockSocket(userId)` from test helpers
+- Socket auth is verified via JWT in `AuthManager.checkAuth()`
+- Sockets include token in handshake for authentication
+
+**Test Data Creation:**
+
+- Use `registerMockUsers(socket, count)` to create multiple users via public API
+- Sessions created with `SessionManager.onCreateSession()`
+- RSVPs via `SessionManager.onRsvpSession()`
+- Use `randomUUID()` for request IDs, but expect database to generate actual IDs
+- Query database to fetch created entities by attribute (e.g., by name) rather than assuming specific IDs
+
+**Example Template:**
+
+```typescript
+describe('ManagerName - Feature', () => {
+  beforeEach(async () => {
+    await clearDB()
+    setupRatingManagerMock() // if needed
+  })
+
+  it('should verify behavior', async () => {
+    // ARRANGE
+    const { socket } = await createMockAdmin()
+    const [user1, user2] = await registerMockUsers(socket, 2)
+
+    const sessionId = randomUUID()
+    await SessionManager.onCreateSession(socket, {
+      type: 'CreateSessionRequest',
+      id: sessionId,
+      name: 'Test Session',
+      date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    })
+
+    // ACT
+    const result = await ManagerUnderTest.methodName(someParam)
+
+    // ASSERT
+    expect(result).toHaveProperty('expectedProp')
+  })
+})
+```
+
+**Test File Locations:**
+
+- Backend: `*.spec.ts` next to source files (e.g., `src/managers/user.manager.spec.ts`)
+- Frontend: `*.test.tsx` next to source files (e.g., `components/Button.test.tsx`)
+
 ## Reactive Contract
 
 - Treat the backend as reactive-first: every create/update/delete for tracks, users, lap times, sessions, and session signups must emit Socket.IO change events using the same DTOs as request responses.
