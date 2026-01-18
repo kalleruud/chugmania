@@ -103,14 +103,14 @@ export default class TournamentMatchManager {
       }
     }
 
-    matchesWithPosition.sort((a, b) => a.targetPosition - b.targetPosition)
+    matchesWithPosition.toSorted((a, b) => a.targetPosition - b.targetPosition)
 
     for (const { match } of matchesWithPosition) {
       pairings.push(match)
     }
 
     // Create stages (one per round)
-    const roundNumbers = [...new Set(pairings.map(p => p.round))].sort(
+    const roundNumbers = [...new Set(pairings.map(p => p.round))].toSorted(
       (a, b) => a - b
     )
     const stagesMap = new Map<number, Stage>()

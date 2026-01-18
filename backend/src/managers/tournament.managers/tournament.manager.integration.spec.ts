@@ -465,8 +465,12 @@ describe('TournamentManager.onGetTournamentPreview - Integration Tests', () => {
       const group0Players = tournament.groups[0].players
       const group1Players = tournament.groups[1].players
 
-      const group0Seeds = group0Players.map(p => p.seed).sort((a, b) => b - a)
-      const group1Seeds = group1Players.map(p => p.seed).sort((a, b) => b - a)
+      const group0Seeds = group0Players
+        .map(p => p.seed)
+        .toSorted((a, b) => b - a)
+      const group1Seeds = group1Players
+        .map(p => p.seed)
+        .toSorted((a, b) => b - a)
 
       expect(group0Seeds[0]).toBeGreaterThan(group1Seeds[0])
       expect(group1Seeds[1]).toBeGreaterThan(group0Seeds[1])

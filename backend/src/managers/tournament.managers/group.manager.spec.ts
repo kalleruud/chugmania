@@ -130,7 +130,7 @@ describe('GroupManager - Snake Seeding Logic', () => {
       groupCounts.set(item.group, (groupCounts.get(item.group) ?? 0) + 1)
     }
 
-    const counts = Array.from(groupCounts.values()).sort()
+    const counts = Array.from(groupCounts.values()).toSorted()
     expect(counts).toEqual([1, 2])
   })
 
@@ -176,8 +176,8 @@ describe('GroupManager - Snake Seeding Logic', () => {
     // All items should be in the result
     expect(result).toHaveLength(items.length)
 
-    const resultIds = result.map(r => r.item).sort()
-    const inputIds = items.map(i => i.id).sort()
+    const resultIds = result.map(r => r.item).toSorted()
+    const inputIds = items.map(i => i.id).toSorted()
     expect(resultIds).toEqual(inputIds)
   })
 
@@ -212,10 +212,10 @@ describe('GroupManager - Snake Seeding Logic', () => {
 
     // Group 1 should have p1 (highest) and p4 (lowest)
     const group1 = result.filter(r => r.group === 'g1')
-    expect(group1.map(r => r.seed).sort((a, b) => b - a)).toEqual([100, 70])
+    expect(group1.map(r => r.seed).toSorted((a, b) => b - a)).toEqual([100, 70])
 
     // Group 2 should have p2 and p3 (middle)
     const group2 = result.filter(r => r.group === 'g2')
-    expect(group2.map(r => r.seed).sort((a, b) => b - a)).toEqual([90, 80])
+    expect(group2.map(r => r.seed).toSorted((a, b) => b - a)).toEqual([90, 80])
   })
 })

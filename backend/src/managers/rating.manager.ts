@@ -60,7 +60,7 @@ export default class RatingManager {
     if (RatingManager.ratings.size === 0)
       RatingManager.ratings = await RatingManager.calculateRatings()
 
-    return Array.from(RatingManager.ratings.values()).sort(
+    return Array.from(RatingManager.ratings.values()).toSorted(
       (a, b) => b.ranking - a.ranking
     )
   }
@@ -92,7 +92,7 @@ export default class RatingManager {
     }
 
     const newRatings: typeof RatingManager.ratings = new Map()
-    const rankings = Array.from(ratings.values()).sort(
+    const rankings = Array.from(ratings.values()).toSorted(
       (a, b) => b.totalRating - a.totalRating
     )
     for (let i = 0; i < rankings.length; i++) {
