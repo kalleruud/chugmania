@@ -203,7 +203,7 @@ export default class GroupManager {
    * @param groups - The groups to seed into.
    * @returns The group items.
    */
-  private static snakeSeed<
+  static snakeSeed<
     T extends { id: string },
     G extends { id: string; index: number },
   >(

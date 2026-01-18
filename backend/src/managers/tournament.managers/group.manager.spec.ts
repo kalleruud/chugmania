@@ -1,10 +1,8 @@
 import { describe, expect, it } from 'vitest'
+import GroupManager from './group.manager'
 
 /**
  * Tests for pure functions in GroupManager
- *
- * Note: GroupManager.snakeSeed is private but we can test its behavior
- * through the snake seeding pattern it implements.
  *
  * Snake seeding pattern:
  * Row 0: A B C D (left to right)
@@ -14,49 +12,6 @@ import { describe, expect, it } from 'vitest'
  */
 
 describe('GroupManager - Snake Seeding Logic', () => {
-  /**
-   * Helper function that implements the snake seeding algorithm
-   * This mirrors the private GroupManager.snakeSeed method
-   */
-  function snakeSeed<
-    T extends { id: string },
-    G extends { id: string; index: number },
-  >(
-    items: (T & { seed: number })[],
-    groups: G[]
-  ): {
-    group: G['id']
-    item: T['id']
-    seed: number
-  }[] {
-    const sortedItems = items.toSorted((a, b) => b.seed - a.seed)
-    const sortedGroups = groups.toSorted((a, b) => a.index - b.index)
-
-    const groupItems: {
-      group: G['id']
-      item: T['id']
-      seed: number
-    }[] = []
-    for (let i = 0; i < sortedItems.length; i++) {
-      const row = Math.floor(i / sortedGroups.length)
-      const positionInRow = i % sortedGroups.length
-      const isReverseRow = row % 2 === 1
-
-      const groupIndex = isReverseRow
-        ? groups.length - 1 - positionInRow
-        : positionInRow
-      const group = groups[groupIndex]
-
-      groupItems.push({
-        group: group.id,
-        item: sortedItems[i].id,
-        seed: sortedItems[i].seed,
-      })
-    }
-
-    return groupItems
-  }
-
   it('distributes items evenly across groups', () => {
     const groups = [
       { id: 'g1', index: 0 },
@@ -72,7 +27,7 @@ describe('GroupManager - Snake Seeding Logic', () => {
       { id: 'p6', seed: 50 },
     ]
 
-    const result = snakeSeed(items, groups)
+    const result = GroupManager.snakeSeed(items, groups)
 
     // Count items per group
     const groupCounts = new Map<string, number>()
@@ -98,7 +53,7 @@ describe('GroupManager - Snake Seeding Logic', () => {
       { id: 'p4', seed: 70 },
     ]
 
-    const result = snakeSeed(items, groups)
+    const result = GroupManager.snakeSeed(items, groups)
 
     // First item should be the highest seeded player
     expect(result[0].item).toBe('p1')
@@ -117,7 +72,7 @@ describe('GroupManager - Snake Seeding Logic', () => {
       { id: 'p4', seed: 70 },
     ]
 
-    const result = snakeSeed(items, groups)
+    const result = GroupManager.snakeSeed(items, groups)
 
     // Row 0 (left to right): p1 -> g1, p2 -> g2
     expect(result[0]).toEqual({ group: 'g1', item: 'p1', seed: 100 })
@@ -143,7 +98,7 @@ describe('GroupManager - Snake Seeding Logic', () => {
       { id: 'p6', seed: 50 },
     ]
 
-    const result = snakeSeed(items, groups)
+    const result = GroupManager.snakeSeed(items, groups)
 
     // Row 0 (left to right): p1 -> g1, p2 -> g2, p3 -> g3
     expect(result[0].group).toBe('g1')
@@ -167,7 +122,7 @@ describe('GroupManager - Snake Seeding Logic', () => {
       { id: 'p3', seed: 80 },
     ]
 
-    const result = snakeSeed(items, groups)
+    const result = GroupManager.snakeSeed(items, groups)
 
     // Should distribute 2 to one group, 1 to another
     const groupCounts = new Map<string, number>()
@@ -192,7 +147,7 @@ describe('GroupManager - Snake Seeding Logic', () => {
       { id: 'p2', seed: 90 },
     ]
 
-    const result = snakeSeed(items, groups)
+    const result = GroupManager.snakeSeed(items, groups)
 
     // Results should be in descending seed order
     expect(result[0].seed).toBe(100)
@@ -216,7 +171,7 @@ describe('GroupManager - Snake Seeding Logic', () => {
       { id: 'p6', seed: 50 },
     ]
 
-    const result = snakeSeed(items, groups)
+    const result = GroupManager.snakeSeed(items, groups)
 
     // All items should be in the result
     expect(result).toHaveLength(items.length)
@@ -234,7 +189,7 @@ describe('GroupManager - Snake Seeding Logic', () => {
       { id: 'p3', seed: 80 },
     ]
 
-    const result = snakeSeed(items, groups)
+    const result = GroupManager.snakeSeed(items, groups)
 
     // All items should go to the single group
     expect(result.every(r => r.group === 'g1')).toBe(true)
@@ -253,7 +208,7 @@ describe('GroupManager - Snake Seeding Logic', () => {
       { id: 'p4', seed: 70 },
     ]
 
-    const result = snakeSeed(items, groups)
+    const result = GroupManager.snakeSeed(items, groups)
 
     // Group 1 should have p1 (highest) and p4 (lowest)
     const group1 = result.filter(r => r.group === 'g1')
