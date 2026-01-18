@@ -19,6 +19,10 @@ export default defineConfig({
     environment: 'node',
     include: ['**/*.test.ts*', '**/*.spec.ts*'],
     exclude: ['node_modules/**', 'dist/**', '.**'],
+    env: {
+      SECRET: "test",
+      NODE_ENV: "test"
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],
