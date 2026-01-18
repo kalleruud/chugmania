@@ -55,14 +55,8 @@ export type TournamentWithDetails = Tournament & {
   stages: TournamentStage[]
 }
 
-export type CreateTournamentRequest = {
+export type CreateTournamentRequest = CreateTournament & {
   type: 'CreateTournamentRequest'
-  session: string
-  name: string
-  description?: string
-  groupsCount: number
-  advancementCount: number
-  eliminationType: EliminationType
   groupStageTracks?: string[]
   bracketTracks?: string[]
 }
