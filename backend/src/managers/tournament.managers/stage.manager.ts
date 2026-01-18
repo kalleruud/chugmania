@@ -1,26 +1,58 @@
 import loc from '@/lib/locales'
 import db from '@backend/database/database'
-import { stages, type StageLevel } from '@backend/database/schema'
+import { matches, stages, type StageLevel } from '@backend/database/schema'
 import type {
   CreateStage,
   MatchWithTournamentDetails,
   Stage,
   TournamentStage,
 } from '@common/models/tournament'
-import { eq } from 'drizzle-orm'
+import { and, asc, eq } from 'drizzle-orm'
 
 export default class StageManager {
   private static async getMatches(
     stageId: string
   ): Promise<MatchWithTournamentDetails[]> {
-    // TODO: Fetch matches
+    const matchData = await db
+      .select()
+      .from(matches)
+      .where(eq(matches.stage, stageId))
+      .orderBy(asc(matches.index))
+
+    return matchData.map(match => {
+      const { stage, index, ...cleanMatch } = match
+      if (index === null)
+        throw new Error(
+          `Found a match (${cleanMatch.id}) with a stage and  without an index`
+        )
+
+      return {
+        ...match,
+        stage: stageId,
+        index,
+        dependencyNames: null,
+      }
+    })
   }
 
   static async getStages(
     tournamentId: string,
     level?: StageLevel
   ): Promise<TournamentStage[]> {
-    // TODO: Fetch all stages with corresponding matches
+    const stagesList = await db
+      .select()
+      .from(stages)
+      .where(
+        and(
+          eq(stages.tournament, tournamentId),
+          level ? eq(stages.level, level) : undefined
+        )
+      )
+      .orderBy(asc(stages.index))
+
+    return Promise.all(
+      stagesList.map(stage => StageManager.getStageWithDetails(stage.id))
+    )
   }
 
   static async createStage(draft: CreateStage): Promise<Stage> {
