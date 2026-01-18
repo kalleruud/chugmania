@@ -1,11 +1,10 @@
 import { randomUUID } from 'node:crypto'
-import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import {
   clearDB,
   createMockAdmin,
   registerMockUsers,
 } from '../../utils/test.helpers'
-import RatingManager from '../rating.manager'
 import SessionManager from '../session.manager'
 import GroupManager from './group.manager'
 import TournamentManager from './tournament.manager'
@@ -27,10 +26,6 @@ import TournamentManager from './tournament.manager'
 // ============================================================================
 
 describe('GroupManager.getAll - Blueprint Test', () => {
-  beforeAll(async () => {
-    await clearDB()
-    await RatingManager.recalculate()
-  })
   beforeEach(async () => {
     await clearDB()
   })
