@@ -9,11 +9,57 @@ import type {
   MatchWithTournamentDetails,
 } from '@common/models/tournament'
 import type { UserInfoWithSeed } from '@common/models/user'
-import { and, eq, getTableColumns, inArray, isNull } from 'drizzle-orm'
+import { and, eq, getTableColumns } from 'drizzle-orm'
 
 export default class GroupManager {
   static async get(groupId: string): Promise<GroupWithPlayers> {
-    // TODO: Fetch players with stats, users sorted after wins/losses
+    const group = await GroupManager.getGroup(groupId)
+
+    const groupPlayersData = await db.query.groupPlayers.findMany({
+      where: eq(groupPlayers.group, groupId),
+    })
+
+    // Fetch all matches for this group to calculate win/loss stats
+    const matches = await GroupManager.getGroupMatches(groupId)
+
+    // Calculate wins and losses for each player
+    const playerStats = new Map<string, { wins: number; losses: number }>()
+    for (const player of groupPlayersData) {
+      playerStats.set(player.user, { wins: 0, losses: 0 })
+    }
+
+    // Count wins and losses
+    for (const match of matches) {
+      if (match.status === 'completed' && match.winner) {
+        const winnerUserId = match.winner === 'A' ? match.userA : match.userB
+        const loserUserId = match.winner === 'A' ? match.userB : match.userA
+
+        if (winnerUserId && playerStats.has(winnerUserId)) {
+          playerStats.get(winnerUserId)!.wins++
+        }
+        if (loserUserId && playerStats.has(loserUserId)) {
+          playerStats.get(loserUserId)!.losses++
+        }
+      }
+    }
+
+    // Sort players by wins/losses (descending)
+    const sortedPlayers = groupPlayersData
+      .map(player => ({
+        ...player,
+        wins: playerStats.get(player.user)?.wins ?? 0,
+        losses: playerStats.get(player.user)?.losses ?? 0,
+      }))
+      .sort((a, b) => {
+        // Sort by wins descending, then by losses ascending
+        if (b.wins !== a.wins) return b.wins - a.wins
+        return a.losses - b.losses
+      })
+
+    return {
+      ...group,
+      players: sortedPlayers,
+    }
   }
 
   static async getAll(tournamentId: string): Promise<GroupWithPlayers[]> {
@@ -50,7 +96,24 @@ export default class GroupManager {
   static async getGroupMatches(
     groupId: string
   ): Promise<MatchWithTournamentDetails[]> {
-    // TODO: Fetch matches for a specific group
+    // Get the group to access tournament id
+    const group = await GroupManager.getGroup(groupId)
+
+    // Fetch all matches for the group stage (stage.level = 'group')
+    const matchesData = await db
+      .select()
+      .from(matches)
+      .innerJoin(stages, eq(matches.stage, stages.id))
+      .where(
+        and(eq(stages.tournament, group.tournament), eq(stages.level, 'group'))
+      )
+
+    return matchesData.map(({ matches: match, stages: stage }) => ({
+      ...match,
+      stage: stage.id,
+      index: match.index ?? 0,
+      dependencyNames: null,
+    }))
   }
 
   private static async getGroup(groupId: string): Promise<Group> {
@@ -103,65 +166,6 @@ export default class GroupManager {
           losses: 0,
         })),
     }))
-  }
-
-  /**
-   * Get wins and losses for a group player by counting completed matches.
-   * Returns stats computed from matches rather than stored values.
-   */
-  static async getGroupPlayerStats(
-    _groupId: string,
-    userId: string
-  ): Promise<{ wins: number; losses: number; totalMatches: number }> {
-    // Find all group stage matches for this group
-    const groupStages = await db.query.stages.findMany({
-      where: and(isNull(stages.bracket), isNull(stages.deletedAt)),
-    })
-
-    if (groupStages.length === 0) {
-      return { wins: 0, losses: 0, totalMatches: 0 }
-    }
-
-    const stageIds = groupStages.map(s => s.id)
-    const tmRows = await db.query.tournamentMatches.findMany({
-      where: and(
-        inArray(tournamentMatches.stage, stageIds),
-        isNull(tournamentMatches.deletedAt)
-      ),
-    })
-
-    const matchesInGroupStages = await db.query.matches.findMany({
-      where: and(
-        inArray(
-          matches.tournamentMatch,
-          tmRows.map(tm => tm.id)
-        ),
-        isNull(matches.deletedAt)
-      ),
-    })
-
-    // Filter to matches involving this user in this group
-    // Note: We need to identify which matches belong to which group
-    // For now, we count all matches where the user participated
-    let wins = 0
-    let losses = 0
-    let totalMatches = 0
-
-    for (const match of matchesInGroupStages) {
-      const isUserA = match.userA === userId
-      const isUserB = match.userB === userId
-      if (!isUserA && !isUserB) continue
-
-      totalMatches++
-      if (match.winner) {
-        const userWon =
-          (isUserA && match.winner === 'A') || (isUserB && match.winner === 'B')
-        if (userWon) wins++
-        else losses++
-      }
-    }
-
-    return { wins, losses, totalMatches }
   }
 
   /**
