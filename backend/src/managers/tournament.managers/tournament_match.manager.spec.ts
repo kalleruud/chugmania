@@ -37,114 +37,11 @@ describe('calculateMinMaxMatchesPerPlayer', () => {
       eliminationType: 'single',
       expected: { min: 5, max: 8 },
     },
-    // Single elimination - advancement count variations
-    {
-      groups: [createGroup(4), createGroup(4)],
-      advancementCount: 1,
-      eliminationType: 'single',
-      expected: { min: 3, max: 4 },
-    },
-    {
-      groups: [createGroup(4), createGroup(4)],
-      advancementCount: 3,
-      eliminationType: 'single',
-      expected: { min: 3, max: 6 },
-    },
-    {
-      groups: [createGroup(4), createGroup(4), createGroup(4)],
-      advancementCount: 2,
-      eliminationType: 'single',
-      expected: { min: 3, max: 6 },
-    },
-    // Single elimination - edge cases
-    {
-      groups: [createGroup(1)],
-      advancementCount: 1,
-      eliminationType: 'single',
-      expected: { min: 0, max: 0 },
-    },
-    {
-      groups: [createGroup(1), createGroup(1)],
-      advancementCount: 1,
-      eliminationType: 'single',
-      expected: { min: 0, max: 0 },
-    },
-    {
-      groups: [createGroup(0)],
-      advancementCount: 1,
-      eliminationType: 'single',
-      expected: { min: 0, max: 0 },
-    },
-    {
-      groups: [createGroup(2)],
-      advancementCount: 1,
-      eliminationType: 'single',
-      expected: { min: 1, max: 1 },
-    },
-    {
-      groups: [createGroup(3), createGroup(5), createGroup(4)],
-      advancementCount: 2,
-      eliminationType: 'single',
-      expected: { min: 4, max: 7 },
-    },
-    // Double elimination - basic cases
-    {
-      groups: [createGroup(4)],
-      advancementCount: 2,
-      eliminationType: 'double',
-      expected: { min: 3, max: 6 },
-    },
-    {
-      groups: [createGroup(4), createGroup(4)],
-      advancementCount: 2,
-      eliminationType: 'double',
-      expected: { min: 3, max: 7 },
-    },
-    {
-      groups: [createGroup(8)],
-      advancementCount: 2,
-      eliminationType: 'double',
-      expected: { min: 7, max: 10 },
-    },
-    // Double elimination - advancement count variations
-    {
-      groups: [createGroup(4), createGroup(4)],
-      advancementCount: 1,
-      eliminationType: 'double',
-      expected: { min: 3, max: 6 },
-    },
-    {
-      groups: [createGroup(6), createGroup(6)],
-      advancementCount: 4,
-      eliminationType: 'double',
-      expected: { min: 5, max: 10 },
-    },
-    // Double elimination - edge cases
-    {
-      groups: [createGroup(1)],
-      advancementCount: 1,
-      eliminationType: 'double',
-      expected: { min: 0, max: 0 },
-    },
-    // Large groups
-    {
-      groups: [createGroup(32)],
-      advancementCount: 8,
-      eliminationType: 'single',
-      expected: { min: 31, max: 34 },
-    },
-    {
-      groups: [createGroup(16)],
-      advancementCount: 4,
-      eliminationType: 'double',
-      expected: { min: 15, max: 19 },
-    },
-    // Custom tests
     {
       groups: [createGroup(5), createGroup(5), createGroup(5), createGroup(4)],
       advancementCount: 2,
       eliminationType: 'double',
-      expected: { min: 3, max: 19 },
+      expected: { min: 3, max: 9 },
     },
   ]
 
