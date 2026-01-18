@@ -114,12 +114,9 @@ export const tournaments = sqliteTable('tournaments', {
     .references(() => sessions.id, { onDelete: 'cascade' }),
   name: text().notNull(),
   description: text(),
-  groupsCount: integer('groups_count').notNull().default(2),
-  advancementCount: integer('advancement_count').notNull().default(2),
-  eliminationType: text('elimination_type')
-    .$type<EliminationType>()
-    .notNull()
-    .$default(() => 'single'),
+  groupsCount: integer('groups_count').notNull(),
+  advancementCount: integer('advancement_count').notNull(),
+  eliminationType: text('elimination_type').$type<EliminationType>().notNull(),
 })
 
 export const groups = sqliteTable('groups', {
