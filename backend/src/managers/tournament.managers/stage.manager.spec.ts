@@ -17,7 +17,6 @@ describe('getStageLevel', () => {
     })
   })
 
-
   invalidCounts.forEach(count => {
     it(`throws for invalid match count: ${count}`, () => {
       expect(() => StageManager.getStageLevel(count)).toThrow()
