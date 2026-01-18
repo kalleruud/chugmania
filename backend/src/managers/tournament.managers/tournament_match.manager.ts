@@ -875,14 +875,17 @@ export default class TournamentMatchManager {
     advancementCount: number
     eliminationType: EliminationType
   }): { min: number; max: number } {
-    const largestGroup = tournament.groups.reduce(
+    const smallestGroupSize = tournament.groups.reduce(
+      (min, group) => Math.min(min, group.players.length),
+      Number.MAX_SAFE_INTEGER
+    )
+    
+    const largestGroupSize = tournament.groups.reduce(
       (max, group) => Math.max(max, group.players.length),
       0
     )
 
-    if (largestGroup < 2) return { min: 0, max: 0 }
-
-    const groupStageMatches = largestGroup - 1
+    if (largestGroupSize < 2) return { min: 0, max: 0 }
 
     const totalAdvancingPlayers =
       tournament.advancementCount * tournament.groups.length
@@ -901,6 +904,6 @@ export default class TournamentMatchManager {
       knockoutMatches = rounds + 2
     }
 
-    return { min: groupStageMatches, max: groupStageMatches + knockoutMatches }
+    return { min: smallestGroupSize - 1, max: largestGroupSize - 1  + knockoutMatches }
   }
 }
