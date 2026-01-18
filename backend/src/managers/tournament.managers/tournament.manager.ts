@@ -48,6 +48,7 @@ export default class TournamentManager {
   }
 
   private static async createTournament({
+    id,
     session,
     name,
     description,
@@ -63,6 +64,7 @@ export default class TournamentManager {
     const [tournament] = await db
       .insert(tournaments)
       .values({
+        id,
         session,
         name,
         description: description === '' ? null : (description ?? null),
