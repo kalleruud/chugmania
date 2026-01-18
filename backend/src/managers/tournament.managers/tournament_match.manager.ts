@@ -879,7 +879,7 @@ export default class TournamentMatchManager {
       (min, group) => Math.min(min, group.players.length),
       Number.MAX_SAFE_INTEGER
     )
-    
+
     const largestGroupSize = tournament.groups.reduce(
       (max, group) => Math.max(max, group.players.length),
       0
@@ -904,6 +904,9 @@ export default class TournamentMatchManager {
       knockoutMatches = rounds + 2
     }
 
-    return { min: smallestGroupSize - 1, max: largestGroupSize - 1  + knockoutMatches }
+    return {
+      min: smallestGroupSize - 1,
+      max: largestGroupSize - 1 + knockoutMatches,
+    }
   }
 }

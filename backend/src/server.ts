@@ -22,23 +22,6 @@ import TournamentManager from './managers/tournament.managers/tournament.manager
 import TrackManager from './managers/track.manager'
 import UserManager from './managers/user.manager'
 
-const PORT = process.env.PORT ? Number.parseInt(process.env.PORT) : 6996
-const ORIGIN = new URL(process.env.ORIGIN ?? `http://localhost:${PORT}`)
-
-const app = express()
-const server = ViteExpress.listen(app, PORT)
-const io = new Server<
-  ClientToServerEvents,
-  ServerToClientEvents,
-  InterServerEvents,
-  SocketData
->(server, {
-  cors: {
-    origin: [ORIGIN.toString()],
-    credentials: true,
-  },
-})
-
 export type TypedSocket = Socket<
   ClientToServerEvents,
   ServerToClientEvents,
@@ -46,18 +29,48 @@ export type TypedSocket = Socket<
   SocketData
 >
 
-export const broadcast: typeof io.emit = (ev, ...args) => {
-  return io.emit(ev, ...args)
+let io: Server<
+  ClientToServerEvents,
+  ServerToClientEvents,
+  InterServerEvents,
+  SocketData
+> | null = null
+
+// Type-safe broadcast function
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const broadcast: any = (ev: any, ...args: any[]) => {
+  if (io) {
+    return io.emit(ev, ...args)
+  }
+  return undefined
 }
 
-app.get('/api/sessions/calendar.ics', (req, res) =>
-  ApiManager.onGetCalendar(ORIGIN, req, res)
-)
-
-io.on('connect', s => Connect(s))
-
-// Initialize session scheduler when server starts (skip during tests)
+// Skip server initialization during tests
 if (process.env.NODE_ENV !== 'test') {
+  const PORT = process.env.PORT ? Number.parseInt(process.env.PORT) : 6996
+  const ORIGIN = new URL(process.env.ORIGIN ?? `http://localhost:${PORT}`)
+
+  const app = express()
+  const server = ViteExpress.listen(app, PORT)
+  io = new Server<
+    ClientToServerEvents,
+    ServerToClientEvents,
+    InterServerEvents,
+    SocketData
+  >(server, {
+    cors: {
+      origin: [ORIGIN.toString()],
+      credentials: true,
+    },
+  })
+
+  app.get('/api/sessions/calendar.ics', (req, res) =>
+    ApiManager.onGetCalendar(ORIGIN, req, res)
+  )
+
+  io.on('connect', s => Connect(s))
+
+  // Initialize session scheduler when server starts
   await SessionScheduler.scheduleNext()
 
   // Calculate ratings
