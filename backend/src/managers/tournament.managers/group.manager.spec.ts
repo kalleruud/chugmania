@@ -1,15 +1,91 @@
-import { describe, expect, it } from 'vitest'
+import { randomUUID } from 'node:crypto'
+import { beforeEach, describe, expect, it } from 'vitest'
+import {
+  clearDB,
+  createMockAdmin,
+  registerMockUsers,
+} from '../../utils/test.helpers'
+import SessionManager from '../session.manager'
 import GroupManager from './group.manager'
+import TournamentManager from './tournament.manager'
 
 /**
- * Tests for pure functions in GroupManager
+ * Blueprint Test for GroupManager.getAll()
  *
- * Snake seeding pattern:
- * Row 0: A B C D (left to right)
- * Row 1: D C B A (right to left)
- * Row 2: A B C D (left to right)
- * etc.
+ * This test demonstrates the recommended pattern for testing managers with the test database:
+ * 1. Use beforeEach to reset the database
+ * 2. Use existing manager public APIs (onRegister, onCreateSession, etc.) to create test data
+ * 3. Test the public API only
+ * 4. Mirror production workflows exactly
+ *
+ * This pattern should be used as a template for all future manager tests.
  */
+
+// ============================================================================
+// BLUEPRINT TEST - Copy this pattern for other managers
+// ============================================================================
+
+describe('GroupManager.getAll - Blueprint Test', () => {
+  beforeEach(async () => {
+    await clearDB()
+  })
+
+  it('should return all groups for a tournament with players sorted by wins', async () => {
+    // ARRANGE
+    const { user, socket } = await createMockAdmin()
+
+    // Register users via public API
+
+    const [user1, user2] = await registerMockUsers(socket, 2)
+
+    const sessionId = randomUUID()
+    await SessionManager.onCreateSession(socket, {
+      type: 'CreateSessionRequest',
+      id: sessionId,
+      name: 'Test Session',
+      description: 'A test session',
+      date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    })
+
+    await SessionManager.onRsvpSession(socket, {
+      type: 'RsvpSessionRequest',
+      session: sessionId,
+      user: user1.id,
+      response: 'yes',
+    })
+
+    await SessionManager.onRsvpSession(socket, {
+      type: 'RsvpSessionRequest',
+      session: sessionId,
+      user: user2.id,
+      response: 'yes',
+    })
+
+    const tournamentId = randomUUID()
+    await TournamentManager.onCreateTournament(socket, {
+      type: 'CreateTournamentRequest',
+      id: tournamentId,
+      session: sessionId,
+      name: 'Test Tournament',
+      description: 'A test tournament',
+      groupsCount: 1,
+      advancementCount: 1,
+      eliminationType: 'single',
+    })
+
+    // ACT: Call the method under test
+    const allGroups = await GroupManager.getAll(tournamentId)
+
+    // ASSERT: Verify results
+    expect(allGroups).toHaveLength(1)
+    expect(allGroups[0].players).toHaveLength(2)
+
+    const actualUser1 = allGroups[0].players[0]
+    expect(actualUser1).toHaveProperty('wins')
+    expect(actualUser1).toHaveProperty('losses')
+    expect(actualUser1).toHaveProperty('seed')
+  })
+})
 
 describe('GroupManager - Snake Seeding Logic', () => {
   it('distributes items evenly across groups', () => {
