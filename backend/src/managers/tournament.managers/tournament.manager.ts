@@ -281,6 +281,10 @@ export default class TournamentManager {
     const participants = await SessionManager.getParticipantsWithSeed(
       request.session
     )
+
+    if (participants.length === 0)
+      throw new Error(loc.no.error.messages.no_participants)
+
     await TournamentManager.createTournament({
       ...request,
       participants,
@@ -317,6 +321,9 @@ export default class TournamentManager {
       const participants = await SessionManager.getParticipantsWithSeed(
         request.session
       )
+
+      if (participants.length === 0)
+        throw new Error(loc.no.error.messages.no_participants)
 
       tournamentId = await TournamentManager.createTournament({
         ...request,

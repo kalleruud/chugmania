@@ -367,6 +367,8 @@ const no = {
         'Taper mangler! Matchen har fått en vinner selv om ikke to spillere var involvert.',
       session_not_selected:
         'Du må velge en session, vennligst ikke reproduser.',
+      no_participants:
+        'Sesjonen har ingen deltakere. Minst én deltaker må være påmeldt med "ja" respons.',
       update_email: 'Du må oppdatere e-post og passord før du kan gjøre noe.',
       missing_files: 'Du har ikke valgt noen filer',
       missing_data: 'Ingen data ble sendt',
