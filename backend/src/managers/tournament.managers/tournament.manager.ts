@@ -221,15 +221,14 @@ export default class TournamentManager {
     await AuthManager.checkAuth(socket, ['admin', 'moderator'])
 
     let tournamentId: string | undefined
+    const participants = await SessionManager.getParticipantsWithSeed(
+      request.session
+    )
+
+    if (participants.length === 0)
+      throw new Error(loc.no.error.messages.no_participants)
 
     try {
-      const participants = await SessionManager.getParticipantsWithSeed(
-        request.session
-      )
-
-      if (participants.length === 0)
-        throw new Error(loc.no.error.messages.no_participants)
-
       tournamentId = await TournamentManager.createTournament({
         ...request,
         participants,
