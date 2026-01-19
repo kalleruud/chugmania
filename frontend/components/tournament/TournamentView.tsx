@@ -36,15 +36,13 @@ export default function TournamentView({
   const groupMatches = groupStages.flatMap(s => s.matches)
   const totalGroupMatches = groupMatches.length
   const completedGroupMatches = groupMatches.filter(
-    gm =>
-      gm.match && matches?.find(m => m.id === gm.match)?.status === 'completed'
+    gm => matches?.find(m => m.id === gm.id)?.status === 'completed'
   ).length
 
   const eliminationMatches = bracketStages.flatMap(s => s.matches)
   const totalEliminationMatches = eliminationMatches.length
   const completedEliminationMatches = eliminationMatches.filter(
-    gm =>
-      gm.match && matches?.find(m => m.id === gm.match)?.status === 'completed'
+    gm => matches?.find(m => m.id === gm.id)?.status === 'completed'
   ).length
 
   const handleDelete = () => {
@@ -139,7 +137,7 @@ export default function TournamentView({
                         ? matchIndex
                         : undefined
                     }
-                    item={match.matchDetails ?? undefined}
+                    item={match as any}
                     tournamentMatch={match}
                     tournament={tournament}
                     stageDisplayIndex={index}
@@ -181,7 +179,7 @@ export default function TournamentView({
                   <MatchRow
                     key={match.id}
                     className='bg-background-secondary rounded-sm border p-2'
-                    item={match.matchDetails ?? undefined}
+                    item={match as any}
                     tournamentMatch={match}
                     tournament={tournament}
                     index={
