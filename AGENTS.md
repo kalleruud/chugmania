@@ -96,13 +96,6 @@ describe('ManagerName - Feature', () => {
 - `clearDB()` from test helpers handles sequential deletion respecting foreign key constraints
 - Database migrations auto-apply on test startup via Drizzle
 
-**Mocking Strategy:**
-
-- Mock only external dependencies (e.g., `RatingManager.getUserRatings()` if ratings aren't pre-calculated)
-- Use `vi.spyOn()` to mock specific static methods
-- Avoid mocking managers being tested or their direct dependencies
-- Example: `vi.spyOn(RatingManager, 'getUserRatings').mockImplementation((userId: string) => ({ user: userId, totalRating: 1000, matchRating: 500, trackRating: 500, ranking: 1 }))`
-
 **Socket Creation for Tests:**
 
 - Use `createMockAdmin()` or `createMockSocket(userId)` from test helpers
@@ -111,11 +104,8 @@ describe('ManagerName - Feature', () => {
 
 **Test Data Creation:**
 
-- Use `registerMockUsers(socket, count)` to create multiple users via public API
-- Sessions created with `SessionManager.onCreateSession()`
-- RSVPs via `SessionManager.onRsvpSession()`
-- Use `randomUUID()` for request IDs, but expect database to generate actual IDs
-- Query database to fetch created entities by attribute (e.g., by name) rather than assuming specific IDs
+- Use methods in `@backend/src/utils/test.helpers.ts`, create new ones to avoid code duplication.
+- Use `randomUUID()` to predefine IDs to avoid having to fetch data after creation.
 
 **Example Template:**
 
