@@ -369,7 +369,7 @@ export default class TournamentManager {
       )
     }
 
-    AuthManager.checkAuth(socket, ['admin', 'moderator'])
+    await AuthManager.checkAuth(socket, ['admin', 'moderator'])
 
     const deletedAt = new Date()
 
