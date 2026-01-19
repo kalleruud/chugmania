@@ -2,11 +2,13 @@ import db from '@backend/database/database'
 import * as schema from '@backend/database/schema'
 import type { Ranking } from '@common/models/ranking'
 import type { SocketData } from '@common/models/socket.io'
+import type { CreateTournament } from '@common/models/tournament'
 import type { User } from '@common/models/user'
 import { randomInt, randomUUID } from 'node:crypto'
 import AuthManager from '../managers/auth.manager'
 import RatingManager from '../managers/rating.manager'
 import SessionManager from '../managers/session.manager'
+import TournamentManager from '../managers/tournament.managers/tournament.manager'
 import UserManager from '../managers/user.manager'
 import type { TypedSocket } from '../server'
 
@@ -66,33 +68,26 @@ export function createMockSocket(userId: string): TypedSocket {
   } as TypedSocket
 }
 
-export async function registerMockUser(
-  socket: TypedSocket,
-  identifier?: number | string
-) {
-  const id = `${identifier ?? randomUUID().substring(0, 3)}`
-  const idSuffix = `-${identifier}`
-  const email = `user${idSuffix}@test.com`
+export async function registerMockUser(socket: TypedSocket) {
+  const uniqueId = randomUUID()
+  const shortUuid = uniqueId.substring(0, 8)
+  const email = `user-${shortUuid}@test.com`
 
   await UserManager.onRegister(socket, {
     type: 'RegisterRequest',
     email,
     firstName: 'Test',
-    lastName: 'User' + idSuffix,
-    shortName: id.toUpperCase(),
+    lastName: `User-${shortUuid}`,
+    shortName: shortUuid.toUpperCase(),
     password: randomUUID(),
   })
 
   return await UserManager.getUser(email)
 }
 
-export async function registerMockUsers(
-  socket: TypedSocket,
-  length: number,
-  start: number = 1
-) {
+export async function registerMockUsers(socket: TypedSocket, length: number) {
   return await Promise.all(
-    Array.from({ length }, (_, i) => registerMockUser(socket, start + i))
+    Array.from({ length }, (_, i) => registerMockUser(socket))
   )
 }
 
@@ -164,4 +159,26 @@ export async function createTestTracks(count: number = 1) {
     trackIds.push(trackId)
   }
   return trackIds
+}
+
+export async function createMockTournament(
+  socket: TypedSocket,
+  participantCount: number,
+  tournamentSettings: Omit<CreateTournament, 'name' | 'session'>
+) {
+  const users = await registerMockUsers(socket, participantCount)
+  const sessionId = await createSessionMock(
+    socket,
+    users.map(u => u.id)
+  )
+
+  const tournamentId = randomUUID()
+  await TournamentManager.onCreateTournament(socket, {
+    type: 'CreateTournamentRequest',
+    session: sessionId,
+    name: 'Test',
+    ...tournamentSettings,
+  })
+
+  return tournamentId
 }
