@@ -44,7 +44,142 @@ export default class TournamentManager {
   private static async getTournamentWithDetails(
     tournamentId: string
   ): Promise<TournamentWithDetails> {
-    // TODO: Implement with as few queries as possible
+    // Fetch tournament
+    const tournament = await db.query.tournaments.findFirst({
+      where: eq(tournaments.id, tournamentId),
+    })
+
+    if (!tournament) {
+      throw new Error(`Tournament ${tournamentId} not found`)
+    }
+
+    // Fetch all groups with players
+    const groupsWithPlayers = await GroupManager.getAll(tournamentId)
+
+    // Fetch all stages for this tournament
+    const stagesData = await db.query.stages.findMany({
+      where: and(eq(stages.tournament, tournamentId), isNull(stages.deletedAt)),
+    })
+
+    const stageIds = stagesData.map(s => s.id)
+
+    // Fetch all matches for this tournament (only those in stages)
+    const allMatches = await db.query.matches.findMany({
+      where: and(inArray(matches.stage, stageIds), isNull(matches.deletedAt)),
+    })
+
+    // Filter to ensure all matches have a stage (non-null)
+    const matchesWithStage = allMatches.filter(
+      (m): m is typeof m & { stage: string } => m.stage !== null
+    )
+
+    // Fetch all match dependencies for bracket structure
+    const allDependencies = await db.query.matchDependencies.findMany({
+      where: and(
+        or(
+          inArray(
+            matchDependencies.toMatch,
+            matchesWithStage.map(m => m.id)
+          ),
+          inArray(
+            matchDependencies.fromMatch,
+            matchesWithStage.map(m => m.id)
+          ),
+          inArray(
+            matchDependencies.fromGroup,
+            groupsWithPlayers.map(g => g.id)
+          )
+        ),
+        isNull(matchDependencies.deletedAt)
+      ),
+    })
+
+    // Build dependency map: matchId -> dependencies targeting it
+    const dependenciesByToMatch = new Map<string, typeof allDependencies>()
+    for (const dep of allDependencies) {
+      const existing = dependenciesByToMatch.get(dep.toMatch) || []
+      existing.push(dep)
+      dependenciesByToMatch.set(dep.toMatch, existing)
+    }
+
+    // Enrich matches with dependency names (ensure index is non-null)
+    const enrichedMatches = matchesWithStage
+      .filter((m): m is typeof m & { index: number } => m.index !== null)
+      .map(match => {
+        const deps = dependenciesByToMatch.get(match.id) || []
+        const depsBySlot = new Map<string, string>()
+
+        for (const dep of deps) {
+          const source = dep.fromGroup
+            ? `Group ${dep.fromPosition}`
+            : dep.fromMatch
+              ? `Match Winner`
+              : 'Unknown'
+          depsBySlot.set(dep.toSlot, source)
+        }
+
+        return {
+          ...match,
+          dependencyNames:
+            depsBySlot.size === 2
+              ? {
+                  A: depsBySlot.get('A') || 'Unknown',
+                  B: depsBySlot.get('B') || 'Unknown',
+                }
+              : null,
+        }
+      })
+
+    // Group enriched matches by stage
+    const matchesByStage = new Map<string, typeof enrichedMatches>()
+    for (const stage of stagesData) {
+      matchesByStage.set(
+        stage.id,
+        enrichedMatches.filter(m => m.stage === stage.id)
+      )
+    }
+
+    // Build TournamentStage array, sorted by stage index
+    const tournamentStages = stagesData
+      .sort((a, b) => a.index - b.index)
+      .map(stage => ({
+        stage,
+        matches: matchesByStage.get(stage.id) || [],
+      }))
+
+    // Calculate min/max matches per player
+    const { min: minMatchesPerPlayer, max: maxMatchesPerPlayer } =
+      TournamentMatchManager.calculateMinMaxMatchesPerPlayer({
+        groups: groupsWithPlayers,
+        advancementCount: tournament.advancementCount,
+        eliminationType: tournament.eliminationType,
+      })
+
+    // Count unique group stage tracks
+    const groupStageIds = stagesData
+      .filter(s => s.level === 'group')
+      .map(s => s.id)
+    const groupStageTracks = new Set<string>()
+
+    if (groupStageIds.length > 0) {
+      const groupStageMatches = enrichedMatches.filter(m =>
+        groupStageIds.includes(m.stage || '')
+      )
+      for (const match of groupStageMatches) {
+        if (match.track) {
+          groupStageTracks.add(match.track)
+        }
+      }
+    }
+
+    return {
+      ...tournament,
+      minMatchesPerPlayer,
+      maxMatchesPerPlayer,
+      groupStageTrackCount: groupStageTracks.size,
+      groups: groupsWithPlayers,
+      stages: tournamentStages,
+    }
   }
 
   private static async createTournament({
