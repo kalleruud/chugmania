@@ -2,11 +2,11 @@ import type {
   EliminationType,
   groupPlayers,
   groups,
-  MatchProgression,
-  TournamentBracket,
-  tournamentMatches,
+  matchDependencies,
+  stages,
   tournaments,
 } from '../../backend/database/schema'
+import type { Match } from './match'
 import type { SuccessResponse } from './socket.io'
 
 export type Tournament = typeof tournaments.$inferSelect
@@ -18,33 +18,47 @@ export type CreateGroup = typeof groups.$inferInsert
 export type GroupPlayer = typeof groupPlayers.$inferSelect
 export type CreateGroupPlayer = typeof groupPlayers.$inferInsert
 
-export type TournamentMatch = typeof tournamentMatches.$inferSelect
-export type CreateTournamentMatch = typeof tournamentMatches.$inferInsert
+export type Stage = typeof stages.$inferSelect
+export type CreateStage = typeof stages.$inferInsert
 
-export type TournamentWithDetails = Tournament & {
-  groups: GroupWithPlayers[]
-  matches: TournamentMatch[]
+export type MatchDependency = typeof matchDependencies.$inferSelect
+export type CreateMatchDependency = typeof matchDependencies.$inferInsert
+
+export type MatchWithTournamentDetails = Omit<Match, 'stage' | 'index'> & {
+  stage: string
+  index: number
+  dependencyNames: {
+    A: string
+    B: string
+  } | null
+}
+
+export type TournamentStage = {
+  stage: Stage
+  matches: MatchWithTournamentDetails[]
+}
+
+export type GroupPlayerWithStats = GroupPlayer & {
+  wins: number
+  losses: number
 }
 
 export type GroupWithPlayers = Group & {
   players: GroupPlayerWithStats[]
 }
 
-export type GroupPlayerWithStats = {
-  user: GroupPlayer['user']
-  seed: GroupPlayer['seed']
-  wins: number
-  losses: number
+export type TournamentWithDetails = Tournament & {
+  maxMatchesPerPlayer: number
+  minMatchesPerPlayer: number
+  groupStageTrackCount: number
+  groups: GroupWithPlayers[]
+  stages: TournamentStage[]
 }
 
-export type CreateTournamentRequest = {
+export type CreateTournamentRequest = CreateTournament & {
   type: 'CreateTournamentRequest'
-  session: string
-  name: string
-  description?: string
-  groupsCount: number
-  advancementCount: number
-  eliminationType: EliminationType
+  groupStageTracks?: string[]
+  bracketTracks?: string[]
 }
 
 export function isCreateTournamentRequest(
@@ -59,13 +73,8 @@ export function isCreateTournamentRequest(
   )
 }
 
-export type TournamentPreview = Omit<
-  TournamentWithDetails,
-  'id' | 'createdAt' | 'updatedAt' | 'deletedAt'
->
-
 export type TournamentPreviewResponse = SuccessResponse & {
-  tournament: TournamentPreview
+  tournament: TournamentWithDetails
 }
 
 export type TournamentPreviewRequest = Omit<CreateTournamentRequest, 'type'> & {
@@ -116,7 +125,3 @@ export function isDeleteTournamentRequest(
   const d = data as Record<string, unknown>
   return d.type === 'DeleteTournamentRequest' && typeof d.id === 'string'
 }
-
-export type TournamentBracketType = TournamentBracket
-export type TournamentEliminationType = EliminationType
-export type TournamentMatchProgressionType = MatchProgression

@@ -3,10 +3,10 @@ import type { GapType } from '@/components/timeentries/TimeEntryRow'
 import type { ExportCsvRequest } from '@common/models/importCsv'
 import type {
   EliminationType,
-  MatchStage,
   MatchStatus,
   SessionResponse,
   SessionStatus,
+  StageLevel,
   TournamentBracket,
   TrackLevel,
   TrackType,
@@ -47,7 +47,9 @@ const no = {
       tournaments: 'Turneringer',
       groups: 'Grupper',
       groupPlayers: 'Gruppespillere',
+      stages: 'Stages',
       tournamentMatches: 'Turneringsmatcher',
+      matchDependencies: 'Match Dependencies',
     } satisfies Record<ExportCsvRequest['table'], string>,
   },
   user: {
@@ -184,25 +186,23 @@ const no = {
     new: 'Ny match',
     noMatches: 'Ingen matcher funnet.',
     unknownUser: 'Ukjent',
+    unknownGroup: 'Ukjent gruppe',
+    unknownMatch: 'Ukjent match',
+    round: 'Runde',
     status: {
       planned: 'Planlagt',
       completed: 'Ferdig',
       cancelled: 'Avlyst',
-    } as Record<MatchStatus, string>,
-    stage: {
-      group: 'Gruppespill',
+    } satisfies Record<MatchStatus, string>,
+    stageNames: {
+      sixteen: 'Sekstendelsfinale',
       eight: 'Åttendelsfinale',
       quarter: 'Kvartfinale',
       semi: 'Semifinale',
-      bronze: 'Bronsefinale',
       final: 'Finale',
-      loser_eight: 'Taperåttendelsfinale',
-      loser_quarter: 'Taperkvartfinale',
-      loser_semi: 'Tapersemifinale',
-      loser_bronze: 'Taperbronsefinale',
-      loser_final: 'Taperfinale',
-      grand_final: 'Grand finale',
-    } as Record<MatchStage, string>,
+      grand_final: 'Grand Finale',
+      group: 'Gruppe',
+    } satisfies Record<StageLevel, string>,
     form: {
       user1: 'Spiller 1',
       user2: 'Spiller 2',
@@ -256,12 +256,22 @@ const no = {
     groupStage: 'Gruppespill',
     bracket: 'Sluttspill',
     pending: 'Venter',
-    matchName: (group: string, match: number) => `${group} Match ${match}`,
-    groupName: (group: string) => `Gruppe ${group}`,
+    groupName: (number: number) =>
+      `Gruppe ${String.fromCodePoint(number + 65)}`,
+    groupMatchName: (group: number, match: number) =>
+      `${loc.no.tournament.groupName(group)}, match ${match}`,
+    bracketMatchName: (roundName: string, matchNumber: number) =>
+      `${roundName}, match ${matchNumber}`,
+    sourceGroupPlaceholder: (group: number, rank: number) =>
+      `${rank}. plass fra ${loc.no.tournament.groupName(group)}`,
+    sourceMatchPlaceholder: (matchName: string, position: number) =>
+      `${position === 1 ? 'Vinner' : 'Taper'} av ${matchName}`,
     form: {
       name: 'Navn',
+      namePlaceholder: 'Chugmania World Championship 20**',
       session: 'Velg session',
       description: 'Beskrivelse',
+      descriptionPlaceholder: 'En jævel av en fest...',
       groupsCount: 'Antall grupper',
       groupsCountHint: (players: number) => `~${players} per gruppe`,
       advancementCount: 'Antall som går videre per gruppe',
@@ -272,8 +282,11 @@ const no = {
       bracketTracks: 'Baner for sluttspill',
       bracketTracksHint: 'Velg én bane for hver runde.',
       selectTrack: 'Velg bane',
+      trackPerRound: 'Bane per runde i gruppespill',
       trackDistribution: (matches: number, tracks: number) =>
         `${matches} matcher fordelt på ${tracks} bane${tracks > 1 ? 'r' : ''} (~${Math.round(matches / tracks)} per bane)`,
+      simulate: 'Simuler resultat',
+      simulateHint: 'Genererer vinnere for alle matcher i turneringen.',
     },
     preview: {
       totalMatches: 'Totalt antall matcher',
@@ -291,6 +304,7 @@ const no = {
       group: 'Gruppespill',
       upper: 'Upper Bracket',
       lower: 'Lower Bracket',
+      grand_final: 'Grand Finale',
     } as Record<TournamentBracket, string>,
     toast: {
       create: {
@@ -311,10 +325,29 @@ const no = {
       },
     },
     source: {
-      groupWinner: (group: string) => `Vinner ${group}`,
-      groupRank: (group: string, rank: number) => `${rank}. plass ${group}`,
-      matchWinner: (match: string) => `Vinner ${match}`,
-      matchLoser: (match: string) => `Taper ${match}`,
+      groupWinner: (group: string) => `Vinner av ${group}`,
+      groupRank: (group: string, rank: number) => `${rank}. plass av ${group}`,
+      matchWinner: (match: string) => `Vinner av ${match}`,
+      matchLoser: (match: string) => `Taper av ${match}`,
+    },
+    roundNames: {
+      grand_final: 'Grand Finale',
+      upper: {
+        final: 'Finale',
+        semi: 'Semifinale',
+        quarter: 'Kvartfinale',
+        eight: 'Åttendelsfinale',
+        sixteen: 'Sekstendelsfinale',
+        round: 'Runde',
+      },
+      lower: {
+        final: 'Taperfinale',
+        semi: 'Tapersemifinale',
+        quarter: 'Taperkvartfinale',
+        eight: 'Taperåttendelsfinale',
+        sixteen: 'Tapersekstendelsfinale',
+        round: 'Taperrunde',
+      },
     },
   },
   error: {
@@ -330,8 +363,12 @@ const no = {
     ]),
     retryAction: 'Gå tilbake',
     messages: {
+      loser_not_found:
+        'Taper mangler! Matchen har fått en vinner selv om ikke to spillere var involvert.',
       session_not_selected:
         'Du må velge en session, vennligst ikke reproduser.',
+      no_participants:
+        'Sesjonen har ingen deltakere. Minst én deltaker må være påmeldt med "ja" respons.',
       update_email: 'Du må oppdatere e-post og passord før du kan gjøre noe.',
       missing_files: 'Du har ikke valgt noen filer',
       missing_data: 'Ingen data ble sendt',

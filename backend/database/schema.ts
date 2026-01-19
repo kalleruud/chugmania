@@ -16,22 +16,18 @@ export type UserRole = 'admin' | 'moderator' | 'user'
 export type SessionResponse = 'yes' | 'no' | 'maybe'
 export type SessionStatus = 'confirmed' | 'tentative' | 'cancelled'
 export type MatchStatus = 'planned' | 'completed' | 'cancelled'
-export type MatchStage =
-  | 'group'
-  | 'eight'
-  | 'quarter'
-  | 'semi'
-  | 'bronze'
-  | 'final'
-  | 'grand_final'
-  | 'loser_eight'
-  | 'loser_quarter'
-  | 'loser_semi'
-  | 'loser_bronze'
-  | 'loser_final'
 export type EliminationType = 'single' | 'double'
-export type TournamentBracket = 'group' | 'upper' | 'lower'
-export type MatchProgression = 'winner' | 'loser'
+export type TournamentBracket = 'upper' | 'lower'
+export type MatchSide = 'A' | 'B'
+
+export type StageLevel =
+  | 'grand_final'
+  | 'final'
+  | 'semi'
+  | 'quarter'
+  | 'eight'
+  | 'sixteen'
+  | 'group'
 
 export const users = sqliteTable('users', {
   ...metadata,
@@ -95,18 +91,20 @@ export const timeEntries = sqliteTable('time_entries', {
 
 export const matches = sqliteTable('matches', {
   ...metadata,
-  user1: text().references(() => users.id),
-  user2: text().references(() => users.id),
+  userA: text('user_a').references(() => users.id),
+  userB: text('user_b').references(() => users.id),
+  winner: text().$type<MatchSide>(),
   track: text().references(() => tracks.id),
   session: text().references(() => sessions.id),
-  winner: text().references(() => users.id),
-  duration: integer('duration_ms'),
-  stage: text().$type<MatchStage>(),
-  comment: text(),
   status: text()
     .$type<MatchStatus>()
     .notNull()
     .$default(() => 'planned'),
+  duration: integer('duration_ms'),
+  completedAt: integer('completed_at', { mode: 'timestamp_ms' }),
+  comment: text(),
+  index: integer(),
+  stage: text().references(() => stages.id, { onDelete: 'cascade' }),
 })
 
 export const tournaments = sqliteTable('tournaments', {
@@ -116,12 +114,9 @@ export const tournaments = sqliteTable('tournaments', {
     .references(() => sessions.id, { onDelete: 'cascade' }),
   name: text().notNull(),
   description: text(),
-  groupsCount: integer('groups_count').notNull().default(2),
-  advancementCount: integer('advancement_count').notNull().default(2),
-  eliminationType: text('elimination_type')
-    .$type<EliminationType>()
-    .notNull()
-    .$default(() => 'single'),
+  groupsCount: integer('groups_count').notNull(),
+  advancementCount: integer('advancement_count').notNull(),
+  eliminationType: text('elimination_type').$type<EliminationType>().notNull(),
 })
 
 export const groups = sqliteTable('groups', {
@@ -129,7 +124,7 @@ export const groups = sqliteTable('groups', {
   tournament: text()
     .notNull()
     .references(() => tournaments.id, { onDelete: 'cascade' }),
-  name: text().notNull(),
+  index: integer().notNull(),
 })
 
 export const groupPlayers = sqliteTable('group_players', {
@@ -143,27 +138,27 @@ export const groupPlayers = sqliteTable('group_players', {
   seed: integer().notNull(),
 })
 
-export const tournamentMatches = sqliteTable('tournament_matches', {
+export const stages = sqliteTable('stages', {
   ...metadata,
   tournament: text()
     .notNull()
     .references(() => tournaments.id, { onDelete: 'cascade' }),
-  name: text().notNull(),
-  bracket: text().$type<TournamentBracket>().notNull(),
-  round: integer(),
-  match: text().references(() => matches.id),
-  track: text().references(() => tracks.id),
-  completedAt: integer('completed_at', { mode: 'timestamp_ms' }),
-  sourceGroupA: text('source_group_a').references(() => groups.id),
-  sourceGroupARank: integer('source_group_a_rank'),
-  sourceGroupB: text('source_group_b').references(() => groups.id),
-  sourceGroupBRank: integer('source_group_b_rank'),
-  sourceMatchA: text('source_match_a'),
-  sourceMatchAProgression: text(
-    'source_match_a_progression'
-  ).$type<MatchProgression>(),
-  sourceMatchB: text('source_match_b'),
-  sourceMatchBProgression: text(
-    'source_match_b_progression'
-  ).$type<MatchProgression>(),
+  bracket: text().$type<TournamentBracket>(),
+  level: text().$type<StageLevel>(),
+  index: integer().notNull(),
+})
+
+export const matchDependencies = sqliteTable('match_dependencies', {
+  ...metadata,
+  fromMatch: text('from_match').references(() => matches.id, {
+    onDelete: 'cascade',
+  }),
+  fromGroup: text('from_group').references(() => groups.id, {
+    onDelete: 'cascade',
+  }),
+  toMatch: text('to_match')
+    .notNull()
+    .references(() => matches.id, { onDelete: 'cascade' }),
+  fromPosition: integer('from_position').notNull(),
+  toSlot: text('to_slot').$type<MatchSide>().notNull(),
 })

@@ -7,12 +7,14 @@ import {
   type SessionWithSignups,
 } from '@common/models/session'
 import type { EventReq, EventRes } from '@common/models/socket.io'
+import type { UserInfoWithSeed } from '@common/models/user'
 import { and, asc, desc, eq, isNull } from 'drizzle-orm'
 import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
 import { sessions, sessionSignups, users } from '../../database/schema'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
+import RatingManager from './rating.manager'
 import SessionScheduler from './session.scheduler'
 import UserManager from './user.manager'
 
@@ -93,6 +95,21 @@ export default class SessionManager {
       ...row,
       user: UserManager.toUserInfo(row.user).userInfo,
     }))
+  }
+
+  static async getParticipantsWithSeed(
+    session: string
+  ): Promise<UserInfoWithSeed[]> {
+    const signedUpPlayers = (await SessionManager.getSessionSignups(session))
+      .filter(s => s.response === 'yes')
+      .map(s => s.user)
+
+    return signedUpPlayers
+      .map(player => ({
+        ...player,
+        seed: RatingManager.getUserRatings(player.id)?.totalRating ?? 0,
+      }))
+      .toSorted((a, b) => b.seed - a.seed)
   }
 
   static async onCreateSession(
@@ -224,7 +241,6 @@ export default class SessionManager {
     )
 
     broadcast('all_sessions', await SessionManager.getAllSessions())
-    await SessionScheduler.reschedule()
 
     return { success: true }
   }

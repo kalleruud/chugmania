@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom'
 import { PageSubheader } from '../PageHeader'
 import { Button } from '../ui/button'
 import { Empty } from '../ui/empty'
-import TournamentCard from './TournamentCard'
+import TournamentView from './TournamentView'
 
 type TournamentListProps = {
   sessionId: string
@@ -46,7 +46,7 @@ export default function TournamentList({
       )}
 
       {sessionTournaments.map(tournament => (
-        <TournamentCard key={tournament.id} tournament={tournament} />
+        <TournamentView key={tournament.id} tournament={tournament} />
       ))}
     </div>
   )
