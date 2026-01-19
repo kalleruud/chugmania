@@ -167,6 +167,14 @@ export async function createMockTournament(
   tournamentSettings: Omit<CreateTournament, 'name' | 'session'>
 ) {
   const users = await registerMockUsers(socket, participantCount)
+
+  setupRatings(
+    users.map((u, idx) => ({
+      userId: u.id,
+      rating: users.length - idx,
+    }))
+  )
+
   const sessionId = await createSessionMock(
     socket,
     users.map(u => u.id)
