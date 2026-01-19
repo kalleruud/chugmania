@@ -1,6 +1,7 @@
 import loc from '@/lib/locales'
 import db from '@backend/database/database'
 import {
+  groups,
   matchDependencies,
   matches,
   stages,
@@ -57,6 +58,13 @@ export default class StageManager {
 
     const matchMap = new Map(allMatches.map(m => [m.id, m]))
 
+    // Fetch all groups in this tournament for group dependency resolution
+    const allGroups = await db.query.groups.findMany({
+      where: eq(groups.tournament, tournamentId),
+    })
+
+    const groupMap = new Map(allGroups.map(g => [g.id, g]))
+
     // Build dependency map: matchId -> dependencies targeting it
     const dependenciesByToMatch = new Map<string, typeof deps>()
     for (const dep of deps) {
@@ -80,10 +88,20 @@ export default class StageManager {
 
         if (dep.fromGroup) {
           // Format: "{rank}. plass fra {groupName}"
-          source = loc.no.tournament.sourceGroupPlaceholder(
-            dep.fromPosition - 1,
-            dep.fromPosition
-          )
+          const group = groupMap.get(dep.fromGroup)
+          if (group) {
+            // fromPosition is 0-based for slot A, 1-based for slot B
+            // Convert to 1-based for display (1st place, 2nd place, etc.)
+            const displayRank =
+              dep.toSlot === 'A' ? dep.fromPosition + 1 : dep.fromPosition
+            // group.index is 0-based, we pass it directly to groupName
+            source = loc.no.tournament.sourceGroupPlaceholder(
+              group.index,
+              displayRank
+            )
+          } else {
+            source = 'Ukjent'
+          }
         } else if (dep.fromMatch) {
           // Format: "Vinner av {matchName}" or "Taper av {matchName}"
           const sourceMatch = matchMap.get(dep.fromMatch)
