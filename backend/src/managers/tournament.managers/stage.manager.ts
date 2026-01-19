@@ -69,7 +69,9 @@ export default class StageManager {
     return stage
   }
 
-  static async getStageWithDetails(stageId: string): Promise<TournamentStage> {
+  private static async getStageWithDetails(
+    stageId: string
+  ): Promise<TournamentStage> {
     return {
       stage: await StageManager.getStage(stageId),
       matches: await StageManager.getMatches(stageId),
