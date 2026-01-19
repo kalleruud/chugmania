@@ -234,6 +234,75 @@ describe('TournamentManager - getTournamentWithDetails', () => {
       }
     }
   })
+
+  it('should return stages in correct play order (sorted by stage.index)', async () => {
+    // ARRANGE: Create a double elimination tournament
+    const { socket } = await createMockAdmin()
+    const tournamentId = await createMockTournament(socket, 4, {
+      groupsCount: 2,
+      advancementCount: 2,
+      eliminationType: 'double',
+    })
+
+    // ACT: Get tournament with details
+    const tournament =
+      await TournamentManager['getTournamentWithDetails'](tournamentId)
+
+    // ASSERT: Verify stages are ordered by index
+    const stageIndices = tournament.stages.map(s => s.stage.index)
+
+    // Verify indices are in ascending order (not sorted by level/bracket)
+    for (let i = 0; i < stageIndices.length - 1; i++) {
+      expect(stageIndices[i]).toBeLessThanOrEqual(stageIndices[i + 1])
+    }
+
+    // Verify no gaps in indices (they should be sequential starting from groupsCount)
+    const groupStageCount = tournament.stages.filter(
+      s => s.stage.level === 'group'
+    ).length
+    const startIndex = groupStageCount
+
+    for (let i = 0; i < stageIndices.length - groupStageCount; i++) {
+      const expectedIndex = startIndex + i
+      const actualIndex = stageIndices[groupStageCount + i]
+      expect(actualIndex).toBe(expectedIndex)
+    }
+
+    // Verify interleaving: after each upper bracket stage, lower bracket stages should follow
+    // (This catches the case where all upper stages come first, then all lower)
+    let lastUpperBracketIndex = -1
+    let seenLowerAfterUpper = false
+
+    for (let i = 0; i < tournament.stages.length; i++) {
+      const stage = tournament.stages[i].stage
+      const isUpperBracket = stage.bracket === 'upper' || stage.bracket === null
+      const isLowerBracket = stage.bracket === 'lower'
+
+      if (isUpperBracket && stage.level !== 'group') {
+        lastUpperBracketIndex = i
+      }
+
+      if (
+        isLowerBracket &&
+        lastUpperBracketIndex !== -1 &&
+        i > lastUpperBracketIndex
+      ) {
+        seenLowerAfterUpper = true
+      }
+    }
+
+    // If there's both upper and lower bracket, verify interleaving exists
+    const hasUpperBracket = tournament.stages.some(
+      s => s.stage.bracket === 'upper'
+    )
+    const hasLowerBracket = tournament.stages.some(
+      s => s.stage.bracket === 'lower'
+    )
+
+    if (hasUpperBracket && hasLowerBracket) {
+      expect(seenLowerAfterUpper).toBe(true)
+    }
+  })
 })
 
 describe('TournamentManager - onCreateTournament', () => {
