@@ -357,11 +357,10 @@ describe('StageManager - Dependency Names', () => {
             expect(match.dependencyNames.A.length).toBeGreaterThan(0)
             expect(match.dependencyNames.B.length).toBeGreaterThan(0)
 
-            // Verify the format contains expected keywords
             const depA = match.dependencyNames.A
             const depB = match.dependencyNames.B
 
-            // Dependencies should either contain "Vinner av", "Taper av", or "plass fra"
+            // Verify format for each dependency type
             const isValidDependency = (dep: string) =>
               dep.includes('Vinner av') ||
               dep.includes('Taper av') ||
@@ -369,6 +368,48 @@ describe('StageManager - Dependency Names', () => {
 
             expect(isValidDependency(depA)).toBe(true)
             expect(isValidDependency(depB)).toBe(true)
+
+            // Check group dependencies have correct format and no off-by-one errors
+            if (depA.includes('plass fra')) {
+              // Format should be "{rank}. plass fra Gruppe {letter}"
+              // Valid ranks are 1, 2, 3, etc. (NOT 0)
+              const rankMatch = depA.match(/^(\d+)\. plass fra Gruppe/)
+              expect(rankMatch).not.toBeNull()
+              if (rankMatch) {
+                const rank = parseInt(rankMatch[1], 10)
+                expect(rank).toBeGreaterThanOrEqual(1)
+                expect(rank).toBeLessThanOrEqual(4) // Max advancement count
+              }
+
+              // Should have valid group letter (A, B, C, D, etc.)
+              expect(/Gruppe [A-D]$/.test(depA)).toBe(true)
+            }
+
+            if (depB.includes('plass fra')) {
+              // Format should be "{rank}. plass fra Gruppe {letter}"
+              // Valid ranks are 1, 2, 3, etc. (NOT 0)
+              const rankMatch = depB.match(/^(\d+)\. plass fra Gruppe/)
+              expect(rankMatch).not.toBeNull()
+              if (rankMatch) {
+                const rank = parseInt(rankMatch[1], 10)
+                expect(rank).toBeGreaterThanOrEqual(1)
+                expect(rank).toBeLessThanOrEqual(4) // Max advancement count
+              }
+
+              // Should have valid group letter (A, B, C, D, etc.)
+              expect(/Gruppe [A-D]$/.test(depB)).toBe(true)
+            }
+
+            // Check match dependencies have correct format
+            if (depA.includes('Vinner av') || depA.includes('Taper av')) {
+              // Format should be "{Vinner|Taper} av {Stage}, match {number}"
+              expect(/^(Vinner|Taper) av .+, match \d+$/.test(depA)).toBe(true)
+            }
+
+            if (depB.includes('Vinner av') || depB.includes('Taper av')) {
+              // Format should be "{Vinner|Taper} av {Stage}, match {number}"
+              expect(/^(Vinner|Taper) av .+, match \d+$/.test(depB)).toBe(true)
+            }
           }
         }
       }
