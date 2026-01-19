@@ -1,5 +1,5 @@
-DROP TABLE `tournament_matches`;--> statement-breakpoint
 PRAGMA foreign_keys=OFF;--> statement-breakpoint
+DROP TABLE `tournament_matches`;--> statement-breakpoint
 CREATE TABLE `__new_match_dependencies` (
 	`id` text PRIMARY KEY NOT NULL,
 	`updated_at` integer,
