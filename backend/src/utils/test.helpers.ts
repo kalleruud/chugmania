@@ -175,6 +175,7 @@ export async function createMockTournament(
   const tournamentId = randomUUID()
   await TournamentManager.onCreateTournament(socket, {
     type: 'CreateTournamentRequest',
+    id: tournamentId,
     session: sessionId,
     name: 'Test',
     ...tournamentSettings,
