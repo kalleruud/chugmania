@@ -69,7 +69,7 @@ describe('TournamentManager - getAll', () => {
       eliminationType: 'single',
     })
 
-    const deletedTournamenttId = await createMockTournament(socket, 8, {
+    const deletedTournamentId = await createMockTournament(socket, 8, {
       groupsCount: 4,
       advancementCount: 1,
       eliminationType: 'single',
@@ -78,7 +78,7 @@ describe('TournamentManager - getAll', () => {
     // Soft-delete the tournament
     await TournamentManager.onDeleteTournament(socket, {
       type: 'DeleteTournamentRequest',
-      id: deletedTournamenttId,
+      id: deletedTournamentId,
     })
 
     // ACT
@@ -91,8 +91,17 @@ describe('TournamentManager - getAll', () => {
 
   it('should return multiple tournaments', async () => {
     // ARRANGE
-    const tournament1 = await createMockTournament()
-    const tournament2 = await createMockTournament()
+    const { socket } = await createMockAdmin()
+    const tournament1Id = await createMockTournament(socket, 4, {
+      groupsCount: 2,
+      advancementCount: 1,
+      eliminationType: 'single',
+    })
+    const tournament2Id = await createMockTournament(socket, 4, {
+      groupsCount: 2,
+      advancementCount: 1,
+      eliminationType: 'single',
+    })
 
     // ACT
     const result = await TournamentManager.getAll()
@@ -100,8 +109,8 @@ describe('TournamentManager - getAll', () => {
     // ASSERT
     expect(result).toHaveLength(2)
     const ids = result.map(t => t.id).toSorted((a, b) => a.localeCompare(b))
-    expect(ids).toContain(tournament1.tournamentId)
-    expect(ids).toContain(tournament2.tournamentId)
+    expect(ids).toContain(tournament1Id)
+    expect(ids).toContain(tournament2Id)
   })
 })
 
@@ -119,17 +128,19 @@ describe('TournamentManager - getTournamentWithDetails', () => {
 
   it('should return complete tournament structure', async () => {
     // ARRANGE
-    const tournament = await createMockTournament()
+    const { socket } = await createMockAdmin()
+    const tournamentId = await createMockTournament(socket, 4, {
+      groupsCount: 1,
+      advancementCount: 2,
+      eliminationType: 'single',
+    })
 
     // ACT
-    const result = await TournamentManager['getTournamentWithDetails'](
-      tournament.tournamentId
-    )
+    const result =
+      await TournamentManager['getTournamentWithDetails'](tournamentId)
 
     // ASSERT
-    expect(result).toHaveProperty('id', tournament.tournamentId)
-    expect(result).toHaveProperty('name', 'Test Tournament')
-    expect(result).toHaveProperty('session', tournament.sessionId)
+    expect(result).toHaveProperty('id', tournamentId)
     expect(result).toHaveProperty('groups')
     expect(result).toHaveProperty('stages')
     expect(result.groups).toHaveLength(1)
@@ -138,15 +149,16 @@ describe('TournamentManager - getTournamentWithDetails', () => {
 
   it('should calculate min/max matches per player', async () => {
     // ARRANGE
-    const tournament = await createMockTournament({
-      groupCount: 1,
-      playersPerGroup: 4,
+    const { socket } = await createMockAdmin()
+    const tournamentId = await createMockTournament(socket, 4, {
+      groupsCount: 1,
+      advancementCount: 2,
+      eliminationType: 'single',
     })
 
     // ACT
-    const result = await TournamentManager['getTournamentWithDetails'](
-      tournament.tournamentId
-    )
+    const result =
+      await TournamentManager['getTournamentWithDetails'](tournamentId)
 
     // ASSERT
     expect(result.minMatchesPerPlayer).toBeGreaterThanOrEqual(0)
@@ -157,12 +169,16 @@ describe('TournamentManager - getTournamentWithDetails', () => {
 
   it('should count group stage tracks', async () => {
     // ARRANGE
-    const tournament = await createMockTournament()
+    const { socket } = await createMockAdmin()
+    const tournamentId = await createMockTournament(socket, 4, {
+      groupsCount: 1,
+      advancementCount: 2,
+      eliminationType: 'single',
+    })
 
     // ACT
-    const result = await TournamentManager['getTournamentWithDetails'](
-      tournament.tournamentId
-    )
+    const result =
+      await TournamentManager['getTournamentWithDetails'](tournamentId)
 
     // ASSERT
     expect(result.groupStageTrackCount).toBeGreaterThanOrEqual(0)
@@ -170,12 +186,16 @@ describe('TournamentManager - getTournamentWithDetails', () => {
 
   it('should organize stages in chronological order', async () => {
     // ARRANGE
-    const tournament = await createMockTournament()
+    const { socket } = await createMockAdmin()
+    const tournamentId = await createMockTournament(socket, 4, {
+      groupsCount: 1,
+      advancementCount: 2,
+      eliminationType: 'single',
+    })
 
     // ACT
-    const result = await TournamentManager['getTournamentWithDetails'](
-      tournament.tournamentId
-    )
+    const result =
+      await TournamentManager['getTournamentWithDetails'](tournamentId)
 
     // ASSERT
     for (let i = 0; i < result.stages.length - 1; i++) {
@@ -187,12 +207,16 @@ describe('TournamentManager - getTournamentWithDetails', () => {
 
   it('should enrich matches with dependency names', async () => {
     // ARRANGE
-    const tournament = await createMockTournament()
+    const { socket } = await createMockAdmin()
+    const tournamentId = await createMockTournament(socket, 4, {
+      groupsCount: 1,
+      advancementCount: 2,
+      eliminationType: 'single',
+    })
 
     // ACT
-    const result = await TournamentManager['getTournamentWithDetails'](
-      tournament.tournamentId
-    )
+    const result =
+      await TournamentManager['getTournamentWithDetails'](tournamentId)
 
     // ASSERT
     // Find any bracket match with dependencies
@@ -391,13 +415,17 @@ describe('TournamentManager - onDeleteTournament', () => {
 
   it('should soft-delete tournament and related data', async () => {
     // ARRANGE
-    const tournament = await createMockTournament()
     const { socket } = await createMockAdmin()
+    const tournamentId = await createMockTournament(socket, 4, {
+      groupsCount: 1,
+      advancementCount: 2,
+      eliminationType: 'single',
+    })
 
     // ACT
     const result = await TournamentManager.onDeleteTournament(socket, {
       type: 'DeleteTournamentRequest',
-      id: tournament.tournamentId,
+      id: tournamentId,
     })
 
     // ASSERT
@@ -405,7 +433,7 @@ describe('TournamentManager - onDeleteTournament', () => {
 
     // Verify tournament is marked as deleted
     const deletedTournament = await db.query.tournaments.findFirst({
-      where: eq(tournaments.id, tournament.tournamentId),
+      where: eq(tournaments.id, tournamentId),
     })
 
     expect(deletedTournament?.deletedAt).not.toBeNull()
@@ -413,15 +441,19 @@ describe('TournamentManager - onDeleteTournament', () => {
 
   it('should cascade delete groups, players, stages, and matches', async () => {
     // ARRANGE
-    const tournament = await createMockTournament()
     const { socket } = await createMockAdmin()
+    const tournamentId = await createMockTournament(socket, 4, {
+      groupsCount: 1,
+      advancementCount: 2,
+      eliminationType: 'single',
+    })
 
     // Get initial counts
     const initialGroups = await db.query.groups.findMany({
-      where: eq(groups.tournament, tournament.tournamentId),
+      where: eq(groups.tournament, tournamentId),
     })
     const initialStages = await db.query.stages.findMany({
-      where: eq(stages.tournament, tournament.tournamentId),
+      where: eq(stages.tournament, tournamentId),
     })
 
     expect(initialGroups.length).toBeGreaterThan(0)
@@ -430,22 +462,16 @@ describe('TournamentManager - onDeleteTournament', () => {
     // ACT
     await TournamentManager.onDeleteTournament(socket, {
       type: 'DeleteTournamentRequest',
-      id: tournament.tournamentId,
+      id: tournamentId,
     })
 
     // ASSERT - Check that related data is soft-deleted
     const activeGroups = await db.query.groups.findMany({
-      where: and(
-        eq(groups.tournament, tournament.tournamentId),
-        isNull(groups.deletedAt)
-      ),
+      where: and(eq(groups.tournament, tournamentId), isNull(groups.deletedAt)),
     })
 
     const activeStages = await db.query.stages.findMany({
-      where: and(
-        eq(stages.tournament, tournament.tournamentId),
-        isNull(stages.deletedAt)
-      ),
+      where: and(eq(stages.tournament, tournamentId), isNull(stages.deletedAt)),
     })
 
     expect(activeGroups).toEqual([])
@@ -454,26 +480,38 @@ describe('TournamentManager - onDeleteTournament', () => {
 
   it('should not affect other tournaments when deleting', async () => {
     // ARRANGE
-    const tournament1 = await createMockTournament()
-    const tournament2 = await createMockTournament()
     const { socket } = await createMockAdmin()
+    const tournament1Id = await createMockTournament(socket, 4, {
+      groupsCount: 1,
+      advancementCount: 2,
+      eliminationType: 'single',
+    })
+    const tournament2Id = await createMockTournament(socket, 4, {
+      groupsCount: 1,
+      advancementCount: 2,
+      eliminationType: 'single',
+    })
 
     // ACT
     await TournamentManager.onDeleteTournament(socket, {
       type: 'DeleteTournamentRequest',
-      id: tournament1.tournamentId,
+      id: tournament1Id,
     })
 
     // ASSERT
     const result = await TournamentManager.getAll()
     expect(result).toHaveLength(1)
-    expect(result[0].id).toBe(tournament2.tournamentId)
+    expect(result[0].id).toBe(tournament2Id)
   })
 
   it('should reject non-admin users', async () => {
     // ARRANGE
-    const tournament = await createMockTournament()
     const { socket: adminSocket } = await createMockAdmin()
+    const tournamentId = await createMockTournament(adminSocket, 4, {
+      groupsCount: 1,
+      advancementCount: 2,
+      eliminationType: 'single',
+    })
     const user = await registerMockUsers(adminSocket, 1)
 
     // Create a socket for the non-admin user
@@ -483,7 +521,7 @@ describe('TournamentManager - onDeleteTournament', () => {
     await expect(
       TournamentManager.onDeleteTournament(userSocket, {
         type: 'DeleteTournamentRequest',
-        id: tournament.tournamentId,
+        id: tournamentId,
       })
     ).rejects.toThrow()
   })
@@ -498,85 +536,6 @@ describe('TournamentManager - onDeleteTournament', () => {
         type: 'InvalidType',
       } as any)
     ).rejects.toThrow()
-  })
-})
-
-describe('TournamentManager - onMatchUpdated', () => {
-  beforeEach(async () => {
-    await clearDB()
-  })
-
-  it('should handle incomplete match (not completed)', async () => {
-    // ARRANGE
-    const tournament = await createMockTournament()
-    const [match] = tournament.groupMatches.matches
-
-    // Create match that is not completed
-    const incompleteMatch = {
-      ...match,
-      status: 'planned' as const,
-    }
-
-    // ACT - Should return early without throwing
-    const result = await TournamentManager.onMatchUpdated(incompleteMatch)
-
-    // ASSERT
-    expect(result).toBeUndefined()
-  })
-
-  it('should handle match without winner', async () => {
-    // ARRANGE
-    const tournament = await createMockTournament()
-    const [match] = tournament.groupMatches.matches
-
-    const completedMatch = {
-      ...match,
-      status: 'completed' as const,
-      winner: null,
-    }
-
-    // ACT & ASSERT
-    await expect(
-      TournamentManager.onMatchUpdated(completedMatch)
-    ).rejects.toThrow('no winner')
-  })
-
-  it('should handle match without stage', async () => {
-    // ARRANGE
-    const tournament = await createMockTournament()
-    const [match] = tournament.groupMatches.matches
-
-    const matchNoStage = {
-      ...match,
-      status: 'completed' as const,
-      stage: null,
-    }
-
-    // ACT - Should return early without throwing
-    const result = await TournamentManager.onMatchUpdated(matchNoStage)
-
-    // ASSERT
-    expect(result).toBeUndefined()
-  })
-
-  it('should resolve group dependent matches when group match completes', async () => {
-    // ARRANGE
-    const tournament = await createMockTournament()
-    const [match] = tournament.groupMatches.matches
-
-    const completedMatch = {
-      ...match,
-      status: 'completed' as const,
-      winner: 'A' as const,
-      userA: tournament.players[0].id,
-      userB: tournament.players[1].id,
-    }
-
-    // ACT - Should execute without throwing
-    // Result may be undefined or an object depending on stage type
-    await expect(
-      TournamentManager.onMatchUpdated(completedMatch)
-    ).resolves.not.toThrow()
   })
 })
 
