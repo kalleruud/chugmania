@@ -313,16 +313,20 @@ export default class TournamentMatchManager {
 
     // Reassign stage indices and tracks based on the final interleaved stage order
     const stageToTrackId = new Map<string, string>()
-    interleavedStages.forEach((stage, idx) => {
-      // Update stage index to match position in interleaved order
-      stage.index = groupStageCount + idx
+    for (let idx = 0; idx < interleavedStages.length; idx++) {
+      const stage = interleavedStages[idx]
+      const newIndex = groupStageCount + idx
+
+      // Update stage index in database to match position in interleaved order
+      await StageManager.updateStageIndex(stage.id, newIndex)
+      stage.index = newIndex
 
       // Assign track if provided
       if (bracketTracks.length > 0) {
         const trackId = bracketTracks[idx % bracketTracks.length]
         stageToTrackId.set(stage.id, trackId)
       }
-    })
+    }
 
     // Update all matches to use the correct track for their stage
     interleavedMatches.forEach(match => {

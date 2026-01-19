@@ -176,6 +176,16 @@ export default class StageManager {
     return stage
   }
 
+  static async updateStageIndex(
+    stageId: string,
+    newIndex: number
+  ): Promise<void> {
+    await db
+      .update(stages)
+      .set({ index: newIndex })
+      .where(eq(stages.id, stageId))
+  }
+
   static async getStage(stageId: string) {
     const stage = await db.query.stages.findFirst({
       where: eq(stages.id, stageId),

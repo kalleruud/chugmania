@@ -354,6 +354,195 @@ describe('TournamentMatchManager - generateBracketMatches', () => {
     expect(result.matches.length).toBeGreaterThan(0)
     expect(result.stages.length).toBeGreaterThan(0)
   })
+
+  it('should create correct double elimination structure with 19 players, 4 groups, 2 advancing', async () => {
+    // ARRANGE: 19 players, 4 groups (~5 each), 2 advancing = 8 players in bracket
+    const { socket } = await createMockAdmin()
+    const users = await registerMockUsers(socket, 19)
+
+    setupRatings(
+      users.map((u, idx) => ({
+        userId: u.id,
+        rating: 1000 - idx * 10,
+      }))
+    )
+
+    const sessionId = await createSessionMock(
+      socket,
+      users.map(u => u.id)
+    )
+    const tournamentId = randomUUID()
+
+    await TournamentManager.onCreateTournament(socket, {
+      type: 'CreateTournamentRequest',
+      id: tournamentId,
+      name: 'Double Elimination Test',
+      session: sessionId,
+      groupsCount: 4,
+      advancementCount: 2,
+      eliminationType: 'double',
+    })
+
+    const groupsWithPlayers = await GroupManager.getAll(tournamentId)
+    expect(groupsWithPlayers.length).toBe(4)
+
+    const groupMatches = await TournamentMatchManager.createGroupMatches(
+      tournamentId,
+      sessionId,
+      groupsWithPlayers
+    )
+
+    // ACT
+    const result = await TournamentMatchManager.generateBracketMatches(
+      tournamentId,
+      sessionId,
+      groupsWithPlayers,
+      2, // advancement count
+      'double',
+      groupMatches.stages.length
+    )
+
+    // ASSERT - Double elimination structure
+    // With 8 players (4 groups * 2 advancing), bracketSize = 8
+    // Upper bracket: 4 matches (quarter) + 2 matches (semi) + 1 match (final) = 7 stages/matches
+    // Lower bracket structure:
+    //   - Lower R1: 2 matches (losers of quarters play each other)
+    //   - Lower R2 (drop-in): 2 matches (Lower R1 winners vs Semi losers)
+    //   - Lower R3 (survivor): 1 match (Lower R2 winners play each other)
+    //   - Lower R4 (drop-in): 1 match (Lower R3 winner vs Final loser)
+    // Grand Final: 1 match
+
+    // Verify we have upper bracket stages
+    const upperBracketStages = result.stages.filter(s => s.bracket === 'upper')
+    expect(upperBracketStages.length).toBeGreaterThan(0)
+
+    // Verify we have lower bracket stages
+    const lowerBracketStages = result.stages.filter(s => s.bracket === 'lower')
+    expect(lowerBracketStages.length).toBeGreaterThan(0)
+
+    // Verify we have grand final stage
+    const grandFinalStage = result.stages.find(s => s.level === 'grand_final')
+    expect(grandFinalStage).toBeDefined()
+
+    // Verify lower bracket has more than just 1 stage
+    // For 8 players, lower bracket should have at least 4 stages
+    expect(lowerBracketStages.length).toBeGreaterThanOrEqual(4)
+
+    // Verify dependencies exist for lower bracket matches
+    const lowerBracketMatches = result.matches.filter(m =>
+      lowerBracketStages.some(s => s.id === m.stage)
+    )
+    expect(lowerBracketMatches.length).toBeGreaterThan(0)
+
+    // Verify lower bracket matches have dependencies
+    const lowerBracketDeps = result.matchDependencies.filter(d =>
+      lowerBracketMatches.some(m => m.id === d.toMatch)
+    )
+    expect(lowerBracketDeps.length).toBeGreaterThan(0)
+
+    // Verify grand final has dependencies from both upper and lower bracket
+    const grandFinalMatch = result.matches.find(
+      m => m.stage === grandFinalStage?.id
+    )
+    expect(grandFinalMatch).toBeDefined()
+
+    const grandFinalDeps = result.matchDependencies.filter(
+      d => d.toMatch === grandFinalMatch?.id
+    )
+    // Grand final should have exactly 2 dependencies: upper bracket winner and lower bracket winner
+    expect(grandFinalDeps.length).toBe(2)
+
+    // Verify stage ordering is correct (interleaved)
+    const stageIndices = result.stages.map(s => s.index)
+    for (let i = 0; i < stageIndices.length - 1; i++) {
+      expect(stageIndices[i]).toBeLessThan(stageIndices[i + 1])
+    }
+
+    // Log structure for debugging
+    console.log('Double elimination structure:')
+    console.log('Upper bracket stages:', upperBracketStages.length)
+    console.log('Lower bracket stages:', lowerBracketStages.length)
+    console.log('Grand final stage:', grandFinalStage ? 1 : 0)
+    console.log('Total matches:', result.matches.length)
+    console.log('Total dependencies:', result.matchDependencies.length)
+  })
+
+  it('should fetch tournament with all stages including lower bracket', async () => {
+    // ARRANGE: Create a double elimination tournament with 8 advancing (to get full bracket)
+    // 19 players, 4 groups, 2 advancing = 8 players in bracket
+    const { socket } = await createMockAdmin()
+    const users = await registerMockUsers(socket, 19)
+
+    setupRatings(
+      users.map((u, idx) => ({
+        userId: u.id,
+        rating: 1000 - idx * 10,
+      }))
+    )
+
+    const sessionId = await createSessionMock(
+      socket,
+      users.map(u => u.id)
+    )
+    const tournamentId = randomUUID()
+
+    await TournamentManager.onCreateTournament(socket, {
+      type: 'CreateTournamentRequest',
+      id: tournamentId,
+      name: 'Fetch Test Double Elimination',
+      session: sessionId,
+      groupsCount: 4,
+      advancementCount: 2,
+      eliminationType: 'double',
+    })
+
+    // ACT: Fetch the tournament
+    const tournaments = await TournamentManager.getAll()
+    const tournament = tournaments.find(t => t.id === tournamentId)
+
+    expect(tournament).toBeDefined()
+    if (!tournament) return
+
+    // ASSERT: Verify all stage types are present
+    const upperBracketStages = tournament.stages.filter(
+      s => s.stage.bracket === 'upper'
+    )
+    const lowerBracketStages = tournament.stages.filter(
+      s => s.stage.bracket === 'lower'
+    )
+    const grandFinalStage = tournament.stages.find(
+      s => s.stage.level === 'grand_final'
+    )
+    const groupStages = tournament.stages.filter(s => s.stage.level === 'group')
+
+    console.log('Fetched tournament structure:')
+    console.log('Group stages:', groupStages.length)
+    console.log('Upper bracket stages:', upperBracketStages.length)
+    console.log('Lower bracket stages:', lowerBracketStages.length)
+    console.log('Grand final stage:', grandFinalStage ? 1 : 0)
+    console.log('Total stages:', tournament.stages.length)
+
+    // Log all stages in order
+    console.log('All stages in order:')
+    tournament.stages.forEach((s, i) => {
+      console.log(
+        `  ${i}: index=${s.stage.index}, level=${s.stage.level}, bracket=${s.stage.bracket}`
+      )
+    })
+
+    // Verify structure
+    expect(groupStages.length).toBeGreaterThan(0)
+    expect(upperBracketStages.length).toBeGreaterThan(0)
+    expect(lowerBracketStages.length).toBeGreaterThan(0)
+    expect(grandFinalStage).toBeDefined()
+
+    // Verify stages are ordered by index
+    for (let i = 0; i < tournament.stages.length - 1; i++) {
+      expect(tournament.stages[i].stage.index).toBeLessThanOrEqual(
+        tournament.stages[i + 1].stage.index
+      )
+    }
+  })
 })
 
 function createGroup(playerCount: number): GroupWithPlayers {
