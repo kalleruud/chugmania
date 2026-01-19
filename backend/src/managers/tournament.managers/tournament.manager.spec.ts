@@ -10,6 +10,7 @@ import {
   registerMockUsers,
   setupRatings,
 } from '@backend/src/utils/test.helpers'
+import type { Match } from '@common/models/match'
 import { and, eq, isNull } from 'drizzle-orm'
 import { randomUUID } from 'node:crypto'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -308,6 +309,25 @@ describe('TournamentManager - onCreateTournament', () => {
       } as any)
     ).rejects.toThrow()
   })
+
+  it('should throw error when session has no participants', async () => {
+    // ARRANGE
+    const { socket } = await createMockAdmin()
+    const sessionId = await createSessionMock(socket, [])
+
+    // ACT & ASSERT
+    await expect(
+      TournamentManager.onCreateTournament(socket, {
+        type: 'CreateTournamentRequest',
+        id: randomUUID(),
+        name: 'Test Tournament',
+        session: sessionId,
+        groupsCount: 1,
+        advancementCount: 2,
+        eliminationType: 'single',
+      })
+    ).rejects.toThrow('deltaker')
+  })
 })
 
 describe('TournamentManager - onGetTournamentPreview', () => {
@@ -405,6 +425,28 @@ describe('TournamentManager - onGetTournamentPreview', () => {
         eliminationType: 'single',
       })
     ).rejects.toThrow()
+  })
+
+  it('should throw error when session has no participants', async () => {
+    // ARRANGE
+    const { socket } = await createMockAdmin()
+    const sessionId = await createSessionMock(socket, [])
+
+    // ACT & ASSERT
+    // The error comes from Drizzle's values() function when trying to insert empty groups
+    await expect(
+      TournamentManager.onGetTournamentPreview(socket, {
+        type: 'TournamentPreviewRequest',
+        name: 'Preview Tournament',
+        session: sessionId,
+        groupsCount: 1,
+        advancementCount: 2,
+        eliminationType: 'single',
+      })
+    ).rejects.toThrow()
+
+    // Tournament may be created before error, but finally block attempts cleanup
+    // Just verify the error was thrown - cleanup happens in finally block
   })
 })
 
@@ -567,9 +609,7 @@ describe('TournamentManager - onMatchUpdated', () => {
     }
 
     // ACT - should return undefined for non-completed matches
-    const result = await TournamentManager.onMatchUpdated(
-      incompleteMatch as any
-    )
+    const result = await TournamentManager.onMatchUpdated(incompleteMatch)
 
     // ASSERT
     expect(result).toBeUndefined()
@@ -599,7 +639,7 @@ describe('TournamentManager - onMatchUpdated', () => {
 
     // ACT & ASSERT
     await expect(
-      TournamentManager.onMatchUpdated(incompleteMatch as any)
+      TournamentManager.onMatchUpdated(incompleteMatch)
     ).rejects.toThrow('Match has no winner')
   })
 
@@ -627,9 +667,7 @@ describe('TournamentManager - onMatchUpdated', () => {
     }
 
     // ACT & ASSERT - should handle gracefully (no stage = early return)
-    const result = await TournamentManager.onMatchUpdated(
-      matchWithoutStage as any
-    )
+    const result = await TournamentManager.onMatchUpdated(matchWithoutStage)
     expect(result).toBeUndefined()
   })
 
@@ -659,7 +697,7 @@ describe('TournamentManager - onMatchUpdated', () => {
 
     // ACT & ASSERT
     await expect(
-      TournamentManager.onMatchUpdated(matchMissingUser as any)
+      TournamentManager.onMatchUpdated(matchMissingUser)
     ).rejects.toThrow('was completed without both users present')
   })
 
@@ -689,7 +727,7 @@ describe('TournamentManager - onMatchUpdated', () => {
 
     // ACT & ASSERT
     await expect(
-      TournamentManager.onMatchUpdated(matchMissingUser as any)
+      TournamentManager.onMatchUpdated(matchMissingUser)
     ).rejects.toThrow('was completed without both users present')
   })
 
@@ -712,13 +750,13 @@ describe('TournamentManager - onMatchUpdated', () => {
 
     // Create completed match
     const completedMatch = {
-      ...match,
-      status: 'completed' as const,
-      winner: 'A' as const,
-    }
+      ...match!,
+      status: 'completed',
+      winner: 'A',
+    } satisfies Match
 
     // ACT - should process without throwing (resolveGroupDependentMatches returns undefined)
-    const result = await TournamentManager.onMatchUpdated(completedMatch as any)
+    const result = await TournamentManager.onMatchUpdated(completedMatch)
 
     // ASSERT - resolveGroupDependentMatches returns undefined
     expect(result).toBeUndefined()
