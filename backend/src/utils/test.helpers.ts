@@ -146,3 +146,22 @@ export function setupRatings(rankings: { userId: string; rating: number }[]) {
     value: ratingsMap,
   })
 }
+
+/**
+ * Creates test tracks that can be used in tournaments
+ */
+export async function createTestTracks(count: number = 1) {
+  const trackIds: string[] = []
+  for (let i = 0; i < count; i++) {
+    const trackId = randomUUID()
+    await db.insert(schema.tracks).values({
+      id: trackId,
+      number: i + 1,
+      level: 'white',
+      type: 'stadium',
+    })
+
+    trackIds.push(trackId)
+  }
+  return trackIds
+}
