@@ -45,6 +45,10 @@
 
 ## Testing Best Practices
 
+- Only test public methods
+- Do not modify other files than _.spec.ts, _.test.ts or test.helpers.ts when writing tests.
+- If the tests fail because of a bug in the code that is being tested, stop writing tests and ask the user if you can fix it.
+
 ### Blueprint Test Pattern
 
 Use the following pattern when writing manager tests with the in-memory test database:
