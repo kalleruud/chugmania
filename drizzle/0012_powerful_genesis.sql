@@ -21,4 +21,4 @@ ALTER TABLE `__new_match_dependencies` RENAME TO `match_dependencies`;--> statem
 PRAGMA foreign_keys=ON;--> statement-breakpoint
 ALTER TABLE `matches` ADD `completed_at` integer;--> statement-breakpoint
 ALTER TABLE `matches` ADD `index` integer;--> statement-breakpoint
-ALTER TABLE `matches` ADD `stage` text REFERENCES stages(id);
+ALTER TABLE `matches` ADD `stage` text REFERENCES stages(id) ON DELETE cascade;
