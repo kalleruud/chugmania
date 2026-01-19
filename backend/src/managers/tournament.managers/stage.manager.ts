@@ -35,7 +35,7 @@ export default class StageManager {
     })
   }
 
-  static async getStages(
+  private static async getStages(
     tournamentId: string,
     level?: StageLevel
   ): Promise<TournamentStage[]> {
