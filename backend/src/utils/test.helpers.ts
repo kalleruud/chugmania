@@ -1,23 +1,25 @@
-import db, { database } from '@backend/database/database'
+import db from '@backend/database/database'
 import * as schema from '@backend/database/schema'
+import type { Ranking } from '@common/models/ranking'
 import type { SocketData } from '@common/models/socket.io'
 import type { User } from '@common/models/user'
-import { randomUUID } from 'node:crypto'
+import { randomInt, randomUUID } from 'node:crypto'
 import AuthManager from '../managers/auth.manager'
+import RatingManager from '../managers/rating.manager'
+import SessionManager from '../managers/session.manager'
 import UserManager from '../managers/user.manager'
 import type { TypedSocket } from '../server'
 
 export async function clearDB() {
-  database.transaction(() => {
-    db.delete(schema.matches).run()
-    db.delete(schema.stages).run()
-    db.delete(schema.groupPlayers).run()
-    db.delete(schema.groups).run()
-    db.delete(schema.tournaments).run()
-    db.delete(schema.sessions).run()
-    db.delete(schema.users).run()
-    db.delete(schema.sessionSignups).run()
-  })
+  await db.delete(schema.matches)
+  await db.delete(schema.stages)
+  await db.delete(schema.groups)
+  await db.delete(schema.tournaments)
+  await db.delete(schema.groupPlayers)
+  await db.delete(schema.sessionSignups)
+  await db.delete(schema.timeEntries)
+  await db.delete(schema.users)
+  await db.delete(schema.sessions)
 }
 
 export async function createMockAdmin() {
@@ -92,4 +94,55 @@ export async function registerMockUsers(
   return await Promise.all(
     Array.from({ length }, (_, i) => registerMockUser(socket, start + i))
   )
+}
+
+export async function createSessionMock(
+  socket: TypedSocket,
+  participants: string[]
+) {
+  const sessionId = randomUUID()
+  await SessionManager.onCreateSession(socket, {
+    type: 'CreateSessionRequest',
+    id: sessionId,
+    name: 'test',
+    date: new Date(),
+  })
+
+  await Promise.all(
+    participants.map(p =>
+      SessionManager.onRsvpSession(socket, {
+        type: 'RsvpSessionRequest',
+        session: sessionId,
+        user: p,
+        response: 'yes',
+      })
+    )
+  )
+
+  return sessionId
+}
+
+export function setupRatings(rankings: { userId: string; rating: number }[]) {
+  const sortedRankings = rankings.toSorted((a, b) => a.rating - b.rating)
+
+  const ratingsMap = new Map<string, Ranking>()
+  for (let index = 0; index < sortedRankings.length; index++) {
+    const r = sortedRankings[index]
+    const matchRating = randomInt(r.rating)
+    const trackRating = r.rating - matchRating
+
+    ratingsMap.set(r.userId, {
+      user: r.userId,
+      ranking: index,
+      totalRating: r.rating,
+      matchRating,
+      trackRating,
+    })
+  }
+
+  // Use Object.defineProperty to set the private ratings property
+  Object.defineProperty(RatingManager, 'ratings', {
+    writable: true,
+    value: ratingsMap,
+  })
 }
