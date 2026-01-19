@@ -1,23 +1,69 @@
 import loc from '@/lib/locales'
 import db from '@backend/database/database'
-import { matches, stages, type StageLevel } from '@backend/database/schema'
+import {
+  matchDependencies,
+  matches,
+  stages,
+  type StageLevel,
+} from '@backend/database/schema'
 import type {
   CreateStage,
   MatchWithTournamentDetails,
   Stage,
   TournamentStage,
 } from '@common/models/tournament'
-import { and, asc, eq } from 'drizzle-orm'
+import { and, asc, eq, inArray, isNull } from 'drizzle-orm'
+import { getStageName } from '../../utils/stage'
 
 export default class StageManager {
   private static async getMatches(
-    stageId: string
+    stageId: string,
+    tournamentId: string,
+    allStages: Stage[]
   ): Promise<MatchWithTournamentDetails[]> {
     const matchData = await db
       .select()
       .from(matches)
       .where(eq(matches.stage, stageId))
       .orderBy(asc(matches.index))
+
+    const currentStage = allStages.find(s => s.id === stageId)
+    if (!currentStage) {
+      throw new Error(`Stage ${stageId} not found`)
+    }
+
+    // Fetch all dependencies targeting matches in this stage
+    const matchIds = matchData.map(m => m.id)
+    const deps = await db.query.matchDependencies.findMany({
+      where: and(
+        inArray(matchDependencies.toMatch, matchIds),
+        isNull(matchDependencies.deletedAt)
+      ),
+    })
+
+    // Build a map of match IDs to stage data for quick lookup
+    const stageMap = new Map(allStages.map(s => [s.id, s]))
+
+    // Build a map of all matches in this tournament for dependency resolution
+    const allMatches = await db.query.matches.findMany({
+      where: and(
+        inArray(
+          matches.stage,
+          allStages.map(s => s.id)
+        ),
+        isNull(matches.deletedAt)
+      ),
+    })
+
+    const matchMap = new Map(allMatches.map(m => [m.id, m]))
+
+    // Build dependency map: matchId -> dependencies targeting it
+    const dependenciesByToMatch = new Map<string, typeof deps>()
+    for (const dep of deps) {
+      const existing = dependenciesByToMatch.get(dep.toMatch) || []
+      existing.push(dep)
+      dependenciesByToMatch.set(dep.toMatch, existing)
+    }
 
     return matchData.map(match => {
       const { stage, index, ...cleanMatch } = match
@@ -26,16 +72,66 @@ export default class StageManager {
           `Found a match (${cleanMatch.id}) with a stage and  without an index`
         )
 
+      const matchDeps = dependenciesByToMatch.get(match.id) || []
+      const depsBySlot = new Map<string, string>()
+
+      for (const dep of matchDeps) {
+        let source: string
+
+        if (dep.fromGroup) {
+          // Format: "{rank}. plass fra {groupName}"
+          source = loc.no.tournament.sourceGroupPlaceholder(
+            dep.fromPosition - 1,
+            dep.fromPosition
+          )
+        } else if (dep.fromMatch) {
+          // Format: "Vinner av {matchName}" or "Taper av {matchName}"
+          const sourceMatch = matchMap.get(dep.fromMatch)
+          const sourceStage =
+            sourceMatch && stageMap.get(sourceMatch.stage || '')
+
+          if (sourceMatch && sourceStage && sourceMatch.index !== null) {
+            const stageName = getStageName(
+              sourceStage.level,
+              sourceStage.bracket,
+              sourceStage.index
+            )
+            const matchName = loc.no.tournament.bracketMatchName(
+              stageName,
+              sourceMatch.index + 1
+            )
+            // Position 1 = winner, 2+ = loser
+            const position = dep.fromPosition === 1 ? 1 : 2
+            source = loc.no.tournament.sourceMatchPlaceholder(
+              matchName,
+              position
+            )
+          } else {
+            source = 'Ukjent'
+          }
+        } else {
+          source = 'Ukjent'
+        }
+
+        depsBySlot.set(dep.toSlot, source)
+      }
+
       return {
         ...match,
         stage: stageId,
         index,
-        dependencyNames: null,
+        dependencyNames:
+          depsBySlot.size === 2
+            ? {
+                A: depsBySlot.get('A') || 'Ukjent',
+                B: depsBySlot.get('B') || 'Ukjent',
+              }
+            : null,
       }
     })
   }
 
-  private static async getStages(
+  static async getStages(
     tournamentId: string,
     level?: StageLevel
   ): Promise<TournamentStage[]> {
@@ -51,7 +147,9 @@ export default class StageManager {
       .orderBy(asc(stages.index))
 
     return Promise.all(
-      stagesList.map(stage => StageManager.getStageWithDetails(stage.id))
+      stagesList.map(stage =>
+        StageManager.getStageWithDetails(stage.id, tournamentId, stagesList)
+      )
     )
   }
 
@@ -70,11 +168,13 @@ export default class StageManager {
   }
 
   private static async getStageWithDetails(
-    stageId: string
+    stageId: string,
+    tournamentId: string,
+    allStages: Stage[]
   ): Promise<TournamentStage> {
     return {
       stage: await StageManager.getStage(stageId),
-      matches: await StageManager.getMatches(stageId),
+      matches: await StageManager.getMatches(stageId, tournamentId, allStages),
     }
   }
 

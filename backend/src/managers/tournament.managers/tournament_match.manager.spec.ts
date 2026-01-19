@@ -72,10 +72,6 @@ describe('TournamentMatchManager - calculateMinMaxMatchesPerPlayer', () => {
   )
 })
 
-// ============================================================================
-// INTEGRATION TESTS
-// ============================================================================
-
 describe('TournamentMatchManager - createGroupMatches', () => {
   beforeEach(async () => {
     await clearDB()
@@ -359,10 +355,6 @@ describe('TournamentMatchManager - generateBracketMatches', () => {
     expect(result.stages.length).toBeGreaterThan(0)
   })
 })
-
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
 
 function createGroup(playerCount: number): GroupWithPlayers {
   const groupId = `group-${Math.random()}`

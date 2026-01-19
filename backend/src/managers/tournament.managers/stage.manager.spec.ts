@@ -10,22 +10,6 @@ import {
 import StageManager from './stage.manager'
 import TournamentManager from './tournament.manager'
 
-/**
- * Comprehensive Test Suite for StageManager
- *
- * Tests only public methods:
- * - createStage(draft: CreateStage): Promise<Stage>
- * - getStage(stageId: string): Promise<Stage>
- * - getStageLevel(matchesInRound: number): StageLevel
- *
- * Each test sets up its own test data using helper functions.
- * beforeEach only clears the database to ensure test isolation.
- */
-
-// ============================================================================
-// STAGE LEVEL MAPPING TESTS (Pure Functions)
-// ============================================================================
-
 describe('StageManager.getStageLevel', () => {
   const invalidCounts = [-1, 0, 3, 5, 6, 7, 9, 10, 32, 100]
   const stageLevelTests: [number, string][] = [
@@ -48,10 +32,6 @@ describe('StageManager.getStageLevel', () => {
     })
   })
 })
-
-// ============================================================================
-// INTEGRATION TESTS - Public Methods
-// ============================================================================
 
 describe('StageManager - createStage & getStage', () => {
   beforeEach(async () => {
@@ -261,10 +241,6 @@ describe('StageManager - createStage & getStage', () => {
   })
 })
 
-// ============================================================================
-// EDGE CASES & ERROR HANDLING
-// ============================================================================
-
 describe('StageManager - Error Handling', () => {
   beforeEach(async () => {
     await clearDB()
@@ -352,9 +328,53 @@ describe('StageManager - Error Handling', () => {
   })
 })
 
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
+describe('StageManager - Dependency Names', () => {
+  beforeEach(async () => {
+    await clearDB()
+  })
+
+  it('should generate descriptive dependency names for match dependencies', async () => {
+    // ARRANGE: Create a tournament with bracket stages
+    await createTestTournament()
+
+    // Get all tournaments to access the one we just created
+    const tournaments = await TournamentManager.getAll()
+    expect(tournaments.length).toBeGreaterThan(0)
+
+    // ASSERT: Verify that dependency names are properly formatted strings
+    for (const tournament of tournaments) {
+      // Find stages with matches that have dependencies
+      for (const stage of tournament.stages) {
+        for (const match of stage.matches) {
+          if (match.dependencyNames) {
+            // Should have both A and B dependencies
+            expect(match.dependencyNames).toHaveProperty('A')
+            expect(match.dependencyNames).toHaveProperty('B')
+
+            // Both should be non-empty strings
+            expect(typeof match.dependencyNames.A).toBe('string')
+            expect(typeof match.dependencyNames.B).toBe('string')
+            expect(match.dependencyNames.A.length).toBeGreaterThan(0)
+            expect(match.dependencyNames.B.length).toBeGreaterThan(0)
+
+            // Verify the format contains expected keywords
+            const depA = match.dependencyNames.A
+            const depB = match.dependencyNames.B
+
+            // Dependencies should either contain "Vinner av", "Taper av", or "plass fra"
+            const isValidDependency = (dep: string) =>
+              dep.includes('Vinner av') ||
+              dep.includes('Taper av') ||
+              dep.includes('plass fra')
+
+            expect(isValidDependency(depA)).toBe(true)
+            expect(isValidDependency(depB)).toBe(true)
+          }
+        }
+      }
+    }
+  })
+})
 
 async function createTestTournament() {
   // Create admin socket
