@@ -110,11 +110,14 @@ export default class TournamentManager {
         const depsBySlot = new Map<string, string>()
 
         for (const dep of deps) {
-          const source = dep.fromGroup
-            ? `Group ${dep.fromPosition}`
-            : dep.fromMatch
-              ? `Match Winner`
-              : 'Unknown'
+          let source: string
+          if (dep.fromGroup) {
+            source = `Group ${dep.fromPosition}`
+          } else if (dep.fromMatch) {
+            source = 'Match Winner'
+          } else {
+            source = 'Unknown'
+          }
           depsBySlot.set(dep.toSlot, source)
         }
 
@@ -140,12 +143,11 @@ export default class TournamentManager {
     }
 
     // Build TournamentStage array, sorted by stage index
-    const tournamentStages = stagesData
-      .sort((a, b) => a.index - b.index)
-      .map(stage => ({
-        stage,
-        matches: matchesByStage.get(stage.id) || [],
-      }))
+    const sortedStages = stagesData.toSorted((a, b) => a.index - b.index)
+    const tournamentStages = sortedStages.map(stage => ({
+      stage,
+      matches: matchesByStage.get(stage.id) || [],
+    }))
 
     // Calculate min/max matches per player
     const { min: minMatchesPerPlayer, max: maxMatchesPerPlayer } =
