@@ -90,14 +90,11 @@ export default class StageManager {
           // Format: "{rank}. plass fra {groupName}"
           const group = groupMap.get(dep.fromGroup)
           if (group) {
-            // fromPosition is 0-based for slot A, 1-based for slot B
-            // Convert to 1-based for display (1st place, 2nd place, etc.)
-            const displayRank =
-              dep.toSlot === 'A' ? dep.fromPosition + 1 : dep.fromPosition
+            // fromPosition is 1-based (1 = 1st place, 2 = 2nd place, etc.)
             // group.index is 0-based, we pass it directly to groupName
             source = loc.no.tournament.sourceGroupPlaceholder(
               group.index,
-              displayRank
+              dep.fromPosition
             )
           } else {
             source = 'Ukjent'

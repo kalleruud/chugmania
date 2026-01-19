@@ -246,14 +246,10 @@ export default class TournamentMatchManager {
       deps: MatchDependency[]
     ) => {
       interleavedStages.push(stage)
-      const tmsForStage = stageMap.get(stage.id) || []
-      interleavedMatches.push(...tmsForStage)
-      tmsForStage.forEach(tm => {
-        const match = matchesById.get(tm.id)
-        if (match) interleavedMatches.push(match)
-      })
+      const matchesForStage = stageMap.get(stage.id) || []
+      interleavedMatches.push(...matchesForStage)
       interleavedDeps.push(
-        ...deps.filter(d => tmsForStage.some(tm => tm.id === d.toMatch))
+        ...deps.filter(d => matchesForStage.some(m => m.id === d.toMatch))
       )
     }
 
@@ -448,9 +444,9 @@ export default class TournamentMatchManager {
     const groupAIndex = Math.floor(index / advancementCount) % groupCount
     const groupBIndex = (groupAIndex + 1) % groupCount
 
-    // Determine which rank within each group
+    // Determine which rank within each group (1-based: 1 = 1st place, 2 = 2nd place, etc.)
     const rankWithinPairing = index % advancementCount
-    const slotAPosition = rankWithinPairing // 0 = 1st, 1 = 2nd, 2 = 3rd,  3 = 4th, etc.
+    const slotAPosition = rankWithinPairing + 1 // 1 = 1st, 2 = 2nd, etc.
     const slotBPosition = advancementCount - rankWithinPairing // Reverse order from other group
 
     // Slot A: from group A, in order

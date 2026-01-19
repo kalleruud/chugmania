@@ -247,7 +247,7 @@ describe('TournamentMatchManager - generateBracketMatches', () => {
   it('should generate double elimination bracket', async () => {
     // ARRANGE
     const { socket } = await createMockAdmin()
-    const users = await registerMockUsers(socket, 4)
+    const users = await registerMockUsers(socket, 8)
 
     setupRatings(
       users.map((u, idx) => ({
@@ -262,14 +262,15 @@ describe('TournamentMatchManager - generateBracketMatches', () => {
     )
     const tournamentId = randomUUID()
 
+    // Create with 2 groups of 4, advancing 2 each = 4 players in bracket
     await TournamentManager.onCreateTournament(socket, {
       type: 'CreateTournamentRequest',
       id: tournamentId,
       name: 'Test Tournament',
       session: sessionId,
-      groupsCount: 1,
+      groupsCount: 2,
       advancementCount: 2,
-      eliminationType: 'single',
+      eliminationType: 'double',
     })
 
     const groupsWithPlayers = await GroupManager.getAll(tournamentId)
@@ -295,8 +296,12 @@ describe('TournamentMatchManager - generateBracketMatches', () => {
     expect(result.stages).toBeDefined()
     expect(result.stages.length).toBeGreaterThan(0)
     expect(result.matches).toBeDefined()
-    // Double elimination should have more matches than single
-    expect(result.matches.length).toBeGreaterThanOrEqual(3)
+    // With 4 players in double elimination:
+    // Upper: 2 semi + 1 final = 3 matches
+    // Lower: 1 (losers from semi) + 1 (lower final: survivor vs upper final loser) = 2 matches
+    // Grand Final: 1 match
+    // Total: 6 matches
+    expect(result.matches.length).toBeGreaterThanOrEqual(5)
     expect(result.matchDependencies).toBeDefined()
   })
 
@@ -541,6 +546,178 @@ describe('TournamentMatchManager - generateBracketMatches', () => {
       expect(tournament.stages[i].stage.index).toBeLessThanOrEqual(
         tournament.stages[i + 1].stage.index
       )
+    }
+  })
+
+  it('should create correct dependencies for double elimination bracket', async () => {
+    // ARRANGE: Create a double elimination tournament
+    const { socket } = await createMockAdmin()
+    const users = await registerMockUsers(socket, 8)
+
+    setupRatings(
+      users.map((u, idx) => ({
+        userId: u.id,
+        rating: 1000 - idx * 10,
+      }))
+    )
+
+    const sessionId = await createSessionMock(
+      socket,
+      users.map(u => u.id)
+    )
+    const tournamentId = randomUUID()
+
+    await TournamentManager.onCreateTournament(socket, {
+      type: 'CreateTournamentRequest',
+      id: tournamentId,
+      name: 'Dependency Test',
+      session: sessionId,
+      groupsCount: 2,
+      advancementCount: 2,
+      eliminationType: 'double',
+    })
+
+    const groupsWithPlayers = await GroupManager.getAll(tournamentId)
+
+    const groupMatches = await TournamentMatchManager.createGroupMatches(
+      tournamentId,
+      sessionId,
+      groupsWithPlayers
+    )
+
+    // ACT
+    const result = await TournamentMatchManager.generateBracketMatches(
+      tournamentId,
+      sessionId,
+      groupsWithPlayers,
+      2,
+      'double',
+      groupMatches.stages.length
+    )
+
+    // Get all stages by type
+    const upperStages = result.stages.filter(s => s.bracket === 'upper')
+    const lowerStages = result.stages.filter(s => s.bracket === 'lower')
+    const grandFinalStage = result.stages.find(s => s.level === 'grand_final')
+
+    // Get matches by stage
+    const upperMatches = result.matches.filter(m =>
+      upperStages.some(s => s.id === m.stage)
+    )
+    const lowerMatches = result.matches.filter(m =>
+      lowerStages.some(s => s.id === m.stage)
+    )
+    const grandFinalMatch = result.matches.find(
+      m => m.stage === grandFinalStage?.id
+    )
+
+    console.log('Upper matches:', upperMatches.length)
+    console.log('Lower matches:', lowerMatches.length)
+    console.log('Grand final match:', grandFinalMatch ? 1 : 0)
+
+    // ASSERT: Lower bracket matches should have dependencies from upper bracket losers
+    // Lower R1 matches should depend on upper bracket match losers (fromPosition: 2)
+    const lowerR1Matches = lowerMatches.filter(m => {
+      const stage = lowerStages.find(s => s.id === m.stage)
+      return stage && stage.index === Math.min(...lowerStages.map(s => s.index))
+    })
+
+    console.log('Lower R1 matches:', lowerR1Matches.length)
+
+    for (const lowerMatch of lowerR1Matches) {
+      const deps = result.matchDependencies.filter(
+        d => d.toMatch === lowerMatch.id
+      )
+      console.log(`Lower R1 match ${lowerMatch.id} dependencies:`, deps.length)
+
+      // Lower R1 matches should have 2 dependencies, both from upper bracket losers
+      expect(deps.length).toBe(2)
+
+      for (const dep of deps) {
+        // Should be from an upper bracket match
+        expect(dep.fromMatch).not.toBeNull()
+        const sourceMatch = upperMatches.find(m => m.id === dep.fromMatch)
+        expect(sourceMatch).toBeDefined()
+        // Should be the loser (position 2)
+        expect(dep.fromPosition).toBe(2)
+      }
+    }
+
+    // ASSERT: Grand Final should have dependencies from both upper winner and lower winner
+    expect(grandFinalMatch).toBeDefined()
+    const grandFinalDeps = result.matchDependencies.filter(
+      d => d.toMatch === grandFinalMatch?.id
+    )
+
+    console.log('Grand final dependencies:', grandFinalDeps.length)
+    grandFinalDeps.forEach(dep => {
+      const sourceMatch = result.matches.find(m => m.id === dep.fromMatch)
+      const sourceStage = result.stages.find(s => s.id === sourceMatch?.stage)
+      console.log(
+        `  From: ${sourceStage?.bracket || sourceStage?.level}, position: ${dep.fromPosition}, slot: ${dep.toSlot}`
+      )
+    })
+
+    expect(grandFinalDeps.length).toBe(2)
+
+    // One dependency should be from upper bracket final (winner)
+    const upperFinalDep = grandFinalDeps.find(d => {
+      const sourceMatch = result.matches.find(m => m.id === d.fromMatch)
+      const sourceStage = result.stages.find(s => s.id === sourceMatch?.stage)
+      return sourceStage?.bracket === 'upper' && sourceStage?.level === 'final'
+    })
+    expect(upperFinalDep).toBeDefined()
+    expect(upperFinalDep?.fromPosition).toBe(1) // winner
+
+    // One dependency should be from lower bracket final (winner)
+    const lowerFinalDep = grandFinalDeps.find(d => {
+      const sourceMatch = result.matches.find(m => m.id === d.fromMatch)
+      const sourceStage = result.stages.find(s => s.id === sourceMatch?.stage)
+      return sourceStage?.bracket === 'lower'
+    })
+    expect(lowerFinalDep).toBeDefined()
+    expect(lowerFinalDep?.fromPosition).toBe(1) // winner
+
+    // ASSERT: Upper bracket matches after first round should only depend on upper bracket winners
+    // (This is correct - upper bracket is pure winners bracket)
+    const upperSemiMatches = upperMatches.filter(m => {
+      const stage = upperStages.find(s => s.id === m.stage)
+      return stage?.level === 'semi'
+    })
+
+    console.log('Upper semi matches:', upperSemiMatches.length)
+    console.log('All upper stages:')
+    upperStages.forEach(s => {
+      console.log(`  Stage ${s.id}: level=${s.level}, bracket=${s.bracket}`)
+    })
+
+    for (const semiMatch of upperSemiMatches) {
+      const deps = result.matchDependencies.filter(
+        d => d.toMatch === semiMatch.id
+      )
+      console.log(`Semi match ${semiMatch.id} has ${deps.length} deps`)
+
+      expect(deps.length).toBe(2)
+
+      for (const dep of deps) {
+        // Should be from an upper bracket match or group
+        const sourceMatch = result.matches.find(m => m.id === dep.fromMatch)
+        const sourceStage = result.stages.find(s => s.id === sourceMatch?.stage)
+        console.log(
+          `  Dep from match ${dep.fromMatch} (stage ${sourceStage?.id}, bracket=${sourceStage?.bracket}, level=${sourceStage?.level}), position=${dep.fromPosition}`
+        )
+
+        if (dep.fromMatch) {
+          // If from a match, that match should be from upper bracket (winners)
+          expect(sourceStage?.bracket).toBe('upper')
+          expect(dep.fromPosition).toBe(1) // winner
+        } else if (dep.fromGroup) {
+          // If from a group, position indicates group standing (1=1st, 2=2nd, etc.)
+          // With snake seeding: slot A gets better seed, slot B gets worse seed
+          expect(dep.fromPosition).toBeGreaterThanOrEqual(1)
+          expect(dep.fromPosition).toBeLessThanOrEqual(2) // advancementCount is 2
+        }
+      }
     }
   })
 })
