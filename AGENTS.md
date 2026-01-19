@@ -52,11 +52,43 @@ Use the following pattern when writing manager tests with the in-memory test dat
 **ARRANGE-ACT-ASSERT Structure:**
 
 1. **ARRANGE**: Set up test data using public manager APIs (not direct database insertion)
-   - Use `clearDB()` to reset database state in `beforeEach`
+   - **Each test must set up its own database state** - do NOT share setup between tests
+   - Use `clearDB()` to reset database state in `beforeEach` hook
+   - Each test calls helper functions to create its own isolated test context
    - Use existing public APIs like `UserManager.onRegister()`, `SessionManager.onCreateSession()`, etc.
    - Avoid bypassing registration workflows or validation
 2. **ACT**: Call the method under test
 3. **ASSERT**: Verify the results with specific assertions
+
+**Database Isolation (Critical):**
+
+- **Only call `clearDB()` in `beforeEach`** - this ensures a fresh database for each test
+- **Never call `clearDB()` in `beforeAll`** - this causes test pollution because tests would share state
+- **Each test must independently create all data it needs** - use helper functions
+- Test isolation prevents cascading failures where fixing one test breaks another
+- Ensures tests can run in parallel without conflicts
+
+Example of CORRECT isolation:
+
+```typescript
+describe('ManagerName - Feature', () => {
+  beforeEach(async () => {
+    await clearDB() // ✅ Correct: reset before EACH test
+  })
+
+  it('first test', async () => {
+    const { socket } = await createMockAdmin() // ✅ Each test creates its own admin
+    const users = await registerMockUsers(socket, 4) // ✅ Each test creates its own users
+    // ... test logic
+  })
+
+  it('second test', async () => {
+    const { socket } = await createMockAdmin() // ✅ Fresh admin for this test
+    const users = await registerMockUsers(socket, 2) // ✅ Fresh users for this test
+    // ... test logic
+  })
+})
+```
 
 **Database Setup:**
 

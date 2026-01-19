@@ -41,7 +41,43 @@ Chugmania is a full-stack Trackmania Turbo companion for logging lap times, shar
 
 ### Testing
 
-Formal test suites are still pending. Author backend specs as `*.spec.ts` or frontend tests as `*.test.tsx`, then execute single files manually with `tsx path/to/spec.ts`.
+Run all tests with `npm run test`. The test suite uses **Vitest** with in-memory SQLite for test isolation.
+
+**Test Coverage:**
+
+- Backend manager tests: `*.spec.ts` (e.g., `StageManager`, `TournamentMatchManager`)
+- Frontend component tests: `*.test.tsx`
+- All tests follow the **Blueprint Test Pattern** with ARRANGE-ACT-ASSERT structure
+- Tests use `beforeEach` to reset database state, ensuring complete isolation between tests
+- Helper functions in `backend/src/utils/test.helpers.ts` provide reusable test setup (users, sessions, tournaments, tracks)
+
+**Running Tests:**
+
+- `npm run test` – Run all tests with Vitest
+- `npm run test:watch` – Run tests in watch mode for development
+- `npm run test:coverage` – Generate coverage reports for SonarQube (v8 provider)
+
+**Test Pattern Example:**
+
+```typescript
+describe('ManagerName - Feature', () => {
+  beforeEach(async () => {
+    await clearDB() // Fresh DB for each test
+  })
+
+  it('should do something', async () => {
+    // ARRANGE: Set up test data
+    const { socket } = await createMockAdmin()
+    const users = await registerMockUsers(socket, 4)
+
+    // ACT: Execute the feature
+    const result = await ManagerUnderTest.methodName(params)
+
+    // ASSERT: Verify behavior
+    expect(result).toBeDefined()
+  })
+})
+```
 
 ## Project Layout
 
