@@ -18,7 +18,6 @@ import {
   sessionSignups,
   stages,
   timeEntries,
-  tournamentMatches,
   tournaments,
   tracks,
   users,
@@ -45,7 +44,6 @@ export default class AdminManager {
     groups: new Set(),
     groupPlayers: new Set(),
     stages: new Set(),
-    tournamentMatches: new Set(),
     matchDependencies: new Set(),
   } satisfies Record<ExportCsvRequest['table'], Set<string>>
 
@@ -60,7 +58,6 @@ export default class AdminManager {
     groups: groups,
     groupPlayers: groupPlayers,
     stages: stages,
-    tournamentMatches: tournamentMatches,
     matchDependencies: matchDependencies,
   } satisfies Record<ExportCsvRequest['table'], SQLiteTable>
 
