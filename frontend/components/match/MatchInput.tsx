@@ -13,6 +13,11 @@ import {
   userToLookupItem,
 } from '@/lib/lookup-utils'
 import type {
+  MatchSide,
+  MatchStatus,
+  StageLevel,
+} from '@backend/database/schema'
+import type {
   CreateMatchRequest,
   EditMatchRequest,
   Match,
@@ -59,10 +64,10 @@ export default function MatchInput({
   const currentOngoingSession = sessions?.find(s => isOngoing(s))
 
   const isCreating = !inputMatch.id
-  const initialUser1: UserInfo | null =
-    users?.find(u => u.id === inputMatch.user1) ?? null
-  const initialUser2: UserInfo | null =
-    users?.find(u => u.id === inputMatch.user2) ?? null
+  const initialUserA: UserInfo | null =
+    users?.find(u => u.id === inputMatch.userA) ?? null
+  const initialUserB: UserInfo | null =
+    users?.find(u => u.id === inputMatch.userB) ?? null
   const initialTrack: Track | null = isCreating
     ? (tracks?.find(t => t.id === (inputMatch.track ?? paramId)) ?? null)
     : (tracks?.find(t => t.id === inputMatch.track) ?? null)
@@ -72,12 +77,13 @@ export default function MatchInput({
       sessions?.find(u => u.id === paramId) ??
       null)
     : (sessions?.find(u => u.id === inputMatch.session) ?? null)
-  const initialWinner: string | null = inputMatch.winner ?? null
-  const initialStatus: MatchStatus = inputMatch.status ?? 'planned'
-  const initialStage: MatchStage | null = inputMatch.stage ?? null
 
-  const [user1, setUser1] = useState(initialUser1)
-  const [user2, setUser2] = useState(initialUser2)
+  const initialStatus: MatchStatus = inputMatch.status ?? 'planned'
+  const initialWinner = inputMatch.winner ?? null
+  const initialStage = inputMatch.stage ?? null
+
+  const [userA, setUserA] = useState(initialUserA)
+  const [userB, setUserB] = useState(initialUserB)
   const [track, setTrack] = useState(initialTrack)
 
   const [session, setSession] = useState(initialSession)
@@ -90,16 +96,16 @@ export default function MatchInput({
     if (!track || !status) return undefined
 
     return {
-      user1: user1?.id ?? null,
-      user2: user2?.id ?? null,
+      userA: userA?.id ?? null,
+      userB: userB?.id ?? null,
       track: track.id,
       session: session?.id ?? null,
-      winner: !winner || winner === 'none' ? null : winner,
+      winner: winner ?? null,
       status: status,
       stage: stage ?? null,
       comment: comment?.trim() === '' ? null : comment?.trim(),
     } satisfies Omit<CreateMatchRequest | EditMatchRequest, 'type'> | undefined
-  }, [user1, user2, track, session, winner, status, stage, comment])
+  }, [userA, userB, track, session, winner, status, stage, comment])
 
   function handleCreate(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -138,20 +144,20 @@ export default function MatchInput({
     )
   }
 
-  function handleSetWinner(userId: string) {
-    if (!userId || userId === 'none') {
-      setWinner('none')
+  function handleSetWinner(side: string) {
+    if (!side || side === 'none') {
+      setWinner(null)
       setStatus('planned')
       return
     }
-    setWinner(userId)
+    setWinner(side as MatchSide)
     setStatus('completed')
   }
 
   function handleSetStatus(status: MatchStatus) {
     setStatus(status)
     if (status !== 'completed') {
-      setWinner('none')
+      setWinner(null)
     }
   }
 
@@ -166,8 +172,8 @@ export default function MatchInput({
             <Combobox
               className='w-full'
               disabled={disabled}
-              selected={user1}
-              setSelected={value => setUser1(value ?? null)}
+              selected={userA}
+              setSelected={value => setUserA(value ?? null)}
               items={users.map(userToLookupItem)}
               CustomRow={UserRow}
               placeholder={loc.no.match.placeholder.selectUser1}
@@ -184,8 +190,8 @@ export default function MatchInput({
             <Combobox
               className='w-full'
               disabled={disabled}
-              selected={user2}
-              setSelected={value => setUser2(value ?? null)}
+              selected={userB}
+              setSelected={value => setUserB(value ?? null)}
               items={users.map(userToLookupItem)}
               CustomRow={UserRow}
               placeholder={loc.no.match.placeholder.selectUser2}
@@ -226,7 +232,7 @@ export default function MatchInput({
           <div className='flex items-center gap-2'>
             <Select
               value={stage ?? undefined}
-              onValueChange={v => setStage(v as MatchStage)}
+              onValueChange={v => setStage(v as StageLevel)}
               disabled={disabled}>
               <SelectTrigger>
                 <SelectValue placeholder={loc.no.match.placeholder.none} />
@@ -235,12 +241,12 @@ export default function MatchInput({
                 <SelectGroup>
                   <SelectLabel>Gruppespill</SelectLabel>
                   <SelectItem value='group'>
-                    {loc.no.match.stage.group}
+                    {loc.no.match.stageNames.group}
                   </SelectItem>
                 </SelectGroup>
                 <SelectGroup>
                   <SelectLabel>Sluttspill</SelectLabel>
-                  {Object.entries(loc.no.match.stage)
+                  {Object.entries(loc.no.match.stageNames)
                     .filter(
                       ([key]) => !key.includes('loser') && key !== 'group'
                     )
@@ -252,7 +258,7 @@ export default function MatchInput({
                 </SelectGroup>
                 <SelectGroup>
                   <SelectLabel>Tapersluttspill</SelectLabel>
-                  {Object.entries(loc.no.match.stage)
+                  {Object.entries(loc.no.match.stageNames)
                     .filter(([key]) => key.includes('loser'))
                     .map(([key, label]) => (
                       <SelectItem key={key} value={key}>
@@ -297,12 +303,8 @@ export default function MatchInput({
               <SelectItem value='none'>
                 {loc.no.match.placeholder.none}
               </SelectItem>
-              {user1 && (
-                <SelectItem value={user1.id}>{user1.firstName}</SelectItem>
-              )}
-              {user2 && (
-                <SelectItem value={user2.id}>{user2.firstName}</SelectItem>
-              )}
+              {userA && <SelectItem value='A'>{userA.firstName}</SelectItem>}
+              {userB && <SelectItem value='B'>{userB.firstName}</SelectItem>}
             </SelectContent>
           </Select>
         </div>
