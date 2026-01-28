@@ -12,12 +12,10 @@ import {
   trackToLookupItem,
   userToLookupItem,
 } from '@/lib/lookup-utils'
-import type { MatchStage } from '@backend/database/schema'
 import type {
   CreateMatchRequest,
   EditMatchRequest,
   Match,
-  MatchStatus,
 } from '@common/models/match'
 import type { SessionWithSignups } from '@common/models/session'
 import type { Track } from '@common/models/track'

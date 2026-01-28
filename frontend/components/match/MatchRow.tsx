@@ -6,7 +6,7 @@ import { getStageName } from '@/lib/utils'
 import type { MatchSide } from '@backend/database/schema'
 import type { EditMatchRequest, Match } from '@common/models/match'
 import type {
-  TournamentMatchWithDetails,
+  MatchWithTournamentDetails,
   TournamentWithDetails,
 } from '@common/models/tournament'
 import type { UserInfo } from '@common/models/user'
@@ -19,10 +19,8 @@ import type { BaseRowProps } from '../row/RowProps'
 import { NameCellPart } from '../timeentries/TimeEntryRow'
 import { Label } from '../ui/label'
 
-export type MatchRowProps = BaseRowProps<Match | undefined> & {
-  tournamentMatch?: TournamentMatchWithDetails
+export type MatchRowProps = BaseRowProps<Match | MatchWithTournamentDetails> & {
   tournament?: TournamentWithDetails
-  index?: number
   hideTrack?: boolean
   isReadOnly?: boolean
   stageDisplayIndex?: number
@@ -31,9 +29,7 @@ export type MatchRowProps = BaseRowProps<Match | undefined> & {
 export default function MatchRow({
   className,
   item: match,
-  tournamentMatch,
   tournament,
-  index,
   highlight,
   hideTrack,
   isReadOnly,
@@ -45,15 +41,15 @@ export default function MatchRow({
   const { isLoggedIn, loggedInUser } = useAuth()
 
   // Derived values
-  const stage = tournamentMatch?.stage
+  const stage = tournament?.stages.find(s => s.stage.id === match.stage)?.stage
   const stageName = stage
     ? getStageName(stage.level, stage.bracket, stageDisplayIndex ?? stage.index)
     : undefined
 
   const matchName =
-    index === undefined || !stageName
+    match?.index === undefined || match?.index === null || !stageName
       ? undefined
-      : loc.no.tournament.bracketMatchName(stageName, index + 1)
+      : loc.no.tournament.bracketMatchName(stageName, match.index + 1)
 
   const track = match?.track
     ? tracks?.find(t => t.id === match?.track)
@@ -128,7 +124,7 @@ export default function MatchRow({
           <UserCell
             className='flex-1 text-right'
             user={userA}
-            placeholder={tournamentMatch?.dependencyNames?.A}
+            placeholder={match?.dependencyNames?.A}
             isWinner={!!match?.winner && match?.winner === 'A'}
             onClick={() => userA && handleSetWinner('A')}
             disabled={!canEdit || isCancelled || match?.status !== 'planned'}
@@ -147,7 +143,7 @@ export default function MatchRow({
           <UserCell
             className='flex-1'
             user={userB}
-            placeholder={tournamentMatch?.dependencyNames?.B}
+            placeholder={match?.dependencyNames?.B}
             isWinner={!!match?.winner && match?.winner === 'B'}
             onClick={() => userB && handleSetWinner('B')}
             disabled={!canEdit || isCancelled || match?.status !== 'planned'}
