@@ -33,6 +33,19 @@ export type MatchWithTournamentDetails = Omit<Match, 'stage' | 'index'> & {
   } | null
 }
 
+export function isMatchWithTournamentDetails(
+  data: any
+): data is MatchWithTournamentDetails {
+  if (typeof data !== 'object' || !data) return false
+  return (
+    typeof data.id === 'string' &&
+    typeof data.status === 'string' &&
+    typeof data.stage === 'string' &&
+    typeof data.index === 'number' &&
+    'dependencyNames' in data
+  )
+}
+
 export type TournamentStage = {
   stage: Stage
   matches: MatchWithTournamentDetails[]

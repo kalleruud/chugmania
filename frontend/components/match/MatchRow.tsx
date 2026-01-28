@@ -5,9 +5,10 @@ import loc from '@/lib/locales'
 import { getStageName } from '@/lib/utils'
 import type { MatchSide } from '@backend/database/schema'
 import type { EditMatchRequest, Match } from '@common/models/match'
-import type {
-  MatchWithTournamentDetails,
-  TournamentWithDetails,
+import {
+  isMatchWithTournamentDetails,
+  type MatchWithTournamentDetails,
+  type TournamentWithDetails,
 } from '@common/models/tournament'
 import type { UserInfo } from '@common/models/user'
 import { formatTrackName } from '@common/utils/track'
@@ -19,7 +20,7 @@ import type { BaseRowProps } from '../row/RowProps'
 import { NameCellPart } from '../timeentries/TimeEntryRow'
 import { Label } from '../ui/label'
 
-export type MatchRowProps = BaseRowProps<Match | MatchWithTournamentDetails> & {
+export type MatchRowProps = BaseRowProps<MatchWithTournamentDetails | Match> & {
   tournament?: TournamentWithDetails
   hideTrack?: boolean
   isReadOnly?: boolean
@@ -47,29 +48,29 @@ export default function MatchRow({
     : undefined
 
   const matchName =
-    match?.index === undefined || match?.index === null || !stageName
+    match.index === undefined || match.index === null || !stageName
       ? undefined
       : loc.no.tournament.bracketMatchName(stageName, match.index + 1)
 
-  const track = match?.track
-    ? tracks?.find(t => t.id === match?.track)
+  const track = match.track
+    ? tracks?.find(t => t.id === match.track)
     : undefined
-  const session = match?.session
-    ? sessions?.find(s => s.id === match?.session)
+  const session = match.session
+    ? sessions?.find(s => s.id === match.session)
     : undefined
 
-  const userA = match?.userA
-    ? users?.find(u => u.id === match?.userA)
-    : undefined
-  const userB = match?.userB
-    ? users?.find(u => u.id === match?.userB)
-    : undefined
+  const userA = match.userA ? users?.find(u => u.id === match.userA) : undefined
+  const userB = match.userB ? users?.find(u => u.id === match.userB) : undefined
+
+  const deps = isMatchWithTournamentDetails(match)
+    ? match.dependencyNames
+    : null
 
   const canEdit = !isReadOnly && isLoggedIn && loggedInUser.role !== 'user'
 
-  const isCancelled = match?.status === 'cancelled'
-  const isCompleted = match?.status === 'completed'
-  const isPlanned = match?.status === 'planned'
+  const isCancelled = match.status === 'cancelled'
+  const isCompleted = match.status === 'completed'
+  const isPlanned = match.status === 'planned'
 
   const handleSetWinner = (side: MatchSide) => {
     if (!canEdit || !match || isReadOnly) return
@@ -124,10 +125,10 @@ export default function MatchRow({
           <UserCell
             className='flex-1 text-right'
             user={userA}
-            placeholder={match?.dependencyNames?.A}
-            isWinner={!!match?.winner && match?.winner === 'A'}
+            placeholder={deps?.A}
+            isWinner={!!match.winner && match.winner === 'A'}
             onClick={() => userA && handleSetWinner('A')}
-            disabled={!canEdit || isCancelled || match?.status !== 'planned'}
+            disabled={!canEdit || isCancelled || match.status !== 'planned'}
             isCancelled={isCancelled}
             isCompleted={isCompleted}
           />
@@ -143,10 +144,10 @@ export default function MatchRow({
           <UserCell
             className='flex-1'
             user={userB}
-            placeholder={match?.dependencyNames?.B}
-            isWinner={!!match?.winner && match?.winner === 'B'}
+            placeholder={deps?.B}
+            isWinner={!!match.winner && match.winner === 'B'}
             onClick={() => userB && handleSetWinner('B')}
-            disabled={!canEdit || isCancelled || match?.status !== 'planned'}
+            disabled={!canEdit || isCancelled || match.status !== 'planned'}
             isCancelled={isCancelled}
             isCompleted={isCompleted}
           />
