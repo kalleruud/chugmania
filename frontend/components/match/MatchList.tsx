@@ -13,6 +13,7 @@ export type MatchListProps = {
   session?: string
   matches: Match[]
   hideTrack?: boolean
+  // TODO: Hide user, show lap time in place of name
 }
 
 export default function MatchList({
@@ -33,7 +34,7 @@ export default function MatchList({
             variant='outline'
             size='sm'
             className='text-muted-foreground w-fit'
-            onClick={() => openMatch({ track, user1: user, session })}>
+            onClick={() => openMatch({ track, userA: user, session })}>
             <PlusIcon />
             {loc.no.match.new}
           </Button>
@@ -52,7 +53,7 @@ export default function MatchList({
           highlight={
             match.status !== 'cancelled' &&
             isLoggedIn &&
-            (match.user1 === loggedInUser.id || match.user2 === loggedInUser.id)
+            (match.userA === loggedInUser.id || match.userB === loggedInUser.id)
           }
           className='bg-background-secondary rounded-sm p-2'
           onClick={() => openMatch(match)}
@@ -65,7 +66,7 @@ export default function MatchList({
           variant='ghost'
           size='sm'
           className='text-muted-foreground w-fit'
-          onClick={() => openMatch({ track, user1: user, session })}>
+          onClick={() => openMatch({ track, userA: user, session })}>
           <PlusIcon />
           {loc.no.match.new}
         </Button>

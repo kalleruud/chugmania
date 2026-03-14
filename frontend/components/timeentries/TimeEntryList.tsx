@@ -12,7 +12,7 @@ import TimeEntryRow, { type GapType } from './TimeEntryRow'
 type FilterType = 'all' | 'best' | 'latest'
 
 function sortEntries(entries: TimeEntry[]): TimeEntry[] {
-  return [...entries].sort((a, b) => {
+  return [...entries].toSorted((a, b) => {
     // Entries with valid duration first, sorted by lowest duration
     if (a.duration && b.duration) {
       return a.duration - b.duration

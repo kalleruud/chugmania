@@ -9,6 +9,7 @@ export type UpdateUser = Partial<
   id: User['id']
   newPassword?: string
 }
+
 export type UserInfo = Omit<User, 'passwordHash'> & { passwordHash: undefined }
 
 export function isUserInfo(data: any): data is UserInfo {
@@ -20,6 +21,8 @@ export function isUserInfo(data: any): data is UserInfo {
     typeof data.email === 'string'
   )
 }
+
+export type UserInfoWithSeed = UserInfo & { seed: number }
 
 export type LoginResponse = SuccessResponse & SocketData
 

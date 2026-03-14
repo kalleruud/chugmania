@@ -3,8 +3,6 @@ import type { matches } from '../../backend/database/schema'
 export type Match = typeof matches.$inferSelect
 export type CreateMatch = typeof matches.$inferInsert
 
-export type MatchStatus = 'planned' | 'completed' | 'cancelled'
-
 export type CreateMatchRequest = {
   type: 'CreateMatchRequest'
 } & CreateMatch

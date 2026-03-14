@@ -11,10 +11,6 @@
     @apply scroll-smooth;
   }
 
-  *:focus-visible {
-    @apply ring-primary rounded-sm outline-none ring-2;
-  }
-
   *::selection {
     @apply bg-primary/50;
   }
