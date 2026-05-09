@@ -2,7 +2,6 @@ import ConfirmationButton from '@/components/ConfirmationButton'
 import { PageSubheader } from '@/components/PageHeader'
 import SessionCard from '@/components/session/SessionCard'
 import SessionForm from '@/components/session/SessionForm'
-import TournamentList from '@/components/tournament/TournamentList'
 import TrackLeaderboard from '@/components/track/TrackLeaderboard'
 import {
   Breadcrumb,
@@ -329,8 +328,6 @@ export default function SessionPage() {
         disabled={isCancelled}
         session={session}
       />
-
-      <TournamentList sessionId={session.id} />
 
       {tracks.map(track => (
         <TrackLeaderboard
