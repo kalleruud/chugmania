@@ -1,3 +1,4 @@
+import Combobox from '@/components/combobox'
 import ConfirmationButton from '@/components/ConfirmationButton'
 import { PageSubheader } from '@/components/PageHeader'
 import SessionCard from '@/components/session/SessionCard'
@@ -23,6 +24,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Empty } from '@/components/ui/empty'
+import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -36,7 +38,9 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
+import { userToLookupItem } from '@/lib/lookup-utils'
 import type { SessionWithSignups } from '@common/models/session'
+import type { UserInfo } from '@common/models/user'
 import { isUpcoming } from '@common/utils/date'
 import accumulateSignups from '@common/utils/signupAccumulator'
 import {
@@ -47,7 +51,7 @@ import {
   Trash2,
   type LucideIcon,
 } from 'lucide-react'
-import { useMemo, useState, type ComponentProps } from 'react'
+import { useEffect, useMemo, useState, type ComponentProps } from 'react'
 import { useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
@@ -70,7 +74,17 @@ function Signup({
     session.signups.find(s => s.user.id === loggedInUser?.id)?.response
   )
 
+  const [userToAdd, setUserToAdd] = useState<UserInfo | null>(null)
+  const [addResponse, setAddResponse] = useState<SessionResponse>('yes')
+
+  useEffect(() => {
+    setMyResponse(
+      session.signups.find(s => s.user.id === loggedInUser?.id)?.response
+    )
+  }, [session.signups, loggedInUser?.id])
+
   const isAdmin = isLoggedIn && loggedInUser.role !== 'user'
+  const canManageParticipants = isAdmin
   const responses: { response: SessionResponse; Icon: LucideIcon }[] = [
     { response: 'yes', Icon: CircleCheck },
     { response: 'maybe', Icon: CircleQuestionMark },
@@ -99,6 +113,17 @@ function Signup({
           return rankA - rankB
         }),
     [session, timeEntries, matches, users, rankings]
+  )
+
+  const addableUsers = useMemo(() => {
+    if (!users) return []
+    const signedUpIds = new Set(session.signups.map(s => s.user.id))
+    return users.filter(u => !signedUpIds.has(u.id))
+  }, [users, session.signups])
+
+  const addableItems = useMemo(
+    () => addableUsers.map(userToLookupItem),
+    [addableUsers]
   )
 
   if (isLoadingData)
@@ -130,6 +155,79 @@ function Signup({
     )
   }
 
+  function handleModSetResponse(userId: string, response: SessionResponse) {
+    toast.promise(
+      socket
+        .emitWithAck('rsvp_session', {
+          type: 'RsvpSessionRequest',
+          session: session.id,
+          user: userId,
+          response,
+        })
+        .then(res => {
+          if (!res.success) throw new Error(res.message)
+          if (userId === loggedInUser?.id) setMyResponse(response)
+        }),
+      {
+        loading: loc.no.session.participants.modRsvpToast.loading,
+        success: loc.no.session.participants.modRsvpToast.success,
+        error: loc.no.session.participants.modRsvpToast.error,
+      }
+    )
+  }
+
+  function handleRemoveSignup(userId: string) {
+    toast.promise(
+      socket
+        .emitWithAck('remove_session_signup', {
+          type: 'RemoveSessionSignupRequest',
+          session: session.id,
+          user: userId,
+        })
+        .then(res => {
+          if (!res.success) throw new Error(res.message)
+          if (userId === loggedInUser?.id) setMyResponse(undefined)
+        }),
+      {
+        loading: loc.no.session.participants.removeToast.loading,
+        success: loc.no.session.participants.removeToast.success,
+        error: loc.no.session.participants.removeToast.error,
+      }
+    )
+  }
+
+  function handleAddParticipant() {
+    if (!userToAdd) return
+    toast.promise(
+      socket
+        .emitWithAck('rsvp_session', {
+          type: 'RsvpSessionRequest',
+          session: session.id,
+          user: userToAdd.id,
+          response: addResponse,
+        })
+        .then(res => {
+          if (!res.success) throw new Error(res.message)
+          setUserToAdd(null)
+          if (userToAdd.id === loggedInUser?.id) setMyResponse(addResponse)
+        }),
+      {
+        loading: loc.no.session.participants.addToast.loading,
+        success: loc.no.session.participants.addToast.success,
+        error: loc.no.session.participants.addToast.error,
+      }
+    )
+  }
+
+  const showSelfQuickRsvpHeader =
+    (isUpcoming(session) || isAdmin) &&
+    isLoggedIn &&
+    myResponse &&
+    !(canManageParticipants && myResponse)
+
+  const hideSelfRsvpButtons =
+    !isUpcoming(session) || !isLoggedIn || !!myResponse
+
   return (
     <div className={twMerge('flex flex-col gap-4', className)} {...rest}>
       <div className='flex justify-between'>
@@ -140,7 +238,7 @@ function Signup({
         </h3>
 
         <div>
-          {(isUpcoming(session) || isAdmin) && isLoggedIn && myResponse && (
+          {showSelfQuickRsvpHeader && (
             <Select
               disabled={disabled}
               value={myResponse}
@@ -163,7 +261,7 @@ function Signup({
 
       <div
         className='flex items-center justify-center gap-2'
-        hidden={!isUpcoming(session) || !isLoggedIn || !!myResponse}>
+        hidden={hideSelfRsvpButtons}>
         {responses.map(({ response, Icon }) => (
           <Button
             key={response}
@@ -175,6 +273,56 @@ function Signup({
           </Button>
         ))}
       </div>
+
+      {canManageParticipants && addableUsers.length > 0 && (
+        <div className='border-border bg-background-secondary/80 flex flex-col gap-3 rounded-sm border p-3'>
+          <h4 className='text-sm font-medium'>
+            {loc.no.session.participants.addTitle}
+          </h4>
+          <div className='flex flex-col gap-3 md:flex-row md:items-end'>
+            <div className='min-w-0 flex-1'>
+              <Combobox
+                disabled={disabled}
+                selected={
+                  userToAdd
+                    ? (addableItems.find(i => i.id === userToAdd.id) ?? null)
+                    : null
+                }
+                setSelected={v => setUserToAdd(v ?? null)}
+                items={addableItems}
+                CustomRow={UserRow}
+                placeholder={loc.no.session.participants.addPlaceholder}
+              />
+            </div>
+            <div className='flex flex-col gap-1'>
+              <Label className='text-label-muted text-xs'>
+                {loc.no.session.participants.addResponse}
+              </Label>
+              <Select
+                disabled={disabled}
+                value={addResponse}
+                onValueChange={v => setAddResponse(v as SessionResponse)}>
+                <SelectTrigger className='w-full md:w-[160px]'>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {responses.map(({ response, Icon }) => (
+                    <SelectItem key={response} value={response}>
+                      <Icon className='size-4' />
+                      {loc.no.session.rsvp.responses[response]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              disabled={disabled || !userToAdd}
+              onClick={handleAddParticipant}>
+              {loc.no.session.participants.addSubmit}
+            </Button>
+          </div>
+        </div>
+      )}
 
       {accumulatedSignups.length === 0 && (
         <Empty className='border-input text-muted-foreground border text-sm'>
@@ -196,13 +344,57 @@ function Signup({
             <div className='bg-background-secondary rounded-sm'>
               {accumulatedSignups
                 .filter(s => s.response === response)
-                .map(({ user }) => (
-                  <UserRow
-                    key={user.id}
-                    item={user}
-                    className='py-3 first:pt-4 last:pb-4'
-                  />
-                ))}
+                .map(({ user }) => {
+                  const hasSignupRow = session.signups.some(
+                    su => su.user.id === user.id
+                  )
+                  return (
+                    <div
+                      key={user.id}
+                      className='border-border flex flex-col gap-2 border-b px-2 py-3 last:border-b-0 sm:flex-row sm:items-center sm:gap-3'>
+                      <UserRow
+                        item={user}
+                        className='min-w-0 flex-1 py-0 first:pt-0 last:pb-0'
+                      />
+                      {canManageParticipants && (
+                        <div className='flex shrink-0 flex-wrap items-center gap-2 sm:justify-end'>
+                          <Select
+                            disabled={disabled}
+                            value={response}
+                            onValueChange={v =>
+                              handleModSetResponse(
+                                user.id,
+                                v as SessionResponse
+                              )
+                            }>
+                            <SelectTrigger className='w-[160px]'>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {responses.map(({ response: r, Icon }) => (
+                                <SelectItem key={r} value={r}>
+                                  <Icon className='size-4' />
+                                  {loc.no.session.rsvp.responses[r]}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {hasSignupRow && (
+                            <ConfirmationButton
+                              size='sm'
+                              variant='outline'
+                              disabled={disabled}
+                              confirmText={loc.no.common.continue}
+                              onClick={() => handleRemoveSignup(user.id)}>
+                              <Trash2 className='size-4' />
+                              {loc.no.session.participants.remove}
+                            </ConfirmationButton>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
             </div>
           </div>
         )

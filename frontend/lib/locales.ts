@@ -173,6 +173,30 @@ const no = {
     },
     errorMessages: {
       no_edit_historical: 'Du kan ikke endre svar på en session tilbake i tid.',
+      no_signup_to_remove:
+        'Fant ingen aktiv påmelding å fjerne for denne brukeren.',
+    },
+    participants: {
+      addTitle: 'Legg til deltaker',
+      addPlaceholder: 'Velg bruker',
+      addResponse: 'Svar',
+      addSubmit: 'Legg til',
+      addToast: {
+        loading: 'Legger til deltaker...',
+        success: 'Deltaker lagt til',
+        error: (err: Error) => `Kunne ikke legge til: ${err.message}`,
+      },
+      modRsvpToast: {
+        loading: 'Oppdaterer deltaker...',
+        success: 'Deltaker oppdatert',
+        error: (err: Error) => `Kunne ikke oppdatere: ${err.message}`,
+      },
+      remove: 'Fjern påmelding',
+      removeToast: {
+        loading: 'Fjerner deltaker...',
+        success: 'Deltaker fjernet fra påmelding',
+        error: (err: Error) => `Kunne ikke fjerne: ${err.message}`,
+      },
     },
   },
   match: {
