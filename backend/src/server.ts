@@ -91,6 +91,7 @@ async function Connect(s: TypedSocket) {
   setup(s, 'create_session', SessionManager.onCreateSession)
   setup(s, 'edit_session', SessionManager.onEditSession)
   setup(s, 'rsvp_session', SessionManager.onRsvpSession)
+  setup(s, 'remove_session_signup', SessionManager.onRemoveSessionSignup)
   setup(s, 'delete_session', SessionManager.onDeleteSession)
 
   setup(s, 'create_match', MatchManager.onCreateMatch)

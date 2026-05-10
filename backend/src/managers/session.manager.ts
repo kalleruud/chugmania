@@ -2,6 +2,7 @@ import {
   isCreateSessionRequest,
   isDeleteSessionRequest,
   isEditSessionRequest,
+  isRemoveSessionSignupRequest,
   isRsvpSessionRequest,
   type SessionSignup,
   type SessionWithSignups,
@@ -221,6 +222,61 @@ export default class SessionManager {
       socket.id,
       `Signed up for session with response: ${requestData.response}`,
       session.id
+    )
+
+    broadcast('all_sessions', await SessionManager.getAllSessions())
+    await SessionScheduler.reschedule()
+
+    return { success: true }
+  }
+
+  static async onRemoveSessionSignup(
+    socket: TypedSocket,
+    request: EventReq<'remove_session_signup'>
+  ): Promise<EventRes<'remove_session_signup'>> {
+    if (!isRemoveSessionSignupRequest(request)) {
+      throw new Error(
+        loc.no.error.messages.invalid_request('RemoveSessionSignupRequest')
+      )
+    }
+
+    await AuthManager.checkAuth(socket, ['admin', 'moderator'])
+
+    const { type, ...requestData } = request
+
+    const session = await db.query.sessions.findFirst({
+      where: and(
+        eq(sessions.id, requestData.session),
+        isNull(sessions.deletedAt)
+      ),
+    })
+
+    if (!session) {
+      throw new Error(loc.no.error.messages.not_in_db(requestData.session))
+    }
+
+    const signup = await db.query.sessionSignups.findFirst({
+      where: and(
+        eq(sessionSignups.session, requestData.session),
+        eq(sessionSignups.user, requestData.user),
+        isNull(sessionSignups.deletedAt)
+      ),
+    })
+
+    if (!signup) {
+      throw new Error(loc.no.session.errorMessages.no_signup_to_remove)
+    }
+
+    await db
+      .update(sessionSignups)
+      .set({ deletedAt: new Date() })
+      .where(eq(sessionSignups.id, signup.id))
+
+    console.debug(
+      new Date().toISOString(),
+      socket.id,
+      'Removed session signup',
+      signup.id
     )
 
     broadcast('all_sessions', await SessionManager.getAllSessions())

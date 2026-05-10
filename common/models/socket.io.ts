@@ -15,6 +15,7 @@ import type {
   CreateSessionRequest,
   DeleteSessionRequest,
   EditSessionRequest,
+  RemoveSessionSignupRequest,
   RsvpSessionRequest,
   SessionWithSignups,
 } from './session'
@@ -102,6 +103,10 @@ export interface ClientToServerEvents {
   ) => void
   rsvp_session: (
     r: RsvpSessionRequest,
+    callback: (r: SuccessResponse | ErrorResponse) => void
+  ) => void
+  remove_session_signup: (
+    r: RemoveSessionSignupRequest,
     callback: (r: SuccessResponse | ErrorResponse) => void
   ) => void
   delete_session: (

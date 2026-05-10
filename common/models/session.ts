@@ -66,3 +66,20 @@ export function isDeleteSessionRequest(
   if (typeof data !== 'object' || data === null) return false
   return data.type === 'DeleteSessionRequest' && typeof data.id === 'string'
 }
+
+export type RemoveSessionSignupRequest = {
+  type: 'RemoveSessionSignupRequest'
+  session: Session['id']
+  user: UserInfo['id']
+}
+
+export function isRemoveSessionSignupRequest(
+  data: any
+): data is RemoveSessionSignupRequest {
+  if (typeof data !== 'object' || data === null) return false
+  return (
+    data.type === 'RemoveSessionSignupRequest' &&
+    typeof data.session === 'string' &&
+    typeof data.user === 'string'
+  )
+}
