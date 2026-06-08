@@ -1,11 +1,13 @@
 import type {
+  CaptureAssignment as Assignment,
   CaptureHeatPayload,
   UnconfirmedRound,
 } from '@common/models/capture'
 import { and, eq, isNull } from 'drizzle-orm'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import * as schema from '../../database/schema'
-import { tracks, unconfirmedLaps } from '../../database/schema'
+import { matches, timeEntries, tracks, unconfirmedLaps } from '../../database/schema'
+import { validateAssignments, winningSlot } from './capture.logic'
 
 type Db = BetterSQLite3Database<typeof schema>
 
@@ -92,4 +94,54 @@ export async function lapsForHeat(db: Db, heatId: string) {
 
 export async function deleteHeat(db: Db, heatId: string): Promise<void> {
   await db.delete(unconfirmedLaps).where(eq(unconfirmedLaps.heatId, heatId))
+}
+
+export async function confirmCapture(
+  db: Db,
+  heatId: string,
+  assignments: Assignment[]
+): Promise<void> {
+  const laps = await lapsForHeat(db, heatId)
+  if (laps.length === 0) throw new Error('Fant ingen ubekrefta runde')
+
+  const slots = laps.map(l => l.slot)
+  const problem = validateAssignments(slots, assignments)
+  if (problem) throw new Error(problem)
+
+  const sessionId = laps[0].session
+  const trackId = laps[0].track
+
+  const entryValues = laps.map(lap => {
+    const assignment = assignments.find(a => a.slot === lap.slot)!
+    return {
+      user: assignment.user,
+      track: trackId,
+      session: sessionId,
+      duration: lap.duration,
+      source: 'auto' as const,
+    }
+  })
+  await db.insert(timeEntries).values(entryValues)
+
+  if (laps.length === 2) {
+    const winSlot = winningSlot(
+      laps.map(l => ({ slot: l.slot, duration: l.duration }))
+    )
+    const userForSlot = (slot: number) =>
+      assignments.find(a => a.slot === slot)!.user
+    await db.insert(matches).values({
+      user1: userForSlot(laps[0].slot),
+      user2: userForSlot(laps[1].slot),
+      track: trackId,
+      session: sessionId,
+      winner: winSlot === null ? null : userForSlot(winSlot),
+      status: 'completed',
+    })
+  }
+
+  await deleteHeat(db, heatId)
+}
+
+export async function discardCapture(db: Db, heatId: string): Promise<void> {
+  await deleteHeat(db, heatId)
 }
