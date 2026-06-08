@@ -40,7 +40,11 @@ export function UnconfirmedRoundsTable({ sessionId }: { sessionId: string }) {
             }),
         )}
       </div>
-      <ConfirmRoundDialog round={selected} onClose={() => setSelected(null)} />
+      <ConfirmRoundDialog
+        key={selected?.heatId ?? 'none'}
+        round={selected}
+        onClose={() => setSelected(null)}
+      />
     </div>
   )
 }
