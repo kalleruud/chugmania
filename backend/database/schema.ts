@@ -51,9 +51,12 @@ export type TrackType = 'drift' | 'valley' | 'lagoon' | 'stadium'
 
 export const tracks = sqliteTable('tracks', {
   ...metadata,
-  number: integer().notNull(),
-  level: text().$type<TrackLevel>().notNull(),
-  type: text().$type<TrackType>().notNull(),
+  number: integer(),
+  level: text().$type<TrackLevel>(),
+  type: text().$type<TrackType>(),
+  mapUid: text('map_uid').unique(),
+  name: text(),
+  author: text(),
 })
 
 export const sessions = sqliteTable('sessions', {
@@ -91,6 +94,10 @@ export const timeEntries = sqliteTable('time_entries', {
   duration: integer('duration_ms'),
   amount: integer('amount_l').notNull().default(0.5),
   comment: text(),
+  source: text()
+    .$type<'manual' | 'auto'>()
+    .notNull()
+    .default('manual'),
 })
 
 export const matches = sqliteTable('matches', {
@@ -166,4 +173,18 @@ export const tournamentMatches = sqliteTable('tournament_matches', {
   sourceMatchBProgression: text(
     'source_match_b_progression'
   ).$type<MatchProgression>(),
+})
+
+export const unconfirmedLaps = sqliteTable('unconfirmed_laps', {
+  ...metadata,
+  session: text()
+    .notNull()
+    .references(() => sessions.id, { onDelete: 'cascade' }),
+  track: text()
+    .notNull()
+    .references(() => tracks.id),
+  heatId: text('heat_id').notNull(),
+  slot: integer().notNull(),
+  duration: integer('duration_ms').notNull(),
+  playerCount: integer('player_count').notNull(),
 })

@@ -13,6 +13,7 @@ import ViteExpress from 'vite-express'
 import AdminManager from './managers/admin.manager'
 import ApiManager from './managers/api.manager'
 import AuthManager from './managers/auth.manager'
+import CaptureManager from './managers/capture.manager'
 import MatchManager from './managers/match.manager'
 import RatingManager from './managers/rating.manager'
 import SessionManager from './managers/session.manager'
@@ -24,6 +25,7 @@ import UserManager from './managers/user.manager'
 
 const PORT = process.env.PORT ? Number.parseInt(process.env.PORT) : 6996
 const ORIGIN = new URL(process.env.ORIGIN ?? `http://localhost:${PORT}`)
+const CAPTURE_TOKEN = process.env.CAPTURE_TOKEN
 
 const app = express()
 const server = ViteExpress.listen(app, PORT)
@@ -54,6 +56,24 @@ app.get('/api/sessions/calendar.ics', (req, res) =>
   ApiManager.onGetCalendar(ORIGIN, req, res)
 )
 
+app.post('/api/capture/heat', express.json(), async (req, res) => {
+  if (!CAPTURE_TOKEN) {
+    res.status(503).json({ success: false, message: 'Capture disabled' })
+    return
+  }
+  const auth = req.header('authorization')
+  if (auth !== `Bearer ${CAPTURE_TOKEN}`) {
+    res.status(401).json({ success: false, message: 'Unauthorized' })
+    return
+  }
+  try {
+    const stored = await CaptureManager.ingestHeat(req.body)
+    res.status(200).json({ success: true, stored })
+  } catch (e) {
+    res.status(400).json({ success: false, message: (e as Error).message })
+  }
+})
+
 io.on('connect', s => Connect(s))
 
 // Initialize session scheduler when server starts
@@ -73,6 +93,8 @@ async function Connect(s: TypedSocket) {
   s.emit('all_matches', await MatchManager.getAllMatches())
   s.emit('all_rankings', await RatingManager.onGetRatings())
   s.emit('all_tournaments', await TournamentManager.getAllTournaments())
+  s.emit('capture_state', CaptureManager.getCaptureState())
+  s.emit('all_unconfirmed_rounds', await CaptureManager.getUnconfirmedRounds())
 
   s.on('disconnect', () =>
     console.debug(new Date().toISOString(), s.id, 'Disconnected')
@@ -104,6 +126,10 @@ async function Connect(s: TypedSocket) {
   setup(s, 'edit_tournament', TournamentManager.onEditTournament)
   setup(s, 'delete_tournament', TournamentManager.onDeleteTournament)
   setup(s, 'get_tournament_preview', TournamentManager.onGetTournamentPreview)
+
+  setup(s, 'set_active_session', CaptureManager.onSetActiveSession)
+  setup(s, 'confirm_capture', CaptureManager.onConfirmCapture)
+  setup(s, 'discard_capture', CaptureManager.onDiscardCapture)
 }
 
 function setup<Ev extends keyof ClientToServerEvents>(

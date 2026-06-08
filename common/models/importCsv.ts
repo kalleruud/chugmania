@@ -1,8 +1,7 @@
-import type * as schema from '../../backend/database/schema'
 import type { SuccessResponse } from './socket.io'
 
 export type ImportCsvRequest = {
-  table: keyof typeof schema
+  table: ExportCsvRequest['table']
   content: string
 }
 
@@ -12,7 +11,18 @@ export function isImportCsvRequest(data: any): data is ImportCsvRequest {
 }
 
 export type ExportCsvRequest = {
-  table: keyof typeof schema
+  table:
+    | 'users'
+    | 'tracks'
+    | 'sessions'
+    | 'timeEntries'
+    | 'sessionSignups'
+    | 'matches'
+    | 'tournaments'
+    | 'groups'
+    | 'groupPlayers'
+    | 'tournamentMatches'
+    | 'unconfirmedLaps'
 }
 
 export function isExportCsvRequest(data: any): data is ExportCsvRequest {

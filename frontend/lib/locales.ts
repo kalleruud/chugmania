@@ -48,6 +48,7 @@ const no = {
       groups: 'Grupper',
       groupPlayers: 'Gruppespillere',
       tournamentMatches: 'Turneringsmatcher',
+      unconfirmedLaps: 'Ubekrefta runder',
     } satisfies Record<ExportCsvRequest['table'], string>,
   },
   user: {
@@ -404,6 +405,32 @@ const no = {
         success: 'Rundetiden ble slettet',
         error: (err: Error) => `Sletting feilet: ${err.message}`,
       },
+    },
+  },
+  capture: {
+    unconfirmedTitle: 'Ubekrefta runder',
+    activate: 'Aktiver registrering',
+    deactivate: 'Stopp registrering',
+    active: 'Registrering aktiv',
+    assignTitle: 'Hvem kjørte?',
+    selectPlayer: 'Velg spiller',
+    swap: 'Bytt om',
+    confirm: 'Bekreft',
+    discard: 'Forkast',
+    confirmRequest: {
+      loading: 'Bekrefter runde...',
+      success: 'Runde registrert',
+      error: (err: Error) => `Feil ved registrering: ${err.message}`,
+    },
+    discardRequest: {
+      loading: 'Forkaster runde...',
+      success: 'Runde forkastet',
+      error: (err: Error) => `Feil ved forkasting: ${err.message}`,
+    },
+    activateRequest: {
+      loading: 'Endrer registrering...',
+      success: 'Registrering oppdatert',
+      error: (err: Error) => `Feil: ${err.message}`,
     },
   },
   tracks: {

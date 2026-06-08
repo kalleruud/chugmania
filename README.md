@@ -62,12 +62,24 @@ Admins can visit `/admin` to upload and download CSV files for all database tabl
 
 The `/sessions` route shows upcoming and past events. Authorized users may create, edit, or delete sessions with optional locations and descriptions. Attendees can RSVP; ICS feeds are available via `/api/sessions/calendar.ics`, and individual invites can be downloaded per session. Session deletion is soft-delete (retained for audit), cascading to all signups, and only available to admin/moderator roles.
 
+## Auto-capture (Trackmania 2020)
+
+Chugmania can receive finish times directly from a Trackmania 2020 PC session. A separate Openplanet plugin (lives in its own repository) POSTs heat results to `POST /api/capture/heat` after each map visit. Received times appear as faded "Ubekrefta runder" rows at the top of the active session page, where an admin or moderator can click a row, assign player(s) from a dropdown, and confirm — writing the entries (and a completed match for 1v1) through the normal reactive Socket.IO path. Manual entry continues to work in parallel.
+
+**Enabling capture:**
+
+- Set `CAPTURE_TOKEN` in `.env` to a shared secret; the plugin sends it as `Authorization: Bearer <token>`. If the variable is unset the endpoint returns `503` and capture is disabled.
+- On the session page, an admin clicks **Aktiver registrering** to mark that session as "live for capture". Heats received while no session is active are silently ignored (the plugin receives `{ stored: false }` and should not retry).
+
+See `docs/autocapture/capture-contract.md` for the full HTTP contract (payload shape, versioning, idempotency).
+
 ## Configuration
 
 - `SECRET` (required): JWT signing key; use a strong random value.
 - `ORIGIN` (required in production): Allowed frontend origin for CORS.
 - `TOKEN_EXPIRY_H` (optional): Override default 1-hour auth token expiry.
-- `.env.example` also exposes `PRIVATE_KEY` for local defaults—never commit secrets.
+- `CAPTURE_TOKEN` (optional): Shared secret for the Trackmania auto-capture ingest endpoint. If unset, the endpoint is disabled.
+- `.env.example` also exposes `SECRET` for local defaults—never commit secrets.
 
 ## Docker
 

@@ -19,6 +19,7 @@ import {
   tournamentMatches,
   tournaments,
   tracks,
+  unconfirmedLaps,
   users,
 } from '../../database/schema'
 import { broadcast } from '../server'
@@ -43,6 +44,7 @@ export default class AdminManager {
     groups: new Set(),
     groupPlayers: new Set(),
     tournamentMatches: new Set(),
+    unconfirmedLaps: new Set(),
   } satisfies Record<ExportCsvRequest['table'], Set<string>>
 
   private static readonly TABLE_MAP = {
@@ -56,6 +58,7 @@ export default class AdminManager {
     groups: groups,
     groupPlayers: groupPlayers,
     tournamentMatches: tournamentMatches,
+    unconfirmedLaps: unconfirmedLaps,
   } satisfies Record<ExportCsvRequest['table'], SQLiteTable>
 
   private static async importRows<T extends Record<string, any>>(
