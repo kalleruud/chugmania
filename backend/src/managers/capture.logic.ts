@@ -1,6 +1,7 @@
-import type {
-  CaptureAssignment,
-  CaptureHeatPayload,
+import {
+  CAPTURE_CONTRACT_VERSION,
+  type CaptureAssignment,
+  type CaptureHeatPayload,
 } from '@common/models/capture'
 
 export function isHeatPayload(data: any): data is CaptureHeatPayload {
@@ -17,6 +18,13 @@ export function isHeatPayload(data: any): data is CaptureHeatPayload {
       typeof r.slot === 'number' &&
       typeof r.bestTimeMs === 'number' &&
       r.bestTimeMs > 0
+  )
+}
+
+export function isSupportedHeat(payload: CaptureHeatPayload): boolean {
+  return (
+    payload.contractVersion === CAPTURE_CONTRACT_VERSION &&
+    templateFor(payload.playerCount) !== null
   )
 }
 

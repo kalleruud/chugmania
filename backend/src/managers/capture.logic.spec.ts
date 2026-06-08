@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import {
   isHeatPayload,
+  isSupportedHeat,
   templateFor,
   winningSlot,
   validateAssignments,
@@ -52,6 +53,22 @@ test('winningSlot returns null on a tie', () => {
     { slot: 1, duration: 42300 },
     { slot: 2, duration: 42300 },
   ]), null)
+})
+
+test('isSupportedHeat returns true for playerCount 1 with contractVersion 1', () => {
+  assert.equal(isSupportedHeat({ ...validPayload, playerCount: 1, results: [{ slot: 1, bestTimeMs: 42300 }] }), true)
+})
+
+test('isSupportedHeat returns true for playerCount 2 with contractVersion 1', () => {
+  assert.equal(isSupportedHeat({ ...validPayload, playerCount: 2 }), true)
+})
+
+test('isSupportedHeat returns false for playerCount 3', () => {
+  assert.equal(isSupportedHeat({ ...validPayload, playerCount: 3 }), false)
+})
+
+test('isSupportedHeat returns false when contractVersion is not 1', () => {
+  assert.equal(isSupportedHeat({ ...validPayload, contractVersion: 2 }), false)
 })
 
 test('validateAssignments requires one per slot and distinct users for duels', () => {

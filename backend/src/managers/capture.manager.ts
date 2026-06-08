@@ -10,7 +10,7 @@ import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
-import { isHeatPayload } from './capture.logic'
+import { isHeatPayload, isSupportedHeat } from './capture.logic'
 import {
   confirmCapture,
   discardCapture,
@@ -34,6 +34,10 @@ export default class CaptureManager {
   static async ingestHeat(body: unknown): Promise<boolean> {
     if (!isHeatPayload(body)) {
       throw new Error(loc.no.error.messages.invalid_request('CaptureHeatPayload'))
+    }
+    if (!isSupportedHeat(body)) {
+      console.debug(new Date().toISOString(), 'Capture ignored — unsupported heat', body.heatId, body.playerCount, body.contractVersion)
+      return false
     }
     if (!CaptureManager.activeSessionId) {
       console.debug(
