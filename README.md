@@ -79,7 +79,7 @@ See `docs/autocapture/capture-contract.md` for the full HTTP contract (payload s
 - `ORIGIN` (required in production): Allowed frontend origin for CORS.
 - `TOKEN_EXPIRY_H` (optional): Override default 1-hour auth token expiry.
 - `CAPTURE_TOKEN` (optional): Shared secret for the Trackmania auto-capture ingest endpoint. If unset, the endpoint is disabled.
-- `.env.example` also exposes `PRIVATE_KEY` for local defaults—never commit secrets.
+- `.env.example` also exposes `SECRET` for local defaults—never commit secrets.
 
 ## Docker
 
