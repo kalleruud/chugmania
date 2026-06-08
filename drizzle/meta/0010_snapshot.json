@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "9e683aac-a67b-46b6-b569-861a433238a5",
+  "id": "2b41ff42-14e0-4986-9225-cbdba6859243",
   "prevId": "a036dd3d-568f-4bb5-8c98-abedbc61325f",
   "tables": {
     "group_players": {
@@ -561,7 +561,8 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false
+          "autoincrement": false,
+          "default": "'manual'"
         }
       },
       "indexes": {},

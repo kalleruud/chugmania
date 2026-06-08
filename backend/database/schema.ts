@@ -97,7 +97,7 @@ export const timeEntries = sqliteTable('time_entries', {
   source: text()
     .$type<'manual' | 'auto'>()
     .notNull()
-    .$default(() => 'manual'),
+    .default('manual'),
 })
 
 export const matches = sqliteTable('matches', {

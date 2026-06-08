@@ -32,4 +32,4 @@ DROP TABLE `tracks`;--> statement-breakpoint
 ALTER TABLE `__new_tracks` RENAME TO `tracks`;--> statement-breakpoint
 PRAGMA foreign_keys=ON;--> statement-breakpoint
 CREATE UNIQUE INDEX `tracks_map_uid_unique` ON `tracks` (`map_uid`);--> statement-breakpoint
-ALTER TABLE `time_entries` ADD `source` text NOT NULL;
+ALTER TABLE `time_entries` ADD `source` text DEFAULT 'manual' NOT NULL;
