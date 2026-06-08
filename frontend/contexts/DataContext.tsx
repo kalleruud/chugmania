@@ -1,4 +1,5 @@
 import type { Match } from '@common/models/match'
+import type { CaptureState, UnconfirmedRound } from '@common/models/capture'
 import type { Ranking } from '@common/models/ranking'
 import type { SessionWithSignups } from '@common/models/session'
 import type { TimeEntry } from '@common/models/timeEntry'
@@ -25,6 +26,8 @@ type DataContextType =
       matches: Match[]
       rankings: Ranking[]
       tournaments: TournamentWithDetails[]
+      unconfirmedRounds: UnconfirmedRound[]
+      captureState: CaptureState
     }
   | {
       isLoadingData: true
@@ -35,6 +38,8 @@ type DataContextType =
       matches?: never
       rankings?: never
       tournaments?: never
+      unconfirmedRounds?: never
+      captureState?: never
     }
 
 const DataContext = createContext<DataContextType | undefined>(undefined)
@@ -81,6 +86,8 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
     useState<DataContextType['rankings']>(undefined)
   const [tournaments, setTournaments] =
     useState<DataContextType['tournaments']>(undefined)
+  const [unconfirmedRounds, setUnconfirmedRounds] = useState<UnconfirmedRound[]>([])
+  const [captureState, setCaptureState] = useState<CaptureState>({ activeSessionId: null })
 
   useEffect(() => {
     socket.on('all_sessions', data => {
@@ -111,6 +118,9 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
       setTournaments(parseDatesArray(data))
     })
 
+    socket.on('all_unconfirmed_rounds', data => { setUnconfirmedRounds(parseDatesArray(data)) })
+    socket.on('capture_state', data => { setCaptureState(data) })
+
     return () => {
       socket.off('all_sessions')
       socket.off('all_time_entries')
@@ -119,6 +129,8 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
       socket.off('all_matches')
       socket.off('all_rankings')
       socket.off('all_tournaments')
+      socket.off('all_unconfirmed_rounds')
+      socket.off('capture_state')
     }
   }, [])
 
@@ -143,8 +155,10 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
       matches,
       rankings,
       tournaments,
+      unconfirmedRounds,
+      captureState,
     }
-  }, [tracks, timeEntries, users, sessions, matches, rankings, tournaments])
+  }, [tracks, timeEntries, users, sessions, matches, rankings, tournaments, unconfirmedRounds, captureState])
 
   return <DataContext.Provider value={context}>{children}</DataContext.Provider>
 }
