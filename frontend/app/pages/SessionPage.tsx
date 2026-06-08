@@ -1,3 +1,5 @@
+import { ActiveSessionControl } from '@/components/capture/ActiveSessionControl'
+import { UnconfirmedRoundsTable } from '@/components/capture/UnconfirmedRoundsTable'
 import ConfirmationButton from '@/components/ConfirmationButton'
 import { PageSubheader } from '@/components/PageHeader'
 import SessionCard from '@/components/session/SessionCard'
@@ -331,6 +333,13 @@ export default function SessionPage() {
       />
 
       <TournamentList sessionId={session.id} />
+
+      {canEdit && (
+        <div className='flex flex-col gap-4'>
+          <ActiveSessionControl sessionId={session.id} />
+          <UnconfirmedRoundsTable sessionId={session.id} />
+        </div>
+      )}
 
       {tracks.map(track => (
         <TrackLeaderboard
