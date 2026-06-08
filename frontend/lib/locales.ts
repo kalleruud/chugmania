@@ -48,6 +48,7 @@ const no = {
       groups: 'Grupper',
       groupPlayers: 'Gruppespillere',
       tournamentMatches: 'Turneringsmatcher',
+      unconfirmedLaps: 'Ubekrefta runder',
     } satisfies Record<ExportCsvRequest['table'], string>,
   },
   user: {
