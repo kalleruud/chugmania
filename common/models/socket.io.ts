@@ -6,6 +6,13 @@ import type {
 } from '@common/models/importCsv'
 import type { LoginRequest, RegisterRequest } from './auth'
 import type {
+  CaptureState,
+  ConfirmCaptureRequest,
+  DiscardCaptureRequest,
+  SetActiveSessionRequest,
+  UnconfirmedRound,
+} from './capture'
+import type {
   CreateMatchRequest,
   DeleteMatchRequest,
   EditMatchRequest,
@@ -61,6 +68,8 @@ export interface ServerToClientEvents {
   all_matches: (r: Match[]) => void
   all_rankings: (r: Ranking[]) => void
   all_tournaments: (r: TournamentWithDetails[]) => void
+  all_unconfirmed_rounds: (r: UnconfirmedRound[]) => void
+  capture_state: (r: CaptureState) => void
 }
 
 export interface ClientToServerEvents {
@@ -147,6 +156,18 @@ export interface ClientToServerEvents {
   get_tournament_preview: (
     r: TournamentPreviewRequest,
     callback: (r: TournamentPreviewResponse | ErrorResponse) => void
+  ) => void
+  set_active_session: (
+    r: SetActiveSessionRequest,
+    callback: (r: SuccessResponse | ErrorResponse) => void
+  ) => void
+  confirm_capture: (
+    r: ConfirmCaptureRequest,
+    callback: (r: SuccessResponse | ErrorResponse) => void
+  ) => void
+  discard_capture: (
+    r: DiscardCaptureRequest,
+    callback: (r: SuccessResponse | ErrorResponse) => void
   ) => void
 }
 
