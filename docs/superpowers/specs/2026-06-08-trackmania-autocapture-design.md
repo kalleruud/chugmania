@@ -4,6 +4,8 @@
 **Status:** Approved design, pending implementation plan
 **Supersedes:** `CHUGMANIA_AUTOCAPTURE_PLAN.md` (the original brief assumed a dedicated-server/XML-RPC architecture; this document replaces that architecture wholesale — see §10).
 
+**Delivery:** Two repos. (a) The **Openplanet plugin** is its own, separately-owned repo (different language/runtime/distribution). (b) The **Chugmania backend + frontend** changes land as a **PR to the upstream Chugmania repo** (which the author of this work does not own). The only coupling is the versioned `POST /api/capture/heat` JSON contract (§7), documented in the Chugmania repo. The fixture-based ingest tests (T2) let the Chugmania PR be reviewed and verified without the plugin present.
+
 ---
 
 ## 1. Goal
@@ -55,7 +57,7 @@ as before.
 - Dedicated-server / XML-RPC / `@evotm/gbxclient` route.
 - PS5 / console capture.
 - Any new UI design system — reuse existing components only.
-- Persisting unassigned captures across restarts (pending lives in memory for v1).
+- Tournament-bracket auto-binding — assignment stays manual via the "Ubekrefta runder" table.
 
 ---
 
@@ -76,22 +78,25 @@ Four independently testable units:
 [Chugmania backend]  CaptureManager
      │  • if no active session → discard (log, 200)        ← per user decision
      │  • auto-create tracks row if mapUid unseen
-     │  • create in-memory pending capture (dedupe by heatId)
-     │  • emit 'capture_pending' to admin/mod clients
+     │  • persist unconfirmed_laps row(s) (one per slot, linked by heatId; dedupe by heatId)
+     │  • broadcast 'all_unconfirmed_laps' (role-aware: admin/mod)
      ▼
-[Chugmania frontend]  Live-capture popup
-     │  solo → 1 player dropdown | 1v1 → 2 dropdowns + Swap; time & map prefilled
-     │  emit 'commit_capture' { pendingId, assignments:[{slot,userId}] }
+[Chugmania frontend]  "Ubekrefta runder" faded table at top of the active session
+     │  faded row = time + map, no name/rank; click a row →
+     │  popup (solo → 1 dropdown | 1v1 → 2 dropdowns + Swap; time & map read-only)
+     │  emit 'confirm_capture' { heatId, assignments:[{slot,userId}] }
      ▼
-[Chugmania backend]  commit
-     • write time_entries (source='auto', duration=bestTimeMs) per assigned player on active session
+[Chugmania backend]  confirm
+     • write time_entries (source='auto', duration=bestTimeMs) per assigned player on the session
      • for 1v1: write completed matches row (user1,user2,track,session,winner=faster)
-     • RatingManager.recalculate(); broadcast all_time_entries / all_matches / all_rankings
+     • delete the heat's unconfirmed_laps rows
+     • RatingManager.recalculate(); broadcast all_time_entries / all_matches / all_rankings / all_unconfirmed_laps
 ```
 
 ### 4.1 Where the listener lives
 The Openplanet plugin **is** the external listener; it replaces the separate Node sibling service from the
-original brief. The backend only gains an HTTP ingest route — no second process to run.
+original brief. The backend only gains an HTTP ingest route — no second process to run. The plugin ships as
+its own repo; the backend/frontend changes ship as a PR to the Chugmania repo (see header **Delivery**).
 
 ---
 
@@ -117,25 +122,34 @@ original brief. The backend only gains an HTTP ingest route — no second proces
 - **Validation:** shape-check payload (mirror the `isXRequest` guard pattern); reject malformed.
 - **No active session → discard:** log a debug line and return `200` so the plugin does not retry. (User
   decision: captures outside an active session are ignored.)
-- **Dedupe:** ignore a heat whose `heatId` is already pending or already committed.
+- **Dedupe:** ignore a heat whose `heatId` already exists in `unconfirmed_laps` or has been confirmed.
 - **Track auto-create:** if `mapUid` not in `tracks`, insert a TM2020 map row (`mapUid`, `name`, `author`).
-- **Pending model:** in-memory map of `pendingId → { heatId, sessionId, trackId, playerCount, results }`.
-  Emit `capture_pending` to admin/mod sockets.
-- **Commit (`commit_capture`):** validate assignments (distinct users for 1v1; users exist); write
-  `time_entries` (`source='auto'`, `duration=bestTimeMs`, `track`, `session`=active) per assignment; for
-  1v1 also insert a `matches` row (`status='completed'`, `winner` = faster slot's user); then
-  `RatingManager.recalculate()` and the three existing broadcasts. Remove the pending entry.
-- **Permissions:** committing requires `admin`/`moderator` (reuse `AuthManager.checkAuth`).
+- **Persist as unconfirmed:** insert one `unconfirmed_laps` row per slot (linked by `heatId`, carrying
+  `slot`, `durationMs`, `playerCount`, `session`, `track`); broadcast `all_unconfirmed_laps`. These survive
+  refreshes and restarts — they are the backing store for the "Ubekrefta runder" table.
+- **Confirm (`confirm_capture`):** validate assignments (distinct users for 1v1; users exist); write
+  `time_entries` (`source='auto'`, `duration=durationMs`, `track`, `session`) per assignment; for 1v1 also
+  insert a `matches` row (`status='completed'`, `winner` = faster slot's user); delete the heat's
+  `unconfirmed_laps` rows; then `RatingManager.recalculate()` and broadcast
+  `all_time_entries`/`all_matches`/`all_rankings`/`all_unconfirmed_laps`.
+- **Discard (`discard_capture`):** delete a heat's `unconfirmed_laps` rows without writing (for junk/aborted
+  runs); broadcast `all_unconfirmed_laps`.
+- **Permissions:** confirming/discarding requires `admin`/`moderator` (reuse `AuthManager.checkAuth`).
 
 ### 5.3 Live-capture UI (frontend)
 - **Active-session control:** lets an admin mark one session "live for capture" (defaults to today's/nearest
   session). Stored as capture state on the backend; surfaced via `capture_state`.
-- **Pending popup:** on `capture_pending`, show the template by `playerCount`:
-  - **Solo:** one `NativeSelect` player dropdown; prefilled time + map (read-only).
-  - **1v1:** two `NativeSelect` dropdowns (one per slot) showing each slot's time + map; a **Swap** button to
-    exchange which slot maps to which player; confirm.
+- **"Ubekrefta runder" table:** rendered at the **top of the active session view** (admin/mod only), styled
+  like the existing leaderboard rows but **faded, with no name and no rank** — each faded row shows the
+  captured **time + map**. Backed by `all_unconfirmed_laps`. Rows from the same `heatId` are visually linked.
+- **Click-to-confirm popup:** clicking a faded row opens a `Dialog` scoped to that heat:
+  - **Solo (`playerCount = 1`):** one `NativeSelect` player dropdown; time + map shown read-only.
+  - **1v1 (`playerCount = 2`):** two `NativeSelect` dropdowns (one per slot) with each slot's time + map; a
+    **Swap** button to exchange which slot maps to which player; confirm.
+  - Confirm emits `confirm_capture`; a discard action emits `discard_capture`.
 - Built from existing components (`NativeSelect`, `Dialog`, `sonner` toasts). No new design language.
-- After commit, the existing leaderboard/match views update through the normal broadcast path.
+- After confirm, the faded row disappears and the existing leaderboard/match views update through the normal
+  broadcast path — auto and manual entries sit on the same leaderboard.
 
 ### 5.4 Parallelism guarantee
 Auto-capture adds only: one Express route, one manager, new socket events, two nullable-friendly schema
@@ -159,9 +173,19 @@ Minimal, "add alongside" — existing Turbo data is preserved.
 ### `time_entries`
 - Add `source TEXT NOT NULL DEFAULT 'manual'` with type `'manual' | 'auto'`.
 
+### `unconfirmed_laps` (new table — backs the "Ubekrefta runder" list)
+- `id` (pk), standard `createdAt`/`updatedAt`/`deletedAt` metadata.
+- `session` (FK `sessions`, the active session), `track` (FK `tracks`, the TM2020 map).
+- `heatId TEXT NOT NULL` — groups the slot rows belonging to one race; also the idempotency key.
+- `slot INTEGER NOT NULL` — 1 or 2.
+- `durationMs INTEGER NOT NULL` — the captured best time for that slot.
+- `playerCount INTEGER NOT NULL` — 1 (solo) or 2 (1v1); drives the popup template.
+- Rows are created on ingest and deleted on confirm/discard. They are never shown on the leaderboard (only
+  in the faded table) and never feed ratings until confirmed into `time_entries`.
+
 ### Process
 - Run `npm run db:gen` to generate the Drizzle migration after editing `schema.ts`.
-- Add the new columns to `AdminManager` `TABLE_MAP` / `EXCLUDED_COL_EXPORT` per `AGENTS.md` so CSV
+- Add the new table/columns to `AdminManager` `TABLE_MAP` / `EXCLUDED_COL_EXPORT` per `AGENTS.md` so CSV
   import/export stays complete.
 
 ### No change to `users`
@@ -171,11 +195,13 @@ Slots are assigned to players manually each heat, so no TM-login/AccountId field
 
 ## 7. Socket.IO & HTTP contract additions
 
-- **HTTP** `POST /api/capture/heat` (token-auth) — body in §4.
-- **Server→client** `capture_state` (active session + config), `capture_pending` (a pending capture to
-  assign). Emitted role-aware to admin/mod only.
-- **Client→server** `set_active_session` (mark/clear the live session), `commit_capture`
-  (`{ pendingId, assignments }`), `discard_pending` (`{ pendingId }`).
+- **HTTP** `POST /api/capture/heat` (token-auth, **versioned contract**) — body in §4. The JSON schema is
+  documented in the Chugmania repo and consumed by the separate plugin repo; bump a `contractVersion` field
+  when it changes so plugin and backend can evolve independently.
+- **Server→client** `capture_state` (active session + config), `all_unconfirmed_laps` (the faded-table
+  list for the active session). Emitted role-aware to admin/mod only.
+- **Client→server** `set_active_session` (mark/clear the live session), `confirm_capture`
+  (`{ heatId, assignments:[{slot,userId}] }`), `discard_capture` (`{ heatId }`).
 - All follow the existing `setup(s, event, handler)` wiring and `Result<T>`/`SuccessResponse|ErrorResponse`
   conventions.
 
@@ -184,14 +210,14 @@ Slots are assigned to players manually each heat, so no TM-login/AccountId field
 ## 8. Edge handling
 
 - **No active session:** discard (log, 200). No retry, no queue.
-- **Duplicate heat:** deduped by `heatId` (pending or committed).
+- **Duplicate heat:** deduped by `heatId` (unconfirmed or already confirmed).
 - **Plugin/HTTP failure:** plugin retries with the same `heatId`; backend is idempotent.
-- **Backend restart mid-session:** in-memory pending is lost (acceptable for v1 — a heat is assigned within
-  seconds); active-session selection is re-set by the admin. Persisting pending is flagged as later hardening.
-- **Wrong template / wrong map / wrong player:** correctable after the fact via the existing time-entry and
-  match edit flows.
-- **Unassigned pending:** stays until committed or explicitly discarded; never auto-writes.
-- **>2 players:** out of scope for v1 templates; backend logs and discards (or holds without a template).
+- **Backend restart mid-session:** unconfirmed laps are **persisted in the DB**, so the "Ubekrefta runder"
+  table survives restarts and page refreshes; only the active-session pointer is re-set by the admin.
+- **Wrong map / wrong player:** correctable before confirm (pick correctly / discard) and after confirm via
+  the existing time-entry and match edit flows.
+- **Unassigned captures:** remain as faded rows until confirmed or explicitly discarded; never auto-write.
+- **>2 players:** out of scope for v1 templates; backend logs and discards.
 
 ---
 
@@ -223,18 +249,21 @@ insight from the brief survives; only the capture transport changed.
   name/index, and `RaceWaypointTimes` during 2-player splitscreen and hotseat. Record real payloads as
   golden fixtures. Directly mitigates the "verify against the running game / docs drift" risk.
 - **T1 — Backend logic unit tests** (`*.spec.ts` via `tsx`): payload validation; best-time selection;
-  solo-vs-1v1 routing; slot→player binding + swap; winner derivation; idempotency/dedupe by `heatId`;
-  no-active-session discard; track auto-create.
+  solo-vs-1v1 routing; `unconfirmed_laps` creation; slot→player binding + swap; winner derivation;
+  idempotency/dedupe by `heatId`; no-active-session discard; track auto-create; confirm deletes the heat's
+  unconfirmed rows.
 - **T2 — Ingest integration tests:** a `mock-plugin` script POSTs recorded/synthetic fixtures to
-  `/api/capture/heat`; assert DB rows, `matches` rows, and emitted socket events — full loop **without the
-  game running**.
+  `/api/capture/heat`; assert `unconfirmed_laps` rows + `all_unconfirmed_laps` broadcast, then drive
+  `confirm_capture` and assert `time_entries`/`matches` rows and broadcasts — full loop **without the game
+  running**. This is what lets the Chugmania PR be verified standalone.
 - **T3 — Plugin manual tests** (gaming PC): finish detection; best-of-retries; map-end trigger;
   HTTP retry while backend is down then recovers.
-- **T4 — Full manual E2E protocol** (real setup, checklist): solo run → leaderboard row; 1v1 → two rows +
-  match winner + swap correctness; capture while no session active → ignored; backend restart recovery;
-  manual entry still works alongside.
-- **T5 — Reliability/edge:** duplicate finishes; plugin reconnect; wrong-template correction via edit flow;
-  parallel manual + auto entries on the same session/leaderboard.
+- **T4 — Full manual E2E protocol** (real setup, checklist): solo run → faded "Ubekrefta runder" row →
+  click → assign → leaderboard row; 1v1 → two linked faded rows → confirm with swap → two entries + match
+  winner; capture while no session active → ignored; backend restart → faded rows persist; manual entry
+  still works alongside.
+- **T5 — Reliability/edge:** duplicate finishes; plugin reconnect; discard junk capture; post-confirm
+  correction via edit flow; parallel manual + auto entries on the same session/leaderboard.
 
 ---
 
