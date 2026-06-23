@@ -18,7 +18,7 @@ export default function CreateTournamentPage() {
 
   if (isLoading) {
     return (
-      <div className='h-dvh-safe flex w-full items-center justify-center'>
+      <div className='flex h-dvh-safe w-full items-center justify-center'>
         <Spinner />
       </div>
     )

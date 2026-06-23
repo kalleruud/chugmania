@@ -50,12 +50,12 @@ function Row<T extends ComboboxLookupItem>({
         'flex w-full items-center justify-between gap-2',
         className
       )}>
-      <p className='max-w-3/4 block flex-none truncate text-left'>
+      <p className='block max-w-3/4 flex-none truncate text-left'>
         {item.label}
       </p>
       <p
         className={cn(
-          'text-muted-foreground block truncate text-right',
+          'block truncate text-right text-muted-foreground',
           highlight && 'text-primary-foreground'
         )}>
         {item.sublabel}
@@ -160,16 +160,16 @@ export default function Combobox<T extends ComboboxLookupItem>({
 
             {isLoading && <Spinner />}
             {!disabled && !isLoading && (
-              <ChevronsUpDown className='text-muted-foreground size-4 flex-none' />
+              <ChevronsUpDown className='size-4 flex-none text-muted-foreground' />
             )}
           </Button>
         </PopoverTrigger>
         {!isLoading && (
           <PopoverContent
-            className='bg-popover/90 w-sm p-0 backdrop-blur-xl'
+            className='w-sm bg-popover/90 p-0 backdrop-blur-xl'
             align={align}>
-            <div className='border-border flex items-center gap-2 border-b px-2'>
-              <Search className='text-muted-foreground size-4' />
+            <div className='flex items-center gap-2 border-b border-border px-2'>
+              <Search className='size-4 text-muted-foreground' />
               <input
                 type='text'
                 inputMode='search'
@@ -186,7 +186,7 @@ export default function Combobox<T extends ComboboxLookupItem>({
                 {emptyLabel ?? 'No results'}
               </div>
             ) : (
-              <ul className='max-h-64 w-full overflow-y-auto overflow-x-hidden p-1'>
+              <ul className='max-h-64 w-full overflow-x-hidden overflow-y-auto p-1'>
                 {results.map(item => (
                   <li key={item.id} className='list-none'>
                     <Button

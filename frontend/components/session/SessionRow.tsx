@@ -39,7 +39,7 @@ export function SessionRow({
         )}>
         <ItemTitle>
           {isOngoing(session) && !isCancelled && (
-            <div className='bg-primary size-2 animate-pulse rounded-full' />
+            <div className='size-2 animate-pulse rounded-full bg-primary' />
           )}
           {session.name}
         </ItemTitle>
@@ -65,7 +65,7 @@ export function SessionRow({
       <Item
         className={twMerge(
           highlight &&
-            'bg-primary-background hover:bg-primary/25 ring-primary/50 ring-1',
+            'bg-primary-background ring-1 ring-primary/50 hover:bg-primary/25',
           className
         )}
         asChild>
@@ -78,7 +78,7 @@ export function SessionRow({
     <Item
       className={twMerge(
         highlight &&
-          'bg-primary-background hover:bg-primary/25 ring-primary/50 ring-1',
+          'bg-primary-background ring-1 ring-primary/50 hover:bg-primary/25',
         className
       )}
       asChild>

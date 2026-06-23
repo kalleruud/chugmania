@@ -40,7 +40,7 @@ export default function TournamentList({
       </div>
 
       {sessionTournaments.length === 0 && (
-        <Empty className='border-input text-muted-foreground border text-sm'>
+        <Empty className='border border-input text-sm text-muted-foreground'>
           {loc.no.common.noItems}
         </Empty>
       )}

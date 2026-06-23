@@ -80,7 +80,7 @@ export default function MatchRow({
   return (
     <div
       className={twMerge(
-        'hover:bg-foreground/15 group relative flex cursor-pointer items-center justify-between rounded-sm p-2 transition-colors',
+        'group relative flex cursor-pointer items-center justify-between rounded-sm p-2 transition-colors hover:bg-foreground/15',
         isCancelled && 'text-muted-foreground opacity-33',
         className,
         highlight && 'bg-foreground/13'
@@ -104,7 +104,7 @@ export default function MatchRow({
 
           <span
             className={twMerge(
-              'text-muted-foreground/50 font-kh-interface mb-1 text-sm font-black',
+              'mb-1 font-kh-interface text-sm font-black text-muted-foreground/50',
               isCancelled && 'line-through'
             )}>
             {loc.no.match.vs}
@@ -133,14 +133,14 @@ export default function MatchRow({
                   'font-kh-interface tabular-nums',
                   isCancelled && 'line-through'
                 )}>
-                <span className='text-primary mr-1'>#</span>
+                <span className='mr-1 text-primary'>#</span>
                 {formatTrackName(track.number)}
               </span>
             </div>
           )}
 
           {session && (
-            <div className='text-muted-foreground flex items-center gap-1'>
+            <div className='flex items-center gap-1 text-muted-foreground'>
               <CalendarIcon className='size-3' />
               <Label
                 className={twMerge('text-xs', isCancelled && 'line-through')}>
@@ -166,7 +166,7 @@ export default function MatchRow({
         {canEdit && isPlanned && (
           <button
             title={loc.no.match.cancel}
-            className='text-muted-foreground hover:text-primary-foreground hover:bg-muted m-2 hidden p-2 transition-colors hover:rounded-sm group-hover:block'
+            className='m-2 hidden p-2 text-muted-foreground transition-colors group-hover:block hover:rounded-sm hover:bg-muted hover:text-primary-foreground'
             onClick={e => {
               e.stopPropagation()
               handleCancel()
@@ -176,7 +176,7 @@ export default function MatchRow({
         )}
 
         {isPlanned && (
-          <span className='bg-primary mr-5 size-2 animate-pulse rounded-full group-hover:hidden' />
+          <span className='mr-5 size-2 animate-pulse rounded-full bg-primary group-hover:hidden' />
         )}
       </div>
     </div>
@@ -215,7 +215,7 @@ function UserCell({
           !isCancelled &&
             !isCompleted &&
             user &&
-            'hover:border-primary hover:border-b-2',
+            'hover:border-b-2 hover:border-primary',
           !isWinner && isCompleted && 'text-muted-foreground',
           isWinner && 'border-primary',
           !user && 'text-muted-foreground opacity-50',

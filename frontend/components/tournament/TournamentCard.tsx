@@ -151,7 +151,7 @@ export default function TournamentCard({
   return (
     <div
       className={twMerge(
-        'bg-background-secondary flex flex-col gap-4 rounded-lg border p-2',
+        'flex flex-col gap-4 rounded-lg border bg-background-secondary p-2',
         className
       )}>
       <div className='flex items-center justify-between p-2'>
@@ -165,7 +165,7 @@ export default function TournamentCard({
             </Badge>
           </div>
           {tournament.description && (
-            <p className='text-muted-foreground text-sm'>
+            <p className='text-sm text-muted-foreground'>
               {tournament.description}
             </p>
           )}
@@ -199,7 +199,7 @@ export default function TournamentCard({
             <h4 className='font-f1-bold text-sm uppercase'>
               {loc.no.tournament.groupStage}
             </h4>
-            <span className='text-muted-foreground text-xs'>
+            <span className='text-xs text-muted-foreground'>
               {completedGroupMatches}/{totalGroupMatches} matcher
             </span>
           </div>

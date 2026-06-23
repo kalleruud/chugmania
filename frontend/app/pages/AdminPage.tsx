@@ -32,7 +32,7 @@ export default function AdminPage() {
 
   if (isLoading) {
     return (
-      <div className='h-dvh-safe flex w-full items-center justify-center'>
+      <div className='flex h-dvh-safe w-full items-center justify-center'>
         <Spinner />
       </div>
     )
@@ -71,7 +71,7 @@ export default function AdminPage() {
         {tableNames.map(t => (
           <div
             key={t}
-            className='bg-background-secondary flex flex-col rounded-sm border'>
+            className='flex flex-col rounded-sm border bg-background-secondary'>
             <TableRow table={t} />
           </div>
         ))}

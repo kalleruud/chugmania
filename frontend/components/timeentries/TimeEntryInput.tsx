@@ -126,7 +126,7 @@ export default function TimeEntryInput({
 
   if (isLoadingData) {
     return (
-      <div className='items-center-safe justify-center-safe flex h-32 w-full'>
+      <div className='flex h-32 w-full items-center-safe justify-center-safe'>
         <Spinner className='size-6' />
       </div>
     )
@@ -226,7 +226,7 @@ export default function TimeEntryInput({
               onFocus={e => e.currentTarget.select()}
               onClick={e => e.currentTarget.select()}
               className={
-                'focus:ring-ring focus:border-primary border-input bg-background dark:bg-input/30 font-f1-bold h-16 w-12 rounded-md border text-center text-2xl tabular-nums caret-transparent transition selection:bg-transparent invalid:border-red-500/30 invalid:bg-red-500/30'
+                'font-f1-bold h-16 w-12 rounded-md border border-input bg-background text-center text-2xl tabular-nums caret-transparent transition selection:bg-transparent invalid:border-red-500/30 invalid:bg-red-500/30 focus:border-primary focus:ring-ring dark:bg-input/30'
               }
               inputMode='numeric'
               pattern={i === 0 || i === 2 ? '[0-5]' : '[0-9]'}

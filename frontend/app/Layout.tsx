@@ -11,7 +11,7 @@ export default function Layout() {
 
   return (
     <>
-      <div className='items-center-safe px-safe-or-2 py-safe-or-4 flex flex-col'>
+      <div className='flex flex-col items-center-safe py-safe-or-4 px-safe-or-2'>
         <div className='w-full max-w-2xl'>
           <main className='z-0 pb-28'>
             <Outlet />
@@ -22,7 +22,7 @@ export default function Layout() {
       <Button
         onClick={() => open()}
         disabled={!isLoggedIn || isLoading}
-        className='disabled:bg-background-secondary/90 drop-shadow-black disabled:text-muted-foreground fixed bottom-0 right-0 z-50 m-12 rounded-full drop-shadow-2xl backdrop-blur-2xl disabled:border disabled:opacity-100'
+        className='fixed right-0 bottom-0 z-50 m-12 rounded-full drop-shadow-2xl drop-shadow-black backdrop-blur-2xl disabled:border disabled:bg-background-secondary/90 disabled:text-muted-foreground disabled:opacity-100'
         size='icon-2xl'>
         {isLoading ? <Spinner /> : <PlusIcon className='size-8' />}
       </Button>
