@@ -20,7 +20,6 @@ type TimeEntryRowProps = BaseRowProps<TimeEntry> & {
   gap?: LeaderboardEntryGap
   gapType?: GapType
   onChangeGapType: () => void
-  qualificationPending?: boolean
 }
 
 const breakpoints = {
@@ -33,26 +32,14 @@ const breakpoints = {
 
 function PositionBadgePart({
   position,
-  pending,
-}: Readonly<{
-  position: TimeEntryRowProps['position']
-  pending?: boolean
-}>) {
+}: Readonly<{ position: TimeEntryRowProps['position'] }>) {
   return (
     <div
       className={twMerge(
         'font-kh-interface flex w-6 flex-none items-center justify-center rounded-sm uppercase'
       )}
-      aria-label={
-        pending
-          ? loc.no.timeEntry.pending
-          : position
-            ? `#${position}`
-            : loc.no.timeEntry.dnf
-      }>
-      {pending ? (
-        <span className='text-muted-foreground inline-block w-3' />
-      ) : position ? (
+      aria-label={position ? `#${position}` : loc.no.timeEntry.dnf}>
+      {position ? (
         <span className='text-primary'>{position}</span>
       ) : (
         <MinusIcon className='text-muted-foreground' />
@@ -82,16 +69,11 @@ export function NameCellPart({
   )
 }
 
-function TimePart({
-  duration,
-  pending,
-}: Readonly<{ duration?: number | null; pending?: boolean }>) {
-  const isDNF = !duration && !pending
-  const label = pending
-    ? loc.no.timeEntry.pending
-    : duration
-      ? formatTime(duration).replace(/^0/, '')
-      : loc.no.timeEntry.dnf
+function TimePart({ duration }: Readonly<{ duration?: number | null }>) {
+  const isDNF = !duration
+  const label = duration
+    ? formatTime(duration).replace(/^0/, '')
+    : loc.no.timeEntry.dnf
   return (
     <div
       className={twMerge(
@@ -135,7 +117,6 @@ export default function TimeEntryRow({
   gapType,
   onChangeGapType,
   highlight,
-  qualificationPending,
   ...rest
 }: Readonly<TimeEntryRowProps>) {
   const containerRef = useRef<HTMLDivElement | null>(null)
@@ -143,7 +124,7 @@ export default function TimeEntryRow({
   const { users } = useData()
   const userInfo = users ? users.find(u => u.id === lapTime.user) : null
 
-  const isDNF = !lapTime.duration && !qualificationPending
+  const isDNF = !lapTime.duration
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -176,12 +157,7 @@ export default function TimeEntryRow({
       )}
       title={lapTime.comment ?? undefined}
       {...rest}>
-      {show.pos && (
-        <PositionBadgePart
-          position={qualificationPending ? null : gap?.position}
-          pending={qualificationPending}
-        />
-      )}
+      {show.pos && <PositionBadgePart position={gap?.position} />}
       <NameCellPart
         name={
           userInfo?.shortName ??
@@ -200,9 +176,7 @@ export default function TimeEntryRow({
           onChangeGapType={onChangeGapType}
         />
       )}
-      {show.time && (
-        <TimePart duration={lapTime.duration} pending={qualificationPending} />
-      )}
+      {show.time && <TimePart duration={lapTime.duration} />}
     </div>
   )
 }

@@ -1,5 +1,5 @@
 import { TextField } from '@/components/FormFields'
-import { Combobox } from '@/components/combobox'
+import Combobox from '@/components/combobox'
 import { SessionRow } from '@/components/session/SessionRow'
 import { TrackRow } from '@/components/track/TrackRow'
 import UserRow from '@/components/user/UserRow'

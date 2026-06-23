@@ -3,23 +3,16 @@ import { Spinner } from '@/components/ui/spinner'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTimeEntryInput } from '@/hooks/TimeEntryInputProvider'
 import { PlusIcon } from '@heroicons/react/24/solid'
-import { Outlet, useLocation } from 'react-router-dom'
-import { twMerge } from 'tailwind-merge'
+import { Outlet } from 'react-router-dom'
 
 export default function Layout() {
   const { isLoggedIn, isLoading } = useAuth()
   const { open } = useTimeEntryInput()
-  const { pathname } = useLocation()
-  const wideMain = pathname.includes('/tournament/new')
 
   return (
     <>
       <div className='items-center-safe px-safe-or-2 py-safe-or-4 flex flex-col'>
-        <div
-          className={twMerge(
-            'w-full',
-            wideMain ? 'max-w-7xl xl:max-w-[90rem]' : 'max-w-2xl'
-          )}>
+        <div className='w-full max-w-2xl'>
           <main className='z-0 pb-28'>
             <Outlet />
           </main>

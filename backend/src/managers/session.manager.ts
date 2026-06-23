@@ -14,7 +14,6 @@ import { sessions, sessionSignups, users } from '../../database/schema'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import SessionScheduler from './session.scheduler'
-import TournamentManager from './tournament.manager'
 import UserManager from './user.manager'
 
 export default class SessionManager {
@@ -226,12 +225,6 @@ export default class SessionManager {
 
     broadcast('all_sessions', await SessionManager.getAllSessions())
     await SessionScheduler.reschedule()
-
-    const t = await TournamentManager.getActiveTournamentRow(
-      requestData.session
-    )
-    if (t)
-      await TournamentManager.broadcastSessionTournament(requestData.session)
 
     return { success: true }
   }

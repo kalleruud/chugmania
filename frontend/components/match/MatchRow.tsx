@@ -14,21 +14,13 @@ import { NameCellPart } from '../timeentries/TimeEntryRow'
 import { Badge } from '../ui/badge'
 import { Label } from '../ui/label'
 
-export type MatchRowProps = BaseRowProps<Match> & {
-  hideTrack?: boolean
-  readOnly?: boolean
-  slotLabel1?: string | null
-  slotLabel2?: string | null
-}
+export type MatchRowProps = BaseRowProps<Match> & { hideTrack?: boolean }
 
 export default function MatchRow({
   className,
   item: match,
   highlight,
   hideTrack,
-  readOnly,
-  slotLabel1,
-  slotLabel2,
   ...rest
 }: Readonly<MatchRowProps>) {
   const { users, tracks, sessions } = useData()
@@ -39,7 +31,7 @@ export default function MatchRow({
   const track = tracks?.find(t => t.id === match.track)
   const session = sessions?.find(s => s.id === match.session)
 
-  const canEdit = !readOnly && isLoggedIn && loggedInUser.role !== 'user'
+  const canEdit = isLoggedIn && loggedInUser.role !== 'user'
 
   const isCancelled = match.status === 'cancelled'
   const isCompleted = match.status === 'completed'
@@ -94,16 +86,15 @@ export default function MatchRow({
         highlight && 'bg-foreground/13'
       )}
       {...rest}>
-      <div className='mt-1 grid w-full min-w-0 grid-cols-1 items-center gap-1 sm:grid-cols-2'>
+      <div className='mt-1 grid w-full grid-cols-1 items-center gap-1 sm:grid-cols-2'>
         <div
           className={twMerge(
-            'flex w-full min-w-0 items-center justify-center gap-2',
+            'flex w-full items-center justify-center gap-2',
             isCancelled && 'line-through'
           )}>
           <UserCell
             className='flex-1 text-right'
             user={user1}
-            fallbackLabel={slotLabel1}
             isWinner={!!match.winner && match.winner === match.user1}
             onClick={() => user1 && handleSetWinner(user1.id)}
             disabled={!canEdit || isCancelled || match.status !== 'planned'}
@@ -122,7 +113,6 @@ export default function MatchRow({
           <UserCell
             className='flex-1'
             user={user2}
-            fallbackLabel={slotLabel2}
             isWinner={!!match.winner && match.winner === match.user2}
             onClick={() => user2 && handleSetWinner(user2.id)}
             disabled={!canEdit || isCancelled || match.status !== 'planned'}
@@ -195,18 +185,15 @@ export default function MatchRow({
 
 function UserCell({
   user,
-  fallbackLabel,
   isWinner,
   onClick,
   disabled,
   isCancelled,
   isCompleted,
-  className,
   ...props
 }: Readonly<
   {
     user: UserInfo | undefined
-    fallbackLabel?: string | null
     isWinner: boolean
     onClick?: () => void
     disabled?: boolean
@@ -214,26 +201,17 @@ function UserCell({
     isCompleted: boolean
   } & ComponentProps<'div'>
 >) {
-  const label =
-    user?.shortName ??
-    user?.lastName ??
-    user?.firstName ??
-    fallbackLabel ??
-    loc.no.match.unknownUser
   return (
-    <div
-      {...props}
-      className={twMerge('min-w-0 max-w-full overflow-hidden', className)}>
+    <div {...props}>
       <button
         type='button'
-        title={label}
         disabled={disabled}
         onClick={e => {
           e.stopPropagation()
           onClick?.()
         }}
         className={twMerge(
-          'min-w-0 max-w-full border-b-2 border-transparent px-1 transition-all',
+          'border-b-2 border-transparent px-1 transition-all',
           !isCancelled &&
             !isCompleted &&
             user &&
@@ -244,7 +222,14 @@ function UserCell({
           disabled && 'pointer-events-none',
           isCancelled && 'line-through'
         )}>
-        <NameCellPart name={label} className='block w-full truncate' />
+        <NameCellPart
+          name={
+            user?.shortName ??
+            user?.lastName ??
+            user?.firstName ??
+            loc.no.match.unknownUser
+          }
+        />
       </button>
     </div>
   )

@@ -14,7 +14,6 @@ import type { TypedSocket } from '../server'
 import { broadcast } from '../server'
 import AuthManager from './auth.manager'
 import RatingManager from './rating.manager'
-import TournamentManager from './tournament.manager'
 
 export default class TimeEntryManager {
   static readonly table = timeEntries
@@ -107,12 +106,6 @@ export default class TimeEntryManager {
     RatingManager.recalculate()
     broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
     broadcast('all_rankings', await RatingManager.onGetRatings())
-    if (request.session && request.track) {
-      const t = await TournamentManager.getActiveTournamentRow(request.session)
-      if (t?.qualificationTrack === request.track) {
-        await TournamentManager.broadcastSessionTournament(request.session)
-      }
-    }
 
     return {
       success: true,
@@ -179,15 +172,6 @@ export default class TimeEntryManager {
 
     broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
     broadcast('all_rankings', await RatingManager.onGetRatings())
-
-    const sess = processedUpdates.session ?? lapTime.session
-    const trk = processedUpdates.track ?? lapTime.track
-    if (sess && trk) {
-      const t = await TournamentManager.getActiveTournamentRow(sess)
-      if (t?.qualificationTrack === trk) {
-        await TournamentManager.broadcastSessionTournament(sess)
-      }
-    }
 
     return {
       success: true,

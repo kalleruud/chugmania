@@ -18,7 +18,6 @@ import RatingManager from './managers/rating.manager'
 import SessionManager from './managers/session.manager'
 import SessionScheduler from './managers/session.scheduler'
 import TimeEntryManager from './managers/timeEntry.manager'
-import TournamentManager from './managers/tournament.manager'
 import TrackManager from './managers/track.manager'
 import UserManager from './managers/user.manager'
 
@@ -95,11 +94,6 @@ async function Connect(s: TypedSocket) {
   setup(s, 'create_match', MatchManager.onCreateMatch)
   setup(s, 'edit_match', MatchManager.onEditMatch)
   setup(s, 'delete_match', MatchManager.onDeleteMatch)
-
-  setup(s, 'get_tournament_details', TournamentManager.onGetTournamentDetails)
-  setup(s, 'preview_tournament', TournamentManager.onPreviewTournament)
-  setup(s, 'create_tournament', TournamentManager.onCreateTournament)
-  setup(s, 'delete_tournament', TournamentManager.onDeleteTournament)
 
   setup(s, 'import_csv', AdminManager.onImportCsv)
   setup(s, 'export_csv', AdminManager.onExportCsv)
