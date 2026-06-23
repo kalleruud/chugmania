@@ -1,4 +1,4 @@
-import Combobox from '@/components/combobox'
+import { Combobox } from '@/components/combobox'
 import loc from '@/lib/locales'
 import {
   getId,

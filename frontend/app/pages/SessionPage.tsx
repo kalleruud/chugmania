@@ -2,6 +2,7 @@ import ConfirmationButton from '@/components/ConfirmationButton'
 import { PageSubheader } from '@/components/PageHeader'
 import SessionCard from '@/components/session/SessionCard'
 import SessionForm from '@/components/session/SessionForm'
+import TournamentPanel from '@/components/tournament/TournamentPanel'
 import TrackLeaderboard from '@/components/track/TrackLeaderboard'
 import {
   Breadcrumb,
@@ -30,12 +31,14 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Spinner } from '@/components/ui/spinner'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import UserRow from '@/components/user/UserRow'
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
 import type { SessionWithSignups } from '@common/models/session'
+import type { TournamentDetails } from '@common/models/tournament'
 import { isUpcoming } from '@common/utils/date'
 import accumulateSignups from '@common/utils/signupAccumulator'
 import {
@@ -46,8 +49,8 @@ import {
   Trash2,
   type LucideIcon,
 } from 'lucide-react'
-import { useMemo, useState, type ComponentProps } from 'react'
-import { useParams } from 'react-router-dom'
+import { useEffect, useMemo, useState, type ComponentProps } from 'react'
+import { Link, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
 import type { SessionResponse } from '../../../backend/database/schema'
@@ -216,10 +219,65 @@ export default function SessionPage() {
   const { sessions, tracks, isLoadingData } = useData()
   const { loggedInUser, isLoggedIn, isLoading } = useAuth()
   const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [tournamentDetails, setTournamentDetails] = useState<
+    TournamentDetails | null | undefined
+  >(undefined)
 
   const isAdmin = isLoggedIn && loggedInUser.role === 'admin'
   const isModerator = isLoggedIn && loggedInUser.role === 'moderator'
   const canEdit = isAdmin || isModerator
+
+  useEffect(() => {
+    if (!id) return
+    setTournamentDetails(undefined)
+    socket
+      .emitWithAck('get_tournament_details', {
+        type: 'GetTournamentDetailsRequest',
+        sessionId: id,
+      })
+      .then(
+        (res: {
+          success: boolean
+          details?: TournamentDetails | null
+          message?: string
+        }) => {
+          if (res.success && 'details' in res) {
+            setTournamentDetails(res.details ?? null)
+          } else {
+            setTournamentDetails(null)
+          }
+        }
+      )
+  }, [id, socket])
+
+  useEffect(() => {
+    if (!id) return
+    const h = (p: { sessionId: string; details: TournamentDetails | null }) => {
+      if (p.sessionId === id) setTournamentDetails(p.details)
+    }
+    socket.on('session_tournament', h)
+    return () => {
+      socket.off('session_tournament', h)
+    }
+  }, [id, socket])
+
+  const session = useMemo(
+    () => (id && sessions ? sessions.find(s => s.id === id) : undefined),
+    [sessions, id]
+  )
+
+  const signupSummary = useMemo(() => {
+    if (!session) return { yes: 0, maybe: 0, no: 0 }
+    let yes = 0
+    let maybe = 0
+    let no = 0
+    for (const s of session.signups) {
+      if (s.response === 'yes') yes++
+      else if (s.response === 'maybe') maybe++
+      else no++
+    }
+    return { yes, maybe, no }
+  }, [session])
 
   const handleDeleteSession = async (sessionId: string) => {
     toast.promise(
@@ -248,11 +306,28 @@ export default function SessionPage() {
     )
   }
 
-  const session = sessions.find(s => s.id === id)
   if (!session)
     throw new Error(loc.no.error.messages.not_in_db('sessions/' + id))
 
   const isCancelled = session?.status === 'cancelled'
+
+  async function handleDeleteTournament() {
+    toast.promise(
+      socket
+        .emitWithAck('delete_tournament', {
+          type: 'DeleteTournamentRequest',
+          sessionId: session.id,
+        })
+        .then(r => {
+          if (!r.success) throw new Error(r.message)
+        }),
+      {
+        loading: loc.no.tournament.toast.deleteLoading,
+        success: loc.no.tournament.toast.deleted,
+        error: (e: Error) => e.message,
+      }
+    )
+  }
 
   return (
     <div className='flex flex-col gap-6'>
@@ -323,21 +398,77 @@ export default function SessionPage() {
         )}
       </div>
 
-      <Signup
-        className='bg-background rounded-sm border p-2'
-        disabled={isCancelled}
-        session={session}
-      />
-
-      {tracks.map(track => (
-        <TrackLeaderboard
-          key={track.id}
-          track={track}
-          session={session.id}
-          highlight={e => isLoggedIn && loggedInUser.id === e.id}
-          filter='all'
-        />
-      ))}
+      <Tabs defaultValue='session' className='flex flex-col gap-4'>
+        <TabsList className='bg-background-secondary w-full max-w-md'>
+          <TabsTrigger value='session'>
+            {loc.no.tournament.tabSession}
+          </TabsTrigger>
+          <TabsTrigger value='participants'>
+            {loc.no.tournament.tabParticipants}
+          </TabsTrigger>
+          <TabsTrigger value='tournament'>
+            {loc.no.tournament.tabTournament}
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value='session' className='flex flex-col gap-4'>
+          {tracks.map(track => (
+            <TrackLeaderboard
+              key={track.id}
+              track={track}
+              session={session.id}
+              omitTournamentMatches
+              highlight={e => isLoggedIn && loggedInUser.id === e.id}
+              filter='all'
+            />
+          ))}
+        </TabsContent>
+        <TabsContent value='participants' className='flex flex-col gap-4'>
+          <p className='text-muted-foreground text-sm'>
+            {loc.no.session.rsvp.responses.yes}: {signupSummary.yes} ·{' '}
+            {loc.no.session.rsvp.responses.maybe}: {signupSummary.maybe} ·{' '}
+            {loc.no.session.rsvp.responses.no}: {signupSummary.no}
+          </p>
+          <Signup
+            className='bg-background rounded-sm border p-2'
+            disabled={isCancelled}
+            session={session}
+          />
+        </TabsContent>
+        <TabsContent value='tournament' className='flex flex-col gap-4'>
+          {tournamentDetails === undefined ? (
+            <Spinner className='size-6' />
+          ) : tournamentDetails ? (
+            <>
+              {canEdit && (
+                <div className='flex justify-end'>
+                  <ConfirmationButton
+                    variant='destructive'
+                    onClick={handleDeleteTournament}
+                    disabled={isLoading}>
+                    {loc.no.tournament.delete}
+                  </ConfirmationButton>
+                </div>
+              )}
+              <TournamentPanel details={tournamentDetails} />
+            </>
+          ) : canEdit ? (
+            <div className='flex flex-col items-start gap-2'>
+              <p className='text-muted-foreground text-sm'>
+                {loc.no.common.noItems}
+              </p>
+              <Button variant='default' asChild>
+                <Link to={`/sessions/${session.id}/tournament/new`}>
+                  {loc.no.tournament.create}
+                </Link>
+              </Button>
+            </div>
+          ) : (
+            <p className='text-muted-foreground text-sm'>
+              {loc.no.common.noItems}
+            </p>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

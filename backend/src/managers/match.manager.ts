@@ -14,6 +14,7 @@ import { matches, sessions } from '../../database/schema'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import RatingManager from './rating.manager'
+import TournamentManager from './tournament.manager'
 
 export default class MatchManager {
   private static validateMatchState(
@@ -73,13 +74,14 @@ export default class MatchManager {
     MatchManager.validateMatchState(request)
 
     const { type, createdAt, updatedAt, deletedAt, ...matchData } = request
-    await db.insert(matches).values(matchData).returning()
+    const inserted = await db.insert(matches).values(matchData).returning()
 
     console.debug(new Date().toISOString(), socket.id, 'Created match')
 
     RatingManager.recalculate()
     broadcast('all_matches', await MatchManager.getAllMatches())
     broadcast('all_rankings', await RatingManager.onGetRatings())
+    if (inserted[0]) await TournamentManager.afterMatchMutation(inserted[0].id)
 
     return { success: true }
   }
@@ -120,6 +122,7 @@ export default class MatchManager {
     await RatingManager.recalculate()
     broadcast('all_matches', await MatchManager.getAllMatches())
     broadcast('all_rankings', await RatingManager.onGetRatings())
+    await TournamentManager.afterMatchMutation(preImageMatch.id)
 
     return { success: true }
   }

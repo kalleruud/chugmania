@@ -10,10 +10,15 @@ import type { Socket } from 'socket.io'
 import loc from '../../../frontend/lib/locales'
 import db, { database } from '../../database/database'
 import {
+  groupPlayers,
+  groups,
   matches,
   sessions,
   sessionSignups,
   timeEntries,
+  tournamentMatches,
+  tournaments,
+  tournamentStageTracks,
   tracks,
   users,
 } from '../../database/schema'
@@ -35,6 +40,11 @@ export default class AdminManager {
     timeEntries: new Set(),
     sessionSignups: new Set(),
     matches: new Set(),
+    tournaments: new Set(),
+    tournamentStageTracks: new Set(),
+    groups: new Set(),
+    groupPlayers: new Set(),
+    tournamentMatches: new Set(),
   } satisfies Record<ExportCsvRequest['table'], Set<string>>
 
   private static readonly TABLE_MAP = {
@@ -44,6 +54,11 @@ export default class AdminManager {
     timeEntries: timeEntries,
     sessionSignups: sessionSignups,
     matches: matches,
+    tournaments: tournaments,
+    tournamentStageTracks: tournamentStageTracks,
+    groups: groups,
+    groupPlayers: groupPlayers,
+    tournamentMatches: tournamentMatches,
   } satisfies Record<ExportCsvRequest['table'], SQLiteTable>
 
   private static async importRows<T extends Record<string, any>>(
