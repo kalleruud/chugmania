@@ -57,6 +57,10 @@ import { twMerge } from 'tailwind-merge'
 import type { SessionResponse } from '../../../backend/database/schema'
 import { SubscribeButton } from './SessionsPage'
 
+function getUserSortName(user: UserInfo) {
+  return user.shortName ?? `${user.firstName} ${user.lastName ?? ''}`
+}
+
 function Signup({
   session,
   disabled,
@@ -67,7 +71,7 @@ function Signup({
 >) {
   const { socket } = useConnection()
   const { loggedInUser, isLoggedIn } = useAuth()
-  const { timeEntries, matches, users, rankings, isLoadingData } = useData()
+  const { timeEntries, matches, users, isLoadingData } = useData()
 
   const [myResponse, setMyResponse] = useState<SessionResponse | undefined>(
     session.signups.find(s => s.user.id === loggedInUser?.id)?.response
@@ -99,16 +103,10 @@ function Signup({
           }
         })
         .filter(s => s !== undefined)
-        .toSorted((a, b) => {
-          const rankA =
-            rankings?.find(r => r.user === a.user.id)?.ranking ??
-            Number.MAX_SAFE_INTEGER
-          const rankB =
-            rankings?.find(r => r.user === b.user.id)?.ranking ??
-            Number.MAX_SAFE_INTEGER
-          return rankA - rankB
-        }),
-    [session, timeEntries, matches, users, rankings]
+        .toSorted((a, b) =>
+          getUserSortName(a.user).localeCompare(getUserSortName(b.user))
+        ),
+    [session, timeEntries, matches, users]
   )
   const signedUpUserIds = useMemo(
     () => new Set(session.signups.map(s => s.user.id)),
@@ -119,9 +117,7 @@ function Signup({
       users
         ?.filter(user => !signedUpUserIds.has(user.id))
         .toSorted((a, b) =>
-          `${a.firstName} ${a.lastName ?? ''}`.localeCompare(
-            `${b.firstName} ${b.lastName ?? ''}`
-          )
+          getUserSortName(a).localeCompare(getUserSortName(b))
         ) ?? [],
     [users, signedUpUserIds]
   )
