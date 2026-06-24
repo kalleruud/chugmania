@@ -6,58 +6,10 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
-import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
-import { Empty } from '@/components/ui/empty'
-import { Item, ItemContent, ItemMedia } from '@/components/ui/item'
-import { Skeleton } from '@/components/ui/skeleton'
-import UserForm from '@/components/user/UserForm'
-import UserRow from '@/components/user/UserRow'
-import { useAuth } from '@/contexts/AuthContext'
-import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
-import type { UserInfo } from '@common/models/user'
-import { PlusIcon } from '@heroicons/react/24/solid'
-import { useState, type ComponentProps } from 'react'
-import { twMerge } from 'tailwind-merge'
-import { PageHeader } from '../../components/PageHeader'
+import { UsersContent, type UsersContentProps } from './UsersContent'
 
-type UsersPageProps = {
-  showAll?: boolean
-  showLink?: boolean
-} & ComponentProps<'div'>
-
-function UserRowList({ users }: Readonly<{ users: UserInfo[] }>) {
-  if (users.length === 0) {
-    return (
-      <Empty className='border border-input text-sm text-muted-foreground'>
-        {loc.no.common.noItems}
-      </Empty>
-    )
-  }
-  return (
-    <div className='rounded-sm bg-background-secondary'>
-      {users.map(user => (
-        <UserRow
-          key={user.id}
-          item={user}
-          className='py-3 first:pt-4 last:pb-4'
-        />
-      ))}
-    </div>
-  )
-}
-
-export default function UsersPage(props: Readonly<UsersPageProps>) {
+export default function UsersPage(props: Readonly<UsersContentProps>) {
   return (
     <div>
       <Breadcrumb>
@@ -72,104 +24,6 @@ export default function UsersPage(props: Readonly<UsersPageProps>) {
         </BreadcrumbList>
       </Breadcrumb>
       <UsersContent {...props} showAll />
-    </div>
-  )
-}
-
-export function UsersContent({
-  className,
-  showAll,
-  showLink,
-}: Readonly<UsersPageProps>) {
-  const { users: ud, rankings } = useData()
-  const { isLoggedIn, loggedInUser, isLoading } = useAuth()
-  const isModerator = isLoggedIn && loggedInUser.role !== 'user'
-
-  const [open, setOpen] = useState(false)
-
-  if (ud === undefined) {
-    return (
-      <div className={twMerge('flex flex-col', className)}>
-        <Item>
-          <ItemMedia>
-            <Skeleton className='size-8 rounded-sm' />
-          </ItemMedia>
-          <ItemContent>
-            <Skeleton className='h-6 w-24 rounded-sm' />
-            <Skeleton className='h-4 w-64 rounded-sm' />
-          </ItemContent>
-        </Item>
-
-        <div className='overflow-clip rounded-sm'>
-          <Skeleton className='h-16 w-full divide-y divide-border rounded-none' />
-          <Skeleton className='h-16 w-full divide-y divide-border rounded-none' />
-          <Skeleton className='h-16 w-full divide-y divide-border rounded-none' />
-        </div>
-      </div>
-    )
-  }
-
-  const users = ud
-    .filter(u => !u.email.endsWith('@chugmania.no') || showAll)
-    .toSorted((a, b) => {
-      const rankA =
-        rankings.find(r => r.user === a.id)?.ranking ?? Number.MAX_SAFE_INTEGER
-      const rankB =
-        rankings.find(r => r.user === b.id)?.ranking ?? Number.MAX_SAFE_INTEGER
-      return rankA - rankB
-    })
-
-  return (
-    <div className={twMerge('flex flex-col', className)}>
-      <PageHeader
-        title={loc.no.users.title}
-        description={loc.no.users.description}
-        to={showLink ? '/users' : undefined}
-        icon={'UsersIcon'}
-      />
-
-      <UserRowList users={users} />
-
-      {isModerator && (
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button
-              variant='ghost'
-              size='sm'
-              className='mt-2 w-fit text-muted-foreground'>
-              <PlusIcon />
-              {loc.no.user.create.title}
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{loc.no.user.create.title}</DialogTitle>
-              <DialogDescription>
-                {loc.no.user.create.description}
-              </DialogDescription>
-            </DialogHeader>
-
-            <UserForm
-              id='createUserForm'
-              variant='create'
-              className='py-2'
-              onSubmitResponse={success => success && setOpen(false)}
-              disabled={isLoading}
-            />
-
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button variant='outline' disabled={isLoading}>
-                  {loc.no.common.cancel}
-                </Button>
-              </DialogClose>
-              <Button type='submit' form='createUserForm' disabled={isLoading}>
-                {loc.no.common.continue}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
     </div>
   )
 }

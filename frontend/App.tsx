@@ -1,25 +1,37 @@
-import { StrictMode } from 'react'
+import { lazy, StrictMode, Suspense } from 'react'
 import { createRoot } from 'react-dom/client'
 import { ErrorBoundary } from 'react-error-boundary'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import Layout from './app/Layout'
-import AdminPage from './app/pages/AdminPage'
-import CreateTournamentPage from './app/pages/CreateTournamentPage'
 import { ErrorPage } from './app/pages/ErrorPage'
 import Home from './app/pages/HomePage'
-import SessionPage from './app/pages/SessionPage'
-import SessionsPage from './app/pages/SessionsPage'
-import TrackPage from './app/pages/TrackPage'
-import TracksPage from './app/pages/TracksPage'
-import UserPage from './app/pages/UserPage'
-import UsersPage from './app/pages/UsersPage'
 import { Toaster } from './components/ui/sonner'
+import { Spinner } from './components/ui/spinner'
 import { AuthProvider } from './contexts/AuthContext'
 import { ConnectionProvider } from './contexts/ConnectionContext'
 import { DataProvider } from './contexts/DataContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import TimeEntryInputProvider from './hooks/TimeEntryInputProvider'
 import './index.css'
+
+const AdminPage = lazy(() => import('./app/pages/AdminPage'))
+const CreateTournamentPage = lazy(
+  () => import('./app/pages/CreateTournamentPage')
+)
+const SessionPage = lazy(() => import('./app/pages/SessionPage'))
+const SessionsPage = lazy(() => import('./app/pages/SessionsPage'))
+const TrackPage = lazy(() => import('./app/pages/TrackPage'))
+const TracksPage = lazy(() => import('./app/pages/TracksPage'))
+const UserPage = lazy(() => import('./app/pages/UserPage'))
+const UsersPage = lazy(() => import('./app/pages/UsersPage'))
+
+function RouteLoadingFallback() {
+  return (
+    <main className='flex min-h-dvh-safe items-center justify-center'>
+      <Spinner />
+    </main>
+  )
+}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -31,23 +43,25 @@ createRoot(document.getElementById('root')!).render(
             <AuthProvider>
               <ErrorBoundary FallbackComponent={ErrorPage}>
                 <TimeEntryInputProvider>
-                  <Routes>
-                    <Route element={<Layout />}>
-                      <Route index element={<Home />} />
-                      <Route path='tracks' element={<TracksPage />} />
-                      <Route path='tracks/:id' element={<TrackPage />} />
-                      <Route path='users' element={<UsersPage />} />
-                      <Route path='users/:id' element={<UserPage />} />
-                      <Route path='sessions' element={<SessionsPage />} />
-                      <Route path='sessions/:id' element={<SessionPage />} />
-                      <Route path='admin' element={<AdminPage />} />
-                      <Route
-                        path='tournaments/create'
-                        element={<CreateTournamentPage />}
-                      />
-                      <Route path='*' element={<Navigate to='/' replace />} />
-                    </Route>
-                  </Routes>
+                  <Suspense fallback={<RouteLoadingFallback />}>
+                    <Routes>
+                      <Route element={<Layout />}>
+                        <Route index element={<Home />} />
+                        <Route path='tracks' element={<TracksPage />} />
+                        <Route path='tracks/:id' element={<TrackPage />} />
+                        <Route path='users' element={<UsersPage />} />
+                        <Route path='users/:id' element={<UserPage />} />
+                        <Route path='sessions' element={<SessionsPage />} />
+                        <Route path='sessions/:id' element={<SessionPage />} />
+                        <Route path='admin' element={<AdminPage />} />
+                        <Route
+                          path='tournaments/create'
+                          element={<CreateTournamentPage />}
+                        />
+                        <Route path='*' element={<Navigate to='/' replace />} />
+                      </Route>
+                    </Routes>
+                  </Suspense>
                   <Toaster />
                 </TimeEntryInputProvider>
               </ErrorBoundary>
