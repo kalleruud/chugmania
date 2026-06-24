@@ -62,14 +62,11 @@ export async function broadcastAuthenticated<Ev extends ProtectedServerEvent>(
   ev: Ev,
   ...args: Parameters<ServerToClientEvents[Ev]>
 ) {
-  await Promise.all(
-    Array.from(io.sockets.sockets.values()).map(async socket => {
-      const auth = await AuthManager.refreshToken(socket)
-      if (auth.success) {
-        socket.emit(ev, ...args)
-      }
-    })
-  )
+  io.sockets.sockets.forEach(socket => {
+    if (socket.data.userId) {
+      socket.emit(ev, ...args)
+    }
+  })
 }
 
 app.get('/api/sessions/calendar.ics', (req, res) =>

@@ -130,14 +130,21 @@ export default class AuthManager {
       AuthManager.checkAuth(socket, undefined, true)
     )
     if (error) {
+      socket.data.token = ''
+      socket.data.userId = ''
       return {
         success: false,
         message: error.message,
       }
     }
+    const token = AuthManager.sign(user.id)
+    socket.data.token = token
+    socket.data.userId = user.id
+    socket.handshake.auth.token = token
+
     return {
       success: true,
-      token: AuthManager.sign(user.id),
+      token,
       userId: user.id,
     }
   }
