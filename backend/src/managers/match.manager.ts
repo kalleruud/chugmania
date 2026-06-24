@@ -78,7 +78,7 @@ export default class MatchManager {
 
     console.debug(new Date().toISOString(), socket.id, 'Created match')
 
-    RatingManager.recalculate()
+    await RatingManager.recalculate()
     await broadcast('all_matches', await MatchManager.getAllMatches())
     await broadcast('all_rankings', await RatingManager.onGetRatings())
 

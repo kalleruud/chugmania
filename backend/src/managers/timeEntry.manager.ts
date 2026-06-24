@@ -102,12 +102,9 @@ export default class TimeEntryManager {
       request.duration
     )
 
-    RatingManager.recalculate()
-    await broadcast(
-      'all_time_entries',
-      await TimeEntryManager.getAllTimeEntries()
-    )
-    await broadcast('all_rankings', await RatingManager.onGetRatings())
+    await RatingManager.recalculate()
+    broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
+    broadcast('all_rankings', await RatingManager.onGetRatings())
 
     return {
       success: true,
