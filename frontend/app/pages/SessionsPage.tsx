@@ -1,9 +1,4 @@
 import {
-  sessionGroupings,
-  type SessionGroupingKey,
-} from '@/components/session/session.groupings'
-import SessionsList from '@/components/session/SessionsList'
-import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
@@ -11,26 +6,8 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
-import { Button } from '@/components/ui/button'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { useAuth } from '@/contexts/AuthContext'
-import { useData } from '@/contexts/DataContext'
 import loc from '@common/locale/locales'
-import { isOngoing, isPast, isUpcoming } from '@common/utils/date'
-import { CalendarIcon } from '@heroicons/react/24/solid'
-import { useState, type ComponentProps } from 'react'
-import { twMerge } from 'tailwind-merge'
-import { PageHeader } from '../../components/PageHeader'
-
-const ARCHIVE_GROUP_LIMIT = 5
-const ARCHIVE_TOTAL_LIMIT = 10
-const RECENT_SESSIONS_LIMIT = 1
+import { SessionsContent } from './SessionsContent'
 
 export default function SessionsPage() {
   return (
@@ -49,131 +26,5 @@ export default function SessionsPage() {
 
       <SessionsContent />
     </div>
-  )
-}
-
-export function SessionsContent({
-  className,
-  showLink,
-  ...props
-}: Readonly<{ showLink?: boolean } & ComponentProps<'div'>>) {
-  const { loggedInUser, isLoggedIn } = useAuth()
-  const { sessions } = useData()
-
-  const [archiveGrouping, setArchiveGrouping] =
-    useState<SessionGroupingKey>('year')
-
-  const isAdmin = isLoggedIn && loggedInUser.role === 'admin'
-  const isModerator = isLoggedIn && loggedInUser.role === 'moderator'
-  const canCreate = isAdmin || isModerator
-
-  const upcomingSessions = sessions?.filter(isUpcoming) ?? []
-  const pastSessions = sessions?.filter(isPast) ?? []
-  const archivedSessions = pastSessions.toSorted(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-  )
-  const ongoingSessions = sessions?.filter(isOngoing) ?? []
-
-  return (
-    <div className={twMerge('flex flex-col gap-2', className)} {...props}>
-      <PageHeader
-        title={loc.no.session.title}
-        description={loc.no.session.description}
-        to={showLink ? '/sessions' : undefined}
-        Icon={CalendarIcon}
-      />
-
-      <SubscribeButton className={twMerge(!canCreate && 'w-full')} />
-      {ongoingSessions.length > 0 && (
-        <SessionsList
-          header={loc.no.session.status.ongoing}
-          sessions={ongoingSessions}
-          hideCreate
-          featured
-        />
-      )}
-      <SessionsList
-        header={loc.no.session.status.upcoming}
-        sessions={upcomingSessions}
-      />
-      {!showLink && (
-        <SessionsList
-          header={loc.no.session.past}
-          sessions={archivedSessions}
-          grouping={sessionGroupings[archiveGrouping]}
-          groupLimit={ARCHIVE_GROUP_LIMIT}
-          totalLimit={ARCHIVE_TOTAL_LIMIT}
-          hideCreate
-          actions={
-            <ArchiveGroupingSelect
-              value={archiveGrouping}
-              onChange={setArchiveGrouping}
-            />
-          }
-        />
-      )}
-      {showLink && (
-        <SessionsList
-          className='opacity-75'
-          header={loc.no.session.previous}
-          sessions={archivedSessions.slice(0, RECENT_SESSIONS_LIMIT)}
-          hideCreate
-        />
-      )}
-    </div>
-  )
-}
-
-function ArchiveGroupingSelect({
-  value,
-  onChange,
-}: Readonly<{
-  value: SessionGroupingKey
-  onChange: (value: SessionGroupingKey) => void
-}>) {
-  const options = Object.keys(sessionGroupings) as SessionGroupingKey[]
-
-  return (
-    <Select
-      value={value}
-      onValueChange={next => {
-        const option = options.find(key => key === next)
-        if (option) onChange(option)
-      }}>
-      <SelectTrigger size='sm' className='mb-2'>
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        {options.map(key => (
-          <SelectItem key={key} value={key}>
-            {loc.no.common.groupBy[key]}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  )
-}
-
-export function SubscribeButton({
-  className,
-  ...rest
-}: Readonly<Parameters<typeof Button>[0]>) {
-  const subscribe = () => {
-    const url =
-      `${globalThis.location.origin}/api/sessions/calendar.ics`.replace(
-        /^https?:\/\//,
-        'webcal://'
-      )
-    window.open(url)
-  }
-
-  return (
-    <Button
-      className={twMerge('flex-1', className)}
-      onClick={subscribe}
-      {...rest}>
-      <CalendarIcon className='size-4' />
-      {loc.no.session.calendar.subscribe}
-    </Button>
   )
 }
