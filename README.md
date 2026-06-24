@@ -23,8 +23,8 @@ Chugmania is a full-stack Trackmania Turbo companion for logging lap times, shar
 2. Copy `.env.example` to `.env` and populate required secrets (see **Configuration**).
 3. Launch the dev server via `npm run dev`; visit `http://localhost:6996` for the app and API.
 4. The first boot creates `data/db.sqlite`. Commit no database files—Drizzle migrations handle schema.
-5. On a fresh database, the login page shows only `Registrer`. Create the first user there; Chugmania automatically gives that account the `admin` role.
-6. After the first admin exists, use `Logg inn` with that account. Additional users can be created or imported from `/admin`.
+5. There are no default login credentials. On a fresh database, the login page shows only `Registrer`; enter the email and password you want for the first admin user.
+6. Chugmania automatically gives the first registered user the `admin` role. After that, use `Logg inn` with the same email and password. Additional users can be created or imported from `/admin`.
 
 ## Scripts
 
