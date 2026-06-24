@@ -23,7 +23,7 @@ import type { SessionWithSignups } from '@common/models/session'
 import type { Track } from '@common/models/track'
 import type { UserInfo } from '@common/models/user'
 import { isOngoing } from '@common/utils/date'
-import { useMemo, useState, type ComponentProps, type FormEvent } from 'react'
+import { useMemo, useState, type ComponentProps } from 'react'
 import { useLocation } from 'react-router'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
@@ -41,7 +41,7 @@ import {
 type MatchInputProps = {
   inputMatch: Partial<Match>
   onSubmitResponse?: (success: boolean) => void
-  onSubmit?: (e: FormEvent<HTMLFormElement>) => void
+  onSubmit?: (e: SubmitEvent<HTMLFormElement>) => void
   disabled?: boolean
 } & ComponentProps<'form'>
 
@@ -103,7 +103,7 @@ export default function MatchInput({
     } satisfies Omit<CreateMatchRequest | EditMatchRequest, 'type'> | undefined
   }, [user1, user2, track, session, winner, status, stage, comment])
 
-  function handleCreate(e: FormEvent<HTMLFormElement>) {
+  function handleCreate(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!request) return toast.error(loc.no.match.toast.validationError)
 
@@ -121,7 +121,7 @@ export default function MatchInput({
     )
   }
 
-  function handleUpdate(e: FormEvent<HTMLFormElement>) {
+  function handleUpdate(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!inputMatch?.id) return
 

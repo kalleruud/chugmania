@@ -2,7 +2,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import loc from '@/lib/locales'
 import type { SessionWithSignups } from '@common/models/session'
-import { useState, type ComponentProps, type FormEvent } from 'react'
+import { useState, type ComponentProps, type SubmitEvent } from 'react'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
 import type { SessionStatus } from '../../../backend/database/schema'
@@ -40,7 +40,7 @@ export default function SessionForm({
   const isModerator = isLoggedIn && loggedInUser.role === 'moderator'
   const canCreate = isAdmin || isModerator
 
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!date) return toast.error('Dato er påkrevd')
 

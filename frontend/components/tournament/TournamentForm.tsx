@@ -13,7 +13,7 @@ import {
   useMemo,
   useState,
   type ComponentProps,
-  type FormEvent,
+  type SubmitEvent,
 } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
@@ -62,7 +62,7 @@ function calculateMaxMatchesPerPlayer(
 export default function TournamentForm(props: Readonly<TournamentFormProps>) {
   const { socket } = useConnection()
   const navigate = useNavigate()
-  const { sessions, rankings, users, tracks, isLoadingData } = useData()
+  const { sessions, users, isLoadingData } = useData()
   const [searchParams, setSearchParams] = useSearchParams()
 
   const selectedSessionId = searchParams.get('session')
@@ -131,7 +131,7 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
       })
   }
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!selectedSessionId)
       return toast.error(loc.no.error.messages.session_not_selected)

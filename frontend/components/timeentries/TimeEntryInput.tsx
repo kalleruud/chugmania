@@ -26,8 +26,8 @@ import {
   useRef,
   useState,
   type ComponentProps,
-  type FormEvent,
   type KeyboardEvent,
+  type SubmitEvent,
 } from 'react'
 import { useLocation } from 'react-router'
 import { toast } from 'sonner'
@@ -161,7 +161,7 @@ export default function TimeEntryInput({
     }
   }
 
-  function handleUpdate(e: FormEvent<HTMLFormElement>) {
+  function handleUpdate(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!inputTimeEntry?.id) return toast.error('Is not editing')
 
@@ -180,7 +180,7 @@ export default function TimeEntryInput({
     )
   }
 
-  function handleCreate(e: FormEvent<HTMLFormElement>) {
+  function handleCreate(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!request) return toast.error(loc.no.timeEntry.input.validationError)
 
