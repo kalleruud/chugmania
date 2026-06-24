@@ -21,7 +21,7 @@ import { useState } from 'react'
 import { Spinner } from '../ui/spinner'
 import UserForm from './UserForm'
 
-const ALLOW_SIGNUPS = false
+const allowSignups = import.meta.env.VITE_ALLOW_SIGNUPS === 'true'
 
 export default function LoginCard() {
   const { isLoggedIn, isLoading } = useAuth()
@@ -46,7 +46,7 @@ export default function LoginCard() {
       </EmptyHeader>
       <EmptyContent>
         <div className='flex gap-2'>
-          {ALLOW_SIGNUPS && (
+          {allowSignups && (
             <Dialog open={openRegister} onOpenChange={setOpenRegister}>
               <DialogTrigger asChild>
                 <Button variant='outline' size='sm'>

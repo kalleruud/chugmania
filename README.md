@@ -68,6 +68,7 @@ The `/sessions` route shows upcoming and past events. Authorized users may creat
 - `SECRET` (required): JWT signing key; use a strong random value.
 - `ORIGIN` (required in production): Allowed frontend origin for CORS.
 - `TOKEN_EXPIRY_H` (optional): Override default 1-hour auth token expiry.
+- `VITE_ALLOW_SIGNUPS` (optional): Set to `true` to show the public `Registrer` button on the login page. Keep it `false` unless you intentionally want open registration.
 - `.env.example` also exposes `SECRET` for local defaults—never commit secrets.
 
 ## Docker
