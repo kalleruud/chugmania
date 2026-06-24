@@ -15,6 +15,7 @@ import { useConnection } from './ConnectionContext'
 import { useData } from './DataContext'
 
 type AuthContextType = {
+  hasUsers: boolean
   isLoading: boolean
 } & (
   | {
@@ -36,6 +37,7 @@ const AuthContext = createContext<AuthContextType | null>(null)
 export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const { users } = useData()
   const { socket, setToken } = useConnection()
+  const [hasUsers, setHasUsers] = useState(true)
   const [isLoadingAuth, setIsLoadingAuth] = useState(true)
   const [loggedInUserId, setLoggedInUserId] = useState<string | undefined>(
     undefined
@@ -93,8 +95,10 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   }
 
   useEffect(() => {
+    socket.on('setup_data', r => setHasUsers(r.hasUsers))
     socket.on('user_data', r => handleResponse(r, false))
     return () => {
+      socket.off('setup_data')
       socket.off('user_data')
     }
   }, [])
@@ -102,6 +106,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const context = useMemo<AuthContextType>(() => {
     if (loggedInUser)
       return {
+        hasUsers,
         isLoading,
         isLoggedIn: true,
         loggedInUser,
@@ -109,11 +114,12 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
       }
     else
       return {
+        hasUsers,
         isLoading,
         isLoggedIn: false,
         login,
       }
-  }, [isLoading, loggedInUser])
+  }, [hasUsers, isLoading, loggedInUser])
 
   return <AuthContext.Provider value={context}>{children}</AuthContext.Provider>
 }

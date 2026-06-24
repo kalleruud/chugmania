@@ -25,9 +25,10 @@ import UserForm from './UserForm'
 const ALLOW_SIGNUPS = false
 
 export default function LoginCard() {
-  const { isLoggedIn, isLoading } = useAuth()
+  const { hasUsers, isLoggedIn, isLoading } = useAuth()
   const [openLogin, setOpenLogin] = useState(false)
   const [openRegister, setOpenRegister] = useState(false)
+  const showRegister = !hasUsers || ALLOW_SIGNUPS
 
   if (isLoggedIn) return undefined
 
@@ -49,12 +50,18 @@ export default function LoginCard() {
             className='h-auto w-48 max-w-full'
           />
         </EmptyMedia>
-        <EmptyTitle>{loc.no.user.notLoggedIn}</EmptyTitle>
-        <EmptyDescription>{loc.no.user.login.description}</EmptyDescription>
+        <EmptyTitle>
+          {hasUsers ? loc.no.user.notLoggedIn : loc.no.user.firstRun.title}
+        </EmptyTitle>
+        <EmptyDescription>
+          {hasUsers
+            ? loc.no.user.login.description
+            : loc.no.user.firstRun.description}
+        </EmptyDescription>
       </EmptyHeader>
       <EmptyContent>
         <div className='flex gap-2'>
-          {ALLOW_SIGNUPS && (
+          {showRegister && (
             <Dialog open={openRegister} onOpenChange={setOpenRegister}>
               <DialogTrigger asChild>
                 <Button variant='outline' size='sm'>
@@ -99,41 +106,43 @@ export default function LoginCard() {
             </Dialog>
           )}
 
-          <Dialog open={openLogin} onOpenChange={setOpenLogin}>
-            <DialogTrigger asChild>
-              <Button size='sm'>{loc.no.user.login.title}</Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>{loc.no.user.login.title}</DialogTitle>
-                <DialogDescription>
-                  {loc.no.user.login.description}
-                </DialogDescription>
-              </DialogHeader>
+          {hasUsers && (
+            <Dialog open={openLogin} onOpenChange={setOpenLogin}>
+              <DialogTrigger asChild>
+                <Button size='sm'>{loc.no.user.login.title}</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>{loc.no.user.login.title}</DialogTitle>
+                  <DialogDescription>
+                    {loc.no.user.login.description}
+                  </DialogDescription>
+                </DialogHeader>
 
-              <UserForm
-                id='loginForm'
-                variant='login'
-                className='py-2'
-                onSubmitResponse={success => success && setOpenLogin(false)}
-                disabled={isLoading}
-              />
+                <UserForm
+                  id='loginForm'
+                  variant='login'
+                  className='py-2'
+                  onSubmitResponse={success => success && setOpenLogin(false)}
+                  disabled={isLoading}
+                />
 
-              <DialogFooter>
-                <DialogClose asChild>
-                  <Button variant='outline' disabled={isLoading}>
-                    {loc.no.common.cancel}
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button variant='outline' disabled={isLoading}>
+                      {loc.no.common.cancel}
+                    </Button>
+                  </DialogClose>
+                  <Button type='submit' form='loginForm' disabled={isLoading}>
+                    {isLoading && <Spinner />}
+                    {isLoading
+                      ? loc.no.user.login.request.loading
+                      : loc.no.user.login.title}
                   </Button>
-                </DialogClose>
-                <Button type='submit' form='loginForm' disabled={isLoading}>
-                  {isLoading && <Spinner />}
-                  {isLoading
-                    ? loc.no.user.login.request.loading
-                    : loc.no.user.login.title}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
       </EmptyContent>
     </Empty>

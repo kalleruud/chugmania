@@ -87,6 +87,23 @@ export default class UserManager {
     return !!data?.length
   }
 
+  static async hasUsers(): Promise<boolean> {
+    const { data, error } = await tryCatchAsync(
+      db
+        .select({ id: users.id })
+        .from(users)
+        .where(isNull(users.deletedAt))
+        .limit(1)
+    )
+
+    if (error) {
+      console.warn(new Date().toISOString(), error.message)
+      return true
+    }
+
+    return !!data?.length
+  }
+
   static async userExists(email: string): Promise<boolean> {
     const { data, error } = await tryCatchAsync(
       db.query.users.findFirst({ where: eq(users.email, email) })
@@ -265,6 +282,7 @@ export default class UserManager {
     )
 
     await broadcastAuthenticated('all_users', await UserManager.getAllUsers())
+    socket.emit('setup_data', { hasUsers: true })
 
     return { success: true }
   }

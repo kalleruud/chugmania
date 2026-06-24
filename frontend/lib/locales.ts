@@ -53,6 +53,11 @@ const no = {
   user: {
     notLoggedIn: 'Du er ikke logget inn',
     joined: 'Chugget siden',
+    firstRun: {
+      title: 'Ingen brukere finnes ennå',
+      description:
+        'Du må opprette den første brukeren for å sette opp admin-kontoen.',
+    },
     login: {
       title: 'Logg inn',
       description: 'Logg inn for å registrere tider og meld deg på sessions.',
