@@ -132,11 +132,21 @@ export default function TournamentCard({
   }
 
   const groupMatches = tournament.matches.filter(m => m.bracket === 'group')
+  const bracketMatches = tournament.matches.filter(m => m.bracket !== 'group')
+
   const completedGroupMatches = groupMatches.filter(
     gm =>
       gm.match && matches?.find(m => m.id === gm.match)?.status === 'completed'
   ).length
   const totalGroupMatches = groupMatches.length
+
+  const completedBracketMatches = bracketMatches.filter(
+    bm =>
+      bm.match && matches?.find(m => m.id === bm.match)?.status === 'completed'
+  ).length
+  const totalBracketMatches = bracketMatches.filter(
+    bm => bm.match !== null
+  ).length
 
   return (
     <div

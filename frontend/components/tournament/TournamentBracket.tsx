@@ -16,37 +16,6 @@ type TournamentBracketProps = {
   className?: string
 }
 
-function getGroupSourceDescription(
-  groups: GroupWithPlayers[],
-  groupId: string | null,
-  rank: number | null
-): string | undefined {
-  if (!groupId || !rank) return undefined
-
-  const group = groups.find(g => g.id === groupId)
-  if (!group) return undefined
-
-  if (rank === 1) return loc.no.tournament.source.groupWinner(group.name)
-  return loc.no.tournament.source.groupRank(group.name, rank)
-}
-
-function getMatchSourceDescription(
-  matches: TournamentMatchWithDetails[],
-  matchId: string | null,
-  progression: string | null
-): string | undefined {
-  if (!matchId) return undefined
-
-  const sourceMatch = matches.find(m => m.id === matchId)
-  if (!sourceMatch) return undefined
-
-  if (progression === 'winner') {
-    return loc.no.tournament.source.matchWinner(sourceMatch.name)
-  }
-
-  return loc.no.tournament.source.matchLoser(sourceMatch.name)
-}
-
 export default function TournamentBracket({
   matches,
   groups,
@@ -71,31 +40,50 @@ export default function TournamentBracket({
     sourceA: string
     sourceB: string
   } {
-    const sourceA =
-      getGroupSourceDescription(
-        groups,
-        match.sourceGroupA,
-        match.sourceGroupARank
-      ) ??
-      getMatchSourceDescription(
-        matches,
-        match.sourceMatchA,
-        match.sourceMatchAProgression
-      ) ??
-      loc.no.tournament.pending
+    let sourceA = loc.no.tournament.pending
+    let sourceB = loc.no.tournament.pending
 
-    const sourceB =
-      getGroupSourceDescription(
-        groups,
-        match.sourceGroupB,
-        match.sourceGroupBRank
-      ) ??
-      getMatchSourceDescription(
-        matches,
-        match.sourceMatchB,
-        match.sourceMatchBProgression
-      ) ??
-      loc.no.tournament.pending
+    if (match.sourceGroupA && match.sourceGroupARank) {
+      const group = groups.find(g => g.id === match.sourceGroupA)
+      if (group) {
+        sourceA =
+          match.sourceGroupARank === 1
+            ? loc.no.tournament.source.groupWinner(group.name)
+            : loc.no.tournament.source.groupRank(
+                group.name,
+                match.sourceGroupARank
+              )
+      }
+    } else if (match.sourceMatchA) {
+      const sourceMatch = matches.find(m => m.id === match.sourceMatchA)
+      if (sourceMatch) {
+        sourceA =
+          match.sourceMatchAProgression === 'winner'
+            ? loc.no.tournament.source.matchWinner(sourceMatch.name)
+            : loc.no.tournament.source.matchLoser(sourceMatch.name)
+      }
+    }
+
+    if (match.sourceGroupB && match.sourceGroupBRank) {
+      const group = groups.find(g => g.id === match.sourceGroupB)
+      if (group) {
+        sourceB =
+          match.sourceGroupBRank === 1
+            ? loc.no.tournament.source.groupWinner(group.name)
+            : loc.no.tournament.source.groupRank(
+                group.name,
+                match.sourceGroupBRank
+              )
+      }
+    } else if (match.sourceMatchB) {
+      const sourceMatch = matches.find(m => m.id === match.sourceMatchB)
+      if (sourceMatch) {
+        sourceB =
+          match.sourceMatchBProgression === 'winner'
+            ? loc.no.tournament.source.matchWinner(sourceMatch.name)
+            : loc.no.tournament.source.matchLoser(sourceMatch.name)
+      }
+    }
 
     return { sourceA, sourceB }
   }
@@ -116,9 +104,7 @@ export default function TournamentBracket({
                 key={match.id}
                 item={match.matchDetails}
                 className='rounded-sm border bg-background p-2'
-                onClick={() => {
-                  if (match.matchDetails) openMatch(match.matchDetails)
-                }}
+                onClick={() => openMatch(match.matchDetails!)}
                 hideTrack
               />
             )

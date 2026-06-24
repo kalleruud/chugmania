@@ -62,7 +62,7 @@ function calculateMaxMatchesPerPlayer(
 export default function TournamentForm(props: Readonly<TournamentFormProps>) {
   const { socket } = useConnection()
   const navigate = useNavigate()
-  const { sessions, users, isLoadingData } = useData()
+  const { sessions, rankings, users, tracks, isLoadingData } = useData()
   const [searchParams, setSearchParams] = useSearchParams()
 
   const selectedSessionId = searchParams.get('session')

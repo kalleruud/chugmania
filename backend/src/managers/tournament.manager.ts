@@ -45,12 +45,6 @@ type TournamentStructure = {
   matches: Match[]
 }
 
-function hasMatch(
-  tournamentMatch: TournamentMatch
-): tournamentMatch is TournamentMatch & { match: string } {
-  return tournamentMatch.match !== null
-}
-
 type UpperMatchMeta = {
   id: string
   round: number
@@ -129,13 +123,14 @@ export default class TournamentManager {
     })
 
     const matchRows: Match[] = await Promise.all(
-      tournamentMatchRows.filter(hasMatch).map(async tm => {
-        const match = await db.query.matches.findFirst({
-          where: and(eq(matches.id, tm.match), isNull(matches.deletedAt)),
+      tournamentMatchRows
+        .filter(tm => tm.match)
+        .map(async tm => {
+          const match = await db.query.matches.findFirst({
+            where: and(eq(matches.id, tm.match!), isNull(matches.deletedAt)),
+          })
+          return match!
         })
-        if (!match) throw new Error(loc.no.error.messages.not_in_db(tm.match))
-        return match
-      })
     )
 
     return {
@@ -362,7 +357,8 @@ export default class TournamentManager {
       user2: string
     }[] = []
 
-    // Future improvement: avoid players playing back to back matches.
+    // TODO: Use a more efficient algorithm for generating group match pairings
+    // to avoid players playing back to back matches.
     for (const group of groupWithPlayers) {
       for (let i = 0; i < group.players.length; i++) {
         for (let j = i + 1; j < group.players.length; j++) {
@@ -375,7 +371,7 @@ export default class TournamentManager {
       }
     }
 
-    // Future improvement: distribute tracks evenly across group matches.
+    // TODO: Distribute tracks evenly across group matches
 
     // Create group matches with assigned tracks
     const matches: CreateMatch[] = []
@@ -1315,11 +1311,11 @@ export default class TournamentManager {
 
     const tournamentWithDetails =
       await TournamentManager.toTournamentWithDetails({
-        tournament: tournamentDraft,
-        groups,
-        groupPlayers,
-        tournamentMatches,
-        matches,
+        tournament: tournamentDraft as Tournament,
+        groups: groups as Group[],
+        groupPlayers: groupPlayers as GroupPlayer[],
+        tournamentMatches: tournamentMatches as TournamentMatch[],
+        matches: matches as Match[],
       })
 
     console.debug(
