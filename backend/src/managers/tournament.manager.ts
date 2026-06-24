@@ -31,7 +31,7 @@ import {
   type MatchStage,
   type TournamentBracket,
 } from '../../database/schema'
-import { broadcast, type TypedSocket } from '../server'
+import { broadcastAuthenticated, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import MatchManager from './match.manager'
 import RatingManager from './rating.manager'
@@ -233,8 +233,14 @@ export default class TournamentManager {
       request.name
     )
 
-    broadcast('all_tournaments', await TournamentManager.getAllTournaments())
-    broadcast('all_matches', await MatchManager.getAllMatches())
+    await broadcastAuthenticated(
+      'all_tournaments',
+      await TournamentManager.getAllTournaments()
+    )
+    await broadcastAuthenticated(
+      'all_matches',
+      await MatchManager.getAllMatches()
+    )
 
     return { success: true }
   }
@@ -800,8 +806,14 @@ export default class TournamentManager {
       request.id
     )
 
-    broadcast('all_tournaments', await TournamentManager.getAllTournaments())
-    broadcast('all_matches', await MatchManager.getAllMatches())
+    await broadcastAuthenticated(
+      'all_tournaments',
+      await TournamentManager.getAllTournaments()
+    )
+    await broadcastAuthenticated(
+      'all_matches',
+      await MatchManager.getAllMatches()
+    )
 
     return { success: true }
   }
@@ -846,7 +858,10 @@ export default class TournamentManager {
       )
     }
 
-    broadcast('all_tournaments', await TournamentManager.getAllTournaments())
+    await broadcastAuthenticated(
+      'all_tournaments',
+      await TournamentManager.getAllTournaments()
+    )
   }
 
   private static async checkGroupCompletion(
@@ -1170,8 +1185,14 @@ export default class TournamentManager {
       .where(eq(tournamentMatches.id, pendingMatch.id))
 
     await RatingManager.recalculate()
-    broadcast('all_matches', await MatchManager.getAllMatches())
-    broadcast('all_rankings', await RatingManager.onGetRatings())
+    await broadcastAuthenticated(
+      'all_matches',
+      await MatchManager.getAllMatches()
+    )
+    await broadcastAuthenticated(
+      'all_rankings',
+      await RatingManager.onGetRatings()
+    )
   }
 
   private static async getGroupRankedPlayer(

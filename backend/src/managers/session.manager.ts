@@ -11,7 +11,7 @@ import { and, asc, desc, eq, isNull } from 'drizzle-orm'
 import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
 import { sessions, sessionSignups, users } from '../../database/schema'
-import { broadcast, type TypedSocket } from '../server'
+import { broadcastAuthenticated, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import SessionScheduler from './session.scheduler'
 import UserManager from './user.manager'
@@ -120,7 +120,10 @@ export default class SessionManager {
       request.name
     )
 
-    broadcast('all_sessions', await SessionManager.getAllSessions())
+    await broadcastAuthenticated(
+      'all_sessions',
+      await SessionManager.getAllSessions()
+    )
     await SessionScheduler.reschedule()
 
     return { success: true }
@@ -160,7 +163,10 @@ export default class SessionManager {
 
     console.debug(new Date().toISOString(), socket.id, 'Updated session', id)
 
-    broadcast('all_sessions', await SessionManager.getAllSessions())
+    await broadcastAuthenticated(
+      'all_sessions',
+      await SessionManager.getAllSessions()
+    )
     await SessionScheduler.reschedule()
 
     return { success: true }
@@ -223,7 +229,10 @@ export default class SessionManager {
       session.id
     )
 
-    broadcast('all_sessions', await SessionManager.getAllSessions())
+    await broadcastAuthenticated(
+      'all_sessions',
+      await SessionManager.getAllSessions()
+    )
     await SessionScheduler.reschedule()
 
     return { success: true }

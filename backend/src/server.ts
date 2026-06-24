@@ -46,8 +46,30 @@ export type TypedSocket = Socket<
   SocketData
 >
 
-export const broadcast: typeof io.emit = (ev, ...args) => {
-  return io.emit(ev, ...args)
+type ProtectedServerEvent = Exclude<keyof ServerToClientEvents, 'user_data'>
+
+async function emitInitialData(socket: TypedSocket) {
+  socket.emit('all_users', await UserManager.getAllUsers())
+  socket.emit('all_tracks', await TrackManager.getAllTracks())
+  socket.emit('all_sessions', await SessionManager.getAllSessions())
+  socket.emit('all_time_entries', await TimeEntryManager.getAllTimeEntries())
+  socket.emit('all_matches', await MatchManager.getAllMatches())
+  socket.emit('all_rankings', await RatingManager.onGetRatings())
+  socket.emit('all_tournaments', await TournamentManager.getAllTournaments())
+}
+
+export async function broadcastAuthenticated<Ev extends ProtectedServerEvent>(
+  ev: Ev,
+  ...args: Parameters<ServerToClientEvents[Ev]>
+) {
+  await Promise.all(
+    Array.from(io.sockets.sockets.values()).map(async socket => {
+      const auth = await AuthManager.refreshToken(socket)
+      if (auth.success) {
+        socket.emit(ev, ...args)
+      }
+    })
+  )
 }
 
 app.get('/api/sessions/calendar.ics', (req, res) =>
@@ -65,14 +87,11 @@ await RatingManager.recalculate()
 async function Connect(s: TypedSocket) {
   console.debug(new Date().toISOString(), s.id, 'Connected')
 
-  s.emit('user_data', await AuthManager.refreshToken(s))
-  s.emit('all_users', await UserManager.getAllUsers())
-  s.emit('all_tracks', await TrackManager.getAllTracks())
-  s.emit('all_sessions', await SessionManager.getAllSessions())
-  s.emit('all_time_entries', await TimeEntryManager.getAllTimeEntries())
-  s.emit('all_matches', await MatchManager.getAllMatches())
-  s.emit('all_rankings', await RatingManager.onGetRatings())
-  s.emit('all_tournaments', await TournamentManager.getAllTournaments())
+  const auth = await AuthManager.refreshToken(s)
+  s.emit('user_data', auth)
+  if (auth.success) {
+    await emitInitialData(s)
+  }
 
   s.on('disconnect', () =>
     console.debug(new Date().toISOString(), s.id, 'Disconnected')

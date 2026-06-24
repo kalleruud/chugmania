@@ -2,7 +2,7 @@ import type { SessionWithSignups } from '@common/models/session'
 import { and, asc, gt, isNull } from 'drizzle-orm'
 import db from '../../database/database'
 import { sessions } from '../../database/schema'
-import { broadcast } from '../server'
+import { broadcastAuthenticated } from '../server'
 import SessionManager from './session.manager'
 
 export default class SessionScheduler {
@@ -65,7 +65,10 @@ export default class SessionScheduler {
       'Session started, broadcasting all_sessions'
     )
 
-    broadcast('all_sessions', await SessionManager.getAllSessions())
+    await broadcastAuthenticated(
+      'all_sessions',
+      await SessionManager.getAllSessions()
+    )
     SessionScheduler.cancel()
     await SessionScheduler.scheduleNext()
   }

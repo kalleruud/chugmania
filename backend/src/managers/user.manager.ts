@@ -12,7 +12,7 @@ import { eq, isNull } from 'drizzle-orm'
 import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
 import { users } from '../../database/schema'
-import { broadcast, type TypedSocket } from '../server'
+import { broadcastAuthenticated, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import RatingManager from './rating.manager'
 import TimeEntryManager from './timeEntry.manager'
@@ -61,7 +61,7 @@ export default class UserManager {
     const user = data[0]
     if (!user) throw new Error(loc.no.error.messages.not_in_db(id))
 
-    broadcast('all_users', await UserManager.getAllUsers())
+    await broadcastAuthenticated('all_users', await UserManager.getAllUsers())
     return user
   }
 
@@ -167,8 +167,11 @@ export default class UserManager {
       socket.emit('user_data', response)
     }
 
-    broadcast('all_users', await UserManager.getAllUsers())
-    broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
+    await broadcastAuthenticated('all_users', await UserManager.getAllUsers())
+    await broadcastAuthenticated(
+      'all_time_entries',
+      await TimeEntryManager.getAllTimeEntries()
+    )
 
     return {
       success: true,
@@ -201,9 +204,15 @@ export default class UserManager {
     )
 
     await RatingManager.recalculate()
-    broadcast('all_users', await UserManager.getAllUsers())
-    broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
-    broadcast('all_rankings', await RatingManager.onGetRatings())
+    await broadcastAuthenticated('all_users', await UserManager.getAllUsers())
+    await broadcastAuthenticated(
+      'all_time_entries',
+      await TimeEntryManager.getAllTimeEntries()
+    )
+    await broadcastAuthenticated(
+      'all_rankings',
+      await RatingManager.onGetRatings()
+    )
 
     return {
       success: true,
@@ -255,7 +264,7 @@ export default class UserManager {
       `Registered user '${userInfo.email}' with role '${role}'`
     )
 
-    broadcast('all_users', await UserManager.getAllUsers())
+    await broadcastAuthenticated('all_users', await UserManager.getAllUsers())
 
     return { success: true }
   }
