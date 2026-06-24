@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node dist/server/server.js",
     "dev": "tsx watch --env-file .env backend/src/server.ts",
-    "check": "drizzle-kit check && eslint . --cache && tsc --noEmit && prettier -c .",
+    "check": "drizzle-kit check && eslint . --cache && bunx tsc --noEmit --pretty false -p tsconfig.app.json && prettier -c .",
     "fix": "eslint . --cache --fix && prettier -w .",
     "build": "npm run build:frontend && npm run build:backend",
     "build:frontend": "vite build",
