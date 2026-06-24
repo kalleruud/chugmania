@@ -66,7 +66,7 @@ export default function FileDrop({
         onDrop={handleDrop}
         {...props}>
         {(isLoading || isDragging) && (
-          <div className='bg-background/25 absolute flex size-full items-center justify-center p-0.5'>
+          <div className='absolute flex size-full items-center justify-center bg-background/25 p-0.5'>
             {isLoading ? <Spinner /> : undefined}
           </div>
         )}

@@ -24,7 +24,7 @@ export default function TrackPage() {
 
   if (isLoadingData) {
     return (
-      <div className='items-center-safe justify-center-safe flex h-dvh w-full'>
+      <div className='flex h-dvh w-full items-center-safe justify-center-safe'>
         <Spinner className='size-6' />
       </div>
     )

@@ -20,7 +20,7 @@ export default function TournamentMatchRow({
 
   if (match)
     return (
-      <div className='bg-background/50 flex w-full flex-col items-center justify-center rounded-sm border p-2'>
+      <div className='flex w-full flex-col items-center justify-center rounded-sm border bg-background/50 p-2'>
         <span>{item.name}</span>
         <MatchRow
           item={match}
@@ -33,11 +33,11 @@ export default function TournamentMatchRow({
   return (
     <div
       className={twMerge(
-        'bg-background/50 flex flex-col gap-2 rounded-sm border border-dashed p-3',
+        'flex flex-col gap-2 rounded-sm border border-dashed bg-background/50 p-3',
         className
       )}>
       <div className='flex items-center justify-center gap-2'>
-        <span className='text-muted-foreground truncate text-sm'>
+        <span className='truncate text-sm text-muted-foreground'>
           {item.name}
         </span>
       </div>

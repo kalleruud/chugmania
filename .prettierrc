@@ -7,7 +7,7 @@
   "tabWidth": 2,
   "trailingComma": "es5",
   "useTabs": false,
-  "tailwindStylesheet": "./src/styles/App.css",
+  "tailwindStylesheet": "./frontend/index.css",
   "bracketSameLine": true,
   "plugins": ["prettier-plugin-organize-imports", "prettier-plugin-tailwindcss"]
 }

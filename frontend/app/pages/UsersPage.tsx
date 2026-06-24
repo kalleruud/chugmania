@@ -39,13 +39,13 @@ type UsersPageProps = {
 function UserRowList({ users }: Readonly<{ users: UserInfo[] }>) {
   if (users.length === 0) {
     return (
-      <Empty className='border-input text-muted-foreground border text-sm'>
+      <Empty className='border border-input text-sm text-muted-foreground'>
         {loc.no.common.noItems}
       </Empty>
     )
   }
   return (
-    <div className='bg-background-secondary rounded-sm'>
+    <div className='rounded-sm bg-background-secondary'>
       {users.map(user => (
         <UserRow
           key={user.id}
@@ -101,9 +101,9 @@ export function UsersContent({
         </Item>
 
         <div className='overflow-clip rounded-sm'>
-          <Skeleton className='divide-border h-16 w-full divide-y rounded-none' />
-          <Skeleton className='divide-border h-16 w-full divide-y rounded-none' />
-          <Skeleton className='divide-border h-16 w-full divide-y rounded-none' />
+          <Skeleton className='h-16 w-full divide-y divide-border rounded-none' />
+          <Skeleton className='h-16 w-full divide-y divide-border rounded-none' />
+          <Skeleton className='h-16 w-full divide-y divide-border rounded-none' />
         </div>
       </div>
     )
@@ -136,7 +136,7 @@ export function UsersContent({
             <Button
               variant='ghost'
               size='sm'
-              className='text-muted-foreground mt-2 w-fit'>
+              className='mt-2 w-fit text-muted-foreground'>
               <PlusIcon />
               {loc.no.user.create.title}
             </Button>

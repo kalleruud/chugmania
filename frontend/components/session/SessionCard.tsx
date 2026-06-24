@@ -66,24 +66,24 @@ export default function SessionCard({
           <div className='flex items-center gap-2'>
             <StatusIcon
               status={session.status}
-              className='text-muted-foreground size-4'
+              className='size-4 text-muted-foreground'
             />
             <span>{loc.no.session.statusOptions[session.status]}</span>
           </div>
 
           <div className='flex items-center gap-2'>
-            <ClockIcon className='text-muted-foreground size-4' />
+            <ClockIcon className='size-4 text-muted-foreground' />
             <span className='capitalize'>{formatTimeOnly(session.date)}</span>
           </div>
 
           <div className='flex items-center gap-2 capitalize'>
-            <CalendarIcon className='text-muted-foreground size-4' />
+            <CalendarIcon className='size-4 text-muted-foreground' />
             {formatDateWithYear(session.date)}
           </div>
 
           {session.location && (
             <div className='flex items-center gap-2'>
-              <MapPinIcon className='text-muted-foreground size-4' />
+              <MapPinIcon className='size-4 text-muted-foreground' />
               <span>{session.location}</span>
             </div>
           )}

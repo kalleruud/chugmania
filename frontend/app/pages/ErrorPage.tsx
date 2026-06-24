@@ -15,7 +15,7 @@ export function ErrorPage({
   resetErrorBoundary,
 }: Readonly<FallbackProps>) {
   return (
-    <div className='justify-center-safe flex w-full'>
+    <div className='flex w-full justify-center-safe'>
       <Empty className='m-safe-or-4 max-w-2xl border border-dashed'>
         <EmptyHeader>
           <EmptyTitle>{loc.no.error.title}</EmptyTitle>

@@ -27,12 +27,12 @@ export default function MatchList({
 
   if (matches.length === 0) {
     return (
-      <Empty className='border-input text-muted-foreground border text-sm'>
+      <Empty className='border border-input text-sm text-muted-foreground'>
         {isLoggedIn && (
           <Button
             variant='outline'
             size='sm'
-            className='text-muted-foreground w-fit'
+            className='w-fit text-muted-foreground'
             onClick={() => openMatch({ track, user1: user, session })}>
             <PlusIcon />
             {loc.no.match.new}
@@ -54,7 +54,7 @@ export default function MatchList({
             isLoggedIn &&
             (match.user1 === loggedInUser.id || match.user2 === loggedInUser.id)
           }
-          className='bg-background-secondary rounded-sm p-2'
+          className='rounded-sm bg-background-secondary p-2'
           onClick={() => openMatch(match)}
           hideTrack={hideTrack}
         />
@@ -64,7 +64,7 @@ export default function MatchList({
         <Button
           variant='ghost'
           size='sm'
-          className='text-muted-foreground w-fit'
+          className='w-fit text-muted-foreground'
           onClick={() => openMatch({ track, user1: user, session })}>
           <PlusIcon />
           {loc.no.match.new}

@@ -22,13 +22,13 @@ type TracksPageProps = { showLink?: true } & ComponentProps<'div'>
 function TrackRowList({ tracks }: Readonly<{ tracks: Track[] }>) {
   if (tracks.length === 0) {
     return (
-      <Empty className='border-input text-muted-foreground border text-sm'>
+      <Empty className='border border-input text-sm text-muted-foreground'>
         {loc.no.common.noItems}
       </Empty>
     )
   }
   return (
-    <div className='bg-background-secondary rounded-sm'>
+    <div className='rounded-sm bg-background-secondary'>
       {tracks.map(track => (
         <TrackRow
           key={track.id}
@@ -79,9 +79,9 @@ export function TracksContent({
         </Item>
 
         <div className='overflow-clip rounded-sm'>
-          <Skeleton className='divide-border h-16 w-full divide-y rounded-none' />
-          <Skeleton className='divide-border h-16 w-full divide-y rounded-none' />
-          <Skeleton className='divide-border h-16 w-full divide-y rounded-none' />
+          <Skeleton className='h-16 w-full divide-y divide-border rounded-none' />
+          <Skeleton className='h-16 w-full divide-y divide-border rounded-none' />
+          <Skeleton className='h-16 w-full divide-y divide-border rounded-none' />
         </div>
       </div>
     )

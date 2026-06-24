@@ -29,7 +29,7 @@ export default function TrackLeaderboard({
 
   if (isLoadingData)
     return (
-      <div className='items-center-safe justify-center-safe bg-background flex h-32 w-full flex-col gap-2 rounded-sm border p-2'>
+      <div className='flex h-32 w-full flex-col items-center-safe justify-center-safe gap-2 rounded-sm border bg-background p-2'>
         <Spinner className='size-6' />
       </div>
     )
@@ -53,12 +53,12 @@ export default function TrackLeaderboard({
   return (
     <div
       className={twMerge(
-        'bg-background flex flex-col gap-2 rounded-sm border p-2',
+        'flex flex-col gap-2 rounded-sm border bg-background p-2',
         className
       )}>
       <TrackRow item={track} />
       <Tabs defaultValue={entries.length > 0 ? 'laptimes' : 'matches'}>
-        <TabsList className='bg-background-secondary w-full'>
+        <TabsList className='w-full bg-background-secondary'>
           <TabsTrigger value='laptimes'>{loc.no.timeEntry.title}</TabsTrigger>
           <TabsTrigger value='matches'>{loc.no.match.title}</TabsTrigger>
         </TabsList>

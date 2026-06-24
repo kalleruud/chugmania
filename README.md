@@ -67,12 +67,12 @@ The `/sessions` route shows upcoming and past events. Authorized users may creat
 - `SECRET` (required): JWT signing key; use a strong random value.
 - `ORIGIN` (required in production): Allowed frontend origin for CORS.
 - `TOKEN_EXPIRY_H` (optional): Override default 1-hour auth token expiry.
-- `.env.example` also exposes `PRIVATE_KEY` for local defaults—never commit secrets.
+- `.env.example` also exposes `SECRET` for local defaults—never commit secrets.
 
 ## Docker
 
 - Build: `docker build -t chugmania .`
-- Run: `docker run -p 6996:6996 chugmania`
+- Run: `docker run -p 6996:6996 -v ./data:/app/data  --env-file .env chugmania`
 - The entrypoint executes `npm start`, so migrations apply automatically before serving.
 - Mount `/app/data` as a volume to persist the SQLite database across restarts.
 

@@ -16,7 +16,7 @@ export function TrackRow({
   const content = (
     <>
       <ItemContent>
-        <ItemTitle className='font-kh-interface text-2xl tabular-nums tracking-tight'>
+        <ItemTitle className='font-kh-interface text-2xl tracking-tight tabular-nums'>
           <p className='text-primary'>#</p>
           {formatTrackName(track.number)}
         </ItemTitle>
@@ -43,7 +43,7 @@ export function TrackRow({
         key={track.id}
         className={twMerge(
           highlight &&
-            'bg-primary-background hover:bg-primary/25 ring-primary/50 ring-1',
+            'bg-primary-background ring-1 ring-primary/50 hover:bg-primary/25',
           className
         )}
         asChild>
@@ -57,7 +57,7 @@ export function TrackRow({
       key={track.id}
       className={twMerge(
         highlight &&
-          'bg-primary-background hover:bg-primary/25 ring-primary/50 ring-1',
+          'bg-primary-background ring-1 ring-primary/50 hover:bg-primary/25',
         className
       )}
       asChild>

@@ -124,11 +124,11 @@ export function TimeEntryList({
 
   if (filteredEntries.length === 0) {
     return (
-      <Empty className='border-input text-muted-foreground border text-sm'>
+      <Empty className='border border-input text-sm text-muted-foreground'>
         <Button
           variant='outline'
           size='sm'
-          className='text-muted-foreground w-fit'
+          className='w-fit text-muted-foreground'
           onClick={() => open({ track, user, session })}>
           <PlusIcon />
           {loc.no.timeEntry.input.create.title}
@@ -174,7 +174,7 @@ export function TimeEntryList({
         </ToggleGroup>
       </div>
 
-      <div className='bg-background-secondary flex flex-col rounded-sm'>
+      <div className='flex flex-col rounded-sm bg-background-secondary'>
         {filteredEntries.map((entry, i) => {
           return (
             <TimeEntryRow
@@ -202,7 +202,7 @@ export function TimeEntryList({
         <Button
           variant='ghost'
           size='sm'
-          className='text-muted-foreground w-fit'
+          className='w-fit text-muted-foreground'
           onClick={() => open({ track, user, session })}>
           <PlusIcon />
           {loc.no.timeEntry.input.create.title}

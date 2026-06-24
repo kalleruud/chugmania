@@ -103,7 +103,7 @@ function Signup({
 
   if (isLoadingData)
     return (
-      <div className='items-center-safe justify-center-safe border-border flex h-32 w-full rounded-sm border'>
+      <div className='flex h-32 w-full items-center-safe justify-center-safe rounded-sm border border-border'>
         <Spinner className='size-6' />
       </div>
     )
@@ -177,7 +177,7 @@ function Signup({
       </div>
 
       {accumulatedSignups.length === 0 && (
-        <Empty className='border-input text-muted-foreground border text-sm'>
+        <Empty className='border border-input text-sm text-muted-foreground'>
           {loc.no.common.noItems}
         </Empty>
       )}
@@ -193,7 +193,7 @@ function Signup({
               title={loc.no.session.rsvp.responses[response]}
               description={responses.length.toString()}
             />
-            <div className='bg-background-secondary rounded-sm'>
+            <div className='rounded-sm bg-background-secondary'>
               {accumulatedSignups
                 .filter(s => s.response === response)
                 .map(({ user }) => (
@@ -243,7 +243,7 @@ export default function SessionPage() {
 
   if (isLoadingData) {
     return (
-      <div className='items-center-safe justify-center-safe flex h-dvh w-full'>
+      <div className='flex h-dvh w-full items-center-safe justify-center-safe'>
         <Spinner className='size-6' />
       </div>
     )
@@ -325,7 +325,7 @@ export default function SessionPage() {
       </div>
 
       <Signup
-        className='bg-background rounded-sm border p-2'
+        className='rounded-sm border bg-background p-2'
         disabled={isCancelled}
         session={session}
       />

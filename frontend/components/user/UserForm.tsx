@@ -172,7 +172,7 @@ export default function UserForm({
 
       <div hidden={!isAdmin} className='-mx-3 flex flex-col gap-2'>
         <Label className='pl-3'>{loc.no.user.form.advanced}</Label>
-        <div className='border-border rounded-md border border-dashed p-3'>
+        <div className='rounded-md border border-dashed border-border p-3'>
           <CalendarField
             id='created_at'
             selected={createdAt}
