@@ -1,12 +1,29 @@
-import * as HeroIcons from '@heroicons/react/24/solid'
-import type { ComponentProps } from 'react'
+import {
+  CalendarIcon,
+  ChevronRightIcon,
+  MapIcon,
+  ShieldExclamationIcon,
+  TrophyIcon,
+  UsersIcon,
+  WrenchIcon,
+} from '@heroicons/react/24/solid'
+import type { ComponentProps, ComponentType, SVGProps } from 'react'
 import { Link } from 'react-router'
 import { twMerge } from 'tailwind-merge'
+
+const icons = {
+  CalendarIcon,
+  MapIcon,
+  ShieldExclamationIcon,
+  TrophyIcon,
+  UsersIcon,
+  WrenchIcon,
+} satisfies Record<string, ComponentType<SVGProps<SVGSVGElement>>>
 
 type PageHeaderProps = {
   title: string
   description?: string | null
-  icon?: keyof typeof HeroIcons
+  icon?: keyof typeof icons
   to?: string
 } & ComponentProps<'div'>
 
@@ -18,7 +35,7 @@ export function PageHeader({
   className,
   ...props
 }: Readonly<PageHeaderProps>) {
-  const Icon = icon ? HeroIcons[icon] : undefined
+  const Icon = icon ? icons[icon] : undefined
   const content = (
     <div className='flex items-center justify-between'>
       <div className='flex flex-col' {...props}>
@@ -32,7 +49,7 @@ export function PageHeader({
           </p>
         )}
       </div>
-      {to && <HeroIcons.ChevronRightIcon className='size-4' />}
+      {to && <ChevronRightIcon className='size-4' />}
     </div>
   )
 

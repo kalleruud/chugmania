@@ -15,7 +15,7 @@ export default function ConfirmationButton({
   ...props
 }: Readonly<ConfirmationButtonProps>) {
   const [isConfirming, setIsConfirming] = useState(false)
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -56,6 +56,10 @@ export default function ConfirmationButton({
       </Button>
     )
 
-  const { type, formAction, onSubmit, onSubmitCapture, ...initProps } = props
+  const initProps = { ...props }
+  delete initProps.type
+  delete initProps.formAction
+  delete initProps.onSubmit
+  delete initProps.onSubmitCapture
   return <Button {...initProps} onClick={() => setIsConfirming(true)} />
 }

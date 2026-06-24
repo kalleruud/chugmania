@@ -31,10 +31,11 @@ export default function TrackPage() {
   }
 
   const track = tracks.find(t => t.id === id)
-  if (!track) throw new Error(loc.no.error.messages.not_in_db('track/' + id))
-  const filteredMatches = matches?.filter(m => m.track === track.id) ?? []
+  if (!track)
+    throw new Error(loc.no.error.messages.not_in_db('track/' + String(id)))
+  const filteredMatches = matches.filter(m => m.track === track.id)
 
-  const entries = timeEntries?.filter(te => !track || track.id === te.track)
+  const entries = timeEntries.filter(te => track.id === te.track)
 
   return (
     <div className='flex flex-col gap-4'>

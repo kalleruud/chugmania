@@ -94,7 +94,7 @@ export default function Combobox<T extends ComboboxLookupItem>({
     return items.slice(0, limit)
   }, [items, search])
 
-  const isLoading = results === undefined
+  const isLoading = false
 
   function onSelect(item: ComboboxLookupItem) {
     if (item.id === selected?.id) setSelected(undefined)
@@ -120,7 +120,7 @@ export default function Combobox<T extends ComboboxLookupItem>({
     function onDocKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape') setOpen(false)
       if (e.key === 'Enter' && open) {
-        const first = results?.[0]
+        const first = results[0]
         if (first) onSelect(first)
       }
     }

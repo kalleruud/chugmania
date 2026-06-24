@@ -32,7 +32,7 @@ export default function MatchCard({
       {/* Header: Stage and Status */}
       <div className='flex w-full items-center justify-between text-xs text-muted-foreground uppercase'>
         <span>
-          {match.stage ? (loc.no.match.stage[match.stage] ?? match.stage) : ''}
+          {match.stage ? loc.no.match.stage[match.stage] : ''}
         </span>
         <span>{loc.no.match.status[match.status]}</span>
       </div>
@@ -49,7 +49,7 @@ export default function MatchCard({
                 : 'border-border text-muted-foreground'
             )}>
             <span className='font-f1-bold text-lg'>
-              {user1?.firstName?.charAt(0) ?? '?'}
+              {user1?.firstName.charAt(0) ?? '?'}
             </span>
           </div>
           <span
@@ -78,7 +78,7 @@ export default function MatchCard({
                 : 'border-border text-muted-foreground'
             )}>
             <span className='font-f1-bold text-lg'>
-              {user2?.firstName?.charAt(0) ?? '?'}
+              {user2?.firstName.charAt(0) ?? '?'}
             </span>
           </div>
           <span
