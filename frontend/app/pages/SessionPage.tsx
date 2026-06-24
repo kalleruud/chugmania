@@ -56,6 +56,12 @@ import { twMerge } from 'tailwind-merge'
 import type { SessionResponse } from '../../../backend/database/schema'
 import { SubscribeButton } from './SessionsPage'
 
+const RESPONSE_OPTIONS: { response: SessionResponse; Icon: LucideIcon }[] = [
+  { response: 'yes', Icon: CircleCheck },
+  { response: 'maybe', Icon: CircleQuestionMark },
+  { response: 'no', Icon: CircleX },
+]
+
 function getUserSortName(user: UserInfo) {
   return user.shortName ?? `${user.firstName} ${user.lastName ?? ''}`
 }
@@ -76,21 +82,13 @@ function Signup({
     s => s.user.id === loggedInUser?.id
   )?.response
 
-  const isAdmin = isLoggedIn && loggedInUser.role !== 'user'
-  const responseOptions: { response: SessionResponse; Icon: LucideIcon }[] = [
-    { response: 'yes', Icon: CircleCheck },
-    { response: 'maybe', Icon: CircleQuestionMark },
-    { response: 'no', Icon: CircleX },
-  ]
+  const canManageSignups = isLoggedIn && loggedInUser.role !== 'user'
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([])
-  const [selectedPickerUser, setSelectedPickerUser] = useState<
-    ReturnType<typeof userToLookupItem> | null | undefined
-  >(null)
   const [selectedResponse, setSelectedResponse] =
     useState<SessionResponse>('yes')
 
-  const accumulatedSignups = useMemo(
+  const sortedSignups = useMemo(
     () =>
       session.signups.toSorted((a, b) =>
         getUserSortName(a.user).localeCompare(getUserSortName(b.user))
@@ -147,7 +145,6 @@ function Signup({
   }
 
   function handleSelectUser(user: UserInfo | null | undefined) {
-    setSelectedPickerUser(null)
     if (!user) return
     setSelectedUserIds(current =>
       current.includes(user.id) ? current : [...current, user.id]
@@ -184,31 +181,33 @@ function Signup({
         </h3>
 
         <div>
-          {(isUpcoming(session) || isAdmin) && isLoggedIn && myResponse && (
-            <Select
-              disabled={disabled}
-              value={myResponse}
-              onValueChange={handleRsvp}>
-              <SelectTrigger className='w-[160px]'>
-                <SelectValue placeholder={loc.no.session.rsvp.change} />
-              </SelectTrigger>
-              <SelectContent>
-                {responseOptions.map(({ response, Icon }) => (
-                  <SelectItem key={response} value={response}>
-                    <Icon className='size-4' />
-                    {loc.no.session.rsvp.responses[response]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
+          {(isUpcoming(session) || canManageSignups) &&
+            isLoggedIn &&
+            myResponse && (
+              <Select
+                disabled={disabled}
+                value={myResponse}
+                onValueChange={handleRsvp}>
+                <SelectTrigger className='w-[160px]'>
+                  <SelectValue placeholder={loc.no.session.rsvp.change} />
+                </SelectTrigger>
+                <SelectContent>
+                  {RESPONSE_OPTIONS.map(({ response, Icon }) => (
+                    <SelectItem key={response} value={response}>
+                      <Icon className='size-4' />
+                      {loc.no.session.rsvp.responses[response]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
         </div>
       </div>
 
       <div
         className='flex items-center justify-center gap-2'
         hidden={!isUpcoming(session) || !isLoggedIn || !!myResponse}>
-        {responseOptions.map(({ response, Icon }) => (
+        {RESPONSE_OPTIONS.map(({ response, Icon }) => (
           <Button
             key={response}
             size='sm'
@@ -220,7 +219,7 @@ function Signup({
         ))}
       </div>
 
-      {isAdmin && (
+      {canManageSignups && (
         <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
           <DialogTrigger asChild>
             <Button type='button' variant='outline' disabled={disabled}>
@@ -237,7 +236,7 @@ function Signup({
                 placeholder={loc.no.session.rsvp.manage.userPlaceholder}
                 emptyLabel={loc.no.common.noItems ?? undefined}
                 items={selectableUsers.map(userToLookupItem)}
-                selected={selectedPickerUser}
+                selected={undefined}
                 setSelected={handleSelectUser}
                 CustomRow={props => <UserRow {...props} hideLink hideRanking />}
               />
@@ -280,7 +279,7 @@ function Signup({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {responseOptions.map(({ response, Icon }) => (
+                  {RESPONSE_OPTIONS.map(({ response, Icon }) => (
                     <SelectItem key={response} value={response}>
                       <Icon className='size-4' />
                       {loc.no.session.rsvp.responses[response]}
@@ -304,14 +303,14 @@ function Signup({
         </Dialog>
       )}
 
-      {accumulatedSignups.length === 0 && (
+      {sortedSignups.length === 0 && (
         <Empty className='border border-input text-sm text-muted-foreground'>
           {loc.no.common.noItems}
         </Empty>
       )}
 
-      {responseOptions.map(({ response }) => {
-        const responseSignups = accumulatedSignups.filter(
+      {RESPONSE_OPTIONS.map(({ response }) => {
+        const responseSignups = sortedSignups.filter(
           s => s.response === response
         )
         if (responseSignups.length === 0) return undefined
@@ -329,7 +328,7 @@ function Signup({
                     item={user}
                     className='w-full py-1 first:pt-2 last:pb-2'
                     hideRanking>
-                    {isAdmin && (
+                    {canManageSignups && (
                       <Select
                         value={response}
                         onValueChange={value =>
@@ -340,7 +339,7 @@ function Signup({
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {responseOptions.map(({ response, Icon }) => (
+                          {RESPONSE_OPTIONS.map(({ response, Icon }) => (
                             <SelectItem key={response} value={response}>
                               <Icon className='size-4' />
                               {loc.no.session.rsvp.responses[response]}
