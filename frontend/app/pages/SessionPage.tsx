@@ -52,7 +52,7 @@ import { useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
 import type { SessionResponse } from '../../../backend/database/schema'
-import { SubscribeButton } from './SessionsPage'
+import { SubscribeButton } from './SessionsContent'
 
 function Signup({
   session,

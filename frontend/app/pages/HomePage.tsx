@@ -2,9 +2,9 @@ import { PageHeader } from '@/components/PageHeader'
 import UserCard from '@/components/user/UserCard'
 import { useAuth } from '@/contexts/AuthContext'
 import loc from '@/lib/locales'
-import { SessionsContent } from './SessionsPage'
-import { TracksContent } from './TracksPage'
-import { UsersContent } from './UsersPage'
+import { SessionsContent } from './SessionsContent'
+import { TracksContent } from './TracksContent'
+import { UsersContent } from './UsersContent'
 
 export default function Home() {
   const { loggedInUser } = useAuth()
