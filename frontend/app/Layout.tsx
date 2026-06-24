@@ -10,21 +10,25 @@ export default function Layout() {
   const { isLoggedIn, isLoading } = useAuth()
   const { open } = useTimeEntryInput()
 
+  function renderContent() {
+    if (isLoading) {
+      return (
+        <div className='flex min-h-96 items-center justify-center'>
+          <Spinner />
+        </div>
+      )
+    }
+
+    if (isLoggedIn) return <Outlet />
+
+    return <LoginCard />
+  }
+
   return (
     <>
       <div className='flex flex-col items-center-safe py-safe-or-4 px-safe-or-2'>
         <div className='w-full max-w-2xl'>
-          <main className='z-0 pb-28'>
-            {isLoading ? (
-              <div className='flex min-h-96 items-center justify-center'>
-                <Spinner />
-              </div>
-            ) : isLoggedIn ? (
-              <Outlet />
-            ) : (
-              <LoginCard />
-            )}
-          </main>
+          <main className='z-0 pb-28'>{renderContent()}</main>
         </div>
       </div>
 

@@ -114,7 +114,8 @@ export default function Combobox<T extends ComboboxLookupItem>({
     function onDocMouseDown(e: MouseEvent) {
       if (!open) return
       if (!containerRef.current) return
-      if (containerRef.current.contains(e.target as Node)) return
+      if (e.target instanceof Node && containerRef.current.contains(e.target))
+        return
       setOpen(false)
     }
     function onDocKeyDown(e: KeyboardEvent) {
