@@ -251,9 +251,7 @@ export default function SessionPage() {
 
   const session = sessions.find(s => s.id === id)
   if (!session)
-    throw new Error(
-      loc.no.error.messages.not_in_db('sessions/' + String(id))
-    )
+    throw new Error(loc.no.error.messages.not_in_db('sessions/' + String(id)))
 
   const isCancelled = session.status === 'cancelled'
 

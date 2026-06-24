@@ -8,8 +8,8 @@ import {
   type CreateGroup,
   type CreateGroupPlayer,
   type CreateTournament,
-  type CreateTournamentRequest,
   type CreateTournamentMatch,
+  type CreateTournamentRequest,
   type DeleteTournamentRequest,
   type EditTournamentRequest,
   type Group,
@@ -261,13 +261,12 @@ class TournamentManagerClass {
       playerIds
     )
 
-    const { tournamentMatches, matches } =
-      TournamentManager.createGroupMatches(
-        tournamentId,
-        sessionId,
-        groups,
-        groupPlayers
-      )
+    const { tournamentMatches, matches } = TournamentManager.createGroupMatches(
+      tournamentId,
+      sessionId,
+      groups,
+      groupPlayers
+    )
 
     const totalAdvancing = groupsCount * advancementCount
     const bracketTournamentMatches = TournamentManager.generateBracketSlots(
@@ -576,8 +575,7 @@ class TournamentManagerClass {
       matches.push({
         id,
         tournament: tournamentId,
-        name:
-          `${TournamentManager.getRoundName(lowerRound, true)} - ${i + 1}`,
+        name: `${TournamentManager.getRoundName(lowerRound, true)} - ${i + 1}`,
         bracket: 'lower',
         round: lowerRound,
         track,
@@ -853,10 +851,7 @@ class TournamentManagerClass {
     broadcast('all_tournaments', await TournamentManager.getAllTournaments())
   }
 
-  private async checkGroupCompletion(
-    tournamentId: string,
-    sessionId: string
-  ) {
+  private async checkGroupCompletion(tournamentId: string, sessionId: string) {
     const tournament = await db.query.tournaments.findFirst({
       where: eq(tournaments.id, tournamentId),
     })
@@ -1303,14 +1298,13 @@ class TournamentManagerClass {
       eliminationType: request.eliminationType,
     } satisfies CreateTournament
 
-    const tournamentWithDetails =
-      TournamentManager.toTournamentWithDetails({
-        tournament: tournamentDraft as Tournament,
-        groups: groups as Group[],
-        groupPlayers: groupPlayers as GroupPlayer[],
-        tournamentMatches: tournamentMatches as TournamentMatch[],
-        matches: matches as Match[],
-      })
+    const tournamentWithDetails = TournamentManager.toTournamentWithDetails({
+      tournament: tournamentDraft as Tournament,
+      groups: groups as Group[],
+      groupPlayers: groupPlayers as GroupPlayer[],
+      tournamentMatches: tournamentMatches as TournamentMatch[],
+      matches: matches as Match[],
+    })
 
     console.debug(
       new Date().toISOString(),

@@ -34,7 +34,9 @@ export type EditSessionRequest = Partial<CreateSession> & {
   id: Session['id']
 }
 
-export function isEditSessionRequest(data: unknown): data is EditSessionRequest {
+export function isEditSessionRequest(
+  data: unknown
+): data is EditSessionRequest {
   if (!isRecord(data)) return false
   return data.type === 'EditSessionRequest' && typeof data.id === 'string'
 }
@@ -46,7 +48,9 @@ export type RsvpSessionRequest = {
   response: SessionResponse
 }
 
-export function isRsvpSessionRequest(data: unknown): data is RsvpSessionRequest {
+export function isRsvpSessionRequest(
+  data: unknown
+): data is RsvpSessionRequest {
   if (!isRecord(data)) return false
   return (
     data.type === 'RsvpSessionRequest' &&

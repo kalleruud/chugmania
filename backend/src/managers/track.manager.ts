@@ -20,10 +20,7 @@ class TrackManagerClass {
     return (await Promise.all(tasks)).flat()
   }
 
-  async getTrackIdsWithLapTimes(
-    offset = 0,
-    limit = 100
-  ): Promise<string[]> {
+  async getTrackIdsWithLapTimes(offset = 0, limit = 100): Promise<string[]> {
     const { data, error } = await tryCatchAsync(
       db
         .select({ id: tracks.id })

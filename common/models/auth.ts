@@ -1,5 +1,5 @@
-import { type UserInfo } from './user'
 import { isRecord } from '../utils/is-record'
+import { type UserInfo } from './user'
 
 export type LoginRequest = {
   type: 'LoginRequest'

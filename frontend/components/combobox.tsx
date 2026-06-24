@@ -165,48 +165,48 @@ export default function Combobox<T extends ComboboxLookupItem>({
         <PopoverContent
           className='w-sm bg-popover/90 p-0 backdrop-blur-xl'
           align={align}>
-            <div className='flex items-center gap-2 border-b border-border px-2'>
-              <Search className='size-4 text-muted-foreground' />
-              <input
-                type='text'
-                inputMode='search'
-                className='placeholder:text-label-muted flex w-full py-2 focus:ring-0'
-                placeholder='Søk...'
-                maxLength={64}
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                autoFocus
-              />
+          <div className='flex items-center gap-2 border-b border-border px-2'>
+            <Search className='size-4 text-muted-foreground' />
+            <input
+              type='text'
+              inputMode='search'
+              className='placeholder:text-label-muted flex w-full py-2 focus:ring-0'
+              placeholder='Søk...'
+              maxLength={64}
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              autoFocus
+            />
+          </div>
+          {results.length === 0 ? (
+            <div className='text-label-muted py-6 text-center'>
+              {emptyLabel ?? 'No results'}
             </div>
-            {results.length === 0 ? (
-              <div className='text-label-muted py-6 text-center'>
-                {emptyLabel ?? 'No results'}
-              </div>
-            ) : (
-              <ul className='max-h-64 w-full overflow-x-hidden overflow-y-auto p-1'>
-                {results.map(item => (
-                  <li key={item.id} className='list-none'>
-                    <Button
-                      type='button'
-                      variant='ghost'
-                      size='sm'
-                      className='flex h-fit w-full justify-between p-0'
-                      onClick={() => onSelect(item)}>
-                      {CustomRow ? (
-                        <CustomRow
-                          item={item}
-                          className='w-full px-2 py-3'
-                          hideLink
-                          highlight={item.id === selected?.id}
-                        />
-                      ) : (
-                        <Row item={item} highlight={item.id === selected?.id} />
-                      )}
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            )}
+          ) : (
+            <ul className='max-h-64 w-full overflow-x-hidden overflow-y-auto p-1'>
+              {results.map(item => (
+                <li key={item.id} className='list-none'>
+                  <Button
+                    type='button'
+                    variant='ghost'
+                    size='sm'
+                    className='flex h-fit w-full justify-between p-0'
+                    onClick={() => onSelect(item)}>
+                    {CustomRow ? (
+                      <CustomRow
+                        item={item}
+                        className='w-full px-2 py-3'
+                        hideLink
+                        highlight={item.id === selected?.id}
+                      />
+                    ) : (
+                      <Row item={item} highlight={item.id === selected?.id} />
+                    )}
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
         </PopoverContent>
       </Popover>
     </div>

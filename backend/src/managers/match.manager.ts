@@ -138,7 +138,12 @@ class MatchManagerClass {
       .where(eq(matches.id, preImageMatch.id))
       .returning()
 
-    console.debug(new Date().toISOString(), socket.id, 'Updated match', request.id)
+    console.debug(
+      new Date().toISOString(),
+      socket.id,
+      'Updated match',
+      request.id
+    )
 
     await RatingManager.recalculate()
     broadcast('all_matches', await MatchManager.getAllMatches())

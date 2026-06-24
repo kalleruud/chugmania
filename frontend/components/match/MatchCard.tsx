@@ -31,9 +31,7 @@ export default function MatchCard({
       )}>
       {/* Header: Stage and Status */}
       <div className='flex w-full items-center justify-between text-xs text-muted-foreground uppercase'>
-        <span>
-          {match.stage ? loc.no.match.stage[match.stage] : ''}
-        </span>
+        <span>{match.stage ? loc.no.match.stage[match.stage] : ''}</span>
         <span>{loc.no.match.status[match.status]}</span>
       </div>
 

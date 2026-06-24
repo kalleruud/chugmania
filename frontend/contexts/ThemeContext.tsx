@@ -15,12 +15,10 @@ export function ThemeProvider({
   storageKey = 'vite-ui-theme',
   ...props
 }: Readonly<ThemeProviderProps>) {
-  const [theme, setTheme] = useState<Theme>(
-    () => {
-      const storedTheme = localStorage.getItem(storageKey)
-      return isTheme(storedTheme) ? storedTheme : defaultTheme
-    }
-  )
+  const [theme, setTheme] = useState<Theme>(() => {
+    const storedTheme = localStorage.getItem(storageKey)
+    return isTheme(storedTheme) ? storedTheme : defaultTheme
+  })
 
   useEffect(() => {
     const root = globalThis.document.documentElement

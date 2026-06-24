@@ -8,7 +8,12 @@ type ObjectWithDates = Partial<
 >
 
 function parseDates<T extends ObjectWithDates>(obj: T): T {
-  const dateFields: DateField[] = ['createdAt', 'updatedAt', 'deletedAt', 'date']
+  const dateFields: DateField[] = [
+    'createdAt',
+    'updatedAt',
+    'deletedAt',
+    'date',
+  ]
   const result = { ...obj }
 
   for (const field of dateFields) {

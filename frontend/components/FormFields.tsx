@@ -69,10 +69,7 @@ export function SelectField<T extends string>({
       <Label htmlFor={id} className='gap-1'>
         {name} {props.required && <span className='text-primary'>*</span>}
       </Label>
-      <Select
-        value={value}
-        onValueChange={onValueChange}
-        {...props}>
+      <Select value={value} onValueChange={onValueChange} {...props}>
         <SelectTrigger className='w-full'>
           <SelectValue placeholder={name} />
         </SelectTrigger>

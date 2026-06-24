@@ -184,9 +184,8 @@ type CallbackOf<F> =
       ? C
       : undefined
 
-type ResponseOf<F> = CallbackOf<F> extends (res: infer R) => void
-  ? R
-  : undefined
+type ResponseOf<F> =
+  CallbackOf<F> extends (res: infer R) => void ? R : undefined
 
 type HasCallback<F> = CallbackOf<F> extends undefined ? false : true
 

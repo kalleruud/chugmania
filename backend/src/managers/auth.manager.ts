@@ -1,8 +1,8 @@
 import { isLoginRequest } from '@common/models/auth'
 import type { EventReq, EventRes, SocketData } from '@common/models/socket.io'
 import { type User, type UserInfo } from '@common/models/user'
-import { tryCatch, tryCatchAsync } from '@common/utils/try-catch'
 import { isRecord } from '@common/utils/is-record'
+import { tryCatch, tryCatchAsync } from '@common/utils/try-catch'
 import jwt, { type JwtPayload } from 'jsonwebtoken'
 import loc from '../../../frontend/lib/locales'
 import type { TypedSocket } from '../server'
@@ -128,9 +128,7 @@ class AuthManagerClass {
     }
   }
 
-  async refreshToken(
-    socket: TypedSocket
-  ): Promise<EventRes<'get_user_data'>> {
+  async refreshToken(socket: TypedSocket): Promise<EventRes<'get_user_data'>> {
     const { data: user, error } = await tryCatchAsync(
       AuthManager.checkAuth(socket, undefined, true)
     )

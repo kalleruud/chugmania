@@ -63,9 +63,7 @@ class SessionManagerClass {
     }
   }
 
-  public async getSessionSignups(
-    sessionId: string
-  ): Promise<SessionSignup[]> {
+  public async getSessionSignups(sessionId: string): Promise<SessionSignup[]> {
     const signupRows = await db
       .select({
         id: sessionSignups.id,
@@ -163,7 +161,12 @@ class SessionManagerClass {
 
     if (res.changes === 0) throw new Error('Update failed')
 
-    console.debug(new Date().toISOString(), socket.id, 'Updated session', request.id)
+    console.debug(
+      new Date().toISOString(),
+      socket.id,
+      'Updated session',
+      request.id
+    )
 
     broadcast('all_sessions', await SessionManager.getAllSessions())
     await SessionScheduler.reschedule()

@@ -10,7 +10,9 @@ export type CreateMatchRequest = {
   type: 'CreateMatchRequest'
 } & CreateMatch
 
-export function isCreateMatchRequest(data: unknown): data is CreateMatchRequest {
+export function isCreateMatchRequest(
+  data: unknown
+): data is CreateMatchRequest {
   if (!isRecord(data)) return false
   return data.type === 'CreateMatchRequest' && typeof data.track === 'string'
 }
@@ -30,7 +32,9 @@ export type DeleteMatchRequest = {
   id: Match['id']
 }
 
-export function isDeleteMatchRequest(data: unknown): data is DeleteMatchRequest {
+export function isDeleteMatchRequest(
+  data: unknown
+): data is DeleteMatchRequest {
   if (!isRecord(data)) return false
   return data.type === 'DeleteMatchRequest' && typeof data.id === 'string'
 }

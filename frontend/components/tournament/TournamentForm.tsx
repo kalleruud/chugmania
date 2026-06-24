@@ -9,8 +9,8 @@ import type {
 } from '@common/models/tournament'
 import { Users } from 'lucide-react'
 import {
-  useEffect,
   useCallback,
+  useEffect,
   useMemo,
   useState,
   type ComponentProps,
