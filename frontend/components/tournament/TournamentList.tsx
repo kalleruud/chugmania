@@ -1,5 +1,5 @@
-import { useAuth } from '@/contexts/AuthContext'
-import { useData } from '@/contexts/DataContext'
+import { useAuth } from '@/contexts/useAuth'
+import { useData } from '@/contexts/useData'
 import loc from '@/lib/locales'
 import { PlusIcon } from '@heroicons/react/24/solid'
 import { Link } from 'react-router'

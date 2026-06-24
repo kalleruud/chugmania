@@ -11,31 +11,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { useAuth } from '@/contexts/AuthContext'
-import { useConnection } from '@/contexts/ConnectionContext'
+import { useAuth } from '@/contexts/useAuth'
+import { useConnection } from '@/contexts/useConnection'
 import loc from '@/lib/locales'
 import type { Match } from '@common/models/match'
 import type { TimeEntry } from '@common/models/timeEntry'
 import { Trash2 } from 'lucide-react'
-import {
-  createContext,
-  useContext,
-  useMemo,
-  useState,
-  type ReactNode,
-} from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
-
-type TimeEntryInputContextType = {
-  state: 'open' | 'closed'
-  open: (editingTimeEntry?: Partial<TimeEntry>) => void
-  openMatch: (editingMatch?: Partial<Match>) => void
-  close: () => void
-}
-
-const TimeEntryInputContext = createContext<
-  TimeEntryInputContextType | undefined
->(undefined)
+import {
+  TimeEntryInputContext,
+  type TimeEntryInputContextType,
+} from './time-entry-input-context'
 
 export default function TimeEntryInputProvider({
   children,
@@ -92,10 +79,10 @@ export default function TimeEntryInputProvider({
 
   const canEdit =
     mode === 'match'
-      ? isLoggedIn && loggedInUser?.role !== 'user'
+      ? isLoggedIn && loggedInUser.role !== 'user'
       : isEditingSelf ||
         !isEditing ||
-        (isLoggedIn && loggedInUser?.role !== 'user')
+        (isLoggedIn && loggedInUser.role !== 'user')
 
   function open(
     editingTimeEntry: Parameters<TimeEntryInputContextType['open']>[0] = {}
@@ -117,7 +104,7 @@ export default function TimeEntryInputProvider({
 
   function handleDelete() {
     if (mode === 'match') {
-      if (!editingMatch?.id) return
+      if (!editingMatch.id) return
       toast.promise(
         socket
           .emitWithAck('delete_match', {
@@ -134,14 +121,14 @@ export default function TimeEntryInputProvider({
       return
     }
 
-    if (!editingTimeEntry?.id) {
+    if (!editingTimeEntry.id) {
       return toast.error('Du kan ikke slette en uregistrert tid...')
     }
     toast.promise(
       socket
         .emitWithAck('edit_time_entry', {
           type: 'EditTimeEntryRequest',
-          id: editingTimeEntry?.id,
+          id: editingTimeEntry.id,
           deletedAt: new Date(),
         })
         .then(r => {
@@ -221,13 +208,4 @@ export default function TimeEntryInputProvider({
       {children}
     </TimeEntryInputContext.Provider>
   )
-}
-
-export const useTimeEntryInput = () => {
-  const context = useContext(TimeEntryInputContext)
-  if (!context)
-    throw new Error(
-      'useTimeEntryInput must be used inside TimeEntryInputProvider'
-    )
-  return context
 }

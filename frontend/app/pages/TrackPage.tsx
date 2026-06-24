@@ -11,8 +11,8 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
 import { Spinner } from '@/components/ui/spinner'
-import { useAuth } from '@/contexts/AuthContext'
-import { useData } from '@/contexts/DataContext'
+import { useAuth } from '@/contexts/useAuth'
+import { useData } from '@/contexts/useData'
 import loc from '@/lib/locales'
 import { formatTrackName } from '@common/utils/track'
 import { useParams } from 'react-router'

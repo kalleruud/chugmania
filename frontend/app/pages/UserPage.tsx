@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/breadcrumb'
 import { Spinner } from '@/components/ui/spinner'
 import UserCard from '@/components/user/UserCard'
-import { useData } from '@/contexts/DataContext'
+import { useData } from '@/contexts/useData'
 import loc from '@/lib/locales'
 import { getUserFullName } from '@common/models/user'
 import { useParams } from 'react-router'

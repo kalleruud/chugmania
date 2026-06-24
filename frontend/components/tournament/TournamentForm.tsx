@@ -1,5 +1,5 @@
-import { useConnection } from '@/contexts/ConnectionContext'
-import { useData } from '@/contexts/DataContext'
+import { useConnection } from '@/contexts/useConnection'
+import { useData } from '@/contexts/useData'
 import loc from '@/lib/locales'
 import { sessionToLookupItem } from '@/lib/lookup-utils'
 import type {

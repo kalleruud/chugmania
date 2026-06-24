@@ -6,7 +6,7 @@ import {
   ItemDescription,
   ItemTitle,
 } from '@/components/ui/item'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/contexts/useAuth'
 import { useTimeAgoStrict as useDistanceToNow } from '@/hooks/useTimeAgoStrict'
 import loc from '@/lib/locales'
 import type { SessionWithSignups } from '@common/models/session'

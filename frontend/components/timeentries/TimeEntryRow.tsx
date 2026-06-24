@@ -1,4 +1,4 @@
-import { useData } from '@/contexts/DataContext'
+import { useData } from '@/contexts/useData'
 import loc from '@/lib/locales'
 import type { LeaderboardEntryGap, TimeEntry } from '@common/models/timeEntry'
 import { formatTime } from '@common/utils/time'

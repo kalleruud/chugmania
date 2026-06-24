@@ -1,5 +1,5 @@
-import { useAuth } from '@/contexts/AuthContext'
-import { useTimeEntryInput } from '@/hooks/TimeEntryInputProvider'
+import { useAuth } from '@/contexts/useAuth'
+import { useTimeEntryInput } from '@/hooks/useTimeEntryInput'
 import loc from '@/lib/locales'
 import type { Match } from '@common/models/match'
 import { PlusIcon } from '@heroicons/react/24/solid'

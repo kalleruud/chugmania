@@ -10,7 +10,7 @@ import {
 import { Empty } from '@/components/ui/empty'
 import { Item, ItemContent, ItemMedia } from '@/components/ui/item'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useData } from '@/contexts/DataContext'
+import { useData } from '@/contexts/useData'
 import loc from '@/lib/locales'
 import type { Track } from '@common/models/track'
 import type { ComponentProps } from 'react'

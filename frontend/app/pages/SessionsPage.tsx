@@ -8,8 +8,8 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
 import { Button } from '@/components/ui/button'
-import { useAuth } from '@/contexts/AuthContext'
-import { useData } from '@/contexts/DataContext'
+import { useAuth } from '@/contexts/useAuth'
+import { useData } from '@/contexts/useData'
 import loc from '@/lib/locales'
 import { isOngoing, isPast, isUpcoming } from '@common/utils/date'
 import { CalendarIcon } from '@heroicons/react/24/solid'

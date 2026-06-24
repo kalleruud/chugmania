@@ -1,6 +1,6 @@
 import MatchList from '@/components/match/MatchList'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { useData } from '@/contexts/DataContext'
+import { useData } from '@/contexts/useData'
 import loc from '@/lib/locales'
 import type { Track } from '@common/models/track'
 import type { ComponentProps } from 'react'

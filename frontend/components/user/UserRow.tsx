@@ -1,6 +1,6 @@
 import { Item, ItemActions, ItemContent, ItemTitle } from '@/components/ui/item'
-import { useAuth } from '@/contexts/AuthContext'
-import { useData } from '@/contexts/DataContext'
+import { useAuth } from '@/contexts/useAuth'
+import { useData } from '@/contexts/useData'
 import { type UserInfo } from '@common/models/user'
 import { Award, ChevronRight, Map, Minus, Trophy } from 'lucide-react'
 import { Link } from 'react-router'

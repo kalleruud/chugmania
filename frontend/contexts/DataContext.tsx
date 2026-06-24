@@ -1,69 +1,25 @@
-import type { Match } from '@common/models/match'
-import type { Ranking } from '@common/models/ranking'
-import type { SessionWithSignups } from '@common/models/session'
-import type { TimeEntry } from '@common/models/timeEntry'
-import type { TournamentWithDetails } from '@common/models/tournament'
-import type { Track } from '@common/models/track'
-import type { UserInfo } from '@common/models/user'
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from 'react'
-import { useConnection } from './ConnectionContext'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { DataContext, type DataContextType } from './data-context'
+import { useConnection } from './useConnection'
 
-type DataContextType =
-  | {
-      isLoadingData: false
-      tracks: Track[]
-      timeEntries: TimeEntry[]
-      users: UserInfo[]
-      sessions: SessionWithSignups[]
-      matches: Match[]
-      rankings: Ranking[]
-      tournaments: TournamentWithDetails[]
-    }
-  | {
-      isLoadingData: true
-      tracks?: never
-      timeEntries?: never
-      users?: never
-      sessions?: never
-      matches?: never
-      rankings?: never
-      tournaments?: never
-    }
+type DateField = 'createdAt' | 'updatedAt' | 'deletedAt' | 'date'
+type ObjectWithDates = Partial<
+  Record<DateField, string | number | Date | null | undefined>
+>
 
-const DataContext = createContext<DataContextType | undefined>(undefined)
-
-/**
- * Automatically converts timestamp fields to Date objects.
- * Handles: createdAt, updatedAt, deletedAt, date
- */
-export function parseDates<T extends Record<string, any>>(obj: T): T {
-  const dateFields = ['createdAt', 'updatedAt', 'deletedAt', 'date']
-  const result: any = { ...obj }
+function parseDates<T extends ObjectWithDates>(obj: T): T {
+  const dateFields: DateField[] = ['createdAt', 'updatedAt', 'deletedAt', 'date']
+  const result = { ...obj }
 
   for (const field of dateFields) {
-    if (
-      field in result &&
-      result[field] !== null &&
-      result[field] !== undefined
-    ) {
-      result[field] = new Date(result[field])
-    }
+    const value = result[field]
+    if (value !== null && value !== undefined) result[field] = new Date(value)
   }
 
   return result
 }
 
-/**
- * Applies date parsing to an array of objects
- */
-export function parseDatesArray<T extends Record<string, any>>(arr: T[]): T[] {
+function parseDatesArray<T extends ObjectWithDates>(arr: T[]): T[] {
   return arr.map(parseDates)
 }
 
@@ -147,10 +103,4 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
   }, [tracks, timeEntries, users, sessions, matches, rankings, tournaments])
 
   return <DataContext.Provider value={context}>{children}</DataContext.Provider>
-}
-
-export const useData = () => {
-  const context = useContext(DataContext)
-  if (!context) throw new Error('useData must be used inside DataProvider')
-  return context
 }

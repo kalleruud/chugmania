@@ -1,4 +1,4 @@
-import { useTimeEntryInput } from '@/hooks/TimeEntryInputProvider'
+import { useTimeEntryInput } from '@/hooks/useTimeEntryInput'
 import loc from '@/lib/locales'
 import type { Match } from '@common/models/match'
 import type {

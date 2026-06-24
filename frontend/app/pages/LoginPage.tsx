@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/dialog'
 import { Spinner } from '@/components/ui/spinner'
 import UserForm from '@/components/user/UserForm'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/contexts/useAuth'
 import loc from '@/lib/locales'
 import { useState } from 'react'
 

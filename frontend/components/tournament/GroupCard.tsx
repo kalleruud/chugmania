@@ -1,4 +1,4 @@
-import { useData } from '@/contexts/DataContext'
+import { useData } from '@/contexts/useData'
 import loc from '@/lib/locales'
 import type { TournamentWithDetails } from '@common/models/tournament'
 import type { ComponentProps } from 'react'

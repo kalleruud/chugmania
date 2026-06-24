@@ -3,8 +3,8 @@ import Combobox from '@/components/combobox'
 import { SessionRow } from '@/components/session/SessionRow'
 import { TrackRow } from '@/components/track/TrackRow'
 import UserRow from '@/components/user/UserRow'
-import { useConnection } from '@/contexts/ConnectionContext'
-import { useData } from '@/contexts/DataContext'
+import { useConnection } from '@/contexts/useConnection'
+import { useData } from '@/contexts/useData'
 import loc from '@/lib/locales'
 import {
   getId,

@@ -1,41 +1,25 @@
 import loc from '@/lib/locales'
-import {
-  type ClientToServerEvents,
-  type ServerToClientEvents,
-} from '@common/models/socket.io'
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from 'react'
-import { io, Socket } from 'socket.io-client'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { io } from 'socket.io-client'
 import { toast } from 'sonner'
+import {
+  ConnectionContext,
+  type AppSocket,
+  type ConnectionContextType,
+} from './connection-context'
 
 const AUTH_KEY = 'auth'
 
-type ConnectionContextType = {
-  socket: typeof socket
-  isConnected: boolean
-  setToken: typeof setToken
-}
-
-const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io('/', {
+const socket: AppSocket = io('/', {
   auth: { token: localStorage.getItem(AUTH_KEY) },
 }).timeout(10_000)
 
 function setToken(token: string | undefined): void {
-  // @ts-expect-error
-  socket.auth.token = token
+  if (typeof socket.auth === 'function') return
+  socket.auth = { ...socket.auth, token }
   if (token) localStorage.setItem(AUTH_KEY, token)
   else localStorage.removeItem(AUTH_KEY)
 }
-
-const ConnectionContext = createContext<ConnectionContextType | undefined>(
-  undefined
-)
 
 export function ConnectionProvider({
   children,
@@ -82,11 +66,4 @@ export function ConnectionProvider({
       {children}
     </ConnectionContext.Provider>
   )
-}
-
-export const useConnection = () => {
-  const context = useContext(ConnectionContext)
-  if (!context)
-    throw new Error('useConnection must be used inside ConnectionProvider')
-  return context
 }

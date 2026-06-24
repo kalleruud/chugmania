@@ -1,37 +1,11 @@
 import loc from '@/lib/locales'
-import type { LoginRequest } from '@common/models/auth'
-import type { ErrorResponse, EventRes } from '@common/models/socket.io'
-import { type LoginResponse, type UserInfo } from '@common/models/user'
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from 'react'
+import type { ErrorResponse } from '@common/models/socket.io'
+import { type LoginResponse } from '@common/models/user'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
-import { useConnection } from './ConnectionContext'
-import { useData } from './DataContext'
-
-type AuthContextType = {
-  isLoading: boolean
-} & (
-  | {
-      isLoggedIn: false
-      loggedInUser: undefined
-      login: (request: Omit<LoginRequest, 'type'>) => Promise<EventRes<'login'>>
-      logout: undefined
-    }
-  | {
-      isLoggedIn: true
-      loggedInUser: UserInfo
-      login: undefined
-      logout: () => void
-    }
-)
-
-const AuthContext = createContext<AuthContextType | null>(null)
+import { AuthContext, type AuthContextType } from './auth-context'
+import { useConnection } from './useConnection'
+import { useData } from './useData'
 
 export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const { users } = useData()
@@ -116,10 +90,4 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   }, [isLoading, loggedInUser])
 
   return <AuthContext.Provider value={context}>{children}</AuthContext.Provider>
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext)
-  if (!context) throw new Error('useAuth must be used inside AuthProvider')
-  return context
 }

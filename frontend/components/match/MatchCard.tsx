@@ -1,4 +1,4 @@
-import { useData } from '@/contexts/DataContext'
+import { useData } from '@/contexts/useData'
 import loc from '@/lib/locales'
 import type { Match } from '@common/models/match'
 import { formatTrackName } from '@common/utils/track'
