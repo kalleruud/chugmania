@@ -1,18 +1,13 @@
 import type { SessionResponse } from '@backend/database/schema'
-import type { Match } from '@common/models/match'
 import type { SessionWithSignups } from '@common/models/session'
-import type { TimeEntry } from '@common/models/timeEntry'
 import { getEndOfDate } from '@common/utils/date'
-import accumulateSignups from '@common/utils/signupAccumulator'
 import {
   type Attendee,
   createEvents,
   type EventAttributes,
   type ParticipationStatus,
 } from 'ics'
-import MatchManager from './match.manager'
 import SessionManager from './session.manager'
-import TimeEntryManager from './timeEntry.manager'
 import UserManager from './user.manager'
 
 const isProduction = process.env.NODE_ENV === 'production'
@@ -34,18 +29,9 @@ class CalendarManagerClass {
     baseUrl: URL,
     calendarName: string
   ): Promise<string> {
-    const allTimeEntries = await TimeEntryManager.getAllTimeEntries()
-    const allMatches = await MatchManager.getAllMatches()
-
     const events = await Promise.all(
       sessionList.map(session =>
-        CalendarManager.createSessionEvent(
-          session,
-          baseUrl,
-          calendarName,
-          allTimeEntries.filter(te => te.session === session.id),
-          allMatches.filter(m => m.session === session.id)
-        )
+        CalendarManager.createSessionEvent(session, baseUrl, calendarName)
       )
     )
 
@@ -62,9 +48,7 @@ class CalendarManagerClass {
   private async createSessionEvent(
     session: SessionWithSignups,
     baseUrl: URL,
-    calendarName: string,
-    sessionTimeEntries: TimeEntry[],
-    sessionMatches: Match[]
+    calendarName: string
   ): Promise<EventAttributes> {
     let status: EventAttributes['status']
     switch (session.status) {
@@ -81,8 +65,11 @@ class CalendarManagerClass {
     baseUrl.pathname = `sessions`
 
     const attendees = await Promise.all(
-      accumulateSignups(session, sessionTimeEntries, sessionMatches).map(
-        signup => CalendarManager.createEventAttendee(signup)
+      session.signups.map(signup =>
+        CalendarManager.createEventAttendee({
+          user: signup.user.id,
+          response: signup.response,
+        })
       )
     )
 

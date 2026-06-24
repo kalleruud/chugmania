@@ -15,6 +15,7 @@ import { timeEntries } from '../../database/schema'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import RatingManager from './rating.manager'
+import SessionManager from './session.manager'
 
 class TimeEntryManagerClass {
   readonly table = timeEntries
@@ -96,6 +97,9 @@ class TimeEntryManagerClass {
     }
 
     await db.insert(timeEntries).values(request)
+    const signupChanged = request.session
+      ? await SessionManager.ensureSessionSignup(request.session, request.user)
+      : false
 
     console.debug(
       new Date().toISOString(),
@@ -106,6 +110,9 @@ class TimeEntryManagerClass {
 
     await RatingManager.recalculate()
     broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
+    if (signupChanged) {
+      broadcast('all_sessions', await SessionManager.getAllSessions())
+    }
     broadcast('all_rankings', RatingManager.onGetRatings())
 
     return {
@@ -166,6 +173,11 @@ class TimeEntryManagerClass {
       .update(timeEntries)
       .set(processedUpdates)
       .where(eq(timeEntries.id, request.id))
+    const sessionId = processedUpdates.session ?? lapTime.session
+    const userId = processedUpdates.user ?? lapTime.user
+    const signupChanged = sessionId
+      ? await SessionManager.ensureSessionSignup(sessionId, userId)
+      : false
 
     console.debug(
       new Date().toISOString(),
@@ -176,6 +188,9 @@ class TimeEntryManagerClass {
 
     await RatingManager.recalculate()
     broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
+    if (signupChanged) {
+      broadcast('all_sessions', await SessionManager.getAllSessions())
+    }
     broadcast('all_rankings', RatingManager.onGetRatings())
 
     return {
