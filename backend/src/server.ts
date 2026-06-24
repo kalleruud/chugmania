@@ -9,7 +9,7 @@ import type {
 } from '@common/models/socket.io'
 import express from 'express'
 import { Server } from 'socket.io'
-import { listen } from 'vite-express'
+import ViteExpress from 'vite-express'
 import AdminManager from './managers/admin.manager'
 import ApiManager from './managers/api.manager'
 import AuthManager from './managers/auth.manager'
@@ -27,7 +27,7 @@ const PORT = process.env.PORT ? Number.parseInt(process.env.PORT) : 6996
 const ORIGIN = new URL(process.env.ORIGIN ?? `http://localhost:${PORT}`)
 
 const app = express()
-const server = listen(app, PORT)
+const server = ViteExpress.listen(app, PORT)
 const io = new Server<
   ClientToServerEvents,
   ServerToClientEvents,
