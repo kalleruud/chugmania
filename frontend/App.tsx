@@ -1,7 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { ErrorBoundary } from 'react-error-boundary'
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import Layout from './app/Layout'
 import AdminPage from './app/pages/AdminPage'
 import CreateTournamentPage from './app/pages/CreateTournamentPage'
@@ -45,6 +45,7 @@ createRoot(document.getElementById('root')!).render(
                         path='tournaments/create'
                         element={<CreateTournamentPage />}
                       />
+                      <Route path='*' element={<Navigate to='/' replace />} />
                     </Route>
                   </Routes>
                   <Toaster />

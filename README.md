@@ -23,6 +23,8 @@ Chugmania is a full-stack Trackmania Turbo companion for logging lap times, shar
 2. Copy `.env.example` to `.env` and populate required secrets (see **Configuration**).
 3. Launch the dev server via `npm run dev`; visit `http://localhost:6996` for the app and API.
 4. The first boot creates `data/db.sqlite`. Commit no database files—Drizzle migrations handle schema.
+5. There are no default login credentials. On a fresh database, the login page shows only `Registrer`; enter the email and password you want for the first admin user.
+6. Chugmania automatically gives the first registered user the `admin` role. After that, use `Logg inn` with the same email and password. Additional users can be created or imported from `/admin`.
 
 ## Scripts
 
@@ -36,7 +38,6 @@ Chugmania is a full-stack Trackmania Turbo companion for logging lap times, shar
 | `npm run prod`                  | Serve the built backend without running migrations.       |
 | `npm run check`                 | Run `drizzle-kit check`, TypeScript, and Prettier.        |
 | `npm run db:gen`                | Emit SQL migrations after schema edits.                   |
-| `npm run db:migrate`            | Apply pending Drizzle migrations.                         |
 | `npm run db:push` / `db:studio` | Push schema OR open the Drizzle Studio UI.                |
 
 ### Testing
@@ -67,6 +68,7 @@ The `/sessions` route shows upcoming and past events. Authorized users may creat
 - `SECRET` (required): JWT signing key; use a strong random value.
 - `ORIGIN` (required in production): Allowed frontend origin for CORS.
 - `TOKEN_EXPIRY_H` (optional): Override default 1-hour auth token expiry.
+- `VITE_ALLOW_SIGNUPS` (optional): Set to `true` to show the public `Registrer` button on the login page. Keep it `false` unless you intentionally want open registration.
 - `.env.example` also exposes `SECRET` for local defaults—never commit secrets.
 
 ## Docker

@@ -10,8 +10,7 @@ import { and, asc, eq, getTableColumns, isNull, sql } from 'drizzle-orm'
 import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
 import { timeEntries } from '../../database/schema'
-import type { TypedSocket } from '../server'
-import { broadcast } from '../server'
+import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import RatingManager from './rating.manager'
 
@@ -103,7 +102,7 @@ export default class TimeEntryManager {
       request.duration
     )
 
-    RatingManager.recalculate()
+    await RatingManager.recalculate()
     broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
     broadcast('all_rankings', await RatingManager.onGetRatings())
 
@@ -169,9 +168,11 @@ export default class TimeEntryManager {
     )
 
     await RatingManager.recalculate()
-
-    broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
-    broadcast('all_rankings', await RatingManager.onGetRatings())
+    await broadcast(
+      'all_time_entries',
+      await TimeEntryManager.getAllTimeEntries()
+    )
+    await broadcast('all_rankings', await RatingManager.onGetRatings())
 
     return {
       success: true,

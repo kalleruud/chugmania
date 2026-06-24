@@ -5,14 +5,13 @@
   "type": "module",
   "main": "backend/src/server.ts",
   "scripts": {
-    "start": "npm run db:migrate && node dist/server/server.js",
+    "start": "node dist/server/server.js",
     "dev": "tsx watch --env-file .env backend/src/server.ts",
     "check": "drizzle-kit check && tsc --noEmit && prettier -c .",
     "build": "npm run build:frontend && npm run build:backend",
     "build:frontend": "vite build",
     "build:backend": "tsup backend/src/server.ts --format esm --target node20 --out-dir dist/server --clean",
     "db:gen": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push --force",
     "db:studio": "drizzle-kit studio"
   },

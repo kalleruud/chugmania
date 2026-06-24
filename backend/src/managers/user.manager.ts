@@ -201,8 +201,11 @@ export default class UserManager {
     )
 
     await RatingManager.recalculate()
-    broadcast('all_users', await UserManager.getAllUsers())
-    broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
+    await broadcast('all_users', await UserManager.getAllUsers())
+    await broadcast(
+      'all_time_entries',
+      await TimeEntryManager.getAllTimeEntries()
+    )
     broadcast('all_rankings', await RatingManager.onGetRatings())
 
     return {

@@ -42,8 +42,14 @@ export default class TrackManager {
   static async getAllTracks(): Promise<Track[]> {
     const data = await db.select().from(tracks).orderBy(asc(tracks.number))
 
-    if (data.length === 0)
-      throw new Error(loc.no.error.messages.not_in_db(loc.no.tracks.title))
+    if (data.length === 0) {
+      console.debug(
+        new Date().toISOString(),
+        loc.no.error.messages.not_in_db(loc.no.tracks.title)
+      )
+      return []
+    }
+
     return data
   }
 }

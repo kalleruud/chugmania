@@ -130,12 +130,25 @@ export default class AdminManager {
 
     await RatingManager.recalculate()
 
-    broadcast('all_users', await UserManager.getAllUsers())
-    broadcast('all_tracks', await TrackManager.getAllTracks())
-    broadcast('all_sessions', await SessionManager.getAllSessions())
-    broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
-    broadcast('all_matches', await MatchManager.getAllMatches())
-    broadcast('all_rankings', await RatingManager.onGetRatings())
+    const [users, tracks, sessions, timeEntries, matches, ratings] =
+      await Promise.all([
+        UserManager.getAllUsers(),
+        TrackManager.getAllTracks(),
+        SessionManager.getAllSessions(),
+        TimeEntryManager.getAllTimeEntries(),
+        MatchManager.getAllMatches(),
+        RatingManager.onGetRatings(),
+      ])
+
+    await Promise.all([
+      broadcast('all_users', users),
+      broadcast('all_tracks', tracks),
+      broadcast('all_sessions', sessions),
+      broadcast('all_time_entries', timeEntries),
+      broadcast('all_matches', matches),
+    ])
+
+    broadcast('all_rankings', ratings)
 
     return {
       success: true,

@@ -78,9 +78,9 @@ export default class MatchManager {
 
     console.debug(new Date().toISOString(), socket.id, 'Created match')
 
-    RatingManager.recalculate()
-    broadcast('all_matches', await MatchManager.getAllMatches())
-    broadcast('all_rankings', await RatingManager.onGetRatings())
+    await RatingManager.recalculate()
+    await broadcast('all_matches', await MatchManager.getAllMatches())
+    await broadcast('all_rankings', await RatingManager.onGetRatings())
 
     if (match.winner) await TournamentManager.onMatchCompleted(match.id)
     return { success: true }
@@ -121,8 +121,8 @@ export default class MatchManager {
     console.debug(new Date().toISOString(), socket.id, 'Updated match', id)
 
     await RatingManager.recalculate()
-    broadcast('all_matches', await MatchManager.getAllMatches())
-    broadcast('all_rankings', await RatingManager.onGetRatings())
+    await broadcast('all_matches', await MatchManager.getAllMatches())
+    await broadcast('all_rankings', await RatingManager.onGetRatings())
 
     if (res.winner && preImageMatch.winner !== res.winner) {
       await TournamentManager.onMatchCompleted(res.id)

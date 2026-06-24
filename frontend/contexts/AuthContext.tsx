@@ -36,13 +36,20 @@ const AuthContext = createContext<AuthContextType | null>(null)
 export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   const { users } = useData()
   const { socket, setToken } = useConnection()
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoadingAuth, setIsLoadingAuth] = useState(true)
   const [loggedInUserId, setLoggedInUserId] = useState<string | undefined>(
     undefined
   )
   const loggedInUser = loggedInUserId
     ? users?.find(u => loggedInUserId === u.id)
     : undefined
+  const isLoading =
+    isLoadingAuth || (loggedInUserId !== undefined && users === undefined)
+
+  function clearAuthState() {
+    setToken(undefined)
+    setLoggedInUserId(undefined)
+  }
 
   function handleResponse(
     response: LoginResponse | ErrorResponse,
@@ -51,19 +58,20 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     try {
       if (!response.success) {
         console.warn(response.message)
-        return logout()
+        clearAuthState()
+        return
       }
 
       setToken(response.token)
       setLoggedInUserId(response.userId)
       if (reconnect) socket.disconnect().connect()
     } finally {
-      setIsLoading(false)
+      setIsLoadingAuth(false)
     }
   }
 
   const login: Required<AuthContextType>['login'] = async r => {
-    setIsLoading(true)
+    setIsLoadingAuth(true)
     const response = await socket.emitWithAck('login', {
       type: 'LoginRequest',
       ...r,
@@ -80,8 +88,8 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   }
 
   const logout = () => {
-    setToken(undefined)
-    setLoggedInUserId(undefined)
+    clearAuthState()
+    socket.disconnect().connect()
   }
 
   useEffect(() => {
@@ -105,7 +113,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
         isLoggedIn: false,
         login,
       }
-  }, [loggedInUserId, isLoading, loggedInUser])
+  }, [isLoading, loggedInUser])
 
   return <AuthContext.Provider value={context}>{children}</AuthContext.Provider>
 }

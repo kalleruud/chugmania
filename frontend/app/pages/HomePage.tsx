@@ -1,5 +1,4 @@
 import { PageHeader } from '@/components/PageHeader'
-import LoginCard from '@/components/user/LoginCard'
 import UserCard from '@/components/user/UserCard'
 import { useAuth } from '@/contexts/AuthContext'
 import loc from '@/lib/locales'
@@ -8,14 +7,12 @@ import { TracksContent } from './TracksPage'
 import { UsersContent } from './UsersPage'
 
 export default function Home() {
-  const { loggedInUser, isLoggedIn } = useAuth()
+  const { loggedInUser } = useAuth()
 
   return (
     <div className='flex flex-col gap-8'>
       <h1 className='text-primary'>Chugmania</h1>
-      {isLoggedIn && loggedInUser && <UserCard user={loggedInUser} />}
-
-      <LoginCard />
+      {loggedInUser && <UserCard user={loggedInUser} />}
 
       {loggedInUser?.role === 'admin' && (
         <PageHeader

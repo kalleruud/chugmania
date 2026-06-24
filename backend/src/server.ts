@@ -46,8 +46,37 @@ export type TypedSocket = Socket<
   SocketData
 >
 
-export const broadcast: typeof io.emit = (ev, ...args) => {
-  return io.emit(ev, ...args)
+type ProtectedServerEvent = Exclude<keyof ServerToClientEvents, 'user_data'>
+
+async function emitData(socket: TypedSocket) {
+  const [users, tracks, sessions, timeEntries, matches, rankings, tournaments] =
+    await Promise.all([
+      UserManager.getAllUsers(),
+      TrackManager.getAllTracks(),
+      SessionManager.getAllSessions(),
+      TimeEntryManager.getAllTimeEntries(),
+      MatchManager.getAllMatches(),
+      RatingManager.onGetRatings(),
+      TournamentManager.getAllTournaments(),
+    ])
+  socket.emit('all_users', users)
+  socket.emit('all_tracks', tracks)
+  socket.emit('all_sessions', sessions)
+  socket.emit('all_time_entries', timeEntries)
+  socket.emit('all_matches', matches)
+  socket.emit('all_rankings', rankings)
+  socket.emit('all_tournaments', tournaments)
+}
+
+export async function broadcast<Ev extends ProtectedServerEvent>(
+  ev: Ev,
+  ...args: Parameters<ServerToClientEvents[Ev]>
+) {
+  io.sockets.sockets.forEach(socket => {
+    if (socket.data.userId) {
+      socket.emit(ev, ...args)
+    }
+  })
 }
 
 app.get('/api/sessions/calendar.ics', (req, res) =>
@@ -65,14 +94,11 @@ await RatingManager.recalculate()
 async function Connect(s: TypedSocket) {
   console.debug(new Date().toISOString(), s.id, 'Connected')
 
-  s.emit('user_data', await AuthManager.refreshToken(s))
-  s.emit('all_users', await UserManager.getAllUsers())
-  s.emit('all_tracks', await TrackManager.getAllTracks())
-  s.emit('all_sessions', await SessionManager.getAllSessions())
-  s.emit('all_time_entries', await TimeEntryManager.getAllTimeEntries())
-  s.emit('all_matches', await MatchManager.getAllMatches())
-  s.emit('all_rankings', await RatingManager.onGetRatings())
-  s.emit('all_tournaments', await TournamentManager.getAllTournaments())
+  const auth = await AuthManager.refreshToken(s)
+  s.emit('user_data', auth)
+  if (auth.success) {
+    await emitData(s)
+  }
 
   s.on('disconnect', () =>
     console.debug(new Date().toISOString(), s.id, 'Disconnected')
