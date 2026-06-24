@@ -1,4 +1,4 @@
-import type { ComponentProps } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 
 /**
  * Base props for all Row components
@@ -8,4 +8,5 @@ export type BaseRowProps<T> = {
   item: T
   highlight?: boolean
   hideLink?: boolean
+  children?: ReactNode
 } & ComponentProps<'div'>

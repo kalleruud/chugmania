@@ -1,7 +1,7 @@
 import ConfirmationButton from '@/components/ConfirmationButton'
-import { PageSubheader } from '@/components/PageHeader'
 import SessionCard from '@/components/session/SessionCard'
 import SessionForm from '@/components/session/SessionForm'
+import SessionSignupPanel from '@/components/session/SessionSignupPanel'
 import TournamentList from '@/components/tournament/TournamentList'
 import TrackLeaderboard from '@/components/track/TrackLeaderboard'
 import {
@@ -22,194 +22,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { Empty } from '@/components/ui/empty'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Spinner } from '@/components/ui/spinner'
-import UserRow from '@/components/user/UserRow'
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
-import type { SessionWithSignups } from '@common/models/session'
-import { isUpcoming } from '@common/utils/date'
-import accumulateSignups from '@common/utils/signupAccumulator'
-import {
-  CircleCheck,
-  CircleQuestionMark,
-  CircleX,
-  PencilIcon,
-  Trash2,
-  type LucideIcon,
-} from 'lucide-react'
-import { useMemo, useState, type ComponentProps } from 'react'
+import { PencilIcon, Trash2 } from 'lucide-react'
+import { useState } from 'react'
 import { useParams } from 'react-router'
 import { toast } from 'sonner'
-import { twMerge } from 'tailwind-merge'
-import type { SessionResponse } from '../../../backend/database/schema'
 import { SubscribeButton } from './SessionsPage'
-
-function Signup({
-  session,
-  disabled,
-  className,
-  ...rest
-}: Readonly<
-  { session: SessionWithSignups; disabled?: boolean } & ComponentProps<'div'>
->) {
-  const { socket } = useConnection()
-  const { loggedInUser, isLoggedIn } = useAuth()
-  const { timeEntries, matches, users, rankings, isLoadingData } = useData()
-
-  const [myResponse, setMyResponse] = useState<SessionResponse | undefined>(
-    session.signups.find(s => s.user.id === loggedInUser?.id)?.response
-  )
-
-  const isAdmin = isLoggedIn && loggedInUser.role !== 'user'
-  const responses: { response: SessionResponse; Icon: LucideIcon }[] = [
-    { response: 'yes', Icon: CircleCheck },
-    { response: 'maybe', Icon: CircleQuestionMark },
-    { response: 'no', Icon: CircleX },
-  ]
-
-  const accumulatedSignups = useMemo(
-    () =>
-      accumulateSignups(session, timeEntries ?? [], matches ?? [])
-        .map(s => {
-          const user = users?.find(u => u.id === s.user)
-          if (!user) return undefined
-          return {
-            user,
-            response: s.response,
-          }
-        })
-        .filter(s => s !== undefined)
-        .toSorted((a, b) => {
-          const rankA =
-            rankings?.find(r => r.user === a.user.id)?.ranking ??
-            Number.MAX_SAFE_INTEGER
-          const rankB =
-            rankings?.find(r => r.user === b.user.id)?.ranking ??
-            Number.MAX_SAFE_INTEGER
-          return rankA - rankB
-        }),
-    [session, timeEntries, matches, users, rankings]
-  )
-
-  if (isLoadingData)
-    return (
-      <div className='flex h-32 w-full items-center-safe justify-center-safe rounded-sm border border-border'>
-        <Spinner className='size-6' />
-      </div>
-    )
-
-  function handleRsvp(response: SessionResponse) {
-    if (!isLoggedIn) return
-    toast.promise(
-      socket
-        .emitWithAck('rsvp_session', {
-          type: 'RsvpSessionRequest',
-          session: session.id,
-          user: loggedInUser.id,
-          response,
-        })
-        .then(res => {
-          if (res.success) setMyResponse(response)
-          else throw new Error(res.message)
-        }),
-      {
-        loading: loc.no.session.rsvp.response.loading,
-        success: loc.no.session.rsvp.response.success(response),
-        error: loc.no.session.rsvp.response.error,
-      }
-    )
-  }
-
-  return (
-    <div className={twMerge('flex flex-col gap-4', className)} {...rest}>
-      <div className='flex justify-between'>
-        <h3 className='px-2 pt-2'>
-          {isUpcoming(session)
-            ? loc.no.session.attendance
-            : loc.no.session.attendees}
-        </h3>
-
-        <div>
-          {(isUpcoming(session) || isAdmin) && isLoggedIn && myResponse && (
-            <Select
-              disabled={disabled}
-              value={myResponse}
-              onValueChange={handleRsvp}>
-              <SelectTrigger className='w-[180px]'>
-                <SelectValue placeholder={loc.no.session.rsvp.change} />
-              </SelectTrigger>
-              <SelectContent>
-                {responses.map(({ response, Icon }) => (
-                  <SelectItem key={response} value={response}>
-                    <Icon className='size-4' />
-                    {loc.no.session.rsvp.responses[response]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        </div>
-      </div>
-
-      <div
-        className='flex items-center justify-center gap-2'
-        hidden={!isUpcoming(session) || !isLoggedIn || !!myResponse}>
-        {responses.map(({ response, Icon }) => (
-          <Button
-            key={response}
-            size='sm'
-            onClick={() => handleRsvp(response)}
-            disabled={disabled}>
-            <Icon className='size-4' />
-            {loc.no.session.rsvp.responses[response]}
-          </Button>
-        ))}
-      </div>
-
-      {accumulatedSignups.length === 0 && (
-        <Empty className='border border-input text-sm text-muted-foreground'>
-          {loc.no.common.noItems}
-        </Empty>
-      )}
-
-      {responses.map(({ response }) => {
-        const responses = accumulatedSignups.filter(
-          s => s.response === response
-        )
-        if (responses.length === 0) return undefined
-        return (
-          <div key={response} className='flex flex-col'>
-            <PageSubheader
-              title={loc.no.session.rsvp.responses[response]}
-              description={responses.length.toString()}
-            />
-            <div className='rounded-sm bg-background-secondary'>
-              {accumulatedSignups
-                .filter(s => s.response === response)
-                .map(({ user }) => (
-                  <UserRow
-                    key={user.id}
-                    item={user}
-                    className='py-3 first:pt-4 last:pb-4'
-                  />
-                ))}
-            </div>
-          </div>
-        )
-      })}
-    </div>
-  )
-}
 
 export default function SessionPage() {
   const { id } = useParams()
@@ -324,7 +146,7 @@ export default function SessionPage() {
         )}
       </div>
 
-      <Signup
+      <SessionSignupPanel
         className='rounded-sm border bg-background p-2'
         disabled={isCancelled}
         session={session}

@@ -17,6 +17,35 @@ import SessionScheduler from './session.scheduler'
 import UserManager from './user.manager'
 
 export default class SessionManager {
+  public static async ensureSessionSignup(
+    sessionId: string,
+    userId: string
+  ): Promise<boolean> {
+    const existingSignup = await db.query.sessionSignups.findFirst({
+      where: and(
+        eq(sessionSignups.session, sessionId),
+        eq(sessionSignups.user, userId)
+      ),
+    })
+
+    if (existingSignup && !existingSignup.deletedAt) return false
+
+    await db
+      .insert(sessionSignups)
+      .values({
+        id: existingSignup?.id,
+        session: sessionId,
+        user: userId,
+        response: 'yes',
+      })
+      .onConflictDoUpdate({
+        target: [sessionSignups.id],
+        set: { response: 'yes', deletedAt: null },
+      })
+
+    return true
+  }
+
   public static async getAllSessions(): Promise<SessionWithSignups[]> {
     const sessionRows = await db
       .select()

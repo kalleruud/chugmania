@@ -8,13 +8,19 @@ import { twMerge } from 'tailwind-merge'
 import type { BaseRowProps } from '../row/RowProps'
 import { Spinner } from '../ui/spinner'
 
+type UserRowProps = BaseRowProps<UserInfo> & {
+  hideRanking?: boolean
+}
+
 export default function UserRow({
   item: user,
   className,
   hideLink,
   highlight,
+  hideRanking,
+  children,
   ...props
-}: Readonly<BaseRowProps<UserInfo>>) {
+}: Readonly<UserRowProps>) {
   const { loggedInUser, isLoggedIn } = useAuth()
   const { rankings, isLoadingData } = useData()
 
@@ -27,7 +33,7 @@ export default function UserRow({
 
   const content = (
     <>
-      <ItemContent>
+      <ItemContent className='relative z-10'>
         <div className='flex items-center gap-2'>
           <div className='h-4 w-1 rounded-full bg-primary' />
 
@@ -36,7 +42,7 @@ export default function UserRow({
             <span className='font-bold'>{user.lastName}</span>
           </ItemTitle>
 
-          {isAdmin && ranking && (
+          {!hideRanking && isAdmin && ranking && (
             <div className='hidden w-48 items-center gap-2 tabular-nums sm:flex'>
               <div className='flex items-center gap-1'>
                 <Trophy className='size-4' />
@@ -61,7 +67,7 @@ export default function UserRow({
             </div>
           )}
 
-          {ranking ? (
+          {!hideRanking && ranking && (
             <div
               className={twMerge(
                 'flex items-center justify-end gap-0.5 font-kh-interface text-muted-foreground tabular-nums',
@@ -72,13 +78,19 @@ export default function UserRow({
               <span className='w-2 text-end'>#</span>
               <span className='w-4 font-black'>{ranking.ranking}</span>
             </div>
-          ) : (
+          )}
+
+          {!hideRanking && !ranking && (
             <Minus className='size-4 text-muted-foreground' />
+          )}
+
+          {children && (
+            <div className='pointer-events-auto relative z-10'>{children}</div>
           )}
         </div>
       </ItemContent>
       {!hideLink && (
-        <ItemActions>
+        <ItemActions className='relative z-10'>
           <ChevronRight className='size-4' />
         </ItemActions>
       )}
@@ -105,13 +117,18 @@ export default function UserRow({
     <Item
       key={user.id}
       className={twMerge(
+        'relative',
         highlight &&
           'bg-primary-background ring-1 ring-primary/50 hover:bg-primary/25',
         className
       )}
-      asChild
       {...props}>
-      <Link to={`/users/${user.id}`}>{content}</Link>
+      <div className='pointer-events-none contents'>{content}</div>
+      <Link
+        className='absolute inset-0 z-0 rounded-md transition-colors duration-100 hover:bg-accent/50'
+        to={`/users/${user.id}`}
+        aria-label={`${user.firstName} ${user.lastName}`}
+      />
     </Item>
   )
 }
