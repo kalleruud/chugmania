@@ -23,12 +23,15 @@ class CsvParserClass {
       dataLines.map(async values => {
         const entries = new Map()
 
-        for (let i = 0; i < headerLine.length; i++) {
-          const k = headerLine[i]?.trim()
-          if (!k) continue
-          const keyVal = await CsvParser.normalize(k, values[i])
-          if (!keyVal) continue
-          entries.set(keyVal.key, keyVal.value)
+        const keyValues = await Promise.all(
+          headerLine.map(async (header, i) => {
+            const key = header.trim()
+            return key ? CsvParser.normalize(key, values[i]) : null
+          })
+        )
+
+        for (const keyVal of keyValues) {
+          if (keyVal) entries.set(keyVal.key, keyVal.value)
         }
 
         return Object.fromEntries(entries) as CsvRecord

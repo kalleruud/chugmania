@@ -3,10 +3,12 @@ import type { EventReq, EventRes, SocketData } from '@common/models/socket.io'
 import { type User, type UserInfo } from '@common/models/user'
 import { isRecord } from '@common/utils/is-record'
 import { tryCatch, tryCatchAsync } from '@common/utils/try-catch'
+import { eq } from 'drizzle-orm'
 import jwt, { type JwtPayload } from 'jsonwebtoken'
 import loc from '../../../frontend/lib/locales'
-import type { TypedSocket } from '../server'
-import UserManager from './user.manager'
+import db from '../../database/database'
+import { users } from '../../database/schema'
+import type { TypedSocket } from '../socket'
 
 const SECRET: jwt.Secret = (() => {
   const secret = process.env.SECRET
@@ -47,11 +49,30 @@ class AuthManagerClass {
     if (!isTokenData(data)) throw new Error(loc.no.error.messages.invalid_jwt)
 
     const { error: userError } = await tryCatchAsync(
-      UserManager.getUserById(data.userId)
+      AuthManager.getUserById(data.userId)
     )
     if (userError) throw new Error(loc.no.error.messages.invalid_jwt)
 
     return data
+  }
+
+  private async getUser(email: string) {
+    const user = await db.query.users.findFirst({
+      where: eq(users.email, email),
+    })
+    if (!user) throw new Error(`Couldn't find user with email ${email}`)
+    return user
+  }
+
+  private async getUserById(id: User['id']) {
+    const user = await db.query.users.findFirst({ where: eq(users.id, id) })
+    if (!user) throw new Error(loc.no.error.messages.not_in_db(id))
+    return user
+  }
+
+  private toUserInfo(user: User) {
+    const userInfo: UserInfo = { ...user, passwordHash: undefined }
+    return { passwordHash: user.passwordHash, userInfo }
   }
 
   async isPasswordValid(
@@ -77,7 +98,7 @@ class AuthManagerClass {
         ? socket.handshake.auth.token
         : undefined
     const { userId } = await AuthManager.verify(token)
-    const user = await UserManager.getUserById(userId)
+    const user = await AuthManager.getUserById(userId)
 
     if (allowedRoles && !allowedRoles.includes(user.role)) {
       throw new Error(loc.no.error.messages.insufficient_permissions)
@@ -87,7 +108,7 @@ class AuthManagerClass {
       throw new Error(loc.no.error.messages.update_email)
     }
 
-    return UserManager.toUserInfo(user).userInfo
+    return AuthManager.toUserInfo(user).userInfo
   }
 
   async onLogin(
@@ -100,9 +121,9 @@ class AuthManagerClass {
       }
 
       const { email, password } = request
-      const data = await UserManager.getUser(email)
+      const data = await AuthManager.getUser(email)
 
-      const { passwordHash, userInfo } = UserManager.toUserInfo(data)
+      const { passwordHash, userInfo } = AuthManager.toUserInfo(data)
       const isPasswordValid = await AuthManager.isPasswordValid(
         passwordHash,
         password
@@ -118,11 +139,12 @@ class AuthManagerClass {
         userId: userInfo.id,
       }
     } catch (error) {
-      await delay(AuthManager.LOGIN_DELAY)
       if (!error || typeof error !== 'object' || !('message' in error)) {
+        await delay(AuthManager.LOGIN_DELAY)
         console.error(new Date().toISOString(), socket.id, error)
         throw new Error(loc.no.error.messages.unknown_error)
       }
+      await delay(AuthManager.LOGIN_DELAY)
       console.error(new Date().toISOString(), socket.id, error.message)
       throw new Error(loc.no.error.messages.incorrect_login)
     }

@@ -22,7 +22,7 @@ import {
   tracks,
   users,
 } from '../../database/schema'
-import { broadcast, type TypedSocket } from '../server'
+import { broadcast, type TypedSocket } from '../socket'
 import CsvParser from '../utils/csv-parser'
 import AuthManager from './auth.manager'
 import MatchManager from './match.manager'

@@ -11,117 +11,37 @@ import {
   type SessionWithSignups,
 } from '@common/models/session'
 import type { EventRes } from '@common/models/socket.io'
-import { and, asc, desc, eq, isNull } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
-import { sessions, sessionSignups, users } from '../../database/schema'
-import { broadcast, type TypedSocket } from '../server'
+import { sessions, sessionSignups } from '../../database/schema'
+import { broadcast, type TypedSocket } from '../socket'
 import AuthManager from './auth.manager'
-import SessionScheduler from './session.scheduler'
-import UserManager from './user.manager'
+import {
+  ensureSessionSignup,
+  getAllSessions,
+  getSession,
+  getSessionSignups,
+} from './session.queries'
 
 class SessionManagerClass {
   public async ensureSessionSignup(
     sessionId: string,
     userId: string
   ): Promise<boolean> {
-    const existingSignup = await db.query.sessionSignups.findFirst({
-      where: and(
-        eq(sessionSignups.session, sessionId),
-        eq(sessionSignups.user, userId)
-      ),
-    })
-
-    if (existingSignup && !existingSignup.deletedAt) return false
-
-    await db
-      .insert(sessionSignups)
-      .values({
-        id: existingSignup?.id,
-        session: sessionId,
-        user: userId,
-        response: 'yes',
-      })
-      .onConflictDoUpdate({
-        target: [sessionSignups.id],
-        set: { response: 'yes', deletedAt: null },
-      })
-
-    return true
+    return ensureSessionSignup(sessionId, userId)
   }
 
   public async getAllSessions(): Promise<SessionWithSignups[]> {
-    const sessionRows = await db
-      .select()
-      .from(sessions)
-      .where(isNull(sessions.deletedAt))
-      .orderBy(desc(sessions.date), asc(sessions.createdAt))
-
-    if (sessionRows.length === 0) {
-      console.debug(
-        new Date().toISOString(),
-        loc.no.error.messages.not_in_db('sessions')
-      )
-      return []
-    }
-
-    return Promise.all(
-      sessionRows.map(async session => ({
-        ...session,
-        signups: await SessionManager.getSessionSignups(session.id),
-      }))
-    )
+    return getAllSessions()
   }
 
   public async getSession(id: string): Promise<SessionWithSignups | null> {
-    const session = await db.query.sessions.findFirst({
-      where: and(eq(sessions.id, id), isNull(sessions.deletedAt)),
-    })
-
-    if (!session) {
-      console.warn(
-        new Date().toISOString(),
-        loc.no.error.messages.not_in_db(id)
-      )
-      return null
-    }
-
-    return {
-      ...session,
-      signups: await SessionManager.getSessionSignups(session.id),
-    }
+    return getSession(id)
   }
 
   public async getSessionSignups(sessionId: string): Promise<SessionSignup[]> {
-    const signupRows = await db
-      .select({
-        id: sessionSignups.id,
-        createdAt: sessionSignups.createdAt,
-        updatedAt: sessionSignups.updatedAt,
-        deletedAt: sessionSignups.deletedAt,
-        response: sessionSignups.response,
-        session: sessionSignups.session,
-        user: users,
-      })
-      .from(sessionSignups)
-      .innerJoin(users, eq(sessionSignups.user, users.id))
-      .where(
-        and(
-          eq(sessionSignups.session, sessionId),
-          isNull(users.deletedAt),
-          isNull(sessionSignups.deletedAt)
-        )
-      )
-      .orderBy(asc(sessionSignups.createdAt))
-
-    if (signupRows.length === 0) {
-      return []
-    }
-
-    return signupRows.map(row => ({
-      ...row,
-      user: UserManager.toUserInfo(row.user).userInfo,
-    }))
+    return getSessionSignups(sessionId)
   }
 
   async onCreateSession(
@@ -149,6 +69,7 @@ class SessionManagerClass {
     )
 
     broadcast('all_sessions', await SessionManager.getAllSessions())
+    const { default: SessionScheduler } = await import('./session.scheduler')
     await SessionScheduler.reschedule()
 
     return { success: true }
@@ -198,6 +119,7 @@ class SessionManagerClass {
     )
 
     broadcast('all_sessions', await SessionManager.getAllSessions())
+    const { default: SessionScheduler } = await import('./session.scheduler')
     await SessionScheduler.reschedule()
 
     return { success: true }
@@ -265,6 +187,7 @@ class SessionManagerClass {
     )
 
     broadcast('all_sessions', await SessionManager.getAllSessions())
+    const { default: SessionScheduler } = await import('./session.scheduler')
     await SessionScheduler.reschedule()
 
     return { success: true }

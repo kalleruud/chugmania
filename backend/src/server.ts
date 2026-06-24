@@ -8,7 +8,7 @@ import type {
   SocketData,
 } from '@common/models/socket.io'
 import express from 'express'
-import { Server, Socket } from 'socket.io'
+import { Server } from 'socket.io'
 import { listen } from 'vite-express'
 import AdminManager from './managers/admin.manager'
 import ApiManager from './managers/api.manager'
@@ -21,6 +21,7 @@ import TimeEntryManager from './managers/timeEntry.manager'
 import TournamentManager from './managers/tournament.manager'
 import TrackManager from './managers/track.manager'
 import UserManager from './managers/user.manager'
+import { trackSocket, type TypedSocket } from './socket'
 
 const PORT = process.env.PORT ? Number.parseInt(process.env.PORT) : 6996
 const ORIGIN = new URL(process.env.ORIGIN ?? `http://localhost:${PORT}`)
@@ -38,15 +39,6 @@ const io = new Server<
     credentials: true,
   },
 })
-
-export type TypedSocket = Socket<
-  ClientToServerEvents,
-  ServerToClientEvents,
-  InterServerEvents,
-  SocketData
->
-
-type ProtectedServerEvent = Exclude<keyof ServerToClientEvents, 'user_data'>
 
 async function emitData(socket: TypedSocket) {
   const [users, tracks, sessions, timeEntries, matches, tournaments] =
@@ -68,17 +60,6 @@ async function emitData(socket: TypedSocket) {
   socket.emit('all_tournaments', tournaments)
 }
 
-export function broadcast<Ev extends ProtectedServerEvent>(
-  ev: Ev,
-  ...args: Parameters<ServerToClientEvents[Ev]>
-): void {
-  io.sockets.sockets.forEach(socket => {
-    if (socket.data.userId) {
-      socket.emit(ev, ...args)
-    }
-  })
-}
-
 app.get('/api/sessions/calendar.ics', (req, res) =>
   ApiManager.onGetCalendar(ORIGIN, req, res)
 )
@@ -92,6 +73,7 @@ await SessionScheduler.scheduleNext()
 await RatingManager.recalculate()
 
 async function Connect(s: TypedSocket) {
+  trackSocket(s)
   console.debug(new Date().toISOString(), s.id, 'Connected')
 
   const auth = await AuthManager.refreshToken(s)

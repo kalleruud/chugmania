@@ -1,15 +1,17 @@
+import type { Match } from '@common/models/match'
 import type { Ranking } from '@common/models/ranking'
 import type { Session } from '@common/models/session'
+import type { TimeEntry } from '@common/models/timeEntry'
 import type { User } from '@common/models/user'
 import { RATING_CONSTANTS } from '@common/utils/constants'
 import { formatDateWithYear } from '@common/utils/date'
-import MatchManager from './match.manager'
+import { and, asc, desc, eq, getTableColumns, isNull, sql } from 'drizzle-orm'
+import db from '../../database/database'
+import { matches, sessions, timeEntries } from '../../database/schema'
 import {
   MatchRatingCalculator,
   TrackRatingCalculator,
 } from './rating.calculator'
-import SessionManager from './session.manager'
-import TimeEntryManager from './timeEntry.manager'
 
 class RatingManagerClass {
   private readonly matchCalculator: MatchRatingCalculator =
@@ -28,24 +30,94 @@ class RatingManagerClass {
   async recalculate() {
     RatingManager.reset()
 
-    const sessions = await SessionManager.getAllSessions()
-    for (const session of sessions.toReversed()) {
+    const sessionRows = await db
+      .select()
+      .from(sessions)
+      .where(isNull(sessions.deletedAt))
+      .orderBy(desc(sessions.date), asc(sessions.createdAt))
+    const sessionInputs = await Promise.all(
+      sessionRows.toReversed().map(async session => ({
+        session,
+        input: await RatingManager.getSessionRatingInput(session.id),
+      }))
+    )
+
+    for (const { session, input } of sessionInputs) {
       console.log(
         `Processing session ${session.name} (${formatDateWithYear(session.date)})`
       )
-      await RatingManager.processSession(session.id)
+      RatingManager.matchCalculator.processMatches(input.matches)
+      RatingManager.trackCalculator.processTimeEntries(input.timeEntries)
     }
 
     RatingManager.ratings = RatingManager.calculateRatings()
   }
 
-  private async processSession(sessionId: Session['id']) {
-    const matches = await MatchManager.getAllBySession(sessionId)
-    RatingManager.matchCalculator.processMatches(matches)
+  private async getSessionRatingInput(
+    sessionId: Session['id']
+  ): Promise<{ matches: Match[]; timeEntries: TimeEntry[] }> {
+    const [matches, timeEntries] = await Promise.all([
+      RatingManager.getMatchesBySession(sessionId),
+      RatingManager.getLatestTimeEntriesAfterSession(sessionId),
+    ])
 
-    const timeEntries =
-      await TimeEntryManager.getAllLatestAfterSession(sessionId)
-    RatingManager.trackCalculator.processTimeEntries(timeEntries)
+    return { matches, timeEntries }
+  }
+
+  private async getMatchesBySession(
+    sessionId: Session['id']
+  ): Promise<Match[]> {
+    return await db
+      .select({ ...getTableColumns(matches) })
+      .from(matches)
+      .where(and(eq(matches.session, sessionId), isNull(matches.deletedAt)))
+      .orderBy(desc(matches.createdAt))
+  }
+
+  private async getLatestTimeEntriesAfterSession(
+    sessionId: Session['id']
+  ): Promise<TimeEntry[]> {
+    const latestDatePerUser = db
+      .select({
+        user: timeEntries.user,
+        maxDate: sql<Date>`max(${timeEntries.createdAt})`.as('maxDate'),
+      })
+      .from(timeEntries)
+      .where(eq(timeEntries.session, sessionId))
+      .groupBy(timeEntries.user)
+      .as('latest_date')
+
+    const latestBestPerUser = db
+      .select({
+        user: timeEntries.user,
+        createdAt: timeEntries.createdAt,
+        minDuration: sql<number>`min(${timeEntries.duration})`.as(
+          'minDuration'
+        ),
+      })
+      .from(timeEntries)
+      .innerJoin(
+        latestDatePerUser,
+        and(
+          eq(timeEntries.user, latestDatePerUser.user),
+          eq(timeEntries.createdAt, latestDatePerUser.maxDate)
+        )
+      )
+      .groupBy(timeEntries.user, timeEntries.createdAt)
+      .as('latest_best')
+
+    return await db
+      .select({ ...getTableColumns(timeEntries) })
+      .from(timeEntries)
+      .innerJoin(
+        latestBestPerUser,
+        and(
+          eq(timeEntries.user, latestBestPerUser.user),
+          eq(timeEntries.createdAt, latestBestPerUser.createdAt),
+          eq(timeEntries.duration, latestBestPerUser.minDuration)
+        )
+      )
+      .where(eq(timeEntries.session, sessionId))
   }
 
   getUserRatings(userId: string): Ranking | undefined {

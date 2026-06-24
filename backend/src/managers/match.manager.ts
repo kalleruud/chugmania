@@ -8,14 +8,14 @@ import {
   type Match,
 } from '@common/models/match'
 import type { EventRes } from '@common/models/socket.io'
-import { and, desc, eq, getTableColumns, isNull, sql } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
-import { matches, sessions } from '../../database/schema'
-import { broadcast, type TypedSocket } from '../server'
+import { matches } from '../../database/schema'
+import { broadcast, type TypedSocket } from '../socket'
 import AuthManager from './auth.manager'
+import { getAllMatches, getAllMatchesBySession } from './match.queries'
 import RatingManager from './rating.manager'
-import TournamentManager from './tournament.manager'
 
 class MatchManagerClass {
   private validateMatchState(
@@ -41,23 +41,12 @@ class MatchManagerClass {
   }
 
   public async getAllMatches(): Promise<Match[]> {
-    const matchRows = await db
-      .select({ ...getTableColumns(matches) })
-      .from(matches)
-      .leftJoin(sessions, eq(matches.session, sessions.id))
-      .where(isNull(matches.deletedAt))
-      .orderBy(desc(sql`COALESCE(${sessions.date}, ${matches.createdAt})`))
-
-    return matchRows
+    return getAllMatches()
   }
 
   // Returns matches sorted by creation date, most recent first.
   public async getAllBySession(sessionId: string): Promise<Match[]> {
-    return await db
-      .select({ ...getTableColumns(matches) })
-      .from(matches)
-      .where(and(eq(matches.session, sessionId), isNull(matches.deletedAt)))
-      .orderBy(desc(matches.createdAt))
+    return getAllMatchesBySession(sessionId)
   }
 
   async onCreateMatch(
@@ -92,7 +81,11 @@ class MatchManagerClass {
     broadcast('all_matches', await MatchManager.getAllMatches())
     broadcast('all_rankings', RatingManager.onGetRatings())
 
-    if (match.winner) await TournamentManager.onMatchCompleted(match.id)
+    if (match.winner) {
+      const { default: TournamentManager } =
+        await import('./tournament.manager')
+      await TournamentManager.onMatchCompleted(match.id)
+    }
     return { success: true }
   }
 
@@ -150,6 +143,8 @@ class MatchManagerClass {
     broadcast('all_rankings', RatingManager.onGetRatings())
 
     if (res.winner && preImageMatch.winner !== res.winner) {
+      const { default: TournamentManager } =
+        await import('./tournament.manager')
       await TournamentManager.onMatchCompleted(res.id)
     }
     return { success: true }

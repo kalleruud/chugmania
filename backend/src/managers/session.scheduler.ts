@@ -2,8 +2,8 @@ import type { SessionWithSignups } from '@common/models/session'
 import { and, asc, gt, isNull } from 'drizzle-orm'
 import db from '../../database/database'
 import { sessions } from '../../database/schema'
-import { broadcast } from '../server'
-import SessionManager from './session.manager'
+import { broadcast } from '../socket'
+import { getAllSessions, getSession } from './session.queries'
 
 class SessionSchedulerClass {
   private scheduledTimeout: NodeJS.Timeout | null = null
@@ -17,7 +17,7 @@ class SessionSchedulerClass {
     })
 
     if (!nextSessionRow) return null
-    return SessionManager.getSession(nextSessionRow.id)
+    return getSession(nextSessionRow.id)
   }
 
   async scheduleNext(): Promise<void> {
@@ -65,7 +65,7 @@ class SessionSchedulerClass {
       'Session started, broadcasting all_sessions'
     )
 
-    broadcast('all_sessions', await SessionManager.getAllSessions())
+    broadcast('all_sessions', await getAllSessions())
     SessionScheduler.cancel()
     await SessionScheduler.scheduleNext()
   }

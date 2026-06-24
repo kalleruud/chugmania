@@ -12,10 +12,10 @@ import { and, asc, eq, getTableColumns, isNull, sql } from 'drizzle-orm'
 import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
 import { timeEntries } from '../../database/schema'
-import { broadcast, type TypedSocket } from '../server'
+import { broadcast, type TypedSocket } from '../socket'
 import AuthManager from './auth.manager'
 import RatingManager from './rating.manager'
-import SessionManager from './session.manager'
+import { ensureSessionSignup, getAllSessions } from './session.queries'
 
 class TimeEntryManagerClass {
   readonly table = timeEntries
@@ -98,7 +98,7 @@ class TimeEntryManagerClass {
 
     await db.insert(timeEntries).values(request)
     const signupChanged = request.session
-      ? await SessionManager.ensureSessionSignup(request.session, request.user)
+      ? await ensureSessionSignup(request.session, request.user)
       : false
 
     console.debug(
@@ -111,7 +111,7 @@ class TimeEntryManagerClass {
     await RatingManager.recalculate()
     broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
     if (signupChanged) {
-      broadcast('all_sessions', await SessionManager.getAllSessions())
+      broadcast('all_sessions', await getAllSessions())
     }
     broadcast('all_rankings', RatingManager.onGetRatings())
 
@@ -176,7 +176,7 @@ class TimeEntryManagerClass {
     const sessionId = processedUpdates.session ?? lapTime.session
     const userId = processedUpdates.user ?? lapTime.user
     const signupChanged = sessionId
-      ? await SessionManager.ensureSessionSignup(sessionId, userId)
+      ? await ensureSessionSignup(sessionId, userId)
       : false
 
     console.debug(
@@ -189,7 +189,7 @@ class TimeEntryManagerClass {
     await RatingManager.recalculate()
     broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
     if (signupChanged) {
-      broadcast('all_sessions', await SessionManager.getAllSessions())
+      broadcast('all_sessions', await getAllSessions())
     }
     broadcast('all_rankings', RatingManager.onGetRatings())
 
