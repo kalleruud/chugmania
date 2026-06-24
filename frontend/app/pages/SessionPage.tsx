@@ -72,9 +72,9 @@ function Signup({
   const { loggedInUser, isLoggedIn } = useAuth()
   const { users, isLoadingData } = useData()
 
-  const [myResponse, setMyResponse] = useState<SessionResponse | undefined>(
-    session.signups.find(s => s.user.id === loggedInUser?.id)?.response
-  )
+  const myResponse = session.signups.find(
+    s => s.user.id === loggedInUser?.id
+  )?.response
 
   const isAdmin = isLoggedIn && loggedInUser.role !== 'user'
   const responseOptions: { response: SessionResponse; Icon: LucideIcon }[] = [
@@ -139,16 +139,11 @@ function Signup({
 
   function handleRsvp(response: SessionResponse, user?: UserInfo) {
     if (!isLoggedIn) return
-    toast.promise(
-      updateSignup(response, user ?? loggedInUser).then(() => {
-        if (!user || user.id === loggedInUser.id) setMyResponse(response)
-      }),
-      {
-        loading: loc.no.session.rsvp.response.loading,
-        success: loc.no.session.rsvp.response.success(response),
-        error: loc.no.session.rsvp.response.error,
-      }
-    )
+    toast.promise(updateSignup(response, user ?? loggedInUser), {
+      loading: loc.no.session.rsvp.response.loading,
+      success: loc.no.session.rsvp.response.success(response),
+      error: loc.no.session.rsvp.response.error,
+    })
   }
 
   function handleSelectUser(user: UserInfo | null | undefined) {
@@ -172,9 +167,6 @@ function Signup({
       Promise.all(
         selectedUsers.map(user => updateSignup(selectedResponse, user))
       ).then(() => {
-        if (selectedUserIds.includes(loggedInUser.id)) {
-          setMyResponse(selectedResponse)
-        }
         setSelectedUserIds([])
         setAddDialogOpen(false)
       }),
