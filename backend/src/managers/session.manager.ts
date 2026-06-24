@@ -21,7 +21,7 @@ import SessionScheduler from './session.scheduler'
 import UserManager from './user.manager'
 
 class SessionManagerClass {
-  public static async ensureSessionSignup(
+  public async ensureSessionSignup(
     sessionId: string,
     userId: string
   ): Promise<boolean> {
