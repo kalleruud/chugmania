@@ -7,7 +7,7 @@ import globals from 'globals'
 import { configs as tseslint } from 'typescript-eslint'
 
 export default defineConfig([
-  globalIgnores(['dist', 'node_modules', '*.d.ts']),
+  globalIgnores(['dist', 'node_modules', 'scripts/*', '*.d.ts']),
   eslint.configs.recommended,
   tseslint.strictTypeChecked,
   reactHooks.configs.flat.recommended,
