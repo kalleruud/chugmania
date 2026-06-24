@@ -82,7 +82,7 @@ class CalendarManagerClass {
 
     const attendees = await Promise.all(
       accumulateSignups(session, sessionTimeEntries, sessionMatches).map(
-        CalendarManager.createEventAttendee
+        signup => CalendarManager.createEventAttendee(signup)
       )
     )
 
@@ -136,7 +136,6 @@ class CalendarManagerClass {
     }
 
     const user = await UserManager.getUserById(signup.user)
-    if (!user) throw new Error(loc.no.error.messages.not_in_db(signup.user))
 
     return {
       name: `${user.firstName} ${user.lastName}`,

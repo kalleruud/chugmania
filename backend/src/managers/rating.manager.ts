@@ -36,7 +36,7 @@ class RatingManagerClass {
       await RatingManager.processSession(session.id)
     }
 
-    RatingManager.ratings = await RatingManager.calculateRatings()
+    RatingManager.ratings = RatingManager.calculateRatings()
   }
 
   private async processSession(sessionId: Session['id']) {
@@ -56,16 +56,16 @@ class RatingManagerClass {
   }
 
   // Returns all users with their ratings, sorted by ranking.
-  async onGetRatings(): Promise<Ranking[]> {
+  onGetRatings(): Ranking[] {
     if (RatingManager.ratings.size === 0)
-      RatingManager.ratings = await RatingManager.calculateRatings()
+      RatingManager.ratings = RatingManager.calculateRatings()
 
     return Array.from(RatingManager.ratings.values()).sort(
       (a, b) => b.ranking - a.ranking
     )
   }
 
-  private async calculateRatings() {
+  private calculateRatings() {
     const matchRatings = RatingManager.matchCalculator.getAllRatings()
     const trackRatings = RatingManager.trackCalculator.getAllRatings()
     const users = Array.from(

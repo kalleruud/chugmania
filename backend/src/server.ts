@@ -50,16 +50,16 @@ export type TypedSocket = Socket<
 type ProtectedServerEvent = Exclude<keyof ServerToClientEvents, 'user_data'>
 
 async function emitData(socket: TypedSocket) {
-  const [users, tracks, sessions, timeEntries, matches, rankings, tournaments] =
+  const [users, tracks, sessions, timeEntries, matches, tournaments] =
     await Promise.all([
       UserManager.getAllUsers(),
       TrackManager.getAllTracks(),
       SessionManager.getAllSessions(),
       TimeEntryManager.getAllTimeEntries(),
       MatchManager.getAllMatches(),
-      RatingManager.onGetRatings(),
       TournamentManager.getAllTournaments(),
     ])
+  const rankings = RatingManager.onGetRatings()
   socket.emit('all_users', users)
   socket.emit('all_tracks', tracks)
   socket.emit('all_sessions', sessions)
@@ -172,10 +172,13 @@ async function Connect(s: TypedSocket) {
 function setup<Ev extends keyof ClientToServerEvents>(
   s: TypedSocket,
   event: Ev,
-  handler: (s: TypedSocket, r: EventReq<Ev>) => Promise<EventRes<Ev>>
+  handler: (
+    s: TypedSocket,
+    r: EventReq<Ev>
+  ) => EventRes<Ev> | Promise<EventRes<Ev>>
 ) {
   s.on(event, ((r: EventReq<Ev>, callback?: EventCb<Ev>) =>
-    handler(s, r)
+    Promise.resolve(handler(s, r))
       .then(callback)
       .catch((e: unknown) => {
         const message = e instanceof Error ? e.message : String(e)

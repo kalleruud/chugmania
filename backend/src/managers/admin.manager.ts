@@ -2,11 +2,11 @@ import {
   isExportCsvRequest,
   isImportCsvRequest,
   type ExportCsvRequest,
+  type ImportCsvRequest,
 } from '@common/models/importCsv'
-import type { EventReq, EventRes } from '@common/models/socket.io'
+import type { EventRes } from '@common/models/socket.io'
 import { eq } from 'drizzle-orm'
 import type { SQLiteTable } from 'drizzle-orm/sqlite-core'
-import type { Socket } from 'socket.io'
 import loc from '../../../frontend/lib/locales'
 import db, { database } from '../../database/database'
 import {
@@ -21,7 +21,7 @@ import {
   tracks,
   users,
 } from '../../database/schema'
-import { broadcast } from '../server'
+import { broadcast, type TypedSocket } from '../server'
 import CsvParser from '../utils/csv-parser'
 import AuthManager from './auth.manager'
 import MatchManager from './match.manager'
@@ -58,9 +58,9 @@ class AdminManagerClass {
     tournamentMatches: tournamentMatches,
   } satisfies Record<ExportCsvRequest['table'], SQLiteTable>
 
-  private async importRows<T extends Record<string, any>>(
+  private async importRows(
     tableName: ExportCsvRequest['table'],
-    data: T[]
+    data: Record<string, unknown>[]
   ): Promise<{ created: number; updated: number }> {
     const table = AdminManager.TABLE_MAP[tableName]
 
@@ -68,8 +68,8 @@ class AdminManagerClass {
     const existingRecords = await db.select({ id: table.id }).from(table)
     const existingIds = new Set(existingRecords.map(r => r.id))
 
-    const toCreate: T[] = []
-    const toUpdate: T[] = []
+    const toCreate: Record<string, unknown>[] = []
+    const toUpdate: Record<string, unknown>[] = []
     for (const item of data) {
       if (existingIds.has(item.id)) {
         toUpdate.push(item)
@@ -105,8 +105,8 @@ class AdminManagerClass {
   }
 
   async onImportCsv(
-    socket: Socket,
-    request: EventReq<'import_csv'>
+    socket: TypedSocket,
+    request: ImportCsvRequest
   ): Promise<EventRes<'import_csv'>> {
     if (!isImportCsvRequest(request))
       throw new Error(loc.no.error.messages.invalid_request('ImportCsvRequest'))
@@ -130,23 +130,20 @@ class AdminManagerClass {
 
     await RatingManager.recalculate()
 
-    const [users, tracks, sessions, timeEntries, matches, ratings] =
-      await Promise.all([
-        UserManager.getAllUsers(),
-        TrackManager.getAllTracks(),
-        SessionManager.getAllSessions(),
-        TimeEntryManager.getAllTimeEntries(),
-        MatchManager.getAllMatches(),
-        RatingManager.onGetRatings(),
-      ])
-
-    await Promise.all([
-      broadcast('all_users', users),
-      broadcast('all_tracks', tracks),
-      broadcast('all_sessions', sessions),
-      broadcast('all_time_entries', timeEntries),
-      broadcast('all_matches', matches),
+    const [users, tracks, sessions, timeEntries, matches] = await Promise.all([
+      UserManager.getAllUsers(),
+      TrackManager.getAllTracks(),
+      SessionManager.getAllSessions(),
+      TimeEntryManager.getAllTimeEntries(),
+      MatchManager.getAllMatches(),
     ])
+    const ratings = RatingManager.onGetRatings()
+
+    broadcast('all_users', users)
+    broadcast('all_tracks', tracks)
+    broadcast('all_sessions', sessions)
+    broadcast('all_time_entries', timeEntries)
+    broadcast('all_matches', matches)
 
     broadcast('all_rankings', ratings)
 
@@ -159,12 +156,12 @@ class AdminManagerClass {
   private filterColumnsForExport(
     tableName: ExportCsvRequest['table'],
     records: object[]
-  ): object[] {
+  ): Record<string, unknown>[] {
     const excludeColumns = AdminManager.EXCLUDED_COL_EXPORT[tableName]
     if (excludeColumns.size === 0) return records
 
     return records.map(record => {
-      const filtered: Record<string, any> = {}
+      const filtered: Record<string, unknown> = {}
       for (const [key, value] of Object.entries(record)) {
         if (!excludeColumns.has(key)) {
           filtered[key] = value
@@ -175,8 +172,8 @@ class AdminManagerClass {
   }
 
   async onExportCsv(
-    socket: Socket,
-    request: EventReq<'export_csv'>
+    socket: TypedSocket,
+    request: ExportCsvRequest
   ): Promise<EventRes<'export_csv'>> {
     if (!isExportCsvRequest(request))
       throw new Error(loc.no.error.messages.invalid_request('ExportCsvRequest'))

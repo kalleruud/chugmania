@@ -1,9 +1,11 @@
 import type { Session } from '@common/models/session'
-import type { EventReq, EventRes } from '@common/models/socket.io'
+import type { EventRes } from '@common/models/socket.io'
 import type { TimeEntry } from '@common/models/timeEntry'
 import {
   isCreateTimeEntryRequest,
   isEditTimeEntryRequest,
+  type CreateTimeEntryRequest,
+  type EditTimeEntryRequest,
 } from '@common/models/timeEntry'
 import type { User } from '@common/models/user'
 import { and, asc, eq, getTableColumns, isNull, sql } from 'drizzle-orm'
@@ -78,7 +80,7 @@ class TimeEntryManagerClass {
 
   async onPostTimeEntry(
     socket: TypedSocket,
-    request: EventReq<'post_time_entry'>
+    request: CreateTimeEntryRequest
   ): Promise<EventRes<'post_time_entry'>> {
     if (!isCreateTimeEntryRequest(request)) {
       throw new Error(
@@ -104,7 +106,7 @@ class TimeEntryManagerClass {
 
     await RatingManager.recalculate()
     broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
-    broadcast('all_rankings', await RatingManager.onGetRatings())
+    broadcast('all_rankings', RatingManager.onGetRatings())
 
     return {
       success: true,
@@ -113,7 +115,7 @@ class TimeEntryManagerClass {
 
   async onEditTimeEntry(
     socket: TypedSocket,
-    request: EventReq<'edit_time_entry'>
+    request: EditTimeEntryRequest
   ): Promise<EventRes<'edit_time_entry'>> {
     if (!isEditTimeEntryRequest(request)) {
       throw new Error(
@@ -124,12 +126,9 @@ class TimeEntryManagerClass {
     const user = await AuthManager.checkAuth(socket)
 
     // Get the lap time entry to check ownership
-    const entries = await db
-      .select()
-      .from(timeEntries)
-      .where(eq(timeEntries.id, request.id))
-
-    const lapTime = entries[0]
+    const lapTime = await db.query.timeEntries.findFirst({
+      where: eq(timeEntries.id, request.id),
+    })
     if (!lapTime) {
       throw new Error(loc.no.error.messages.not_in_db(request.id))
     }
@@ -176,11 +175,8 @@ class TimeEntryManagerClass {
     )
 
     await RatingManager.recalculate()
-    await broadcast(
-      'all_time_entries',
-      await TimeEntryManager.getAllTimeEntries()
-    )
-    await broadcast('all_rankings', await RatingManager.onGetRatings())
+    broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
+    broadcast('all_rankings', RatingManager.onGetRatings())
 
     return {
       success: true,

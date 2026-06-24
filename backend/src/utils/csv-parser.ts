@@ -1,15 +1,18 @@
 import AuthManager from '../managers/auth.manager'
 
-export default class CsvParser {
-  private static readonly JAN_01_2000 = 946681200000
-  private static readonly DATE_KEYS = new Set([
+type CsvValue = string | number | Date | Buffer
+type CsvRecord = Record<string, CsvValue>
+
+class CsvParserClass {
+  private readonly JAN_01_2000 = 946681200000
+  private readonly DATE_KEYS = new Set([
     'createdAt',
     'updatedAt',
     'deletedAt',
     'date',
   ])
 
-  static async toObjects(csv: string) {
+  async toObjects(csv: string): Promise<CsvRecord[]> {
     const lines = CsvParser.parseLines(csv.trim())
     if (lines.length === 0) return []
 
@@ -28,12 +31,12 @@ export default class CsvParser {
           entries.set(keyVal.key, keyVal.value)
         }
 
-        return Object.fromEntries(entries) as Record<string, any>
+        return Object.fromEntries(entries) as CsvRecord
       })
     )
   }
 
-  private static parseLines(csv: string): string[][] {
+  private parseLines(csv: string): string[][] {
     const state = {
       lines: [] as string[][],
       currentLine: [] as string[],
@@ -61,7 +64,7 @@ export default class CsvParser {
     return state.lines
   }
 
-  private static handleQuote(
+  private handleQuote(
     csv: string,
     state: {
       currentField: string
@@ -78,7 +81,7 @@ export default class CsvParser {
     }
   }
 
-  private static handleFieldDelimiter(state: {
+  private handleFieldDelimiter(state: {
     currentLine: string[]
     currentField: string
     i: number
@@ -88,7 +91,7 @@ export default class CsvParser {
     state.i++
   }
 
-  private static handleLineDelimiter(
+  private handleLineDelimiter(
     csv: string,
     state: {
       lines: string[][]
@@ -112,7 +115,7 @@ export default class CsvParser {
     }
   }
 
-  private static finalizeParsing(state: {
+  private finalizeParsing(state: {
     lines: string[][]
     currentLine: string[]
     currentField: string
@@ -125,10 +128,10 @@ export default class CsvParser {
     }
   }
 
-  private static async normalize(
+  private async normalize(
     key: string,
     value: string | undefined
-  ): Promise<{ key: string; value: any } | null> {
+  ): Promise<{ key: string; value: CsvValue } | null> {
     const val = value?.trim()
     if (!val) return null
 
@@ -153,9 +156,7 @@ export default class CsvParser {
     return { key, value: val }
   }
 
-  public static toCsv<T extends Record<string, any>>(
-    objects: T[]
-  ): string | null {
+  toCsv(objects: Record<string, unknown>[]): string | null {
     if (objects.length === 0) {
       console.warn('No objects to convert to CSV')
       return null
@@ -165,10 +166,15 @@ export default class CsvParser {
     const rows = objects.map(obj =>
       headers
         .map(header => {
-          const value = obj[header]
+          const value = Object.entries(obj).find(([key]) => key === header)?.[1]
           if (value === null || value === undefined) return ''
-          if (value instanceof Date) return String(value.toISOString())
-          const str = String(value)
+          if (value instanceof Date) return value.toISOString()
+          const str = (() => {
+            if (typeof value === 'string') return value
+            if (typeof value === 'number' || typeof value === 'boolean')
+              return String(value)
+            return JSON.stringify(value)
+          })()
           if (str.includes(',') || str.includes('\n') || str.includes('"'))
             return `"${str.replaceAll('"', '""')}"`
           return str
@@ -179,3 +185,7 @@ export default class CsvParser {
     return [headers.join(','), ...rows].join('\n')
   }
 }
+
+const CsvParser = new CsvParserClass()
+
+export default CsvParser

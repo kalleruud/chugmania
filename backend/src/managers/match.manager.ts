@@ -3,10 +3,11 @@ import {
   isDeleteMatchRequest,
   isEditMatchRequest,
   type CreateMatchRequest,
+  type DeleteMatchRequest,
   type EditMatchRequest,
   type Match,
 } from '@common/models/match'
-import type { EventReq, EventRes } from '@common/models/socket.io'
+import type { EventRes } from '@common/models/socket.io'
 import { and, desc, eq, getTableColumns, isNull, sql } from 'drizzle-orm'
 import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
@@ -61,7 +62,7 @@ class MatchManagerClass {
 
   async onCreateMatch(
     socket: TypedSocket,
-    request: EventReq<'create_match'>
+    request: CreateMatchRequest
   ): Promise<EventRes<'create_match'>> {
     if (!isCreateMatchRequest(request)) {
       throw new Error(
@@ -88,8 +89,8 @@ class MatchManagerClass {
     console.debug(new Date().toISOString(), socket.id, 'Created match')
 
     await RatingManager.recalculate()
-    await broadcast('all_matches', await MatchManager.getAllMatches())
-    await broadcast('all_rankings', await RatingManager.onGetRatings())
+    broadcast('all_matches', await MatchManager.getAllMatches())
+    broadcast('all_rankings', RatingManager.onGetRatings())
 
     if (match.winner) await TournamentManager.onMatchCompleted(match.id)
     return { success: true }
@@ -97,7 +98,7 @@ class MatchManagerClass {
 
   async onEditMatch(
     socket: TypedSocket,
-    request: EventReq<'edit_match'>
+    request: EditMatchRequest
   ): Promise<EventRes<'edit_match'>> {
     if (!isEditMatchRequest(request)) {
       throw new Error(loc.no.error.messages.invalid_request('EditMatchRequest'))
@@ -140,8 +141,8 @@ class MatchManagerClass {
     console.debug(new Date().toISOString(), socket.id, 'Updated match', request.id)
 
     await RatingManager.recalculate()
-    await broadcast('all_matches', await MatchManager.getAllMatches())
-    await broadcast('all_rankings', await RatingManager.onGetRatings())
+    broadcast('all_matches', await MatchManager.getAllMatches())
+    broadcast('all_rankings', RatingManager.onGetRatings())
 
     if (res.winner && preImageMatch.winner !== res.winner) {
       await TournamentManager.onMatchCompleted(res.id)
@@ -151,7 +152,7 @@ class MatchManagerClass {
 
   async onDeleteMatch(
     socket: TypedSocket,
-    request: EventReq<'delete_match'>
+    request: DeleteMatchRequest
   ): Promise<EventRes<'delete_match'>> {
     if (!isDeleteMatchRequest(request)) {
       throw new Error(

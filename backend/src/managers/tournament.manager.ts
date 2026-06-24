@@ -1,5 +1,5 @@
 import type { CreateMatch, Match } from '@common/models/match'
-import type { EventReq, EventRes } from '@common/models/socket.io'
+import type { EventRes } from '@common/models/socket.io'
 import {
   isCreateTournamentRequest,
   isDeleteTournamentRequest,
@@ -8,12 +8,16 @@ import {
   type CreateGroup,
   type CreateGroupPlayer,
   type CreateTournament,
+  type CreateTournamentRequest,
   type CreateTournamentMatch,
+  type DeleteTournamentRequest,
+  type EditTournamentRequest,
   type Group,
   type GroupPlayer,
   type GroupWithPlayers,
   type Tournament,
   type TournamentMatch,
+  type TournamentPreviewRequest,
   type TournamentWithDetails,
 } from '@common/models/tournament'
 import { and, eq, inArray, isNull } from 'drizzle-orm'
@@ -122,16 +126,16 @@ class TournamentManagerClass {
       ),
     })
 
-    const matchRows: Match[] = await Promise.all(
-      tournamentMatchRows
-        .filter(tm => tm.match)
-        .map(async tm => {
-          const match = await db.query.matches.findFirst({
-            where: and(eq(matches.id, tm.match!), isNull(matches.deletedAt)),
+    const matchRows = (
+      await Promise.all(
+        tournamentMatchRows.map(async tm => {
+          if (!tm.match) return null
+          return await db.query.matches.findFirst({
+            where: and(eq(matches.id, tm.match), isNull(matches.deletedAt)),
           })
-          return match!
         })
-    )
+      )
+    ).filter(match => match !== null && match !== undefined)
 
     return {
       tournament,
@@ -142,13 +146,13 @@ class TournamentManagerClass {
     }
   }
 
-  private async toTournamentWithDetails({
+  private toTournamentWithDetails({
     tournament,
     groups,
     groupPlayers,
     tournamentMatches,
     matches,
-  }: TournamentStructure): Promise<TournamentWithDetails> {
+  }: TournamentStructure): TournamentWithDetails {
     const groupMatches = tournamentMatches
       .filter(tm => tm.bracket === 'group')
       .map(tm => matches.find(m => m.id === tm.match))
@@ -162,11 +166,11 @@ class TournamentManagerClass {
           .toSorted((a, b) => b.seed - a.seed)
           .map(gp => ({
             ...gp,
-            wins: groupMatches.filter(m => m?.winner === gp.user).length,
+            wins: groupMatches.filter(m => m.winner === gp.user).length,
             losses: groupMatches.filter(
               m =>
-                (m?.user1 === gp.user || m?.user2 === gp.user) &&
-                m?.winner !== gp.user
+                (m.user1 === gp.user || m.user2 === gp.user) &&
+                m.winner !== gp.user
             ).length,
           })),
       }
@@ -185,7 +189,7 @@ class TournamentManagerClass {
 
   async onCreateTournament(
     socket: TypedSocket,
-    request: EventReq<'create_tournament'>
+    request: CreateTournamentRequest
   ): Promise<EventRes<'create_tournament'>> {
     if (!isCreateTournamentRequest(request)) {
       throw new Error(
@@ -251,14 +255,14 @@ class TournamentManagerClass {
       .filter(s => s.response === 'yes')
       .map(s => s.user.id)
 
-    const { groups, groupPlayers } = await TournamentManager.createGroups(
+    const { groups, groupPlayers } = TournamentManager.createGroups(
       tournamentId,
       groupsCount,
       playerIds
     )
 
     const { tournamentMatches, matches } =
-      await TournamentManager.createGroupMatches(
+      TournamentManager.createGroupMatches(
         tournamentId,
         sessionId,
         groups,
@@ -283,7 +287,7 @@ class TournamentManagerClass {
     }
   }
 
-  private async createGroups(
+  private createGroups(
     tournamentId: string,
     groupsCount: number,
     playerIds: string[]
@@ -335,7 +339,7 @@ class TournamentManagerClass {
     }
   }
 
-  private async createGroupMatches(
+  private createGroupMatches(
     tournamentId: string,
     sessionId: string,
     groups: { id: string; name: string }[],
@@ -573,7 +577,7 @@ class TournamentManagerClass {
         id,
         tournament: tournamentId,
         name:
-          TournamentManager.getRoundName(lowerRound, true) + ' - ' + (i + 1),
+          `${TournamentManager.getRoundName(lowerRound, true)} - ${i + 1}`,
         bracket: 'lower',
         round: lowerRound,
         track,
@@ -716,10 +720,10 @@ class TournamentManagerClass {
     return `${prefix}Runde ${size}`
   }
 
-  async onEditTournament(
+  onEditTournament(
     socket: TypedSocket,
-    request: EventReq<'edit_tournament'>
-  ): Promise<EventRes<'edit_tournament'>> {
+    request: EditTournamentRequest
+  ): EventRes<'edit_tournament'> {
     if (!isEditTournamentRequest(request)) {
       throw new Error(
         loc.no.error.messages.invalid_request('EditTournamentRequest')
@@ -776,7 +780,7 @@ class TournamentManagerClass {
 
   async onDeleteTournament(
     socket: TypedSocket,
-    request: EventReq<'delete_tournament'>
+    request: DeleteTournamentRequest
   ): Promise<EventRes<'delete_tournament'>> {
     if (!isDeleteTournamentRequest(request)) {
       throw new Error(
@@ -905,7 +909,6 @@ class TournamentManagerClass {
 
       for (let rank = 1; rank <= tournament.advancementCount; rank++) {
         const player = standings[rank - 1]
-        if (!player) continue
 
         const pendingMatches = await db
           .select()
@@ -1171,7 +1174,7 @@ class TournamentManagerClass {
 
     await RatingManager.recalculate()
     broadcast('all_matches', await MatchManager.getAllMatches())
-    broadcast('all_rankings', await RatingManager.onGetRatings())
+    broadcast('all_rankings', RatingManager.onGetRatings())
   }
 
   private async getGroupRankedPlayer(
@@ -1267,7 +1270,7 @@ class TournamentManagerClass {
 
   async onGetTournamentPreview(
     socket: TypedSocket,
-    request: EventReq<'get_tournament_preview'>
+    request: TournamentPreviewRequest
   ): Promise<EventRes<'get_tournament_preview'>> {
     if (!isTournamentPreviewRequest(request)) {
       throw new Error(
@@ -1301,7 +1304,7 @@ class TournamentManagerClass {
     } satisfies CreateTournament
 
     const tournamentWithDetails =
-      await TournamentManager.toTournamentWithDetails({
+      TournamentManager.toTournamentWithDetails({
         tournament: tournamentDraft as Tournament,
         groups: groups as Group[],
         groupPlayers: groupPlayers as GroupPlayer[],

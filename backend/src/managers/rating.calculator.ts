@@ -103,7 +103,7 @@ export class TrackRatingCalculator extends RatingCalculator {
   public processTimeEntries(timeEntries: TimeEntry[]) {
     const entriesByTrack = timeEntries.reduce<Record<Track['id'], TimeEntry[]>>(
       (acc, entry) => {
-        acc[entry.track] = [...(acc[entry.track] || []), entry]
+        acc[entry.track] = [...(acc[entry.track] ?? []), entry]
         return acc
       },
       {}

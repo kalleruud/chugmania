@@ -1,6 +1,8 @@
-import { isRegisterRequest } from '@common/models/auth'
-import type { EventReq, EventRes } from '@common/models/socket.io'
+import { isRegisterRequest, type RegisterRequest } from '@common/models/auth'
+import type { EventRes } from '@common/models/socket.io'
 import {
+  type DeleteUserRequest,
+  type EditUserRequest,
   isDeleteUserRequest,
   isEditUserRequest,
   type LoginResponse,
@@ -59,7 +61,6 @@ class UserManagerClass {
       .returning()
 
     const user = data[0]
-    if (!user) throw new Error(loc.no.error.messages.not_in_db(id))
 
     broadcast('all_users', await UserManager.getAllUsers())
     return user
@@ -84,7 +85,7 @@ class UserManagerClass {
       return false
     }
 
-    return !!data?.length
+    return data.length > 0
   }
 
   async userExists(email: string): Promise<boolean> {
@@ -102,7 +103,7 @@ class UserManagerClass {
 
   async onEditUser(
     socket: TypedSocket,
-    request: EventReq<'edit_user'>
+    request: EditUserRequest
   ): Promise<EventRes<'edit_user'>> {
     if (!isEditUserRequest(request)) {
       throw new Error(loc.no.error.messages.invalid_request('EditUserRequest'))
@@ -177,7 +178,7 @@ class UserManagerClass {
 
   async onDeleteUser(
     socket: TypedSocket,
-    request: EventReq<'delete_user'>
+    request: DeleteUserRequest
   ): Promise<EventRes<'delete_user'>> {
     if (!isDeleteUserRequest(request)) {
       throw new Error(
@@ -201,12 +202,9 @@ class UserManagerClass {
     )
 
     await RatingManager.recalculate()
-    await broadcast('all_users', await UserManager.getAllUsers())
-    await broadcast(
-      'all_time_entries',
-      await TimeEntryManager.getAllTimeEntries()
-    )
-    broadcast('all_rankings', await RatingManager.onGetRatings())
+    broadcast('all_users', await UserManager.getAllUsers())
+    broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
+    broadcast('all_rankings', RatingManager.onGetRatings())
 
     return {
       success: true,
@@ -215,7 +213,7 @@ class UserManagerClass {
 
   async onRegister(
     socket: TypedSocket,
-    request: EventReq<'register'>
+    request: RegisterRequest
   ): Promise<EventRes<'register'>> {
     if (!isRegisterRequest(request)) {
       throw new Error(loc.no.error.messages.invalid_request('RegisterRequest'))

@@ -3,10 +3,14 @@ import {
   isDeleteSessionRequest,
   isEditSessionRequest,
   isRsvpSessionRequest,
+  type CreateSessionRequest,
+  type DeleteSessionRequest,
+  type EditSessionRequest,
+  type RsvpSessionRequest,
   type SessionSignup,
   type SessionWithSignups,
 } from '@common/models/session'
-import type { EventReq, EventRes } from '@common/models/socket.io'
+import type { EventRes } from '@common/models/socket.io'
 import { and, asc, desc, eq, isNull } from 'drizzle-orm'
 import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
@@ -95,7 +99,7 @@ class SessionManagerClass {
 
   async onCreateSession(
     socket: TypedSocket,
-    request: EventReq<'create_session'>
+    request: CreateSessionRequest
   ): Promise<EventRes<'create_session'>> {
     if (!isCreateSessionRequest(request)) {
       throw new Error(
@@ -108,8 +112,6 @@ class SessionManagerClass {
     await db.insert(sessions).values({
       name: request.name,
       date: new Date(request.date),
-      track: request.track,
-      isCancelled: request.isCancelled,
     })
 
     console.debug(
@@ -119,7 +121,7 @@ class SessionManagerClass {
       request.name
     )
 
-    await broadcast('all_sessions', await SessionManager.getAllSessions())
+    broadcast('all_sessions', await SessionManager.getAllSessions())
     await SessionScheduler.reschedule()
 
     return { success: true }
@@ -127,7 +129,7 @@ class SessionManagerClass {
 
   async onEditSession(
     socket: TypedSocket,
-    request: EventReq<'edit_session'>
+    request: EditSessionRequest
   ): Promise<EventRes<'edit_session'>> {
     if (!isEditSessionRequest(request)) {
       throw new Error(
@@ -148,8 +150,6 @@ class SessionManagerClass {
     const updates = {
       name: request.name,
       date: request.date,
-      track: request.track,
-      isCancelled: request.isCancelled,
       deletedAt: request.deletedAt,
     }
     const res = await db
@@ -165,7 +165,7 @@ class SessionManagerClass {
 
     console.debug(new Date().toISOString(), socket.id, 'Updated session', request.id)
 
-    await broadcast('all_sessions', await SessionManager.getAllSessions())
+    broadcast('all_sessions', await SessionManager.getAllSessions())
     await SessionScheduler.reschedule()
 
     return { success: true }
@@ -173,7 +173,7 @@ class SessionManagerClass {
 
   async onRsvpSession(
     socket: TypedSocket,
-    request: EventReq<'rsvp_session'>
+    request: RsvpSessionRequest
   ): Promise<EventRes<'rsvp_session'>> {
     if (!isRsvpSessionRequest(request)) {
       throw new Error(
@@ -232,7 +232,7 @@ class SessionManagerClass {
       session.id
     )
 
-    await broadcast('all_sessions', await SessionManager.getAllSessions())
+    broadcast('all_sessions', await SessionManager.getAllSessions())
     await SessionScheduler.reschedule()
 
     return { success: true }
@@ -240,7 +240,7 @@ class SessionManagerClass {
 
   async onDeleteSession(
     socket: TypedSocket,
-    request: EventReq<'delete_session'>
+    request: DeleteSessionRequest
   ): Promise<EventRes<'delete_session'>> {
     if (!isDeleteSessionRequest(request)) {
       throw new Error(
