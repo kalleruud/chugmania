@@ -84,7 +84,9 @@ export default function UserRow({
             <Minus className='size-4 text-muted-foreground' />
           )}
 
-          {children}
+          {children && (
+            <div className='pointer-events-auto relative z-10'>{children}</div>
+          )}
         </div>
       </ItemContent>
       {!hideLink && (
@@ -115,13 +117,18 @@ export default function UserRow({
     <Item
       key={user.id}
       className={twMerge(
+        'relative',
         highlight &&
           'bg-primary-background ring-1 ring-primary/50 hover:bg-primary/25',
         className
       )}
-      asChild
       {...props}>
-      <Link to={`/users/${user.id}`}>{content}</Link>
+      <div className='pointer-events-none contents'>{content}</div>
+      <Link
+        className='absolute inset-0 rounded-md transition-colors duration-100 hover:bg-accent/50'
+        to={`/users/${user.id}`}
+        aria-label={`${user.firstName} ${user.lastName}`}
+      />
     </Item>
   )
 }
