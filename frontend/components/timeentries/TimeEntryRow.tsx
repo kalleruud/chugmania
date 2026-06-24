@@ -3,13 +3,7 @@ import loc from '@/lib/locales'
 import type { LeaderboardEntryGap, TimeEntry } from '@common/models/timeEntry'
 import { formatTime } from '@common/utils/time'
 import { MinusIcon } from '@heroicons/react/24/solid'
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ComponentProps,
-} from 'react'
+import { useState, useSyncExternalStore, type ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type { BaseRowProps } from '../row/RowProps'
 
@@ -28,6 +22,19 @@ const breakpoints = {
   md: 270,
   lg: 360,
   xl: 640,
+}
+
+function useElementWidth(element: HTMLElement | null) {
+  return useSyncExternalStore(
+    onStoreChange => {
+      if (!element) return () => undefined
+      const observer = new ResizeObserver(onStoreChange)
+      observer.observe(element)
+      return () => observer.disconnect()
+    },
+    () => element?.getBoundingClientRect().width ?? 0,
+    () => 0
+  )
 }
 
 function PositionBadgePart({
@@ -119,36 +126,23 @@ export default function TimeEntryRow({
   highlight,
   ...rest
 }: Readonly<TimeEntryRowProps>) {
-  const containerRef = useRef<HTMLDivElement | null>(null)
-  const [width, setWidth] = useState(breakpoints.md)
+  const [container, setContainer] = useState<HTMLDivElement | null>(null)
+  const width = useElementWidth(container)
   const { users } = useData()
   const userInfo = users ? users.find(u => u.id === lapTime.user) : null
 
   const isDNF = !lapTime.duration
 
-  useEffect(() => {
-    if (!containerRef.current) return
-    const el = containerRef.current
-    const ro = new ResizeObserver(entries => {
-      const w = entries[0]?.contentRect.width
-      if (typeof w === 'number') setWidth(w)
-    })
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
-
-  const show = useMemo(() => {
-    return {
-      time: width >= breakpoints.none,
-      pos: width >= breakpoints.sm,
-      gap: width >= breakpoints.lg,
-      date: width >= breakpoints.xl,
-    }
-  }, [width])
+  const show = {
+    time: width >= breakpoints.none,
+    pos: width >= breakpoints.sm,
+    gap: width >= breakpoints.lg,
+    date: width >= breakpoints.xl,
+  }
 
   return (
     <div
-      ref={containerRef}
+      ref={setContainer}
       className={twMerge(
         'flex cursor-pointer items-center gap-4 rounded-md hover:bg-foreground/5',
         highlight && 'bg-foreground/3',

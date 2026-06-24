@@ -5,6 +5,7 @@ import { TrackRow } from '@/components/track/TrackRow'
 import UserRow from '@/components/user/UserRow'
 import { useConnection } from '@/contexts/useConnection'
 import { useData } from '@/contexts/useData'
+import { useObjectState } from '@/hooks/useObjectState'
 import loc from '@/lib/locales'
 import {
   getId,
@@ -23,7 +24,7 @@ import type { SessionWithSignups } from '@common/models/session'
 import type { Track } from '@common/models/track'
 import type { UserInfo } from '@common/models/user'
 import { isOngoing } from '@common/utils/date'
-import { useMemo, useState, type ComponentProps, type SubmitEvent } from 'react'
+import type { ComponentProps, SubmitEvent } from 'react'
 import { useLocation } from 'react-router'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
@@ -78,30 +79,30 @@ export default function MatchInput({
   const initialStatus: MatchStatus = inputMatch.status ?? 'planned'
   const initialStage: MatchStage | null = inputMatch.stage ?? null
 
-  const [user1, setUser1] = useState(initialUser1)
-  const [user2, setUser2] = useState(initialUser2)
-  const [track, setTrack] = useState(initialTrack)
+  const [form, setForm] = useObjectState({
+    user1: initialUser1,
+    user2: initialUser2,
+    track: initialTrack,
+    session: initialSession,
+    winner: initialWinner,
+    status: initialStatus,
+    stage: initialStage,
+    comment: inputMatch.comment ?? '',
+  })
+  const { user1, user2, track, session, winner, status, stage, comment } = form
 
-  const [session, setSession] = useState(initialSession)
-  const [winner, setWinner] = useState(initialWinner)
-  const [status, setStatus] = useState(initialStatus)
-  const [stage, setStage] = useState(initialStage)
-  const [comment, setComment] = useState(inputMatch.comment ?? '')
-
-  const request = useMemo(() => {
-    if (!track) return undefined
-
-    return {
-      user1: user1?.id ?? null,
-      user2: user2?.id ?? null,
-      track: track.id,
-      session: session?.id ?? null,
-      winner: !winner || winner === 'none' ? null : winner,
-      status: status,
-      stage: stage ?? null,
-      comment: comment.trim() === '' ? null : comment.trim(),
-    } satisfies Omit<CreateMatchRequest | EditMatchRequest, 'type'> | undefined
-  }, [user1, user2, track, session, winner, status, stage, comment])
+  const request = track
+    ? ({
+        user1: user1?.id ?? null,
+        user2: user2?.id ?? null,
+        track: track.id,
+        session: session?.id ?? null,
+        winner: !winner || winner === 'none' ? null : winner,
+        status: status,
+        stage: stage ?? null,
+        comment: comment.trim() === '' ? null : comment.trim(),
+      } satisfies Omit<CreateMatchRequest | EditMatchRequest, 'type'>)
+    : undefined
 
   function handleCreate(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -142,18 +143,16 @@ export default function MatchInput({
 
   function handleSetWinner(userId: string) {
     if (!userId || userId === 'none') {
-      setWinner('none')
-      setStatus('planned')
+      setForm({ winner: 'none', status: 'planned' })
       return
     }
-    setWinner(userId)
-    setStatus('completed')
+    setForm({ winner: userId, status: 'completed' })
   }
 
   function handleSetStatus(status: MatchStatus) {
-    setStatus(status)
+    setForm({ status })
     if (status !== 'completed') {
-      setWinner('none')
+      setForm({ winner: 'none' })
     }
   }
 
@@ -169,7 +168,7 @@ export default function MatchInput({
               className='w-full'
               disabled={disabled}
               selected={user1}
-              setSelected={value => setUser1(value ?? null)}
+              setSelected={value => setForm({ user1: value ?? null })}
               items={users.map(userToLookupItem)}
               CustomRow={UserRow}
               placeholder={loc.no.match.placeholder.selectUser1}
@@ -187,7 +186,7 @@ export default function MatchInput({
               className='w-full'
               disabled={disabled}
               selected={user2}
-              setSelected={value => setUser2(value ?? null)}
+              setSelected={value => setForm({ user2: value ?? null })}
               items={users.map(userToLookupItem)}
               CustomRow={UserRow}
               placeholder={loc.no.match.placeholder.selectUser2}
@@ -203,7 +202,7 @@ export default function MatchInput({
             required
             disabled={disabled}
             selected={track}
-            setSelected={value => setTrack(value ?? null)}
+            setSelected={value => setForm({ track: value ?? null })}
             items={tracks.map(trackToLookupItem)}
             CustomRow={TrackRow}
             placeholder={loc.no.match.placeholder.selectTrack}
@@ -214,7 +213,7 @@ export default function MatchInput({
             className='w-full'
             disabled={disabled}
             selected={session}
-            setSelected={value => setSession(value ?? null)}
+            setSelected={value => setForm({ session: value ?? null })}
             items={sessions.map(sessionToLookupItem)}
             CustomRow={SessionRow}
             placeholder={loc.no.match.placeholder.selectSession}
@@ -228,7 +227,7 @@ export default function MatchInput({
           <div className='flex items-center gap-2'>
             <Select
               value={stage ?? undefined}
-              onValueChange={v => setStage(v as MatchStage)}
+              onValueChange={v => setForm({ stage: v as MatchStage })}
               disabled={disabled}>
               <SelectTrigger>
                 <SelectValue placeholder={loc.no.match.placeholder.none} />
@@ -242,25 +241,27 @@ export default function MatchInput({
                 </SelectGroup>
                 <SelectGroup>
                   <SelectLabel>Sluttspill</SelectLabel>
-                  {Object.entries(loc.no.match.stage)
-                    .filter(
-                      ([key]) => !key.includes('loser') && key !== 'group'
-                    )
-                    .map(([key, label]) => (
-                      <SelectItem key={key} value={key}>
-                        {label}
-                      </SelectItem>
-                    ))}
+                  {Object.entries(loc.no.match.stage).flatMap(([key, label]) =>
+                    !key.includes('loser') && key !== 'group'
+                      ? [
+                          <SelectItem key={key} value={key}>
+                            {label}
+                          </SelectItem>,
+                        ]
+                      : []
+                  )}
                 </SelectGroup>
                 <SelectGroup>
                   <SelectLabel>Tapersluttspill</SelectLabel>
-                  {Object.entries(loc.no.match.stage)
-                    .filter(([key]) => key.includes('loser'))
-                    .map(([key, label]) => (
-                      <SelectItem key={key} value={key}>
-                        {label}
-                      </SelectItem>
-                    ))}
+                  {Object.entries(loc.no.match.stage).flatMap(([key, label]) =>
+                    key.includes('loser')
+                      ? [
+                          <SelectItem key={key} value={key}>
+                            {label}
+                          </SelectItem>,
+                        ]
+                      : []
+                  )}
                 </SelectGroup>
               </SelectContent>
             </Select>
@@ -314,7 +315,7 @@ export default function MatchInput({
         id='comment'
         name={loc.no.match.form.comment}
         value={comment}
-        onChange={e => setComment(e.target.value)}
+        onChange={e => setForm({ comment: e.target.value })}
         disabled={disabled}
       />
     </form>

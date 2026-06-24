@@ -1,5 +1,6 @@
 import { useConnection } from '@/contexts/useConnection'
 import { useData } from '@/contexts/useData'
+import { useObjectState } from '@/hooks/useObjectState'
 import loc from '@/lib/locales'
 import { sessionToLookupItem } from '@/lib/lookup-utils'
 import type {
@@ -8,14 +9,7 @@ import type {
   TournamentPreview,
 } from '@common/models/tournament'
 import { Users } from 'lucide-react'
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-  type ComponentProps,
-  type SubmitEvent,
-} from 'react'
+import { useEffect, type ComponentProps, type SubmitEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
 import Combobox from '../combobox'
@@ -27,6 +21,14 @@ import { Spinner } from '../ui/spinner'
 import GroupCard from './GroupCard'
 
 type TournamentFormProps = Partial<CreateTournament> & ComponentProps<'form'>
+type TournamentFormState = {
+  preview: TournamentPreview | undefined
+  name: string
+  description: string
+  groupsCount: number
+  advancementCount: number
+  eliminationType: TournamentEliminationType
+}
 
 function calculateMaxMatchesPerPlayer(
   playersPerGroup: number,
@@ -60,6 +62,14 @@ function calculateMaxMatchesPerPlayer(
   return groupStageMatches + knockoutMatches
 }
 
+const eliminationTypeEntries: {
+  key: TournamentEliminationType
+  label: string
+}[] = [
+  { key: 'single', label: loc.no.tournament.eliminationType.single },
+  { key: 'double', label: loc.no.tournament.eliminationType.double },
+]
+
 export default function TournamentForm(props: Readonly<TournamentFormProps>) {
   const { socket } = useConnection()
   const navigate = useNavigate()
@@ -68,33 +78,38 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
 
   const selectedSessionId = searchParams.get('session')
 
-  const [preview, setPreview] = useState<TournamentPreview | undefined>(
-    undefined
-  )
-
-  const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
-  const [groupsCount, setGroupsCount] = useState(2)
-  const [advancementCount, setAdvancementCount] = useState(1)
-  const [eliminationType, setEliminationType] =
-    useState<TournamentEliminationType>('single')
+  const [form, setForm] = useObjectState<TournamentFormState>({
+    preview: undefined,
+    name: '',
+    description: '',
+    groupsCount: 2,
+    advancementCount: 1,
+    eliminationType: 'single',
+  })
+  const {
+    preview,
+    name,
+    description,
+    groupsCount,
+    advancementCount,
+    eliminationType,
+  } = form
 
   const session = sessions?.find(s => s.id === selectedSessionId)
-  const signedUpPlayers = useMemo(() => {
-    if (!session || !users) return []
-    return session.signups
-      .filter(s => s.response === 'yes')
-      .map(s => users.find(u => u.id === s.user.id))
-      .filter(u => u !== undefined)
-  }, [session, users])
+  const signedUpPlayers =
+    session && users
+      ? session.signups.reduce<typeof users>((players, signup) => {
+          const user = users.find(u => u.id === signup.user.id)
+          if (signup.response === 'yes' && user) players.push(user)
+          return players
+        }, [])
+      : []
 
-  const maxMatchesPerPlayer = useMemo(() => {
-    return calculateMaxMatchesPerPlayer(
-      preview?.groups.at(-1)?.players.length ?? 0,
-      advancementCount * groupsCount,
-      eliminationType
-    )
-  }, [preview, advancementCount, groupsCount, eliminationType])
+  const maxMatchesPerPlayer = calculateMaxMatchesPerPlayer(
+    preview?.groups.at(-1)?.players.length ?? 0,
+    advancementCount * groupsCount,
+    eliminationType
+  )
 
   function handleSessionChange(sessionId: string) {
     if (sessionId) {
@@ -110,7 +125,7 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
     }
   }
 
-  const requestPreview = useCallback(() => {
+  useEffect(() => {
     if (!selectedSessionId || name === '') return
     socket
       .emitWithAck('get_tournament_preview', {
@@ -124,7 +139,7 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
       })
       .then(r => {
         if (!r.success) return toast.error(r.message)
-        setPreview(r.tournament)
+        setForm({ preview: r.tournament })
       })
   }, [
     advancementCount,
@@ -133,12 +148,9 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
     groupsCount,
     name,
     selectedSessionId,
+    setForm,
     socket,
   ])
-
-  useEffect(() => {
-    requestPreview()
-  }, [requestPreview])
 
   const handleSubmit = (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -179,14 +191,14 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
           type='text'
           required
           value={name}
-          onChange={e => setName(e.target.value)}
+          onChange={e => setForm({ name: e.target.value })}
         />
 
         <TextField
           id='description'
           name={loc.no.tournament.form.description}
           value={description}
-          onChange={e => setDescription(e.target.value)}
+          onChange={e => setForm({ description: e.target.value })}
         />
 
         <div className='flex flex-col gap-2'>
@@ -195,9 +207,14 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
             name={loc.no.tournament.form.session}
             required
             placeholder={loc.no.tournament.form.session}
-            items={sessions
-              .filter(s => s.status !== 'cancelled')
-              .map(sessionToLookupItem)}
+            items={sessions.reduce<ReturnType<typeof sessionToLookupItem>[]>(
+              (items, session) => {
+                if (session.status !== 'cancelled')
+                  items.push(sessionToLookupItem(session))
+                return items
+              },
+              []
+            )}
             selected={session ? sessionToLookupItem(session) : null}
             setSelected={value => handleSessionChange(value?.id ?? '')}
             limit={2}
@@ -223,7 +240,7 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
               })
             )}
             value={groupsCount.toString()}
-            onValueChange={value => setGroupsCount(Number(value))}
+            onValueChange={value => setForm({ groupsCount: Number(value) })}
           />
 
           <SelectField
@@ -237,23 +254,18 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
               })
             )}
             value={advancementCount.toString()}
-            onValueChange={value => setAdvancementCount(Number(value))}
+            onValueChange={value =>
+              setForm({ advancementCount: Number(value) })
+            }
           />
         </div>
 
         <SelectField
           id='eliminationType'
           name={loc.no.tournament.form.eliminationType}
-          entries={Object.entries(loc.no.tournament.eliminationType).map(
-            ([key, label]) => ({
-              key,
-              label,
-            })
-          )}
+          entries={eliminationTypeEntries}
           value={eliminationType}
-          onValueChange={value =>
-            setEliminationType(value as TournamentEliminationType)
-          }
+          onValueChange={eliminationType => setForm({ eliminationType })}
         />
       </div>
 

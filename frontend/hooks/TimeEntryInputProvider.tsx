@@ -17,7 +17,7 @@ import loc from '@/lib/locales'
 import type { Match } from '@common/models/match'
 import type { TimeEntry } from '@common/models/timeEntry'
 import { Trash2 } from 'lucide-react'
-import { useMemo, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 import {
   TimeEntryInputContext,
@@ -140,15 +140,12 @@ export default function TimeEntryInputProvider({
     )
   }
 
-  const context = useMemo<TimeEntryInputContextType>(
-    () => ({
-      state: mode === 'closed' ? 'closed' : 'open',
-      open,
-      openMatch,
-      close,
-    }),
-    [mode]
-  )
+  const context: TimeEntryInputContextType = {
+    state: mode === 'closed' ? 'closed' : 'open',
+    open,
+    openMatch,
+    close,
+  }
 
   return (
     <TimeEntryInputContext.Provider value={context}>

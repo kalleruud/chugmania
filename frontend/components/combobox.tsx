@@ -9,7 +9,6 @@ import { ChevronsUpDown, Search } from 'lucide-react'
 
 import {
   useEffect,
-  useMemo,
   useRef,
   useState,
   type ComponentProps,
@@ -83,15 +82,13 @@ export default function Combobox<T extends ComboboxLookupItem>({
   const triggerRef = useRef<HTMLButtonElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  const results = useMemo(() => {
-    const term = search.trim().toLowerCase()
-    if (term.length > 0) {
-      return items
-        .filter(i => i.tags?.join(',').toLowerCase().includes(term))
-        .slice(0, limit)
-    }
-    return items.slice(0, limit)
-  }, [items, search])
+  const term = search.trim().toLowerCase()
+  const results =
+    term.length > 0
+      ? items
+          .filter(i => i.tags?.join(',').toLowerCase().includes(term))
+          .slice(0, limit)
+      : items.slice(0, limit)
 
   const isLoading = false
 
@@ -116,20 +113,11 @@ export default function Combobox<T extends ComboboxLookupItem>({
       if (containerRef.current.contains(e.target as Node)) return
       setOpen(false)
     }
-    function onDocKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') setOpen(false)
-      if (e.key === 'Enter' && open) {
-        const first = results.at(0)
-        if (first) onSelect(first)
-      }
-    }
     document.addEventListener('mousedown', onDocMouseDown)
-    document.addEventListener('keydown', onDocKeyDown)
     return () => {
       document.removeEventListener('mousedown', onDocMouseDown)
-      document.removeEventListener('keydown', onDocKeyDown)
     }
-  }, [open, results])
+  }, [open])
 
   return (
     <div ref={containerRef} className={className}>
@@ -146,6 +134,7 @@ export default function Combobox<T extends ComboboxLookupItem>({
             variant='outline'
             disabled={disabled || isLoading}
             aria-expanded={open}
+            aria-label={placeholder}
             ref={triggerRef}>
             {!selected && (
               <span className='text-muted-foreground'>{placeholder}</span>
@@ -171,11 +160,18 @@ export default function Combobox<T extends ComboboxLookupItem>({
               type='text'
               inputMode='search'
               className='placeholder:text-label-muted flex w-full py-2 focus:ring-0'
+              aria-label='Søk'
               placeholder='Søk...'
               maxLength={64}
               value={search}
               onChange={e => setSearch(e.target.value)}
-              autoFocus
+              onKeyDown={e => {
+                if (e.key === 'Escape') setOpen(false)
+                if (e.key === 'Enter') {
+                  const first = results.at(0)
+                  if (first) onSelect(first)
+                }
+              }}
             />
           </div>
           {results.length === 0 ? (

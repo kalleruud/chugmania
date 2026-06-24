@@ -1,6 +1,6 @@
 import { formatDateWithYear, formatTimeOnly } from '@common/utils/date'
 import { ChevronDownIcon } from '@heroicons/react/24/solid'
-import { useState, type ComponentProps } from 'react'
+import { useRef, useState, type ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { Button } from './ui/button'
 import { Calendar } from './ui/calendar'
@@ -15,6 +15,13 @@ import {
   SelectValue,
 } from './ui/select'
 import { Textarea } from './ui/textarea'
+
+function dateToTime(date: Date | undefined) {
+  if (!date) return undefined
+  const h = String(date.getHours()).padStart(2, '0')
+  const m = String(date.getMinutes()).padStart(2, '0')
+  return `${h}:${m}`
+}
 
 export function Field({
   hidden,
@@ -103,21 +110,16 @@ export function CalendarField({
   required?: boolean
 }>) {
   const [open, setOpen] = useState(false)
-  const [date, setDate] = useState<Date | undefined>(undefined)
-  const [time, setTime] = useState<string | undefined>(dateToTime(selected))
+  const dateRef = useRef<Date | undefined>(undefined)
+  const [time, setTime] = useState<string | undefined>(() =>
+    dateToTime(selected)
+  )
   const [timeError, setTimeError] = useState<string | undefined>()
 
   const now = new Date()
   const isEmpty = selected === undefined
 
   if (hidden) return undefined
-
-  function dateToTime(date: Date | undefined) {
-    if (!date) return undefined
-    const h = String(date.getHours()).padStart(2, '0')
-    const m = String(date.getMinutes()).padStart(2, '0')
-    return `${h}:${m}`
-  }
 
   function handleTimeChange(timeString: string) {
     setTime(timeString)
@@ -126,7 +128,7 @@ export function CalendarField({
   function handleTimeBlur() {
     if (!time?.trim()) {
       setTimeError(undefined)
-      onSelect?.(date)
+      onSelect?.(dateRef.current)
       return
     }
 
@@ -142,7 +144,7 @@ export function CalendarField({
     newDate.setMinutes(parsed.minutes)
     newDate.setSeconds(parsed.seconds)
     onSelect?.(newDate)
-    setDate(newDate)
+    dateRef.current = newDate
     setTime(
       Object.values(parsed)
         .map(v => v.toString().padStart(2, '0'))
@@ -152,7 +154,7 @@ export function CalendarField({
 
   function handleDateSelect(date: Date) {
     const newDate = new Date(date)
-    setDate(newDate)
+    dateRef.current = newDate
 
     if (time) {
       const parsed = parseTimeInput(time)

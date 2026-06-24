@@ -30,9 +30,7 @@ export type GroupedBracket = {
   }[]
 }
 
-export function MatchesGroupedByBracket(
-  matches: TournamentMatch[]
-): GroupedBracket[] {
+function MatchesGroupedByBracket(matches: TournamentMatch[]): GroupedBracket[] {
   // keywords to help sort "Upper" brackets before "Lower" brackets
   const upperKeywords = ['winner', 'upper', 'group']
   const lowerKeywords = ['loser', 'lower']

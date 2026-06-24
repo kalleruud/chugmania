@@ -1,10 +1,17 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useReducer, type ReactNode } from 'react'
 import { DataContext, type DataContextType } from './data-context'
 import { useConnection } from './useConnection'
 
 type DateField = 'createdAt' | 'updatedAt' | 'deletedAt' | 'date'
 type ObjectWithDates = Partial<
   Record<DateField, string | number | Date | null | undefined>
+>
+type LoadedDataContext = Extract<DataContextType, { isLoadingData: false }>
+type DataState = Partial<Omit<LoadedDataContext, 'isLoadingData'>>
+type DataAction = NonNullable<
+  {
+    [K in keyof DataState]: { key: K; value: DataState[K] }
+  }[keyof DataState]
 >
 
 function parseDates<T extends ObjectWithDates>(obj: T): T {
@@ -30,46 +37,41 @@ function parseDatesArray<T extends ObjectWithDates>(arr: T[]): T[] {
 
 export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
   const { socket } = useConnection()
-
-  const [tracks, setTracks] = useState<DataContextType['tracks']>(undefined)
-  const [timeEntries, setTimeEntries] =
-    useState<DataContextType['timeEntries']>(undefined)
-  const [users, setUsers] = useState<DataContextType['users']>(undefined)
-  const [sessions, setSessions] =
-    useState<DataContextType['sessions']>(undefined)
-  const [matches, setMatches] = useState<DataContextType['matches']>(undefined)
-  const [rankings, setRankings] =
-    useState<DataContextType['rankings']>(undefined)
-  const [tournaments, setTournaments] =
-    useState<DataContextType['tournaments']>(undefined)
+  const [data, dispatch] = useReducer(
+    (state: DataState, action: DataAction) => ({
+      ...state,
+      [action.key]: action.value,
+    }),
+    {}
+  )
 
   useEffect(() => {
     socket.on('all_sessions', data => {
-      setSessions(parseDatesArray(data))
+      dispatch({ key: 'sessions', value: parseDatesArray(data) })
     })
 
     socket.on('all_time_entries', data => {
-      setTimeEntries(parseDatesArray(data))
+      dispatch({ key: 'timeEntries', value: parseDatesArray(data) })
     })
 
     socket.on('all_tracks', data => {
-      setTracks(parseDatesArray(data))
+      dispatch({ key: 'tracks', value: parseDatesArray(data) })
     })
 
     socket.on('all_users', data => {
-      setUsers(parseDatesArray(data))
+      dispatch({ key: 'users', value: parseDatesArray(data) })
     })
 
     socket.on('all_matches', data => {
-      setMatches(parseDatesArray(data))
+      dispatch({ key: 'matches', value: parseDatesArray(data) })
     })
 
     socket.on('all_rankings', data => {
-      setRankings(data)
+      dispatch({ key: 'rankings', value: data })
     })
 
     socket.on('all_tournaments', data => {
-      setTournaments(parseDatesArray(data))
+      dispatch({ key: 'tournaments', value: parseDatesArray(data) })
     })
 
     return () => {
@@ -81,31 +83,27 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
       socket.off('all_rankings')
       socket.off('all_tournaments')
     }
-  }, [])
+  }, [socket])
 
-  const context = useMemo<DataContextType>(() => {
-    if (
-      tracks === undefined ||
-      timeEntries === undefined ||
-      users === undefined ||
-      sessions === undefined ||
-      matches === undefined ||
-      rankings === undefined ||
-      tournaments === undefined
-    ) {
-      return { isLoadingData: true }
-    }
-    return {
-      isLoadingData: false,
-      timeEntries,
-      sessions,
-      tracks,
-      users,
-      matches,
-      rankings,
-      tournaments,
-    }
-  }, [tracks, timeEntries, users, sessions, matches, rankings, tournaments])
+  const context: DataContextType =
+    data.tracks === undefined ||
+    data.timeEntries === undefined ||
+    data.users === undefined ||
+    data.sessions === undefined ||
+    data.matches === undefined ||
+    data.rankings === undefined ||
+    data.tournaments === undefined
+      ? { isLoadingData: true }
+      : {
+          isLoadingData: false,
+          timeEntries: data.timeEntries,
+          sessions: data.sessions,
+          tracks: data.tracks,
+          users: data.users,
+          matches: data.matches,
+          rankings: data.rankings,
+          tournaments: data.tournaments,
+        }
 
   return <DataContext.Provider value={context}>{children}</DataContext.Provider>
 }

@@ -58,6 +58,8 @@ export default function FileDrop({
   return (
     <>
       <button
+        type='button'
+        aria-label='Velg fil'
         className={'relative'}
         onClick={() => inputRef.current?.click()}
         onDragEnter={handleDragOver}
@@ -76,6 +78,7 @@ export default function FileDrop({
       <input
         ref={inputRef}
         type='file'
+        aria-label='Velg fil'
         accept={accept}
         className='sr-only'
         onChange={handleInputChange}

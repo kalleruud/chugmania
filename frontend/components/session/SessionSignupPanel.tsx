@@ -17,7 +17,7 @@ import loc from '@/lib/locales'
 import type { SessionWithSignups } from '@common/models/session'
 import type { UserInfo } from '@common/models/user'
 import { isUpcoming } from '@common/utils/date'
-import { useMemo, type ComponentProps } from 'react'
+import type { ComponentProps } from 'react'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
 import type { SessionResponse } from '../../../backend/database/schema'
@@ -42,26 +42,16 @@ export default function SessionSignupPanel({
 
   const canManageSignups = isLoggedIn && loggedInUser.role !== 'user'
 
-  const sortedSignups = useMemo(
-    () =>
-      session.signups.toSorted((a, b) =>
-        getUserSortName(a.user).localeCompare(getUserSortName(b.user))
-      ),
-    [session.signups]
+  const sortedSignups = session.signups.toSorted((a, b) =>
+    getUserSortName(a.user).localeCompare(getUserSortName(b.user))
   )
-  const signedUpUserIds = useMemo(
-    () => new Set(session.signups.map(s => s.user.id)),
-    [session.signups]
-  )
-  const availableUsers = useMemo(
-    () =>
-      users
-        ?.filter(user => !signedUpUserIds.has(user.id))
-        .toSorted((a, b) =>
-          getUserSortName(a).localeCompare(getUserSortName(b))
-        ) ?? [],
-    [users, signedUpUserIds]
-  )
+  const signedUpUserIds = new Set(session.signups.map(s => s.user.id))
+  const availableUsers =
+    users
+      ?.filter(user => !signedUpUserIds.has(user.id))
+      .toSorted((a, b) =>
+        getUserSortName(a).localeCompare(getUserSortName(b))
+      ) ?? []
 
   if (isLoadingData)
     return (

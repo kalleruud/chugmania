@@ -188,12 +188,12 @@ class UserManagerClass {
 
     await AuthManager.checkAuth(socket, ['admin'])
 
-    const deletedUser = await UserManager.updateUser(request.id, {
-      deletedAt: new Date(),
-    })
-
-    // Soft-delete all time entries for this user
-    await TimeEntryManager.deleteTimeEntriesForUser(request.id)
+    const [deletedUser] = await Promise.all([
+      UserManager.updateUser(request.id, {
+        deletedAt: new Date(),
+      }),
+      TimeEntryManager.deleteTimeEntriesForUser(request.id),
+    ])
 
     console.info(
       new Date().toISOString(),
@@ -201,9 +201,13 @@ class UserManagerClass {
       `Deleted user '${deletedUser.email}' and their time entries`
     )
 
-    await RatingManager.recalculate()
-    broadcast('all_users', await UserManager.getAllUsers())
-    broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
+    const [, allUsers, allTimeEntries] = await Promise.all([
+      RatingManager.recalculate(),
+      UserManager.getAllUsers(),
+      TimeEntryManager.getAllTimeEntries(),
+    ])
+    broadcast('all_users', allUsers)
+    broadcast('all_time_entries', allTimeEntries)
     broadcast('all_rankings', RatingManager.onGetRatings())
 
     return {

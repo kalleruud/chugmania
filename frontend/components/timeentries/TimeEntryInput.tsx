@@ -1,4 +1,5 @@
 import Combobox from '@/components/combobox'
+import { useObjectState } from '@/hooks/useObjectState'
 import loc from '@/lib/locales'
 import {
   getId,
@@ -21,10 +22,7 @@ import {
   inputListToMs,
 } from '@common/utils/time'
 import {
-  useCallback,
-  useMemo,
   useRef,
-  useState,
   type ComponentProps,
   type KeyboardEvent,
   type SubmitEvent,
@@ -82,47 +80,36 @@ export default function TimeEntryInput({
 
   const inputs = useRef<HTMLInputElement[]>([])
 
-  const [digits, setDigits] = useState<string[]>(
-    durationToInputList(inputTimeEntry.duration)
-  )
+  const [form, setForm] = useObjectState({
+    digits: durationToInputList(inputTimeEntry.duration),
+    selectedUser: initialUser,
+    selectedTrack: initialTrack,
+    selectedSession: initialSession,
+    comment: inputTimeEntry.comment ?? '',
+  })
+  const { digits, selectedUser, selectedTrack, selectedSession, comment } = form
 
-  const [selectedUser, setSelectedUser] = useState(initialUser)
-  const [selectedTrack, setSelectedTrack] = useState(initialTrack)
-  const [selectedSession, setSelectedSession] = useState(initialSession)
-  const [comment, setComment] = useState(inputTimeEntry.comment ?? '')
-
-  const request = useMemo(() => {
-    if (!selectedUser?.id || !selectedTrack?.id) return undefined
-    const durationInput = inputListToMs(digits)
-    const durationToPost = durationInput === 0 ? null : durationInput
-
-    return {
-      duration: durationToPost,
-      user: selectedUser.id,
-      track: selectedTrack.id,
-      session: selectedSession?.id ?? null,
-      comment: comment.trim() === '' ? null : comment.trim(),
-    } satisfies
-      | Omit<CreateTimeEntryRequest | EditTimeEntryRequest, 'type'>
-      | undefined
-  }, [
-    selectedUser,
-    selectedTrack,
-    selectedSession,
-    isCreating,
-    digits,
-    comment,
-  ])
+  const durationInput = inputListToMs(digits)
+  const request =
+    selectedUser?.id && selectedTrack?.id
+      ? ({
+          duration: durationInput === 0 ? null : durationInput,
+          user: selectedUser.id,
+          track: selectedTrack.id,
+          session: selectedSession?.id ?? null,
+          comment: comment.trim() === '' ? null : comment.trim(),
+        } satisfies Omit<CreateTimeEntryRequest | EditTimeEntryRequest, 'type'>)
+      : undefined
 
   const DIGIT = /^\d$/
 
-  const setDigitAt = useCallback((i: number, val: string) => {
-    setDigits(prev => {
-      const next = prev.slice()
+  function setDigitAt(i: number, val: string) {
+    setForm(({ digits }) => {
+      const next = digits.slice()
       next[i] = val
-      return next
+      return { digits: next }
     })
-  }, [])
+  }
 
   if (isLoadingData) {
     return (
@@ -203,8 +190,7 @@ export default function TimeEntryInput({
     )
   }
 
-  // Stable keys for each digit position to avoid using array index as key
-  const DIGIT_KEYS = ['m10', 'm1', 's10', 's1', 'h1', 'h10'] as const
+  const DIGIT_KEYS: string[] = ['m10', 'm1', 's10', 's1', 'h1', 'h10']
 
   return (
     <form
@@ -219,6 +205,7 @@ export default function TimeEntryInput({
                 if (el) inputs.current[i] = el
               }}
               disabled={disabled}
+              aria-label={DIGIT_KEYS[i]}
               value={d}
               onChange={e => setDigitAt(i, e.target.value)}
               placeholder='0'
@@ -245,7 +232,7 @@ export default function TimeEntryInput({
           disabled={disabled || loggedInUser?.role === 'user'}
           placeholder={loc.no.timeEntry.input.placeholder.user}
           selected={selectedUser}
-          setSelected={value => setSelectedUser(value ?? null)}
+          setSelected={value => setForm({ selectedUser: value ?? null })}
           limit={2}
           align='start'
           items={users.map(userToLookupItem)}
@@ -258,7 +245,7 @@ export default function TimeEntryInput({
           disabled={disabled}
           placeholder={loc.no.timeEntry.input.placeholder.track}
           selected={selectedTrack}
-          setSelected={value => setSelectedTrack(value ?? null)}
+          setSelected={value => setForm({ selectedTrack: value ?? null })}
           limit={2}
           align='start'
           items={tracks.map(trackToLookupItem)}
@@ -271,12 +258,17 @@ export default function TimeEntryInput({
           disabled={disabled}
           placeholder={loc.no.timeEntry.input.placeholder.session}
           selected={selectedSession}
-          setSelected={value => setSelectedSession(value ?? null)}
+          setSelected={value => setForm({ selectedSession: value ?? null })}
           limit={2}
           align='start'
-          items={sessions
-            .filter(s => s.status !== 'cancelled')
-            .map(sessionToLookupItem)}
+          items={sessions.reduce<ReturnType<typeof sessionToLookupItem>[]>(
+            (items, session) => {
+              if (session.status !== 'cancelled')
+                items.push(sessionToLookupItem(session))
+              return items
+            },
+            []
+          )}
           CustomRow={SessionRow}
         />
 
@@ -284,7 +276,7 @@ export default function TimeEntryInput({
           id='comment'
           name='Comment'
           disabled={disabled}
-          onChange={e => setComment(e.target.value)}
+          onChange={e => setForm({ comment: e.target.value })}
           value={comment}
           placeholder={loc.no.timeEntry.input.placeholder.comment}
         />

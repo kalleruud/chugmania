@@ -1,8 +1,9 @@
 import { useAuth } from '@/contexts/useAuth'
 import { useConnection } from '@/contexts/useConnection'
+import { useObjectState } from '@/hooks/useObjectState'
 import loc from '@/lib/locales'
 import type { SessionWithSignups } from '@common/models/session'
-import { useState, type ComponentProps, type SubmitEvent } from 'react'
+import type { ComponentProps, SubmitEvent } from 'react'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
 import type { SessionStatus } from '../../../backend/database/schema'
@@ -26,15 +27,14 @@ export default function SessionForm({
   const { socket } = useConnection()
   const { loggedInUser, isLoggedIn } = useAuth()
 
-  const [name, setName] = useState(session?.name ?? '')
-  const [description, setDescription] = useState(session?.description ?? '')
-  const [date, setDate] = useState<Date | undefined>(
-    session?.date ? new Date(session.date) : undefined
-  )
-  const [location, setLocation] = useState(session?.location ?? '')
-  const [status, setStatus] = useState<SessionStatus>(
-    session?.status ?? 'confirmed'
-  )
+  const [form, setForm] = useObjectState({
+    name: session?.name ?? '',
+    description: session?.description ?? '',
+    date: session?.date ? new Date(session.date) : undefined,
+    location: session?.location ?? '',
+    status: session?.status ?? 'confirmed',
+  })
+  const { name, description, date, location, status } = form
 
   const isAdmin = isLoggedIn && loggedInUser.role === 'admin'
   const isModerator = isLoggedIn && loggedInUser.role === 'moderator'
@@ -106,7 +106,7 @@ export default function SessionForm({
         disabled={disabled}
         required
         value={name}
-        onChange={e => setName(e.target.value)}
+        onChange={e => setForm({ name: e.target.value })}
         placeholder='Mine favorite baner'
       />
 
@@ -114,7 +114,7 @@ export default function SessionForm({
         id='date'
         name={loc.no.session.form.date}
         selected={date}
-        onSelect={setDate}
+        onSelect={date => setForm({ date })}
         disabled={disabled}
         required
       />
@@ -125,7 +125,7 @@ export default function SessionForm({
         type='text'
         disabled={disabled}
         value={location}
-        onChange={e => setLocation(e.target.value)}
+        onChange={e => setForm({ location: e.target.value })}
         placeholder='Oslo, Stasjonsgata 10'
       />
 
@@ -135,7 +135,7 @@ export default function SessionForm({
         disabled={disabled}
         required
         value={status}
-        onValueChange={setStatus}
+        onValueChange={status => setForm({ status })}
         entries={Object.entries(loc.no.session.statusOptions).map(
           ([key, label]) =>
             ({ key, label }) as { key: SessionStatus; label: string }
@@ -147,7 +147,7 @@ export default function SessionForm({
         name={loc.no.session.form.description}
         disabled={disabled}
         value={description}
-        onChange={e => setDescription(e.target.value)}
+        onChange={e => setForm({ description: e.target.value })}
         placeholder='En kort beskrivelse av sesjonen'
       />
     </form>

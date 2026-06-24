@@ -12,7 +12,7 @@ import TimeEntryRow, { type GapType } from './TimeEntryRow'
 type FilterType = 'all' | 'best' | 'latest'
 
 function sortEntries(entries: TimeEntry[]): TimeEntry[] {
-  return [...entries].sort((a, b) => {
+  return entries.toSorted((a, b) => {
     // Entries with valid duration first, sorted by lowest duration
     if (a.duration && b.duration) {
       return a.duration - b.duration
@@ -117,10 +117,11 @@ export function TimeEntryList({
 }: Readonly<TimeEntryListProps>) {
   const { isLoggedIn } = useAuth()
   const [gapType, setGapType] = useState<GapType>('interval')
-  const [filterType, setFilterType] = useState<FilterType>(filter)
+  const [filterType, setFilterType] = useState<FilterType | undefined>()
   const { open } = useTimeEntryInput()
+  const selectedFilter = filterType ?? filter
 
-  const filteredEntries = filterEntries(entries, filterType)
+  const filteredEntries = filterEntries(entries, selectedFilter)
 
   if (filteredEntries.length === 0) {
     return (
@@ -142,7 +143,7 @@ export function TimeEntryList({
       <div className='flex w-full justify-between'>
         <ToggleGroup
           type='single'
-          value={filterType}
+          value={selectedFilter}
           onValueChange={value => setFilterType(value as FilterType)}
           variant='outline'
           size='sm'>

@@ -1,5 +1,5 @@
 import loc from '@/lib/locales'
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { Button } from './ui/button'
 
 type ConfirmationButtonProps = Parameters<typeof Button>[0] & {
@@ -15,29 +15,15 @@ export default function ConfirmationButton({
   ...props
 }: Readonly<ConfirmationButtonProps>) {
   const [isConfirming, setIsConfirming] = useState(false)
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const timeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current)
-    }
-  }, [])
-
-  // Reset confirmation state after duration
-  useEffect(() => {
-    if (!isConfirming) return
-
+  function startConfirming() {
+    setIsConfirming(true)
+    if (timeoutRef.current) clearTimeout(timeoutRef.current)
     timeoutRef.current = setTimeout(() => {
       setIsConfirming(false)
     }, confirmDuration)
-
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current)
-      }
-    }
-  }, [isConfirming, confirmDuration])
+  }
 
   if (isConfirming)
     return (
@@ -50,6 +36,7 @@ export default function ConfirmationButton({
             )?.requestSubmit()
           onClick?.(e)
           setIsConfirming(false)
+          if (timeoutRef.current) clearTimeout(timeoutRef.current)
         }}
         variant={'default'}>
         {confirmText}
@@ -61,5 +48,5 @@ export default function ConfirmationButton({
   delete initProps.formAction
   delete initProps.onSubmit
   delete initProps.onSubmitCapture
-  return <Button {...initProps} onClick={() => setIsConfirming(true)} />
+  return <Button {...initProps} onClick={startConfirming} />
 }

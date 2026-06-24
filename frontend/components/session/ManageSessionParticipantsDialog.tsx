@@ -22,7 +22,7 @@ import loc from '@/lib/locales'
 import { userToLookupItem } from '@/lib/lookup-utils'
 import type { UserInfo } from '@common/models/user'
 import { CircleCheck, CircleX } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 import type { SessionResponse } from '../../../backend/database/schema'
 import { RESPONSE_OPTIONS } from './session-signup-utils'
@@ -46,13 +46,11 @@ export default function ManageSessionParticipantsDialog({
   const [selectedResponse, setSelectedResponse] =
     useState<SessionResponse>('yes')
 
-  const selectedUsers = useMemo(
-    () => availableUsers.filter(user => selectedUserIds.includes(user.id)),
-    [availableUsers, selectedUserIds]
+  const selectedUsers = availableUsers.filter(user =>
+    selectedUserIds.includes(user.id)
   )
-  const selectableUsers = useMemo(
-    () => availableUsers.filter(user => !selectedUserIds.includes(user.id)),
-    [availableUsers, selectedUserIds]
+  const selectableUsers = availableUsers.filter(
+    user => !selectedUserIds.includes(user.id)
   )
 
   function handleSelectUser(user: UserInfo | null | undefined) {
@@ -151,7 +149,9 @@ export default function ManageSessionParticipantsDialog({
         </div>
         <DialogFooter>
           <DialogClose asChild>
-            <Button variant='outline'>{loc.no.common.cancel}</Button>
+            <Button type='button' variant='outline'>
+              {loc.no.common.cancel}
+            </Button>
           </DialogClose>
           <Button
             type='button'

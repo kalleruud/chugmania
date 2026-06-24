@@ -34,15 +34,19 @@ export default function TrackLeaderboard({
       </div>
     )
 
-  const entries = timeEntries
-    .filter(te => !session || session === te.session)
-    .filter(te => !user || user === te.user)
-    .filter(te => track.id === te.track)
+  const entries = timeEntries.filter(
+    te =>
+      (!session || session === te.session) &&
+      (!user || user === te.user) &&
+      track.id === te.track
+  )
 
-  const filteredMatches = matches
-    .filter(m => !session || session === m.session)
-    .filter(m => !user || user === m.user1 || user === m.user2)
-    .filter(m => track.id === m.track)
+  const filteredMatches = matches.filter(
+    m =>
+      (!session || session === m.session) &&
+      (!user || user === m.user1 || user === m.user2) &&
+      track.id === m.track
+  )
 
   if (entries.length === 0 && filteredMatches.length === 0) return undefined
 

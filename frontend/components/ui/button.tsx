@@ -2,8 +2,7 @@ import { Slot } from '@radix-ui/react-slot'
 import type { VariantProps } from 'class-variance-authority'
 import * as React from 'react'
 
-import { cn } from '@/lib/utils'
-import { buttonVariants } from './button-variants'
+import { cn, variants } from '@/lib/utils'
 
 function Button({
   className,
@@ -12,7 +11,7 @@ function Button({
   asChild = false,
   ...props
 }: React.ComponentProps<'button'> &
-  VariantProps<typeof buttonVariants> & {
+  VariantProps<typeof variants.button> & {
     asChild?: boolean
   }) {
   const Comp = asChild ? Slot : 'button'
@@ -20,7 +19,7 @@ function Button({
   return (
     <Comp
       data-slot='button'
-      className={cn(buttonVariants({ variant, size, className }))}
+      className={cn(variants.button({ variant, size, className }))}
       {...props}
     />
   )

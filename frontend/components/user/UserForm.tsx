@@ -1,8 +1,9 @@
 import { useAuth } from '@/contexts/useAuth'
 import { useConnection } from '@/contexts/useConnection'
+import { useObjectState } from '@/hooks/useObjectState'
 import loc from '@/lib/locales'
 import { type UserInfo } from '@common/models/user'
-import { useState, type ComponentProps, type SubmitEvent } from 'react'
+import type { ComponentProps, SubmitEvent } from 'react'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
 import type { UserRole } from '../../../backend/database/schema'
@@ -29,14 +30,26 @@ export default function UserForm({
   const { socket } = useConnection()
   const { login, loggedInUser, isLoggedIn } = useAuth()
 
-  const [email, setEmail] = useState(user?.email ?? '')
-  const [firstName, setFirstName] = useState(user?.firstName ?? '')
-  const [lastName, setLastName] = useState(user?.lastName ?? '')
-  const [shortName, setShortName] = useState(user?.shortName ?? '')
-  const [newPassword, setNewPassword] = useState('')
-  const [password, setPassword] = useState('')
-  const [role, setRole] = useState<UserRole>(user?.role ?? 'user')
-  const [createdAt, setCreatedAt] = useState<Date | undefined>(user?.createdAt)
+  const [form, setForm] = useObjectState({
+    email: user?.email ?? '',
+    firstName: user?.firstName ?? '',
+    lastName: user?.lastName ?? '',
+    shortName: user?.shortName ?? '',
+    newPassword: '',
+    password: '',
+    role: user?.role ?? 'user',
+    createdAt: user?.createdAt,
+  })
+  const {
+    email,
+    firstName,
+    lastName,
+    shortName,
+    newPassword,
+    password,
+    role,
+    createdAt,
+  } = form
 
   const isAdmin = isLoggedIn && loggedInUser.role === 'admin'
   const isSelf = isLoggedIn && loggedInUser.id === user?.id
@@ -110,7 +123,7 @@ export default function UserForm({
         disabled={disabled && canEdit}
         required
         value={email}
-        onChange={e => setEmail(e.target.value.toLowerCase())}
+        onChange={e => setForm({ email: e.target.value.toLowerCase() })}
         placeholder='cumguzzler69@chugmania.no'
       />
 
@@ -125,7 +138,7 @@ export default function UserForm({
           required
           hidden={isLoggingIn}
           value={firstName}
-          onChange={e => setFirstName(e.target.value)}
+          onChange={e => setForm({ firstName: e.target.value })}
           placeholder='Ola'
         />
 
@@ -137,7 +150,7 @@ export default function UserForm({
           required
           hidden={isLoggingIn}
           value={lastName}
-          onChange={e => setLastName(e.target.value)}
+          onChange={e => setForm({ lastName: e.target.value })}
           placeholder='Nordmann'
         />
 
@@ -151,7 +164,7 @@ export default function UserForm({
           required
           hidden={isLoggingIn}
           value={shortName}
-          onChange={e => setShortName(e.target.value.toUpperCase())}
+          onChange={e => setForm({ shortName: e.target.value.toUpperCase() })}
           placeholder='NOR'
         />
 
@@ -161,7 +174,7 @@ export default function UserForm({
           disabled={disabled}
           required
           value={role}
-          onValueChange={setRole}
+          onValueChange={role => setForm({ role })}
           name={loc.no.user.form.role}
           entries={Object.entries(loc.no.user.role).map(([key, label]) => ({
             key: key as UserRole,
@@ -176,7 +189,7 @@ export default function UserForm({
           <CalendarField
             id='created_at'
             selected={createdAt}
-            onSelect={setCreatedAt}
+            onSelect={createdAt => setForm({ createdAt })}
             disabled={disabled}
             name={loc.no.user.form.createdAt}
           />
@@ -195,7 +208,7 @@ export default function UserForm({
           required
           hidden={isAdmin && !isCreating}
           value={password}
-          onChange={e => setPassword(e.target.value)}
+          onChange={e => setForm({ password: e.target.value })}
           placeholder='•••••••••••'
         />
 
@@ -207,7 +220,7 @@ export default function UserForm({
           disabled={disabled && canEdit}
           value={newPassword}
           hidden={!isEditing}
-          onChange={e => setNewPassword(e.target.value)}
+          onChange={e => setForm({ newPassword: e.target.value })}
           placeholder='•••••••••••'
         />
       </div>

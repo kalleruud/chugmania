@@ -7,8 +7,7 @@ import * as React from 'react'
 import { DayButton, DayPicker, getDefaultClassNames } from 'react-day-picker'
 
 import { Button } from '@/components/ui/button'
-import { buttonVariants } from '@/components/ui/button-variants'
-import { cn } from '@/lib/utils'
+import { cn, variants } from '@/lib/utils'
 
 function CalendarRoot({
   className,
@@ -97,12 +96,12 @@ function Calendar({
           defaultClassNames.nav
         ),
         button_previous: cn(
-          buttonVariants({ variant: buttonVariant }),
+          variants.button({ variant: buttonVariant }),
           'size-(--cell-size) aria-disabled:opacity-50 p-0 select-none',
           defaultClassNames.button_previous
         ),
         button_next: cn(
-          buttonVariants({ variant: buttonVariant }),
+          variants.button({ variant: buttonVariant }),
           'size-(--cell-size) aria-disabled:opacity-50 p-0 select-none',
           defaultClassNames.button_next
         ),

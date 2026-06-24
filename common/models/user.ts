@@ -12,16 +12,6 @@ export type UpdateUser = Partial<
 }
 export type UserInfo = Omit<User, 'passwordHash'> & { passwordHash: undefined }
 
-export function isUserInfo(data: unknown): data is UserInfo {
-  if (!isRecord(data)) return false
-
-  return (
-    data.passwordHash === undefined &&
-    typeof data.id === 'string' &&
-    typeof data.email === 'string'
-  )
-}
-
 export type LoginResponse = SuccessResponse & SocketData
 
 export type EditUserRequest = UpdateUser & {

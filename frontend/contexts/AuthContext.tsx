@@ -1,7 +1,7 @@
 import loc from '@/lib/locales'
 import type { ErrorResponse } from '@common/models/socket.io'
 import { type LoginResponse } from '@common/models/user'
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useEffectEvent, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 import { AuthContext, type AuthContextType } from './auth-context'
 import { useConnection } from './useConnection'
@@ -29,19 +29,17 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     response: LoginResponse | ErrorResponse,
     reconnect: boolean = true
   ) {
-    try {
-      if (!response.success) {
-        console.warn(response.message)
-        clearAuthState()
-        return
-      }
-
-      setToken(response.token)
-      setLoggedInUserId(response.userId)
-      if (reconnect) socket.disconnect().connect()
-    } finally {
+    if (!response.success) {
+      console.warn(response.message)
+      clearAuthState()
       setIsLoadingAuth(false)
+      return
     }
+
+    setToken(response.token)
+    setLoggedInUserId(response.userId)
+    if (reconnect) socket.disconnect().connect()
+    setIsLoadingAuth(false)
   }
 
   const login: Required<AuthContextType>['login'] = async r => {
@@ -66,28 +64,33 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     socket.disconnect().connect()
   }
 
-  useEffect(() => {
-    socket.on('user_data', r => handleResponse(r, false))
-    return () => {
-      socket.off('user_data')
-    }
-  }, [])
+  const handleUserData = useEffectEvent((r: LoginResponse | ErrorResponse) => {
+    handleResponse(r, false)
+  })
 
-  const context = useMemo<AuthContextType>(() => {
-    if (loggedInUser)
-      return {
+  useEffect(() => {
+    const onUserData = (r: LoginResponse | ErrorResponse) => handleUserData(r)
+    socket.on('user_data', onUserData)
+    return () => {
+      socket.off('user_data', onUserData)
+    }
+  }, [socket])
+
+  const context: AuthContextType = loggedInUser
+    ? {
         isLoading,
         isLoggedIn: true,
         loggedInUser,
+        login: undefined,
         logout,
       }
-    else
-      return {
+    : {
         isLoading,
         isLoggedIn: false,
         login,
+        loggedInUser: undefined,
+        logout: undefined,
       }
-  }, [isLoading, loggedInUser])
 
   return <AuthContext.Provider value={context}>{children}</AuthContext.Provider>
 }

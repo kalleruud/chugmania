@@ -1,5 +1,5 @@
 import loc from '@/lib/locales'
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { io } from 'socket.io-client'
 import { toast } from 'sonner'
 import {
@@ -52,14 +52,11 @@ export function ConnectionProvider({
     }
   }, [])
 
-  const context = useMemo<ConnectionContextType>(
-    () => ({
-      socket,
-      isConnected,
-      setToken,
-    }),
-    [socket, isConnected]
-  )
+  const context: ConnectionContextType = {
+    socket,
+    isConnected,
+    setToken,
+  }
 
   return (
     <ConnectionContext.Provider value={context}>

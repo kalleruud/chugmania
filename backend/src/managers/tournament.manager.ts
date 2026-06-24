@@ -97,17 +97,27 @@ class TournamentManagerClass {
   private async getTournamentStructure(
     tournamentId: string
   ): Promise<TournamentStructure> {
-    const tournament = await db.query.tournaments.findFirst({
-      where: eq(tournaments.id, tournamentId),
-    })
+    const [tournament, groupRows, tournamentMatchRows] = await Promise.all([
+      db.query.tournaments.findFirst({
+        where: eq(tournaments.id, tournamentId),
+      }),
+      db.query.groups.findMany({
+        where: and(
+          eq(groups.tournament, tournamentId),
+          isNull(groups.deletedAt)
+        ),
+      }),
+      db.query.tournamentMatches.findMany({
+        where: and(
+          eq(tournamentMatches.tournament, tournamentId),
+          isNull(tournamentMatches.deletedAt)
+        ),
+      }),
+    ])
 
     if (!tournament) {
       throw new Error(loc.no.error.messages.not_in_db(tournamentId))
     }
-
-    const groupRows = await db.query.groups.findMany({
-      where: and(eq(groups.tournament, tournamentId), isNull(groups.deletedAt)),
-    })
 
     const groupPlayerRows = await db.query.groupPlayers.findMany({
       where: and(
@@ -116,13 +126,6 @@ class TournamentManagerClass {
           groupRows.map(g => g.id)
         ),
         isNull(groupPlayers.deletedAt)
-      ),
-    })
-
-    const tournamentMatchRows = await db.query.tournamentMatches.findMany({
-      where: and(
-        eq(tournamentMatches.tournament, tournamentId),
-        isNull(tournamentMatches.deletedAt)
       ),
     })
 
@@ -153,16 +156,22 @@ class TournamentManagerClass {
     tournamentMatches,
     matches,
   }: TournamentStructure): TournamentWithDetails {
-    const groupMatches = tournamentMatches
-      .filter(tm => tm.bracket === 'group')
-      .map(tm => matches.find(m => m.id === tm.match))
-      .filter((m): m is Match => m?.winner !== undefined)
+    const matchById = new Map(matches.map(match => [match.id, match]))
+    const groupMatches: Match[] = []
+    for (const tm of tournamentMatches) {
+      if (tm.bracket !== 'group') continue
+      const match = tm.match ? matchById.get(tm.match) : undefined
+      if (match?.winner !== undefined) groupMatches.push(match)
+    }
 
     const groupsWithPlayers: GroupWithPlayers[] = groups.map(group => {
       return {
         ...group,
         players: groupPlayers
-          .filter(gp => gp.group === group.id)
+          .reduce<typeof groupPlayers>((players, gp) => {
+            if (gp.group === group.id) players.push(gp)
+            return players
+          }, [])
           .toSorted((a, b) => b.seed - a.seed)
           .map(gp => ({
             ...gp,
@@ -251,9 +260,13 @@ class TournamentManagerClass {
   ) {
     const tournamentId = randomUUID()
 
-    const playerIds = (await getSessionSignups(sessionId))
-      .filter(s => s.response === 'yes')
-      .map(s => s.user.id)
+    const playerIds = (await getSessionSignups(sessionId)).reduce<string[]>(
+      (ids, signup) => {
+        if (signup.response === 'yes') ids.push(signup.user.id)
+        return ids
+      },
+      []
+    )
 
     const { groups, groupPlayers } = TournamentManager.createGroups(
       tournamentId,
@@ -292,7 +305,7 @@ class TournamentManagerClass {
     playerIds: string[]
   ) {
     // Sort players by rating (descending) - highest rated first
-    const sortedPlayers = [...playerIds].sort((a, b) => {
+    const sortedPlayers = playerIds.toSorted((a, b) => {
       const ratingA = RatingManager.getUserRatings(a)?.totalRating ?? 0
       const ratingB = RatingManager.getUserRatings(b)?.totalRating ?? 0
       return ratingB - ratingA
@@ -344,12 +357,13 @@ class TournamentManagerClass {
     groups: { id: string; name: string }[],
     groupPlayers: CreateGroupPlayer[]
   ) {
-    const groupWithPlayers = groups.map(group => ({
-      ...group,
-      players: groupPlayers
-        .filter(gp => gp.group === group.id)
-        .map(p => p.user),
-    }))
+    const groupWithPlayers = groups.map(group => {
+      const players: string[] = []
+      for (const groupPlayer of groupPlayers) {
+        if (groupPlayer.group === group.id) players.push(groupPlayer.user)
+      }
+      return { ...group, players }
+    })
 
     const pairings: {
       group: { id: Group['id']; name: Group['name'] }
@@ -739,44 +753,42 @@ class TournamentManagerClass {
   }
 
   private async deleteTournamentStructure(tournamentId: string) {
-    const matchRows = await db
-      .select({ matchId: tournamentMatches.match })
-      .from(tournamentMatches)
-      .where(eq(tournamentMatches.tournament, tournamentId))
+    const [matchRows, groupRows] = await Promise.all([
+      db
+        .select({ matchId: tournamentMatches.match })
+        .from(tournamentMatches)
+        .where(eq(tournamentMatches.tournament, tournamentId)),
+      db
+        .select({ id: groups.id })
+        .from(groups)
+        .where(eq(groups.tournament, tournamentId)),
+    ])
 
-    await Promise.all(
-      matchRows.map(async row => {
-        if (!row.matchId) return
-        await db
-          .update(matches)
-          .set({ deletedAt: new Date() })
-          .where(eq(matches.id, row.matchId))
-      })
-    )
-
-    await db
-      .update(tournamentMatches)
-      .set({ deletedAt: new Date() })
-      .where(eq(tournamentMatches.tournament, tournamentId))
-
-    const groupRows = await db
-      .select({ id: groups.id })
-      .from(groups)
-      .where(eq(groups.tournament, tournamentId))
-
-    await Promise.all(
-      groupRows.map(group =>
+    const deletedAt = new Date()
+    await Promise.all([
+      ...matchRows.map(row =>
+        row.matchId
+          ? db
+              .update(matches)
+              .set({ deletedAt })
+              .where(eq(matches.id, row.matchId))
+          : Promise.resolve()
+      ),
+      db
+        .update(tournamentMatches)
+        .set({ deletedAt })
+        .where(eq(tournamentMatches.tournament, tournamentId)),
+      ...groupRows.map(group =>
         db
           .update(groupPlayers)
-          .set({ deletedAt: new Date() })
+          .set({ deletedAt })
           .where(eq(groupPlayers.group, group.id))
-      )
-    )
-
-    await db
-      .update(groups)
-      .set({ deletedAt: new Date() })
-      .where(eq(groups.tournament, tournamentId))
+      ),
+      db
+        .update(groups)
+        .set({ deletedAt })
+        .where(eq(groups.tournament, tournamentId)),
+    ])
   }
 
   async onDeleteTournament(
@@ -791,12 +803,14 @@ class TournamentManagerClass {
 
     await AuthManager.checkAuth(socket, ['admin', 'moderator'])
 
-    await TournamentManager.deleteTournamentStructure(request.id)
-
-    await db
-      .update(tournaments)
-      .set({ deletedAt: new Date() })
-      .where(eq(tournaments.id, request.id))
+    const deletedAt = new Date()
+    await Promise.all([
+      TournamentManager.deleteTournamentStructure(request.id),
+      db
+        .update(tournaments)
+        .set({ deletedAt })
+        .where(eq(tournaments.id, request.id)),
+    ])
 
     console.debug(
       new Date().toISOString(),
@@ -868,27 +882,28 @@ class TournamentManagerClass {
 
     await Promise.all(
       groupRows.map(async group => {
-        const groupMatchRows = await db
-          .select()
-          .from(tournamentMatches)
-          .innerJoin(matches, eq(tournamentMatches.match, matches.id))
-          .where(
-            and(
-              eq(tournamentMatches.tournament, tournamentId),
-              eq(tournamentMatches.bracket, 'group'),
-              isNull(tournamentMatches.deletedAt)
-            )
-          )
-
-        const playerRows = await db
-          .select()
-          .from(groupPlayers)
-          .where(
-            and(
-              eq(groupPlayers.group, group.id),
-              isNull(groupPlayers.deletedAt)
-            )
-          )
+        const [groupMatchRows, playerRows] = await Promise.all([
+          db
+            .select()
+            .from(tournamentMatches)
+            .innerJoin(matches, eq(tournamentMatches.match, matches.id))
+            .where(
+              and(
+                eq(tournamentMatches.tournament, tournamentId),
+                eq(tournamentMatches.bracket, 'group'),
+                isNull(tournamentMatches.deletedAt)
+              )
+            ),
+          db
+            .select()
+            .from(groupPlayers)
+            .where(
+              and(
+                eq(groupPlayers.group, group.id),
+                isNull(groupPlayers.deletedAt)
+              )
+            ),
+        ])
 
         const relevantMatches = groupMatchRows.filter(gm => {
           const playerIds = new Set(playerRows.map(p => p.user))
@@ -917,52 +932,50 @@ class TournamentManagerClass {
           ranks.map(async rank => {
             const player = standings[rank - 1]
 
-            const pendingMatches = await db
-              .select()
-              .from(tournamentMatches)
-              .where(
-                and(
-                  eq(tournamentMatches.tournament, tournamentId),
-                  eq(tournamentMatches.sourceGroupA, group.id),
-                  eq(tournamentMatches.sourceGroupARank, rank),
-                  isNull(tournamentMatches.match),
-                  isNull(tournamentMatches.deletedAt)
-                )
-              )
+            const [pendingMatches, pendingMatchesB] = await Promise.all([
+              db
+                .select()
+                .from(tournamentMatches)
+                .where(
+                  and(
+                    eq(tournamentMatches.tournament, tournamentId),
+                    eq(tournamentMatches.sourceGroupA, group.id),
+                    eq(tournamentMatches.sourceGroupARank, rank),
+                    isNull(tournamentMatches.match),
+                    isNull(tournamentMatches.deletedAt)
+                  )
+                ),
+              db
+                .select()
+                .from(tournamentMatches)
+                .where(
+                  and(
+                    eq(tournamentMatches.tournament, tournamentId),
+                    eq(tournamentMatches.sourceGroupB, group.id),
+                    eq(tournamentMatches.sourceGroupBRank, rank),
+                    isNull(tournamentMatches.match),
+                    isNull(tournamentMatches.deletedAt)
+                  )
+                ),
+            ])
 
-            await Promise.all(
-              pendingMatches.map(pending =>
+            await Promise.all([
+              ...pendingMatches.map(pending =>
                 TournamentManager.tryCreateBracketMatch(
                   pending,
                   sessionId,
                   player.user
                 )
-              )
-            )
-
-            const pendingMatchesB = await db
-              .select()
-              .from(tournamentMatches)
-              .where(
-                and(
-                  eq(tournamentMatches.tournament, tournamentId),
-                  eq(tournamentMatches.sourceGroupB, group.id),
-                  eq(tournamentMatches.sourceGroupBRank, rank),
-                  isNull(tournamentMatches.match),
-                  isNull(tournamentMatches.deletedAt)
-                )
-              )
-
-            await Promise.all(
-              pendingMatchesB.map(pending =>
+              ),
+              ...pendingMatchesB.map(pending =>
                 TournamentManager.tryCreateBracketMatch(
                   pending,
                   sessionId,
                   undefined,
                   player.user
                 )
-              )
-            )
+              ),
+            ])
           })
         )
       })
@@ -1015,92 +1028,88 @@ class TournamentManagerClass {
     loserId: string | null,
     sessionId: string
   ) {
-    const downstreamWinner = await db
-      .select()
-      .from(tournamentMatches)
-      .where(
-        and(
-          eq(tournamentMatches.tournament, tournamentId),
-          eq(tournamentMatches.sourceMatchA, completedMatchId),
-          eq(tournamentMatches.sourceMatchAProgression, 'winner'),
-          isNull(tournamentMatches.match),
-          isNull(tournamentMatches.deletedAt)
-        )
-      )
-
-    await Promise.all(
-      downstreamWinner.map(pending =>
-        TournamentManager.tryCreateBracketMatch(pending, sessionId, winnerId)
-      )
-    )
-
-    const downstreamWinnerB = await db
-      .select()
-      .from(tournamentMatches)
-      .where(
-        and(
-          eq(tournamentMatches.tournament, tournamentId),
-          eq(tournamentMatches.sourceMatchB, completedMatchId),
-          eq(tournamentMatches.sourceMatchBProgression, 'winner'),
-          isNull(tournamentMatches.match),
-          isNull(tournamentMatches.deletedAt)
-        )
-      )
-
-    await Promise.all(
-      downstreamWinnerB.map(pending =>
-        TournamentManager.tryCreateBracketMatch(
-          pending,
-          sessionId,
-          undefined,
-          winnerId
-        )
-      )
-    )
-
-    if (loserId) {
-      const downstreamLoser = await db
+    const [downstreamWinner, downstreamWinnerB] = await Promise.all([
+      db
         .select()
         .from(tournamentMatches)
         .where(
           and(
             eq(tournamentMatches.tournament, tournamentId),
             eq(tournamentMatches.sourceMatchA, completedMatchId),
-            eq(tournamentMatches.sourceMatchAProgression, 'loser'),
+            eq(tournamentMatches.sourceMatchAProgression, 'winner'),
             isNull(tournamentMatches.match),
             isNull(tournamentMatches.deletedAt)
           )
-        )
-
-      await Promise.all(
-        downstreamLoser.map(pending =>
-          TournamentManager.tryCreateBracketMatch(pending, sessionId, loserId)
-        )
-      )
-
-      const downstreamLoserB = await db
+        ),
+      db
         .select()
         .from(tournamentMatches)
         .where(
           and(
             eq(tournamentMatches.tournament, tournamentId),
             eq(tournamentMatches.sourceMatchB, completedMatchId),
-            eq(tournamentMatches.sourceMatchBProgression, 'loser'),
+            eq(tournamentMatches.sourceMatchBProgression, 'winner'),
             isNull(tournamentMatches.match),
             isNull(tournamentMatches.deletedAt)
           )
-        )
+        ),
+    ])
 
-      await Promise.all(
-        downstreamLoserB.map(pending =>
+    await Promise.all([
+      ...downstreamWinner.map(pending =>
+        TournamentManager.tryCreateBracketMatch(pending, sessionId, winnerId)
+      ),
+      ...downstreamWinnerB.map(pending =>
+        TournamentManager.tryCreateBracketMatch(
+          pending,
+          sessionId,
+          undefined,
+          winnerId
+        )
+      ),
+    ])
+
+    if (loserId) {
+      const [downstreamLoser, downstreamLoserB] = await Promise.all([
+        db
+          .select()
+          .from(tournamentMatches)
+          .where(
+            and(
+              eq(tournamentMatches.tournament, tournamentId),
+              eq(tournamentMatches.sourceMatchA, completedMatchId),
+              eq(tournamentMatches.sourceMatchAProgression, 'loser'),
+              isNull(tournamentMatches.match),
+              isNull(tournamentMatches.deletedAt)
+            )
+          ),
+        db
+          .select()
+          .from(tournamentMatches)
+          .where(
+            and(
+              eq(tournamentMatches.tournament, tournamentId),
+              eq(tournamentMatches.sourceMatchB, completedMatchId),
+              eq(tournamentMatches.sourceMatchBProgression, 'loser'),
+              isNull(tournamentMatches.match),
+              isNull(tournamentMatches.deletedAt)
+            )
+          ),
+      ])
+
+      await Promise.all([
+        ...downstreamLoser.map(pending =>
+          TournamentManager.tryCreateBracketMatch(pending, sessionId, loserId)
+        ),
+        ...downstreamLoserB.map(pending =>
           TournamentManager.tryCreateBracketMatch(
             pending,
             sessionId,
             undefined,
             loserId
           )
-        )
-      )
+        ),
+      ])
     }
   }
 
@@ -1113,51 +1122,10 @@ class TournamentManagerClass {
     let resolvedUserA = userA
     let resolvedUserB = userB
 
-    if (
-      !resolvedUserA &&
-      pendingMatch.sourceGroupA &&
-      pendingMatch.sourceGroupARank
-    ) {
-      resolvedUserA = await TournamentManager.getGroupRankedPlayer(
-        pendingMatch.sourceGroupA,
-        pendingMatch.sourceGroupARank,
-        pendingMatch.tournament
-      )
-    }
-
-    if (
-      !resolvedUserA &&
-      pendingMatch.sourceMatchA &&
-      pendingMatch.sourceMatchAProgression
-    ) {
-      resolvedUserA = await TournamentManager.getMatchProgressedPlayer(
-        pendingMatch.sourceMatchA,
-        pendingMatch.sourceMatchAProgression
-      )
-    }
-
-    if (
-      !resolvedUserB &&
-      pendingMatch.sourceGroupB &&
-      pendingMatch.sourceGroupBRank
-    ) {
-      resolvedUserB = await TournamentManager.getGroupRankedPlayer(
-        pendingMatch.sourceGroupB,
-        pendingMatch.sourceGroupBRank,
-        pendingMatch.tournament
-      )
-    }
-
-    if (
-      !resolvedUserB &&
-      pendingMatch.sourceMatchB &&
-      pendingMatch.sourceMatchBProgression
-    ) {
-      resolvedUserB = await TournamentManager.getMatchProgressedPlayer(
-        pendingMatch.sourceMatchB,
-        pendingMatch.sourceMatchBProgression
-      )
-    }
+    ;[resolvedUserA, resolvedUserB] = await Promise.all([
+      TournamentManager.resolveBracketUser(pendingMatch, 'A', resolvedUserA),
+      TournamentManager.resolveBracketUser(pendingMatch, 'B', resolvedUserB),
+    ])
 
     if (!resolvedUserA || !resolvedUserB) {
       return
@@ -1180,14 +1148,60 @@ class TournamentManagerClass {
       })
       .returning()
 
-    await db
-      .update(tournamentMatches)
-      .set({ match: newMatch.id })
-      .where(eq(tournamentMatches.id, pendingMatch.id))
-
-    await RatingManager.recalculate()
-    broadcast('all_matches', await getAllMatches())
+    const [, , allMatches] = await Promise.all([
+      db
+        .update(tournamentMatches)
+        .set({ match: newMatch.id })
+        .where(eq(tournamentMatches.id, pendingMatch.id)),
+      RatingManager.recalculate(),
+      getAllMatches(),
+    ])
+    broadcast('all_matches', allMatches)
     broadcast('all_rankings', RatingManager.onGetRatings())
+  }
+
+  private async resolveBracketUser(
+    pendingMatch: typeof tournamentMatches.$inferSelect,
+    side: 'A' | 'B',
+    user?: string
+  ) {
+    if (user) return user
+
+    if (side === 'A') {
+      if (pendingMatch.sourceGroupA && pendingMatch.sourceGroupARank) {
+        return TournamentManager.getGroupRankedPlayer(
+          pendingMatch.sourceGroupA,
+          pendingMatch.sourceGroupARank,
+          pendingMatch.tournament
+        )
+      }
+
+      if (pendingMatch.sourceMatchA && pendingMatch.sourceMatchAProgression) {
+        return TournamentManager.getMatchProgressedPlayer(
+          pendingMatch.sourceMatchA,
+          pendingMatch.sourceMatchAProgression
+        )
+      }
+
+      return undefined
+    }
+
+    if (pendingMatch.sourceGroupB && pendingMatch.sourceGroupBRank) {
+      return TournamentManager.getGroupRankedPlayer(
+        pendingMatch.sourceGroupB,
+        pendingMatch.sourceGroupBRank,
+        pendingMatch.tournament
+      )
+    }
+
+    if (pendingMatch.sourceMatchB && pendingMatch.sourceMatchBProgression) {
+      return TournamentManager.getMatchProgressedPlayer(
+        pendingMatch.sourceMatchB,
+        pendingMatch.sourceMatchBProgression
+      )
+    }
+
+    return undefined
   }
 
   private async getGroupRankedPlayer(
@@ -1195,24 +1209,25 @@ class TournamentManagerClass {
     rank: number,
     tournamentId: string
   ): Promise<string | undefined> {
-    const playerRows = await db
-      .select()
-      .from(groupPlayers)
-      .where(
-        and(eq(groupPlayers.group, groupId), isNull(groupPlayers.deletedAt))
-      )
-
-    const groupMatchRows = await db
-      .select()
-      .from(tournamentMatches)
-      .innerJoin(matches, eq(tournamentMatches.match, matches.id))
-      .where(
-        and(
-          eq(tournamentMatches.tournament, tournamentId),
-          eq(tournamentMatches.bracket, 'group'),
-          isNull(tournamentMatches.deletedAt)
-        )
-      )
+    const [playerRows, groupMatchRows] = await Promise.all([
+      db
+        .select()
+        .from(groupPlayers)
+        .where(
+          and(eq(groupPlayers.group, groupId), isNull(groupPlayers.deletedAt))
+        ),
+      db
+        .select()
+        .from(tournamentMatches)
+        .innerJoin(matches, eq(tournamentMatches.match, matches.id))
+        .where(
+          and(
+            eq(tournamentMatches.tournament, tournamentId),
+            eq(tournamentMatches.bracket, 'group'),
+            isNull(tournamentMatches.deletedAt)
+          )
+        ),
+    ])
 
     const playerIds = new Set(playerRows.map(p => p.user))
     const relevantMatches = groupMatchRows.filter(
