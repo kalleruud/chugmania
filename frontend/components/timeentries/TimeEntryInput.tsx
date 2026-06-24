@@ -29,7 +29,7 @@ import {
   type FormEvent,
   type KeyboardEvent,
 } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation } from 'react-router'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
 import { useAuth } from '../../contexts/AuthContext'

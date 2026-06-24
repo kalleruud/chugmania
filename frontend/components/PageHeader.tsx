@@ -1,6 +1,6 @@
 import * as HeroIcons from '@heroicons/react/24/solid'
 import type { ComponentProps } from 'react'
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { twMerge } from 'tailwind-merge'
 
 type PageHeaderProps = {

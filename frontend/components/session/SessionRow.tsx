@@ -12,7 +12,7 @@ import loc from '@/lib/locales'
 import type { SessionWithSignups } from '@common/models/session'
 import { isOngoing, isUpcoming } from '@common/utils/date'
 import { ChevronRight } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { twMerge } from 'tailwind-merge'
 import type { BaseRowProps } from '../row/RowProps'
 

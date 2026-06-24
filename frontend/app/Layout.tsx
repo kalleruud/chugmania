@@ -3,7 +3,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTimeEntryInput } from '@/hooks/TimeEntryInputProvider'
 import { PlusIcon } from '@heroicons/react/24/solid'
-import { Outlet } from 'react-router-dom'
+import { Outlet } from 'react-router'
 import LoginPage from './pages/LoginPage'
 
 export default function Layout() {

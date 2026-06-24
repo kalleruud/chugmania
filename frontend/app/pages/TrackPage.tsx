@@ -15,7 +15,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
 import { formatTrackName } from '@common/utils/track'
-import { useParams } from 'react-router-dom'
+import { useParams } from 'react-router'
 
 export default function TrackPage() {
   const { id } = useParams()

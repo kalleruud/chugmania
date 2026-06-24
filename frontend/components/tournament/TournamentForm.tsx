@@ -15,7 +15,7 @@ import {
   type ComponentProps,
   type FormEvent,
 } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
 import Combobox from '../combobox'
 import { Field, SelectField, TextField } from '../FormFields'

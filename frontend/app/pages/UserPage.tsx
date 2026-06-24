@@ -12,7 +12,7 @@ import UserCard from '@/components/user/UserCard'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
 import { getUserFullName } from '@common/models/user'
-import { useParams } from 'react-router-dom'
+import { useParams } from 'react-router'
 
 export default function UserPage() {
   const { id } = useParams()

@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/empty'
 import loc from '@/lib/locales'
 import { type FallbackProps } from 'react-error-boundary'
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 
 export function ErrorPage({
   error,
