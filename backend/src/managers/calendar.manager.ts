@@ -1,4 +1,3 @@
-import loc from '@/lib/locales'
 import type { SessionResponse } from '@backend/database/schema'
 import type { Match } from '@common/models/match'
 import type { SessionWithSignups } from '@common/models/session'
@@ -17,6 +16,7 @@ import TimeEntryManager from './timeEntry.manager'
 import UserManager from './user.manager'
 
 const isProduction = process.env.NODE_ENV === 'production'
+const CALENDAR_NAME = 'Chugmania'
 
 class CalendarManagerClass {
   public readonly PRODUCT_ID = 'chugmania/sessions'
@@ -25,7 +25,7 @@ class CalendarManagerClass {
     return await CalendarManager.createIcsCalendar(
       await SessionManager.getAllSessions(),
       baseUrl,
-      isProduction ? loc.no.chugmania : loc.no.chugmania + ' (dev)'
+      isProduction ? CALENDAR_NAME : CALENDAR_NAME + ' (dev)'
     )
   }
 

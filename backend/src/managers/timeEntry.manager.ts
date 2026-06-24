@@ -1,7 +1,7 @@
 import type { Session } from '@common/models/session'
 import type { EventRes } from '@common/models/socket.io'
-import type { TimeEntry } from '@common/models/timeEntry'
 import {
+  type TimeEntry,
   isCreateTimeEntryRequest,
   isEditTimeEntryRequest,
   type CreateTimeEntryRequest,

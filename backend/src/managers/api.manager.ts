@@ -1,6 +1,7 @@
-import loc from '@/lib/locales'
 import type { Request, Response } from 'express'
 import CalendarManager from './calendar.manager'
+
+const UNKNOWN_ERROR_MESSAGE = 'Ngl, jeg aaner ikke hva som skjedde her...'
 
 class ApiManagerClass {
   async onGetCalendar(baseUrl: URL, _: Request, res: Response) {
@@ -25,9 +26,7 @@ class ApiManagerClass {
   ) {
     const timestamp = new Date().toISOString()
     const message =
-      error instanceof Error
-        ? error.message
-        : loc.no.error.messages.unknown_error
+      error instanceof Error ? error.message : UNKNOWN_ERROR_MESSAGE
     console.error(timestamp, message, error)
     res.status(statusCode).send(context + ': ' + message)
   }
