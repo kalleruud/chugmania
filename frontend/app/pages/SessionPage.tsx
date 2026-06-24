@@ -1,3 +1,4 @@
+import Combobox from '@/components/combobox'
 import ConfirmationButton from '@/components/ConfirmationButton'
 import { PageSubheader } from '@/components/PageHeader'
 import SessionCard from '@/components/session/SessionCard'
@@ -36,7 +37,9 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
+import { userToLookupItem } from '@/lib/lookup-utils'
 import type { SessionWithSignups } from '@common/models/session'
+import type { UserInfo } from '@common/models/user'
 import { isUpcoming } from '@common/utils/date'
 import accumulateSignups from '@common/utils/signupAccumulator'
 import {
@@ -71,11 +74,18 @@ function Signup({
   )
 
   const isAdmin = isLoggedIn && loggedInUser.role !== 'user'
-  const responses: { response: SessionResponse; Icon: LucideIcon }[] = [
+  const responseOptions: { response: SessionResponse; Icon: LucideIcon }[] = [
     { response: 'yes', Icon: CircleCheck },
     { response: 'maybe', Icon: CircleQuestionMark },
     { response: 'no', Icon: CircleX },
   ]
+  const [addDialogOpen, setAddDialogOpen] = useState(false)
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([])
+  const [selectedPickerUser, setSelectedPickerUser] = useState<
+    ReturnType<typeof userToLookupItem> | null | undefined
+  >(null)
+  const [selectedResponse, setSelectedResponse] =
+    useState<SessionResponse>('yes')
 
   const accumulatedSignups = useMemo(
     () =>
@@ -100,6 +110,29 @@ function Signup({
         }),
     [session, timeEntries, matches, users, rankings]
   )
+  const signedUpUserIds = useMemo(
+    () => new Set(session.signups.map(s => s.user.id)),
+    [session.signups]
+  )
+  const availableUsers = useMemo(
+    () =>
+      users
+        ?.filter(user => !signedUpUserIds.has(user.id))
+        .toSorted((a, b) =>
+          `${a.firstName} ${a.lastName ?? ''}`.localeCompare(
+            `${b.firstName} ${b.lastName ?? ''}`
+          )
+        ) ?? [],
+    [users, signedUpUserIds]
+  )
+  const selectedUsers = useMemo(
+    () => availableUsers.filter(user => selectedUserIds.includes(user.id)),
+    [availableUsers, selectedUserIds]
+  )
+  const selectableUsers = useMemo(
+    () => availableUsers.filter(user => !selectedUserIds.includes(user.id)),
+    [availableUsers, selectedUserIds]
+  )
 
   if (isLoadingData)
     return (
@@ -108,25 +141,59 @@ function Signup({
       </div>
     )
 
-  function handleRsvp(response: SessionResponse) {
+  async function updateSignup(response: SessionResponse, user: UserInfo) {
+    const res = await socket.emitWithAck('rsvp_session', {
+      type: 'RsvpSessionRequest',
+      session: session.id,
+      user: user.id,
+      response,
+    })
+
+    if (!res.success) throw new Error(res.message)
+  }
+
+  function handleRsvp(response: SessionResponse, user?: UserInfo) {
     if (!isLoggedIn) return
     toast.promise(
-      socket
-        .emitWithAck('rsvp_session', {
-          type: 'RsvpSessionRequest',
-          session: session.id,
-          user: loggedInUser.id,
-          response,
-        })
-        .then(res => {
-          if (res.success) setMyResponse(response)
-          else throw new Error(res.message)
-        }),
+      updateSignup(response, user ?? loggedInUser).then(() => {
+        if (!user || user.id === loggedInUser.id) setMyResponse(response)
+      }),
       {
         loading: loc.no.session.rsvp.response.loading,
         success: loc.no.session.rsvp.response.success(response),
         error: loc.no.session.rsvp.response.error,
       }
+    )
+  }
+
+  function handleSelectUser(user: UserInfo | null | undefined) {
+    setSelectedPickerUser(null)
+    if (!user) return
+    setSelectedUserIds(current =>
+      current.includes(user.id) ? current : [...current, user.id]
+    )
+  }
+
+  function removeSelectedUser(userId: string) {
+    setSelectedUserIds(current =>
+      current.filter(selectedUserId => selectedUserId !== userId)
+    )
+  }
+
+  function handleAddParticipants() {
+    if (selectedUsers.length === 0) return
+
+    toast.promise(
+      Promise.all(
+        selectedUsers.map(user => updateSignup(selectedResponse, user))
+      ).then(() => {
+        if (selectedUserIds.includes(loggedInUser.id)) {
+          setMyResponse(selectedResponse)
+        }
+        setSelectedUserIds([])
+        setAddDialogOpen(false)
+      }),
+      loc.no.session.rsvp.manage.addRequest(selectedUsers.length)
     )
   }
 
@@ -145,11 +212,11 @@ function Signup({
               disabled={disabled}
               value={myResponse}
               onValueChange={handleRsvp}>
-              <SelectTrigger className='w-[180px]'>
+              <SelectTrigger className='w-[160px]'>
                 <SelectValue placeholder={loc.no.session.rsvp.change} />
               </SelectTrigger>
               <SelectContent>
-                {responses.map(({ response, Icon }) => (
+                {responseOptions.map(({ response, Icon }) => (
                   <SelectItem key={response} value={response}>
                     <Icon className='size-4' />
                     {loc.no.session.rsvp.responses[response]}
@@ -164,7 +231,7 @@ function Signup({
       <div
         className='flex items-center justify-center gap-2'
         hidden={!isUpcoming(session) || !isLoggedIn || !!myResponse}>
-        {responses.map(({ response, Icon }) => (
+        {responseOptions.map(({ response, Icon }) => (
           <Button
             key={response}
             size='sm'
@@ -176,33 +243,139 @@ function Signup({
         ))}
       </div>
 
+      {isAdmin && (
+        <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+          <DialogTrigger asChild>
+            <Button type='button' variant='outline' disabled={disabled}>
+              <CircleCheck className='size-4' />
+              {loc.no.session.rsvp.manage.add}
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{loc.no.session.rsvp.manage.title}</DialogTitle>
+            </DialogHeader>
+            <div className='flex flex-col gap-4'>
+              <Select
+                value={selectedResponse}
+                onValueChange={value =>
+                  setSelectedResponse(value as SessionResponse)
+                }>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {responseOptions.map(({ response, Icon }) => (
+                    <SelectItem key={response} value={response}>
+                      <Icon className='size-4' />
+                      {loc.no.session.rsvp.responses[response]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Combobox
+                placeholder={loc.no.session.rsvp.manage.userPlaceholder}
+                emptyLabel={loc.no.common.noItems ?? undefined}
+                items={selectableUsers}
+                selected={selectedPickerUser}
+                setSelected={handleSelectUser}
+                CustomRow={props => <UserRow {...props} hideLink hideRanking />}
+              />
+
+              {availableUsers.length === 0 && (
+                <Empty className='border border-input text-sm text-muted-foreground'>
+                  {loc.no.common.noItems}
+                </Empty>
+              )}
+
+              {selectedUsers.length > 0 && (
+                <div className='max-h-80 overflow-y-auto rounded-sm bg-background-secondary'>
+                  {selectedUsers.map(user => (
+                    <div
+                      key={user.id}
+                      className='flex items-center gap-2 border-b border-border/60 p-2 last:border-b-0'>
+                      <UserRow
+                        item={user}
+                        hideLink
+                        hideRanking
+                        className='flex-1 py-2'
+                      />
+                      <Button
+                        type='button'
+                        size='icon'
+                        variant='ghost'
+                        onClick={() => removeSelectedUser(user.id)}>
+                        <CircleX className='size-4' />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant='outline'>{loc.no.common.cancel}</Button>
+              </DialogClose>
+              <Button
+                type='button'
+                onClick={handleAddParticipants}
+                disabled={selectedUserIds.length === 0}>
+                {loc.no.session.rsvp.manage.addSelected}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
       {accumulatedSignups.length === 0 && (
         <Empty className='border border-input text-sm text-muted-foreground'>
           {loc.no.common.noItems}
         </Empty>
       )}
 
-      {responses.map(({ response }) => {
-        const responses = accumulatedSignups.filter(
+      {responseOptions.map(({ response }) => {
+        const responseSignups = accumulatedSignups.filter(
           s => s.response === response
         )
-        if (responses.length === 0) return undefined
+        if (responseSignups.length === 0) return undefined
         return (
           <div key={response} className='flex flex-col'>
             <PageSubheader
               title={loc.no.session.rsvp.responses[response]}
-              description={responses.length.toString()}
+              description={responseSignups.length.toString()}
             />
             <div className='rounded-sm bg-background-secondary'>
-              {accumulatedSignups
-                .filter(s => s.response === response)
-                .map(({ user }) => (
+              {responseSignups.map(({ user }) => {
+                return (
                   <UserRow
                     key={user.id}
                     item={user}
-                    className='py-3 first:pt-4 last:pb-4'
-                  />
-                ))}
+                    className='w-full py-1 first:pt-2 last:pb-2'
+                    hideRanking>
+                    {isAdmin && (
+                      <Select
+                        value={response}
+                        onValueChange={value =>
+                          handleRsvp(value as SessionResponse, user)
+                        }
+                        disabled={disabled}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {responseOptions.map(({ response, Icon }) => (
+                            <SelectItem key={response} value={response}>
+                              <Icon className='size-4' />
+                              {loc.no.session.rsvp.responses[response]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </UserRow>
+                )
+              })}
             </div>
           </div>
         )

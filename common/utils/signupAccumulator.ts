@@ -21,15 +21,19 @@ export default function accumulateSignups(
     ...ma.filter(m => m.session === session.id && m.user2).map(m => m.user2!),
   ])
 
-  const existingSignups = session.signups
-    .filter(s => !accumulatedSignups.has(s.user.id))
-    .map(s => ({ user: s.user.id, response: s.response }))
+  const signupUsers = new Set(session.signups.map(s => s.user.id))
+  const existingSignups = session.signups.map(s => ({
+    user: s.user.id,
+    response: s.response,
+  }))
 
   return [
     ...existingSignups,
-    ...Array.from(accumulatedSignups).map(user => ({
-      user,
-      response: YES_RES,
-    })),
+    ...Array.from(accumulatedSignups)
+      .filter(user => !signupUsers.has(user))
+      .map(user => ({
+        user,
+        response: YES_RES,
+      })),
   ]
 }

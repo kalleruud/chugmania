@@ -2,7 +2,7 @@
 
 ## Commands
 
-- `npm run dev` – dev mode (port 6996)
+- `npm run dev` – dev mode (port 6996), this is usually already running, avoid to run it yourself.
 - `npm run check` – typecheck + Prettier format check (run before commits)
 - `npm run build` – build frontend + backend
 - `npm run db:gen` – generate Drizzle migration after schema changes

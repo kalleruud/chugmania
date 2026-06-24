@@ -169,6 +169,18 @@ const no = {
           `Svar ble oppdatert: ${no.session.rsvp.responses[response]}`,
         error: (err: Error) => `Kunne ikke registrere svar: ${err.message}`,
       },
+      manage: {
+        add: 'Legg til',
+        addSelected: 'Legg til valgte',
+        title: 'Legg til deltakere',
+        userPlaceholder: 'Velg deltaker',
+        addRequest: (count: number) => ({
+          loading: 'Legger til deltakere...',
+          success: `${count} ${count === 1 ? 'deltaker' : 'deltakere'} lagt til`,
+          error: (err: Error) =>
+            `Kunne ikke legge til deltakere: ${err.message}`,
+        }),
+      },
     },
     calendar: {
       subscribe: 'Abonner på kalender',
