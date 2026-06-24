@@ -12,7 +12,6 @@ import {
   EmptyContent,
   EmptyDescription,
   EmptyHeader,
-  EmptyMedia,
   EmptyTitle,
 } from '@/components/ui/empty'
 import { useAuth } from '@/contexts/AuthContext'
@@ -42,13 +41,6 @@ export default function LoginCard() {
   return (
     <Empty className='w-full rounded-sm border border-dashed'>
       <EmptyHeader>
-        <EmptyMedia>
-          <img
-            src='/cm.svg'
-            alt='Chugmania'
-            className='h-auto w-48 max-w-full'
-          />
-        </EmptyMedia>
         <EmptyTitle>{loc.no.user.notLoggedIn}</EmptyTitle>
         <EmptyDescription>{loc.no.user.login.description}</EmptyDescription>
       </EmptyHeader>
