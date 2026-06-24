@@ -42,6 +42,10 @@ const no = {
       tracks: 'Baner',
       users: 'Spillere',
       matches: 'Matcher',
+      tournaments: 'Turneringer',
+      groups: 'Turneringsgrupper',
+      groupPlayers: 'Turneringsspillere',
+      tournamentMatches: 'Turneringsmatcher',
     } satisfies Record<ExportCsvRequest['table'], string>,
   },
   user: {
@@ -238,6 +242,25 @@ const no = {
         'Du kan ikke sette en vinner på en match før den er ferdig.',
       invalid_winner: 'Vinneren må være en av deltakerne.',
       same_user: 'Begge deltakerne kan ikke være den samme spilleren.',
+    },
+  },
+  tournament: {
+    error: {
+      session_cancelled: 'Du kan ikke opprette turnering for en avlyst session.',
+      min_participants:
+        'Turneringen krever minst fire bekreftede deltakere.',
+      duplicate_active:
+        'Det finnes allerede en aktiv turnering for denne sessionen.',
+      invalid_group_count: 'Ugyldig gruppetall for denne turneringen.',
+      invalid_advancement_count:
+        'Ugyldig antall spillere som går videre fra hver gruppe.',
+      invalid_advancer_total:
+        'Totalt antall spillere som går videre må være en potens av to.',
+      missing_track: 'En eller flere baner finnes ikke.',
+      missing_tournament:
+        'Fant ikke noen aktiv turnering for denne sessionen.',
+      invalid_elimination_type:
+        'Bare single elimination er støttet i denne MVP-en.',
     },
   },
   error: {

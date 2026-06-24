@@ -114,6 +114,9 @@ export const tournaments = sqliteTable('tournaments', {
   session: text()
     .notNull()
     .references(() => sessions.id, { onDelete: 'cascade' }),
+  qualificationTrack: text('qualification_track')
+    .notNull()
+    .references(() => tracks.id),
   name: text().notNull(),
   description: text(),
   groupsCount: integer('groups_count').notNull().default(2),
@@ -148,9 +151,12 @@ export const tournamentMatches = sqliteTable('tournament_matches', {
   tournament: text()
     .notNull()
     .references(() => tournaments.id, { onDelete: 'cascade' }),
+  group: text().references(() => groups.id, { onDelete: 'cascade' }),
   name: text().notNull(),
   bracket: text().$type<TournamentBracket>().notNull(),
+  stage: text().$type<MatchStage>(),
   round: integer(),
+  sortOrder: integer('sort_order').notNull().default(0),
   match: text().references(() => matches.id),
   track: text().references(() => tracks.id),
   completedAt: integer('completed_at', { mode: 'timestamp_ms' }),

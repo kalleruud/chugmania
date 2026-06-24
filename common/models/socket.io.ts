@@ -19,6 +19,13 @@ import type {
   SessionWithSignups,
 } from './session'
 import type {
+  CreateTournamentRequest,
+  CreateTournamentResponse,
+  GetTournamentDetailsRequest,
+  GetTournamentDetailsResponse,
+  TournamentDetails,
+} from './tournament'
+import type {
   AbsoluteTimeEntriesRequest,
   AbsoluteTimeEntriesResponse,
   CreateTimeEntryRequest,
@@ -52,6 +59,7 @@ export interface ServerToClientEvents {
   all_sessions: (r: SessionWithSignups[]) => void
   all_matches: (r: Match[]) => void
   all_rankings: (r: Ranking[]) => void
+  tournament_details: (r: TournamentDetails | null) => void
 }
 
 export interface ClientToServerEvents {
@@ -122,6 +130,14 @@ export interface ClientToServerEvents {
   delete_match: (
     r: DeleteMatchRequest,
     callback: (r: SuccessResponse | ErrorResponse) => void
+  ) => void
+  create_tournament: (
+    r: CreateTournamentRequest,
+    callback: (r: CreateTournamentResponse | ErrorResponse) => void
+  ) => void
+  get_tournament_details: (
+    r: GetTournamentDetailsRequest,
+    callback: (r: GetTournamentDetailsResponse | ErrorResponse) => void
   ) => void
 }
 
