@@ -65,6 +65,7 @@ const no = {
     register: {
       title: 'Registrer',
       description: 'Lag din egen Chugmania-bruker',
+      notEnabled: 'Nye registreringer er skrudd av',
       request: {
         loading: 'Registrerer...',
         success: 'Brukeren ble opprettet, prøv å logg inn!',

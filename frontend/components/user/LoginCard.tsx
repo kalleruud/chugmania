@@ -117,12 +117,6 @@ export default function LoginCard() {
                     {loc.no.common.cancel}
                   </Button>
                 </DialogClose>
-                <Button type='submit' form='loginForm' disabled={isLoading}>
-                  {isLoading && <Spinner />}
-                  {isLoading
-                    ? loc.no.user.login.request.loading
-                    : loc.no.user.login.title}
-                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>

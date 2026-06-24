@@ -61,7 +61,7 @@ export default class UserManager {
     const user = data[0]
     if (!user) throw new Error(loc.no.error.messages.not_in_db(id))
 
-    await broadcast('all_users', await UserManager.getAllUsers())
+    broadcast('all_users', await UserManager.getAllUsers())
     return user
   }
 
@@ -167,11 +167,8 @@ export default class UserManager {
       socket.emit('user_data', response)
     }
 
-    await broadcast('all_users', await UserManager.getAllUsers())
-    await broadcast(
-      'all_time_entries',
-      await TimeEntryManager.getAllTimeEntries()
-    )
+    broadcast('all_users', await UserManager.getAllUsers())
+    broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
 
     return {
       success: true,
@@ -209,7 +206,7 @@ export default class UserManager {
       'all_time_entries',
       await TimeEntryManager.getAllTimeEntries()
     )
-    await broadcast('all_rankings', await RatingManager.onGetRatings())
+    broadcast('all_rankings', await RatingManager.onGetRatings())
 
     return {
       success: true,
@@ -261,7 +258,7 @@ export default class UserManager {
       `Registered user '${userInfo.email}' with role '${role}'`
     )
 
-    await broadcast('all_users', await UserManager.getAllUsers())
+    broadcast('all_users', await UserManager.getAllUsers())
 
     return { success: true }
   }

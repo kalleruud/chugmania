@@ -233,11 +233,8 @@ export default class TournamentManager {
       request.name
     )
 
-    await broadcast(
-      'all_tournaments',
-      await TournamentManager.getAllTournaments()
-    )
-    await broadcast('all_matches', await MatchManager.getAllMatches())
+    broadcast('all_tournaments', await TournamentManager.getAllTournaments())
+    broadcast('all_matches', await MatchManager.getAllMatches())
 
     return { success: true }
   }
@@ -803,11 +800,8 @@ export default class TournamentManager {
       request.id
     )
 
-    await broadcast(
-      'all_tournaments',
-      await TournamentManager.getAllTournaments()
-    )
-    await broadcast('all_matches', await MatchManager.getAllMatches())
+    broadcast('all_tournaments', await TournamentManager.getAllTournaments())
+    broadcast('all_matches', await MatchManager.getAllMatches())
 
     return { success: true }
   }
@@ -852,10 +846,7 @@ export default class TournamentManager {
       )
     }
 
-    await broadcast(
-      'all_tournaments',
-      await TournamentManager.getAllTournaments()
-    )
+    broadcast('all_tournaments', await TournamentManager.getAllTournaments())
   }
 
   private static async checkGroupCompletion(
@@ -1179,8 +1170,8 @@ export default class TournamentManager {
       .where(eq(tournamentMatches.id, pendingMatch.id))
 
     await RatingManager.recalculate()
-    await broadcast('all_matches', await MatchManager.getAllMatches())
-    await broadcast('all_rankings', await RatingManager.onGetRatings())
+    broadcast('all_matches', await MatchManager.getAllMatches())
+    broadcast('all_rankings', await RatingManager.onGetRatings())
   }
 
   private static async getGroupRankedPlayer(

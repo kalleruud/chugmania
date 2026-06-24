@@ -48,14 +48,24 @@ export type TypedSocket = Socket<
 
 type ProtectedServerEvent = Exclude<keyof ServerToClientEvents, 'user_data'>
 
-async function emitInitialData(socket: TypedSocket) {
-  socket.emit('all_users', await UserManager.getAllUsers())
-  socket.emit('all_tracks', await TrackManager.getAllTracks())
-  socket.emit('all_sessions', await SessionManager.getAllSessions())
-  socket.emit('all_time_entries', await TimeEntryManager.getAllTimeEntries())
-  socket.emit('all_matches', await MatchManager.getAllMatches())
-  socket.emit('all_rankings', await RatingManager.onGetRatings())
-  socket.emit('all_tournaments', await TournamentManager.getAllTournaments())
+async function emitData(socket: TypedSocket) {
+  const [users, tracks, sessions, timeEntries, matches, rankings, tournaments] =
+    await Promise.all([
+      UserManager.getAllUsers(),
+      TrackManager.getAllTracks(),
+      SessionManager.getAllSessions(),
+      TimeEntryManager.getAllTimeEntries(),
+      MatchManager.getAllMatches(),
+      RatingManager.onGetRatings(),
+      TournamentManager.getAllTournaments(),
+    ])
+  socket.emit('all_users', users)
+  socket.emit('all_tracks', tracks)
+  socket.emit('all_sessions', sessions)
+  socket.emit('all_time_entries', timeEntries)
+  socket.emit('all_matches', matches)
+  socket.emit('all_rankings', rankings)
+  socket.emit('all_tournaments', tournaments)
 }
 
 export async function broadcast<Ev extends ProtectedServerEvent>(
@@ -87,7 +97,7 @@ async function Connect(s: TypedSocket) {
   const auth = await AuthManager.refreshToken(s)
   s.emit('user_data', auth)
   if (auth.success) {
-    await emitInitialData(s)
+    await emitData(s)
   }
 
   s.on('disconnect', () =>
