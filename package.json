@@ -59,7 +59,10 @@
     "vite-express": "^0.22.1"
   },
   "devDependencies": {
+    "@babel/core": "^8.0.1",
+    "@rolldown/plugin-babel": "^0.2.3",
     "@tailwindcss/vite": "^4.3.1",
+    "@types/babel__core": "^7.20.5",
     "@types/better-sqlite3": "^7.6.13",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
