@@ -11,7 +11,7 @@ import { and, desc, eq, getTableColumns, isNull, sql } from 'drizzle-orm'
 import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
 import { matches, sessions } from '../../database/schema'
-import { broadcastAuthenticated, type TypedSocket } from '../server'
+import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import RatingManager from './rating.manager'
 import TournamentManager from './tournament.manager'
@@ -79,14 +79,8 @@ export default class MatchManager {
     console.debug(new Date().toISOString(), socket.id, 'Created match')
 
     RatingManager.recalculate()
-    await broadcastAuthenticated(
-      'all_matches',
-      await MatchManager.getAllMatches()
-    )
-    await broadcastAuthenticated(
-      'all_rankings',
-      await RatingManager.onGetRatings()
-    )
+    await broadcast('all_matches', await MatchManager.getAllMatches())
+    await broadcast('all_rankings', await RatingManager.onGetRatings())
 
     if (match.winner) await TournamentManager.onMatchCompleted(match.id)
     return { success: true }
@@ -127,14 +121,8 @@ export default class MatchManager {
     console.debug(new Date().toISOString(), socket.id, 'Updated match', id)
 
     await RatingManager.recalculate()
-    await broadcastAuthenticated(
-      'all_matches',
-      await MatchManager.getAllMatches()
-    )
-    await broadcastAuthenticated(
-      'all_rankings',
-      await RatingManager.onGetRatings()
-    )
+    await broadcast('all_matches', await MatchManager.getAllMatches())
+    await broadcast('all_rankings', await RatingManager.onGetRatings())
 
     if (res.winner && preImageMatch.winner !== res.winner) {
       await TournamentManager.onMatchCompleted(res.id)

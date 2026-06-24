@@ -58,7 +58,7 @@ async function emitInitialData(socket: TypedSocket) {
   socket.emit('all_tournaments', await TournamentManager.getAllTournaments())
 }
 
-export async function broadcastAuthenticated<Ev extends ProtectedServerEvent>(
+export async function broadcast<Ev extends ProtectedServerEvent>(
   ev: Ev,
   ...args: Parameters<ServerToClientEvents[Ev]>
 ) {

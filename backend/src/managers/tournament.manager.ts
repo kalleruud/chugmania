@@ -31,7 +31,7 @@ import {
   type MatchStage,
   type TournamentBracket,
 } from '../../database/schema'
-import { broadcastAuthenticated, type TypedSocket } from '../server'
+import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import MatchManager from './match.manager'
 import RatingManager from './rating.manager'
@@ -238,14 +238,11 @@ export default class TournamentManager {
       request.name
     )
 
-    await broadcastAuthenticated(
+    await broadcast(
       'all_tournaments',
       await TournamentManager.getAllTournaments()
     )
-    await broadcastAuthenticated(
-      'all_matches',
-      await MatchManager.getAllMatches()
-    )
+    await broadcast('all_matches', await MatchManager.getAllMatches())
 
     return { success: true }
   }
@@ -810,14 +807,11 @@ export default class TournamentManager {
       request.id
     )
 
-    await broadcastAuthenticated(
+    await broadcast(
       'all_tournaments',
       await TournamentManager.getAllTournaments()
     )
-    await broadcastAuthenticated(
-      'all_matches',
-      await MatchManager.getAllMatches()
-    )
+    await broadcast('all_matches', await MatchManager.getAllMatches())
 
     return { success: true }
   }
@@ -862,7 +856,7 @@ export default class TournamentManager {
       )
     }
 
-    await broadcastAuthenticated(
+    await broadcast(
       'all_tournaments',
       await TournamentManager.getAllTournaments()
     )
@@ -1189,14 +1183,8 @@ export default class TournamentManager {
       .where(eq(tournamentMatches.id, pendingMatch.id))
 
     await RatingManager.recalculate()
-    await broadcastAuthenticated(
-      'all_matches',
-      await MatchManager.getAllMatches()
-    )
-    await broadcastAuthenticated(
-      'all_rankings',
-      await RatingManager.onGetRatings()
-    )
+    await broadcast('all_matches', await MatchManager.getAllMatches())
+    await broadcast('all_rankings', await RatingManager.onGetRatings())
   }
 
   private static async getGroupRankedPlayer(

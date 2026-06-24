@@ -21,7 +21,7 @@ import {
   tracks,
   users,
 } from '../../database/schema'
-import { broadcastAuthenticated } from '../server'
+import { broadcast } from '../server'
 import CsvParser from '../utils/csv-parser'
 import AuthManager from './auth.manager'
 import MatchManager from './match.manager'
@@ -130,27 +130,15 @@ export default class AdminManager {
 
     await RatingManager.recalculate()
 
-    await broadcastAuthenticated('all_users', await UserManager.getAllUsers())
-    await broadcastAuthenticated(
-      'all_tracks',
-      await TrackManager.getAllTracks()
-    )
-    await broadcastAuthenticated(
-      'all_sessions',
-      await SessionManager.getAllSessions()
-    )
-    await broadcastAuthenticated(
+    await broadcast('all_users', await UserManager.getAllUsers())
+    await broadcast('all_tracks', await TrackManager.getAllTracks())
+    await broadcast('all_sessions', await SessionManager.getAllSessions())
+    await broadcast(
       'all_time_entries',
       await TimeEntryManager.getAllTimeEntries()
     )
-    await broadcastAuthenticated(
-      'all_matches',
-      await MatchManager.getAllMatches()
-    )
-    await broadcastAuthenticated(
-      'all_rankings',
-      await RatingManager.onGetRatings()
-    )
+    await broadcast('all_matches', await MatchManager.getAllMatches())
+    await broadcast('all_rankings', await RatingManager.onGetRatings())
 
     return {
       success: true,
