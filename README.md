@@ -72,7 +72,7 @@ The `/sessions` route shows upcoming and past events. Authorized users may creat
 ## Docker
 
 - Build: `docker build -t chugmania .`
-- Run: `docker run -p 6996:6996 chugmania`
+- Run: `docker run -p 6996:6996 -v ./data:/app/data  --env-file .env chugmania`
 - The entrypoint executes `npm start`, so migrations apply automatically before serving.
 - Mount `/app/data` as a volume to persist the SQLite database across restarts.
 
