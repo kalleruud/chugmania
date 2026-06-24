@@ -2,6 +2,7 @@ import { isLoginRequest } from '@common/models/auth'
 import type { EventReq, EventRes, SocketData } from '@common/models/socket.io'
 import { type User, type UserInfo } from '@common/models/user'
 import { tryCatch, tryCatchAsync } from '@common/utils/try-catch'
+import { isRecord } from '@common/utils/is-record'
 import jwt, { type JwtPayload } from 'jsonwebtoken'
 import loc from '../../../frontend/lib/locales'
 import type { TypedSocket } from '../server'
@@ -15,8 +16,8 @@ const SECRET: jwt.Secret = (() => {
 
 type TokenData = Omit<SocketData, 'token'> & JwtPayload
 
-function isTokenData(data: any): data is TokenData {
-  if (!data || typeof data !== 'object') return false
+function isTokenData(data: unknown): data is TokenData {
+  if (!isRecord(data)) return false
   return typeof data.userId === 'string'
 }
 
@@ -45,10 +46,10 @@ class AuthManagerClass {
     }
     if (!isTokenData(data)) throw new Error(loc.no.error.messages.invalid_jwt)
 
-    const { data: user, error: userError } = await tryCatchAsync(
+    const { error: userError } = await tryCatchAsync(
       UserManager.getUserById(data.userId)
     )
-    if (userError || !user) throw new Error(loc.no.error.messages.invalid_jwt)
+    if (userError) throw new Error(loc.no.error.messages.invalid_jwt)
 
     return data
   }
@@ -71,7 +72,11 @@ class AuthManagerClass {
     allowedRoles?: UserInfo['role'][],
     allowDefaultEmail?: boolean
   ): Promise<UserInfo> {
-    const { userId } = await AuthManager.verify(socket.handshake.auth.token)
+    const token =
+      typeof socket.handshake.auth.token === 'string'
+        ? socket.handshake.auth.token
+        : undefined
+    const { userId } = await AuthManager.verify(token)
     const user = await UserManager.getUserById(userId)
 
     if (allowedRoles && !allowedRoles.includes(user.role)) {

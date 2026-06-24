@@ -7,6 +7,7 @@ import type {
   tournamentMatches,
   tournaments,
 } from '../../backend/database/schema'
+import { isRecord } from '../utils/is-record'
 import type { SuccessResponse } from './socket.io'
 
 export type Tournament = typeof tournaments.$inferSelect
@@ -50,12 +51,11 @@ export type CreateTournamentRequest = {
 export function isCreateTournamentRequest(
   data: unknown
 ): data is CreateTournamentRequest {
-  if (typeof data !== 'object' || data === null) return false
-  const d = data as Record<string, unknown>
+  if (!isRecord(data)) return false
   return (
-    d.type === 'CreateTournamentRequest' &&
-    typeof d.session === 'string' &&
-    typeof d.name === 'string'
+    data.type === 'CreateTournamentRequest' &&
+    typeof data.session === 'string' &&
+    typeof data.name === 'string'
   )
 }
 
@@ -73,10 +73,9 @@ export type TournamentPreviewRequest = Omit<CreateTournamentRequest, 'type'> & {
 }
 
 export function isTournamentPreviewRequest(
-  data: any
+  data: unknown
 ): data is TournamentPreviewRequest {
-  if (typeof data !== 'object' || data === null || data === undefined)
-    return false
+  if (!isRecord(data)) return false
   return (
     data.type === 'TournamentPreviewRequest' &&
     typeof data.name === 'string' &&
@@ -99,9 +98,8 @@ export type EditTournamentRequest = {
 export function isEditTournamentRequest(
   data: unknown
 ): data is EditTournamentRequest {
-  if (typeof data !== 'object' || data === null) return false
-  const d = data as Record<string, unknown>
-  return d.type === 'EditTournamentRequest' && typeof d.id === 'string'
+  if (!isRecord(data)) return false
+  return data.type === 'EditTournamentRequest' && typeof data.id === 'string'
 }
 
 export type DeleteTournamentRequest = {
@@ -112,9 +110,8 @@ export type DeleteTournamentRequest = {
 export function isDeleteTournamentRequest(
   data: unknown
 ): data is DeleteTournamentRequest {
-  if (typeof data !== 'object' || data === null) return false
-  const d = data as Record<string, unknown>
-  return d.type === 'DeleteTournamentRequest' && typeof d.id === 'string'
+  if (!isRecord(data)) return false
+  return data.type === 'DeleteTournamentRequest' && typeof data.id === 'string'
 }
 
 export type TournamentBracketType = TournamentBracket

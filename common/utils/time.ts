@@ -42,7 +42,7 @@ export function durationToInputList(
   duration: number | null | undefined
 ): string[] {
   if (!duration || duration <= 0) {
-    return new Array(6).fill('')
+    return Array.from<string>({ length: 6 }).fill('')
   }
 
   const minutes = Math.floor(duration / 60000)

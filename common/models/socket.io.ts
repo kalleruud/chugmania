@@ -165,10 +165,10 @@ type RequestOf<F> =
   F extends () => void
     ? undefined
     : // callback-only (first param is callback) => no request
-      F extends (cb: any) => void
+      F extends (cb: unknown) => void
       ? undefined
       : // req + callback
-        F extends (req: infer R, cb: any) => void
+        F extends (req: infer R, cb: unknown) => void
         ? R
         : // single-arg non-callback
           F extends (arg: infer A) => void
@@ -180,11 +180,13 @@ type CallbackOf<F> =
   F extends (cb: infer C) => void
     ? C
     : // req + callback
-      F extends (req: any, cb: infer C) => void
+      F extends (req: unknown, cb: infer C) => void
       ? C
       : undefined
 
-type ResponseOf<F> = CallbackOf<F> extends (res: infer R) => void ? R : void
+type ResponseOf<F> = CallbackOf<F> extends (res: infer R) => void
+  ? R
+  : undefined
 
 type HasCallback<F> = CallbackOf<F> extends undefined ? false : true
 

@@ -3,6 +3,7 @@ import type {
   sessionSignups,
   sessions,
 } from '../../backend/database/schema'
+import { isRecord } from '../utils/is-record'
 import { type UserInfo } from './user'
 
 export type Session = typeof sessions.$inferSelect
@@ -22,9 +23,9 @@ export type CreateSessionRequest = CreateSession & {
 }
 
 export function isCreateSessionRequest(
-  data: any
+  data: unknown
 ): data is CreateSessionRequest {
-  if (typeof data !== 'object' || data === null) return false
+  if (!isRecord(data)) return false
   return data.type === 'CreateSessionRequest' && typeof data.name === 'string'
 }
 
@@ -33,8 +34,8 @@ export type EditSessionRequest = Partial<CreateSession> & {
   id: Session['id']
 }
 
-export function isEditSessionRequest(data: any): data is EditSessionRequest {
-  if (typeof data !== 'object' || data === null) return false
+export function isEditSessionRequest(data: unknown): data is EditSessionRequest {
+  if (!isRecord(data)) return false
   return data.type === 'EditSessionRequest' && typeof data.id === 'string'
 }
 
@@ -45,8 +46,8 @@ export type RsvpSessionRequest = {
   response: SessionResponse
 }
 
-export function isRsvpSessionRequest(data: any): data is RsvpSessionRequest {
-  if (typeof data !== 'object' || data === null) return false
+export function isRsvpSessionRequest(data: unknown): data is RsvpSessionRequest {
+  if (!isRecord(data)) return false
   return (
     data.type === 'RsvpSessionRequest' &&
     typeof data.session === 'string' &&
@@ -61,8 +62,8 @@ export type DeleteSessionRequest = {
 }
 
 export function isDeleteSessionRequest(
-  data: any
+  data: unknown
 ): data is DeleteSessionRequest {
-  if (typeof data !== 'object' || data === null) return false
+  if (!isRecord(data)) return false
   return data.type === 'DeleteSessionRequest' && typeof data.id === 'string'
 }

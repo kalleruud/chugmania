@@ -17,8 +17,8 @@ export default function accumulateSignups(
 ): AccumulatedSignup[] {
   const accumulatedSignups = new Set([
     ...te.filter(te => te.session === session.id).map(te => te.user),
-    ...ma.filter(m => m.session === session.id && m.user1).map(m => m.user1!),
-    ...ma.filter(m => m.session === session.id && m.user2).map(m => m.user2!),
+    ...ma.flatMap(m => (m.session === session.id && m.user1 ? [m.user1] : [])),
+    ...ma.flatMap(m => (m.session === session.id && m.user2 ? [m.user2] : [])),
   ])
 
   const existingSignups = session.signups

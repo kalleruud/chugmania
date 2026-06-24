@@ -44,7 +44,7 @@ export function formatTimeOnly(input: Date | string): string {
       ? DateTime.fromISO(input, { zone: DEFAULT_ZONE })
       : DateTime.fromJSDate(input, { zone: DEFAULT_ZONE })
 
-  if (!dateTime.isValid) return 'Invalid date: ' + input
+  if (!dateTime.isValid) return 'Invalid date: ' + String(input)
 
   const localized = dateTime.setZone(DEFAULT_ZONE).setLocale(DEFAULT_LOCALE)
   return localized.toFormat('HH:mm')

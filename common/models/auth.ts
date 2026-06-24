@@ -1,4 +1,5 @@
 import { type UserInfo } from './user'
+import { isRecord } from '../utils/is-record'
 
 export type LoginRequest = {
   type: 'LoginRequest'
@@ -6,8 +7,8 @@ export type LoginRequest = {
   password: string
 }
 
-export function isLoginRequest(data: any): data is LoginRequest {
-  if (typeof data !== 'object' || !data) return false
+export function isLoginRequest(data: unknown): data is LoginRequest {
+  if (!isRecord(data)) return false
   return (
     data.type === 'LoginRequest' &&
     typeof data.email === 'string' &&
@@ -25,8 +26,8 @@ export type RegisterRequest = Omit<
     createdAt?: UserInfo['createdAt']
   }
 
-export function isRegisterRequest(data: any): data is RegisterRequest {
-  if (typeof data !== 'object' || !data) return false
+export function isRegisterRequest(data: unknown): data is RegisterRequest {
+  if (!isRecord(data)) return false
   return (
     data.type === 'RegisterRequest' &&
     typeof data.email === 'string' &&
