@@ -50,14 +50,9 @@ export type ErrorResponse = {
   message: string
 }
 
-export type SetupData = {
-  hasUsers: boolean
-}
-
 import type { Ranking } from './ranking'
 
 export interface ServerToClientEvents {
-  setup_data: (r: SetupData) => void
   user_data: (r: EventRes<'get_user_data'>) => void
   all_users: (r: UserInfo[]) => void
   all_tracks: (r: Track[]) => void

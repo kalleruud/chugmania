@@ -46,10 +46,7 @@ export type TypedSocket = Socket<
   SocketData
 >
 
-type ProtectedServerEvent = Exclude<
-  keyof ServerToClientEvents,
-  'setup_data' | 'user_data'
->
+type ProtectedServerEvent = Exclude<keyof ServerToClientEvents, 'user_data'>
 
 async function emitInitialData(socket: TypedSocket) {
   socket.emit('all_users', await UserManager.getAllUsers())
@@ -90,7 +87,6 @@ await RatingManager.recalculate()
 async function Connect(s: TypedSocket) {
   console.debug(new Date().toISOString(), s.id, 'Connected')
 
-  s.emit('setup_data', { hasUsers: await UserManager.hasUsers() })
   const auth = await AuthManager.refreshToken(s)
   s.emit('user_data', auth)
   if (auth.success) {
