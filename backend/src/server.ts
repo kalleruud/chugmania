@@ -1,7 +1,6 @@
 import type {
   ClientToServerEvents,
   ErrorResponse,
-  EventCb,
   EventReq,
   EventRes,
   InterServerEvents,
@@ -110,7 +109,15 @@ async function Connect(s: TypedSocket) {
     UserManager.onRegister(socket, request)
   )
 
-  setup(s, 'get_user_data', socket => AuthManager.refreshToken(socket))
+  s.on('get_user_data', callback =>
+    Promise.resolve(AuthManager.refreshToken(s))
+      .then(callback)
+      .catch((e: unknown) => {
+        const message = e instanceof Error ? e.message : String(e)
+        console.warn(message)
+        callback({ success: false, message })
+      })
+  )
   setup(s, 'edit_user', (socket, request) =>
     UserManager.onEditUser(socket, request)
   )
@@ -169,7 +176,16 @@ async function Connect(s: TypedSocket) {
   )
 }
 
-function setup<Ev extends keyof ClientToServerEvents>(
+type RequestEvent = Exclude<
+  keyof ClientToServerEvents,
+  'connect' | 'disconnect' | 'connect_error' | 'get_user_data'
+>
+
+type SocketCallback<Ev extends RequestEvent> = (
+  response: EventRes<Ev> | ErrorResponse
+) => void
+
+function setup<Ev extends RequestEvent>(
   s: TypedSocket,
   event: Ev,
   handler: (
@@ -177,12 +193,20 @@ function setup<Ev extends keyof ClientToServerEvents>(
     r: EventReq<Ev>
   ) => EventRes<Ev> | Promise<EventRes<Ev>>
 ) {
-  s.on(event, ((r: EventReq<Ev>, callback?: EventCb<Ev>) =>
+  ;(
+    s as TypedSocket & {
+      on: (
+        event: Ev,
+        listener: (r: EventReq<Ev>, callback: SocketCallback<Ev>) => void
+      ) => void
+    }
+  ).on(event, (r, callback) =>
     Promise.resolve(handler(s, r))
       .then(callback)
       .catch((e: unknown) => {
         const message = e instanceof Error ? e.message : String(e)
         console.warn(message)
-        callback?.({ success: false, message } satisfies ErrorResponse)
-      })) as ClientToServerEvents[Ev])
+        callback({ success: false, message })
+      })
+  )
 }

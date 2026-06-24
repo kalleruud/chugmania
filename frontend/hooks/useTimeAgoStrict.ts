@@ -1,5 +1,5 @@
 import loc from '@/lib/locales'
-import { isOngoing, isPast } from '@common/utils/date'
+import { isPast, isUpcoming } from '@common/utils/date'
 import { formatDistanceToNowStrict as formatDistanceToNow } from 'date-fns'
 import { nb } from 'date-fns/locale'
 import { useEffect, useState } from 'react'
@@ -44,7 +44,7 @@ export function useTimeAgoStrict({
 }
 
 function getString(date: Date) {
-  if (isOngoing({ date })) return loc.no.common.now
+  if (!isPast({ date }) && !isUpcoming({ date })) return loc.no.common.now
   return formatDistanceToNow(date, {
     addSuffix: true,
     locale: nb,

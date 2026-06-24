@@ -99,7 +99,6 @@ export default function ManageSessionParticipantsDialog({
             items={selectableUsers.map(userToLookupItem)}
             selected={undefined}
             setSelected={handleSelectUser}
-            closeOnSelect={false}
             CustomRow={props => <UserRow {...props} hideLink hideRanking />}
           />
 

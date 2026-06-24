@@ -160,34 +160,31 @@ export interface SocketData {
 }
 
 // ---------- helpers & types ----------
-type RequestOf<F> =
-  // no args
-  F extends () => void
+type RequestOf<F extends (...args: never[]) => void> =
+  Parameters<F> extends []
     ? undefined
-    : // callback-only (first param is callback) => no request
-      F extends (cb: unknown) => void
-      ? undefined
-      : // req + callback
-        F extends (req: infer R, cb: unknown) => void
-        ? R
-        : // single-arg non-callback
-          F extends (arg: infer A) => void
-          ? A
-          : never
+    : Parameters<F> extends [infer Only]
+      ? Only extends (...args: never[]) => void
+        ? undefined
+        : Only
+      : Parameters<F> extends [infer Req, (...args: never[]) => void]
+        ? Req
+        : never
 
-type CallbackOf<F> =
-  // callback-only
-  F extends (cb: infer C) => void
-    ? C
-    : // req + callback
-      F extends (req: unknown, cb: infer C) => void
-      ? C
+type CallbackOf<F extends (...args: never[]) => void> =
+  Parameters<F> extends [infer Only]
+    ? Only extends (...args: never[]) => void
+      ? Only
+      : undefined
+    : Parameters<F> extends [unknown, infer Callback]
+      ? Callback
       : undefined
 
-type ResponseOf<F> =
+type ResponseOf<F extends (...args: never[]) => void> =
   CallbackOf<F> extends (res: infer R) => void ? R : undefined
 
-type HasCallback<F> = CallbackOf<F> extends undefined ? false : true
+type HasCallback<F extends (...args: never[]) => void> =
+  CallbackOf<F> extends undefined ? false : true
 
 // --- helpers that accept an event key (Ev) ---
 export type EventReq<Ev extends keyof ClientToServerEvents> = RequestOf<

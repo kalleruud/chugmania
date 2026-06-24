@@ -63,12 +63,12 @@ export function isOngoing(session: { date: Date; status: SessionStatus }) {
   )
 }
 
-export function isPast(session: { date: Date; status: SessionStatus }) {
+export function isPast(session: { date: Date }) {
   const endDate = DateTime.fromJSDate(getEndOfDate(new Date(session.date)))
   return endDate.diffNow().milliseconds <= 0
 }
 
-export function isUpcoming(session: { date: Date; status: SessionStatus }) {
+export function isUpcoming(session: { date: Date }) {
   const startDate = DateTime.fromJSDate(new Date(session.date))
   return startDate.diffNow().milliseconds > 0
 }

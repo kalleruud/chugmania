@@ -156,7 +156,7 @@ class TournamentManagerClass {
     const groupMatches = tournamentMatches
       .filter(tm => tm.bracket === 'group')
       .map(tm => matches.find(m => m.id === tm.match))
-      .filter(m => m?.winner)
+      .filter((m): m is Match => m?.winner !== undefined)
 
     const groupsWithPlayers: GroupWithPlayers[] = groups.map(group => {
       return {

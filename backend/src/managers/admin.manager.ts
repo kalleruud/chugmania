@@ -1,12 +1,13 @@
 import {
   isExportCsvRequest,
   isImportCsvRequest,
+  type CsvTable,
   type ExportCsvRequest,
   type ImportCsvRequest,
 } from '@common/models/importCsv'
 import type { EventRes } from '@common/models/socket.io'
 import { eq } from 'drizzle-orm'
-import type { SQLiteTable } from 'drizzle-orm/sqlite-core'
+import type { AnySQLiteColumn, SQLiteTable } from 'drizzle-orm/sqlite-core'
 import loc from '../../../frontend/lib/locales'
 import db, { database } from '../../database/database'
 import {
@@ -43,7 +44,7 @@ class AdminManagerClass {
     groups: new Set(),
     groupPlayers: new Set(),
     tournamentMatches: new Set(),
-  } satisfies Record<ExportCsvRequest['table'], Set<string>>
+  } satisfies Record<CsvTable, Set<string>>
 
   private readonly TABLE_MAP = {
     users: users,
@@ -56,10 +57,10 @@ class AdminManagerClass {
     groups: groups,
     groupPlayers: groupPlayers,
     tournamentMatches: tournamentMatches,
-  } satisfies Record<ExportCsvRequest['table'], SQLiteTable>
+  } satisfies Record<CsvTable, SQLiteTable & { id: AnySQLiteColumn }>
 
   private async importRows(
-    tableName: ExportCsvRequest['table'],
+    tableName: CsvTable,
     data: Record<string, unknown>[]
   ): Promise<{ created: number; updated: number }> {
     const table = AdminManager.TABLE_MAP[tableName]
@@ -71,7 +72,8 @@ class AdminManagerClass {
     const toCreate: Record<string, unknown>[] = []
     const toUpdate: Record<string, unknown>[] = []
     for (const item of data) {
-      if (existingIds.has(item.id)) {
+      const id = item.id
+      if (typeof id === 'string' && existingIds.has(id)) {
         toUpdate.push(item)
       } else {
         toCreate.push({
@@ -92,11 +94,10 @@ class AdminManagerClass {
       }
 
       for (const update of toUpdate) {
-        const res = db
-          .update(table)
-          .set(update)
-          .where(eq(table.id, update.id))
-          .run()
+        const id = update.id
+        if (typeof id !== 'string') continue
+
+        const res = db.update(table).set(update).where(eq(table.id, id)).run()
         updated += res.changes
       }
     })()
@@ -155,7 +156,7 @@ class AdminManagerClass {
 
   private filterColumnsForExport(
     tableName: ExportCsvRequest['table'],
-    records: object[]
+    records: Record<string, unknown>[]
   ): Record<string, unknown>[] {
     const excludeColumns = AdminManager.EXCLUDED_COL_EXPORT[tableName]
     if (excludeColumns.size === 0) return records

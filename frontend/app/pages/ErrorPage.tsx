@@ -14,14 +14,15 @@ export function ErrorPage({
   error,
   resetErrorBoundary,
 }: Readonly<FallbackProps>) {
+  const message =
+    error instanceof Error ? error.message : loc.no.error.description
+
   return (
     <div className='flex w-full justify-center-safe'>
       <Empty className='m-safe-or-4 max-w-2xl border border-dashed'>
         <EmptyHeader>
           <EmptyTitle>{loc.no.error.title}</EmptyTitle>
-          <EmptyDescription>
-            {error.message ?? loc.no.error.description}
-          </EmptyDescription>
+          <EmptyDescription>{message}</EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
           <Button variant='outline' asChild>
