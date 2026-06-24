@@ -41,7 +41,6 @@ import { userToLookupItem } from '@/lib/lookup-utils'
 import type { SessionWithSignups } from '@common/models/session'
 import type { UserInfo } from '@common/models/user'
 import { isUpcoming } from '@common/utils/date'
-import accumulateSignups from '@common/utils/signupAccumulator'
 import {
   CircleCheck,
   CircleQuestionMark,
@@ -71,7 +70,7 @@ function Signup({
 >) {
   const { socket } = useConnection()
   const { loggedInUser, isLoggedIn } = useAuth()
-  const { timeEntries, matches, users, isLoadingData } = useData()
+  const { users, isLoadingData } = useData()
 
   const [myResponse, setMyResponse] = useState<SessionResponse | undefined>(
     session.signups.find(s => s.user.id === loggedInUser?.id)?.response
@@ -93,20 +92,10 @@ function Signup({
 
   const accumulatedSignups = useMemo(
     () =>
-      accumulateSignups(session, timeEntries ?? [], matches ?? [])
-        .map(s => {
-          const user = users?.find(u => u.id === s.user)
-          if (!user) return undefined
-          return {
-            user,
-            response: s.response,
-          }
-        })
-        .filter(s => s !== undefined)
-        .toSorted((a, b) =>
-          getUserSortName(a.user).localeCompare(getUserSortName(b.user))
-        ),
-    [session, timeEntries, matches, users]
+      session.signups.toSorted((a, b) =>
+        getUserSortName(a.user).localeCompare(getUserSortName(b.user))
+      ),
+    [session.signups]
   )
   const signedUpUserIds = useMemo(
     () => new Set(session.signups.map(s => s.user.id)),
