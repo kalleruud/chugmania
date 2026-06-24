@@ -233,28 +233,10 @@ function Signup({
               <DialogTitle>{loc.no.session.rsvp.manage.title}</DialogTitle>
             </DialogHeader>
             <div className='flex flex-col gap-4'>
-              <Select
-                value={selectedResponse}
-                onValueChange={value =>
-                  setSelectedResponse(value as SessionResponse)
-                }>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {responseOptions.map(({ response, Icon }) => (
-                    <SelectItem key={response} value={response}>
-                      <Icon className='size-4' />
-                      {loc.no.session.rsvp.responses[response]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
               <Combobox
                 placeholder={loc.no.session.rsvp.manage.userPlaceholder}
                 emptyLabel={loc.no.common.noItems ?? undefined}
-                items={selectableUsers}
+                items={selectableUsers.map(userToLookupItem)}
                 selected={selectedPickerUser}
                 setSelected={handleSelectUser}
                 CustomRow={props => <UserRow {...props} hideLink hideRanking />}
@@ -289,6 +271,23 @@ function Signup({
                   ))}
                 </div>
               )}
+              <Select
+                value={selectedResponse}
+                onValueChange={value =>
+                  setSelectedResponse(value as SessionResponse)
+                }>
+                <SelectTrigger className='w-full'>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {responseOptions.map(({ response, Icon }) => (
+                    <SelectItem key={response} value={response}>
+                      <Icon className='size-4' />
+                      {loc.no.session.rsvp.responses[response]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <DialogFooter>
               <DialogClose asChild>
