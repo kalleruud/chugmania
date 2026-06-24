@@ -156,14 +156,14 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
 
   if (isLoadingData)
     return (
-      <div className='h-dvh-safe flex w-full items-center justify-center'>
+      <div className='flex h-dvh-safe w-full items-center justify-center'>
         <Spinner />
       </div>
     )
 
   return (
     <form className='flex flex-col gap-4' onSubmit={handleSubmit} {...props}>
-      <div className='bg-background flex flex-col gap-4 rounded-sm border p-4'>
+      <div className='flex flex-col gap-4 rounded-sm border bg-background p-4'>
         <Field
           id='name'
           name={loc.no.tournament.form.name}
@@ -249,7 +249,7 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
       </div>
 
       {preview && (
-        <div className='bg-background flex flex-col gap-4 rounded-sm border p-4'>
+        <div className='flex flex-col gap-4 rounded-sm border bg-background p-4'>
           <PageSubheader className='p-0' title={'Forhåndsvisning'} />
           <PageHeader
             className='p-0'

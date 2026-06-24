@@ -27,19 +27,19 @@ export default function GroupCard({
   return (
     <div
       className={twMerge(
-        'bg-background flex flex-col gap-2 rounded-lg border p-4',
+        'flex flex-col gap-2 rounded-lg border bg-background p-4',
         className
       )}
       {...props}>
       <div className='flex items-baseline justify-between'>
         <h3 className='text-lg'>{group.name}</h3>
-        <p className='text-muted-foreground text-sm'>
+        <p className='text-sm text-muted-foreground'>
           {sortedPlayers.length} spillere
         </p>
       </div>
 
       <div className='flex flex-col gap-1'>
-        <div className='text-muted-foreground flex items-center justify-between gap-2 px-2 text-sm'>
+        <div className='flex items-center justify-between gap-2 px-2 text-sm text-muted-foreground'>
           <span>Spiller</span>
           <div className='flex items-center gap-4'>
             <span className='w-8 text-end'>S</span>
@@ -53,27 +53,27 @@ export default function GroupCard({
             key={user}
             className={twMerge(
               'flex items-center justify-between px-2 py-1 text-sm',
-              index < advancementCount && 'bg-primary/10 rounded-sm'
+              index < advancementCount && 'rounded-sm bg-primary/10'
             )}>
             <div className='flex items-center gap-1'>
-              <span className='text-muted-foreground font-kh-interface w-4 tabular-nums'>
+              <span className='w-4 font-kh-interface text-muted-foreground tabular-nums'>
                 {index + 1}.
               </span>
-              <span className='font-f1 truncate'>
+              <span className='truncate font-f1'>
                 {users?.find(u => u.id === user)?.shortName ??
                   loc.no.match.unknownUser}
               </span>
             </div>
 
             <div className='flex items-center gap-4'>
-              <div className='text-muted-foreground font-kh-interface w-8 text-end tabular-nums'>
+              <div className='w-8 text-end font-kh-interface text-muted-foreground tabular-nums'>
                 {seed.toFixed()}
               </div>
 
-              <span className='text-primary font-kh-interface w-4 text-end tabular-nums'>
+              <span className='w-4 text-end font-kh-interface text-primary tabular-nums'>
                 {wins}
               </span>
-              <span className='text-muted-foreground font-kh-interface w-4 text-end tabular-nums'>
+              <span className='w-4 text-end font-kh-interface text-muted-foreground tabular-nums'>
                 {losses}
               </span>
             </div>

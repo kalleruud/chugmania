@@ -94,7 +94,7 @@ export default function TournamentBracket({
   ) {
     return (
       <div key={roundNum} className='flex flex-col gap-2'>
-        <span className='text-muted-foreground text-xs font-medium'>
+        <span className='text-xs font-medium text-muted-foreground'>
           {roundMatches[0]?.name.replace(/\s\d+$/, '') ?? `Runde ${roundNum}`}
         </span>
         {roundMatches.map(match => {
@@ -103,7 +103,7 @@ export default function TournamentBracket({
               <MatchRow
                 key={match.id}
                 item={match.matchDetails}
-                className='bg-background rounded-sm border p-2'
+                className='rounded-sm border bg-background p-2'
                 onClick={() => openMatch(match.matchDetails!)}
                 hideTrack
               />
@@ -128,7 +128,7 @@ export default function TournamentBracket({
     <div className={twMerge('flex flex-col gap-6', className)}>
       {upperBracketMatches.length > 0 && (
         <div className='flex flex-col gap-2'>
-          <span className='text-muted-foreground text-xs uppercase'>
+          <span className='text-xs text-muted-foreground uppercase'>
             {loc.no.tournament.bracketType.upper}
           </span>
           <div className='grid auto-cols-fr grid-flow-col gap-4 overflow-x-auto'>
@@ -144,7 +144,7 @@ export default function TournamentBracket({
 
       {lowerBracketMatches.length > 0 && (
         <div className='flex flex-col gap-2'>
-          <span className='text-muted-foreground text-xs uppercase'>
+          <span className='text-xs text-muted-foreground uppercase'>
             {loc.no.tournament.bracketType.lower}
           </span>
           <div className='grid auto-cols-fr grid-flow-col gap-4 overflow-x-auto'>

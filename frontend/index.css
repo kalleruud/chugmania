@@ -12,7 +12,7 @@
   }
 
   *:focus-visible {
-    @apply ring-primary rounded-sm outline-none ring-2;
+    @apply rounded-sm ring-2 ring-primary outline-none;
   }
 
   *::selection {

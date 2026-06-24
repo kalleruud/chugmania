@@ -26,11 +26,11 @@ export default function Home() {
         />
       )}
       <SessionsContent
-        className='bg-background rounded-sm border p-2'
+        className='rounded-sm border bg-background p-2'
         showLink
       />
-      <TracksContent className='bg-background rounded-sm border p-2' showLink />
-      <UsersContent className='bg-background rounded-sm border p-2' showLink />
+      <TracksContent className='rounded-sm border bg-background p-2' showLink />
+      <UsersContent className='rounded-sm border bg-background p-2' showLink />
     </div>
   )
 }

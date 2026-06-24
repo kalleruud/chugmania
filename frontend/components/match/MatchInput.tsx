@@ -177,7 +177,7 @@ export default function MatchInput({
           )}
         </div>
 
-        <h1 className='font-kh-interface text-center text-2xl font-bold'>
+        <h1 className='text-center font-kh-interface text-2xl font-bold'>
           {loc.no.match.vs}
         </h1>
 

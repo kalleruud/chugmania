@@ -36,7 +36,7 @@ function PositionBadgePart({
   return (
     <div
       className={twMerge(
-        'font-kh-interface flex w-6 flex-none items-center justify-center rounded-sm uppercase'
+        'flex w-6 flex-none items-center justify-center rounded-sm font-kh-interface uppercase'
       )}
       aria-label={position ? `#${position}` : loc.no.timeEntry.dnf}>
       {position ? (
@@ -103,7 +103,7 @@ function GapPart({
   return (
     <div
       className={
-        'font-f1-italic text-muted-foreground flex items-center justify-end truncate text-sm uppercase tabular-nums'
+        'font-f1-italic flex items-center justify-end truncate text-sm text-muted-foreground uppercase tabular-nums'
       }>
       {label}
     </div>
@@ -150,7 +150,7 @@ export default function TimeEntryRow({
     <div
       ref={containerRef}
       className={twMerge(
-        'hover:bg-foreground/5 flex cursor-pointer items-center gap-4 rounded-md',
+        'flex cursor-pointer items-center gap-4 rounded-md hover:bg-foreground/5',
         highlight && 'bg-foreground/3',
         isDNF && 'opacity-50',
         className

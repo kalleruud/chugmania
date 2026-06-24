@@ -46,10 +46,10 @@ export default function SessionsList({
   if (sd === undefined) {
     return (
       <div className={twMerge('flex flex-col gap-2', className)} {...rest}>
-        <h3 className='text-muted-foreground text-sm font-medium uppercase'>
+        <h3 className='text-sm font-medium text-muted-foreground uppercase'>
           {header}
         </h3>
-        <Skeleton className='divide-border h-16 w-full divide-y rounded-sm' />
+        <Skeleton className='h-16 w-full divide-y divide-border rounded-sm' />
       </div>
     )
   }
@@ -58,7 +58,7 @@ export default function SessionsList({
     <div className={twMerge('flex flex-col', className)} {...rest}>
       <PageSubheader title={header} description={sessions.length.toString()} />
       {sessions.length > 0 ? (
-        <div className={twMerge('bg-background-secondary rounded-sm')}>
+        <div className={twMerge('rounded-sm bg-background-secondary')}>
           {sessions.map(session => (
             <SessionRow
               key={session.id}
@@ -68,7 +68,7 @@ export default function SessionsList({
           ))}
         </div>
       ) : (
-        <Empty className='border-input text-muted-foreground border text-sm'>
+        <Empty className='border border-input text-sm text-muted-foreground'>
           {loc.no.common.noItems}
         </Empty>
       )}
@@ -79,7 +79,7 @@ export default function SessionsList({
             <Button
               variant='ghost'
               size='sm'
-              className='text-muted-foreground mt-2 w-fit'>
+              className='mt-2 w-fit text-muted-foreground'>
               <Plus />
               {loc.no.session.create.title}
             </Button>

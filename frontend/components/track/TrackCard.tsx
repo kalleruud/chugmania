@@ -16,7 +16,7 @@ export default function TrackCard({
 }: Readonly<TrackCardProps>) {
   return (
     <div key={track.id} className={twMerge('flex p-4', className)} {...props}>
-      <div className='font-kh-interface flex gap-2 text-6xl font-black tabular-nums tracking-tighter'>
+      <div className='flex gap-2 font-kh-interface text-6xl font-black tracking-tighter tabular-nums'>
         <p className='text-primary'>#</p>
         {formatTrackName(track.number)}
       </div>

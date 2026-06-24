@@ -70,20 +70,20 @@ export default function UserCard({
     <div className={twMerge('flex flex-col gap-4', className)} {...props}>
       <div className='flex flex-col items-center justify-center gap-2'>
         <div className='flex flex-col items-center'>
-          <h1 className='font-northwell text-primary z-1 -mb-6 pt-4 text-6xl normal-case'>
+          <h1 className='z-1 -mb-6 pt-4 font-northwell text-6xl text-primary normal-case'>
             {user.firstName}
           </h1>
           <h1 className='font-f1 uppercase'>{user.lastName}</h1>
         </div>
 
-        <div className='text-muted-foreground font-f1 flex gap-2 font-bold'>
+        <div className='flex gap-2 font-f1 font-bold text-muted-foreground'>
           <span>{user.shortName ?? '-'}</span>
 
           <span className='border-r' />
 
           <div
             className={twMerge(
-              'font-kh-interface text-muted-foreground -mb-0.5 flex items-center justify-end gap-0.5 tabular-nums',
+              '-mb-0.5 flex items-center justify-end gap-0.5 font-kh-interface text-muted-foreground tabular-nums',
               ranking?.ranking === 1 && 'text-yellow-400',
               ranking?.ranking === 2 && 'text-gray-300',
               ranking?.ranking === 3 && 'text-amber-600'

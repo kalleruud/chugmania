@@ -29,9 +29,9 @@ export default function UserRow({
     <>
       <ItemContent>
         <div className='flex items-center gap-2'>
-          <div className='bg-primary h-4 w-1 rounded-full' />
+          <div className='h-4 w-1 rounded-full bg-primary' />
 
-          <ItemTitle className='font-f1 mr-auto flex gap-1 uppercase'>
+          <ItemTitle className='mr-auto flex gap-1 font-f1 uppercase'>
             <span>{user.firstName}</span>
             <span className='font-bold'>{user.lastName}</span>
           </ItemTitle>
@@ -64,7 +64,7 @@ export default function UserRow({
           {ranking ? (
             <div
               className={twMerge(
-                'font-kh-interface text-muted-foreground flex items-center justify-end gap-0.5 tabular-nums',
+                'flex items-center justify-end gap-0.5 font-kh-interface text-muted-foreground tabular-nums',
                 ranking.ranking === 1 && 'text-yellow-400',
                 ranking.ranking === 2 && 'text-gray-300',
                 ranking.ranking === 3 && 'text-amber-600'
@@ -73,7 +73,7 @@ export default function UserRow({
               <span className='w-4 font-black'>{ranking.ranking}</span>
             </div>
           ) : (
-            <Minus className='text-muted-foreground size-4' />
+            <Minus className='size-4 text-muted-foreground' />
           )}
         </div>
       </ItemContent>
@@ -91,7 +91,7 @@ export default function UserRow({
         key={user.id}
         className={twMerge(
           highlight &&
-            'bg-primary-background hover:bg-primary/25 ring-primary/50 ring-1',
+            'bg-primary-background ring-1 ring-primary/50 hover:bg-primary/25',
           className
         )}
         asChild
@@ -106,7 +106,7 @@ export default function UserRow({
       key={user.id}
       className={twMerge(
         highlight &&
-          'bg-primary-background hover:bg-primary/25 ring-primary/50 ring-1',
+          'bg-primary-background ring-1 ring-primary/50 hover:bg-primary/25',
         className
       )}
       asChild

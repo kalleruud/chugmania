@@ -215,7 +215,7 @@ export function CalendarField({
             disabled={disabled}
             required={required}
             className={twMerge(
-              timeError && 'border-destructive ring-destructive ring-2'
+              timeError && 'border-destructive ring-2 ring-destructive'
             )}
           />
         </div>

@@ -26,11 +26,11 @@ export default function MatchCard({
       type='button'
       onClick={onClick}
       className={twMerge(
-        'bg-background-secondary hover:bg-background-tertiary hover:border-primary/20 flex w-full cursor-pointer flex-col items-center justify-center gap-4 rounded-lg border border-transparent p-6 transition-colors',
+        'hover:bg-background-tertiary flex w-full cursor-pointer flex-col items-center justify-center gap-4 rounded-lg border border-transparent bg-background-secondary p-6 transition-colors hover:border-primary/20',
         className
       )}>
       {/* Header: Stage and Status */}
-      <div className='text-muted-foreground flex w-full items-center justify-between text-xs uppercase'>
+      <div className='flex w-full items-center justify-between text-xs text-muted-foreground uppercase'>
         <span>
           {match.stage ? (loc.no.match.stage[match.stage] ?? match.stage) : ''}
         </span>
@@ -43,7 +43,7 @@ export default function MatchCard({
         <div className='flex flex-1 flex-col items-center gap-1 text-center'>
           <div
             className={twMerge(
-              'bg-background flex h-12 w-12 items-center justify-center rounded-full border-2',
+              'flex h-12 w-12 items-center justify-center rounded-full border-2 bg-background',
               match.winner === match.user1 && match.user1
                 ? 'border-primary text-primary'
                 : 'border-border text-muted-foreground'
@@ -63,7 +63,7 @@ export default function MatchCard({
 
         {/* VS */}
         <div className='flex flex-col items-center justify-center'>
-          <span className='font-kh-interface text-muted-foreground/50 text-2xl font-bold'>
+          <span className='font-kh-interface text-2xl font-bold text-muted-foreground/50'>
             VS
           </span>
         </div>
@@ -72,7 +72,7 @@ export default function MatchCard({
         <div className='flex flex-1 flex-col items-center gap-1 text-center'>
           <div
             className={twMerge(
-              'bg-background flex h-12 w-12 items-center justify-center rounded-full border-2',
+              'flex h-12 w-12 items-center justify-center rounded-full border-2 bg-background',
               match.winner === match.user2 && match.user2
                 ? 'border-primary text-primary'
                 : 'border-border text-muted-foreground'
@@ -93,7 +93,7 @@ export default function MatchCard({
 
       {/* Footer: Track Info */}
       {track && (
-        <div className='bg-background/50 mt-2 flex items-center justify-center gap-2 rounded-full px-3 py-1'>
+        <div className='mt-2 flex items-center justify-center gap-2 rounded-full bg-background/50 px-3 py-1'>
           <span className='font-kh-interface text-sm tabular-nums'>
             #{formatTrackName(track.number)}
           </span>

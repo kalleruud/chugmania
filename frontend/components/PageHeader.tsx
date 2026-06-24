@@ -23,11 +23,11 @@ export function PageHeader({
     <div className='flex items-center justify-between'>
       <div className='flex flex-col' {...props}>
         <div className='flex items-center gap-2'>
-          {Icon && <Icon className='text-primary size-6' />}
-          <h3 className='text-foreground pt-0.5'>{title}</h3>
+          {Icon && <Icon className='size-6 text-primary' />}
+          <h3 className='pt-0.5 text-foreground'>{title}</h3>
         </div>
         {description && (
-          <p className='text-muted-foreground text-sm font-medium'>
+          <p className='text-sm font-medium text-muted-foreground'>
             {description}
           </p>
         )}
@@ -40,7 +40,7 @@ export function PageHeader({
     return (
       <Link
         className={twMerge(
-          'hover:bg-primary-foreground/10 my-2 rounded-sm p-2 transition-colors',
+          'my-2 rounded-sm p-2 transition-colors hover:bg-primary-foreground/10',
           className
         )}
         to={to}>
@@ -61,7 +61,7 @@ export function PageSubheader({
   return (
     <div
       className={twMerge(
-        'text-muted-foreground font-f1 flex w-full justify-between p-1 pt-2 text-sm font-medium uppercase',
+        'flex w-full justify-between p-1 pt-2 font-f1 text-sm font-medium text-muted-foreground uppercase',
         className
       )}
       {...props}>
