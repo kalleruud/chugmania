@@ -37,18 +37,14 @@ export default function TrackLeaderboard({
   const entries = timeEntries
     .filter(te => !session || session === te.session)
     .filter(te => !user || user === te.user)
-    .filter(te => !track || track.id === te.track)
+    .filter(te => track.id === te.track)
 
   const filteredMatches = matches
     .filter(m => !session || session === m.session)
     .filter(m => !user || user === m.user1 || user === m.user2)
-    .filter(m => !track || track.id === m.track)
+    .filter(m => track.id === m.track)
 
-  if (
-    (!entries || entries.length === 0) &&
-    (!filteredMatches || filteredMatches.length === 0)
-  )
-    return undefined
+  if (entries.length === 0 && filteredMatches.length === 0) return undefined
 
   return (
     <div
@@ -67,7 +63,7 @@ export default function TrackLeaderboard({
             track={track.id}
             user={user}
             session={session}
-            entries={entries ?? []}
+            entries={entries}
             {...rest}
           />
         </TabsContent>

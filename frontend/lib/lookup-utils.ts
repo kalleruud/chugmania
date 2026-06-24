@@ -34,7 +34,7 @@ export function userToLookupItem(user: UserInfo) {
       user.firstName,
       user.lastName ?? '',
       user.shortName ?? '',
-      user.email ?? '',
+      user.email,
     ],
   }
 }

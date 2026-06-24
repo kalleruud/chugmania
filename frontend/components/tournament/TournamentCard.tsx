@@ -46,13 +46,19 @@ export function MatchesGroupedByBracket(
       acc.set(bracketName, new Map<number, TournamentMatch[]>())
     }
 
-    const bracketRounds = acc.get(bracketName)!
+    let bracketRounds = acc.get(bracketName)
+
+    if (!bracketRounds) {
+      bracketRounds = new Map<number, TournamentMatch[]>()
+      acc.set(bracketName, bracketRounds)
+    }
 
     if (!bracketRounds.has(roundNum)) {
       bracketRounds.set(roundNum, [])
     }
 
-    bracketRounds.get(roundNum)!.push(match)
+    const roundMatches = bracketRounds.get(roundNum)
+    if (roundMatches) roundMatches.push(match)
     return acc
   }, new Map<string, Map<number, TournamentMatch[]>>())
 
@@ -132,21 +138,11 @@ export default function TournamentCard({
   }
 
   const groupMatches = tournament.matches.filter(m => m.bracket === 'group')
-  const bracketMatches = tournament.matches.filter(m => m.bracket !== 'group')
-
   const completedGroupMatches = groupMatches.filter(
     gm =>
       gm.match && matches?.find(m => m.id === gm.match)?.status === 'completed'
   ).length
   const totalGroupMatches = groupMatches.length
-
-  const completedBracketMatches = bracketMatches.filter(
-    bm =>
-      bm.match && matches?.find(m => m.id === bm.match)?.status === 'completed'
-  ).length
-  const totalBracketMatches = bracketMatches.filter(
-    bm => bm.match !== null
-  ).length
 
   return (
     <div

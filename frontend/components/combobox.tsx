@@ -18,7 +18,6 @@ import {
 import { twMerge } from 'tailwind-merge'
 import type { BaseRowProps } from './row/RowProps'
 import { Button } from './ui/button'
-import { Spinner } from './ui/spinner'
 
 type ComboboxProps<T extends ComboboxLookupItem> = {
   placeholder: string
@@ -120,7 +119,7 @@ export default function Combobox<T extends ComboboxLookupItem>({
     function onDocKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape') setOpen(false)
       if (e.key === 'Enter' && open) {
-        const first = results[0]
+        const first = results.at(0)
         if (first) onSelect(first)
       }
     }
@@ -158,16 +157,14 @@ export default function Combobox<T extends ComboboxLookupItem>({
 
             {!CustomRow && selected && <Row item={selected} />}
 
-            {isLoading && <Spinner />}
-            {!disabled && !isLoading && (
+            {!disabled && (
               <ChevronsUpDown className='size-4 flex-none text-muted-foreground' />
             )}
           </Button>
         </PopoverTrigger>
-        {!isLoading && (
-          <PopoverContent
-            className='w-sm bg-popover/90 p-0 backdrop-blur-xl'
-            align={align}>
+        <PopoverContent
+          className='w-sm bg-popover/90 p-0 backdrop-blur-xl'
+          align={align}>
             <div className='flex items-center gap-2 border-b border-border px-2'>
               <Search className='size-4 text-muted-foreground' />
               <input
@@ -210,8 +207,7 @@ export default function Combobox<T extends ComboboxLookupItem>({
                 ))}
               </ul>
             )}
-          </PopoverContent>
-        )}
+        </PopoverContent>
       </Popover>
     </div>
   )
