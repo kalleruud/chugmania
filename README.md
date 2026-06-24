@@ -36,7 +36,6 @@ Chugmania is a full-stack Trackmania Turbo companion for logging lap times, shar
 | `npm run prod`                  | Serve the built backend without running migrations.       |
 | `npm run check`                 | Run `drizzle-kit check`, TypeScript, and Prettier.        |
 | `npm run db:gen`                | Emit SQL migrations after schema edits.                   |
-| `npm run db:migrate`            | Apply pending Drizzle migrations.                         |
 | `npm run db:push` / `db:studio` | Push schema OR open the Drizzle Studio UI.                |
 
 ### Testing
