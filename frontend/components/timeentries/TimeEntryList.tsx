@@ -76,7 +76,7 @@ function getGap(
   i: number,
   entry: TimeEntry,
   compareEntry: TimeEntry | undefined,
-  leader: TimeEntry | undefined = undefined
+  leader?: TimeEntry  
 ): LeaderboardEntryGap | undefined {
   if (!entry.duration) return undefined
 

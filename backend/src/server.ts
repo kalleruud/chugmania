@@ -1,6 +1,7 @@
 import type {
   ClientToServerEvents,
   ErrorResponse,
+  EventCb,
   EventReq,
   EventRes,
   InterServerEvents,
@@ -9,7 +10,7 @@ import type {
 } from '@common/models/socket.io'
 import express from 'express'
 import { Server, Socket } from 'socket.io'
-import ViteExpress from 'vite-express'
+import { listen } from 'vite-express'
 import AdminManager from './managers/admin.manager'
 import ApiManager from './managers/api.manager'
 import AuthManager from './managers/auth.manager'
@@ -26,7 +27,7 @@ const PORT = process.env.PORT ? Number.parseInt(process.env.PORT) : 6996
 const ORIGIN = new URL(process.env.ORIGIN ?? `http://localhost:${PORT}`)
 
 const app = express()
-const server = ViteExpress.listen(app, PORT)
+const server = listen(app, PORT)
 const io = new Server<
   ClientToServerEvents,
   ServerToClientEvents,
@@ -68,10 +69,10 @@ async function emitData(socket: TypedSocket) {
   socket.emit('all_tournaments', tournaments)
 }
 
-export async function broadcast<Ev extends ProtectedServerEvent>(
+export function broadcast<Ev extends ProtectedServerEvent>(
   ev: Ev,
   ...args: Parameters<ServerToClientEvents[Ev]>
-) {
+): void {
   io.sockets.sockets.forEach(socket => {
     if (socket.data.userId) {
       socket.emit(ev, ...args)
@@ -104,32 +105,68 @@ async function Connect(s: TypedSocket) {
     console.debug(new Date().toISOString(), s.id, 'Disconnected')
   )
 
-  setup(s, 'login', AuthManager.onLogin)
-  setup(s, 'register', UserManager.onRegister)
+  setup(s, 'login', (socket, request) => AuthManager.onLogin(socket, request))
+  setup(s, 'register', (socket, request) =>
+    UserManager.onRegister(socket, request)
+  )
 
-  setup(s, 'get_user_data', AuthManager.refreshToken)
-  setup(s, 'edit_user', UserManager.onEditUser)
-  setup(s, 'delete_user', UserManager.onDeleteUser)
+  setup(s, 'get_user_data', socket => AuthManager.refreshToken(socket))
+  setup(s, 'edit_user', (socket, request) =>
+    UserManager.onEditUser(socket, request)
+  )
+  setup(s, 'delete_user', (socket, request) =>
+    UserManager.onDeleteUser(socket, request)
+  )
 
-  setup(s, 'post_time_entry', TimeEntryManager.onPostTimeEntry)
-  setup(s, 'edit_time_entry', TimeEntryManager.onEditTimeEntry)
+  setup(s, 'post_time_entry', (socket, request) =>
+    TimeEntryManager.onPostTimeEntry(socket, request)
+  )
+  setup(s, 'edit_time_entry', (socket, request) =>
+    TimeEntryManager.onEditTimeEntry(socket, request)
+  )
 
-  setup(s, 'create_session', SessionManager.onCreateSession)
-  setup(s, 'edit_session', SessionManager.onEditSession)
-  setup(s, 'rsvp_session', SessionManager.onRsvpSession)
-  setup(s, 'delete_session', SessionManager.onDeleteSession)
+  setup(s, 'create_session', (socket, request) =>
+    SessionManager.onCreateSession(socket, request)
+  )
+  setup(s, 'edit_session', (socket, request) =>
+    SessionManager.onEditSession(socket, request)
+  )
+  setup(s, 'rsvp_session', (socket, request) =>
+    SessionManager.onRsvpSession(socket, request)
+  )
+  setup(s, 'delete_session', (socket, request) =>
+    SessionManager.onDeleteSession(socket, request)
+  )
 
-  setup(s, 'create_match', MatchManager.onCreateMatch)
-  setup(s, 'edit_match', MatchManager.onEditMatch)
-  setup(s, 'delete_match', MatchManager.onDeleteMatch)
+  setup(s, 'create_match', (socket, request) =>
+    MatchManager.onCreateMatch(socket, request)
+  )
+  setup(s, 'edit_match', (socket, request) =>
+    MatchManager.onEditMatch(socket, request)
+  )
+  setup(s, 'delete_match', (socket, request) =>
+    MatchManager.onDeleteMatch(socket, request)
+  )
 
-  setup(s, 'import_csv', AdminManager.onImportCsv)
-  setup(s, 'export_csv', AdminManager.onExportCsv)
+  setup(s, 'import_csv', (socket, request) =>
+    AdminManager.onImportCsv(socket, request)
+  )
+  setup(s, 'export_csv', (socket, request) =>
+    AdminManager.onExportCsv(socket, request)
+  )
 
-  setup(s, 'create_tournament', TournamentManager.onCreateTournament)
-  setup(s, 'edit_tournament', TournamentManager.onEditTournament)
-  setup(s, 'delete_tournament', TournamentManager.onDeleteTournament)
-  setup(s, 'get_tournament_preview', TournamentManager.onGetTournamentPreview)
+  setup(s, 'create_tournament', (socket, request) =>
+    TournamentManager.onCreateTournament(socket, request)
+  )
+  setup(s, 'edit_tournament', (socket, request) =>
+    TournamentManager.onEditTournament(socket, request)
+  )
+  setup(s, 'delete_tournament', (socket, request) =>
+    TournamentManager.onDeleteTournament(socket, request)
+  )
+  setup(s, 'get_tournament_preview', (socket, request) =>
+    TournamentManager.onGetTournamentPreview(socket, request)
+  )
 }
 
 function setup<Ev extends keyof ClientToServerEvents>(
@@ -137,11 +174,12 @@ function setup<Ev extends keyof ClientToServerEvents>(
   event: Ev,
   handler: (s: TypedSocket, r: EventReq<Ev>) => Promise<EventRes<Ev>>
 ) {
-  s.on(event, ((r: EventReq<Ev>, callback?: any) =>
+  s.on(event, ((r: EventReq<Ev>, callback?: EventCb<Ev>) =>
     handler(s, r)
       .then(callback)
-      .catch(e => {
-        console.warn(e.message)
-        callback({ success: false, message: e.message } satisfies ErrorResponse)
-      })) as any)
+      .catch((e: unknown) => {
+        const message = e instanceof Error ? e.message : String(e)
+        console.warn(message)
+        callback?.({ success: false, message } satisfies ErrorResponse)
+      })) as ClientToServerEvents[Ev])
 }

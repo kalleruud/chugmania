@@ -16,8 +16,8 @@ import AuthManager from './auth.manager'
 import RatingManager from './rating.manager'
 import TournamentManager from './tournament.manager'
 
-export default class MatchManager {
-  private static validateMatchState(
+class MatchManagerClass {
+  private validateMatchState(
     request: CreateMatchRequest | EditMatchRequest,
     match?: Match
   ) {
@@ -39,7 +39,7 @@ export default class MatchManager {
     }
   }
 
-  public static async getAllMatches(): Promise<Match[]> {
+  public async getAllMatches(): Promise<Match[]> {
     const matchRows = await db
       .select({ ...getTableColumns(matches) })
       .from(matches)
@@ -51,7 +51,7 @@ export default class MatchManager {
   }
 
   // Returns matches sorted by creation date, most recent first.
-  public static async getAllBySession(sessionId: string): Promise<Match[]> {
+  public async getAllBySession(sessionId: string): Promise<Match[]> {
     return await db
       .select({ ...getTableColumns(matches) })
       .from(matches)
@@ -59,7 +59,7 @@ export default class MatchManager {
       .orderBy(desc(matches.createdAt))
   }
 
-  static async onCreateMatch(
+  async onCreateMatch(
     socket: TypedSocket,
     request: EventReq<'create_match'>
   ): Promise<EventRes<'create_match'>> {
@@ -73,7 +73,16 @@ export default class MatchManager {
 
     MatchManager.validateMatchState(request)
 
-    const { type, createdAt, updatedAt, deletedAt, ...matchData } = request
+    const matchData = {
+      session: request.session,
+      user1: request.user1,
+      user2: request.user2,
+      track: request.track,
+      status: request.status,
+      winner: request.winner,
+      duration: request.duration,
+      comment: request.comment,
+    }
     const [match] = await db.insert(matches).values(matchData).returning()
 
     console.debug(new Date().toISOString(), socket.id, 'Created match')
@@ -86,7 +95,7 @@ export default class MatchManager {
     return { success: true }
   }
 
-  static async onEditMatch(
+  async onEditMatch(
     socket: TypedSocket,
     request: EventReq<'edit_match'>
   ): Promise<EventRes<'edit_match'>> {
@@ -106,7 +115,17 @@ export default class MatchManager {
 
     MatchManager.validateMatchState(request, preImageMatch)
 
-    const { type, id, createdAt, updatedAt, ...updates } = request
+    const updates = {
+      session: request.session,
+      user1: request.user1,
+      user2: request.user2,
+      track: request.track,
+      status: request.status,
+      winner: request.winner,
+      duration: request.duration,
+      comment: request.comment,
+      deletedAt: request.deletedAt,
+    }
     const [res] = await db
       .update(matches)
       .set({
@@ -118,7 +137,7 @@ export default class MatchManager {
       .where(eq(matches.id, preImageMatch.id))
       .returning()
 
-    console.debug(new Date().toISOString(), socket.id, 'Updated match', id)
+    console.debug(new Date().toISOString(), socket.id, 'Updated match', request.id)
 
     await RatingManager.recalculate()
     await broadcast('all_matches', await MatchManager.getAllMatches())
@@ -130,7 +149,7 @@ export default class MatchManager {
     return { success: true }
   }
 
-  static async onDeleteMatch(
+  async onDeleteMatch(
     socket: TypedSocket,
     request: EventReq<'delete_match'>
   ): Promise<EventRes<'delete_match'>> {
@@ -151,3 +170,6 @@ export default class MatchManager {
     }
   }
 }
+const MatchManager = new MatchManagerClass()
+
+export default MatchManager

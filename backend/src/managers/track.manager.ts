@@ -5,10 +5,10 @@ import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
 import { timeEntries, tracks } from '../../database/schema'
 
-export default class TrackManager {
-  static readonly table = tracks
+class TrackManagerClass {
+  readonly table = tracks
 
-  static async import(data: (typeof TrackManager.table.$inferInsert)[]) {
+  async import(data: (typeof TrackManager.table.$inferInsert)[]) {
     const tasks = data.map(d =>
       db
         .insert(TrackManager.table)
@@ -20,7 +20,7 @@ export default class TrackManager {
     return (await Promise.all(tasks)).flat()
   }
 
-  static async getTrackIdsWithLapTimes(
+  async getTrackIdsWithLapTimes(
     offset = 0,
     limit = 100
   ): Promise<string[]> {
@@ -39,7 +39,7 @@ export default class TrackManager {
     return data.map(d => d.id)
   }
 
-  static async getAllTracks(): Promise<Track[]> {
+  async getAllTracks(): Promise<Track[]> {
     const data = await db.select().from(tracks).orderBy(asc(tracks.number))
 
     if (data.length === 0) {
@@ -53,3 +53,6 @@ export default class TrackManager {
     return data
   }
 }
+const TrackManager = new TrackManagerClass()
+
+export default TrackManager

@@ -5,10 +5,10 @@ import { sessions } from '../../database/schema'
 import { broadcast } from '../server'
 import SessionManager from './session.manager'
 
-export default class SessionScheduler {
-  private static scheduledTimeout: NodeJS.Timeout | null = null
+class SessionSchedulerClass {
+  private scheduledTimeout: NodeJS.Timeout | null = null
 
-  private static async findNextSession(): Promise<SessionWithSignups | null> {
+  private async findNextSession(): Promise<SessionWithSignups | null> {
     const now = new Date()
 
     const nextSessionRow = await db.query.sessions.findFirst({
@@ -20,7 +20,7 @@ export default class SessionScheduler {
     return SessionManager.getSession(nextSessionRow.id)
   }
 
-  static async scheduleNext(): Promise<void> {
+  async scheduleNext(): Promise<void> {
     if (SessionScheduler.scheduledTimeout) {
       SessionScheduler.cancel()
     }
@@ -59,7 +59,7 @@ export default class SessionScheduler {
     )
   }
 
-  private static async onSessionStart(): Promise<void> {
+  private async onSessionStart(): Promise<void> {
     console.debug(
       new Date().toISOString(),
       'Session started, broadcasting all_sessions'
@@ -70,7 +70,7 @@ export default class SessionScheduler {
     await SessionScheduler.scheduleNext()
   }
 
-  static async reschedule(): Promise<void> {
+  async reschedule(): Promise<void> {
     console.debug(
       new Date().toISOString(),
       'Resetting session scheduler (session created/edited/rsvp)'
@@ -79,7 +79,7 @@ export default class SessionScheduler {
     await SessionScheduler.scheduleNext()
   }
 
-  static cancel(): void {
+  cancel(): void {
     if (!SessionScheduler.scheduledTimeout) {
       return console.log('No session scheduled')
     }
@@ -89,3 +89,6 @@ export default class SessionScheduler {
     console.debug(new Date().toISOString(), 'Cancelled scheduled session')
   }
 }
+const SessionScheduler = new SessionSchedulerClass()
+
+export default SessionScheduler

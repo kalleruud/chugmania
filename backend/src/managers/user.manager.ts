@@ -17,10 +17,10 @@ import AuthManager from './auth.manager'
 import RatingManager from './rating.manager'
 import TimeEntryManager from './timeEntry.manager'
 
-export default class UserManager {
-  static readonly table = users
+class UserManagerClass {
+  readonly table = users
 
-  static async getUser(email: string) {
+  async getUser(email: string) {
     const { data: user, error } = await tryCatchAsync(
       db.query.users.findFirst({ where: eq(users.email, email) })
     )
@@ -31,13 +31,13 @@ export default class UserManager {
     return user
   }
 
-  static async getUserById(id: User['id']) {
+  async getUserById(id: User['id']) {
     const user = await db.query.users.findFirst({ where: eq(users.id, id) })
     if (!user) throw new Error(loc.no.error.messages.not_in_db(id))
     return user
   }
 
-  static async updateUser(
+  async updateUser(
     id: User['id'],
     updates: Partial<typeof UserManager.table.$inferInsert>
   ): Promise<User> {
@@ -65,12 +65,12 @@ export default class UserManager {
     return user
   }
 
-  static toUserInfo(user: User) {
+  toUserInfo(user: User) {
     const userInfo: UserInfo = { ...user, passwordHash: undefined }
     return { passwordHash: user.passwordHash, userInfo }
   }
 
-  static async adminExists(): Promise<boolean> {
+  async adminExists(): Promise<boolean> {
     const { data, error } = await tryCatchAsync(
       db
         .select({ id: users.id })
@@ -87,7 +87,7 @@ export default class UserManager {
     return !!data?.length
   }
 
-  static async userExists(email: string): Promise<boolean> {
+  async userExists(email: string): Promise<boolean> {
     const { data, error } = await tryCatchAsync(
       db.query.users.findFirst({ where: eq(users.email, email) })
     )
@@ -100,7 +100,7 @@ export default class UserManager {
     return !!data
   }
 
-  static async onEditUser(
+  async onEditUser(
     socket: TypedSocket,
     request: EventReq<'edit_user'>
   ): Promise<EventRes<'edit_user'>> {
@@ -175,7 +175,7 @@ export default class UserManager {
     }
   }
 
-  static async onDeleteUser(
+  async onDeleteUser(
     socket: TypedSocket,
     request: EventReq<'delete_user'>
   ): Promise<EventRes<'delete_user'>> {
@@ -213,7 +213,7 @@ export default class UserManager {
     }
   }
 
-  static async onRegister(
+  async onRegister(
     socket: TypedSocket,
     request: EventReq<'register'>
   ): Promise<EventRes<'register'>> {
@@ -222,7 +222,7 @@ export default class UserManager {
     }
 
     const { data: actor } = await tryCatchAsync(AuthManager.checkAuth(socket))
-    if (actor && actor?.role !== 'admin' && request.role !== 'user') {
+    if (actor && actor.role !== 'admin' && request.role !== 'user') {
       throw new Error(loc.no.error.messages.insufficient_permissions)
     }
 
@@ -236,12 +236,14 @@ export default class UserManager {
 
     const passwordHash = await AuthManager.hash(request.password)
 
-    const { password, createdAt, role: _, ...user } = request
     const newUser = await db
       .insert(users)
       .values({
-        ...user,
-        createdAt: createdAt ? new Date(createdAt) : undefined,
+        email: request.email,
+        firstName: request.firstName,
+        lastName: request.lastName,
+        shortName: request.shortName,
+        createdAt: request.createdAt ? new Date(request.createdAt) : undefined,
         passwordHash,
         role,
       })
@@ -263,7 +265,7 @@ export default class UserManager {
     return { success: true }
   }
 
-  static async getAllUsers(): Promise<UserInfo[]> {
+  async getAllUsers(): Promise<UserInfo[]> {
     const data = await db.select().from(users).where(isNull(users.deletedAt))
     if (data.length === 0) {
       throw new Error(loc.no.error.messages.not_in_db(loc.no.users.title))
@@ -272,3 +274,6 @@ export default class UserManager {
     return data.map(r => UserManager.toUserInfo(r).userInfo)
   }
 }
+const UserManager = new UserManagerClass()
+
+export default UserManager

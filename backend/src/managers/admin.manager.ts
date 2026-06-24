@@ -31,8 +31,8 @@ import TimeEntryManager from './timeEntry.manager'
 import TrackManager from './track.manager'
 import UserManager from './user.manager'
 
-export default class AdminManager {
-  private static readonly EXCLUDED_COL_EXPORT = {
+class AdminManagerClass {
+  private readonly EXCLUDED_COL_EXPORT = {
     users: new Set(['passwordHash']),
     tracks: new Set(),
     sessions: new Set(),
@@ -45,7 +45,7 @@ export default class AdminManager {
     tournamentMatches: new Set(),
   } satisfies Record<ExportCsvRequest['table'], Set<string>>
 
-  private static readonly TABLE_MAP = {
+  private readonly TABLE_MAP = {
     users: users,
     tracks: tracks,
     sessions: sessions,
@@ -58,7 +58,7 @@ export default class AdminManager {
     tournamentMatches: tournamentMatches,
   } satisfies Record<ExportCsvRequest['table'], SQLiteTable>
 
-  private static async importRows<T extends Record<string, any>>(
+  private async importRows<T extends Record<string, any>>(
     tableName: ExportCsvRequest['table'],
     data: T[]
   ): Promise<{ created: number; updated: number }> {
@@ -104,7 +104,7 @@ export default class AdminManager {
     return { created, updated }
   }
 
-  static async onImportCsv(
+  async onImportCsv(
     socket: Socket,
     request: EventReq<'import_csv'>
   ): Promise<EventRes<'import_csv'>> {
@@ -156,7 +156,7 @@ export default class AdminManager {
     }
   }
 
-  private static filterColumnsForExport(
+  private filterColumnsForExport(
     tableName: ExportCsvRequest['table'],
     records: object[]
   ): object[] {
@@ -174,7 +174,7 @@ export default class AdminManager {
     })
   }
 
-  static async onExportCsv(
+  async onExportCsv(
     socket: Socket,
     request: EventReq<'export_csv'>
   ): Promise<EventRes<'export_csv'>> {
@@ -208,3 +208,6 @@ export default class AdminManager {
     }
   }
 }
+const AdminManager = new AdminManagerClass()
+
+export default AdminManager

@@ -2,8 +2,8 @@ import loc from '@/lib/locales'
 import type { Request, Response } from 'express'
 import CalendarManager from './calendar.manager'
 
-export default class ApiManager {
-  static async onGetCalendar(baseUrl: URL, _: Request, res: Response) {
+class ApiManagerClass {
+  async onGetCalendar(baseUrl: URL, _: Request, res: Response) {
     try {
       const calendar = await CalendarManager.getAllSessionsCalendar(baseUrl)
 
@@ -17,7 +17,7 @@ export default class ApiManager {
     }
   }
 
-  private static handleError(
+  private handleError(
     res: Response,
     statusCode: number,
     context: string,
@@ -32,3 +32,6 @@ export default class ApiManager {
     res.status(statusCode).send(context + ': ' + message)
   }
 }
+const ApiManager = new ApiManagerClass()
+
+export default ApiManager

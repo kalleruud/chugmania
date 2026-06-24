@@ -18,10 +18,10 @@ import UserManager from './user.manager'
 
 const isProduction = process.env.NODE_ENV === 'production'
 
-export default class CalendarManager {
-  public static readonly PRODUCT_ID = 'chugmania/sessions'
+class CalendarManagerClass {
+  public readonly PRODUCT_ID = 'chugmania/sessions'
 
-  public static async getAllSessionsCalendar(baseUrl: URL): Promise<string> {
+  public async getAllSessionsCalendar(baseUrl: URL): Promise<string> {
     return await CalendarManager.createIcsCalendar(
       await SessionManager.getAllSessions(),
       baseUrl,
@@ -29,7 +29,7 @@ export default class CalendarManager {
     )
   }
 
-  private static async createIcsCalendar(
+  private async createIcsCalendar(
     sessionList: SessionWithSignups[],
     baseUrl: URL,
     calendarName: string
@@ -59,7 +59,7 @@ export default class CalendarManager {
     return value
   }
 
-  private static async createSessionEvent(
+  private async createSessionEvent(
     session: SessionWithSignups,
     baseUrl: URL,
     calendarName: string,
@@ -116,7 +116,7 @@ export default class CalendarManager {
     }
   }
 
-  private static async createEventAttendee(signup: {
+  private async createEventAttendee(signup: {
     user: string
     response: SessionResponse
   }): Promise<Attendee> {
@@ -148,7 +148,7 @@ export default class CalendarManager {
     }
   }
 
-  private static toSequence(date: Date) {
+  private toSequence(date: Date) {
     return (
       date.getUTCFullYear() +
       date.getUTCMonth() +
@@ -159,7 +159,7 @@ export default class CalendarManager {
     )
   }
 
-  private static toUtcArray(date: Date) {
+  private toUtcArray(date: Date) {
     const components: [number, number, number, number, number] = [
       date.getUTCFullYear(),
       date.getUTCMonth() + 1,
@@ -170,3 +170,6 @@ export default class CalendarManager {
     return components
   }
 }
+const CalendarManager = new CalendarManagerClass()
+
+export default CalendarManager

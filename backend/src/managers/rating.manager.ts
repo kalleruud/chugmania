@@ -11,21 +11,21 @@ import {
 import SessionManager from './session.manager'
 import TimeEntryManager from './timeEntry.manager'
 
-export default class RatingManager {
-  private static readonly matchCalculator: MatchRatingCalculator =
+class RatingManagerClass {
+  private readonly matchCalculator: MatchRatingCalculator =
     new MatchRatingCalculator()
-  private static readonly trackCalculator: TrackRatingCalculator =
+  private readonly trackCalculator: TrackRatingCalculator =
     new TrackRatingCalculator()
 
-  private static ratings: Map<User['id'], Ranking> = new Map()
+  private ratings: Map<User['id'], Ranking> = new Map()
 
-  private static reset() {
+  private reset() {
     RatingManager.matchCalculator.reset()
     RatingManager.trackCalculator.reset()
     RatingManager.ratings = new Map()
   }
 
-  static async recalculate() {
+  async recalculate() {
     RatingManager.reset()
 
     const sessions = await SessionManager.getAllSessions()
@@ -39,7 +39,7 @@ export default class RatingManager {
     RatingManager.ratings = await RatingManager.calculateRatings()
   }
 
-  private static async processSession(sessionId: Session['id']) {
+  private async processSession(sessionId: Session['id']) {
     const matches = await MatchManager.getAllBySession(sessionId)
     RatingManager.matchCalculator.processMatches(matches)
 
@@ -48,7 +48,7 @@ export default class RatingManager {
     RatingManager.trackCalculator.processTimeEntries(timeEntries)
   }
 
-  static getUserRatings(userId: string): Ranking | undefined {
+  getUserRatings(userId: string): Ranking | undefined {
     if (RatingManager.ratings.size === 0) {
       throw new Error('Ratings not calculated')
     }
@@ -56,7 +56,7 @@ export default class RatingManager {
   }
 
   // Returns all users with their ratings, sorted by ranking.
-  static async onGetRatings(): Promise<Ranking[]> {
+  async onGetRatings(): Promise<Ranking[]> {
     if (RatingManager.ratings.size === 0)
       RatingManager.ratings = await RatingManager.calculateRatings()
 
@@ -65,7 +65,7 @@ export default class RatingManager {
     )
   }
 
-  private static async calculateRatings() {
+  private async calculateRatings() {
     const matchRatings = RatingManager.matchCalculator.getAllRatings()
     const trackRatings = RatingManager.trackCalculator.getAllRatings()
     const users = Array.from(
@@ -105,3 +105,6 @@ export default class RatingManager {
     return newRatings
   }
 }
+const RatingManager = new RatingManagerClass()
+
+export default RatingManager

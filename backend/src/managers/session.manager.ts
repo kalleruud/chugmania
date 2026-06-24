@@ -16,15 +16,15 @@ import AuthManager from './auth.manager'
 import SessionScheduler from './session.scheduler'
 import UserManager from './user.manager'
 
-export default class SessionManager {
-  public static async getAllSessions(): Promise<SessionWithSignups[]> {
+class SessionManagerClass {
+  public async getAllSessions(): Promise<SessionWithSignups[]> {
     const sessionRows = await db
       .select()
       .from(sessions)
       .where(isNull(sessions.deletedAt))
       .orderBy(desc(sessions.date), asc(sessions.createdAt))
 
-    if (!sessionRows || sessionRows.length === 0) {
+    if (sessionRows.length === 0) {
       console.debug(
         new Date().toISOString(),
         loc.no.error.messages.not_in_db('sessions')
@@ -40,9 +40,7 @@ export default class SessionManager {
     )
   }
 
-  public static async getSession(
-    id: string
-  ): Promise<SessionWithSignups | null> {
+  public async getSession(id: string): Promise<SessionWithSignups | null> {
     const session = await db.query.sessions.findFirst({
       where: and(eq(sessions.id, id), isNull(sessions.deletedAt)),
     })
@@ -61,7 +59,7 @@ export default class SessionManager {
     }
   }
 
-  public static async getSessionSignups(
+  public async getSessionSignups(
     sessionId: string
   ): Promise<SessionSignup[]> {
     const signupRows = await db
@@ -85,7 +83,7 @@ export default class SessionManager {
       )
       .orderBy(asc(sessionSignups.createdAt))
 
-    if (!signupRows || signupRows.length === 0) {
+    if (signupRows.length === 0) {
       return []
     }
 
@@ -95,7 +93,7 @@ export default class SessionManager {
     }))
   }
 
-  static async onCreateSession(
+  async onCreateSession(
     socket: TypedSocket,
     request: EventReq<'create_session'>
   ): Promise<EventRes<'create_session'>> {
@@ -107,10 +105,11 @@ export default class SessionManager {
 
     await AuthManager.checkAuth(socket, ['admin', 'moderator'])
 
-    const { type, createdAt, updatedAt, deletedAt, ...sessionData } = request
     await db.insert(sessions).values({
-      ...sessionData,
-      date: new Date(sessionData.date),
+      name: request.name,
+      date: new Date(request.date),
+      track: request.track,
+      isCancelled: request.isCancelled,
     })
 
     console.debug(
@@ -126,7 +125,7 @@ export default class SessionManager {
     return { success: true }
   }
 
-  static async onEditSession(
+  async onEditSession(
     socket: TypedSocket,
     request: EventReq<'edit_session'>
   ): Promise<EventRes<'edit_session'>> {
@@ -146,7 +145,13 @@ export default class SessionManager {
       throw new Error(loc.no.error.messages.not_in_db(request.id))
     }
 
-    const { type, id, createdAt, updatedAt, ...updates } = request
+    const updates = {
+      name: request.name,
+      date: request.date,
+      track: request.track,
+      isCancelled: request.isCancelled,
+      deletedAt: request.deletedAt,
+    }
     const res = await db
       .update(sessions)
       .set({
@@ -158,7 +163,7 @@ export default class SessionManager {
 
     if (res.changes === 0) throw new Error('Update failed')
 
-    console.debug(new Date().toISOString(), socket.id, 'Updated session', id)
+    console.debug(new Date().toISOString(), socket.id, 'Updated session', request.id)
 
     await broadcast('all_sessions', await SessionManager.getAllSessions())
     await SessionScheduler.reschedule()
@@ -166,7 +171,7 @@ export default class SessionManager {
     return { success: true }
   }
 
-  static async onRsvpSession(
+  async onRsvpSession(
     socket: TypedSocket,
     request: EventReq<'rsvp_session'>
   ): Promise<EventRes<'rsvp_session'>> {
@@ -176,7 +181,11 @@ export default class SessionManager {
       )
     }
 
-    const { type, ...requestData } = request
+    const requestData = {
+      session: request.session,
+      user: request.user,
+      response: request.response,
+    }
 
     const actor = await AuthManager.checkAuth(socket)
     const isModerator = actor.role !== 'user'
@@ -229,7 +238,7 @@ export default class SessionManager {
     return { success: true }
   }
 
-  static async onDeleteSession(
+  async onDeleteSession(
     socket: TypedSocket,
     request: EventReq<'delete_session'>
   ): Promise<EventRes<'delete_session'>> {
@@ -262,3 +271,6 @@ export default class SessionManager {
     }
   }
 }
+const SessionManager = new SessionManagerClass()
+
+export default SessionManager

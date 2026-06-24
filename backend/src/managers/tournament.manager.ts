@@ -55,8 +55,8 @@ type LowerMatchMeta = UpperMatchMeta & {
   isDropIn: boolean
 }
 
-export default class TournamentManager {
-  public static async getAllTournaments(): Promise<TournamentWithDetails[]> {
+class TournamentManagerClass {
+  public async getAllTournaments(): Promise<TournamentWithDetails[]> {
     const tournamentRows = await db
       .select()
       .from(tournaments)
@@ -67,7 +67,7 @@ export default class TournamentManager {
     )
   }
 
-  public static async getTournamentsBySession(
+  public async getTournamentsBySession(
     sessionId: string
   ): Promise<TournamentWithDetails[]> {
     const tournamentRows = await db
@@ -82,7 +82,7 @@ export default class TournamentManager {
     )
   }
 
-  private static async getTournamentWithDetails(
+  private async getTournamentWithDetails(
     tournamentId: string
   ): Promise<TournamentWithDetails> {
     const structure =
@@ -90,7 +90,7 @@ export default class TournamentManager {
     return TournamentManager.toTournamentWithDetails(structure)
   }
 
-  private static async getTournamentStructure(
+  private async getTournamentStructure(
     tournamentId: string
   ): Promise<TournamentStructure> {
     const tournament = await db.query.tournaments.findFirst({
@@ -142,7 +142,7 @@ export default class TournamentManager {
     }
   }
 
-  private static async toTournamentWithDetails({
+  private async toTournamentWithDetails({
     tournament,
     groups,
     groupPlayers,
@@ -183,7 +183,7 @@ export default class TournamentManager {
     }
   }
 
-  static async onCreateTournament(
+  async onCreateTournament(
     socket: TypedSocket,
     request: EventReq<'create_tournament'>
   ): Promise<EventRes<'create_tournament'>> {
@@ -239,7 +239,7 @@ export default class TournamentManager {
     return { success: true }
   }
 
-  private static async createTournament(
+  private async createTournament(
     sessionId: string,
     groupsCount: number,
     advancementCount: number,
@@ -283,7 +283,7 @@ export default class TournamentManager {
     }
   }
 
-  private static async createGroups(
+  private async createGroups(
     tournamentId: string,
     groupsCount: number,
     playerIds: string[]
@@ -335,7 +335,7 @@ export default class TournamentManager {
     }
   }
 
-  private static async createGroupMatches(
+  private async createGroupMatches(
     tournamentId: string,
     sessionId: string,
     groups: { id: string; name: string }[],
@@ -400,7 +400,7 @@ export default class TournamentManager {
     return { tournamentMatches, matches }
   }
 
-  static generateBracketSlots(
+  generateBracketSlots(
     tournamentId: string,
     createdGroups: { id: string; name: string }[],
     advancementCount: number,
@@ -449,7 +449,7 @@ export default class TournamentManager {
     return allMatches
   }
 
-  private static buildUpperBracket(
+  private buildUpperBracket(
     tournamentId: string,
     groups: { id: string }[],
     advancementCount: number,
@@ -502,7 +502,7 @@ export default class TournamentManager {
     return { matches, meta }
   }
 
-  private static assignGroupSources(
+  private assignGroupSources(
     draft: CreateTournamentMatch,
     index: number,
     groups: { id: string }[],
@@ -534,7 +534,7 @@ export default class TournamentManager {
     })
   }
 
-  private static assignWinnerSources(
+  private assignWinnerSources(
     draft: CreateTournamentMatch,
     meta: UpperMatchMeta[],
     roundNum: number,
@@ -553,7 +553,7 @@ export default class TournamentManager {
     }
   }
 
-  private static buildLowerBracket(
+  private buildLowerBracket(
     tournamentId: string,
     upperMeta: UpperMatchMeta[],
     bracketSize: number,
@@ -616,7 +616,7 @@ export default class TournamentManager {
     return { matches, meta }
   }
 
-  private static buildLowerDropInRound(
+  private buildLowerDropInRound(
     tournamentId: string,
     matches: CreateTournamentMatch[],
     meta: LowerMatchMeta[],
@@ -650,7 +650,7 @@ export default class TournamentManager {
     }
   }
 
-  private static buildLowerSurvivorRound(
+  private buildLowerSurvivorRound(
     tournamentId: string,
     matches: CreateTournamentMatch[],
     meta: LowerMatchMeta[],
@@ -680,7 +680,7 @@ export default class TournamentManager {
     }
   }
 
-  private static buildGrandFinal(
+  private buildGrandFinal(
     tournamentId: string,
     upperMeta: UpperMatchMeta[],
     lowerMeta: LowerMatchMeta[],
@@ -707,7 +707,7 @@ export default class TournamentManager {
     }
   }
 
-  private static getRoundName(size: number, isLower: boolean): string {
+  private getRoundName(size: number, isLower: boolean): string {
     const prefix = isLower ? 'Taper ' : ''
     if (size === 2) return `${prefix}Finale`
     if (size === 4) return `${prefix}Semifinale`
@@ -716,7 +716,7 @@ export default class TournamentManager {
     return `${prefix}Runde ${size}`
   }
 
-  static async onEditTournament(
+  async onEditTournament(
     socket: TypedSocket,
     request: EventReq<'edit_tournament'>
   ): Promise<EventRes<'edit_tournament'>> {
@@ -736,7 +736,7 @@ export default class TournamentManager {
     return { success: false, message: 'Not implemented' }
   }
 
-  private static async deleteTournamentStructure(tournamentId: string) {
+  private async deleteTournamentStructure(tournamentId: string) {
     const matchRows = await db
       .select({ matchId: tournamentMatches.match })
       .from(tournamentMatches)
@@ -774,7 +774,7 @@ export default class TournamentManager {
       .where(eq(groups.tournament, tournamentId))
   }
 
-  static async onDeleteTournament(
+  async onDeleteTournament(
     socket: TypedSocket,
     request: EventReq<'delete_tournament'>
   ): Promise<EventRes<'delete_tournament'>> {
@@ -806,7 +806,7 @@ export default class TournamentManager {
     return { success: true }
   }
 
-  public static async onMatchCompleted(matchId: string) {
+  public async onMatchCompleted(matchId: string) {
     const match = await db.query.matches.findFirst({
       where: eq(matches.id, matchId),
     })
@@ -849,7 +849,7 @@ export default class TournamentManager {
     broadcast('all_tournaments', await TournamentManager.getAllTournaments())
   }
 
-  private static async checkGroupCompletion(
+  private async checkGroupCompletion(
     tournamentId: string,
     sessionId: string
   ) {
@@ -953,7 +953,7 @@ export default class TournamentManager {
     }
   }
 
-  private static calculateGroupStandings(
+  private calculateGroupStandings(
     players: { user: string }[],
     groupMatches: {
       user1: string | null
@@ -992,7 +992,7 @@ export default class TournamentManager {
       })
   }
 
-  private static async progressBracket(
+  private async progressBracket(
     tournamentId: string,
     completedMatchId: string,
     winnerId: string,
@@ -1088,7 +1088,7 @@ export default class TournamentManager {
     }
   }
 
-  private static async tryCreateBracketMatch(
+  private async tryCreateBracketMatch(
     pendingMatch: typeof tournamentMatches.$inferSelect,
     sessionId: string,
     userA?: string,
@@ -1174,7 +1174,7 @@ export default class TournamentManager {
     broadcast('all_rankings', await RatingManager.onGetRatings())
   }
 
-  private static async getGroupRankedPlayer(
+  private async getGroupRankedPlayer(
     groupId: string,
     rank: number,
     tournamentId: string
@@ -1219,7 +1219,7 @@ export default class TournamentManager {
     return standings[rank - 1]?.user
   }
 
-  private static async getMatchProgressedPlayer(
+  private async getMatchProgressedPlayer(
     matchId: string,
     progression: MatchProgression
   ): Promise<string | undefined> {
@@ -1244,7 +1244,7 @@ export default class TournamentManager {
     }
   }
 
-  private static getBracketStage(
+  private getBracketStage(
     bracket: TournamentBracket,
     round: number | null
   ): MatchStage {
@@ -1265,7 +1265,7 @@ export default class TournamentManager {
     return 'group'
   }
 
-  static async onGetTournamentPreview(
+  async onGetTournamentPreview(
     socket: TypedSocket,
     request: EventReq<'get_tournament_preview'>
   ): Promise<EventRes<'get_tournament_preview'>> {
@@ -1319,3 +1319,6 @@ export default class TournamentManager {
     return { success: true, tournament: tournamentWithDetails }
   }
 }
+const TournamentManager = new TournamentManagerClass()
+
+export default TournamentManager

@@ -24,19 +24,19 @@ function delay(time: number) {
   return new Promise(resolve => setTimeout(resolve, time))
 }
 
-export default class AuthManager {
-  private static readonly LOGIN_DELAY = 1000
+class AuthManagerClass {
+  private readonly LOGIN_DELAY = 1000
 
-  private static readonly JWT_OPTIONS: jwt.SignOptions = {
+  private readonly JWT_OPTIONS: jwt.SignOptions = {
     algorithm: 'HS512',
     expiresIn: '30DAYS',
   }
 
-  static sign(userId: TokenData['userId']) {
+  sign(userId: TokenData['userId']) {
     return jwt.sign({ userId }, SECRET, AuthManager.JWT_OPTIONS)
   }
 
-  private static async verify(token: string | undefined): Promise<TokenData> {
+  private async verify(token: string | undefined): Promise<TokenData> {
     if (!token) throw new Error(loc.no.error.messages.missing_jwt)
     const { data, error } = tryCatch(jwt.verify(token, SECRET))
     if (error) {
@@ -53,7 +53,7 @@ export default class AuthManager {
     return data
   }
 
-  static async isPasswordValid(
+  async isPasswordValid(
     expectedHash: User['passwordHash'],
     providedPassword?: string
   ) {
@@ -61,12 +61,12 @@ export default class AuthManager {
     return expectedHash.equals(await AuthManager.hash(providedPassword))
   }
 
-  static async hash(s: string): Promise<User['passwordHash']> {
+  async hash(s: string): Promise<User['passwordHash']> {
     const encoder = new TextEncoder()
     return Buffer.from(await crypto.subtle.digest('SHA-512', encoder.encode(s)))
   }
 
-  static async checkAuth(
+  async checkAuth(
     socket: TypedSocket,
     allowedRoles?: UserInfo['role'][],
     allowDefaultEmail?: boolean
@@ -85,7 +85,7 @@ export default class AuthManager {
     return UserManager.toUserInfo(user).userInfo
   }
 
-  static async onLogin(
+  async onLogin(
     socket: TypedSocket,
     request: EventReq<'login'>
   ): Promise<EventRes<'login'>> {
@@ -123,7 +123,7 @@ export default class AuthManager {
     }
   }
 
-  static async refreshToken(
+  async refreshToken(
     socket: TypedSocket
   ): Promise<EventRes<'get_user_data'>> {
     const { data: user, error } = await tryCatchAsync(
@@ -149,3 +149,6 @@ export default class AuthManager {
     }
   }
 }
+const AuthManager = new AuthManagerClass()
+
+export default AuthManager

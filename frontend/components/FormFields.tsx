@@ -71,7 +71,7 @@ export function SelectField<T extends string>({
       </Label>
       <Select
         value={value}
-        onValueChange={onValueChange as (value: string) => void}
+        onValueChange={onValueChange}
         {...props}>
         <SelectTrigger className='w-full'>
           <SelectValue placeholder={name} />

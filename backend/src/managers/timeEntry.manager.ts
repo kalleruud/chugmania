@@ -14,10 +14,10 @@ import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import RatingManager from './rating.manager'
 
-export default class TimeEntryManager {
-  static readonly table = timeEntries
+class TimeEntryManagerClass {
+  readonly table = timeEntries
 
-  static async import(data: (typeof TimeEntryManager.table.$inferInsert)[]) {
+  async import(data: (typeof TimeEntryManager.table.$inferInsert)[]) {
     const tasks = data.map(d =>
       db
         .insert(TimeEntryManager.table)
@@ -30,7 +30,7 @@ export default class TimeEntryManager {
   }
 
   // Returns all latest lap times for each user after a session.
-  static async getAllLatestAfterSession(
+  async getAllLatestAfterSession(
     sessionId: Session['id']
   ): Promise<TimeEntry[]> {
     const latestDatePerUser = db
@@ -76,7 +76,7 @@ export default class TimeEntryManager {
       .where(eq(timeEntries.session, sessionId))
   }
 
-  static async onPostTimeEntry(
+  async onPostTimeEntry(
     socket: TypedSocket,
     request: EventReq<'post_time_entry'>
   ): Promise<EventRes<'post_time_entry'>> {
@@ -111,7 +111,7 @@ export default class TimeEntryManager {
     }
   }
 
-  static async onEditTimeEntry(
+  async onEditTimeEntry(
     socket: TypedSocket,
     request: EventReq<'edit_time_entry'>
   ): Promise<EventRes<'edit_time_entry'>> {
@@ -141,7 +141,15 @@ export default class TimeEntryManager {
       throw new Error(loc.no.error.messages.insufficient_permissions)
     }
 
-    let { type, id, ...updates } = request
+    const updates = {
+      user: request.user,
+      track: request.track,
+      session: request.session,
+      duration: request.duration,
+      createdAt: request.createdAt,
+      updatedAt: request.updatedAt,
+      deletedAt: request.deletedAt,
+    }
 
     // Convert string dates to Date objects
     const processedUpdates = { ...updates }
@@ -179,7 +187,7 @@ export default class TimeEntryManager {
     }
   }
 
-  static async deleteTimeEntriesForUser(userId: User['id']): Promise<void> {
+  async deleteTimeEntriesForUser(userId: User['id']): Promise<void> {
     const deletedAt = new Date()
     await db
       .update(timeEntries)
@@ -187,7 +195,7 @@ export default class TimeEntryManager {
       .where(eq(timeEntries.user, userId))
   }
 
-  static async getAllTimeEntries(): Promise<TimeEntry[]> {
+  async getAllTimeEntries(): Promise<TimeEntry[]> {
     const data = await db
       .select()
       .from(timeEntries)
@@ -203,3 +211,6 @@ export default class TimeEntryManager {
     return data
   }
 }
+const TimeEntryManager = new TimeEntryManagerClass()
+
+export default TimeEntryManager
