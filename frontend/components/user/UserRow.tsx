@@ -33,7 +33,7 @@ export default function UserRow({
 
   const content = (
     <>
-      <ItemContent>
+      <ItemContent className='relative z-10'>
         <div className='flex items-center gap-2'>
           <div className='h-4 w-1 rounded-full bg-primary' />
 
@@ -90,7 +90,7 @@ export default function UserRow({
         </div>
       </ItemContent>
       {!hideLink && (
-        <ItemActions>
+        <ItemActions className='relative z-10'>
           <ChevronRight className='size-4' />
         </ItemActions>
       )}
@@ -125,7 +125,7 @@ export default function UserRow({
       {...props}>
       <div className='pointer-events-none contents'>{content}</div>
       <Link
-        className='absolute inset-0 rounded-md transition-colors duration-100 hover:bg-accent/50'
+        className='absolute inset-0 z-0 rounded-md transition-colors duration-100 hover:bg-accent/50'
         to={`/users/${user.id}`}
         aria-label={`${user.firstName} ${user.lastName}`}
       />
