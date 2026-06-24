@@ -1,7 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { ErrorBoundary } from 'react-error-boundary'
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router'
 import Layout from './app/Layout'
 import AdminPage from './app/pages/AdminPage'
 import CreateTournamentPage from './app/pages/CreateTournamentPage'
@@ -24,8 +24,7 @@ import './index.css'
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider defaultTheme='dark' storageKey='theme'>
-      <BrowserRouter
-        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <BrowserRouter>
         <ConnectionProvider>
           <DataProvider>
             <AuthProvider>

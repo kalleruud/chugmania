@@ -48,7 +48,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { useMemo, useState, type ComponentProps } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams } from 'react-router'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
 import type { SessionResponse } from '../../../backend/database/schema'
