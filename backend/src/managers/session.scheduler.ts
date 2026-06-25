@@ -6,14 +6,12 @@ import { broadcast } from '../server'
 import SessionManager from './session.manager'
 
 export default class SessionScheduler {
-  private static readonly CHECK_INTERVAL_MS = 60 * 60 * 1_000 // 1 hour
-  private static readonly SCHEDULE_WINDOW_MS =
-    2 * SessionScheduler.CHECK_INTERVAL_MS
+  private static readonly MAX_TIMEOUT_MS = 2 ** 31 - 1
 
   private static scheduledTimeout: NodeJS.Timeout | null = null
+  private static checkTimeout: NodeJS.Timeout | null = null
 
   static async start(): Promise<void> {
-    SessionScheduler.cancel()
     const nextSession = await SessionScheduler.findNextSession()
 
     if (!nextSession) {
@@ -26,27 +24,20 @@ export default class SessionScheduler {
 
     const delayMs = Math.max(nextSession.date.getTime() - Date.now())
 
-    if (delayMs > SessionScheduler.SCHEDULE_WINDOW_MS) {
+    if (delayMs > SessionScheduler.MAX_TIMEOUT_MS) {
       console.debug(
         new Date().toISOString(),
-        `Next session "${nextSession.name}" starts outside the scheduling window`,
-        nextSession.id
+        `Next session "${nextSession.name}" starts outside the scheduling window`
       )
-      return
+      return SessionScheduler.rescheduleCheck()
     }
 
+    SessionScheduler.reschedule(delayMs)
     console.debug(
       new Date().toISOString(),
       `Scheduled session "${nextSession.name}" to start in ${delayMs}ms`,
       nextSession.id
     )
-
-    SessionScheduler.scheduledTimeout = setTimeout(
-      SessionScheduler.onSessionStart,
-      delayMs
-    )
-
-    setTimeout(SessionScheduler.start, SessionScheduler.CHECK_INTERVAL_MS)
   }
 
   private static async findNextSession(): Promise<SessionWithSignups | null> {
@@ -68,15 +59,30 @@ export default class SessionScheduler {
     )
 
     broadcast('all_sessions', await SessionManager.getAllSessions())
-    SessionScheduler.cancel()
     await SessionScheduler.start()
   }
 
-  private static cancel(): void {
-    if (!SessionScheduler.scheduledTimeout) return
+  private static reschedule(delay: number): void {
+    if (SessionScheduler.scheduledTimeout) {
+      clearTimeout(SessionScheduler.scheduledTimeout)
+    }
 
-    clearTimeout(SessionScheduler.scheduledTimeout)
-    SessionScheduler.scheduledTimeout = null
-    console.debug(new Date().toISOString(), 'Cancelled scheduled session')
+    SessionScheduler.scheduledTimeout = setTimeout(
+      SessionScheduler.onSessionStart,
+      delay
+    )
+  }
+
+  private static rescheduleCheck(): void {
+    if (SessionScheduler.checkTimeout) {
+      clearTimeout(SessionScheduler.checkTimeout)
+    }
+
+    SessionScheduler.checkTimeout = setTimeout(
+      SessionScheduler.start,
+      SessionScheduler.MAX_TIMEOUT_MS
+    )
+
+    console.debug(new Date().toISOString(), 'Rescheduled check')
   }
 }
