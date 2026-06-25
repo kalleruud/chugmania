@@ -149,7 +149,7 @@ export default class SessionManager {
       request.name
     )
 
-    await broadcast('all_sessions', await SessionManager.getAllSessions())
+    broadcast('all_sessions', await SessionManager.getAllSessions())
     await SessionScheduler.reschedule()
 
     return { success: true }
@@ -189,7 +189,7 @@ export default class SessionManager {
 
     console.debug(new Date().toISOString(), socket.id, 'Updated session', id)
 
-    await broadcast('all_sessions', await SessionManager.getAllSessions())
+    broadcast('all_sessions', await SessionManager.getAllSessions())
     await SessionScheduler.reschedule()
 
     return { success: true }
@@ -252,7 +252,7 @@ export default class SessionManager {
       session.id
     )
 
-    await broadcast('all_sessions', await SessionManager.getAllSessions())
+    broadcast('all_sessions', await SessionManager.getAllSessions())
     await SessionScheduler.reschedule()
 
     return { success: true }

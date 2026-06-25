@@ -180,14 +180,11 @@ export default class TimeEntryManager {
     )
 
     await RatingManager.recalculate()
-    await broadcast(
-      'all_time_entries',
-      await TimeEntryManager.getAllTimeEntries()
-    )
+    broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
     if (signupChanged) {
-      await broadcast('all_sessions', await SessionManager.getAllSessions())
+      broadcast('all_sessions', await SessionManager.getAllSessions())
     }
-    await broadcast('all_rankings', await RatingManager.onGetRatings())
+    broadcast('all_rankings', await RatingManager.onGetRatings())
 
     return {
       success: true,

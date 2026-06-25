@@ -68,7 +68,7 @@ async function emitData(socket: TypedSocket) {
   socket.emit('all_tournaments', tournaments)
 }
 
-export async function broadcast<Ev extends ProtectedServerEvent>(
+export function broadcast<Ev extends ProtectedServerEvent>(
   ev: Ev,
   ...args: Parameters<ServerToClientEvents[Ev]>
 ) {
