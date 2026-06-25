@@ -49,14 +49,13 @@ export type TypedSocket = Socket<
 type ProtectedServerEvent = Exclude<keyof ServerToClientEvents, 'user_data'>
 
 async function emitData(socket: TypedSocket) {
-  const [users, tracks, sessions, timeEntries, matches, rankings, tournaments] =
+  const [users, tracks, sessions, timeEntries, matches, tournaments] =
     await Promise.all([
       UserManager.getAllUsers(),
       TrackManager.getAllTracks(),
       SessionManager.getAllSessions(),
       TimeEntryManager.getAllTimeEntries(),
       MatchManager.getAllMatches(),
-      RatingManager.onGetRatings(),
       TournamentManager.getAllTournaments(),
     ])
   socket.emit('all_users', users)
@@ -64,7 +63,7 @@ async function emitData(socket: TypedSocket) {
   socket.emit('all_sessions', sessions)
   socket.emit('all_time_entries', timeEntries)
   socket.emit('all_matches', matches)
-  socket.emit('all_rankings', rankings)
+  socket.emit('all_rankings', RatingManager.onGetRatings())
   socket.emit('all_tournaments', tournaments)
 }
 
