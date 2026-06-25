@@ -27,7 +27,7 @@ const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io('/', {
 }).timeout(10_000)
 
 function setToken(token: string | undefined): void {
-  socket.auth.token = token
+  socket.auth = { token }
   if (token) localStorage.setItem(AUTH_KEY, token)
   else localStorage.removeItem(AUTH_KEY)
 }

@@ -153,9 +153,8 @@ export default class AdminManager {
   private static filterColumnsForExport(
     tableName: ExportCsvRequest['table'],
     records: object[]
-  ): object[] {
+  ): Record<string, unknown>[] {
     const excludeColumns = AdminManager.EXCLUDED_COL_EXPORT[tableName]
-    if (excludeColumns.size === 0) return records
 
     return records.map(record => {
       const filtered: Record<string, unknown> = {}
