@@ -152,6 +152,7 @@ export default function SessionSignupPanel({
                     key={user.id}
                     item={user}
                     className='h-12 w-full py-1 first:pt-2 last:pb-2'
+                    highlight={isSelf}
                     hideRanking>
                     {(canManageSignups || isSelf) && (
                       <Select
@@ -160,10 +161,10 @@ export default function SessionSignupPanel({
                           handleRsvp(value as SessionResponse, user)
                         }
                         disabled={disabled}>
-                        <SelectTrigger>
+                        <SelectTrigger >
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent align="end">
                           {RESPONSE_OPTIONS.map(({ response, Icon }) => (
                             <SelectItem key={response} value={response}>
                               <Icon className='size-4' />

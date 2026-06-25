@@ -73,11 +73,7 @@ export default function UserRow({
     return (
       <Item
         key={user.id}
-        className={twMerge(
-          highlight &&
-            'bg-primary-background ring-1 ring-primary/50 hover:bg-primary/25',
-          className
-        )}
+        className={twMerge(highlight && 'bg-foreground/3', className)}
         asChild
         {...props}>
         <div>{content}</div>
@@ -88,12 +84,7 @@ export default function UserRow({
   return (
     <Item
       key={user.id}
-      className={twMerge(
-        'relative',
-        highlight &&
-          'bg-primary-background ring-1 ring-primary/50 hover:bg-primary/25',
-        className
-      )}
+      className={twMerge('relative', highlight && 'bg-foreground/3', className)}
       {...props}>
       <div className='pointer-events-none contents'>{content}</div>
       <Link
