@@ -254,7 +254,11 @@ function validateTime(
 }
 
 function formatTimeInput(input: string): string {
-  const digits = input.replaceAll(/\D/g, '').slice(0, 6)
+  const normalized = input.replaceAll(/[.,\s]/g, ':')
+  if (normalized.includes(':')) return normalized.slice(0, 8)
+  if (/\D/.test(normalized)) return normalized.slice(0, 8)
+
+  const digits = normalized.replaceAll(/\D/g, '').slice(0, 6)
   if (digits.length <= 2) return digits
   if (digits.length <= 4) return `${digits.slice(0, 2)}:${digits.slice(2)}`
   if (digits.length === 6 && digits.endsWith('00')) {
@@ -281,14 +285,14 @@ function formatParsedTime({
 function parseTimeWithSeparators(
   input: string
 ): { hours: number; minutes: number; seconds: number } | null {
-  const separators = /[:.,\s]/
-  const parts = input.split(separators).filter(p => p.length > 0)
+  const parts = input.replaceAll(/[.,\s]/g, ':').split(':')
 
   if (parts.length < 2 || parts.length > 3) return null
+  if (parts.some(part => !/^\d+$/.test(part))) return null
 
-  const hours = Number.parseInt(parts[0])
-  const minutes = Number.parseInt(parts[1])
-  const seconds = parts.length === 3 ? Number.parseInt(parts[2]) : 0
+  const hours = Number.parseInt(parts[0], 10)
+  const minutes = Number.parseInt(parts[1], 10)
+  const seconds = parts.length === 3 ? Number.parseInt(parts[2], 10) : 0
 
   if (!validateTime(hours, minutes, seconds)) return null
 
@@ -298,7 +302,9 @@ function parseTimeWithSeparators(
 function parseTimeWithoutSeparators(
   input: string
 ): { hours: number; minutes: number; seconds: number } | null {
-  const digits = input.replaceAll(/\D/g, '')
+  if (!/^\d+$/.test(input)) return null
+
+  const digits = input
   if (digits.length < 1 || digits.length > 6) return null
 
   const padded = digits.padEnd(6, '0')
@@ -316,7 +322,7 @@ function parseTimeInput(
 ): { hours: number; minutes: number; seconds: number } | null {
   if (!input.trim()) return null
 
-  const separators = /[:.\s]/
+  const separators = /[:,.\s]/
   const hasSeparators = separators.test(input)
 
   return hasSeparators
