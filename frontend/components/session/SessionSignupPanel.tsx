@@ -158,7 +158,7 @@ export default function SessionSignupPanel({
                     className='min-h-12 w-full py-1'
                     highlight={isSelf}
                     hideRanking>
-                    {(canManageSignups || isSelf) && (
+                    {(canManageSignups || (isUpcoming(session) && isSelf)) && (
                       <Select
                         value={response}
                         onValueChange={value =>
