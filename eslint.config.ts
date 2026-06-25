@@ -76,6 +76,13 @@ export default defineConfig([
     },
   },
   {
+    // Ignore vite-express import issue
+    files: ['./backend/src/server.ts'],
+    rules: {
+      'import/default': 'off',
+    },
+  },
+  {
     files: ['./common/**/*.{ts,tsx}'],
     rules: {
       '@typescript-eslint/no-restricted-imports': [
