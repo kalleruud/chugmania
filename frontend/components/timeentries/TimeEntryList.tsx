@@ -1,5 +1,5 @@
 import { useAuth } from '@/contexts/AuthContext'
-import { useTimeEntryInput } from '@/hooks/TimeEntryInputProvider'
+import { useTimeEntryInput } from '@/contexts/TimeEntryInputContext'
 import loc from '@common/locale/locales'
 import type {
   GapType,

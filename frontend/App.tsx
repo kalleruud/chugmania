@@ -18,7 +18,7 @@ import { AuthProvider } from './contexts/AuthContext'
 import { ConnectionProvider } from './contexts/ConnectionContext'
 import { DataProvider } from './contexts/DataContext'
 import { ThemeProvider } from './contexts/ThemeContext'
-import TimeEntryInputProvider from './hooks/TimeEntryInputProvider'
+import TimeEntryInputProvider from './contexts/TimeEntryInputContext'
 import './index.css'
 
 const root = document.getElementById('root')

@@ -65,6 +65,12 @@ export default defineConfig([
     },
   },
   {
+    files: ['./frontend/contexts/*.tsx'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
+  {
     files: ['./backend/**/*.{ts,tsx}'],
     rules: {
       '@typescript-eslint/no-restricted-imports': [

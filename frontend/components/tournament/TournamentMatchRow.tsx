@@ -1,5 +1,5 @@
 import { useData } from '@/contexts/DataContext'
-import { useTimeEntryInput } from '@/hooks/TimeEntryInputProvider'
+import { useTimeEntryInput } from '@/contexts/TimeEntryInputContext'
 import type { TournamentMatch } from '@common/models/tournament'
 import { twMerge } from 'tailwind-merge'
 import MatchRow from '../match/MatchRow'

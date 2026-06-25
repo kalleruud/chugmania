@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { useAuth } from '@/contexts/AuthContext'
-import { useTimeEntryInput } from '@/hooks/TimeEntryInputProvider'
+import { useTimeEntryInput } from '@/contexts/TimeEntryInputContext'
 import { PlusIcon } from '@heroicons/react/24/solid'
 import { Outlet } from 'react-router'
 import LoginPage from './pages/LoginPage'
