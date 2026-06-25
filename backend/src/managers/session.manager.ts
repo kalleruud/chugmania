@@ -8,6 +8,7 @@ import {
   type SessionWithSignups,
 } from '@common/models/session'
 import type { EventReq, EventRes } from '@common/models/socket.io'
+import { isPast } from '@common/utils/date'
 import { and, asc, desc, eq, isNull } from 'drizzle-orm'
 import db from '../../database/database'
 import { sessions, sessionSignups, users } from '../../database/schema'
@@ -233,7 +234,7 @@ export default class SessionManager {
       throw new Error(loc.no.error.messages.not_in_db(request.session))
     }
 
-    if (session.date.getTime() < Date.now() && !isModerator) {
+    if (isPast(session) && !isModerator) {
       throw new Error(loc.no.session.errorMessages.no_edit_historical)
     }
 

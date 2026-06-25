@@ -88,7 +88,7 @@ export default function UserRow({
       {...props}>
       <div className='pointer-events-none contents'>{content}</div>
       <Link
-        className='absolute inset-0 z-0 rounded-md transition-colors duration-100 hover:bg-accent/50'
+        className='absolute inset-0 z-0 rounded-sm transition-colors duration-100 hover:bg-accent/50'
         to={`/users/${user.id}`}
         aria-label={`${user.firstName} ${user.lastName}`}
       />

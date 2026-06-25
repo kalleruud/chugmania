@@ -122,7 +122,7 @@ const no = {
     location: 'Sted',
     date: 'Dato',
     time: 'Tid',
-    attendees: 'Påmeldte',
+    attendees: 'Deltakere',
     attendance: 'Påmelding',
     next: 'Neste session',
     form: {

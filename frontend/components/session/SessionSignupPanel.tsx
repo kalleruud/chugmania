@@ -16,7 +16,7 @@ import { useData } from '@/contexts/DataContext'
 import loc from '@common/locale/locales'
 import type { SessionWithSignups } from '@common/models/session'
 import type { UserInfo } from '@common/models/user'
-import { isUpcoming } from '@common/utils/date'
+import { isPast, isUpcoming } from '@common/utils/date'
 import { useMemo, type ComponentProps } from 'react'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
@@ -105,8 +105,8 @@ export default function SessionSignupPanel({
       </div>
 
       <div
-        className='flex items-center gap-2'
-        hidden={!isUpcoming(session) || !isLoggedIn || selfRsvp}>
+        className='flex items-center justify-center gap-2'
+        hidden={!canManageSignups && (isPast(session) || selfRsvp)}>
         {canManageSignups && (
           <ManageSessionParticipantsDialog
             availableUsers={availableUsers}
@@ -114,16 +114,21 @@ export default function SessionSignupPanel({
             onAddParticipants={addParticipants}
           />
         )}
-        {RESPONSE_OPTIONS.map(({ response, Icon }) => (
-          <Button
-            key={response}
-            size='sm'
-            onClick={() => handleRsvp(response)}
-            disabled={disabled}>
-            <Icon className='size-4' />
-            {loc.no.session.rsvp.responses[response]}
-          </Button>
-        ))}
+        <div
+          className='flex items-center gap-2'
+          hidden={isPast(session) || selfRsvp}>
+          {RESPONSE_OPTIONS.map(({ response, Icon, variant }) => (
+            <Button
+              key={response}
+              size='sm'
+              onClick={() => handleRsvp(response)}
+              variant={variant}
+              disabled={disabled}>
+              <Icon className='size-4' />
+              {loc.no.session.rsvp.responses[response]}
+            </Button>
+          ))}
+        </div>
       </div>
 
       {sortedSignups.length === 0 && (
@@ -150,7 +155,7 @@ export default function SessionSignupPanel({
                   <UserRow
                     key={user.id}
                     item={user}
-                    className='h-12 w-full py-1 first:pt-2 last:pb-2'
+                    className='min-h-12 w-full py-1'
                     highlight={isSelf}
                     hideRanking>
                     {(canManageSignups || isSelf) && (
