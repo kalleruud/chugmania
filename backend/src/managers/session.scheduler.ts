@@ -55,7 +55,6 @@ export default class SessionScheduler {
     )
 
     broadcast('all_sessions', await SessionManager.getAllSessions())
-    await SessionScheduler.start()
   }
 
   private static reschedule(delay: number): void {
