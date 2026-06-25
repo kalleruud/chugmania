@@ -44,7 +44,7 @@ jobs:
               fail
             fi
 
-            if [ "$(curl -fsS "http://127.0.0.1:${port}/api/ping" 2>/dev/null || true)" = "broken" ]; then
+            if [ "$(curl -fsS "http://127.0.0.1:${port}/api/ping" 2>/dev/null || true)" = "pong" ]; then
               exit 0
             fi
 
