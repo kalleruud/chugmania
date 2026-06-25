@@ -27,7 +27,7 @@ export default function UserPage() {
   }
 
   const user = users.find(u => u.id === id)
-  if (!user) throw new Error(loc.no.error.messages.not_in_db('users/' + id))
+  if (!user) throw new Error(loc.no.error.messages.not_in_db(`users/${id}`))
 
   const fullName = getUserFullName(user)
 

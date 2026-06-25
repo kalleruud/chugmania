@@ -31,7 +31,7 @@ export default function TrackPage() {
   }
 
   const track = tracks.find(t => t.id === id)
-  if (!track) throw new Error(loc.no.error.messages.not_in_db('track/' + id))
+  if (!track) throw new Error(loc.no.error.messages.not_in_db(`tracks/${id}`))
   const filteredMatches = matches.filter(m => m.track === track.id)
 
   const entries = timeEntries.filter(te => track.id === te.track)
