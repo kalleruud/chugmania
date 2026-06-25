@@ -6,7 +6,6 @@ import {
   isDeleteTournamentRequest,
   isEditTournamentRequest,
   isTournamentPreviewRequest,
-  type CreateGroup,
   type CreateGroupPlayer,
   type CreateTournament,
   type CreateTournamentMatch,
@@ -122,16 +121,19 @@ export default class TournamentManager {
       ),
     })
 
-    const matchRows: Match[] = await Promise.all(
-      tournamentMatchRows
-        .filter(tm => tm.match)
-        .map(async tm => {
-          const match = await db.query.matches.findFirst({
-            where: and(eq(matches.id, tm.match!), isNull(matches.deletedAt)),
-          })
-          return match!
-        })
+    const matchedTournamentRows = tournamentMatchRows.filter(
+      (tm): tm is TournamentMatch & { match: string } => tm.match !== null
     )
+
+    const matchRows = (
+      await Promise.all(
+        matchedTournamentRows.map(tm =>
+          db.query.matches.findFirst({
+            where: and(eq(matches.id, tm.match), isNull(matches.deletedAt)),
+          })
+        )
+      )
+    ).filter((match): match is Match => match !== undefined)
 
     return {
       tournament,
@@ -142,13 +144,13 @@ export default class TournamentManager {
     }
   }
 
-  private static async toTournamentWithDetails({
+  private static toTournamentWithDetails({
     tournament,
     groups,
     groupPlayers,
     tournamentMatches,
     matches,
-  }: TournamentStructure): Promise<TournamentWithDetails> {
+  }: TournamentStructure): TournamentWithDetails {
     const groupMatches = tournamentMatches
       .filter(tm => tm.bracket === 'group')
       .map(tm => matches.find(m => m.id === tm.match))
@@ -251,19 +253,18 @@ export default class TournamentManager {
       .filter(s => s.response === 'yes')
       .map(s => s.user.id)
 
-    const { groups, groupPlayers } = await TournamentManager.createGroups(
+    const { groups, groupPlayers } = TournamentManager.createGroups(
       tournamentId,
       groupsCount,
       playerIds
     )
 
-    const { tournamentMatches, matches } =
-      await TournamentManager.createGroupMatches(
-        tournamentId,
-        sessionId,
-        groups,
-        groupPlayers
-      )
+    const { tournamentMatches, matches } = TournamentManager.createGroupMatches(
+      tournamentId,
+      sessionId,
+      groups,
+      groupPlayers
+    )
 
     const totalAdvancing = groupsCount * advancementCount
     const bracketTournamentMatches = TournamentManager.generateBracketSlots(
@@ -283,7 +284,7 @@ export default class TournamentManager {
     }
   }
 
-  private static async createGroups(
+  private static createGroups(
     tournamentId: string,
     groupsCount: number,
     playerIds: string[]
@@ -296,14 +297,14 @@ export default class TournamentManager {
     })
 
     // Generate an ID for relating group players to groups
-    const groups: (Omit<CreateGroup, 'id'> & { id: string })[] = Array.from(
-      { length: groupsCount },
-      (_, i) => ({
-        id: randomUUID(),
-        name: loc.no.tournament.groupName(String.fromCodePoint(65 + i)),
-        tournament: tournamentId,
-      })
-    )
+    const groups: Group[] = Array.from({ length: groupsCount }, (_, i) => ({
+      id: randomUUID(),
+      name: loc.no.tournament.groupName(String.fromCodePoint(65 + i)),
+      tournament: tournamentId,
+      createdAt: new Date(),
+      updatedAt: null,
+      deletedAt: null,
+    }))
 
     // Snake seeding: alternate direction every row
     // Row 0: A B C D (left to right)
@@ -335,7 +336,7 @@ export default class TournamentManager {
     }
   }
 
-  private static async createGroupMatches(
+  private static createGroupMatches(
     tournamentId: string,
     sessionId: string,
     groups: { id: string; name: string }[],
@@ -572,8 +573,7 @@ export default class TournamentManager {
       matches.push({
         id,
         tournament: tournamentId,
-        name:
-          TournamentManager.getRoundName(lowerRound, true) + ' - ' + (i + 1),
+        name: `${TournamentManager.getRoundName(lowerRound, true)} - ${i + 1}`,
         bracket: 'lower',
         round: lowerRound,
         track,
@@ -725,6 +725,8 @@ export default class TournamentManager {
         loc.no.error.messages.invalid_request('EditTournamentRequest')
       )
     }
+
+    await AuthManager.checkAuth(socket, ['admin', 'moderator'])
 
     console.log(
       new Date().toISOString(),
@@ -1292,20 +1294,22 @@ export default class TournamentManager {
       id: tournamentId,
       session: request.session,
       name: request.name,
-      description: request.description,
+      description: request.description ?? null,
       groupsCount: request.groupsCount,
       advancementCount: request.advancementCount,
       eliminationType: request.eliminationType,
-    } satisfies CreateTournament
+      createdAt: new Date(),
+      updatedAt: null,
+      deletedAt: null,
+    } satisfies Tournament
 
-    const tournamentWithDetails =
-      await TournamentManager.toTournamentWithDetails({
-        tournament: tournamentDraft as Tournament,
-        groups: groups as Group[],
-        groupPlayers: groupPlayers as GroupPlayer[],
-        tournamentMatches: tournamentMatches as TournamentMatch[],
-        matches: matches as Match[],
-      })
+    const tournamentWithDetails = TournamentManager.toTournamentWithDetails({
+      tournament: tournamentDraft,
+      groups: groups,
+      groupPlayers: groupPlayers as GroupPlayer[],
+      tournamentMatches: tournamentMatches as TournamentMatch[],
+      matches: matches as Match[],
+    })
 
     console.debug(
       new Date().toISOString(),
