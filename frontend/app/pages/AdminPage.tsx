@@ -18,6 +18,7 @@ import {
   CloudArrowDownIcon,
   CloudArrowUpIcon,
   DocumentIcon,
+  ShieldExclamationIcon,
 } from '@heroicons/react/24/solid'
 import { useState, type ComponentProps } from 'react'
 import { toast } from 'sonner'
@@ -60,7 +61,7 @@ export default function AdminPage() {
       <PageHeader
         title={loc.no.admin.title}
         description={loc.no.admin.description}
-        icon='ShieldExclamationIcon'
+        Icon={ShieldExclamationIcon}
       />
 
       <div className='grid gap-2'>

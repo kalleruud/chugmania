@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { useAuth } from '@/contexts/AuthContext'
 import loc from '@common/locale/locales'
+import { TrophyIcon } from '@heroicons/react/24/solid'
 
 export default function CreateTournamentPage() {
   const { isLoading, loggedInUser } = useAuth()
@@ -46,7 +47,7 @@ export default function CreateTournamentPage() {
       <PageHeader
         title={loc.no.tournament.new}
         description={loc.no.tournament.description}
-        icon='TrophyIcon'
+        Icon={TrophyIcon}
       />
 
       <TournamentForm id='createTournamentForm' />

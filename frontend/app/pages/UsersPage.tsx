@@ -26,7 +26,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@common/locale/locales'
 import type { UserInfo } from '@common/models/user'
-import { PlusIcon } from '@heroicons/react/24/solid'
+import { PlusIcon, UsersIcon } from '@heroicons/react/24/solid'
 import { useState, type ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { PageHeader } from '../../components/PageHeader'
@@ -125,7 +125,7 @@ export function UsersContent({
         title={loc.no.users.title}
         description={loc.no.users.description}
         to={showLink ? '/users' : undefined}
-        icon={'UsersIcon'}
+        Icon={UsersIcon}
       />
 
       <UserRowList users={users} />

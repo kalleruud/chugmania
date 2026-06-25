@@ -62,7 +62,7 @@ export function SessionsContent({
         title={loc.no.session.title}
         description={loc.no.session.description}
         to={showLink ? '/sessions' : undefined}
-        icon='CalendarIcon'
+        Icon={CalendarIcon}
       />
 
       <SubscribeButton className={twMerge(!canCreate && 'w-full')} />
