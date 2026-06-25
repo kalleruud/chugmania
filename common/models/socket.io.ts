@@ -160,31 +160,30 @@ export interface SocketData {
 }
 
 // ---------- helpers & types ----------
-type RequestOf<F> =
-  // no args
-  F extends () => void
-    ? undefined
-    : // callback-only (first param is callback) => no request
-      F extends (cb: any) => void
-      ? undefined
-      : // req + callback
-        F extends (req: infer R, cb: any) => void
-        ? R
-        : // single-arg non-callback
-          F extends (arg: infer A) => void
-          ? A
-          : never
-
-type CallbackOf<F> =
-  // callback-only
-  F extends (cb: infer C) => void
-    ? C
-    : // req + callback
-      F extends (req: any, cb: infer C) => void
-      ? C
+type RequestOf<F> = F extends (...args: infer P) => void
+  ? P extends [infer R, infer C]
+    ? C extends (...args: never[]) => unknown
+      ? R
+      : never
+    : P extends [infer C]
+      ? C extends (...args: never[]) => unknown
+        ? undefined
+        : C
       : undefined
+  : never
 
-type ResponseOf<F> = CallbackOf<F> extends (res: infer R) => void ? R : void
+type CallbackOf<F> = F extends (...args: infer P) => void
+  ? P extends [unknown, infer C]
+    ? C
+    : P extends [infer C]
+      ? C extends (...args: never[]) => unknown
+        ? C
+        : undefined
+      : undefined
+  : undefined
+
+type ResponseOf<F> =
+  CallbackOf<F> extends (res: infer R) => void ? R : undefined
 
 type HasCallback<F> = CallbackOf<F> extends undefined ? false : true
 
