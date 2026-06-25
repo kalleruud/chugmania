@@ -5,8 +5,9 @@ on:
     paths:
       - '**/*.ts'
       - package*.json
-      - /tsconfig*
+      - tsconfig*
       - dockerfile
+      - '**/build.yml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

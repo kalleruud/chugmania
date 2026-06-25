@@ -6,17 +6,11 @@ on:
     branches:
       - main
     paths:
-      - 'backend/**'
-      - 'frontend/**'
-      - 'common/**'
-      - 'drizzle/**'
-      - 'dockerfile'
-      - 'drizzle.config.ts'
-      - 'vite.config.ts'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'tsconfig*.json'
-      - '.github/workflows/build-docker.yml'
+      - '**/*.ts'
+      - package*.json
+      - tsconfig*
+      - dockerfile
+      - '**/publish-docker.yml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
