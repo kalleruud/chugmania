@@ -105,8 +105,15 @@ export default function SessionSignupPanel({
       </div>
 
       <div
-        className='flex items-center justify-center gap-2'
+        className='flex items-center gap-2'
         hidden={!isUpcoming(session) || !isLoggedIn || selfRsvp}>
+        {canManageSignups && (
+          <ManageSessionParticipantsDialog
+            availableUsers={availableUsers}
+            disabled={disabled}
+            onAddParticipants={addParticipants}
+          />
+        )}
         {RESPONSE_OPTIONS.map(({ response, Icon }) => (
           <Button
             key={response}
@@ -118,14 +125,6 @@ export default function SessionSignupPanel({
           </Button>
         ))}
       </div>
-
-      {canManageSignups && (
-        <ManageSessionParticipantsDialog
-          availableUsers={availableUsers}
-          disabled={disabled}
-          onAddParticipants={addParticipants}
-        />
-      )}
 
       {sortedSignups.length === 0 && (
         <Empty className='border border-input text-sm text-muted-foreground'>
@@ -161,10 +160,10 @@ export default function SessionSignupPanel({
                           handleRsvp(value as SessionResponse, user)
                         }
                         disabled={disabled}>
-                        <SelectTrigger >
+                        <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent align="end">
+                        <SelectContent align='end'>
                           {RESPONSE_OPTIONS.map(({ response, Icon }) => (
                             <SelectItem key={response} value={response}>
                               <Icon className='size-4' />

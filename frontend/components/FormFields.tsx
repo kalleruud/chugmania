@@ -1,6 +1,6 @@
 import { formatDateWithYear, formatTimeOnly } from '@common/utils/date'
 import { ChevronDownIcon } from '@heroicons/react/24/solid'
-import { useState, type ComponentProps } from 'react'
+import { useState, type ComponentProps, type KeyboardEvent } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { Button } from './ui/button'
 import { Calendar } from './ui/calendar'
@@ -120,7 +120,24 @@ export function CalendarField({
   if (hidden) return undefined
 
   function handleTimeChange(timeString: string) {
-    setTime(timeString)
+    setTime(formatTimeInput(timeString))
+  }
+
+  function handleTimeKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    const { selectionStart, selectionEnd, value } = e.currentTarget
+
+    if (selectionStart === null || selectionStart !== selectionEnd) return
+
+    const separatorIndex =
+      e.key === 'Backspace' ? selectionStart - 1 : selectionStart
+    if (value[separatorIndex] !== ':') return
+
+    e.preventDefault()
+    setTime(
+      formatTimeInput(
+        value.slice(0, separatorIndex) + value.slice(separatorIndex + 2)
+      )
+    )
   }
 
   function handleTimeBlur() {
@@ -143,11 +160,7 @@ export function CalendarField({
     newDate.setSeconds(parsed.seconds)
     onSelect?.(newDate)
     setDate(newDate)
-    setTime(
-      Object.values(parsed)
-        .map(v => v.toString().padStart(2, '0'))
-        .join(':')
-    )
+    setTime(formatParsedTime(parsed))
   }
 
   function handleDateSelect(date: Date) {
@@ -207,6 +220,7 @@ export function CalendarField({
             placeholder={formatTimeOnly(now)}
             value={time}
             onChange={e => handleTimeChange(e.target.value)}
+            onKeyDown={handleTimeKeyDown}
             onBlur={handleTimeBlur}
             inputMode='decimal'
             disabled={disabled}
@@ -237,6 +251,31 @@ function validateTime(
     seconds >= 0 &&
     seconds <= 59
   )
+}
+
+function formatTimeInput(input: string): string {
+  const digits = input.replaceAll(/\D/g, '').slice(0, 6)
+  if (digits.length <= 2) return digits
+  if (digits.length <= 4) return `${digits.slice(0, 2)}:${digits.slice(2)}`
+  if (digits.length === 6 && digits.endsWith('00')) {
+    return `${digits.slice(0, 2)}:${digits.slice(2, 4)}`
+  }
+  return `${digits.slice(0, 2)}:${digits.slice(2, 4)}:${digits.slice(4)}`
+}
+
+function formatParsedTime({
+  hours,
+  minutes,
+  seconds,
+}: {
+  hours: number
+  minutes: number
+  seconds: number
+}): string {
+  const formattedHours = hours.toString().padStart(2, '0')
+  const formattedMinutes = minutes.toString().padStart(2, '0')
+  if (seconds === 0) return `${formattedHours}:${formattedMinutes}`
+  return `${formattedHours}:${formattedMinutes}:${seconds.toString().padStart(2, '0')}`
 }
 
 function parseTimeWithSeparators(
