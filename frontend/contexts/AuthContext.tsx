@@ -55,19 +55,17 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     response: LoginResponse | ErrorResponse,
     reconnect: boolean = true
   ) {
-    try {
-      if (!response.success) {
-        console.warn(response.message)
-        clearAuthState()
-        return
-      }
-
-      setToken(response.token)
-      setLoggedInUserId(response.userId)
-      if (reconnect) socket.disconnect().connect()
-    } finally {
+    if (!response.success) {
+      console.warn(response.message)
+      clearAuthState()
       setIsLoadingAuth(false)
+      return
     }
+
+    setToken(response.token)
+    setLoggedInUserId(response.userId)
+    if (reconnect) socket.disconnect().connect()
+    setIsLoadingAuth(false)
   }
 
   const login: Required<AuthContextType>['login'] = async r => {
