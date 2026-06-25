@@ -45,7 +45,7 @@ const DataContext = createContext<DataContextType | undefined>(undefined)
  */
 function parseDates<T extends Record<string, unknown>>(obj: T): T {
   const dateFields = ['createdAt', 'updatedAt', 'deletedAt', 'date']
-  const result = { ...obj }
+  const result: Record<string, unknown> = { ...obj }
 
   for (const field of dateFields) {
     if (typeof result[field] === 'number') {
@@ -53,7 +53,7 @@ function parseDates<T extends Record<string, unknown>>(obj: T): T {
     }
   }
 
-  return result
+  return result as T
 }
 
 /**
