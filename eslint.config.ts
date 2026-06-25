@@ -45,7 +45,7 @@ export default defineConfig([
     files: ['./frontend/**/*.{ts,tsx}'],
     rules: {
       '@typescript-eslint/no-restricted-imports': [
-        'warn',
+        'error',
         {
           patterns: [
             {
@@ -62,7 +62,7 @@ export default defineConfig([
     files: ['./backend/**/*.{ts,tsx}'],
     rules: {
       '@typescript-eslint/no-restricted-imports': [
-        'warn',
+        'error',
         {
           patterns: [
             {
@@ -79,7 +79,7 @@ export default defineConfig([
     files: ['./common/**/*.{ts,tsx}'],
     rules: {
       '@typescript-eslint/no-restricted-imports': [
-        'warn',
+        'error',
         {
           patterns: [
             {

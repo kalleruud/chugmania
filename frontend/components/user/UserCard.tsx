@@ -1,7 +1,7 @@
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
-import loc from '@/lib/locales'
+import loc from '@common/locale/locales'
 import { type UserInfo } from '@common/models/user'
 import { PencilIcon } from '@heroicons/react/24/solid'
 import { Award, LogOut, Minus, Trash2 } from 'lucide-react'

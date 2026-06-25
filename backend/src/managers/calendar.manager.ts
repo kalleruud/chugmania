@@ -1,5 +1,5 @@
-import loc from '@/lib/locales'
 import type { SessionResponse } from '@backend/database/schema'
+import loc from '@common/locale/locales'
 import type { SessionWithSignups } from '@common/models/session'
 import { getEndOfDate } from '@common/utils/date'
 import {

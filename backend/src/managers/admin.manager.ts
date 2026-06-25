@@ -1,3 +1,4 @@
+import loc from '@common/locale/locales'
 import {
   isExportCsvRequest,
   isImportCsvRequest,
@@ -7,7 +8,6 @@ import type { EventReq, EventRes } from '@common/models/socket.io'
 import { eq } from 'drizzle-orm'
 import type { SQLiteTable } from 'drizzle-orm/sqlite-core'
 import type { Socket } from 'socket.io'
-import loc from '../../../frontend/lib/locales'
 import db, { database } from '../../database/database'
 import {
   groupPlayers,

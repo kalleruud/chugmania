@@ -6,7 +6,7 @@ import {
   EmptyHeader,
   EmptyTitle,
 } from '@/components/ui/empty'
-import loc from '@/lib/locales'
+import loc from '@common/locale/locales'
 import { type FallbackProps } from 'react-error-boundary'
 import { Link } from 'react-router'
 

@@ -1,3 +1,4 @@
+import loc from '@common/locale/locales'
 import {
   isCreateSessionRequest,
   isDeleteSessionRequest,
@@ -8,7 +9,6 @@ import {
 } from '@common/models/session'
 import type { EventReq, EventRes } from '@common/models/socket.io'
 import { and, asc, desc, eq, isNull } from 'drizzle-orm'
-import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
 import { sessions, sessionSignups, users } from '../../database/schema'
 import { broadcast, type TypedSocket } from '../server'

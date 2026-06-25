@@ -1,5 +1,5 @@
 import { useData } from '@/contexts/DataContext'
-import loc from '@/lib/locales'
+import loc from '@common/locale/locales'
 import type { Match } from '@common/models/match'
 import { formatTrackName } from '@common/utils/track'
 import { twMerge } from 'tailwind-merge'

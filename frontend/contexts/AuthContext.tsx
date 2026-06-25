@@ -1,4 +1,4 @@
-import loc from '@/lib/locales'
+import loc from '@common/locale/locales'
 import type { LoginRequest } from '@common/models/auth'
 import type { ErrorResponse, EventRes } from '@common/models/socket.io'
 import { type LoginResponse, type UserInfo } from '@common/models/user'

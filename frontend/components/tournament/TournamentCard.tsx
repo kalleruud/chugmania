@@ -1,8 +1,8 @@
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
-import loc from '@/lib/locales'
 import type { TournamentBracket } from '@backend/database/schema'
+import loc from '@common/locale/locales'
 import type {
   TournamentMatch,
   TournamentWithDetails,

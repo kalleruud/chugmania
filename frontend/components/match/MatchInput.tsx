@@ -5,7 +5,6 @@ import { TrackRow } from '@/components/track/TrackRow'
 import UserRow from '@/components/user/UserRow'
 import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
-import loc from '@/lib/locales'
 import {
   getId,
   sessionToLookupItem,
@@ -13,6 +12,7 @@ import {
   userToLookupItem,
 } from '@/lib/lookup-utils'
 import type { MatchStage } from '@backend/database/schema'
+import loc from '@common/locale/locales'
 import type {
   CreateMatchRequest,
   EditMatchRequest,

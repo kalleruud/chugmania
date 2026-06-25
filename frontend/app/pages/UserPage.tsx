@@ -10,7 +10,7 @@ import {
 import { Spinner } from '@/components/ui/spinner'
 import UserCard from '@/components/user/UserCard'
 import { useData } from '@/contexts/DataContext'
-import loc from '@/lib/locales'
+import loc from '@common/locale/locales'
 import { getUserFullName } from '@common/models/user'
 import { useParams } from 'react-router'
 

@@ -1,9 +1,9 @@
+import loc from '@common/locale/locales'
 import { isLoginRequest } from '@common/models/auth'
 import type { EventReq, EventRes, SocketData } from '@common/models/socket.io'
 import { type User, type UserInfo } from '@common/models/user'
 import { tryCatch, tryCatchAsync } from '@common/utils/try-catch'
 import jwt, { type JwtPayload } from 'jsonwebtoken'
-import loc from '../../../frontend/lib/locales'
 import type { TypedSocket } from '../server'
 import UserManager from './user.manager'
 

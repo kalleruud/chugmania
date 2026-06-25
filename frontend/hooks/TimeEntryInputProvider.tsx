@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/dialog'
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
-import loc from '@/lib/locales'
+import loc from '@common/locale/locales'
 import type { Match } from '@common/models/match'
 import type { TimeEntry } from '@common/models/timeEntry'
 import { Trash2 } from 'lucide-react'

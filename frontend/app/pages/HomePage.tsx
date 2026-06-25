@@ -1,7 +1,7 @@
 import { PageHeader } from '@/components/PageHeader'
 import UserCard from '@/components/user/UserCard'
 import { useAuth } from '@/contexts/AuthContext'
-import loc from '@/lib/locales'
+import loc from '@common/locale/locales'
 import { SessionsContent } from './SessionsPage'
 import { TracksContent } from './TracksPage'
 import { UsersContent } from './UsersPage'

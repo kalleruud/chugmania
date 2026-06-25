@@ -1,6 +1,6 @@
 import { useAuth } from '@/contexts/AuthContext'
 import { useTimeEntryInput } from '@/hooks/TimeEntryInputProvider'
-import loc from '@/lib/locales'
+import loc from '@common/locale/locales'
 import type {
   GapType,
   LeaderboardEntryGap,

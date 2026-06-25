@@ -1,6 +1,6 @@
-import { getRandomItem } from '@/app/utils/utils'
 import type { ExportCsvRequest } from '@common/models/importCsv'
 import type { GapType } from '@common/models/timeEntry'
+import { getRandomItem } from '@common/utils/utils'
 import type {
   EliminationType,
   MatchStage,

@@ -1,11 +1,11 @@
 import Combobox from '@/components/combobox'
-import loc from '@/lib/locales'
 import {
   getId,
   sessionToLookupItem,
   trackToLookupItem,
   userToLookupItem,
 } from '@/lib/lookup-utils'
+import loc from '@common/locale/locales'
 import type { SessionWithSignups } from '@common/models/session'
 import type {
   CreateTimeEntryRequest,

@@ -1,4 +1,4 @@
-import loc from '@/lib/locales'
+import loc from '@common/locale/locales'
 import {
   type ClientToServerEvents,
   type ServerToClientEvents,

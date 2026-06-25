@@ -1,3 +1,4 @@
+import loc from '@common/locale/locales'
 import { isRegisterRequest } from '@common/models/auth'
 import type { EventReq, EventRes } from '@common/models/socket.io'
 import {
@@ -9,7 +10,6 @@ import {
 } from '@common/models/user'
 import { tryCatchAsync } from '@common/utils/try-catch'
 import { eq, isNull } from 'drizzle-orm'
-import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
 import { users } from '../../database/schema'
 import { broadcast, type TypedSocket } from '../server'

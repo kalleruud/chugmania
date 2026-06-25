@@ -20,7 +20,7 @@ import {
 import { Spinner } from '@/components/ui/spinner'
 import UserForm from '@/components/user/UserForm'
 import { useAuth } from '@/contexts/AuthContext'
-import loc from '@/lib/locales'
+import loc from '@common/locale/locales'
 import { useState } from 'react'
 
 export default function LoginPage() {

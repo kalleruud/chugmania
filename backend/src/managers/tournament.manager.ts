@@ -1,3 +1,4 @@
+import loc from '@common/locale/locales'
 import type { CreateMatch, Match } from '@common/models/match'
 import type { EventReq, EventRes } from '@common/models/socket.io'
 import {
@@ -18,7 +19,6 @@ import {
 } from '@common/models/tournament'
 import { and, eq, inArray, isNull } from 'drizzle-orm'
 import { randomUUID } from 'node:crypto'
-import loc from '../../../frontend/lib/locales'
 import db, { database } from '../../database/database'
 import {
   groupPlayers,

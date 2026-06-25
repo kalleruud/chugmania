@@ -1,7 +1,7 @@
 import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
-import loc from '@/lib/locales'
 import { sessionToLookupItem } from '@/lib/lookup-utils'
+import loc from '@common/locale/locales'
 import type {
   CreateTournament,
   TournamentEliminationType,

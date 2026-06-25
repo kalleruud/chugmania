@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/item'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTimeAgoStrict as useDistanceToNow } from '@/hooks/useTimeAgoStrict'
-import loc from '@/lib/locales'
+import loc from '@common/locale/locales'
 import type { SessionWithSignups } from '@common/models/session'
 import { isOngoing, isUpcoming } from '@common/utils/date'
 import { ChevronRight } from 'lucide-react'

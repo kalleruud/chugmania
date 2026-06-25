@@ -1,3 +1,4 @@
+import loc from '@common/locale/locales'
 import {
   isCreateMatchRequest,
   isDeleteMatchRequest,
@@ -9,7 +10,6 @@ import {
 } from '@common/models/match'
 import type { EventReq, EventRes } from '@common/models/socket.io'
 import { and, desc, eq, getTableColumns, isNull, sql } from 'drizzle-orm'
-import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
 import { matches, sessions } from '../../database/schema'
 import { broadcast, type TypedSocket } from '../server'

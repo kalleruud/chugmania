@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
-import loc from '@/lib/locales'
+import loc from '@common/locale/locales'
 import {
   CloudArrowDownIcon,
   CloudArrowUpIcon,

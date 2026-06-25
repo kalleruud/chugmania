@@ -1,6 +1,6 @@
 import { useAuth } from '@/contexts/AuthContext'
 import { useData } from '@/contexts/DataContext'
-import loc from '@/lib/locales'
+import loc from '@common/locale/locales'
 import { PlusIcon } from '@heroicons/react/24/solid'
 import { Link } from 'react-router'
 import { PageSubheader } from '../PageHeader'

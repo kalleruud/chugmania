@@ -1,3 +1,4 @@
+import loc from '@common/locale/locales'
 import type { Session } from '@common/models/session'
 import type { EventReq, EventRes } from '@common/models/socket.io'
 import type { TimeEntry } from '@common/models/timeEntry'
@@ -7,7 +8,6 @@ import {
 } from '@common/models/timeEntry'
 import type { User } from '@common/models/user'
 import { and, asc, eq, getTableColumns, isNull, sql } from 'drizzle-orm'
-import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
 import { timeEntries } from '../../database/schema'
 import { broadcast, type TypedSocket } from '../server'
