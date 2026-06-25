@@ -128,7 +128,7 @@ export default class CsvParser {
   private static async normalize(
     key: string,
     value: string | undefined
-  ): Promise<{ key: string; value: any } | null> {
+  ): Promise<{ key: string; value: unknown } | null> {
     const val = value?.trim()
     if (!val) return null
 
@@ -153,9 +153,7 @@ export default class CsvParser {
     return { key, value: val }
   }
 
-  public static toCsv<T extends Record<string, any>>(
-    objects: T[]
-  ): string | null {
+  public static toCsv(objects: Record<string, unknown>[]): string | null {
     if (objects.length === 0) {
       console.warn('No objects to convert to CSV')
       return null
@@ -167,8 +165,13 @@ export default class CsvParser {
         .map(header => {
           const value = obj[header]
           if (value === null || value === undefined) return ''
-          if (value instanceof Date) return String(value.toISOString())
-          const str = String(value)
+          if (value instanceof Date) return value.toISOString()
+          const str = (() => {
+            if (typeof value === 'string') return value
+            if (typeof value === 'number' || typeof value === 'boolean')
+              return String(value)
+            return JSON.stringify(value)
+          })()
           if (str.includes(',') || str.includes('\n') || str.includes('"'))
             return `"${str.replaceAll('"', '""')}"`
           return str
