@@ -1,0 +1,56 @@
+name: Build
+
+on:
+  pull_request:
+    paths:
+      - '**/*.ts'
+      - package*.json
+      - /tsconfig*
+      - dockerfile
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Run checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Docker image
+        run: docker build -t chugmania .
+
+      - name: Check Docker image
+        run: |
+          docker run --name chugmania-check -p 127.0.0.1::6996 -e SECRET=ci -d chugmania
+          trap 'docker rm -f chugmania-check >/dev/null' EXIT
+          port="$(docker port chugmania-check 6996/tcp | sed 's/.*://')"
+
+          fail() {
+            docker ps -a --filter name=chugmania-check
+            docker logs chugmania-check
+            exit 1
+          }
+
+          for _ in {1..30}; do
+            if ! docker ps --format '{{.Names}}' | grep -qx chugmania-check; then
+              fail
+            fi
+
+            if [ "$(curl -fsS "http://127.0.0.1:${port}/api/ping" 2>/dev/null || true)" = "pong" ]; then
+              exit 0
+            fi
+
+            sleep 1
+          done
+
+          fail
