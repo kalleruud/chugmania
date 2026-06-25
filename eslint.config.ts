@@ -33,6 +33,7 @@ export default defineConfig([
       'import/no-unresolved': 'off',
       'no-restricted-imports': 'off',
       'react-hooks/exhaustive-deps': 'off',
+      '@typescript-eslint/unbound-method': 'off',
     },
   },
   {
