@@ -1,7 +1,7 @@
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
-import loc from '@/lib/locales'
+import loc from '@common/locale/locales'
 import type { EditMatchRequest, Match } from '@common/models/match'
 import type { UserInfo } from '@common/models/user'
 import { formatTrackName } from '@common/utils/track'
@@ -165,6 +165,7 @@ export default function MatchRow({
       <div className='absolute right-0 flex items-center'>
         {canEdit && isPlanned && (
           <button
+            type='button'
             title={loc.no.match.cancel}
             className='m-2 hidden p-2 text-muted-foreground transition-colors group-hover:block hover:rounded-sm hover:bg-muted hover:text-primary-foreground'
             onClick={e => {

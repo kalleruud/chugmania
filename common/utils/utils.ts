@@ -3,3 +3,7 @@ export function getRandomItem<T>(list?: T[]): T | null {
   const randomIndex = Math.floor(Math.random() * list.length)
   return list[randomIndex]
 }
+
+export function isRecord(data: unknown): data is Record<string, unknown> {
+  return typeof data === 'object' && data !== null
+}

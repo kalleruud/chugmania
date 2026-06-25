@@ -65,7 +65,7 @@ export default class SessionScheduler {
       'Session started, broadcasting all_sessions'
     )
 
-    await broadcast('all_sessions', await SessionManager.getAllSessions())
+    broadcast('all_sessions', await SessionManager.getAllSessions())
     SessionScheduler.cancel()
     await SessionScheduler.scheduleNext()
   }

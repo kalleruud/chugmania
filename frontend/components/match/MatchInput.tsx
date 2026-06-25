@@ -5,7 +5,6 @@ import { TrackRow } from '@/components/track/TrackRow'
 import UserRow from '@/components/user/UserRow'
 import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
-import loc from '@/lib/locales'
 import {
   getId,
   sessionToLookupItem,
@@ -13,6 +12,7 @@ import {
   userToLookupItem,
 } from '@/lib/lookup-utils'
 import type { MatchStage } from '@backend/database/schema'
+import loc from '@common/locale/locales'
 import type {
   CreateMatchRequest,
   EditMatchRequest,
@@ -89,7 +89,7 @@ export default function MatchInput({
   const [comment, setComment] = useState(inputMatch.comment ?? '')
 
   const request = useMemo(() => {
-    if (!track || !status) return undefined
+    if (!track) return undefined
 
     return {
       user1: user1?.id ?? null,
@@ -99,7 +99,7 @@ export default function MatchInput({
       winner: !winner || winner === 'none' ? null : winner,
       status: status,
       stage: stage ?? null,
-      comment: comment?.trim() === '' ? null : comment?.trim(),
+      comment: comment.trim() === '' ? null : comment.trim(),
     } satisfies Omit<CreateMatchRequest | EditMatchRequest, 'type'> | undefined
   }, [user1, user2, track, session, winner, status, stage, comment])
 
@@ -123,13 +123,13 @@ export default function MatchInput({
 
   function handleUpdate(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
-    if (!inputMatch?.id) return
+    if (!inputMatch.id) return
 
     toast.promise(
       socket
         .emitWithAck('edit_match', {
           type: 'EditMatchRequest',
-          id: inputMatch?.id,
+          id: inputMatch.id,
           ...request,
         })
         .then(r => {

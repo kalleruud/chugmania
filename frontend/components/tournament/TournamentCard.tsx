@@ -1,8 +1,8 @@
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
-import loc from '@/lib/locales'
 import type { TournamentBracket } from '@backend/database/schema'
+import loc from '@common/locale/locales'
 import type {
   TournamentMatch,
   TournamentWithDetails,
@@ -46,13 +46,14 @@ export function MatchesGroupedByBracket(
       acc.set(bracketName, new Map<number, TournamentMatch[]>())
     }
 
-    const bracketRounds = acc.get(bracketName)!
+    const bracketRounds = acc.get(bracketName)
+    if (!bracketRounds) return acc
 
     if (!bracketRounds.has(roundNum)) {
       bracketRounds.set(roundNum, [])
     }
 
-    bracketRounds.get(roundNum)!.push(match)
+    bracketRounds.get(roundNum)?.push(match)
     return acc
   }, new Map<string, Map<number, TournamentMatch[]>>())
 
@@ -132,21 +133,11 @@ export default function TournamentCard({
   }
 
   const groupMatches = tournament.matches.filter(m => m.bracket === 'group')
-  const bracketMatches = tournament.matches.filter(m => m.bracket !== 'group')
-
   const completedGroupMatches = groupMatches.filter(
     gm =>
       gm.match && matches?.find(m => m.id === gm.match)?.status === 'completed'
   ).length
   const totalGroupMatches = groupMatches.length
-
-  const completedBracketMatches = bracketMatches.filter(
-    bm =>
-      bm.match && matches?.find(m => m.id === bm.match)?.status === 'completed'
-  ).length
-  const totalBracketMatches = bracketMatches.filter(
-    bm => bm.match !== null
-  ).length
 
   return (
     <div

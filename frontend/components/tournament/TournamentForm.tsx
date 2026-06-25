@@ -1,7 +1,7 @@
 import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
-import loc from '@/lib/locales'
 import { sessionToLookupItem } from '@/lib/lookup-utils'
+import loc from '@common/locale/locales'
 import type {
   CreateTournament,
   TournamentEliminationType,
@@ -109,10 +109,6 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
     }
   }
 
-  useEffect(() => {
-    requestPreview()
-  }, [selectedSessionId, groupsCount, advancementCount, eliminationType])
-
   const requestPreview = () => {
     if (!selectedSessionId || name === '') return
     socket
@@ -130,6 +126,10 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
         setPreview(r.tournament)
       })
   }
+
+  useEffect(() => {
+    requestPreview()
+  }, [selectedSessionId, groupsCount, advancementCount, eliminationType])
 
   const handleSubmit = (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -187,7 +187,7 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
             required
             placeholder={loc.no.tournament.form.session}
             items={sessions
-              ?.filter(s => s.status !== 'cancelled')
+              .filter(s => s.status !== 'cancelled')
               .map(sessionToLookupItem)}
             selected={session ? sessionToLookupItem(session) : null}
             setSelected={value => handleSessionChange(value?.id ?? '')}

@@ -1,5 +1,5 @@
-import loc from '@/lib/locales'
 import type { SessionResponse } from '@backend/database/schema'
+import loc from '@common/locale/locales'
 import type { SessionWithSignups } from '@common/models/session'
 import { getEndOfDate } from '@common/utils/date'
 import {
@@ -123,7 +123,6 @@ export default class CalendarManager {
     }
 
     const user = await UserManager.getUserById(signup.user)
-    if (!user) throw new Error(loc.no.error.messages.not_in_db(signup.user))
 
     return {
       name: `${user.firstName} ${user.lastName}`,

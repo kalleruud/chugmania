@@ -18,10 +18,13 @@ import { AuthProvider } from './contexts/AuthContext'
 import { ConnectionProvider } from './contexts/ConnectionContext'
 import { DataProvider } from './contexts/DataContext'
 import { ThemeProvider } from './contexts/ThemeContext'
-import TimeEntryInputProvider from './hooks/TimeEntryInputProvider'
+import TimeEntryInputProvider from './contexts/TimeEntryInputContext'
 import './index.css'
 
-createRoot(document.getElementById('root')!).render(
+const root = document.getElementById('root')
+if (!root) throw new Error("HTML element has no 'root'-tag.")
+
+createRoot(root).render(
   <StrictMode>
     <ThemeProvider defaultTheme='dark' storageKey='theme'>
       <BrowserRouter>

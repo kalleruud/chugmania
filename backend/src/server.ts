@@ -49,14 +49,13 @@ export type TypedSocket = Socket<
 type ProtectedServerEvent = Exclude<keyof ServerToClientEvents, 'user_data'>
 
 async function emitData(socket: TypedSocket) {
-  const [users, tracks, sessions, timeEntries, matches, rankings, tournaments] =
+  const [users, tracks, sessions, timeEntries, matches, tournaments] =
     await Promise.all([
       UserManager.getAllUsers(),
       TrackManager.getAllTracks(),
       SessionManager.getAllSessions(),
       TimeEntryManager.getAllTimeEntries(),
       MatchManager.getAllMatches(),
-      RatingManager.onGetRatings(),
       TournamentManager.getAllTournaments(),
     ])
   socket.emit('all_users', users)
@@ -64,11 +63,11 @@ async function emitData(socket: TypedSocket) {
   socket.emit('all_sessions', sessions)
   socket.emit('all_time_entries', timeEntries)
   socket.emit('all_matches', matches)
-  socket.emit('all_rankings', rankings)
+  socket.emit('all_rankings', RatingManager.onGetRatings())
   socket.emit('all_tournaments', tournaments)
 }
 
-export async function broadcast<Ev extends ProtectedServerEvent>(
+export function broadcast<Ev extends ProtectedServerEvent>(
   ev: Ev,
   ...args: Parameters<ServerToClientEvents[Ev]>
 ) {
@@ -82,6 +81,12 @@ export async function broadcast<Ev extends ProtectedServerEvent>(
 app.get('/api/sessions/calendar.ics', (req, res) =>
   ApiManager.onGetCalendar(ORIGIN, req, res)
 )
+
+app.get('/api/ping', (_req, res) => {
+  const pong = 'pong'
+  console.log(`Received ping, responding with '${pong}'`)
+  res.send(pong)
+})
 
 io.on('connect', s => Connect(s))
 
@@ -132,16 +137,32 @@ async function Connect(s: TypedSocket) {
   setup(s, 'get_tournament_preview', TournamentManager.onGetTournamentPreview)
 }
 
+type SocketCallback<Ev extends keyof ClientToServerEvents> = (
+  response: EventRes<Ev> | ErrorResponse
+) => void
+
 function setup<Ev extends keyof ClientToServerEvents>(
   s: TypedSocket,
   event: Ev,
-  handler: (s: TypedSocket, r: EventReq<Ev>) => Promise<EventRes<Ev>>
+  handler: (
+    s: TypedSocket,
+    r: EventReq<Ev>
+  ) => EventRes<Ev> | Promise<EventRes<Ev>>
 ) {
-  s.on(event, ((r: EventReq<Ev>, callback?: any) =>
-    handler(s, r)
+  ;(
+    s as TypedSocket & {
+      on: (
+        event: Ev,
+        listener: (r: EventReq<Ev>, callback: SocketCallback<Ev>) => void
+      ) => void
+    }
+  ).on(event, (r, callback) =>
+    Promise.resolve(handler(s, r))
       .then(callback)
-      .catch(e => {
-        console.warn(e.message)
-        callback({ success: false, message: e.message } satisfies ErrorResponse)
-      })) as any)
+      .catch((e: unknown) => {
+        const message = e instanceof Error ? e.message : String(e)
+        console.warn(message)
+        callback({ success: false, message })
+      })
+  )
 }

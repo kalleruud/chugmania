@@ -1,6 +1,6 @@
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
-import loc from '@/lib/locales'
+import loc from '@common/locale/locales'
 import type { SessionWithSignups } from '@common/models/session'
 import { useState, type ComponentProps, type SubmitEvent } from 'react'
 import { toast } from 'sonner'

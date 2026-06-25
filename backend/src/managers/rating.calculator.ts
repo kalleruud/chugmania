@@ -95,27 +95,24 @@ export class MatchRatingCalculator extends RatingCalculator {
     }
     if (matchEvents.length === 0) return
     this.glicko2.updateRatings(matchEvents)
-    console.log('  - Match ratings:', this.getAllRatings())
   }
 }
 
 export class TrackRatingCalculator extends RatingCalculator {
   public processTimeEntries(timeEntries: TimeEntry[]) {
-    const entriesByTrack = timeEntries.reduce(
-      (acc, entry) => {
-        acc[entry.track] = [...(acc[entry.track] || []), entry]
-        return acc
-      },
-      {} as Record<Track['id'], TimeEntry[]>
-    )
+    const entriesByTrack = new Map<Track['id'], TimeEntry[]>()
+    for (const entry of timeEntries) {
+      entriesByTrack.set(entry.track, [
+        ...(entriesByTrack.get(entry.track) ?? []),
+        entry,
+      ])
+    }
 
-    for (const entries of Object.values(entriesByTrack)) {
+    for (const entries of entriesByTrack.values()) {
       const leaderboard = this.getLeaderboard(entries)
       const race = this.glicko2.makeRace(leaderboard)
       this.glicko2.updateRatings(race)
     }
-
-    console.log('  - Track ratings:', this.getAllRatings())
   }
 
   // Returns a list of players sorted by lap time.

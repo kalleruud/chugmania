@@ -1,4 +1,4 @@
-import loc from '@/lib/locales'
+import loc from '@common/locale/locales'
 import { useEffect, useRef, useState } from 'react'
 import { Button } from './ui/button'
 
@@ -9,13 +9,13 @@ type ConfirmationButtonProps = Parameters<typeof Button>[0] & {
 
 export default function ConfirmationButton({
   confirmText = loc.no.common.confirm,
-  confirmDuration = 3000,
+  confirmDuration = 5000,
   form,
   onClick,
   ...props
 }: Readonly<ConfirmationButtonProps>) {
   const [isConfirming, setIsConfirming] = useState(false)
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -56,6 +56,7 @@ export default function ConfirmationButton({
       </Button>
     )
 
-  const { type, formAction, onSubmit, onSubmitCapture, ...initProps } = props
-  return <Button {...initProps} onClick={() => setIsConfirming(true)} />
+  return (
+    <Button {...props} type='button' onClick={() => setIsConfirming(true)} />
+  )
 }

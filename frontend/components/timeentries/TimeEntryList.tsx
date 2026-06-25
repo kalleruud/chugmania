@@ -1,18 +1,22 @@
 import { useAuth } from '@/contexts/AuthContext'
-import { useTimeEntryInput } from '@/hooks/TimeEntryInputProvider'
-import loc from '@/lib/locales'
-import type { LeaderboardEntryGap, TimeEntry } from '@common/models/timeEntry'
+import { useTimeEntryInput } from '@/contexts/TimeEntryInputContext'
+import loc from '@common/locale/locales'
+import type {
+  GapType,
+  LeaderboardEntryGap,
+  TimeEntry,
+} from '@common/models/timeEntry'
 import { PlusIcon } from '@heroicons/react/24/solid'
 import { useState } from 'react'
 import { Button } from '../ui/button'
 import { Empty } from '../ui/empty'
 import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group'
-import TimeEntryRow, { type GapType } from './TimeEntryRow'
+import TimeEntryRow from './TimeEntryRow'
 
 type FilterType = 'all' | 'best' | 'latest'
 
 function sortEntries(entries: TimeEntry[]): TimeEntry[] {
-  return [...entries].sort((a, b) => {
+  return entries.toSorted((a, b) => {
     // Entries with valid duration first, sorted by lowest duration
     if (a.duration && b.duration) {
       return a.duration - b.duration
@@ -76,7 +80,7 @@ function getGap(
   i: number,
   entry: TimeEntry,
   compareEntry: TimeEntry | undefined,
-  leader: TimeEntry | undefined = undefined
+  leader?: TimeEntry
 ): LeaderboardEntryGap | undefined {
   if (!entry.duration) return undefined
 

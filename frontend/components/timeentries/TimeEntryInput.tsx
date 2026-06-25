@@ -1,11 +1,11 @@
 import Combobox from '@/components/combobox'
-import loc from '@/lib/locales'
 import {
   getId,
   sessionToLookupItem,
   trackToLookupItem,
   userToLookupItem,
 } from '@/lib/lookup-utils'
+import loc from '@common/locale/locales'
 import type { SessionWithSignups } from '@common/models/session'
 import type {
   CreateTimeEntryRequest,
@@ -101,7 +101,7 @@ export default function TimeEntryInput({
       user: selectedUser.id,
       track: selectedTrack.id,
       session: selectedSession?.id ?? null,
-      comment: comment?.trim() === '' ? null : comment?.trim(),
+      comment: comment.trim() === '' ? null : comment.trim(),
     } satisfies
       | Omit<CreateTimeEntryRequest | EditTimeEntryRequest, 'type'>
       | undefined
@@ -163,7 +163,7 @@ export default function TimeEntryInput({
 
   function handleUpdate(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
-    if (!inputTimeEntry?.id) return toast.error('Is not editing')
+    if (!inputTimeEntry.id) return toast.error('Is not editing')
 
     toast.promise(
       socket
@@ -219,6 +219,7 @@ export default function TimeEntryInput({
                 if (el) inputs.current[i] = el
               }}
               disabled={disabled}
+              aria-label={`Siffer ${i + 1}`}
               value={d}
               onChange={e => setDigitAt(i, e.target.value)}
               placeholder='0'
@@ -239,52 +240,46 @@ export default function TimeEntryInput({
       </div>
 
       <div className='flex flex-col gap-2'>
-        {users && (
-          <Combobox
-            className='w-full'
-            required={true}
-            disabled={disabled || loggedInUser?.role === 'user'}
-            placeholder={loc.no.timeEntry.input.placeholder.user}
-            selected={selectedUser}
-            setSelected={value => setSelectedUser(value ?? null)}
-            limit={2}
-            align='start'
-            items={users.map(userToLookupItem)}
-            CustomRow={UserRow}
-          />
-        )}
+        <Combobox
+          className='w-full'
+          required={true}
+          disabled={disabled || loggedInUser?.role === 'user'}
+          placeholder={loc.no.timeEntry.input.placeholder.user}
+          selected={selectedUser}
+          setSelected={value => setSelectedUser(value ?? null)}
+          limit={2}
+          align='start'
+          items={users.map(userToLookupItem)}
+          CustomRow={UserRow}
+        />
 
-        {tracks && (
-          <Combobox
-            className='w-full'
-            required={true}
-            disabled={disabled}
-            placeholder={loc.no.timeEntry.input.placeholder.track}
-            selected={selectedTrack}
-            setSelected={value => setSelectedTrack(value ?? null)}
-            limit={2}
-            align='start'
-            items={tracks.map(trackToLookupItem)}
-            CustomRow={TrackRow}
-          />
-        )}
+        <Combobox
+          className='w-full'
+          required={true}
+          disabled={disabled}
+          placeholder={loc.no.timeEntry.input.placeholder.track}
+          selected={selectedTrack}
+          setSelected={value => setSelectedTrack(value ?? null)}
+          limit={2}
+          align='start'
+          items={tracks.map(trackToLookupItem)}
+          CustomRow={TrackRow}
+        />
 
-        {sessions && (
-          <Combobox
-            className='w-full'
-            required={false}
-            disabled={disabled}
-            placeholder={loc.no.timeEntry.input.placeholder.session}
-            selected={selectedSession}
-            setSelected={value => setSelectedSession(value ?? null)}
-            limit={2}
-            align='start'
-            items={sessions
-              .filter(s => s.status !== 'cancelled')
-              .map(sessionToLookupItem)}
-            CustomRow={SessionRow}
-          />
-        )}
+        <Combobox
+          className='w-full'
+          required={false}
+          disabled={disabled}
+          placeholder={loc.no.timeEntry.input.placeholder.session}
+          selected={selectedSession}
+          setSelected={value => setSelectedSession(value ?? null)}
+          limit={2}
+          align='start'
+          items={sessions
+            .filter(s => s.status !== 'cancelled')
+            .map(sessionToLookupItem)}
+          CustomRow={SessionRow}
+        />
 
         <TextField
           id='comment'

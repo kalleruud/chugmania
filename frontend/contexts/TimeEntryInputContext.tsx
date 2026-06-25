@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/dialog'
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
-import loc from '@/lib/locales'
+import loc from '@common/locale/locales'
 import type { Match } from '@common/models/match'
 import type { TimeEntry } from '@common/models/timeEntry'
 import { Trash2 } from 'lucide-react'
@@ -92,10 +92,10 @@ export default function TimeEntryInputProvider({
 
   const canEdit =
     mode === 'match'
-      ? isLoggedIn && loggedInUser?.role !== 'user'
+      ? isLoggedIn && loggedInUser.role !== 'user'
       : isEditingSelf ||
         !isEditing ||
-        (isLoggedIn && loggedInUser?.role !== 'user')
+        (isLoggedIn && loggedInUser.role !== 'user')
 
   function open(
     editingTimeEntry: Parameters<TimeEntryInputContextType['open']>[0] = {}
@@ -117,7 +117,7 @@ export default function TimeEntryInputProvider({
 
   function handleDelete() {
     if (mode === 'match') {
-      if (!editingMatch?.id) return
+      if (!editingMatch.id) return
       toast.promise(
         socket
           .emitWithAck('delete_match', {
@@ -134,14 +134,14 @@ export default function TimeEntryInputProvider({
       return
     }
 
-    if (!editingTimeEntry?.id) {
+    if (!editingTimeEntry.id) {
       return toast.error('Du kan ikke slette en uregistrert tid...')
     }
     toast.promise(
       socket
         .emitWithAck('edit_time_entry', {
           type: 'EditTimeEntryRequest',
-          id: editingTimeEntry?.id,
+          id: editingTimeEntry.id,
           deletedAt: new Date(),
         })
         .then(r => {

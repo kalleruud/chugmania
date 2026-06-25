@@ -26,7 +26,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
-import loc from '@/lib/locales'
+import loc from '@common/locale/locales'
 import { PencilIcon, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useParams } from 'react-router'
@@ -44,7 +44,7 @@ export default function SessionPage() {
   const isModerator = isLoggedIn && loggedInUser.role === 'moderator'
   const canEdit = isAdmin || isModerator
 
-  const handleDeleteSession = async (sessionId: string) => {
+  const handleDeleteSession = (sessionId: string) => {
     toast.promise(
       socket
         .emitWithAck('delete_session', {
@@ -73,9 +73,9 @@ export default function SessionPage() {
 
   const session = sessions.find(s => s.id === id)
   if (!session)
-    throw new Error(loc.no.error.messages.not_in_db('sessions/' + id))
+    throw new Error(loc.no.error.messages.not_in_db(`sessions/${id}`))
 
-  const isCancelled = session?.status === 'cancelled'
+  const isCancelled = session.status === 'cancelled'
 
   return (
     <div className='flex flex-col gap-6'>

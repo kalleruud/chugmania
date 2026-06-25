@@ -1,9 +1,10 @@
+import loc from '@common/locale/locales'
 import { isLoginRequest } from '@common/models/auth'
 import type { EventReq, EventRes, SocketData } from '@common/models/socket.io'
 import { type User, type UserInfo } from '@common/models/user'
 import { tryCatch, tryCatchAsync } from '@common/utils/try-catch'
+import { isRecord } from '@common/utils/utils'
 import jwt, { type JwtPayload } from 'jsonwebtoken'
-import loc from '../../../frontend/lib/locales'
 import type { TypedSocket } from '../server'
 import UserManager from './user.manager'
 
@@ -15,8 +16,8 @@ const SECRET: jwt.Secret = (() => {
 
 type TokenData = Omit<SocketData, 'token'> & JwtPayload
 
-function isTokenData(data: any): data is TokenData {
-  if (!data || typeof data !== 'object') return false
+function isTokenData(data: unknown): data is TokenData {
+  if (!isRecord(data)) return false
   return typeof data.userId === 'string'
 }
 
@@ -25,7 +26,8 @@ function delay(time: number) {
 }
 
 export default class AuthManager {
-  private static readonly LOGIN_DELAY = 1000
+  // If login is invalid, add a delay.
+  private static readonly LOGIN_DELAY = 2_000
 
   private static readonly JWT_OPTIONS: jwt.SignOptions = {
     algorithm: 'HS512',
@@ -45,10 +47,10 @@ export default class AuthManager {
     }
     if (!isTokenData(data)) throw new Error(loc.no.error.messages.invalid_jwt)
 
-    const { data: user, error: userError } = await tryCatchAsync(
+    const { error: userError } = await tryCatchAsync(
       UserManager.getUserById(data.userId)
     )
-    if (userError || !user) throw new Error(loc.no.error.messages.invalid_jwt)
+    if (userError) throw new Error(loc.no.error.messages.invalid_jwt)
 
     return data
   }
@@ -71,6 +73,10 @@ export default class AuthManager {
     allowedRoles?: UserInfo['role'][],
     allowDefaultEmail?: boolean
   ): Promise<UserInfo> {
+    if (!(typeof socket.handshake.auth.token === 'string')) {
+      throw new Error(loc.no.error.messages.invalid_jwt)
+    }
+
     const { userId } = await AuthManager.verify(socket.handshake.auth.token)
     const user = await UserManager.getUserById(userId)
 
@@ -113,11 +119,11 @@ export default class AuthManager {
         userId: userInfo.id,
       }
     } catch (error) {
-      await delay(AuthManager.LOGIN_DELAY)
       if (!error || typeof error !== 'object' || !('message' in error)) {
         console.error(new Date().toISOString(), socket.id, error)
         throw new Error(loc.no.error.messages.unknown_error)
       }
+      await delay(AuthManager.LOGIN_DELAY)
       console.error(new Date().toISOString(), socket.id, error.message)
       throw new Error(loc.no.error.messages.incorrect_login)
     }

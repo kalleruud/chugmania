@@ -11,8 +11,9 @@ import { Empty } from '@/components/ui/empty'
 import { Item, ItemContent, ItemMedia } from '@/components/ui/item'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useData } from '@/contexts/DataContext'
-import loc from '@/lib/locales'
+import loc from '@common/locale/locales'
 import type { Track } from '@common/models/track'
+import { MapIcon, WrenchIcon } from '@heroicons/react/24/solid'
 import type { ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { PageHeader } from '../../components/PageHeader'
@@ -97,7 +98,7 @@ export function TracksContent({
         title={loc.no.tracks.title}
         description={loc.no.tracks.description}
         to={showLink ? '/tracks' : undefined}
-        icon={'MapIcon'}
+        Icon={MapIcon}
       />
 
       <TrackRowList
@@ -107,7 +108,7 @@ export function TracksContent({
       <PageHeader
         title={loc.no.tracks.level.custom}
         description={loc.no.tracks.customDescription}
-        icon={'WrenchIcon'}
+        Icon={WrenchIcon}
       />
 
       <TrackRowList

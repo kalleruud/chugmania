@@ -1,14 +1,15 @@
+import loc from '@common/locale/locales'
 import {
   isCreateMatchRequest,
   isDeleteMatchRequest,
   isEditMatchRequest,
+  type CreateMatch,
   type CreateMatchRequest,
   type EditMatchRequest,
   type Match,
 } from '@common/models/match'
 import type { EventReq, EventRes } from '@common/models/socket.io'
 import { and, desc, eq, getTableColumns, isNull, sql } from 'drizzle-orm'
-import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
 import { matches, sessions } from '../../database/schema'
 import { broadcast, type TypedSocket } from '../server'
@@ -73,14 +74,24 @@ export default class MatchManager {
 
     MatchManager.validateMatchState(request)
 
-    const { type, createdAt, updatedAt, deletedAt, ...matchData } = request
+    const matchData: CreateMatch = {
+      user1: request.user1,
+      user2: request.user2,
+      track: request.track,
+      session: request.session,
+      winner: request.winner,
+      duration: request.duration,
+      status: request.status,
+      stage: request.stage,
+      comment: request.comment,
+    }
     const [match] = await db.insert(matches).values(matchData).returning()
 
     console.debug(new Date().toISOString(), socket.id, 'Created match')
 
     await RatingManager.recalculate()
-    await broadcast('all_matches', await MatchManager.getAllMatches())
-    await broadcast('all_rankings', await RatingManager.onGetRatings())
+    broadcast('all_matches', await MatchManager.getAllMatches())
+    broadcast('all_rankings', RatingManager.onGetRatings())
 
     if (match.winner) await TournamentManager.onMatchCompleted(match.id)
     return { success: true }
@@ -106,14 +117,22 @@ export default class MatchManager {
 
     MatchManager.validateMatchState(request, preImageMatch)
 
-    const { type, id, createdAt, updatedAt, ...updates } = request
+    const id = request.id
     const [res] = await db
       .update(matches)
       .set({
-        ...updates,
-        deletedAt: updates.deletedAt
-          ? new Date(updates.deletedAt)
-          : updates.deletedAt,
+        user1: request.user1,
+        user2: request.user2,
+        track: request.track,
+        session: request.session,
+        winner: request.winner,
+        duration: request.duration,
+        status: request.status,
+        stage: request.stage,
+        comment: request.comment,
+        deletedAt: request.deletedAt
+          ? new Date(request.deletedAt)
+          : request.deletedAt,
       })
       .where(eq(matches.id, preImageMatch.id))
       .returning()
@@ -121,8 +140,8 @@ export default class MatchManager {
     console.debug(new Date().toISOString(), socket.id, 'Updated match', id)
 
     await RatingManager.recalculate()
-    await broadcast('all_matches', await MatchManager.getAllMatches())
-    await broadcast('all_rankings', await RatingManager.onGetRatings())
+    broadcast('all_matches', await MatchManager.getAllMatches())
+    broadcast('all_rankings', RatingManager.onGetRatings())
 
     if (res.winner && preImageMatch.winner !== res.winner) {
       await TournamentManager.onMatchCompleted(res.id)

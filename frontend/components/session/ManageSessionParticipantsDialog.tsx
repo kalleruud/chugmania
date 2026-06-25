@@ -18,13 +18,14 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import UserRow from '@/components/user/UserRow'
-import loc from '@/lib/locales'
 import { userToLookupItem } from '@/lib/lookup-utils'
+import loc from '@common/locale/locales'
 import type { UserInfo } from '@common/models/user'
 import { CircleCheck, CircleX } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import type { SessionResponse } from '../../../backend/database/schema'
+import type { BaseRowProps } from '../row/RowProps'
 import { RESPONSE_OPTIONS } from './session-signup-utils'
 
 type ManageSessionParticipantsDialogProps = {
@@ -99,8 +100,7 @@ export default function ManageSessionParticipantsDialog({
             items={selectableUsers.map(userToLookupItem)}
             selected={undefined}
             setSelected={handleSelectUser}
-            closeOnSelect={false}
-            CustomRow={props => <UserRow {...props} hideLink hideRanking />}
+            CustomRow={MinimalUserRow}
           />
 
           {availableUsers.length === 0 && (
@@ -164,4 +164,8 @@ export default function ManageSessionParticipantsDialog({
       </DialogContent>
     </Dialog>
   )
+}
+
+function MinimalUserRow(props: BaseRowProps<UserInfo>) {
+  return <UserRow {...props} hideLink hideRanking />
 }
