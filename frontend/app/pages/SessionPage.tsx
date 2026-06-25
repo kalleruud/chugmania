@@ -44,7 +44,7 @@ export default function SessionPage() {
   const isModerator = isLoggedIn && loggedInUser.role === 'moderator'
   const canEdit = isAdmin || isModerator
 
-  const handleDeleteSession = async (sessionId: string) => {
+  const handleDeleteSession = (sessionId: string) => {
     toast.promise(
       socket
         .emitWithAck('delete_session', {

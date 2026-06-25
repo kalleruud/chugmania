@@ -110,7 +110,7 @@ export default function TournamentBracket({
                 key={match.id}
                 item={match.matchDetails}
                 className='rounded-sm border bg-background p-2'
-                onClick={() => openMatch(match.matchDetails!)}
+                onClick={() => openMatch(match.matchDetails)}
                 hideTrack
               />
             )

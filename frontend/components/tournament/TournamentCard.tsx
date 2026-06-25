@@ -46,13 +46,14 @@ export function MatchesGroupedByBracket(
       acc.set(bracketName, new Map<number, TournamentMatch[]>())
     }
 
-    const bracketRounds = acc.get(bracketName)!
+    const bracketRounds = acc.get(bracketName)
+    if (!bracketRounds) return acc
 
     if (!bracketRounds.has(roundNum)) {
       bracketRounds.set(roundNum, [])
     }
 
-    bracketRounds.get(roundNum)!.push(match)
+    bracketRounds.get(roundNum)?.push(match)
     return acc
   }, new Map<string, Map<number, TournamentMatch[]>>())
 
