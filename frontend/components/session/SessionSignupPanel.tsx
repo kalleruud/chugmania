@@ -36,10 +36,6 @@ export default function SessionSignupPanel({
   const { loggedInUser, isLoggedIn } = useAuth()
   const { users, isLoadingData } = useData()
 
-  const myResponse = session.signups.find(
-    s => s.user.id === loggedInUser?.id
-  )?.response
-
   const canManageSignups = isLoggedIn && loggedInUser.role !== 'user'
 
   const sortedSignups = useMemo(
@@ -49,10 +45,12 @@ export default function SessionSignupPanel({
       ),
     [session.signups]
   )
+
   const signedUpUserIds = useMemo(
     () => new Set(session.signups.map(s => s.user.id)),
     [session.signups]
   )
+
   const availableUsers = useMemo(
     () =>
       users
@@ -62,6 +60,8 @@ export default function SessionSignupPanel({
         ) ?? [],
     [users, signedUpUserIds]
   )
+
+  const selfRsvp = isLoggedIn && signedUpUserIds.has(loggedInUser.id)
 
   if (isLoadingData)
     return (
@@ -102,34 +102,11 @@ export default function SessionSignupPanel({
             ? loc.no.session.attendance
             : loc.no.session.attendees}
         </h3>
-
-        <div>
-          {(isUpcoming(session) || canManageSignups) &&
-            isLoggedIn &&
-            myResponse && (
-              <Select
-                disabled={disabled}
-                value={myResponse}
-                onValueChange={handleRsvp}>
-                <SelectTrigger className='w-[160px]'>
-                  <SelectValue placeholder={loc.no.session.rsvp.change} />
-                </SelectTrigger>
-                <SelectContent>
-                  {RESPONSE_OPTIONS.map(({ response, Icon }) => (
-                    <SelectItem key={response} value={response}>
-                      <Icon className='size-4' />
-                      {loc.no.session.rsvp.responses[response]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-        </div>
       </div>
 
       <div
         className='flex items-center justify-center gap-2'
-        hidden={!isUpcoming(session) || !isLoggedIn || !!myResponse}>
+        hidden={!isUpcoming(session) || !isLoggedIn || selfRsvp}>
         {RESPONSE_OPTIONS.map(({ response, Icon }) => (
           <Button
             key={response}
@@ -169,13 +146,14 @@ export default function SessionSignupPanel({
             />
             <div className='rounded-sm bg-background-secondary'>
               {responseSignups.map(({ user }) => {
+                const isSelf = loggedInUser?.id === user.id
                 return (
                   <UserRow
                     key={user.id}
                     item={user}
-                    className='w-full py-1 first:pt-2 last:pb-2'
+                    className='h-12 w-full py-1 first:pt-2 last:pb-2'
                     hideRanking>
-                    {canManageSignups && (
+                    {(canManageSignups || isSelf) && (
                       <Select
                         value={response}
                         onValueChange={value =>

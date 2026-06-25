@@ -1,8 +1,7 @@
 import { Item, ItemActions, ItemContent, ItemTitle } from '@/components/ui/item'
-import { useAuth } from '@/contexts/AuthContext'
 import { useData } from '@/contexts/DataContext'
 import { type UserInfo } from '@common/models/user'
-import { Award, ChevronRight, Map, Minus, Trophy } from 'lucide-react'
+import { ChevronRight, Minus } from 'lucide-react'
 import { Link } from 'react-router'
 import { twMerge } from 'tailwind-merge'
 import type { BaseRowProps } from '../row/RowProps'
@@ -21,7 +20,6 @@ export default function UserRow({
   children,
   ...props
 }: Readonly<UserRowProps>) {
-  const { loggedInUser, isLoggedIn } = useAuth()
   const { rankings, isLoadingData } = useData()
 
   if (isLoadingData) {
@@ -29,7 +27,6 @@ export default function UserRow({
   }
 
   const ranking = rankings.find(r => r.user === user.id)
-  const isAdmin = isLoggedIn && loggedInUser.role === 'admin'
 
   const content = (
     <>
@@ -41,31 +38,6 @@ export default function UserRow({
             <span>{user.firstName}</span>
             <span className='font-bold'>{user.lastName}</span>
           </ItemTitle>
-
-          {!hideRanking && isAdmin && ranking && (
-            <div className='hidden w-48 items-center gap-2 tabular-nums sm:flex'>
-              <div className='flex items-center gap-1'>
-                <Trophy className='size-4' />
-                <span className='truncate text-sm'>
-                  {ranking.matchRating.toFixed()}
-                </span>
-              </div>
-
-              <div className='flex items-center gap-1'>
-                <Map className='size-4' />
-                <span className='truncate text-sm'>
-                  {ranking.trackRating.toFixed()}
-                </span>
-              </div>
-
-              <div className='flex items-center gap-1'>
-                <Award className='size-4' />
-                <span className='truncate text-sm'>
-                  {ranking.totalRating.toFixed()}
-                </span>
-              </div>
-            </div>
-          )}
 
           {!hideRanking && ranking && (
             <div
