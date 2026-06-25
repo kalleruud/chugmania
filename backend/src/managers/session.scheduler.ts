@@ -24,16 +24,16 @@ export default class SessionScheduler {
 
     const delayMs = Math.max(nextSession.date.getTime() - Date.now())
 
-    if (delayMs > SessionScheduler.MAX_TIMEOUT_MS) {
-      return SessionScheduler.rescheduleCheck()
+    if (delayMs < SessionScheduler.MAX_TIMEOUT_MS) {
+      SessionScheduler.reschedule(delayMs)
+      console.debug(
+        new Date().toISOString(),
+        `Scheduled session "${nextSession.name}" to start in ${delayMs}ms`,
+        nextSession.id
+      )
     }
 
-    SessionScheduler.reschedule(delayMs)
-    console.debug(
-      new Date().toISOString(),
-      `Scheduled session "${nextSession.name}" to start in ${delayMs}ms`,
-      nextSession.id
-    )
+    return SessionScheduler.rescheduleCheck()
   }
 
   private static async findNextSession(): Promise<SessionWithSignups | null> {
