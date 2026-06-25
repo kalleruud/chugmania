@@ -16,6 +16,13 @@ import {
 } from './ui/select'
 import { Textarea } from './ui/textarea'
 
+function dateToTime(date: Date | undefined) {
+  if (!date) return undefined
+  const h = String(date.getHours()).padStart(2, '0')
+  const m = String(date.getMinutes()).padStart(2, '0')
+  return `${h}:${m}`
+}
+
 export function Field({
   hidden,
   ...props
@@ -111,13 +118,6 @@ export function CalendarField({
   const isEmpty = selected === undefined
 
   if (hidden) return undefined
-
-  function dateToTime(date: Date | undefined) {
-    if (!date) return undefined
-    const h = String(date.getHours()).padStart(2, '0')
-    const m = String(date.getMinutes()).padStart(2, '0')
-    return `${h}:${m}`
-  }
 
   function handleTimeChange(timeString: string) {
     setTime(timeString)

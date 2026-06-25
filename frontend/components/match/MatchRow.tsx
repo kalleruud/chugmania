@@ -165,6 +165,7 @@ export default function MatchRow({
       <div className='absolute right-0 flex items-center'>
         {canEdit && isPlanned && (
           <button
+            type='button'
             title={loc.no.match.cancel}
             className='m-2 hidden p-2 text-muted-foreground transition-colors group-hover:block hover:rounded-sm hover:bg-muted hover:text-primary-foreground'
             onClick={e => {

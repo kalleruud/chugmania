@@ -219,6 +219,7 @@ export default function TimeEntryInput({
                 if (el) inputs.current[i] = el
               }}
               disabled={disabled}
+              aria-label={`Siffer ${i + 1}`}
               value={d}
               onChange={e => setDigitAt(i, e.target.value)}
               placeholder='0'

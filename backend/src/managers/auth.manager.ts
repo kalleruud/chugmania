@@ -26,7 +26,8 @@ function delay(time: number) {
 }
 
 export default class AuthManager {
-  private static readonly LOGIN_DELAY = 1000
+  // If login is invalid, add a delay.
+  private static readonly LOGIN_DELAY = 2_000
 
   private static readonly JWT_OPTIONS: jwt.SignOptions = {
     algorithm: 'HS512',
@@ -118,11 +119,11 @@ export default class AuthManager {
         userId: userInfo.id,
       }
     } catch (error) {
-      await delay(AuthManager.LOGIN_DELAY)
       if (!error || typeof error !== 'object' || !('message' in error)) {
         console.error(new Date().toISOString(), socket.id, error)
         throw new Error(loc.no.error.messages.unknown_error)
       }
+      await delay(AuthManager.LOGIN_DELAY)
       console.error(new Date().toISOString(), socket.id, error.message)
       throw new Error(loc.no.error.messages.incorrect_login)
     }

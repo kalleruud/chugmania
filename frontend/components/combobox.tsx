@@ -96,6 +96,7 @@ export default function Combobox<T extends ComboboxLookupItem>({
   function onSelect(item: ComboboxLookupItem) {
     if (item.id === selected?.id) setSelected(undefined)
     else setSelected(items.find(i => i.id === item.id))
+    setSearch('')
     closeAndFocusTrigger()
   }
 
@@ -167,13 +168,13 @@ export default function Combobox<T extends ComboboxLookupItem>({
             <Search className='size-4 text-muted-foreground' />
             <input
               type='text'
+              aria-label='Søk'
               inputMode='search'
               className='placeholder:text-label-muted flex w-full py-2 focus:ring-0'
               placeholder='Søk...'
               maxLength={64}
               value={search}
               onChange={e => setSearch(e.target.value)}
-              autoFocus
             />
           </div>
           {results.length === 0 ? (

@@ -290,7 +290,7 @@ export default class TournamentManager {
     playerIds: string[]
   ) {
     // Sort players by rating (descending) - highest rated first
-    const sortedPlayers = [...playerIds].sort((a, b) => {
+    const sortedPlayers = playerIds.toSorted((a, b) => {
       const ratingA = RatingManager.getUserRatings(a)?.totalRating ?? 0
       const ratingB = RatingManager.getUserRatings(b)?.totalRating ?? 0
       return ratingB - ratingA
