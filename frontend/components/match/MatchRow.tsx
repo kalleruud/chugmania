@@ -83,7 +83,7 @@ export default function MatchRow({
         'group relative flex cursor-pointer items-center justify-between rounded-sm p-2 transition-colors hover:bg-foreground/15',
         isCancelled && 'text-muted-foreground opacity-33',
         className,
-        highlight && 'bg-foreground/13'
+        highlight && 'bg-foreground/3'
       )}
       {...rest}>
       <div className='mt-1 grid w-full grid-cols-1 items-center gap-1 sm:grid-cols-2'>

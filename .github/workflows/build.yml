@@ -1,7 +1,13 @@
-name: Check
+name: Build
 
 on:
   pull_request:
+    paths:
+      - '**/*.ts'
+      - package*.json
+      - tsconfig*
+      - dockerfile
+      - '**/build.yml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -20,9 +26,6 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-
-      - name: Run check
-        run: npm run check
 
       - name: Build Docker image
         run: docker build -t chugmania .

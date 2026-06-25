@@ -8,6 +8,7 @@ import {
   type SessionWithSignups,
 } from '@common/models/session'
 import type { EventReq, EventRes } from '@common/models/socket.io'
+import { isPast } from '@common/utils/date'
 import { and, asc, desc, eq, isNull } from 'drizzle-orm'
 import db from '../../database/database'
 import { sessions, sessionSignups, users } from '../../database/schema'
@@ -152,7 +153,7 @@ export default class SessionManager {
     )
 
     broadcast('all_sessions', await SessionManager.getAllSessions())
-    await SessionScheduler.reschedule()
+    await SessionScheduler.start()
 
     return { success: true }
   }
@@ -195,7 +196,7 @@ export default class SessionManager {
     console.debug(new Date().toISOString(), socket.id, 'Updated session', id)
 
     broadcast('all_sessions', await SessionManager.getAllSessions())
-    await SessionScheduler.reschedule()
+    await SessionScheduler.start()
 
     return { success: true }
   }
@@ -233,7 +234,7 @@ export default class SessionManager {
       throw new Error(loc.no.error.messages.not_in_db(request.session))
     }
 
-    if (session.date.getTime() < Date.now() && !isModerator) {
+    if (isPast(session) && !isModerator) {
       throw new Error(loc.no.session.errorMessages.no_edit_historical)
     }
 
@@ -258,7 +259,6 @@ export default class SessionManager {
     )
 
     broadcast('all_sessions', await SessionManager.getAllSessions())
-    await SessionScheduler.reschedule()
 
     return { success: true }
   }

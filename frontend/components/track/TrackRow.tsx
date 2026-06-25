@@ -41,11 +41,7 @@ export function TrackRow({
     return (
       <Item
         key={track.id}
-        className={twMerge(
-          highlight &&
-            'bg-primary-background ring-1 ring-primary/50 hover:bg-primary/25',
-          className
-        )}
+        className={twMerge(highlight && 'bg-foreground/3', className)}
         asChild>
         <div>{content}</div>
       </Item>
@@ -55,11 +51,7 @@ export function TrackRow({
   return (
     <Item
       key={track.id}
-      className={twMerge(
-        highlight &&
-          'bg-primary-background ring-1 ring-primary/50 hover:bg-primary/25',
-        className
-      )}
+      className={twMerge(highlight && 'bg-foreground/3', className)}
       asChild>
       <Link to={`/tracks/${track.id}`}>{content}</Link>
     </Item>

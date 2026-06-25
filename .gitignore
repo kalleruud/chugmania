@@ -1,6 +1,7 @@
 # Output
 .output
 /build
+.plans/
 
 # OS
 .DS_Store

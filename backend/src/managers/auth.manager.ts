@@ -74,7 +74,7 @@ export default class AuthManager {
     allowDefaultEmail?: boolean
   ): Promise<UserInfo> {
     if (!(typeof socket.handshake.auth.token === 'string')) {
-      throw new Error(loc.no.error.messages.invalid_jwt)
+      throw new Error(loc.no.error.messages.missing_jwt)
     }
 
     const { userId } = await AuthManager.verify(socket.handshake.auth.token)

@@ -21,7 +21,7 @@ import UserRow from '@/components/user/UserRow'
 import { userToLookupItem } from '@/lib/lookup-utils'
 import loc from '@common/locale/locales'
 import type { UserInfo } from '@common/models/user'
-import { CircleCheck, CircleX } from 'lucide-react'
+import { CircleX, UserPlus } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import type { SessionResponse } from '../../../backend/database/schema'
@@ -83,9 +83,9 @@ export default function ManageSessionParticipantsDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
+      <DialogTrigger asChild className='flex-1'>
         <Button type='button' variant='outline' disabled={disabled}>
-          <CircleCheck className='size-4' />
+          <UserPlus className='size-4' />
           {loc.no.session.rsvp.manage.add}
         </Button>
       </DialogTrigger>

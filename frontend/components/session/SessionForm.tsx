@@ -42,7 +42,6 @@ export default function SessionForm({
 
   function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
-    if (!date) return toast.error('Dato er påkrevd')
 
     switch (variant) {
       case 'create':
@@ -56,7 +55,7 @@ export default function SessionForm({
               type: 'CreateSessionRequest',
               name,
               description: description || undefined,
-              date,
+              date: date ?? new Date(),
               location: location || undefined,
               status,
             })
@@ -69,6 +68,7 @@ export default function SessionForm({
         )
 
       case 'edit':
+        if (!date) return toast.error('Dato er påkrevd')
         if (!canCreate) {
           toast.error(loc.no.error.messages.insufficient_permissions)
           return
@@ -116,7 +116,7 @@ export default function SessionForm({
         selected={date}
         onSelect={setDate}
         disabled={disabled}
-        required
+        required={variant === 'edit'}
       />
 
       <Field

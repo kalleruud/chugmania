@@ -91,7 +91,7 @@ app.get('/api/ping', (_req, res) => {
 io.on('connect', s => Connect(s))
 
 // Initialize session scheduler when server starts
-await SessionScheduler.scheduleNext()
+await SessionScheduler.start()
 
 // Calculate ratings
 await RatingManager.recalculate()
