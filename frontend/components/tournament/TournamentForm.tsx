@@ -109,10 +109,6 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
     }
   }
 
-  useEffect(() => {
-    requestPreview()
-  }, [selectedSessionId, groupsCount, advancementCount, eliminationType])
-
   const requestPreview = () => {
     if (!selectedSessionId || name === '') return
     socket
@@ -130,6 +126,10 @@ export default function TournamentForm(props: Readonly<TournamentFormProps>) {
         setPreview(r.tournament)
       })
   }
+
+  useEffect(() => {
+    requestPreview()
+  }, [selectedSessionId, groupsCount, advancementCount, eliminationType])
 
   const handleSubmit = (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
