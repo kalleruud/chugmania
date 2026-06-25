@@ -34,6 +34,11 @@ export default defineConfig([
       'no-restricted-imports': 'off',
       'react-hooks/exhaustive-deps': 'off',
       '@typescript-eslint/unbound-method': 'off',
+      '@typescript-eslint/no-extraneous-class': 'off',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { ignoreRestSiblings: true },
+      ],
     },
   },
   {

@@ -145,7 +145,7 @@ export default class TimeEntryManager {
       throw new Error(loc.no.error.messages.insufficient_permissions)
     }
 
-    let { type, id, ...updates } = request
+    const { type, id, ...updates } = request
 
     // Convert string dates to Date objects
     const processedUpdates = { ...updates }
