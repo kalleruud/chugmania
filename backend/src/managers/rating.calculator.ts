@@ -95,7 +95,6 @@ export class MatchRatingCalculator extends RatingCalculator {
     }
     if (matchEvents.length === 0) return
     this.glicko2.updateRatings(matchEvents)
-    console.log('  - Match ratings:', this.getAllRatings())
   }
 }
 
@@ -114,8 +113,6 @@ export class TrackRatingCalculator extends RatingCalculator {
       const race = this.glicko2.makeRace(leaderboard)
       this.glicko2.updateRatings(race)
     }
-
-    console.log('  - Track ratings:', this.getAllRatings())
   }
 
   // Returns a list of players sorted by lap time.

@@ -91,7 +91,7 @@ export default class MatchManager {
 
     await RatingManager.recalculate()
     broadcast('all_matches', await MatchManager.getAllMatches())
-    broadcast('all_rankings', await RatingManager.onGetRatings())
+    broadcast('all_rankings', RatingManager.onGetRatings())
 
     if (match.winner) await TournamentManager.onMatchCompleted(match.id)
     return { success: true }
@@ -141,7 +141,7 @@ export default class MatchManager {
 
     await RatingManager.recalculate()
     broadcast('all_matches', await MatchManager.getAllMatches())
-    broadcast('all_rankings', await RatingManager.onGetRatings())
+    broadcast('all_rankings', RatingManager.onGetRatings())
 
     if (res.winner && preImageMatch.winner !== res.winner) {
       await TournamentManager.onMatchCompleted(res.id)

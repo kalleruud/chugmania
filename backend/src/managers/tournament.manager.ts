@@ -1169,7 +1169,7 @@ export default class TournamentManager {
 
     await RatingManager.recalculate()
     broadcast('all_matches', await MatchManager.getAllMatches())
-    broadcast('all_rankings', await RatingManager.onGetRatings())
+    broadcast('all_rankings', RatingManager.onGetRatings())
   }
 
   private static async getGroupRankedPlayer(

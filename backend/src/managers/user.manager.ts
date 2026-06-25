@@ -201,7 +201,7 @@ export default class UserManager {
     await RatingManager.recalculate()
     broadcast('all_users', await UserManager.getAllUsers())
     broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
-    broadcast('all_rankings', await RatingManager.onGetRatings())
+    broadcast('all_rankings', RatingManager.onGetRatings())
 
     return {
       success: true,

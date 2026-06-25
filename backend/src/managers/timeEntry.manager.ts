@@ -111,7 +111,7 @@ export default class TimeEntryManager {
     if (signupChanged) {
       broadcast('all_sessions', await SessionManager.getAllSessions())
     }
-    broadcast('all_rankings', await RatingManager.onGetRatings())
+    broadcast('all_rankings', RatingManager.onGetRatings())
 
     return {
       success: true,
@@ -181,7 +181,7 @@ export default class TimeEntryManager {
     if (signupChanged) {
       broadcast('all_sessions', await SessionManager.getAllSessions())
     }
-    broadcast('all_rankings', await RatingManager.onGetRatings())
+    broadcast('all_rankings', RatingManager.onGetRatings())
 
     return {
       success: true,
