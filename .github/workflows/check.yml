@@ -26,3 +26,27 @@ jobs:
 
       - name: Build Docker image
         run: docker build -t chugmania .
+
+      - name: Check Docker image
+        run: |
+          docker run --name chugmania-check -p 6996:6996 -e SECRET=ci -d chugmania
+          trap 'docker rm -f chugmania-check' EXIT
+
+          fail() {
+            docker logs chugmania-check
+            exit 1
+          }
+
+          for _ in {1..10}; do
+            if ! docker ps --format '{{.Names}}' | grep -qx chugmania-check; then
+              fail
+            fi
+
+            if [ "$(curl -fsS http://localhost:6996/api/ping || true)" = "pong" ]; then
+              exit 0
+            fi
+
+            sleep 1
+          done
+
+          fail

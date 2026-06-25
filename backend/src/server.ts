@@ -81,6 +81,7 @@ export function broadcast<Ev extends ProtectedServerEvent>(
 app.get('/api/sessions/calendar.ics', (req, res) =>
   ApiManager.onGetCalendar(ORIGIN, req, res)
 )
+app.get('/api/ping', (_req, res) => res.send('pong'))
 
 io.on('connect', s => Connect(s))
 
