@@ -3,23 +3,25 @@ import loc from '@/lib/locales'
 import type { Match } from '@common/models/match'
 import type {
   GroupWithPlayers,
-  TournamentMatchWithDetails,
+  TournamentMatch,
 } from '@common/models/tournament'
 import { twMerge } from 'tailwind-merge'
 import MatchRow from '../match/MatchRow'
 import TournamentMatchPlaceholder from './TournamentMatchRow'
 
+type TournamentMatchWithDetails = TournamentMatch & {
+  matchDetails?: Match
+}
+
 type TournamentBracketProps = {
   matches: TournamentMatchWithDetails[]
   groups: GroupWithPlayers[]
-  allMatches: Match[]
   className?: string
 }
 
 export default function TournamentBracket({
   matches,
   groups,
-  allMatches,
   className,
 }: Readonly<TournamentBracketProps>) {
   const { openMatch } = useTimeEntryInput()
@@ -28,20 +30,24 @@ export default function TournamentBracket({
   const lowerBracketMatches = matches.filter(m => m.bracket === 'lower')
 
   // Upper bracket: higher round numbers are earlier (16->8->4->2->1)
-  const upperRounds = [...new Set(upperBracketMatches.map(m => m.round))].sort(
-    (a, b) => b - a
-  )
+  const upperRounds = [
+    ...new Set(
+      upperBracketMatches.map(m => m.round).filter(round => round !== null)
+    ),
+  ].sort((a, b) => b - a)
   // Lower bracket: sequential round numbers, lower is earlier (1->2->3->4...)
-  const lowerRounds = [...new Set(lowerBracketMatches.map(m => m.round))].sort(
-    (a, b) => a - b
-  )
+  const lowerRounds = [
+    ...new Set(
+      lowerBracketMatches.map(m => m.round).filter(round => round !== null)
+    ),
+  ].sort((a, b) => a - b)
 
   function getSourceDescription(match: TournamentMatchWithDetails): {
     sourceA: string
     sourceB: string
   } {
-    let sourceA = loc.no.tournament.pending
-    let sourceB = loc.no.tournament.pending
+    let sourceA: string = loc.no.tournament.pending
+    let sourceB: string = loc.no.tournament.pending
 
     if (match.sourceGroupA && match.sourceGroupARank) {
       const group = groups.find(g => g.id === match.sourceGroupA)
@@ -114,9 +120,10 @@ export default function TournamentBracket({
           return (
             <TournamentMatchPlaceholder
               key={match.id}
-              name={match.name}
-              sourceA={sourceA}
-              sourceB={sourceB}
+              item={{
+                ...match,
+                name: `${match.name}: ${sourceA} - ${sourceB}`,
+              }}
             />
           )
         })}

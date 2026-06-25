@@ -63,3 +63,5 @@ export type AbsoluteTimeEntriesRequest = {
 export type AbsoluteTimeEntriesResponse = SuccessResponse & {
   entries: LeaderboardEntry[]
 }
+
+export type GapType = 'leader' | 'interval'

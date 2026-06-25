@@ -1,6 +1,10 @@
 import { useData } from '@/contexts/DataContext'
 import loc from '@/lib/locales'
-import type { LeaderboardEntryGap, TimeEntry } from '@common/models/timeEntry'
+import type {
+  GapType,
+  LeaderboardEntryGap,
+  TimeEntry,
+} from '@common/models/timeEntry'
 import { formatTime } from '@common/utils/time'
 import { MinusIcon } from '@heroicons/react/24/solid'
 import {
@@ -12,8 +16,6 @@ import {
 } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type { BaseRowProps } from '../row/RowProps'
-
-export type GapType = 'leader' | 'interval'
 
 type TimeEntryRowProps = BaseRowProps<TimeEntry> & {
   position?: number | null

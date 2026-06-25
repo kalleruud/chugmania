@@ -1,13 +1,17 @@
 import { useAuth } from '@/contexts/AuthContext'
 import { useTimeEntryInput } from '@/hooks/TimeEntryInputProvider'
 import loc from '@/lib/locales'
-import type { LeaderboardEntryGap, TimeEntry } from '@common/models/timeEntry'
+import type {
+  GapType,
+  LeaderboardEntryGap,
+  TimeEntry,
+} from '@common/models/timeEntry'
 import { PlusIcon } from '@heroicons/react/24/solid'
 import { useState } from 'react'
 import { Button } from '../ui/button'
 import { Empty } from '../ui/empty'
 import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group'
-import TimeEntryRow, { type GapType } from './TimeEntryRow'
+import TimeEntryRow from './TimeEntryRow'
 
 type FilterType = 'all' | 'best' | 'latest'
 
