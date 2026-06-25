@@ -9,7 +9,7 @@ import type {
 } from '@common/models/socket.io'
 import express from 'express'
 import { Server, Socket } from 'socket.io'
-import ViteExpress from 'vite-express'
+import { listen } from 'vite-express'
 import AdminManager from './managers/admin.manager'
 import ApiManager from './managers/api.manager'
 import AuthManager from './managers/auth.manager'
@@ -26,7 +26,7 @@ const PORT = process.env.PORT ? Number.parseInt(process.env.PORT) : 6996
 const ORIGIN = new URL(process.env.ORIGIN ?? `http://localhost:${PORT}`)
 
 const app = express()
-const server = ViteExpress.listen(app, PORT)
+const server = listen(app, PORT)
 const io = new Server<
   ClientToServerEvents,
   ServerToClientEvents,
@@ -132,16 +132,32 @@ async function Connect(s: TypedSocket) {
   setup(s, 'get_tournament_preview', TournamentManager.onGetTournamentPreview)
 }
 
+type SocketCallback<Ev extends keyof ClientToServerEvents> = (
+  response: EventRes<Ev> | ErrorResponse
+) => void
+
 function setup<Ev extends keyof ClientToServerEvents>(
   s: TypedSocket,
   event: Ev,
-  handler: (s: TypedSocket, r: EventReq<Ev>) => Promise<EventRes<Ev>>
+  handler: (
+    s: TypedSocket,
+    r: EventReq<Ev>
+  ) => EventRes<Ev> | Promise<EventRes<Ev>>
 ) {
-  s.on(event, ((r: EventReq<Ev>, callback?: any) =>
-    handler(s, r)
+  ;(
+    s as TypedSocket & {
+      on: (
+        event: Ev,
+        listener: (r: EventReq<Ev>, callback: SocketCallback<Ev>) => void
+      ) => void
+    }
+  ).on(event, (r, callback) =>
+    Promise.resolve(handler(s, r))
       .then(callback)
-      .catch(e => {
-        console.warn(e.message)
-        callback({ success: false, message: e.message } satisfies ErrorResponse)
-      })) as any)
+      .catch((e: unknown) => {
+        const message = e instanceof Error ? e.message : String(e)
+        console.warn(message)
+        callback({ success: false, message })
+      })
+  )
 }
