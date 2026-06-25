@@ -28,7 +28,7 @@ export default class CsvParser {
           entries.set(keyVal.key, keyVal.value)
         }
 
-        return Object.fromEntries(entries) as Record<string, any>
+        return Object.fromEntries(entries) as Record<string, unknown>
       })
     )
   }

@@ -7,7 +7,6 @@ import {
 import type { EventReq, EventRes } from '@common/models/socket.io'
 import { eq } from 'drizzle-orm'
 import type { SQLiteTable } from 'drizzle-orm/sqlite-core'
-import type { Socket } from 'socket.io'
 import db, { database } from '../../database/database'
 import {
   groupPlayers,
@@ -21,7 +20,7 @@ import {
   tracks,
   users,
 } from '../../database/schema'
-import { broadcast } from '../server'
+import { broadcast, type TypedSocket } from '../server'
 import CsvParser from '../utils/csv-parser'
 import AuthManager from './auth.manager'
 import MatchManager from './match.manager'
@@ -58,9 +57,9 @@ export default class AdminManager {
     tournamentMatches: tournamentMatches,
   } satisfies Record<ExportCsvRequest['table'], SQLiteTable>
 
-  private static async importRows<T extends Record<string, any>>(
+  private static async importRows(
     tableName: ExportCsvRequest['table'],
-    data: T[]
+    data: Record<string, unknown>[]
   ): Promise<{ created: number; updated: number }> {
     const table = AdminManager.TABLE_MAP[tableName]
 
@@ -68,10 +67,11 @@ export default class AdminManager {
     const existingRecords = await db.select({ id: table.id }).from(table)
     const existingIds = new Set(existingRecords.map(r => r.id))
 
-    const toCreate: T[] = []
-    const toUpdate: T[] = []
+    const toCreate: Record<string, unknown>[] = []
+    const toUpdate: Record<string, unknown>[] = []
     for (const item of data) {
-      if (existingIds.has(item.id)) {
+      const id = item.id
+      if (typeof id === 'string' && existingIds.has(id)) {
         toUpdate.push(item)
       } else {
         toCreate.push({
@@ -92,11 +92,10 @@ export default class AdminManager {
       }
 
       for (const update of toUpdate) {
-        const res = db
-          .update(table)
-          .set(update)
-          .where(eq(table.id, update.id))
-          .run()
+        const id = update.id
+        if (typeof id !== 'string') continue
+
+        const res = db.update(table).set(update).where(eq(table.id, id)).run()
         updated += res.changes
       }
     })()
@@ -105,7 +104,7 @@ export default class AdminManager {
   }
 
   static async onImportCsv(
-    socket: Socket,
+    socket: TypedSocket,
     request: EventReq<'import_csv'>
   ): Promise<EventRes<'import_csv'>> {
     if (!isImportCsvRequest(request))
@@ -130,25 +129,20 @@ export default class AdminManager {
 
     await RatingManager.recalculate()
 
-    const [users, tracks, sessions, timeEntries, matches, ratings] =
-      await Promise.all([
-        UserManager.getAllUsers(),
-        TrackManager.getAllTracks(),
-        SessionManager.getAllSessions(),
-        TimeEntryManager.getAllTimeEntries(),
-        MatchManager.getAllMatches(),
-        RatingManager.onGetRatings(),
-      ])
-
-    await Promise.all([
-      broadcast('all_users', users),
-      broadcast('all_tracks', tracks),
-      broadcast('all_sessions', sessions),
-      broadcast('all_time_entries', timeEntries),
-      broadcast('all_matches', matches),
+    const [users, tracks, sessions, timeEntries, matches] = await Promise.all([
+      UserManager.getAllUsers(),
+      TrackManager.getAllTracks(),
+      SessionManager.getAllSessions(),
+      TimeEntryManager.getAllTimeEntries(),
+      MatchManager.getAllMatches(),
     ])
 
-    broadcast('all_rankings', ratings)
+    broadcast('all_users', users)
+    broadcast('all_tracks', tracks)
+    broadcast('all_sessions', sessions)
+    broadcast('all_time_entries', timeEntries)
+    broadcast('all_matches', matches)
+    broadcast('all_rankings', RatingManager.onGetRatings())
 
     return {
       success: true,
@@ -164,7 +158,7 @@ export default class AdminManager {
     if (excludeColumns.size === 0) return records
 
     return records.map(record => {
-      const filtered: Record<string, any> = {}
+      const filtered: Record<string, unknown> = {}
       for (const [key, value] of Object.entries(record)) {
         if (!excludeColumns.has(key)) {
           filtered[key] = value
@@ -175,7 +169,7 @@ export default class AdminManager {
   }
 
   static async onExportCsv(
-    socket: Socket,
+    socket: TypedSocket,
     request: EventReq<'export_csv'>
   ): Promise<EventRes<'export_csv'>> {
     if (!isExportCsvRequest(request))
