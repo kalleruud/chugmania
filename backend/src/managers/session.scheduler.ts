@@ -25,10 +25,6 @@ export default class SessionScheduler {
     const delayMs = Math.max(nextSession.date.getTime() - Date.now())
 
     if (delayMs > SessionScheduler.MAX_TIMEOUT_MS) {
-      console.debug(
-        new Date().toISOString(),
-        `Next session "${nextSession.name}" starts outside the scheduling window`
-      )
       return SessionScheduler.rescheduleCheck()
     }
 
