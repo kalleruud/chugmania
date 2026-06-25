@@ -75,7 +75,7 @@ export default function SessionPage() {
   if (!session)
     throw new Error(loc.no.error.messages.not_in_db('sessions/' + id))
 
-  const isCancelled = session?.status === 'cancelled'
+  const isCancelled = session.status === 'cancelled'
 
   return (
     <div className='flex flex-col gap-6'>

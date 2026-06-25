@@ -131,12 +131,9 @@ export default class TimeEntryManager {
     const user = await AuthManager.checkAuth(socket)
 
     // Get the lap time entry to check ownership
-    const entries = await db
-      .select()
-      .from(timeEntries)
-      .where(eq(timeEntries.id, request.id))
-
-    const lapTime = entries[0]
+    const lapTime = await db.query.timeEntries.findFirst({
+      where: eq(timeEntries.id, request.id),
+    })
     if (!lapTime) {
       throw new Error(loc.no.error.messages.not_in_db(request.id))
     }

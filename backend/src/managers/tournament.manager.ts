@@ -166,7 +166,7 @@ export default class TournamentManager {
             losses: groupMatches.filter(
               m =>
                 (m?.user1 === gp.user || m?.user2 === gp.user) &&
-                m?.winner !== gp.user
+                m.winner !== gp.user
             ).length,
           })),
       }
@@ -905,8 +905,6 @@ export default class TournamentManager {
 
       for (let rank = 1; rank <= tournament.advancementCount; rank++) {
         const player = standings[rank - 1]
-        if (!player) continue
-
         const pendingMatches = await db
           .select()
           .from(tournamentMatches)

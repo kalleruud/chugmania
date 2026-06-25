@@ -47,7 +47,7 @@ export default function UserCard({
   const isAdmin = loggedInUser?.role === 'admin'
   const canEdit = isSelf || isAdmin
 
-  const handleDeleteUser = async () => {
+  const handleDeleteUser = () => {
     toast.promise(
       socket
         .emitWithAck('delete_user', {
@@ -102,7 +102,7 @@ export default function UserCard({
             <Award className='size-4' />
             {ranking?.totalRating ? (
               <span className='truncate text-sm'>
-                {ranking?.totalRating.toFixed()}
+                {ranking.totalRating.toFixed()}
               </span>
             ) : (
               <Minus className='size-4' />
@@ -122,44 +122,42 @@ export default function UserCard({
             {loc.no.common.delete}
           </ConfirmationButton>
 
-          {canEdit && (
-            <Dialog open={open} onOpenChange={setOpen}>
-              <DialogTrigger asChild>
-                <Button variant='outline' size='sm'>
-                  <PencilIcon />
-                  {loc.no.common.edit}
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>{loc.no.user.edit.title}</DialogTitle>
-                  <DialogDescription>
-                    {loc.no.user.edit.description}
-                  </DialogDescription>
-                </DialogHeader>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button variant='outline' size='sm'>
+                <PencilIcon />
+                {loc.no.common.edit}
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{loc.no.user.edit.title}</DialogTitle>
+                <DialogDescription>
+                  {loc.no.user.edit.description}
+                </DialogDescription>
+              </DialogHeader>
 
-                <UserForm
-                  id='editForm'
-                  variant='edit'
-                  user={user}
-                  className='py-2'
-                  onSubmitResponse={() => setOpen(false)}
-                  disabled={isLoading}
-                />
+              <UserForm
+                id='editForm'
+                variant='edit'
+                user={user}
+                className='py-2'
+                onSubmitResponse={() => setOpen(false)}
+                disabled={isLoading}
+              />
 
-                <DialogFooter>
-                  <DialogClose asChild>
-                    <Button variant='outline' disabled={isLoading}>
-                      {loc.no.common.cancel}
-                    </Button>
-                  </DialogClose>
-                  <ConfirmationButton form='editForm' disabled={isLoading}>
-                    {loc.no.common.continue}
-                  </ConfirmationButton>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          )}
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button variant='outline' disabled={isLoading}>
+                    {loc.no.common.cancel}
+                  </Button>
+                </DialogClose>
+                <ConfirmationButton form='editForm' disabled={isLoading}>
+                  {loc.no.common.continue}
+                </ConfirmationButton>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           {isSelf && (
             <Button onClick={logout} variant='destructive' size='sm'>

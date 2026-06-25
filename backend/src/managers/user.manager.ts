@@ -59,8 +59,6 @@ export default class UserManager {
       .returning()
 
     const user = data[0]
-    if (!user) throw new Error(loc.no.error.messages.not_in_db(id))
-
     broadcast('all_users', await UserManager.getAllUsers())
     return user
   }
@@ -84,7 +82,7 @@ export default class UserManager {
       return false
     }
 
-    return !!data?.length
+    return data.length > 0
   }
 
   static async userExists(email: string): Promise<boolean> {
@@ -219,7 +217,7 @@ export default class UserManager {
     }
 
     const { data: actor } = await tryCatchAsync(AuthManager.checkAuth(socket))
-    if (actor && actor?.role !== 'admin' && request.role !== 'user') {
+    if (actor && actor.role !== 'admin' && request.role !== 'user') {
       throw new Error(loc.no.error.messages.insufficient_permissions)
     }
 
@@ -233,12 +231,14 @@ export default class UserManager {
 
     const passwordHash = await AuthManager.hash(request.password)
 
-    const { password, createdAt, role: _, ...user } = request
     const newUser = await db
       .insert(users)
       .values({
-        ...user,
-        createdAt: createdAt ? new Date(createdAt) : undefined,
+        email: request.email,
+        firstName: request.firstName,
+        lastName: request.lastName,
+        shortName: request.shortName,
+        createdAt: request.createdAt ? new Date(request.createdAt) : undefined,
         passwordHash,
         role,
       })

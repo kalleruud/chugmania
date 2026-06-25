@@ -45,10 +45,10 @@ export default class AuthManager {
     }
     if (!isTokenData(data)) throw new Error(loc.no.error.messages.invalid_jwt)
 
-    const { data: user, error: userError } = await tryCatchAsync(
+    const { error: userError } = await tryCatchAsync(
       UserManager.getUserById(data.userId)
     )
-    if (userError || !user) throw new Error(loc.no.error.messages.invalid_jwt)
+    if (userError) throw new Error(loc.no.error.messages.invalid_jwt)
 
     return data
   }

@@ -56,6 +56,7 @@ export default function ConfirmationButton({
       </Button>
     )
 
-  const { type, formAction, onSubmit, onSubmitCapture, ...initProps } = props
-  return <Button {...initProps} onClick={() => setIsConfirming(true)} />
+  return (
+    <Button {...props} type='button' onClick={() => setIsConfirming(true)} />
+  )
 }

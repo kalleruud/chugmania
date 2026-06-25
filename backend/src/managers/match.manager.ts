@@ -2,6 +2,7 @@ import {
   isCreateMatchRequest,
   isDeleteMatchRequest,
   isEditMatchRequest,
+  type CreateMatch,
   type CreateMatchRequest,
   type EditMatchRequest,
   type Match,
@@ -73,7 +74,17 @@ export default class MatchManager {
 
     MatchManager.validateMatchState(request)
 
-    const { type, createdAt, updatedAt, deletedAt, ...matchData } = request
+    const matchData: CreateMatch = {
+      user1: request.user1,
+      user2: request.user2,
+      track: request.track,
+      session: request.session,
+      winner: request.winner,
+      duration: request.duration,
+      status: request.status,
+      stage: request.stage,
+      comment: request.comment,
+    }
     const [match] = await db.insert(matches).values(matchData).returning()
 
     console.debug(new Date().toISOString(), socket.id, 'Created match')
@@ -106,14 +117,22 @@ export default class MatchManager {
 
     MatchManager.validateMatchState(request, preImageMatch)
 
-    const { type, id, createdAt, updatedAt, ...updates } = request
+    const id = request.id
     const [res] = await db
       .update(matches)
       .set({
-        ...updates,
-        deletedAt: updates.deletedAt
-          ? new Date(updates.deletedAt)
-          : updates.deletedAt,
+        user1: request.user1,
+        user2: request.user2,
+        track: request.track,
+        session: request.session,
+        winner: request.winner,
+        duration: request.duration,
+        status: request.status,
+        stage: request.stage,
+        comment: request.comment,
+        deletedAt: request.deletedAt
+          ? new Date(request.deletedAt)
+          : request.deletedAt,
       })
       .where(eq(matches.id, preImageMatch.id))
       .returning()

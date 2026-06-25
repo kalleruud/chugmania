@@ -101,7 +101,6 @@ export function SessionsContent({
 
 export function SubscribeButton({
   className,
-  variant,
   ...rest
 }: Readonly<Parameters<typeof Button>[0]>) {
   const subscribe = () => {

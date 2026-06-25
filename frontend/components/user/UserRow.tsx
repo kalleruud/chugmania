@@ -47,21 +47,21 @@ export default function UserRow({
               <div className='flex items-center gap-1'>
                 <Trophy className='size-4' />
                 <span className='truncate text-sm'>
-                  {ranking?.matchRating.toFixed()}
+                  {ranking.matchRating.toFixed()}
                 </span>
               </div>
 
               <div className='flex items-center gap-1'>
                 <Map className='size-4' />
                 <span className='truncate text-sm'>
-                  {ranking?.trackRating.toFixed()}
+                  {ranking.trackRating.toFixed()}
                 </span>
               </div>
 
               <div className='flex items-center gap-1'>
                 <Award className='size-4' />
                 <span className='truncate text-sm'>
-                  {ranking?.totalRating.toFixed()}
+                  {ranking.totalRating.toFixed()}
                 </span>
               </div>
             </div>

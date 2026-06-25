@@ -18,7 +18,6 @@ import {
 import { twMerge } from 'tailwind-merge'
 import type { BaseRowProps } from './row/RowProps'
 import { Button } from './ui/button'
-import { Spinner } from './ui/spinner'
 
 type ComboboxProps<T extends ComboboxLookupItem> = {
   placeholder: string
@@ -94,8 +93,6 @@ export default function Combobox<T extends ComboboxLookupItem>({
     return items.slice(0, limit)
   }, [items, search])
 
-  const isLoading = results === undefined
-
   function onSelect(item: ComboboxLookupItem) {
     if (item.id === selected?.id) setSelected(undefined)
     else setSelected(items.find(i => i.id === item.id))
@@ -120,7 +117,7 @@ export default function Combobox<T extends ComboboxLookupItem>({
     function onDocKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape') setOpen(false)
       if (e.key === 'Enter' && open) {
-        const first = results?.[0]
+        const first = results.at(0)
         if (first) onSelect(first)
       }
     }
@@ -145,7 +142,7 @@ export default function Combobox<T extends ComboboxLookupItem>({
           <Button
             className='flex h-fit w-full items-center justify-between gap-2 p-4'
             variant='outline'
-            disabled={disabled || isLoading}
+            disabled={disabled}
             aria-expanded={open}
             ref={triggerRef}>
             {!selected && (
@@ -158,60 +155,57 @@ export default function Combobox<T extends ComboboxLookupItem>({
 
             {!CustomRow && selected && <Row item={selected} />}
 
-            {isLoading && <Spinner />}
-            {!disabled && !isLoading && (
+            {!disabled && (
               <ChevronsUpDown className='size-4 flex-none text-muted-foreground' />
             )}
           </Button>
         </PopoverTrigger>
-        {!isLoading && (
-          <PopoverContent
-            className='w-sm bg-popover/90 p-0 backdrop-blur-xl'
-            align={align}>
-            <div className='flex items-center gap-2 border-b border-border px-2'>
-              <Search className='size-4 text-muted-foreground' />
-              <input
-                type='text'
-                inputMode='search'
-                className='placeholder:text-label-muted flex w-full py-2 focus:ring-0'
-                placeholder='Søk...'
-                maxLength={64}
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                autoFocus
-              />
+        <PopoverContent
+          className='w-sm bg-popover/90 p-0 backdrop-blur-xl'
+          align={align}>
+          <div className='flex items-center gap-2 border-b border-border px-2'>
+            <Search className='size-4 text-muted-foreground' />
+            <input
+              type='text'
+              inputMode='search'
+              className='placeholder:text-label-muted flex w-full py-2 focus:ring-0'
+              placeholder='Søk...'
+              maxLength={64}
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              autoFocus
+            />
+          </div>
+          {results.length === 0 ? (
+            <div className='text-label-muted py-6 text-center'>
+              {emptyLabel ?? 'No results'}
             </div>
-            {results.length === 0 ? (
-              <div className='text-label-muted py-6 text-center'>
-                {emptyLabel ?? 'No results'}
-              </div>
-            ) : (
-              <ul className='max-h-64 w-full overflow-x-hidden overflow-y-auto p-1'>
-                {results.map(item => (
-                  <li key={item.id} className='list-none'>
-                    <Button
-                      type='button'
-                      variant='ghost'
-                      size='sm'
-                      className='flex h-fit w-full justify-between p-0'
-                      onClick={() => onSelect(item)}>
-                      {CustomRow ? (
-                        <CustomRow
-                          item={item}
-                          className='w-full px-2 py-3'
-                          hideLink
-                          highlight={item.id === selected?.id}
-                        />
-                      ) : (
-                        <Row item={item} highlight={item.id === selected?.id} />
-                      )}
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </PopoverContent>
-        )}
+          ) : (
+            <ul className='max-h-64 w-full overflow-x-hidden overflow-y-auto p-1'>
+              {results.map(item => (
+                <li key={item.id} className='list-none'>
+                  <Button
+                    type='button'
+                    variant='ghost'
+                    size='sm'
+                    className='flex h-fit w-full justify-between p-0'
+                    onClick={() => onSelect(item)}>
+                    {CustomRow ? (
+                      <CustomRow
+                        item={item}
+                        className='w-full px-2 py-3'
+                        hideLink
+                        highlight={item.id === selected?.id}
+                      />
+                    ) : (
+                      <Row item={item} highlight={item.id === selected?.id} />
+                    )}
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </PopoverContent>
       </Popover>
     </div>
   )

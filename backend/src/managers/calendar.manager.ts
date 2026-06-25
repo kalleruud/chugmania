@@ -123,7 +123,6 @@ export default class CalendarManager {
     }
 
     const user = await UserManager.getUserById(signup.user)
-    if (!user) throw new Error(loc.no.error.messages.not_in_db(signup.user))
 
     return {
       name: `${user.firstName} ${user.lastName}`,

@@ -15,7 +15,6 @@ export default function TournamentMatchRow({
 }: Readonly<TournamentMatchRowProps>) {
   const { matches } = useData()
   const { openMatch } = useTimeEntryInput()
-  if (!item) return undefined
   const match = matches?.find(m => m.id === item.match)
 
   if (match)
