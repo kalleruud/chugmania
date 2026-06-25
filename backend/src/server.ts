@@ -18,7 +18,6 @@ import RatingManager from './managers/rating.manager'
 import SessionManager from './managers/session.manager'
 import SessionScheduler from './managers/session.scheduler'
 import TimeEntryManager from './managers/timeEntry.manager'
-import TournamentManager from './managers/tournament.manager'
 import TrackManager from './managers/track.manager'
 import UserManager from './managers/user.manager'
 
@@ -49,22 +48,19 @@ export type TypedSocket = Socket<
 type ProtectedServerEvent = Exclude<keyof ServerToClientEvents, 'user_data'>
 
 async function emitData(socket: TypedSocket) {
-  const [users, tracks, sessions, timeEntries, matches, tournaments] =
-    await Promise.all([
-      UserManager.getAllUsers(),
-      TrackManager.getAllTracks(),
-      SessionManager.getAllSessions(),
-      TimeEntryManager.getAllTimeEntries(),
-      MatchManager.getAllMatches(),
-      TournamentManager.getAllTournaments(),
-    ])
+  const [users, tracks, sessions, timeEntries, matches] = await Promise.all([
+    UserManager.getAllUsers(),
+    TrackManager.getAllTracks(),
+    SessionManager.getAllSessions(),
+    TimeEntryManager.getAllTimeEntries(),
+    MatchManager.getAllMatches(),
+  ])
   socket.emit('all_users', users)
   socket.emit('all_tracks', tracks)
   socket.emit('all_sessions', sessions)
   socket.emit('all_time_entries', timeEntries)
   socket.emit('all_matches', matches)
   socket.emit('all_rankings', RatingManager.onGetRatings())
-  socket.emit('all_tournaments', tournaments)
 }
 
 export function broadcast<Ev extends ProtectedServerEvent>(
@@ -130,11 +126,6 @@ async function Connect(s: TypedSocket) {
 
   setup(s, 'import_csv', AdminManager.onImportCsv)
   setup(s, 'export_csv', AdminManager.onExportCsv)
-
-  setup(s, 'create_tournament', TournamentManager.onCreateTournament)
-  setup(s, 'edit_tournament', TournamentManager.onEditTournament)
-  setup(s, 'delete_tournament', TournamentManager.onDeleteTournament)
-  setup(s, 'get_tournament_preview', TournamentManager.onGetTournamentPreview)
 }
 
 type SocketCallback<Ev extends keyof ClientToServerEvents> = (

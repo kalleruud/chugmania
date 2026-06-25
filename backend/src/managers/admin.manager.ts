@@ -9,14 +9,10 @@ import { eq } from 'drizzle-orm'
 import type { SQLiteTable } from 'drizzle-orm/sqlite-core'
 import db, { database } from '../../database/database'
 import {
-  groupPlayers,
-  groups,
   matches,
   sessions,
   sessionSignups,
   timeEntries,
-  tournamentMatches,
-  tournaments,
   tracks,
   users,
 } from '../../database/schema'
@@ -38,10 +34,6 @@ export default class AdminManager {
     timeEntries: new Set(),
     sessionSignups: new Set(),
     matches: new Set(),
-    tournaments: new Set(),
-    groups: new Set(),
-    groupPlayers: new Set(),
-    tournamentMatches: new Set(),
   } satisfies Record<ExportCsvRequest['table'], Set<string>>
 
   private static readonly TABLE_MAP = {
@@ -51,10 +43,6 @@ export default class AdminManager {
     timeEntries: timeEntries,
     sessionSignups: sessionSignups,
     matches: matches,
-    tournaments: tournaments,
-    groups: groups,
-    groupPlayers: groupPlayers,
-    tournamentMatches: tournamentMatches,
   } satisfies Record<ExportCsvRequest['table'], SQLiteTable>
 
   private static async importRows(
