@@ -6,7 +6,48 @@ import { broadcast } from '../server'
 import SessionManager from './session.manager'
 
 export default class SessionScheduler {
+  private static readonly CHECK_INTERVAL_MS = 60 * 60 * 1_000 // 1 hour
+  private static readonly SCHEDULE_WINDOW_MS =
+    2 * SessionScheduler.CHECK_INTERVAL_MS
+
   private static scheduledTimeout: NodeJS.Timeout | null = null
+
+  static async start(): Promise<void> {
+    SessionScheduler.cancel()
+    const nextSession = await SessionScheduler.findNextSession()
+
+    if (!nextSession) {
+      console.debug(
+        new Date().toISOString(),
+        'No upcoming sessions to schedule'
+      )
+      return
+    }
+
+    const delayMs = Math.max(nextSession.date.getTime() - Date.now())
+
+    if (delayMs > SessionScheduler.SCHEDULE_WINDOW_MS) {
+      console.debug(
+        new Date().toISOString(),
+        `Next session "${nextSession.name}" starts outside the scheduling window`,
+        nextSession.id
+      )
+      return
+    }
+
+    console.debug(
+      new Date().toISOString(),
+      `Scheduled session "${nextSession.name}" to start in ${delayMs}ms`,
+      nextSession.id
+    )
+
+    SessionScheduler.scheduledTimeout = setTimeout(
+      SessionScheduler.onSessionStart,
+      delayMs
+    )
+
+    setTimeout(SessionScheduler.start, SessionScheduler.CHECK_INTERVAL_MS)
+  }
 
   private static async findNextSession(): Promise<SessionWithSignups | null> {
     const now = new Date()
@@ -20,45 +61,6 @@ export default class SessionScheduler {
     return SessionManager.getSession(nextSessionRow.id)
   }
 
-  static async scheduleNext(): Promise<void> {
-    if (SessionScheduler.scheduledTimeout) {
-      SessionScheduler.cancel()
-    }
-
-    const nextSession = await SessionScheduler.findNextSession()
-
-    if (!nextSession) {
-      console.debug(
-        new Date().toISOString(),
-        'No upcoming sessions to schedule'
-      )
-      return
-    }
-
-    const delayMs = nextSession.date.getTime() - Date.now()
-
-    if (delayMs <= 0) {
-      console.debug(
-        new Date().toISOString(),
-        'Next session is in the past, triggering immediately',
-        nextSession.id
-      )
-      await SessionScheduler.onSessionStart()
-      return
-    }
-
-    console.debug(
-      new Date().toISOString(),
-      `Scheduled session "${nextSession.name}" to start in ${delayMs}ms`,
-      nextSession.id
-    )
-
-    SessionScheduler.scheduledTimeout = setTimeout(
-      () => SessionScheduler.onSessionStart(),
-      delayMs
-    )
-  }
-
   private static async onSessionStart(): Promise<void> {
     console.debug(
       new Date().toISOString(),
@@ -67,22 +69,11 @@ export default class SessionScheduler {
 
     broadcast('all_sessions', await SessionManager.getAllSessions())
     SessionScheduler.cancel()
-    await SessionScheduler.scheduleNext()
+    await SessionScheduler.start()
   }
 
-  static async reschedule(): Promise<void> {
-    console.debug(
-      new Date().toISOString(),
-      'Resetting session scheduler (session created/edited/rsvp)'
-    )
-    SessionScheduler.cancel()
-    await SessionScheduler.scheduleNext()
-  }
-
-  static cancel(): void {
-    if (!SessionScheduler.scheduledTimeout) {
-      return console.log('No session scheduled')
-    }
+  private static cancel(): void {
+    if (!SessionScheduler.scheduledTimeout) return
 
     clearTimeout(SessionScheduler.scheduledTimeout)
     SessionScheduler.scheduledTimeout = null
