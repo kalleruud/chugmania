@@ -3,6 +3,7 @@ import { isLoginRequest } from '@common/models/auth'
 import type { EventReq, EventRes, SocketData } from '@common/models/socket.io'
 import { type User, type UserInfo } from '@common/models/user'
 import { tryCatch, tryCatchAsync } from '@common/utils/try-catch'
+import { isRecord } from '@common/utils/utils'
 import jwt, { type JwtPayload } from 'jsonwebtoken'
 import type { TypedSocket } from '../server'
 import UserManager from './user.manager'
@@ -15,8 +16,8 @@ const SECRET: jwt.Secret = (() => {
 
 type TokenData = Omit<SocketData, 'token'> & JwtPayload
 
-function isTokenData(data: any): data is TokenData {
-  if (!data || typeof data !== 'object') return false
+function isTokenData(data: unknown): data is TokenData {
+  if (!isRecord(data)) return false
   return typeof data.userId === 'string'
 }
 
@@ -71,6 +72,10 @@ export default class AuthManager {
     allowedRoles?: UserInfo['role'][],
     allowDefaultEmail?: boolean
   ): Promise<UserInfo> {
+    if (!(typeof socket.handshake.auth.token === 'string')) {
+      throw new Error(loc.no.error.messages.invalid_jwt)
+    }
+
     const { userId } = await AuthManager.verify(socket.handshake.auth.token)
     const user = await UserManager.getUserById(userId)
 
