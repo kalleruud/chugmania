@@ -5,6 +5,7 @@ name = "chugmania"
 [setup]
 script = '''
 cd "$CODEX_WORKTREE_PATH"
+cp -R "$CODEX_SOURCE_TREE_PATH/data" .
 npm install
 echo "SECRET=\"dev\"" > .env
 '''
