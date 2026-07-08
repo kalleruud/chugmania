@@ -4,7 +4,7 @@ import react, { reactCompilerPreset } from '@vitejs/plugin-react'
 import path from 'node:path'
 import { defineConfig } from 'vite'
 
-const port = process.env.PORT ? Number.parseInt(process.env.PORT, 10) : 6996
+const port = process.env.PORT ? Number.parseInt(process.env.PORT) : 6996
 
 // https://vite.dev/config/
 export default defineConfig({
