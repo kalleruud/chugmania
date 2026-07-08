@@ -8,8 +8,9 @@ import type {
   SocketData,
 } from '@common/models/socket.io'
 import express from 'express'
+import { createServer } from 'node:http'
+import path from 'node:path'
 import { Server, Socket } from 'socket.io'
-import ViteExpress from 'vite-express'
 import AdminManager from './managers/admin.manager'
 import ApiManager from './managers/api.manager'
 import AuthManager from './managers/auth.manager'
@@ -22,14 +23,13 @@ import TournamentManager from './managers/tournament.manager'
 import TrackManager from './managers/track.manager'
 import UserManager from './managers/user.manager'
 
+const isProduction = process.env.NODE_ENV === 'production'
 const PORT = process.env.PORT ? Number.parseInt(process.env.PORT) : 6996
 const ORIGIN = new URL(process.env.ORIGIN ?? `http://localhost:${PORT}`)
 
 const app = express()
-const server = ViteExpress.listen(app, PORT)
-server.on('listening', () => {
-  console.log(`Hosted at ${ORIGIN.toString()}`)
-})
+const server = createServer(app)
+
 const io = new Server<
   ClientToServerEvents,
   ServerToClientEvents,
@@ -89,6 +89,22 @@ app.get('/api/ping', (_req, res) => {
   const pong = 'pong'
   console.log(`Received ping, responding with '${pong}'`)
   res.send(pong)
+})
+
+if (!isProduction) {
+  const { createServer: createViteServer } = await import('vite')
+  const vite = await createViteServer({ server: { middlewareMode: true } })
+  app.use(vite.middlewares)
+  server.on('close', () => void vite.close())
+} else {
+  app.use(express.static('dist'))
+  app.get('*splat', (_req, res) =>
+    res.sendFile(path.resolve('dist/index.html'))
+  )
+}
+
+server.listen(PORT, () => {
+  console.log(`Hosted at ${ORIGIN.toString()}`)
 })
 
 io.on('connect', s => Connect(s))
