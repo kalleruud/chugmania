@@ -23,3 +23,6 @@ jobs:
 
       - name: Run check
         run: npm run check
+
+      - name: Build Docker image
+        run: docker build -t chugmania .
