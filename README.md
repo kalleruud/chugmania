@@ -21,7 +21,7 @@ Chugmania is a full-stack Trackmania Turbo companion for logging lap times, shar
 
 1. Install dependencies with `npm install`.
 2. Copy `.env.example` to `.env` and populate required secrets (see **Configuration**).
-3. Launch the dev server via `npm run dev`; visit `http://localhost:6996` for the app and API.
+3. Launch the dev server via `npm run dev`; visit the URL printed in the terminal for the app and API.
 4. The first boot creates `data/db.sqlite`. Commit no database files—Drizzle migrations handle schema.
 5. There are no default login credentials. On a fresh database, the login page shows only `Registrer`; enter the email and password you want for the first admin user.
 6. Chugmania automatically gives the first registered user the `admin` role. After that, use `Logg inn` with the same email and password. Additional users can be created or imported from `/admin`.
@@ -30,7 +30,7 @@ Chugmania is a full-stack Trackmania Turbo companion for logging lap times, shar
 
 | Command                         | Description                                               |
 | ------------------------------- | --------------------------------------------------------- |
-| `npm run dev`                   | Boot backend + frontend with hot reload (port 6996).      |
+| `npm run dev`                   | Boot backend + frontend with hot reload on `PORT`.        |
 | `npm run build`                 | Produce production bundles in `dist/` and `dist/server/`. |
 | `npm run build:frontend`        | Build the Vite client only.                               |
 | `npm run build:backend`         | Bundle the Express server via tsup.                       |
@@ -66,6 +66,7 @@ The `/sessions` route shows upcoming and past events. Authorized users may creat
 ## Configuration
 
 - `SECRET` (required): JWT signing key; use a strong random value.
+- `PORT` (optional): Server port. Defaults to `6996`; Codex worktrees generate a random `69xx` port.
 - `ORIGIN` (required in production): Allowed frontend origin for CORS.
 - `TOKEN_EXPIRY_H` (optional): Override default 1-hour auth token expiry.
 - `VITE_ALLOW_SIGNUPS` (optional): Set to `true` to show the public `Registrer` button on the login page. Keep it `false` unless you intentionally want open registration.
@@ -74,7 +75,7 @@ The `/sessions` route shows upcoming and past events. Authorized users may creat
 ## Docker
 
 - Build: `docker build -t chugmania .`
-- Run: `docker run -p 6996:6996 -v ./data:/app/data  --env-file .env chugmania`
+- Run: `docker run -p 6996:6996 -v ./data:/app/data --env-file .env chugmania`
 - The entrypoint executes `npm start`, so migrations apply automatically before serving.
 - Mount `/app/data` as a volume to persist the SQLite database across restarts.
 

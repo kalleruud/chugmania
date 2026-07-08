@@ -7,7 +7,11 @@ script = '''
 cd "$CODEX_WORKTREE_PATH"
 cp -R "$CODEX_SOURCE_TREE_PATH/data" .
 npm install
-echo "SECRET=\"dev\"" > .env
+PORT="$(awk 'BEGIN{srand(); printf "%d\n", 6900 + int(rand() * 100)}')"
+cat > .env <<EOF
+SECRET="dev"
+PORT="$PORT"
+EOF
 '''
 
 [cleanup]
