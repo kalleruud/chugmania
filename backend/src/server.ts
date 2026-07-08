@@ -27,6 +27,9 @@ const ORIGIN = new URL(process.env.ORIGIN ?? `http://localhost:${PORT}`)
 
 const app = express()
 const server = ViteExpress.listen(app, PORT)
+server.on('listening', () => {
+  console.log(`Hosted at ${ORIGIN.toString()}`)
+})
 const io = new Server<
   ClientToServerEvents,
   ServerToClientEvents,
