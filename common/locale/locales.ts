@@ -1,6 +1,6 @@
-import { getRandomItem } from '@/app/utils/utils'
-import type { GapType } from '@/components/timeentries/TimeEntryRow'
 import type { ExportCsvRequest } from '@common/models/importCsv'
+import type { GapType } from '@common/models/timeEntry'
+import { getRandomItem } from '@common/utils/utils'
 import type {
   EliminationType,
   MatchStage,
@@ -122,7 +122,7 @@ const no = {
     location: 'Sted',
     date: 'Dato',
     time: 'Tid',
-    attendees: 'Påmeldte',
+    attendees: 'Deltakere',
     attendance: 'Påmelding',
     next: 'Neste session',
     form: {
@@ -168,6 +168,18 @@ const no = {
         success: (response: SessionResponse) =>
           `Svar ble oppdatert: ${no.session.rsvp.responses[response]}`,
         error: (err: Error) => `Kunne ikke registrere svar: ${err.message}`,
+      },
+      manage: {
+        add: 'Legg til',
+        addSelected: 'Legg til valgte',
+        title: 'Legg til deltakere',
+        userPlaceholder: 'Velg deltaker',
+        addRequest: (count: number) => ({
+          loading: 'Legger til deltakere...',
+          success: `${count} ${count === 1 ? 'deltaker' : 'deltakere'} lagt til`,
+          error: (err: Error) =>
+            `Kunne ikke legge til deltakere: ${err.message}`,
+        }),
       },
     },
     calendar: {
@@ -337,7 +349,7 @@ const no = {
       update_email: 'Du må oppdatere e-post og passord før du kan gjøre noe.',
       missing_files: 'Du har ikke valgt noen filer',
       missing_data: 'Ingen data ble sendt',
-      missing_jwt: 'Du har ingen JWT token... Går det an å være mer idiot?',
+      missing_jwt: 'Du har ingen JWT token... Gro en hjerne og prøv igjen',
       incorrect_login: 'Brukernavn eller passord er feil, prøv igjen.',
       missing_login: 'Enten brukernavn eller passord mangler...',
       db_failed: 'Databasen sa nei',

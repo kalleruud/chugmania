@@ -3,7 +3,7 @@ import SessionsList from '@/components/session/SessionsList'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/contexts/AuthContext'
 import { useData } from '@/contexts/DataContext'
-import loc from '@/lib/locales'
+import loc from '@common/locale/locales'
 import { isOngoing, isPast, isUpcoming } from '@common/utils/date'
 import { CalendarIcon } from '@heroicons/react/24/solid'
 import { ChevronDown, ChevronUp } from 'lucide-react'
@@ -34,7 +34,7 @@ export function SessionsContent({
         title={loc.no.session.title}
         description={loc.no.session.description}
         to={showLink ? '/sessions' : undefined}
-        icon='CalendarIcon'
+        Icon={CalendarIcon}
       />
 
       <SubscribeButton className={twMerge(!canCreate && 'w-full')} />

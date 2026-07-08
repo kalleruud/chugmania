@@ -1,3 +1,4 @@
+import loc from '@common/locale/locales'
 import {
   isCreateSessionRequest,
   isDeleteSessionRequest,
@@ -7,8 +8,8 @@ import {
   type SessionWithSignups,
 } from '@common/models/session'
 import type { EventReq, EventRes } from '@common/models/socket.io'
+import { isPast } from '@common/utils/date'
 import { and, asc, desc, eq, isNull } from 'drizzle-orm'
-import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
 import { sessions, sessionSignups, users } from '../../database/schema'
 import { broadcast, type TypedSocket } from '../server'
@@ -17,6 +18,35 @@ import SessionScheduler from './session.scheduler'
 import UserManager from './user.manager'
 
 export default class SessionManager {
+  public static async ensureSessionSignup(
+    sessionId: string,
+    userId: string
+  ): Promise<boolean> {
+    const existingSignup = await db.query.sessionSignups.findFirst({
+      where: and(
+        eq(sessionSignups.session, sessionId),
+        eq(sessionSignups.user, userId)
+      ),
+    })
+
+    if (existingSignup && !existingSignup.deletedAt) return false
+
+    await db
+      .insert(sessionSignups)
+      .values({
+        id: existingSignup?.id,
+        session: sessionId,
+        user: userId,
+        response: 'yes',
+      })
+      .onConflictDoUpdate({
+        target: [sessionSignups.id],
+        set: { response: 'yes', deletedAt: null },
+      })
+
+    return true
+  }
+
   public static async getAllSessions(): Promise<SessionWithSignups[]> {
     const sessionRows = await db
       .select()
@@ -24,7 +54,7 @@ export default class SessionManager {
       .where(isNull(sessions.deletedAt))
       .orderBy(desc(sessions.date), asc(sessions.createdAt))
 
-    if (!sessionRows || sessionRows.length === 0) {
+    if (sessionRows.length === 0) {
       console.debug(
         new Date().toISOString(),
         loc.no.error.messages.not_in_db('sessions')
@@ -85,7 +115,7 @@ export default class SessionManager {
       )
       .orderBy(asc(sessionSignups.createdAt))
 
-    if (!signupRows || signupRows.length === 0) {
+    if (signupRows.length === 0) {
       return []
     }
 
@@ -107,10 +137,12 @@ export default class SessionManager {
 
     await AuthManager.checkAuth(socket, ['admin', 'moderator'])
 
-    const { type, createdAt, updatedAt, deletedAt, ...sessionData } = request
     await db.insert(sessions).values({
-      ...sessionData,
-      date: new Date(sessionData.date),
+      name: request.name,
+      description: request.description,
+      location: request.location,
+      status: request.status,
+      date: new Date(request.date),
     })
 
     console.debug(
@@ -120,8 +152,8 @@ export default class SessionManager {
       request.name
     )
 
-    await broadcast('all_sessions', await SessionManager.getAllSessions())
-    await SessionScheduler.reschedule()
+    broadcast('all_sessions', await SessionManager.getAllSessions())
+    await SessionScheduler.start()
 
     return { success: true }
   }
@@ -146,13 +178,16 @@ export default class SessionManager {
       throw new Error(loc.no.error.messages.not_in_db(request.id))
     }
 
-    const { type, id, createdAt, updatedAt, ...updates } = request
+    const id = request.id
     const res = await db
       .update(sessions)
       .set({
-        ...updates,
-        date: updates.date ? new Date(updates.date) : undefined,
-        deletedAt: updates.deletedAt ? new Date(updates.deletedAt) : undefined,
+        name: request.name,
+        description: request.description,
+        location: request.location,
+        status: request.status,
+        date: request.date ? new Date(request.date) : undefined,
+        deletedAt: request.deletedAt ? new Date(request.deletedAt) : undefined,
       })
       .where(eq(sessions.id, session.id))
 
@@ -160,8 +195,8 @@ export default class SessionManager {
 
     console.debug(new Date().toISOString(), socket.id, 'Updated session', id)
 
-    await broadcast('all_sessions', await SessionManager.getAllSessions())
-    await SessionScheduler.reschedule()
+    broadcast('all_sessions', await SessionManager.getAllSessions())
+    await SessionScheduler.start()
 
     return { success: true }
   }
@@ -176,16 +211,14 @@ export default class SessionManager {
       )
     }
 
-    const { type, ...requestData } = request
-
     const actor = await AuthManager.checkAuth(socket)
     const isModerator = actor.role !== 'user'
-    const isSelf = actor.id === requestData.user
+    const isSelf = actor.id === request.user
 
     const existingSignup = await db.query.sessionSignups.findFirst({
       where: and(
-        eq(sessionSignups.session, requestData.session),
-        eq(sessionSignups.user, requestData.user)
+        eq(sessionSignups.session, request.session),
+        eq(sessionSignups.user, request.user)
       ),
     })
 
@@ -194,14 +227,14 @@ export default class SessionManager {
     }
 
     const session = await db.query.sessions.findFirst({
-      where: eq(sessions.id, requestData.session),
+      where: eq(sessions.id, request.session),
     })
 
     if (!session) {
-      throw new Error(loc.no.error.messages.not_in_db(requestData.session))
+      throw new Error(loc.no.error.messages.not_in_db(request.session))
     }
 
-    if (session.date.getTime() < Date.now() && !isModerator) {
+    if (isPast(session) && !isModerator) {
       throw new Error(loc.no.session.errorMessages.no_edit_historical)
     }
 
@@ -209,22 +242,23 @@ export default class SessionManager {
       .insert(sessionSignups)
       .values({
         id: existingSignup?.id,
-        ...requestData,
+        session: request.session,
+        user: request.user,
+        response: request.response,
       })
       .onConflictDoUpdate({
         target: [sessionSignups.id],
-        set: { response: requestData.response, deletedAt: null },
+        set: { response: request.response, deletedAt: null },
       })
 
     console.debug(
       new Date().toISOString(),
       socket.id,
-      `Signed up for session with response: ${requestData.response}`,
+      `Signed up for session with response: ${request.response}`,
       session.id
     )
 
-    await broadcast('all_sessions', await SessionManager.getAllSessions())
-    await SessionScheduler.reschedule()
+    broadcast('all_sessions', await SessionManager.getAllSessions())
 
     return { success: true }
   }

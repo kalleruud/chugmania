@@ -1,7 +1,7 @@
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
-import loc from '@/lib/locales'
+import loc from '@common/locale/locales'
 import type { EditMatchRequest, Match } from '@common/models/match'
 import type { UserInfo } from '@common/models/user'
 import { formatTrackName } from '@common/utils/track'
@@ -83,7 +83,7 @@ export default function MatchRow({
         'group relative flex cursor-pointer items-center justify-between rounded-sm p-2 transition-colors hover:bg-foreground/15',
         isCancelled && 'text-muted-foreground opacity-33',
         className,
-        highlight && 'bg-foreground/13'
+        highlight && 'bg-foreground/3'
       )}
       {...rest}>
       <div className='mt-1 grid w-full grid-cols-1 items-center gap-1 sm:grid-cols-2'>
@@ -165,6 +165,7 @@ export default function MatchRow({
       <div className='absolute right-0 flex items-center'>
         {canEdit && isPlanned && (
           <button
+            type='button'
             title={loc.no.match.cancel}
             className='m-2 hidden p-2 text-muted-foreground transition-colors group-hover:block hover:rounded-sm hover:bg-muted hover:text-primary-foreground'
             onClick={e => {

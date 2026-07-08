@@ -1,8 +1,8 @@
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
-import loc from '@/lib/locales'
+import loc from '@common/locale/locales'
 import type { SessionWithSignups } from '@common/models/session'
-import { useState, type ComponentProps, type FormEvent } from 'react'
+import { useState, type ComponentProps, type SubmitEvent } from 'react'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
 import type { SessionStatus } from '../../../backend/database/schema'
@@ -40,9 +40,8 @@ export default function SessionForm({
   const isModerator = isLoggedIn && loggedInUser.role === 'moderator'
   const canCreate = isAdmin || isModerator
 
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
-    if (!date) return toast.error('Dato er påkrevd')
 
     switch (variant) {
       case 'create':
@@ -56,7 +55,7 @@ export default function SessionForm({
               type: 'CreateSessionRequest',
               name,
               description: description || undefined,
-              date,
+              date: date ?? new Date(),
               location: location || undefined,
               status,
             })
@@ -69,6 +68,7 @@ export default function SessionForm({
         )
 
       case 'edit':
+        if (!date) return toast.error('Dato er påkrevd')
         if (!canCreate) {
           toast.error(loc.no.error.messages.insufficient_permissions)
           return
@@ -116,7 +116,7 @@ export default function SessionForm({
         selected={date}
         onSelect={setDate}
         disabled={disabled}
-        required
+        required={variant === 'edit'}
       />
 
       <Field

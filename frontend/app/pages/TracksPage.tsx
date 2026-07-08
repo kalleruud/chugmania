@@ -6,7 +6,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
-import loc from '@/lib/locales'
+import loc from '@common/locale/locales'
 import { TracksContent, type TracksContentProps } from './TracksContent'
 
 export default function TracksPage(props: Readonly<TracksContentProps>) {

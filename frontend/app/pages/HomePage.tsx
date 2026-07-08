@@ -1,7 +1,8 @@
 import { PageHeader } from '@/components/PageHeader'
 import UserCard from '@/components/user/UserCard'
 import { useAuth } from '@/contexts/AuthContext'
-import loc from '@/lib/locales'
+import loc from '@common/locale/locales'
+import { ShieldExclamationIcon } from '@heroicons/react/24/solid'
 import { SessionsContent } from './SessionsContent'
 import { TracksContent } from './TracksContent'
 import { UsersContent } from './UsersContent'
@@ -18,7 +19,7 @@ export default function Home() {
         <PageHeader
           className='mx-2 my-0'
           title={loc.no.admin.title}
-          icon='ShieldExclamationIcon'
+          Icon={ShieldExclamationIcon}
           to='/admin'
         />
       )}

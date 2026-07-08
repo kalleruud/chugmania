@@ -30,12 +30,7 @@ export function userToLookupItem(user: UserInfo) {
     ...user,
     label: user.firstName + (user.lastName ? ' ' + user.lastName : ''),
     sublabel: user.shortName,
-    tags: [
-      user.firstName,
-      user.lastName ?? '',
-      user.shortName ?? '',
-      user.email ?? '',
-    ],
+    tags: [user.firstName, user.lastName ?? '', user.shortName, user.email],
   }
 }
 

@@ -6,7 +6,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
-import loc from '@/lib/locales'
+import loc from '@common/locale/locales'
 import { UsersContent, type UsersContentProps } from './UsersContent'
 
 export default function UsersPage(props: Readonly<UsersContentProps>) {

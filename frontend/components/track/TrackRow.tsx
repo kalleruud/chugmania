@@ -2,7 +2,7 @@ import { Item, ItemActions, ItemContent, ItemTitle } from '@/components/ui/item'
 import type { Track } from '@common/models/track'
 import { formatTrackName } from '@common/utils/track'
 import { ChevronRight } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { twMerge } from 'tailwind-merge'
 import type { BaseRowProps } from '../row/RowProps'
 import TrackBadge from './TrackBadge'
@@ -41,11 +41,7 @@ export function TrackRow({
     return (
       <Item
         key={track.id}
-        className={twMerge(
-          highlight &&
-            'bg-primary-background ring-1 ring-primary/50 hover:bg-primary/25',
-          className
-        )}
+        className={twMerge(highlight && 'bg-foreground/3', className)}
         asChild>
         <div>{content}</div>
       </Item>
@@ -55,11 +51,7 @@ export function TrackRow({
   return (
     <Item
       key={track.id}
-      className={twMerge(
-        highlight &&
-          'bg-primary-background ring-1 ring-primary/50 hover:bg-primary/25',
-        className
-      )}
+      className={twMerge(highlight && 'bg-foreground/3', className)}
       asChild>
       <Link to={`/tracks/${track.id}`}>{content}</Link>
     </Item>

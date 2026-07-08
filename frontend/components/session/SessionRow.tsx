@@ -8,11 +8,11 @@ import {
 } from '@/components/ui/item'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTimeAgoStrict as useDistanceToNow } from '@/hooks/useTimeAgoStrict'
-import loc from '@/lib/locales'
+import loc from '@common/locale/locales'
 import type { SessionWithSignups } from '@common/models/session'
 import { isOngoing, isUpcoming } from '@common/utils/date'
 import { ChevronRight } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { twMerge } from 'tailwind-merge'
 import type { BaseRowProps } from '../row/RowProps'
 
@@ -63,11 +63,7 @@ export function SessionRow({
   if (hideLink) {
     return (
       <Item
-        className={twMerge(
-          highlight &&
-            'bg-primary-background ring-1 ring-primary/50 hover:bg-primary/25',
-          className
-        )}
+        className={twMerge(highlight && 'bg-foreground/3', className)}
         asChild>
         <div>{content}</div>
       </Item>
@@ -76,11 +72,7 @@ export function SessionRow({
 
   return (
     <Item
-      className={twMerge(
-        highlight &&
-          'bg-primary-background ring-1 ring-primary/50 hover:bg-primary/25',
-        className
-      )}
+      className={twMerge(highlight && 'bg-foreground/3', className)}
       asChild>
       <Link to={`/sessions/${session.id}`}>{content}</Link>
     </Item>

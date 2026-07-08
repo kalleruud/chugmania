@@ -1,5 +1,5 @@
 import { useData } from '@/contexts/DataContext'
-import { useTimeEntryInput } from '@/hooks/TimeEntryInputProvider'
+import { useTimeEntryInput } from '@/contexts/TimeEntryInputContext'
 import type { TournamentMatch } from '@common/models/tournament'
 import { twMerge } from 'tailwind-merge'
 import MatchRow from '../match/MatchRow'
@@ -15,7 +15,6 @@ export default function TournamentMatchRow({
 }: Readonly<TournamentMatchRowProps>) {
   const { matches } = useData()
   const { openMatch } = useTimeEntryInput()
-  if (!item) return undefined
   const match = matches?.find(m => m.id === item.match)
 
   if (match)

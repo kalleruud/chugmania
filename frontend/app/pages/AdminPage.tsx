@@ -13,11 +13,12 @@ import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
-import loc from '@/lib/locales'
+import loc from '@common/locale/locales'
 import {
   CloudArrowDownIcon,
   CloudArrowUpIcon,
   DocumentIcon,
+  ShieldExclamationIcon,
 } from '@heroicons/react/24/solid'
 import { useState, type ComponentProps } from 'react'
 import { toast } from 'sonner'
@@ -60,7 +61,7 @@ export default function AdminPage() {
       <PageHeader
         title={loc.no.admin.title}
         description={loc.no.admin.description}
-        icon='ShieldExclamationIcon'
+        Icon={ShieldExclamationIcon}
       />
 
       <div className='grid gap-2'>

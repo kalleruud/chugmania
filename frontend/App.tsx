@@ -1,7 +1,7 @@
 import { lazy, StrictMode, Suspense } from 'react'
 import { createRoot } from 'react-dom/client'
 import { ErrorBoundary } from 'react-error-boundary'
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router'
 import Layout from './app/Layout'
 import { ErrorPage } from './app/pages/ErrorPage'
 import Home from './app/pages/HomePage'
@@ -11,7 +11,7 @@ import { AuthProvider } from './contexts/AuthContext'
 import { ConnectionProvider } from './contexts/ConnectionContext'
 import { DataProvider } from './contexts/DataContext'
 import { ThemeProvider } from './contexts/ThemeContext'
-import TimeEntryInputProvider from './hooks/TimeEntryInputProvider'
+import TimeEntryInputProvider from './contexts/TimeEntryInputContext'
 import './index.css'
 
 const AdminPage = lazy(() => import('./app/pages/AdminPage'))
@@ -25,25 +25,25 @@ const TracksPage = lazy(() => import('./app/pages/TracksPage'))
 const UserPage = lazy(() => import('./app/pages/UserPage'))
 const UsersPage = lazy(() => import('./app/pages/UsersPage'))
 
-function RouteLoadingFallback() {
-  return (
-    <main className='flex min-h-dvh-safe items-center justify-center'>
-      <Spinner />
-    </main>
-  )
-}
+const routeLoadingFallback = (
+  <main className='flex min-h-dvh-safe items-center justify-center'>
+    <Spinner />
+  </main>
+)
 
-createRoot(document.getElementById('root')!).render(
+const root = document.getElementById('root')
+if (!root) throw new Error("HTML element has no 'root'-tag.")
+
+createRoot(root).render(
   <StrictMode>
     <ThemeProvider defaultTheme='dark' storageKey='theme'>
-      <BrowserRouter
-        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <BrowserRouter>
         <ConnectionProvider>
           <DataProvider>
             <AuthProvider>
               <ErrorBoundary FallbackComponent={ErrorPage}>
                 <TimeEntryInputProvider>
-                  <Suspense fallback={<RouteLoadingFallback />}>
+                  <Suspense fallback={routeLoadingFallback}>
                     <Routes>
                       <Route element={<Layout />}>
                         <Route index element={<Home />} />

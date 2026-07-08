@@ -1,21 +1,25 @@
 import { Item, ItemActions, ItemContent, ItemTitle } from '@/components/ui/item'
-import { useAuth } from '@/contexts/AuthContext'
 import { useData } from '@/contexts/DataContext'
 import { type UserInfo } from '@common/models/user'
-import { Award, ChevronRight, Map, Minus, Trophy } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { ChevronRight, Minus } from 'lucide-react'
+import { Link } from 'react-router'
 import { twMerge } from 'tailwind-merge'
 import type { BaseRowProps } from '../row/RowProps'
 import { Spinner } from '../ui/spinner'
+
+type UserRowProps = BaseRowProps<UserInfo> & {
+  hideRanking?: boolean
+}
 
 export default function UserRow({
   item: user,
   className,
   hideLink,
   highlight,
+  hideRanking,
+  children,
   ...props
-}: Readonly<BaseRowProps<UserInfo>>) {
-  const { loggedInUser, isLoggedIn } = useAuth()
+}: Readonly<UserRowProps>) {
   const { rankings, isLoadingData } = useData()
 
   if (isLoadingData) {
@@ -23,11 +27,10 @@ export default function UserRow({
   }
 
   const ranking = rankings.find(r => r.user === user.id)
-  const isAdmin = isLoggedIn && loggedInUser.role === 'admin'
 
   const content = (
     <>
-      <ItemContent>
+      <ItemContent className='relative z-10'>
         <div className='flex items-center gap-2'>
           <div className='h-4 w-1 rounded-full bg-primary' />
 
@@ -36,32 +39,7 @@ export default function UserRow({
             <span className='font-bold'>{user.lastName}</span>
           </ItemTitle>
 
-          {isAdmin && ranking && (
-            <div className='hidden w-48 items-center gap-2 tabular-nums sm:flex'>
-              <div className='flex items-center gap-1'>
-                <Trophy className='size-4' />
-                <span className='truncate text-sm'>
-                  {ranking?.matchRating.toFixed()}
-                </span>
-              </div>
-
-              <div className='flex items-center gap-1'>
-                <Map className='size-4' />
-                <span className='truncate text-sm'>
-                  {ranking?.trackRating.toFixed()}
-                </span>
-              </div>
-
-              <div className='flex items-center gap-1'>
-                <Award className='size-4' />
-                <span className='truncate text-sm'>
-                  {ranking?.totalRating.toFixed()}
-                </span>
-              </div>
-            </div>
-          )}
-
-          {ranking ? (
+          {!hideRanking && ranking && (
             <div
               className={twMerge(
                 'flex items-center justify-end gap-0.5 font-kh-interface text-muted-foreground tabular-nums',
@@ -72,13 +50,19 @@ export default function UserRow({
               <span className='w-2 text-end'>#</span>
               <span className='w-4 font-black'>{ranking.ranking}</span>
             </div>
-          ) : (
+          )}
+
+          {!hideRanking && !ranking && (
             <Minus className='size-4 text-muted-foreground' />
+          )}
+
+          {children && (
+            <div className='pointer-events-auto relative z-10'>{children}</div>
           )}
         </div>
       </ItemContent>
       {!hideLink && (
-        <ItemActions>
+        <ItemActions className='relative z-10'>
           <ChevronRight className='size-4' />
         </ItemActions>
       )}
@@ -89,11 +73,7 @@ export default function UserRow({
     return (
       <Item
         key={user.id}
-        className={twMerge(
-          highlight &&
-            'bg-primary-background ring-1 ring-primary/50 hover:bg-primary/25',
-          className
-        )}
+        className={twMerge(highlight && 'bg-foreground/3', className)}
         asChild
         {...props}>
         <div>{content}</div>
@@ -104,14 +84,14 @@ export default function UserRow({
   return (
     <Item
       key={user.id}
-      className={twMerge(
-        highlight &&
-          'bg-primary-background ring-1 ring-primary/50 hover:bg-primary/25',
-        className
-      )}
-      asChild
+      className={twMerge('relative', highlight && 'bg-foreground/3', className)}
       {...props}>
-      <Link to={`/users/${user.id}`}>{content}</Link>
+      <div className='pointer-events-none contents'>{content}</div>
+      <Link
+        className='absolute inset-0 z-0 rounded-sm transition-colors duration-100 hover:bg-accent/50'
+        to={`/users/${user.id}`}
+        aria-label={`${user.firstName} ${user.lastName}`}
+      />
     </Item>
   )
 }

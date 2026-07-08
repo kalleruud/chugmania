@@ -23,7 +23,7 @@ export default function FileDrop({
   const inputRef = useRef<HTMLInputElement>(null)
   const [isDragging, setIsDragging] = useState<boolean>(false)
 
-  const handleFiles = async (fileList: FileList | null) => {
+  const handleFiles = (fileList: FileList | null) => {
     if (!fileList || fileList.length === 0) {
       onSelect(undefined)
       return
@@ -58,6 +58,7 @@ export default function FileDrop({
   return (
     <>
       <button
+        type='button'
         className={'relative'}
         onClick={() => inputRef.current?.click()}
         onDragEnter={handleDragOver}
@@ -76,6 +77,7 @@ export default function FileDrop({
       <input
         ref={inputRef}
         type='file'
+        aria-label='Velg fil'
         accept={accept}
         className='sr-only'
         onChange={handleInputChange}

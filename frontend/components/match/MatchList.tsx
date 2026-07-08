@@ -1,6 +1,6 @@
 import { useAuth } from '@/contexts/AuthContext'
-import { useTimeEntryInput } from '@/hooks/TimeEntryInputProvider'
-import loc from '@/lib/locales'
+import { useTimeEntryInput } from '@/contexts/TimeEntryInputContext'
+import loc from '@common/locale/locales'
 import type { Match } from '@common/models/match'
 import { PlusIcon } from '@heroicons/react/24/solid'
 import { Button } from '../ui/button'

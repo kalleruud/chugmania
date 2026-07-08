@@ -1,4 +1,4 @@
-import loc from '@/lib/locales'
+import loc from '@common/locale/locales'
 import {
   type ClientToServerEvents,
   type ServerToClientEvents,
@@ -27,8 +27,7 @@ const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io('/', {
 }).timeout(10_000)
 
 function setToken(token: string | undefined): void {
-  // @ts-expect-error
-  socket.auth.token = token
+  socket.auth = { token }
   if (token) localStorage.setItem(AUTH_KEY, token)
   else localStorage.removeItem(AUTH_KEY)
 }

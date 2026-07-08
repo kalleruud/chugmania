@@ -1,4 +1,5 @@
 import type { matches } from '../../backend/database/schema'
+import { isRecord } from '../utils/utils'
 
 export type Match = typeof matches.$inferSelect
 export type CreateMatch = typeof matches.$inferInsert
@@ -9,8 +10,10 @@ export type CreateMatchRequest = {
   type: 'CreateMatchRequest'
 } & CreateMatch
 
-export function isCreateMatchRequest(data: any): data is CreateMatchRequest {
-  if (typeof data !== 'object' || data === null) return false
+export function isCreateMatchRequest(
+  data: unknown
+): data is CreateMatchRequest {
+  if (!isRecord(data)) return false
   return data.type === 'CreateMatchRequest' && typeof data.track === 'string'
 }
 
@@ -19,8 +22,8 @@ export type EditMatchRequest = Partial<CreateMatch> & {
   id: Match['id']
 }
 
-export function isEditMatchRequest(data: any): data is EditMatchRequest {
-  if (typeof data !== 'object' || data === null) return false
+export function isEditMatchRequest(data: unknown): data is EditMatchRequest {
+  if (!isRecord(data)) return false
   return data.type === 'EditMatchRequest' && typeof data.id === 'string'
 }
 
@@ -29,7 +32,9 @@ export type DeleteMatchRequest = {
   id: Match['id']
 }
 
-export function isDeleteMatchRequest(data: any): data is DeleteMatchRequest {
-  if (typeof data !== 'object' || data === null) return false
+export function isDeleteMatchRequest(
+  data: unknown
+): data is DeleteMatchRequest {
+  if (!isRecord(data)) return false
   return data.type === 'DeleteMatchRequest' && typeof data.id === 'string'
 }

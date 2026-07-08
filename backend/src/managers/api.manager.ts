@@ -1,4 +1,4 @@
-import loc from '@/lib/locales'
+import loc from '@common/locale/locales'
 import type { Request, Response } from 'express'
 import CalendarManager from './calendar.manager'
 

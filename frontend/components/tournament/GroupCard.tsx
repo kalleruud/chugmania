@@ -1,5 +1,5 @@
 import { useData } from '@/contexts/DataContext'
-import loc from '@/lib/locales'
+import loc from '@common/locale/locales'
 import type { TournamentWithDetails } from '@common/models/tournament'
 import type { ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'

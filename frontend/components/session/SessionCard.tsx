@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge'
-import loc from '@/lib/locales'
 import type { SessionStatus } from '@backend/database/schema'
+import loc from '@common/locale/locales'
 import type { SessionWithSignups } from '@common/models/session'
 import {
   formatDateWithYear,

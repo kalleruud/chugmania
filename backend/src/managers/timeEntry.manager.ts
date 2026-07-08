@@ -1,3 +1,4 @@
+import loc from '@common/locale/locales'
 import type { Session } from '@common/models/session'
 import type { EventReq, EventRes } from '@common/models/socket.io'
 import type { TimeEntry } from '@common/models/timeEntry'
@@ -7,12 +8,12 @@ import {
 } from '@common/models/timeEntry'
 import type { User } from '@common/models/user'
 import { and, asc, eq, getTableColumns, isNull, sql } from 'drizzle-orm'
-import loc from '../../../frontend/lib/locales'
 import db from '../../database/database'
 import { timeEntries } from '../../database/schema'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import RatingManager from './rating.manager'
+import SessionManager from './session.manager'
 
 export default class TimeEntryManager {
   static readonly table = timeEntries
@@ -94,6 +95,9 @@ export default class TimeEntryManager {
     }
 
     await db.insert(timeEntries).values(request)
+    const signupChanged = request.session
+      ? await SessionManager.ensureSessionSignup(request.session, request.user)
+      : false
 
     console.debug(
       new Date().toISOString(),
@@ -104,7 +108,10 @@ export default class TimeEntryManager {
 
     await RatingManager.recalculate()
     broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
-    broadcast('all_rankings', await RatingManager.onGetRatings())
+    if (signupChanged) {
+      broadcast('all_sessions', await SessionManager.getAllSessions())
+    }
+    broadcast('all_rankings', RatingManager.onGetRatings())
 
     return {
       success: true,
@@ -121,15 +128,12 @@ export default class TimeEntryManager {
       )
     }
 
-    const user = await AuthManager.checkAuth(socket)
-
-    // Get the lap time entry to check ownership
-    const entries = await db
-      .select()
-      .from(timeEntries)
-      .where(eq(timeEntries.id, request.id))
-
-    const lapTime = entries[0]
+    const [user, lapTime] = await Promise.all([
+      AuthManager.checkAuth(socket),
+      db.query.timeEntries.findFirst({
+        where: eq(timeEntries.id, request.id),
+      }),
+    ])
     if (!lapTime) {
       throw new Error(loc.no.error.messages.not_in_db(request.id))
     }
@@ -141,7 +145,7 @@ export default class TimeEntryManager {
       throw new Error(loc.no.error.messages.insufficient_permissions)
     }
 
-    let { type, id, ...updates } = request
+    const { type, id, ...updates } = request
 
     // Convert string dates to Date objects
     const processedUpdates = { ...updates }
@@ -159,6 +163,11 @@ export default class TimeEntryManager {
       .update(timeEntries)
       .set(processedUpdates)
       .where(eq(timeEntries.id, request.id))
+    const sessionId = processedUpdates.session ?? lapTime.session
+    const userId = processedUpdates.user ?? lapTime.user
+    const signupChanged = sessionId
+      ? await SessionManager.ensureSessionSignup(sessionId, userId)
+      : false
 
     console.debug(
       new Date().toISOString(),
@@ -168,11 +177,11 @@ export default class TimeEntryManager {
     )
 
     await RatingManager.recalculate()
-    await broadcast(
-      'all_time_entries',
-      await TimeEntryManager.getAllTimeEntries()
-    )
-    await broadcast('all_rankings', await RatingManager.onGetRatings())
+    broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
+    if (signupChanged) {
+      broadcast('all_sessions', await SessionManager.getAllSessions())
+    }
+    broadcast('all_rankings', RatingManager.onGetRatings())
 
     return {
       success: true,

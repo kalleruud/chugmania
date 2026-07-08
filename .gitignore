@@ -1,6 +1,7 @@
 # Output
 .output
 /build
+.plans/
 
 # OS
 .DS_Store
@@ -26,6 +27,7 @@ data
 # Logs
 logs
 *.log
+.eslintcache
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

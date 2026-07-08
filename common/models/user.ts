@@ -1,4 +1,5 @@
 import type { users } from '../../backend/database/schema'
+import { isRecord } from '../utils/utils'
 import type { SocketData, SuccessResponse } from './socket.io'
 
 export type User = typeof users.$inferSelect
@@ -11,16 +12,6 @@ export type UpdateUser = Partial<
 }
 export type UserInfo = Omit<User, 'passwordHash'> & { passwordHash: undefined }
 
-export function isUserInfo(data: any): data is UserInfo {
-  if (typeof data !== 'object' || data === null) return false
-
-  return (
-    data.passwordHash === undefined &&
-    typeof data.id === 'string' &&
-    typeof data.email === 'string'
-  )
-}
-
 export type LoginResponse = SuccessResponse & SocketData
 
 export type EditUserRequest = UpdateUser & {
@@ -30,8 +21,8 @@ export type EditUserRequest = UpdateUser & {
   createdAt?: User['createdAt']
 }
 
-export function isEditUserRequest(data: any): data is EditUserRequest {
-  if (typeof data !== 'object' || data === null) return false
+export function isEditUserRequest(data: unknown): data is EditUserRequest {
+  if (!isRecord(data)) return false
   return data.type === 'EditUserRequest' && typeof data.id === 'string'
 }
 
@@ -40,8 +31,8 @@ export type DeleteUserRequest = {
   id: User['id']
 }
 
-export function isDeleteUserRequest(data: any): data is DeleteUserRequest {
-  if (typeof data !== 'object' || data === null) return false
+export function isDeleteUserRequest(data: unknown): data is DeleteUserRequest {
+  if (!isRecord(data)) return false
   return data.type === 'DeleteUserRequest' && typeof data.id === 'string'
 }
 

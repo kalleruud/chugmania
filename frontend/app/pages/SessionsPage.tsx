@@ -6,7 +6,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
-import loc from '@/lib/locales'
+import loc from '@common/locale/locales'
 import { SessionsContent } from './SessionsContent'
 
 export default function SessionsPage() {

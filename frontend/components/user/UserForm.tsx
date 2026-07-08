@@ -1,8 +1,8 @@
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
-import loc from '@/lib/locales'
+import loc from '@common/locale/locales'
 import { type UserInfo } from '@common/models/user'
-import { useState, type ComponentProps, type FormEvent } from 'react'
+import { useState, type ComponentProps, type SubmitEvent } from 'react'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
 import type { UserRole } from '../../../backend/database/schema'
@@ -36,7 +36,9 @@ export default function UserForm({
   const [newPassword, setNewPassword] = useState('')
   const [password, setPassword] = useState('')
   const [role, setRole] = useState<UserRole>(user?.role ?? 'user')
-  const [createdAt, setCreatedAt] = useState<Date | undefined>(user?.createdAt)
+  const [createdAt, setCreatedAt] = useState<Date | undefined>(
+    user?.createdAt ? new Date(user.createdAt) : undefined
+  )
 
   const isAdmin = isLoggedIn && loggedInUser.role === 'admin'
   const isSelf = isLoggedIn && loggedInUser.id === user?.id
@@ -46,7 +48,7 @@ export default function UserForm({
 
   const canEdit = isEditing && (isSelf || isAdmin)
 
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     switch (variant) {
       case 'login':
