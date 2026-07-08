@@ -12,30 +12,30 @@ Using `useCallback` for event handlers adds unnecessary complexity and dependenc
 **Incorrect (unnecessary memoization with dependency management):**
 
 ```tsx
-import { useCallback } from 'react';
+import { useCallback } from 'react'
 
 export function App() {
   // useCallback adds boilerplate and requires managing dependencies
   const onSubmit = useCallback((data: FormData) => {
     // handle submission
-  }, []);
+  }, [])
 
-  return <Form onSubmit={onSubmit} />;
+  return <Form onSubmit={onSubmit} />
 }
 ```
 
 **Correct (useEffectEvent for event handlers):**
 
 ```tsx
-import { useEffectEvent } from 'react';
+import { useEffectEvent } from 'react'
 
 export function App() {
   // useEffectEvent always sees latest values, no dependency array needed
   const onSubmit = useEffectEvent((data: FormData) => {
     // handle submission
-  });
+  })
 
-  return <Form onSubmit={onSubmit} />;
+  return <Form onSubmit={onSubmit} />
 }
 ```
 

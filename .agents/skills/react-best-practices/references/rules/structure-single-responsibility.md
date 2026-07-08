@@ -54,14 +54,17 @@ export function useProductSearch() {
   const { data: products } = useQuery({
     queryKey: ['products'],
     queryFn: fetchProducts,
-  });
-  const [query, setQuery] = useState('');
-  const [category, setCategory] = useState<Category | null>(null);
+  })
+  const [query, setQuery] = useState('')
+  const [category, setCategory] = useState<Category | null>(null)
   const filtered = useMemo(
-    () => (products ?? []).filter(p => p.name.includes(query) && (!category || p.category === category)),
-    [products, query, category],
-  );
-  return { filtered, query, setQuery, category, setCategory };
+    () =>
+      (products ?? []).filter(
+        p => p.name.includes(query) && (!category || p.category === category)
+      ),
+    [products, query, category]
+  )
+  return { filtered, query, setQuery, category, setCategory }
 }
 ```
 
@@ -76,7 +79,7 @@ export function ProductList({ products, onSelect }: ProductListProps) {
         </li>
       ))}
     </ul>
-  );
+  )
 }
 ```
 
@@ -93,17 +96,25 @@ export function ProductEditForm({ initialValues }: { initialValues: Product }) {
 ```tsx
 // products-page.tsx — component: composition only
 export function ProductsPage() {
-  const { filtered, query, setQuery, category, setCategory } = useProductSearch();
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const selected = filtered.find(p => p.id === selectedId);
+  const { filtered, query, setQuery, category, setCategory } =
+    useProductSearch()
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const selected = filtered.find(p => p.id === selectedId)
 
   return (
     <>
-      <ProductFilters query={query} onQueryChange={setQuery} category={category} onCategoryChange={setCategory} />
+      <ProductFilters
+        query={query}
+        onQueryChange={setQuery}
+        category={category}
+        onCategoryChange={setCategory}
+      />
       <ProductList products={filtered} onSelect={setSelectedId} />
-      {selected && <ProductEditForm key={selected.id} initialValues={selected} />}
+      {selected && (
+        <ProductEditForm key={selected.id} initialValues={selected} />
+      )}
     </>
-  );
+  )
 }
 ```
 

@@ -13,23 +13,23 @@ Never use `useEffect` to reset or re-sync local state when an upstream identity 
 
 ```tsx
 function ProductForm({ product }: { product: Product }) {
-  const [name, setName] = useState(product.name);
-  const [price, setPrice] = useState(product.price);
+  const [name, setName] = useState(product.name)
+  const [price, setPrice] = useState(product.price)
 
   // Anti-pattern: re-syncing state with an effect.
   // Renders once with stale values, then again after the effect runs.
   // Every new field must be added here too — easy to forget, causes drift.
   useEffect(() => {
-    setName(product.name);
-    setPrice(product.price);
-  }, [product.id]);
+    setName(product.name)
+    setPrice(product.price)
+  }, [product.id])
 
   return (
     <form>
       <input value={name} onChange={e => setName(e.target.value)} />
       <input value={price} onChange={e => setPrice(e.target.value)} />
     </form>
-  );
+  )
 }
 ```
 
@@ -41,27 +41,27 @@ function ProductPage({ productId }: { productId: string }) {
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', productId],
     queryFn: () => fetchProduct(productId),
-  });
+  })
 
   // While the new product loads, the skeleton replaces the form branch.
   // The old ProductForm unmounts, so its state is discarded.
-  if (isLoading) return <ProductFormSkeleton />;
+  if (isLoading) return <ProductFormSkeleton />
 
   // Fresh mount: useState initializers run again with the new values.
-  return <ProductForm initialValues={product} />;
+  return <ProductForm initialValues={product} />
 }
 
 function ProductForm({ initialValues }: { initialValues: Product }) {
   // Initialized once per mount — no sync effect needed, ever.
-  const [name, setName] = useState(initialValues.name);
-  const [price, setPrice] = useState(initialValues.price);
+  const [name, setName] = useState(initialValues.name)
+  const [price, setPrice] = useState(initialValues.price)
 
   return (
     <form>
       <input value={name} onChange={e => setName(e.target.value)} />
       <input value={price} onChange={e => setPrice(e.target.value)} />
     </form>
-  );
+  )
 }
 ```
 

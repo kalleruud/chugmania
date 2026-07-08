@@ -44,10 +44,12 @@ Even then, test the public contract, not incidental design-system tokens.
 
 ```tsx
 it('shows a focused border', () => {
-  render(<InputGroup />);
+  render(<InputGroup />)
 
-  expect(screen.getByTestId('input-group').className).toContain('focus-within:border-neutral5/50');
-});
+  expect(screen.getByTestId('input-group').className).toContain(
+    'focus-within:border-neutral5/50'
+  )
+})
 ```
 
 This duplicates the implementation. It does not prove the focused state changes
@@ -57,32 +59,32 @@ the rendered border, or that another class does not override it.
 
 ```tsx
 it('removes the focused editor outline', async () => {
-  const user = userEvent.setup();
-  const { container } = render(<CodeEditor value="content" />);
-  const textbox = screen.getByRole('textbox');
-  const editor = container.querySelector<HTMLElement>('.cm-editor');
+  const user = userEvent.setup()
+  const { container } = render(<CodeEditor value='content' />)
+  const textbox = screen.getByRole('textbox')
+  const editor = container.querySelector<HTMLElement>('.cm-editor')
 
   if (!editor) {
-    throw new Error('Expected CodeMirror editor');
+    throw new Error('Expected CodeMirror editor')
   }
 
-  await user.click(textbox);
+  await user.click(textbox)
 
-  expect(getComputedStyle(editor).outline).toBe('none');
-});
+  expect(getComputedStyle(editor).outline).toBe('none')
+})
 ```
 
 ### Correct when layout is the behavior
 
 ```tsx
 it('truncates long labels instead of expanding the row', () => {
-  render(<StatusBadge label="A very long status label that must truncate" />);
-  const label = screen.getByText(/very long status/);
+  render(<StatusBadge label='A very long status label that must truncate' />)
+  const label = screen.getByText(/very long status/)
 
-  expect(getComputedStyle(label).overflowX).toBe('hidden');
-  expect(getComputedStyle(label).textOverflow).toBe('ellipsis');
-  expect(label.scrollWidth).toBeGreaterThan(label.clientWidth);
-});
+  expect(getComputedStyle(label).overflowX).toBe('hidden')
+  expect(getComputedStyle(label).textOverflow).toBe('ellipsis')
+  expect(label.scrollWidth).toBeGreaterThan(label.clientWidth)
+})
 ```
 
 ### Review smells

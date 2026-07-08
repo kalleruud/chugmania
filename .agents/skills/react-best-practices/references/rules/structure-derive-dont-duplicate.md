@@ -13,21 +13,27 @@ If a function, hook, or component can compute a value from a parameter or prop i
 
 ```tsx
 // The caller has to pass both and keep them aligned.
-function useStepper({ count, minTimes }: { count: number; minTimes: number[] }) {
-  const lastIndex = count - 1;
+function useStepper({
+  count,
+  minTimes,
+}: {
+  count: number
+  minTimes: number[]
+}) {
+  const lastIndex = count - 1
   // ...
 }
-useStepper({ count: steps.length, minTimes });
+useStepper({ count: steps.length, minTimes })
 ```
 
 **Correct (derive it inside):**
 
 ```tsx
 function useStepper({ minTimes }: { minTimes: number[] }) {
-  const lastIndex = minTimes.length - 1;
+  const lastIndex = minTimes.length - 1
   // ...
 }
-useStepper({ minTimes });
+useStepper({ minTimes })
 ```
 
 The same applies to components: don't accept an `itemCount` prop next to the `items` array, or an `isEmpty` prop next to a list you can measure. Pass the source; derive the rest.

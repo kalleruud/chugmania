@@ -18,12 +18,21 @@ Do not fix one smell while leaving another. Extracting a reassigned `let` into `
 **Incorrect:**
 
 ```tsx
-function Sidebar({ orgId, projectId, isSettingsActive, product, pathname }: SidebarProps) {
+function Sidebar({
+  orgId,
+  projectId,
+  isSettingsActive,
+  product,
+  pathname,
+}: SidebarProps) {
   const isProjectsHeaderActive =
-    (product === 'studio' && !projectId && !isSettingsActive && pathname === `/orgs/${orgId}`) ||
-    (product === 'gateway' && !projectId && !isSettingsActive);
+    (product === 'studio' &&
+      !projectId &&
+      !isSettingsActive &&
+      pathname === `/orgs/${orgId}`) ||
+    (product === 'gateway' && !projectId && !isSettingsActive)
 
-  return <Nav activeProjects={isProjectsHeaderActive} />;
+  return <Nav activeProjects={isProjectsHeaderActive} />
 }
 ```
 
@@ -37,28 +46,34 @@ function shouldHighlightProjects({
   pathname,
   projectsHref,
 }: {
-  product: Product;
-  projectId?: string;
-  isSettingsActive: boolean;
-  pathname: string;
-  projectsHref: string;
+  product: Product
+  projectId?: string
+  isSettingsActive: boolean
+  pathname: string
+  projectsHref: string
 }) {
-  if (projectId || isSettingsActive) return false;
-  if (product === 'gateway') return true;
-  return pathname === projectsHref;
+  if (projectId || isSettingsActive) return false
+  if (product === 'gateway') return true
+  return pathname === projectsHref
 }
 
-function Sidebar({ orgId, projectId, isSettingsActive, product, pathname }: SidebarProps) {
-  const projectsHref = `/orgs/${orgId}`;
+function Sidebar({
+  orgId,
+  projectId,
+  isSettingsActive,
+  product,
+  pathname,
+}: SidebarProps) {
+  const projectsHref = `/orgs/${orgId}`
   const isProjectsHeaderActive = shouldHighlightProjects({
     product,
     projectId,
     isSettingsActive,
     pathname,
     projectsHref,
-  });
+  })
 
-  return <Nav activeProjects={isProjectsHeaderActive} />;
+  return <Nav activeProjects={isProjectsHeaderActive} />
 }
 ```
 
@@ -70,14 +85,14 @@ The callsite names the derived boolean before JSX; the helper owns the ordering 
 
 ```tsx
 function Sidebar({ orgId, projectId, isSettingsActive }: SidebarProps) {
-  const resolvedOrgId = orgId ?? fallbackOrgId;
+  const resolvedOrgId = orgId ?? fallbackOrgId
   const sections = isSettingsActive
     ? getSettingsSections(resolvedOrgId)
     : projectId
       ? getProjectSections(resolvedOrgId, projectId)
-      : getOrgSections(resolvedOrgId);
+      : getOrgSections(resolvedOrgId)
 
-  return <Nav sections={sections} />;
+  return <Nav sections={sections} />
 }
 ```
 
@@ -89,24 +104,24 @@ function getBaseSections({
   projectId,
   isSettingsActive,
 }: {
-  orgId: string;
-  projectId?: string;
-  isSettingsActive: boolean;
+  orgId: string
+  projectId?: string
+  isSettingsActive: boolean
 }) {
-  if (isSettingsActive) return getSettingsSections(orgId);
-  if (projectId) return getProjectSections(orgId, projectId);
-  return getOrgSections(orgId);
+  if (isSettingsActive) return getSettingsSections(orgId)
+  if (projectId) return getProjectSections(orgId, projectId)
+  return getOrgSections(orgId)
 }
 
 function Sidebar({ orgId, projectId, isSettingsActive }: SidebarProps) {
-  const resolvedOrgId = orgId ?? fallbackOrgId;
+  const resolvedOrgId = orgId ?? fallbackOrgId
   const sections = getBaseSections({
     orgId: resolvedOrgId,
     projectId,
     isSettingsActive,
-  });
+  })
 
-  return <Nav sections={sections} />;
+  return <Nav sections={sections} />
 }
 ```
 
@@ -118,32 +133,41 @@ Nested ternaries are especially costly when they select structural data, routes,
 
 ```tsx
 function Sidebar({ orgId, projectId, sections }: SidebarProps) {
-  const [mainSection, ...restSections] = sections ?? [];
+  const [mainSection, ...restSections] = sections ?? []
   const nextSections = [
     {
       ...(mainSection ?? { key: 'main', links: [] }),
-      links: [projectId ? getBackLink(orgId) : getProjectsLink(orgId), ...(mainSection?.links || [])],
+      links: [
+        projectId ? getBackLink(orgId) : getProjectsLink(orgId),
+        ...(mainSection?.links || []),
+      ],
     },
     ...restSections,
-  ];
+  ]
 
-  return <Nav sections={nextSections} />;
+  return <Nav sections={nextSections} />
 }
 ```
 
 **Correct:**
 
 ```tsx
-function getProjectsEntryLink({ orgId, projectId }: { orgId: string; projectId?: string }) {
-  if (projectId) return getBackLink(orgId);
-  return getProjectsLink(orgId);
+function getProjectsEntryLink({
+  orgId,
+  projectId,
+}: {
+  orgId: string
+  projectId?: string
+}) {
+  if (projectId) return getBackLink(orgId)
+  return getProjectsLink(orgId)
 }
 
 function prependLinkToFirstSection(sections: NavSection[], link: NavLink) {
-  const [mainSection, ...restSections] = sections;
+  const [mainSection, ...restSections] = sections
 
   if (!mainSection) {
-    return [{ key: 'main', links: [link] }];
+    return [{ key: 'main', links: [link] }]
   }
 
   return [
@@ -152,13 +176,16 @@ function prependLinkToFirstSection(sections: NavSection[], link: NavLink) {
       links: [link, ...mainSection.links],
     },
     ...restSections,
-  ];
+  ]
 }
 
 function Sidebar({ orgId, projectId, sections }: SidebarProps) {
-  const nextSections = prependLinkToFirstSection(sections, getProjectsEntryLink({ orgId, projectId }));
+  const nextSections = prependLinkToFirstSection(
+    sections,
+    getProjectsEntryLink({ orgId, projectId })
+  )
 
-  return <Nav sections={nextSections} />;
+  return <Nav sections={nextSections} />
 }
 ```
 
@@ -169,18 +196,26 @@ Move fallback behavior and link selection into named helpers. The render prep sh
 **Incorrect:**
 
 ```tsx
-function Sidebar({ orgId, projectId, isSettingsActive, product }: SidebarProps) {
+function Sidebar({
+  orgId,
+  projectId,
+  isSettingsActive,
+  product,
+}: SidebarProps) {
   let sections = getBaseSections({
     orgId: orgId ?? fallbackOrgId,
     projectId,
     isSettingsActive,
-  });
+  })
 
   if (orgId && product === 'studio' && !isSettingsActive) {
-    sections = prependLinkToFirstSection(sections, getProjectsEntryLink({ orgId, projectId }));
+    sections = prependLinkToFirstSection(
+      sections,
+      getProjectsEntryLink({ orgId, projectId })
+    )
   }
 
-  return <Nav sections={sections} />;
+  return <Nav sections={sections} />
 }
 ```
 
@@ -193,33 +228,41 @@ function getSidebarSections({
   product,
   isSettingsActive,
 }: {
-  orgId?: string;
-  projectId?: string;
-  product: Product;
-  isSettingsActive: boolean;
+  orgId?: string
+  projectId?: string
+  product: Product
+  isSettingsActive: boolean
 }) {
   const baseSections = getBaseSections({
     orgId: orgId ?? fallbackOrgId,
     projectId,
     isSettingsActive,
-  });
+  })
 
-  if (!orgId) return baseSections;
-  if (product !== 'studio') return baseSections;
-  if (isSettingsActive) return baseSections;
+  if (!orgId) return baseSections
+  if (product !== 'studio') return baseSections
+  if (isSettingsActive) return baseSections
 
-  return prependLinkToFirstSection(baseSections, getProjectsEntryLink({ orgId, projectId }));
+  return prependLinkToFirstSection(
+    baseSections,
+    getProjectsEntryLink({ orgId, projectId })
+  )
 }
 
-function Sidebar({ orgId, projectId, isSettingsActive, product }: SidebarProps) {
+function Sidebar({
+  orgId,
+  projectId,
+  isSettingsActive,
+  product,
+}: SidebarProps) {
   const sections = getSidebarSections({
     orgId,
     projectId,
     product,
     isSettingsActive,
-  });
+  })
 
-  return <Nav sections={sections} />;
+  return <Nav sections={sections} />
 }
 ```
 

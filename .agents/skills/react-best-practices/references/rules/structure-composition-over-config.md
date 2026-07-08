@@ -13,16 +13,26 @@ When a component renders a known, fixed set of items, write one component per it
 
 ```tsx
 function CapabilitiesPanel({ agentId }: { agentId: string }) {
-  const { data: memory, isLoading: isMemoryLoading } = useMemory(agentId);
-  const { data: agent, isLoading: isAgentLoading } = useAgent(agentId);
+  const { data: memory, isLoading: isMemoryLoading } = useMemory(agentId)
+  const { data: agent, isLoading: isAgentLoading } = useAgent(agentId)
 
   const capabilities: Capability[] = [
-    { id: 'memory', label: 'Memory', status: getMemoryStatus(isMemoryLoading, memory) /* ... */ },
-    { id: 'tools', label: 'Tools', status: getToolsStatus(isAgentLoading, agent) /* ... */ },
+    {
+      id: 'memory',
+      label: 'Memory',
+      status: getMemoryStatus(isMemoryLoading, memory) /* ... */,
+    },
+    {
+      id: 'tools',
+      label: 'Tools',
+      status: getToolsStatus(isAgentLoading, agent) /* ... */,
+    },
     // every new capability grows this array and its helper zoo
-  ];
+  ]
 
-  return capabilities.map(capability => <CapabilityRow key={capability.id} capability={capability} />);
+  return capabilities.map(capability => (
+    <CapabilityRow key={capability.id} capability={capability} />
+  ))
 }
 ```
 
@@ -32,17 +42,29 @@ The parent hoists every query and threads `isLoading` flags into per-item status
 
 ```tsx
 function MemoryCapability({ agentId }: { agentId: string }) {
-  const { data: memory, isLoading } = useMemory(agentId);
-  const enabled = Boolean(memory?.result);
+  const { data: memory, isLoading } = useMemory(agentId)
+  const enabled = Boolean(memory?.result)
 
-  return <CapabilityRow label="Memory" status={isLoading ? 'Checking' : enabled ? 'On' : 'Off'} enabled={enabled} />;
+  return (
+    <CapabilityRow
+      label='Memory'
+      status={isLoading ? 'Checking' : enabled ? 'On' : 'Off'}
+      enabled={enabled}
+    />
+  )
 }
 
 function ToolsCapability({ agentId }: { agentId: string }) {
-  const { data: agent, isLoading } = useAgent(agentId);
-  const count = Object.keys(agent?.tools ?? {}).length;
+  const { data: agent, isLoading } = useAgent(agentId)
+  const count = Object.keys(agent?.tools ?? {}).length
 
-  return <CapabilityRow label="Tools" status={isLoading ? 'Checking' : String(count)} enabled={count > 0} />;
+  return (
+    <CapabilityRow
+      label='Tools'
+      status={isLoading ? 'Checking' : String(count)}
+      enabled={count > 0}
+    />
+  )
 }
 
 function CapabilitiesPanel({ agentId }: { agentId: string }) {
@@ -51,7 +73,7 @@ function CapabilitiesPanel({ agentId }: { agentId: string }) {
       <MemoryCapability agentId={agentId} />
       <ToolsCapability agentId={agentId} />
     </>
-  );
+  )
 }
 ```
 

@@ -32,17 +32,21 @@ not assert a type).
 
 ```ts
 // Production: silences a real union/shape mismatch
-const metadata = message.content.metadata as MessageMetadata | undefined;
-return { ...message, role: 'assistant', content } as MastraDBMessage;
+const metadata = message.content.metadata as MessageMetadata | undefined
+return { ...message, role: 'assistant', content } as MastraDBMessage
 
 // Tests: fixture and DOM casts hide drift
-const msg = { id, role: 'signal', content } as MastraDBMessage;
-const textarea = screen.getByPlaceholderText('Message') as HTMLTextAreaElement;
-const el = document.querySelector('[data-x]') as HTMLElement;
-this.callback(entries as IntersectionObserverEntry[], this as unknown as IntersectionObserver);
+const msg = { id, role: 'signal', content } as MastraDBMessage
+const textarea = screen.getByPlaceholderText('Message') as HTMLTextAreaElement
+const el = document.querySelector('[data-x]') as HTMLElement
+this.callback(
+  entries as IntersectionObserverEntry[],
+  this as unknown as IntersectionObserver
+)
 
 // Fake guard: this only proves "non-null object", not MessageMetadata.
-const isMessageMetadata = (value: unknown): value is MessageMetadata => typeof value === 'object' && value !== null;
+const isMessageMetadata = (value: unknown): value is MessageMetadata =>
+  typeof value === 'object' && value !== null
 ```
 
 **Correct:**
@@ -50,23 +54,27 @@ const isMessageMetadata = (value: unknown): value is MessageMetadata => typeof v
 ```ts
 // Production: narrow with a guard, or annotate the built object
 const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null && !Array.isArray(value);
+  typeof value === 'object' && value !== null && !Array.isArray(value)
 
 const isMessageMetadata = (value: unknown): value is MessageMetadata => {
-  if (!isRecord(value)) return false;
+  if (!isRecord(value)) return false
 
-  const custom = value.custom;
-  if (custom !== undefined && !isRecord(custom)) return false;
+  const custom = value.custom
+  if (custom !== undefined && !isRecord(custom)) return false
 
-  const modelMetadata = custom?.modelMetadata;
-  if (modelMetadata !== undefined && !isRecord(modelMetadata)) return false;
+  const modelMetadata = custom?.modelMetadata
+  if (modelMetadata !== undefined && !isRecord(modelMetadata)) return false
 
-  return true;
-};
+  return true
+}
 
-const metadata = isMessageMetadata(message.content.metadata) ? message.content.metadata : undefined;
-const parts: MastraDBMessage['content']['parts'] = [{ type: 'data-signal', data }];
-return { ...message, role: 'assistant', content: { ...message.content, parts } };
+const metadata = isMessageMetadata(message.content.metadata)
+  ? message.content.metadata
+  : undefined
+const parts: MastraDBMessage['content']['parts'] = [
+  { type: 'data-signal', data },
+]
+return { ...message, role: 'assistant', content: { ...message.content, parts } }
 
 // Tests: typed factory, query generics, guards, and `implements`
 const signalMessage = (id: string, type: string): MastraDBMessage => ({
@@ -75,10 +83,10 @@ const signalMessage = (id: string, type: string): MastraDBMessage => ({
   type,
   createdAt: new Date(),
   content: { format: 2, parts: [] },
-});
-const textarea = screen.getByPlaceholderText<HTMLTextAreaElement>('Message');
-const el = document.querySelector<HTMLElement>('[data-x]');
-if (!el) throw new Error('missing element');
+})
+const textarea = screen.getByPlaceholderText<HTMLTextAreaElement>('Message')
+const el = document.querySelector<HTMLElement>('[data-x]')
+if (!el) throw new Error('missing element')
 class MockIO implements IntersectionObserver {
   /* real members */
 }

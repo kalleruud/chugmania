@@ -35,49 +35,60 @@ Mocking these replaces the very code paths a test should exercise — the React 
 ```tsx
 vi.mock('@mastra/react', () => ({
   useMastraClient: () => ({ getBuilderSettings }),
-}));
+}))
 vi.mock('@/domains/auth/hooks/use-permissions', () => ({
   usePermissions: () => ({ hasPermission: () => true, rbacEnabled: true }),
-}));
+}))
 
 it('shows the editor for permitted users', () => {
-  render(<AgentEditPage />);
-  expect(screen.getByRole('form')).toBeInTheDocument();
-});
+  render(<AgentEditPage />)
+  expect(screen.getByRole('form')).toBeInTheDocument()
+})
 ```
 
 **Correct (real providers + SDK; capability + data driven by MSW fixtures):**
 
 ```tsx
 // __tests__/fixtures/capabilities.ts — typed from @mastra/client-js, no `as any`
-import type { GetCapabilitiesResponse } from '@mastra/client-js';
+import type { GetCapabilitiesResponse } from '@mastra/client-js'
 
 export const canEditAgents: GetCapabilitiesResponse = {
   /* … real-shaped capability payload granting agent edit … */
-};
+}
 
 // agent-edit.msw.test.tsx
 describe('AgentEditPage', () => {
   describe('when the user has the agent-edit capability', () => {
     it('renders the editor form', async () => {
-      server.use(http.get('*/api/auth/capabilities', () => HttpResponse.json(canEditAgents)));
+      server.use(
+        http.get('*/api/auth/capabilities', () =>
+          HttpResponse.json(canEditAgents)
+        )
+      )
 
-      renderWithProviders(<AgentEditPage />);
+      renderWithProviders(<AgentEditPage />)
 
-      expect(await screen.findByRole('form')).toBeInTheDocument();
-    });
-  });
+      expect(await screen.findByRole('form')).toBeInTheDocument()
+    })
+  })
 
   describe('when the user lacks the capability', () => {
     it('redirects to the first accessible route', async () => {
-      server.use(http.get('*/api/auth/capabilities', () => HttpResponse.json(noCapabilities)));
+      server.use(
+        http.get('*/api/auth/capabilities', () =>
+          HttpResponse.json(noCapabilities)
+        )
+      )
 
-      renderWithProviders(<AgentEditPage />);
+      renderWithProviders(<AgentEditPage />)
 
-      expect(await screen.findByTestId('navigate')).toHaveAttribute('data-to', '/agents');
-    });
-  });
-});
+      expect(await screen.findByTestId('navigate')).toHaveAttribute(
+        'data-to',
+        '/agents'
+      )
+    })
+  })
+})
 ```
 
 ### BDD structure
@@ -102,20 +113,20 @@ When a `renderHook` test fires a mutation (or any call that triggers React state
 **Incorrect (bare `mutateAsync`; trailing state update escapes `act`):**
 
 ```tsx
-const { result } = renderHookWithProviders(() => useCreateSkill());
-await waitFor(() => expect(result.current.permissions.isLoading).toBe(false));
-await result.current.create.mutateAsync({ name: 'n', files });
+const { result } = renderHookWithProviders(() => useCreateSkill())
+await waitFor(() => expect(result.current.permissions.isLoading).toBe(false))
+await result.current.create.mutateAsync({ name: 'n', files })
 ```
 
 **Correct (mutation wrapped, then drain React Query):**
 
 ```tsx
-const { result, queryClient } = renderHookWithProviders(() => useCreateSkill());
-await waitFor(() => expect(result.current.permissions.isLoading).toBe(false));
+const { result, queryClient } = renderHookWithProviders(() => useCreateSkill())
+await waitFor(() => expect(result.current.permissions.isLoading).toBe(false))
 await act(async () => {
-  await result.current.create.mutateAsync({ name: 'n', files });
-});
-await waitForMutationsIdle(queryClient);
+  await result.current.create.mutateAsync({ name: 'n', files })
+})
+await waitForMutationsIdle(queryClient)
 ```
 
 ### Hooks don't own UI toasts

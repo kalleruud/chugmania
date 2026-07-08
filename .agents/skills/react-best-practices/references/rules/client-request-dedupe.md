@@ -13,52 +13,52 @@ TanStack Query enables request deduplication, caching, and revalidation across c
 
 ```tsx
 function UserList() {
-  const [users, setUsers] = useState([]);
+  const [users, setUsers] = useState([])
   useEffect(() => {
     fetch('/api/users')
       .then(r => r.json())
-      .then(setUsers);
-  }, []);
+      .then(setUsers)
+  }, [])
 }
 ```
 
 **Correct (multiple instances share one request):**
 
 ```tsx
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query'
 
 function UserList() {
   const { data: users } = useQuery({
     queryKey: ['users'],
     queryFn: () => fetch('/api/users').then(r => r.json()),
-  });
+  })
 }
 ```
 
 **For immutable data:**
 
 ```tsx
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query'
 
 function StaticContent() {
   const { data } = useQuery({
     queryKey: ['config'],
     queryFn: () => fetch('/api/config').then(r => r.json()),
     staleTime: Infinity,
-  });
+  })
 }
 ```
 
 **For mutations:**
 
 ```tsx
-import { useMutation } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query'
 
 function UpdateButton() {
   const { mutate } = useMutation({
     mutationFn: updateUser,
-  });
-  return <button onClick={() => mutate()}>Update</button>;
+  })
+  return <button onClick={() => mutate()}>Update</button>
 }
 ```
 
@@ -70,18 +70,18 @@ Prefer keeping the hook strict (`id: string`) and narrowing at the caller: the c
 
 ```tsx
 function ProjectPage() {
-  const [searchParams] = useSearchParams();
-  const projectId = searchParams.get('projectId') ?? undefined;
+  const [searchParams] = useSearchParams()
+  const projectId = searchParams.get('projectId') ?? undefined
 
-  if (!projectId) return <Navigate to="/projects" />;
+  if (!projectId) return <Navigate to='/projects' />
 
-  return <ProjectDetail projectId={projectId} />;
+  return <ProjectDetail projectId={projectId} />
 }
 
 function ProjectDetail({ projectId }: { projectId: string }) {
   // The hook input stays `string`; loading/error are owned here —
   // see structure-early-return-render-branches.
-  const { data, isLoading, error } = useProject(projectId);
+  const { data, isLoading, error } = useProject(projectId)
   // ...
 }
 
@@ -89,21 +89,21 @@ function useProject(projectId: string) {
   return useQuery({
     queryKey: ['project', projectId],
     queryFn: () => fetchProject(projectId),
-  });
+  })
 }
 ```
 
 When the component must stay mounted before the param exists (e.g. the query is gated by another flag), widen the input to `id?: string` and guard the query function with `skipToken` — never a non-null assertion:
 
 ```tsx
-import { skipToken, useQuery } from '@tanstack/react-query';
+import { skipToken, useQuery } from '@tanstack/react-query'
 
 function useProject(projectId?: string, enabled = true) {
   return useQuery({
     queryKey: ['project', projectId],
     queryFn: projectId ? () => fetchProject(projectId) : skipToken,
     enabled,
-  });
+  })
 }
 ```
 

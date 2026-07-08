@@ -14,12 +14,12 @@ Any reusable function that returns JSX should be a PascalCase component. Lowerca
 ```tsx
 const renderJsonCodeBlock = (value: unknown, testId: string) => (
   <div data-testid={testId}>
-    <CodeBlock code={JSON.stringify(value, null, 2)} lang="json" />
+    <CodeBlock code={JSON.stringify(value, null, 2)} lang='json' />
   </div>
-);
+)
 
 export function ToolBadge({ result }: ToolBadgeProps) {
-  return <section>{renderJsonCodeBlock(result, 'tool-result')}</section>;
+  return <section>{renderJsonCodeBlock(result, 'tool-result')}</section>
 }
 ```
 
@@ -29,24 +29,25 @@ export function ToolBadge({ result }: ToolBadgeProps) {
 function JsonCodeBlock({ value, testId }: { value: unknown; testId: string }) {
   return (
     <div data-testid={testId}>
-      <CodeBlock code={JSON.stringify(value, null, 2)} lang="json" />
+      <CodeBlock code={JSON.stringify(value, null, 2)} lang='json' />
     </div>
-  );
+  )
 }
 
 export function ToolBadge({ result }: ToolBadgeProps) {
   return (
     <section>
-      <JsonCodeBlock value={result} testId="tool-result" />
+      <JsonCodeBlock value={result} testId='tool-result' />
     </section>
-  );
+  )
 }
 ```
 
 Use a lowercase helper only when it does not return JSX:
 
 ```tsx
-const formatJson = (value: unknown) => JSON.stringify(value, null, 2) ?? String(value);
+const formatJson = (value: unknown) =>
+  JSON.stringify(value, null, 2) ?? String(value)
 ```
 
 Smell to catch in reviews: `renderSomething(...)` returning JSX, especially when it accepts props-like arguments or is reused in multiple JSX branches.

@@ -12,7 +12,17 @@ When a component renders mutually exclusive top-level states — loading, empty,
 **Incorrect (a ternary tree inside the wrapper):**
 
 ```tsx
-return <Panel>{isLoading ? <Skeleton /> : isDetailOpen ? <Detail /> : <List items={items} />}</Panel>;
+return (
+  <Panel>
+    {isLoading ? (
+      <Skeleton />
+    ) : isDetailOpen ? (
+      <Detail />
+    ) : (
+      <List items={items} />
+    )}
+  </Panel>
+)
 ```
 
 **Also incorrect (the wrapper duplicated in every early return):**
@@ -23,44 +33,50 @@ if (isLoading)
     <Panel>
       <Skeleton />
     </Panel>
-  );
+  )
 if (isDetailOpen)
   return (
     <Panel>
       <Detail />
     </Panel>
-  );
+  )
 return (
   <Panel>
     <List items={items} />
   </Panel>
-);
+)
 ```
 
 **Also incorrect (passing query state down for the child to sort out):**
 
 ```tsx
 function ThingPanel({ itemId, isDetailOpen }: ThingPanelProps) {
-  const query = useItems(itemId);
+  const query = useItems(itemId)
 
   return (
     <Panel>
       <PanelBody {...query} isDetailOpen={isDetailOpen} />
     </Panel>
-  );
+  )
 }
 ```
 
 **Correct (one wrapper; the body owns the query source and branches from it):**
 
 ```tsx
-function PanelBody({ itemId, isDetailOpen }: { itemId: string; isDetailOpen: boolean }) {
-  const { data: items, isLoading, error } = useItems(itemId);
+function PanelBody({
+  itemId,
+  isDetailOpen,
+}: {
+  itemId: string
+  isDetailOpen: boolean
+}) {
+  const { data: items, isLoading, error } = useItems(itemId)
 
-  if (isLoading) return <Skeleton />;
-  if (error) return <ErrorState error={error} />;
-  if (isDetailOpen) return <Detail items={items} />;
-  return <List items={items} />;
+  if (isLoading) return <Skeleton />
+  if (error) return <ErrorState error={error} />
+  if (isDetailOpen) return <Detail items={items} />
+  return <List items={items} />
 }
 
 function ThingPanel({ itemId, isDetailOpen }: ThingPanelProps) {
@@ -68,7 +84,7 @@ function ThingPanel({ itemId, isDetailOpen }: ThingPanelProps) {
     <Panel>
       <PanelBody itemId={itemId} isDetailOpen={isDetailOpen} />
     </Panel>
-  );
+  )
 }
 ```
 
