@@ -30,19 +30,6 @@ const ORIGIN = new URL(process.env.ORIGIN ?? `http://localhost:${PORT}`)
 const app = express()
 const server = createServer(app)
 
-if (!isProduction) {
-  const { createServer: createViteServer } = await import('vite')
-  const vite = await createViteServer({ server: { middlewareMode: true } })
-  app.use(vite.middlewares)
-  server.on('close', () => void vite.close())
-} else {
-  app.use(express.static('dist'))
-}
-
-server.listen(PORT, () => {
-  console.log(`Hosted at ${ORIGIN.toString()}`)
-})
-
 const io = new Server<
   ClientToServerEvents,
   ServerToClientEvents,
@@ -104,11 +91,21 @@ app.get('/api/ping', (_req, res) => {
   res.send(pong)
 })
 
-if (isProduction) {
+if (!isProduction) {
+  const { createServer: createViteServer } = await import('vite')
+  const vite = await createViteServer({ server: { middlewareMode: true } })
+  app.use(vite.middlewares)
+  server.on('close', () => void vite.close())
+} else {
+  app.use(express.static('dist'))
   app.get('*splat', (_req, res) =>
     res.sendFile(path.resolve('dist/index.html'))
   )
 }
+
+server.listen(PORT, () => {
+  console.log(`Hosted at ${ORIGIN.toString()}`)
+})
 
 io.on('connect', s => Connect(s))
 

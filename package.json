@@ -5,7 +5,7 @@
   "type": "module",
   "main": "backend/src/server.ts",
   "scripts": {
-    "start": "node dist/server/server.js",
+    "start": "NODE_ENV=production node dist/server/server.js",
     "dev": "tsx watch --env-file .env backend/src/server.ts",
     "check": "node scripts/check.js",
     "fix": "eslint . --cache --fix && prettier -w .",
