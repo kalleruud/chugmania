@@ -1,4 +1,10 @@
-import { blob, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import {
+  blob,
+  index,
+  integer,
+  sqliteTable,
+  text,
+} from 'drizzle-orm/sqlite-core'
 import { randomUUID } from 'node:crypto'
 
 const metadata = {
@@ -32,6 +38,7 @@ export type MatchStage =
 export type EliminationType = 'single' | 'double'
 export type TournamentBracket = 'group' | 'upper' | 'lower'
 export type MatchProgression = 'winner' | 'loser'
+export type PublicationState = 'draft' | 'published'
 
 export const users = sqliteTable('users', {
   ...metadata,
@@ -54,6 +61,18 @@ export const tracks = sqliteTable('tracks', {
   number: integer().notNull(),
   level: text().$type<TrackLevel>().notNull(),
   type: text().$type<TrackType>().notNull(),
+  uid: text().unique(),
+  name: text(),
+  author: text(),
+  environment: text(),
+  mapType: text('map_type'),
+  authorMedalTimeMs: integer('author_medal_time_ms'),
+  goldMedalTimeMs: integer('gold_medal_time_ms'),
+  silverMedalTimeMs: integer('silver_medal_time_ms'),
+  bronzeMedalTimeMs: integer('bronze_medal_time_ms'),
+  isLaps: integer('is_laps', { mode: 'boolean' }),
+  totalLaps: integer('total_laps'),
+  checkpointsPerLap: integer('checkpoints_per_lap'),
 })
 
 export const sessions = sqliteTable('sessions', {
@@ -79,16 +98,39 @@ export const sessionSignups = sqliteTable('session_signups', {
   response: text().$type<SessionResponse>().notNull(),
 })
 
+export const webhooks = sqliteTable(
+  'webhooks',
+  {
+    id: text().primaryKey(),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).$onUpdateFn(
+      () => new Date()
+    ),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+    deletedAt: integer('deleted_at', { mode: 'timestamp_ms' }),
+    gameId: text('game_id').notNull(),
+    type: text().notNull(),
+    session: text().references(() => sessions.id),
+    receivedAt: integer('received_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+    payload: text({ mode: 'json' }).$type<Record<string, unknown>>().notNull(),
+  },
+  table => [index('webhooks_game_id_idx').on(table.gameId)]
+)
+
 export const timeEntries = sqliteTable('time_entries', {
   ...metadata,
-  user: text()
-    .notNull()
-    .references(() => users.id),
-  track: text()
-    .notNull()
-    .references(() => tracks.id),
+  user: text().references(() => users.id),
+  track: text().references(() => tracks.id),
   session: text().references(() => sessions.id),
   duration: integer('duration_ms'),
+  chugDurationMs: integer('chug_duration_ms'),
+  publicationState: text('publication_state')
+    .$type<PublicationState>()
+    .notNull()
+    .default('published'),
+  webhookGameId: text('webhook_game_id').unique(),
+  publishedAt: integer('published_at', { mode: 'timestamp_ms' }),
   amount: integer('amount_l').notNull().default(0.5),
   comment: text(),
 })
@@ -101,6 +143,16 @@ export const matches = sqliteTable('matches', {
   session: text().references(() => sessions.id),
   winner: text().references(() => users.id),
   duration: integer('duration_ms'),
+  user1DurationMs: integer('user1_duration_ms'),
+  user2DurationMs: integer('user2_duration_ms'),
+  user1ChugDurationMs: integer('user1_chug_duration_ms'),
+  user2ChugDurationMs: integer('user2_chug_duration_ms'),
+  publicationState: text('publication_state')
+    .$type<PublicationState>()
+    .notNull()
+    .default('published'),
+  webhookGameId: text('webhook_game_id').unique(),
+  publishedAt: integer('published_at', { mode: 'timestamp_ms' }),
   stage: text().$type<MatchStage>(),
   comment: text(),
   status: text()
