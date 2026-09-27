@@ -2,6 +2,7 @@
 .output
 /build
 .plans/
+/backup
 
 # OS
 .DS_Store
