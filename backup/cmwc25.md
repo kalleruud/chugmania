@@ -28,9 +28,7 @@ This is a frozen, human-readable record of the event. The app recorded the group
 ### Original session description
 
 > BEKREFTET! Vi kjører Chuggolini World Championship 3 Jan 2026! Viktig å møte opp i tide, gruppespillet starter kvart over!
-
 > Ta med minst en sixpack med 0.5 L, tror det meste man kan slumpe til å drikke om man vinner er rundt 10 burker. Ta med noe godt å drikke utenom rundene også!
-
 > Vi kjører i huset til mamma og pappa! Estimert chuggemengde er 5-10 øl. Jo mer du vinner jo mer må chugges!
 
 ## Participants and group results
