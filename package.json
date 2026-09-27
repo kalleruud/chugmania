@@ -5,7 +5,7 @@
   "type": "module",
   "main": "backend/src/server.ts",
   "scripts": {
-    "start": "node dist/server/server.js",
+    "start": "NODE_ENV=production node dist/server/server.js",
     "dev": "tsx watch --env-file .env backend/src/server.ts",
     "check": "node scripts/check.js",
     "fix": "eslint . --cache --fix && prettier -w .",
@@ -51,8 +51,7 @@
     "socket.io-client": "^4.8.3",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.6.0",
-    "vaul": "^1.1.2",
-    "vite-express": "^0.22.1"
+    "vaul": "^1.1.2"
   },
   "devDependencies": {
     "@babel/core": "^8.0.1",

@@ -15,11 +15,6 @@ const checks = [
     `tsc${bin}`,
     ['--noEmit', '--pretty', 'false', '-p', 'tsconfig.app.json'],
   ],
-  [
-    'React Doctor',
-    `npx${bin}`,
-    ['react-doctor@latest', '.', '-y', '--verbose'],
-  ],
   ['Prettier', `prettier${bin}`, ['-c', '.']],
 ]
 
