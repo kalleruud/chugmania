@@ -168,6 +168,32 @@ The PDF uses 1 for a win and 0 for a loss. Bracket seeds shown there are JOPE 1,
 
 **Champion: Sindre Haram (HAR). Runner-up: Ole Kallerud (OLE).** Fredrik Hyldmo (FHY) lost the lower bracket final to OLE. HAR lost the first grand final, then won the reset game.
 
+## Final standings
+
+The Challonge bracket determines the first eight places. Players eliminated in the same lower-bracket round are ordered by their fastest active session time. The remaining players are ordered by group win percentage because the groups played different numbers of matches, then by fastest active session time. Equal times, or missing times that prevent a comparison, leave players tied at the same place. Deleted time entries are excluded. FHY and JOPE have no active time entry, but their different bracket finishes determine their places.
+
+| Place | Player                    | Finish              | Group W–L | Fastest active time (s) |
+| ----- | ------------------------- | ------------------- | --------- | ----------------------- |
+| 1     | Sindre Haram (HAR)        | Champion            | 2–1       | 80.63                   |
+| 2     | Ole Kallerud (OLE)        | Runner-up           | 3–1       | 80.91                   |
+| 3     | Fredrik Hyldmo (FHY)      | Lower-bracket final | 3–1       | —                       |
+| 4     | Joppe Joppe (JOPE)        | Lower round 3       | 4–0       | —                       |
+| 5     | Sondre Kristensen (KRI)   | Lower round 2       | 3–1       | 82.19                   |
+| 6     | Axel Ericson (AXEL)       | Lower round 2       | 2–1       | 82.21                   |
+| 7     | Even Galåsen (GAL)        | Lower round 1       | 3–1       | 92.33                   |
+| 8     | Johan Busk (BUS)          | Lower round 1       | 3–1       | 94.15                   |
+| 9     | Sindre Sauarlia (SAU)     | Group stage         | 3–1       | 106.55                  |
+| 10    | Sebastian Pettersen (SEB) | Group stage         | 2–1       | 111.98                  |
+| 11    | Kenneth Solvoll (KSO)     | Group stage         | 2–2       | 83.97                   |
+| 12    | Mikael Rodvelt (ROD)      | Group stage         | 2–2       | 95.30                   |
+| 13    | Birk The skurk (BIRK)     | Group stage         | 2–2       | 109.54                  |
+| 14    | Boye Wolla (WOL)          | Group stage         | 1–3       | 83.57                   |
+| 15    | Johannes Sognnæs (SOG)    | Group stage         | 1–3       | 85.91                   |
+| 16    | Erik Almåsvold (ERI)      | Group stage         | 0–4       | 86.90                   |
+| 17    | Andreas Hundsnes (HUN)    | Group stage         | 0–4       | 88.61                   |
+| 18    | Håkon Busk (HAWK)         | Group stage         | 0–4       | 92.91                   |
+| 19    | Kristian Nielsen (NIE)    | Group stage         | 0–3       | 103.31                  |
+
 ## Knockout fixtures left in the old tournament export
 
 The 14 fixture rows below are the abandoned app bracket template. Only the four quarterfinals had linked app matches, and those matches are now `cancelled` with no winner. The CSV has no result for the PDF knockout games, including the reset game.
