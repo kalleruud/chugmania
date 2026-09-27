@@ -15,7 +15,6 @@ import { matches, sessions } from '../../database/schema'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import RatingManager from './rating.manager'
-import TournamentManager from './tournament.manager'
 
 export default class MatchManager {
   private static validateMatchState(
@@ -85,7 +84,7 @@ export default class MatchManager {
       stage: request.stage,
       comment: request.comment,
     }
-    const [match] = await db.insert(matches).values(matchData).returning()
+    db.insert(matches).values(matchData).run()
 
     console.debug(new Date().toISOString(), socket.id, 'Created match')
 
@@ -93,7 +92,6 @@ export default class MatchManager {
     broadcast('all_matches', await MatchManager.getAllMatches())
     broadcast('all_rankings', RatingManager.onGetRatings())
 
-    if (match.winner) await TournamentManager.onMatchCompleted(match.id)
     return { success: true }
   }
 
@@ -118,8 +116,7 @@ export default class MatchManager {
     MatchManager.validateMatchState(request, preImageMatch)
 
     const id = request.id
-    const [res] = await db
-      .update(matches)
+    db.update(matches)
       .set({
         user1: request.user1,
         user2: request.user2,
@@ -135,7 +132,7 @@ export default class MatchManager {
           : request.deletedAt,
       })
       .where(eq(matches.id, preImageMatch.id))
-      .returning()
+      .run()
 
     console.debug(new Date().toISOString(), socket.id, 'Updated match', id)
 
@@ -143,9 +140,6 @@ export default class MatchManager {
     broadcast('all_matches', await MatchManager.getAllMatches())
     broadcast('all_rankings', RatingManager.onGetRatings())
 
-    if (res.winner && preImageMatch.winner !== res.winner) {
-      await TournamentManager.onMatchCompleted(res.id)
-    }
     return { success: true }
   }
 
