@@ -7,6 +7,10 @@ import type {
   ServerToClientEvents,
   SocketData,
 } from '@common/models/socket.io'
+import {
+  isTournamentRequest,
+  type TournamentChange,
+} from '@common/models/tournament'
 import express from 'express'
 import { createServer } from 'node:http'
 import path from 'node:path'
@@ -19,6 +23,7 @@ import RatingManager from './managers/rating.manager'
 import SessionManager from './managers/session.manager'
 import SessionScheduler from './managers/session.scheduler'
 import TimeEntryManager from './managers/timeEntry.manager'
+import TournamentManager from './managers/tournament.manager'
 import TrackManager from './managers/track.manager'
 import UserManager from './managers/user.manager'
 
@@ -139,6 +144,14 @@ async function Connect(s: TypedSocket) {
   setup(s, 'rsvp_session', SessionManager.onRsvpSession)
   setup(s, 'delete_session', SessionManager.onDeleteSession)
 
+  setup(s, 'preview_tournament', TournamentManager.onPreview)
+  setup(s, 'create_tournament', TournamentManager.onCreate)
+  setup(s, 'get_tournament', TournamentManager.onGet)
+  setup(s, 'delete_tournament', TournamentManager.onDelete)
+  s.on('unsubscribe_tournament', request => {
+    if (isTournamentRequest(request))
+      void s.leave(`tournament:${request.session}`)
+  })
   setup(s, 'create_match', MatchManager.onCreateMatch)
   setup(s, 'edit_match', MatchManager.onEditMatch)
   setup(s, 'delete_match', MatchManager.onDeleteMatch)
@@ -175,4 +188,11 @@ function setup<Ev extends keyof ClientToServerEvents>(
         callback({ success: false, message })
       })
   )
+}
+
+export function broadcastTournament(change: TournamentChange) {
+  for (const socket of io.sockets.sockets.values()) {
+    if (socket.data.userId && socket.rooms.has(`tournament:${change.session}`))
+      socket.emit('tournament_changed', change)
+  }
 }

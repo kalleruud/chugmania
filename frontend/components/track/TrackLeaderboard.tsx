@@ -14,6 +14,7 @@ import { TrackRow } from './TrackRow'
 
 type TrackLeaderboardProps = {
   track: Track
+  excludeTournamentMatches?: boolean
   hideTrack?: boolean
 } & Omit<TimeEntryListProps, 'track' | 'entries'>
 
@@ -23,6 +24,7 @@ export default function TrackLeaderboard({
   user,
   session,
   hideTrack,
+  excludeTournamentMatches,
   ...rest
 }: Readonly<TrackLeaderboardProps & ComponentProps<'div'>>) {
   const { timeEntries, matches, isLoadingData } = useData()
@@ -40,6 +42,8 @@ export default function TrackLeaderboard({
     .filter(te => track.id === te.track)
 
   const filteredMatches = matches
+    .filter(m => !excludeTournamentMatches || !m.tournament)
+    .filter(m => m.tournament?.reset !== 'unneeded')
     .filter(m => !session || session === m.session)
     .filter(m => !user || user === m.user1 || user === m.user2)
     .filter(m => track.id === m.track)

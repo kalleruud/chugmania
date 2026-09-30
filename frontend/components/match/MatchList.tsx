@@ -12,6 +12,8 @@ export type MatchListProps = {
   user?: string
   session?: string
   matches: Match[]
+  managed?: boolean
+  readOnly?: boolean
   hideTrack?: boolean
 }
 
@@ -21,6 +23,8 @@ export default function MatchList({
   user,
   session,
   hideTrack,
+  managed,
+  readOnly,
 }: Readonly<MatchListProps>) {
   const { isLoggedIn, loggedInUser } = useAuth()
   const { openMatch } = useTimeEntryInput()
@@ -28,7 +32,7 @@ export default function MatchList({
   if (matches.length === 0) {
     return (
       <Empty className='border border-input text-sm text-muted-foreground'>
-        {isLoggedIn && (
+        {isLoggedIn && !managed && (
           <Button
             variant='outline'
             size='sm'
@@ -55,12 +59,15 @@ export default function MatchList({
             (match.user1 === loggedInUser.id || match.user2 === loggedInUser.id)
           }
           className='rounded-sm bg-background-secondary p-2'
-          onClick={() => openMatch(match)}
+          readOnly={readOnly}
+          onClick={() => {
+            if (!readOnly && !match.tournament?.readOnly) openMatch(match)
+          }}
           hideTrack={hideTrack}
         />
       ))}
 
-      {isLoggedIn && (
+      {isLoggedIn && !managed && (
         <Button
           variant='ghost'
           size='sm'

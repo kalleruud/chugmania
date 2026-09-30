@@ -15,6 +15,7 @@ import { matches, sessions } from '../../database/schema'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import RatingManager from './rating.manager'
+import TournamentManager from './tournament.manager'
 
 export default class MatchManager {
   private static validateMatchState(
@@ -47,7 +48,7 @@ export default class MatchManager {
       .where(isNull(matches.deletedAt))
       .orderBy(desc(sql`COALESCE(${sessions.date}, ${matches.createdAt})`))
 
-    return matchRows
+    return TournamentManager.enrich(matchRows)
   }
 
   // Returns matches sorted by creation date, most recent first.
@@ -113,6 +114,12 @@ export default class MatchManager {
       throw new Error(loc.no.error.messages.not_in_db(request.id))
     }
 
+    if (TournamentManager.editMatch(request)) {
+      await RatingManager.recalculate()
+      broadcast('all_rankings', RatingManager.onGetRatings())
+      await TournamentManager.publish(socket.id)
+      return { success: true }
+    }
     MatchManager.validateMatchState(request, preImageMatch)
 
     const id = request.id

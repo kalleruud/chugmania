@@ -14,7 +14,8 @@
     "build:backend": "tsup backend/src/server.ts --format esm --target node20 --out-dir dist/server --clean",
     "db:gen": "drizzle-kit generate",
     "db:push": "drizzle-kit push --force",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "test": "node --import tsx --test \"backend/**/*.spec.ts\""
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

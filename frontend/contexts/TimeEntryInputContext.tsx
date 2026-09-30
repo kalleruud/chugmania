@@ -92,10 +92,14 @@ export default function TimeEntryInputProvider({
 
   const canEdit =
     mode === 'match'
-      ? isLoggedIn && loggedInUser.role !== 'user'
+      ? isLoggedIn &&
+        loggedInUser.role !== 'user' &&
+        !editingMatch.tournament?.readOnly
       : isEditingSelf ||
         !isEditing ||
-        (isLoggedIn && loggedInUser.role !== 'user')
+        (isLoggedIn &&
+          loggedInUser.role !== 'user' &&
+          !editingMatch.tournament?.readOnly)
 
   function open(
     editingTimeEntry: Parameters<TimeEntryInputContextType['open']>[0] = {}
@@ -196,15 +200,17 @@ export default function TimeEntryInputProvider({
             <DialogClose asChild>
               <Button variant='outline'>{loc.no.common.cancel}</Button>
             </DialogClose>
-            {canEdit && isEditing && (
-              <ConfirmationButton
-                type='button'
-                variant='destructive'
-                onClick={handleDelete}>
-                <Trash2 />
-                {loc.no.common.delete}
-              </ConfirmationButton>
-            )}
+            {canEdit &&
+              isEditing &&
+              !(mode === 'match' && editingMatch.tournament) && (
+                <ConfirmationButton
+                  type='button'
+                  variant='destructive'
+                  onClick={handleDelete}>
+                  <Trash2 />
+                  {loc.no.common.delete}
+                </ConfirmationButton>
+              )}
 
             {isEditing ? (
               <ConfirmationButton form='inputForm' disabled={!canEdit}>

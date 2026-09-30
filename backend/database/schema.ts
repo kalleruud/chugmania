@@ -1,5 +1,13 @@
-import { blob, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import { sql } from 'drizzle-orm'
+import {
+  blob,
+  integer,
+  sqliteTable,
+  text,
+  uniqueIndex,
+} from 'drizzle-orm/sqlite-core'
 import { randomUUID } from 'node:crypto'
+import type { Slot, TournamentConfig } from '../../common/models/tournament'
 
 const metadata = {
   id: text().primaryKey().$defaultFn(randomUUID),
@@ -17,6 +25,8 @@ export type SessionResponse = 'yes' | 'no' | 'maybe'
 export type SessionStatus = 'confirmed' | 'tentative' | 'cancelled'
 export type MatchStatus = 'planned' | 'completed' | 'cancelled'
 export type MatchStage =
+  | `round_${number}`
+  | 'grand_final_reset'
   | 'group'
   | 'eight'
   | 'quarter'
@@ -105,3 +115,85 @@ export const matches = sqliteTable('matches', {
     .notNull()
     .$default(() => 'planned'),
 })
+
+export const tournaments = sqliteTable(
+  'tournaments',
+  {
+    ...metadata,
+    session: text()
+      .notNull()
+      .references(() => sessions.id),
+    config: text({ mode: 'json' })
+      .$type<Omit<TournamentConfig, 'stageTracks'>>()
+      .notNull(),
+    frozenAt: integer('frozen_at', { mode: 'timestamp_ms' }),
+    admissionClosedAt: integer('admission_closed_at', { mode: 'timestamp_ms' }),
+    notReadyReason: text('not_ready_reason'),
+  },
+  table => [
+    uniqueIndex('active_session_tournament')
+      .on(table.session)
+      .where(sql`${table.deletedAt} IS NULL`),
+  ]
+)
+
+export const tournamentStages = sqliteTable('tournament_stages', {
+  ...metadata,
+  tournament: text()
+    .notNull()
+    .references(() => tournaments.id),
+  stage: text().notNull(),
+  tracks: text({ mode: 'json' }).$type<string[]>().notNull(),
+})
+export const tournamentGroups = sqliteTable('tournament_groups', {
+  ...metadata,
+  tournament: text()
+    .notNull()
+    .references(() => tournaments.id),
+  name: text().notNull(),
+})
+export const tournamentPlayers = sqliteTable(
+  'tournament_players',
+  {
+    ...metadata,
+    tournament: text()
+      .notNull()
+      .references(() => tournaments.id),
+    user: text()
+      .notNull()
+      .references(() => users.id),
+    groupId: text('group_id')
+      .notNull()
+      .references(() => tournamentGroups.id),
+    admission: integer().notNull(),
+    duration: integer(),
+    sourceEntry: text('source_entry'),
+    rating: integer().notNull(),
+  },
+  table => [
+    uniqueIndex('tournament_participant').on(table.tournament, table.user),
+  ]
+)
+export const tournamentMatches = sqliteTable(
+  'tournament_matches',
+  {
+    ...metadata,
+    tournament: text()
+      .notNull()
+      .references(() => tournaments.id),
+    matchId: text('match_id')
+      .notNull()
+      .references(() => matches.id),
+    groupId: text('group_id').references(() => tournamentGroups.id),
+    bracket: text().$type<'group' | 'upper' | 'lower' | 'final'>().notNull(),
+    round: integer().notNull(),
+    order: integer().notNull(),
+    slot1: text({ mode: 'json' }).$type<Slot>().notNull(),
+    slot2: text({ mode: 'json' }).$type<Slot>().notNull(),
+    reset: text()
+      .$type<'none' | 'conditional' | 'required' | 'unneeded'>()
+      .notNull()
+      .default('none'),
+  },
+  table => [uniqueIndex('tournament_match_record').on(table.matchId)]
+)

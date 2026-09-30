@@ -60,6 +60,8 @@ export default function MatchInput({
 
   const currentOngoingSession = sessions?.find(s => isOngoing(s))
 
+  const tournament = inputMatch.tournament
+  const locked = disabled || !!tournament
   const isCreating = !inputMatch.id
   const initialUser1: UserInfo | null =
     users?.find(u => u.id === inputMatch.user1) ?? null
@@ -147,12 +149,12 @@ export default function MatchInput({
       return
     }
     setWinner(userId)
-    setStatus('completed')
+    if (status !== 'cancelled' || !tournament) setStatus('completed')
   }
 
   function handleSetStatus(status: MatchStatus) {
     setStatus(status)
-    if (status !== 'completed') {
+    if (status === 'planned' || (status === 'cancelled' && !tournament)) {
       setWinner('none')
     }
   }
@@ -167,7 +169,7 @@ export default function MatchInput({
           {users && (
             <Combobox
               className='w-full'
-              disabled={disabled}
+              disabled={locked}
               selected={user1}
               setSelected={value => setUser1(value ?? null)}
               items={users.map(userToLookupItem)}
@@ -185,7 +187,7 @@ export default function MatchInput({
           {users && (
             <Combobox
               className='w-full'
-              disabled={disabled}
+              disabled={locked}
               selected={user2}
               setSelected={value => setUser2(value ?? null)}
               items={users.map(userToLookupItem)}
@@ -212,7 +214,7 @@ export default function MatchInput({
         {sessions && (
           <Combobox
             className='w-full'
-            disabled={disabled}
+            disabled={locked}
             selected={session}
             setSelected={value => setSession(value ?? null)}
             items={sessions.map(sessionToLookupItem)}
@@ -229,7 +231,7 @@ export default function MatchInput({
             <Select
               value={stage ?? undefined}
               onValueChange={v => setStage(v as MatchStage)}
-              disabled={disabled}>
+              disabled={locked}>
               <SelectTrigger>
                 <SelectValue placeholder={loc.no.match.placeholder.none} />
               </SelectTrigger>
@@ -291,7 +293,11 @@ export default function MatchInput({
           <Select
             value={winner ?? undefined}
             onValueChange={handleSetWinner}
-            disabled={disabled || status !== 'completed'}>
+            disabled={
+              disabled ||
+              (status !== 'completed' &&
+                !(tournament && status === 'cancelled'))
+            }>
             <SelectTrigger>
               <SelectValue placeholder={loc.no.match.placeholder.none} />
             </SelectTrigger>

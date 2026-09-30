@@ -4,6 +4,7 @@ import { useData } from '@/contexts/DataContext'
 import loc from '@common/locale/locales'
 import type { EditMatchRequest, Match } from '@common/models/match'
 import type { UserInfo } from '@common/models/user'
+import { stageName } from '@common/utils/tournament'
 import { formatTrackName } from '@common/utils/track'
 import { CalendarIcon, MinusIcon } from '@heroicons/react/24/solid'
 import type { ComponentProps } from 'react'
@@ -14,13 +15,17 @@ import { NameCellPart } from '../timeentries/TimeEntryRow'
 import { Badge } from '../ui/badge'
 import { Label } from '../ui/label'
 
-export type MatchRowProps = BaseRowProps<Match> & { hideTrack?: boolean }
+export type MatchRowProps = BaseRowProps<Match> & {
+  hideTrack?: boolean
+  readOnly?: boolean
+}
 
 export default function MatchRow({
   className,
   item: match,
   highlight,
   hideTrack,
+  readOnly,
   ...rest
 }: Readonly<MatchRowProps>) {
   const { users, tracks, sessions } = useData()
@@ -31,10 +36,15 @@ export default function MatchRow({
   const track = tracks?.find(t => t.id === match.track)
   const session = sessions?.find(s => s.id === match.session)
 
-  const canEdit = isLoggedIn && loggedInUser.role !== 'user'
+  const canEdit =
+    isLoggedIn &&
+    loggedInUser.role !== 'user' &&
+    !readOnly &&
+    !match.tournament?.readOnly
 
-  const isCancelled = match.status === 'cancelled'
-  const isCompleted = match.status === 'completed'
+  const isCancelled = match.status === 'cancelled' && !match.tournament?.awarded
+  const isCompleted =
+    match.status === 'completed' || !!match.tournament?.awarded
   const isPlanned = match.status === 'planned'
 
   function handleSetWinner(userId: string) {
@@ -95,6 +105,7 @@ export default function MatchRow({
           <UserCell
             className='flex-1 text-right'
             user={user1}
+            slotLabel={match.tournament?.slot1}
             isWinner={!!match.winner && match.winner === match.user1}
             onClick={() => user1 && handleSetWinner(user1.id)}
             disabled={!canEdit || isCancelled || match.status !== 'planned'}
@@ -113,6 +124,7 @@ export default function MatchRow({
           <UserCell
             className='flex-1'
             user={user2}
+            slotLabel={match.tournament?.slot2}
             isWinner={!!match.winner && match.winner === match.user2}
             onClick={() => user2 && handleSetWinner(user2.id)}
             disabled={!canEdit || isCancelled || match.status !== 'planned'}
@@ -156,12 +168,19 @@ export default function MatchRow({
                 'text-muted-foreground',
                 isCancelled && 'line-through'
               )}>
-              {loc.no.match.stage[match.stage]}
+              {match.tournament?.label ?? stageName(match.stage)}
             </Badge>
           )}
         </div>
       </div>
 
+      {match.tournament?.awarded && <Badge>{loc.no.tournament.awarded}</Badge>}
+      {match.tournament?.reset === 'conditional' && (
+        <Badge>{loc.no.tournament.conditional}</Badge>
+      )}
+      {match.tournament?.reset === 'unneeded' && (
+        <Badge>{loc.no.tournament.unneeded}</Badge>
+      )}
       <div className='absolute right-0 flex items-center'>
         {canEdit && isPlanned && (
           <button
@@ -186,6 +205,7 @@ export default function MatchRow({
 
 function UserCell({
   user,
+  slotLabel,
   isWinner,
   onClick,
   disabled,
@@ -197,6 +217,7 @@ function UserCell({
     user: UserInfo | undefined
     isWinner: boolean
     onClick?: () => void
+    slotLabel?: string
     disabled?: boolean
     isCancelled: boolean
     isCompleted: boolean
@@ -228,7 +249,7 @@ function UserCell({
             user?.shortName ??
             user?.lastName ??
             user?.firstName ??
-            loc.no.match.unknownUser
+            (slotLabel || loc.no.match.unknownUser)
           }
         />
       </button>

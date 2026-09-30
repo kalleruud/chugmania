@@ -25,6 +25,12 @@ import type {
   EditTimeEntryRequest,
   TimeEntry,
 } from './timeEntry'
+import type {
+  TournamentChange,
+  TournamentConfig,
+  TournamentDetails,
+  TournamentRequest,
+} from './tournament'
 import type { Track } from './track'
 import type {
   DeleteUserRequest,
@@ -45,6 +51,7 @@ export type ErrorResponse = {
 import type { Ranking } from './ranking'
 
 export interface ServerToClientEvents {
+  tournament_changed: (change: TournamentChange) => void
   user_data: (r: EventRes<'get_user_data'>) => void
   all_users: (r: UserInfo[]) => void
   all_tracks: (r: Track[]) => void
@@ -55,6 +62,36 @@ export interface ServerToClientEvents {
 }
 
 export interface ClientToServerEvents {
+  preview_tournament: (
+    request: TournamentConfig,
+    callback: (
+      response: { success: true; details: TournamentDetails } | ErrorResponse
+    ) => void
+  ) => void
+  create_tournament: (
+    request: TournamentConfig,
+    callback: (
+      response:
+        | { success: true; details: TournamentDetails | null }
+        | ErrorResponse
+    ) => void
+  ) => void
+  get_tournament: (
+    request: TournamentRequest,
+    callback: (
+      response:
+        | { success: true; details: TournamentDetails | null }
+        | ErrorResponse
+    ) => void
+  ) => void
+  delete_tournament: (
+    request: TournamentRequest,
+    callback: (
+      response: { success: true; details: null } | ErrorResponse
+    ) => void
+  ) => void
+  unsubscribe_tournament: (request: TournamentRequest) => void
+
   connect: () => void
   disconnect: () => void
   connect_error: (err: Error) => void

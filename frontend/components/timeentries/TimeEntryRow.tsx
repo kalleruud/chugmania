@@ -17,7 +17,10 @@ import {
 import { twMerge } from 'tailwind-merge'
 import type { BaseRowProps } from '../row/RowProps'
 
-type TimeEntryRowProps = BaseRowProps<TimeEntry> & {
+type TimeEntryRowProps = BaseRowProps<
+  Pick<TimeEntry, 'user' | 'duration' | 'comment'>
+> & {
+  pending?: boolean
   position?: number | null
   gap?: LeaderboardEntryGap
   gapType?: GapType
@@ -115,6 +118,8 @@ function GapPart({
 export default function TimeEntryRow({
   className,
   item: lapTime,
+  pending,
+  position,
   gap,
   gapType,
   onChangeGapType,
@@ -126,7 +131,7 @@ export default function TimeEntryRow({
   const { users } = useData()
   const userInfo = users ? users.find(u => u.id === lapTime.user) : null
 
-  const isDNF = !lapTime.duration
+  const isDNF = !lapTime.duration && !pending
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -159,7 +164,12 @@ export default function TimeEntryRow({
       )}
       title={lapTime.comment ?? undefined}
       {...rest}>
-      {show.pos && <PositionBadgePart position={gap?.position} />}
+      {show.pos &&
+        (pending ? (
+          <span className='w-6 flex-none' />
+        ) : (
+          <PositionBadgePart position={position ?? gap?.position} />
+        ))}
       <NameCellPart
         name={
           userInfo?.shortName ??
@@ -178,7 +188,12 @@ export default function TimeEntryRow({
           onChangeGapType={onChangeGapType}
         />
       )}
-      {show.time && <TimePart duration={lapTime.duration} />}
+      {show.time &&
+        (pending ? (
+          <span>{loc.no.tournament.pending}</span>
+        ) : (
+          <TimePart duration={lapTime.duration} />
+        ))}
     </div>
   )
 }

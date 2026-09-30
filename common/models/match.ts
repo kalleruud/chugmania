@@ -1,7 +1,17 @@
 import type { matches } from '../../backend/database/schema'
 import { isRecord } from '../utils/utils'
 
-export type Match = typeof matches.$inferSelect
+export type Match = typeof matches.$inferSelect & {
+  tournament?: {
+    id: string
+    label: string
+    slot1: string
+    slot2: string
+    readOnly: boolean
+    reset: 'none' | 'conditional' | 'required' | 'unneeded'
+    awarded: boolean
+  }
+}
 export type CreateMatch = typeof matches.$inferInsert
 
 export type MatchStatus = 'planned' | 'completed' | 'cancelled'

@@ -2,6 +2,7 @@ import ConfirmationButton from '@/components/ConfirmationButton'
 import SessionCard from '@/components/session/SessionCard'
 import SessionForm from '@/components/session/SessionForm'
 import SessionSignupPanel from '@/components/session/SessionSignupPanel'
+import TournamentPanel from '@/components/tournament/TournamentPanel'
 import TrackLeaderboard from '@/components/track/TrackLeaderboard'
 import {
   Breadcrumb,
@@ -22,18 +23,21 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Spinner } from '@/components/ui/spinner'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
+import { useTournament } from '@/hooks/useTournament'
 import loc from '@common/locale/locales'
 import { PencilIcon, Trash2 } from 'lucide-react'
 import { useState } from 'react'
-import { useParams } from 'react-router'
+import { Link, useParams } from 'react-router'
 import { toast } from 'sonner'
 import { SubscribeButton } from './SessionsPage'
 
 export default function SessionPage() {
   const { id } = useParams()
+  const tournament = useTournament(id ?? '')
   const { socket } = useConnection()
   const { sessions, tracks, isLoadingData } = useData()
   const { loggedInUser, isLoggedIn, isLoading } = useAuth()
@@ -145,21 +149,67 @@ export default function SessionPage() {
         )}
       </div>
 
-      <SessionSignupPanel
-        className='rounded-sm border bg-background p-2'
-        disabled={isCancelled}
-        session={session}
-      />
-
-      {tracks.map(track => (
-        <TrackLeaderboard
-          key={track.id}
-          track={track}
-          session={session.id}
-          highlight={e => isLoggedIn && loggedInUser.id === e.id}
-          filter='all'
-        />
-      ))}
+      <Tabs defaultValue='session'>
+        <TabsList>
+          <TabsTrigger value='session'>Session</TabsTrigger>
+          <TabsTrigger value='participants'>Deltakere</TabsTrigger>
+          <TabsTrigger value='tournament'>
+            {loc.no.tournament.title}
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value='participants'>
+          <SessionSignupPanel
+            className='rounded-sm border bg-background p-2'
+            disabled={isCancelled}
+            session={session}
+          />
+        </TabsContent>
+        <TabsContent value='session'>
+          {tracks.map(track => (
+            <TrackLeaderboard
+              key={track.id}
+              track={track}
+              session={session.id}
+              highlight={e => isLoggedIn && loggedInUser.id === e.id}
+              filter='all'
+              excludeTournamentMatches
+            />
+          ))}
+        </TabsContent>
+        <TabsContent value='tournament'>
+          {tournament.loading && <Spinner />}
+          {tournament.details && (
+            <>
+              <TournamentPanel details={tournament.details} />
+              {canEdit && (
+                <ConfirmationButton
+                  variant='destructive'
+                  onClick={async () => {
+                    const response = await socket.emitWithAck(
+                      'delete_tournament',
+                      { session: session.id }
+                    )
+                    if (response.success)
+                      toast.success(loc.no.tournament.deleted)
+                    else toast.error(response.message)
+                  }}>
+                  {loc.no.common.delete}
+                </ConfirmationButton>
+              )}
+            </>
+          )}
+          {!tournament.loading && !tournament.details && (
+            <p>
+              {loc.no.common.noItems}{' '}
+              {canEdit && !isCancelled && (
+                <Link to={`/sessions/${session.id}/tournament/create`}>
+                  {loc.no.tournament.create}
+                </Link>
+              )}
+            </p>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
