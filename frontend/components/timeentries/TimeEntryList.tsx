@@ -184,6 +184,7 @@ export function TimeEntryList({
             <TimeEntryRow
               key={entry.id}
               item={entry}
+              pending={entry.draft}
               gap={getGap(
                 i + 1,
                 entry,

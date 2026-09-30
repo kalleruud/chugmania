@@ -1,4 +1,5 @@
 import { useData } from '@/contexts/DataContext'
+import { useTimeEntryInput } from '@/contexts/TimeEntryInputContext'
 import loc from '@common/locale/locales'
 import type { GapType } from '@common/models/timeEntry'
 import type { TournamentDetails } from '@common/models/tournament'
@@ -14,7 +15,8 @@ export default function TournamentPanel({
   details: TournamentDetails
   isPreview?: boolean
 }) {
-  const { users } = useData()
+  const { users, timeEntries } = useData()
+  const { open } = useTimeEntryInput()
   const [gapType, setGapType] = useState<GapType>('leader')
   const name = (id: string) => users?.find(u => u.id === id)?.firstName ?? id
   const workload = details.workloadSummary
@@ -68,6 +70,20 @@ export default function TournamentPanel({
             key={p.user}
             item={{ user: p.user, duration: p.duration, comment: null }}
             pending={p.duration === null}
+            onClick={
+              isPreview
+                ? undefined
+                : () =>
+                    open(
+                      timeEntries?.find(
+                        entry => entry.id === p.sourceEntry
+                      ) ?? {
+                        user: p.user,
+                        session: details.config.session,
+                        track: details.config.qualificationTrack,
+                      }
+                    )
+            }
             position={p.rank}
             gap={{
               position: p.rank,

@@ -96,6 +96,7 @@ export const timeEntries = sqliteTable('time_entries', {
     .references(() => tracks.id),
   session: text().references(() => sessions.id),
   duration: integer('duration_ms'),
+  draft: integer({ mode: 'boolean' }).notNull().default(false),
   amount: integer('amount_l').notNull().default(0.5),
   comment: text(),
 })

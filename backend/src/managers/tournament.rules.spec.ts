@@ -52,6 +52,12 @@ test('one deterministic draft supplies preview, snake groups, all pairs and isol
     ]
   )
   assert.equal(draft.fixtures.length, 15)
+  assert.deepEqual(
+    draft.fixtures
+      .filter(f => f.match.stage === 'group')
+      .map(f => f.match.track),
+    [...Array<string>(6).fill('track'), ...Array<string>(6).fill('second')]
+  )
   assert.equal(
     new Set(schedulePairs(players.map(p => p.user)).map(pair => pair.join(':')))
       .size,

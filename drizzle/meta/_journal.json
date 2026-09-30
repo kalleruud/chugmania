@@ -85,6 +85,13 @@
       "when": 1790772383121,
       "tag": "0011_abandoned_storm",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1790782943990,
+      "tag": "0012_minor_silver_fox",
+      "breakpoints": true
     }
   ]
 }

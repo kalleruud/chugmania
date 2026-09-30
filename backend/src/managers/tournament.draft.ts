@@ -83,8 +83,6 @@ export function generateTournament(
     groupId: string | null = null
   ): TournamentFixture => {
     const id = `fixture-${fixtures.length}`
-    const stageIndex = fixtures.filter(f => f.match.stage === stage).length
-    const tracks = config.stageTracks[stage] ?? []
     const fixture: TournamentFixture = {
       id,
       groupId,
@@ -104,7 +102,7 @@ export function generateTournament(
         stage,
         status: 'planned',
         session: config.session,
-        track: tracks[stageIndex % tracks.length] ?? null,
+        track: null,
         createdAt: new Date(0),
         updatedAt: null,
         deletedAt: null,
@@ -219,12 +217,19 @@ export function generateTournament(
     fixtures.splice(0, fixtures.length, ...ordered)
   }
   const stageCounts = new Map<string, number>()
+  const stageTotals = new Map<string, number>()
+  fixtures.forEach(fixture => {
+    const stage = fixture.match.stage ?? ''
+    stageTotals.set(stage, (stageTotals.get(stage) ?? 0) + 1)
+  })
   fixtures.forEach((fixture, index) => {
     fixture.order = index
     const stage = fixture.match.stage ?? ''
     const tracks = config.stageTracks[stage] ?? []
     const count = stageCounts.get(stage) ?? 0
-    fixture.match.track = tracks[count % tracks.length] ?? null
+    const total = stageTotals.get(stage) ?? 0
+    fixture.match.track =
+      tracks[Math.floor((count * tracks.length) / total)] ?? null
     stageCounts.set(stage, count + 1)
   })
   return {

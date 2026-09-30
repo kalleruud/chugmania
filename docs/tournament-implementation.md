@@ -54,6 +54,7 @@ Run `npm test`, `npm run check`, and `npm run build`. Tests use disposable SQLit
 - `backend/src/managers/tournament.manager.spec.ts`: real socket commands, permissions, concurrent creation, persistence/restart, freeze/admission, corrections, CSV and lifecycle integration.
 - `backend/database/database.spec.ts`: clean migration and upgrade preserving ordinary data.
 - `drizzle/0011_abandoned_storm.sql`, `drizzle/meta/0011_snapshot.json`: generated tournament migration and schema snapshot.
+- `drizzle/0012_minor_silver_fox.sql`, `drizzle/meta/0012_snapshot.json`: qualification draft flag migration and schema snapshot.
 - `CONTEXT.md`: domain language and module boundaries.
 - `docs/tournament-implementation.md`: staged implementation, lifecycle diagram and file inventory.
 
@@ -61,7 +62,7 @@ Run `npm test`, `npm run check`, and `npm run build`. Tests use disposable SQLit
 
 - `.env.example`: optional disposable database path.
 - `backend/database/database.ts`, `drizzle.config.ts`: honor `DATABASE_PATH`.
-- `backend/database/schema.ts`: tournament tables, slot dependencies, snapshots and uniqueness constraints.
+- `backend/database/schema.ts`: tournament tables, qualification drafts, slot dependencies, snapshots and uniqueness constraints.
 - `drizzle/meta/_journal.json`: register generated migration.
 - `backend/src/managers/admin.manager.ts`: all tournament tables in CSV import/export, publish imported state.
 - `backend/src/utils/csv-parser.ts`: parse JSON structures and snapshot timestamps without domain validation.
@@ -81,7 +82,7 @@ Run `npm test`, `npm run check`, and `npm run build`. Tests use disposable SQLit
 - `frontend/components/match/MatchList.tsx`: managed/read-only lists and preserved scheduling order.
 - `frontend/components/match/MatchRow.tsx`: unresolved labels, conditional resets, awards and result controls.
 - `frontend/components/session/SessionSignupPanel.tsx`: reuse signup summary and native response selector.
-- `frontend/components/timeentries/TimeEntryRow.tsx`: qualification rows and pending players without fabricated lap records or gaps.
+- `frontend/components/timeentries/TimeEntryList.tsx`, `frontend/components/timeentries/TimeEntryRow.tsx`: editable qualification drafts and pending players without fabricated gaps.
 - `frontend/components/track/TrackLeaderboard.tsx`: separate tournament matches on session view and omit unneeded resets.
 - `frontend/contexts/TimeEntryInputContext.tsx`: current match data and tournament editing restrictions.
 - `package.json`: Node test-runner command using the existing TypeScript loader.

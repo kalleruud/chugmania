@@ -33,6 +33,7 @@ import { broadcast, broadcastTournament } from '../server'
 import AuthManager from './auth.manager'
 import MatchManager from './match.manager'
 import RatingManager from './rating.manager'
+import TimeEntryManager from './timeEntry.manager'
 import { tournamentDetails } from './tournament.details'
 import { generateTournament, snakeGroup } from './tournament.draft'
 import {
@@ -78,10 +79,11 @@ export default class TournamentManager {
             (a.duration ?? 0) - (b.duration ?? 0) || a.id.localeCompare(b.id)
         )
         .at(0)
+      const draft = laps.find(l => l.user === user && l.draft)
       return {
         user,
         duration: best?.duration ?? null,
-        sourceEntry: best?.id ?? null,
+        sourceEntry: best?.id ?? draft?.id ?? null,
         rating:
           ratings.find(r => r.user === user)?.totalRating ??
           RATING_CONSTANTS.NO_DATA_RATING,
@@ -417,6 +419,7 @@ export default class TournamentManager {
     }
   }
   static save(state: TournamentState): void {
+    this.createQualificationDrafts(state)
     const previous = this.load(state.config.session)
     if (previous) {
       const deletedAt = new Date()
@@ -502,6 +505,38 @@ export default class TournamentManager {
         .values(row)
         .onConflictDoUpdate({ target: tournamentMatches.id, set: row })
         .run()
+    }
+  }
+  static createQualificationDrafts(state: TournamentState): void {
+    for (const participant of state.participants) {
+      if (participant.duration !== null || participant.sourceEntry) continue
+      const existing = db
+        .select()
+        .from(timeEntries)
+        .where(
+          and(
+            eq(timeEntries.user, participant.user),
+            eq(timeEntries.session, state.config.session),
+            eq(timeEntries.track, state.config.qualificationTrack),
+            eq(timeEntries.draft, true)
+          )
+        )
+        .get()
+      if (existing) {
+        if (!existing.deletedAt) participant.sourceEntry = existing.id
+        continue
+      }
+      const id = randomUUID()
+      db.insert(timeEntries)
+        .values({
+          id,
+          user: participant.user,
+          session: state.config.session,
+          track: state.config.qualificationTrack,
+          draft: true,
+        })
+        .run()
+      participant.sourceEntry = id
     }
   }
   static editMatch(request: EditMatchRequest): boolean {
@@ -613,6 +648,7 @@ export default class TournamentManager {
       this.published.set(row.id, serialized)
       broadcastTournament({ session: row.id, details, actor })
     }
+    broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
     broadcast('all_matches', await MatchManager.getAllMatches())
   }
   static async onPreview(

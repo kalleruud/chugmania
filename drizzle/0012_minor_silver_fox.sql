@@ -1,0 +1,1 @@
+ALTER TABLE `time_entries` ADD `draft` integer DEFAULT false NOT NULL;

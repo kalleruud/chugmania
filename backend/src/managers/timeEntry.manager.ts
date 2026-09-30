@@ -102,7 +102,9 @@ export default class TimeEntryManager {
     }
 
     const signupChanged = TournamentManager.commit(() => {
-      db.insert(timeEntries).values(request).run()
+      db.insert(timeEntries)
+        .values({ ...request, draft: false })
+        .run()
       return request.session
         ? SessionManager.ensureSessionSignup(request.session, request.user)
         : false
@@ -116,7 +118,6 @@ export default class TimeEntryManager {
     )
 
     RatingManager.recalculate()
-    broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
     if (signupChanged) {
       broadcast('all_sessions', await SessionManager.getAllSessions())
     }
@@ -155,7 +156,7 @@ export default class TimeEntryManager {
       throw new Error(loc.no.error.messages.insufficient_permissions)
     }
 
-    const { type, id, ...updates } = request
+    const { type, id, draft: ignoredDraft, ...updates } = request
 
     // Convert string dates to Date objects
     const processedUpdates = { ...updates }
@@ -168,10 +169,14 @@ export default class TimeEntryManager {
     if (typeof updates.createdAt === 'string') {
       processedUpdates.createdAt = new Date(updates.createdAt)
     }
+    const completesDraft = lapTime.draft && (processedUpdates.duration ?? 0) > 0
 
     const signupChanged = TournamentManager.commit(() => {
       db.update(timeEntries)
-        .set(processedUpdates)
+        .set({
+          ...processedUpdates,
+          draft: completesDraft ? false : lapTime.draft,
+        })
         .where(eq(timeEntries.id, request.id))
         .run()
       const sessionId =
@@ -192,7 +197,6 @@ export default class TimeEntryManager {
     )
 
     RatingManager.recalculate()
-    broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
     if (signupChanged) {
       broadcast('all_sessions', await SessionManager.getAllSessions())
     }

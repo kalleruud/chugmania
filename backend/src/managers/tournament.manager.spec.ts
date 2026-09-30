@@ -54,10 +54,12 @@ function parity(details: TournamentDetails) {
     return slot
   }
   return {
-    qualification: details.qualification.map(({ groupId, ...p }) => ({
-      ...p,
-      group: details.groups.find(g => g.id === groupId)?.name,
-    })),
+    qualification: details.qualification.map(
+      ({ groupId, sourceEntry: ignoredSourceEntry, ...p }) => ({
+        ...p,
+        group: details.groups.find(g => g.id === groupId)?.name,
+      })
+    ),
     groups: details.groups.map(({ id, ...g }) => g),
     matches: details.matches.map(
       ({ id, createdAt, updatedAt, tournament, ...m }) => ({
@@ -119,7 +121,7 @@ test(
       db.insert(schema.sessionSignups)
         .values({ session, user: player.id, response: 'yes' })
         .run()
-    for (const [index, player] of people.slice(0, 8).entries())
+    for (const [index, player] of people.slice(0, 4).entries())
       db.insert(schema.timeEntries)
         .values({
           user: player.id,
@@ -239,6 +241,53 @@ test(
         ])
         assert.equal(created.filter(r => r.success).length, 1)
         assert.deepEqual(parity(await details()), parity(preview.details))
+        const drafts = db
+          .select()
+          .from(schema.timeEntries)
+          .all()
+          .filter(entry => entry.draft && !entry.deletedAt)
+        assert.equal(drafts.length, 4)
+        assert.ok(
+          (await details()).qualification
+            .filter(player => player.duration === null)
+            .every(player => player.sourceEntry)
+        )
+
+        const completedDraft = await admin.emitWithAck('edit_time_entry', {
+          type: 'EditTimeEntryRequest',
+          id: drafts[0].id,
+          duration: 1500,
+        })
+        assert.ok(completedDraft.success)
+        assert.equal(
+          db
+            .select()
+            .from(schema.timeEntries)
+            .all()
+            .find(entry => entry.id === drafts[0].id)?.draft,
+          false
+        )
+        const cancelledDraft = await admin.emitWithAck('edit_time_entry', {
+          type: 'EditTimeEntryRequest',
+          id: drafts[1].id,
+          deletedAt: new Date(),
+        })
+        assert.ok(cancelledDraft.success)
+        assert.equal(
+          (await details()).qualification.find(
+            player => player.user === drafts[1].user
+          )?.sourceEntry,
+          null
+        )
+        assert.equal(
+          db
+            .select()
+            .from(schema.timeEntries)
+            .all()
+            .filter(entry => entry.user === drafts[1].user && entry.draft)
+            .length,
+          1
+        )
         assert.ok(changes.some(change => change.details?.config.name === 'Cup'))
         const unresolved = (await details()).matches.find(m => !m.user1)
         assert.ok(unresolved)
