@@ -188,8 +188,16 @@ export default function TournamentForm({
           Format
           <NativeSelect
             value={config.eliminationType}
-            onChange={() => undefined}>
+            onChange={e => {
+              if (e.target.value === 'single' || e.target.value === 'double')
+                change({ ...config, eliminationType: e.target.value })
+            }}>
             <option value='single'>Enkel eliminering</option>
+            <option
+              value='double'
+              disabled={configurationOptions(count, 'double').length === 0}>
+              Dobbel eliminering
+            </option>
           </NativeSelect>
         </label>
         {stages.map(stage => (

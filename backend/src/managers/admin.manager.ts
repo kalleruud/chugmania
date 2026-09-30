@@ -131,7 +131,7 @@ export default class AdminManager {
       `Imported ${data.length} ${request.table}`
     )
 
-    await RatingManager.recalculate()
+    RatingManager.recalculate()
 
     const [users, tracks, sessions, timeEntries, matches] = await Promise.all([
       UserManager.getAllUsers(),

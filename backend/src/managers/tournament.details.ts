@@ -47,6 +47,8 @@ export function tournamentDetails(state: TournamentState): TournamentDetails {
   const groupSizes = state.groups.map(
     g => state.participants.filter(p => p.groupId === g.id).length
   )
+  const guaranteedBracketMatches =
+    state.config.eliminationType === 'double' ? 2 : 1
   const bracketRounds = Math.log2(
     state.config.groupsCount * state.config.advancementCount
   )
@@ -110,9 +112,14 @@ export function tournamentDetails(state: TournamentState): TournamentDetails {
         1 +
         (state.participants.length ===
         state.config.groupsCount * state.config.advancementCount
-          ? 1
+          ? guaranteedBracketMatches
           : 0),
-      maxMatches: Math.max(...groupSizes) - 1 + bracketRounds,
+      maxMatches:
+        Math.max(...groupSizes) -
+        1 +
+        (state.config.eliminationType === 'double'
+          ? bracketRounds * 2 + 1
+          : bracketRounds),
     },
   }
 }

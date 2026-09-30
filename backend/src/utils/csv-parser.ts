@@ -7,6 +7,8 @@ export default class CsvParser {
     'updatedAt',
     'deletedAt',
     'date',
+    'frozenAt',
+    'admissionClosedAt',
   ])
 
   static async toObjects(csv: string) {
@@ -132,6 +134,11 @@ export default class CsvParser {
     const val = value?.trim()
     if (!val) return null
 
+    if (['config', 'tracks', 'slot1', 'slot2'].includes(key)) {
+      const parsed: unknown = JSON.parse(val)
+      return { key, value: parsed }
+    }
+
     if (key === 'password') {
       return { key: 'passwordHash', value: await AuthManager.hash(val) }
     }
@@ -142,7 +149,7 @@ export default class CsvParser {
     ) {
       return {
         key,
-        value: new Date(Number.isInteger(val) ? Number.parseInt(val) : val),
+        value: new Date(Number.isFinite(Number(val)) ? Number(val) : val),
       }
     }
 

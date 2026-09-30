@@ -114,7 +114,7 @@ io.on('connect', s => Connect(s))
 await SessionScheduler.start()
 
 // Calculate ratings
-await RatingManager.recalculate()
+RatingManager.recalculate()
 
 async function Connect(s: TypedSocket) {
   console.debug(new Date().toISOString(), s.id, 'Connected')

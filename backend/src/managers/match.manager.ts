@@ -52,12 +52,13 @@ export default class MatchManager {
   }
 
   // Returns matches sorted by creation date, most recent first.
-  public static async getAllBySession(sessionId: string): Promise<Match[]> {
-    return await db
+  public static getAllBySession(sessionId: string): Match[] {
+    return db
       .select({ ...getTableColumns(matches) })
       .from(matches)
       .where(and(eq(matches.session, sessionId), isNull(matches.deletedAt)))
       .orderBy(desc(matches.createdAt))
+      .all()
   }
 
   static async onCreateMatch(
@@ -85,12 +86,14 @@ export default class MatchManager {
       stage: request.stage,
       comment: request.comment,
     }
-    db.insert(matches).values(matchData).run()
+    TournamentManager.commit(() => {
+      db.insert(matches).values(matchData).run()
+    })
 
     console.debug(new Date().toISOString(), socket.id, 'Created match')
 
-    await RatingManager.recalculate()
-    broadcast('all_matches', await MatchManager.getAllMatches())
+    RatingManager.recalculate()
+    await TournamentManager.publish(socket.id)
     broadcast('all_rankings', RatingManager.onGetRatings())
 
     return { success: true }
@@ -115,7 +118,7 @@ export default class MatchManager {
     }
 
     if (TournamentManager.editMatch(request)) {
-      await RatingManager.recalculate()
+      RatingManager.recalculate()
       broadcast('all_rankings', RatingManager.onGetRatings())
       await TournamentManager.publish(socket.id)
       return { success: true }
@@ -123,28 +126,30 @@ export default class MatchManager {
     MatchManager.validateMatchState(request, preImageMatch)
 
     const id = request.id
-    db.update(matches)
-      .set({
-        user1: request.user1,
-        user2: request.user2,
-        track: request.track,
-        session: request.session,
-        winner: request.winner,
-        duration: request.duration,
-        status: request.status,
-        stage: request.stage,
-        comment: request.comment,
-        deletedAt: request.deletedAt
-          ? new Date(request.deletedAt)
-          : request.deletedAt,
-      })
-      .where(eq(matches.id, preImageMatch.id))
-      .run()
+    TournamentManager.commit(() => {
+      db.update(matches)
+        .set({
+          user1: request.user1,
+          user2: request.user2,
+          track: request.track,
+          session: request.session,
+          winner: request.winner,
+          duration: request.duration,
+          status: request.status,
+          stage: request.stage,
+          comment: request.comment,
+          deletedAt: request.deletedAt
+            ? new Date(request.deletedAt)
+            : request.deletedAt,
+        })
+        .where(eq(matches.id, preImageMatch.id))
+        .run()
+    })
 
     console.debug(new Date().toISOString(), socket.id, 'Updated match', id)
 
-    await RatingManager.recalculate()
-    broadcast('all_matches', await MatchManager.getAllMatches())
+    RatingManager.recalculate()
+    await TournamentManager.publish(socket.id)
     broadcast('all_rankings', RatingManager.onGetRatings())
 
     return { success: true }

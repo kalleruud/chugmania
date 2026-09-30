@@ -16,6 +16,7 @@ import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import RatingManager from './rating.manager'
 import TimeEntryManager from './timeEntry.manager'
+import TournamentManager from './tournament.manager'
 
 export default class UserManager {
   static readonly table = users
@@ -185,12 +186,14 @@ export default class UserManager {
 
     await AuthManager.checkAuth(socket, ['admin'])
 
-    const deletedUser = await UserManager.updateUser(request.id, {
-      deletedAt: new Date(),
+    const deletedUser = await UserManager.getUserById(request.id)
+    TournamentManager.commit(() => {
+      db.update(users)
+        .set({ deletedAt: new Date() })
+        .where(eq(users.id, request.id))
+        .run()
+      TimeEntryManager.deleteTimeEntriesForUser(request.id)
     })
-
-    // Soft-delete all time entries for this user
-    await TimeEntryManager.deleteTimeEntriesForUser(request.id)
 
     console.info(
       new Date().toISOString(),
@@ -198,10 +201,11 @@ export default class UserManager {
       `Deleted user '${deletedUser.email}' and their time entries`
     )
 
-    await RatingManager.recalculate()
+    RatingManager.recalculate()
     broadcast('all_users', await UserManager.getAllUsers())
     broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
     broadcast('all_rankings', RatingManager.onGetRatings())
+    await TournamentManager.publish(socket.id)
 
     return {
       success: true,

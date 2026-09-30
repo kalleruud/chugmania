@@ -4,6 +4,7 @@ import type {
   Slot,
   TournamentConfig,
   TournamentFixture,
+  TournamentGroup,
   TournamentState,
 } from '@common/models/tournament'
 import { upperStage, validConfiguration } from '@common/utils/tournament'
@@ -47,7 +48,8 @@ export function schedulePairs(players: string[]): [string, string][] {
 
 export function generateTournament(
   config: TournamentConfig,
-  inputs: Participant[]
+  inputs: Participant[],
+  assignedGroups?: TournamentGroup[]
 ): TournamentState {
   if (
     !validConfiguration(
@@ -58,19 +60,19 @@ export function generateTournament(
     )
   )
     throw new Error(loc.no.tournament.roster)
-  if (config.eliminationType !== 'single')
-    throw new Error(loc.no.tournament.invalid)
-  const groups = Array.from({ length: config.groupsCount }, (_, index) => ({
-    id: `group-${index}`,
-    name: groupName(index),
-  }))
-  const participants = inputs
-    .toSorted(qualificationOrder)
-    .map((player, index) => ({
-      ...player,
-      admission: index,
-      groupId: groups[snakeGroup(index, groups.length)].id,
+  const groups =
+    assignedGroups ??
+    Array.from({ length: config.groupsCount }, (_, index) => ({
+      id: `group-${index}`,
+      name: groupName(index),
     }))
+  const participants = assignedGroups
+    ? inputs.toSorted((a, b) => a.admission - b.admission)
+    : inputs.toSorted(qualificationOrder).map((player, index) => ({
+        ...player,
+        admission: index,
+        groupId: groups[snakeGroup(index, groups.length)].id,
+      }))
   const fixtures: TournamentFixture[] = []
   const add = (
     stage: MatchStage,
@@ -137,6 +139,7 @@ export function generateTournament(
     groups.forEach(group =>
       seeds.push({ kind: 'group_rank', groupId: group.id, rank })
     )
+  const upperRounds: TournamentFixture[][] = []
   let previous: TournamentFixture[] = []
   let round = 1
   for (let size = seeds.length; size >= 2; size /= 2) {
@@ -150,9 +153,80 @@ export function generateTournament(
         : seeds[size - i - 1]
       next.push(add(upperStage(size), 'upper', round, slot1, slot2))
     }
+    upperRounds.push(next)
     previous = next
     round++
   }
+
+  if (config.eliminationType === 'double') {
+    const winner = (f: TournamentFixture): Slot => ({
+      kind: 'match_winner',
+      matchId: f.id,
+    })
+    const loser = (f: TournamentFixture): Slot => ({
+      kind: 'match_loser',
+      matchId: f.id,
+    })
+    const upperFinal = previous[0]
+    const first = upperRounds[0]
+    const groupFixtures = fixtures.filter(f => f.bracket === 'group')
+    const firstLowerStage = seeds.length === 8 ? 'loser_quarter' : 'loser_semi'
+    const lower = []
+    for (let i = 0; i < first.length; i += 2)
+      lower.push(
+        add(firstLowerStage, 'lower', 1, loser(first[i]), loser(first[i + 1]))
+      )
+    const ordered = [...groupFixtures, ...first, ...lower]
+    let lastLower = lower[0]
+    if (seeds.length === 8) {
+      const semis = upperRounds[1]
+      const drops = [
+        add('loser_semi', 'lower', 2, winner(lower[0]), loser(semis[1])),
+        add('loser_semi', 'lower', 2, winner(lower[1]), loser(semis[0])),
+      ]
+      lastLower = add(
+        'loser_semi',
+        'lower',
+        3,
+        winner(drops[0]),
+        winner(drops[1])
+      )
+      ordered.push(...semis, ...drops, lastLower)
+    }
+    const lowerFinal = add(
+      'loser_final',
+      'lower',
+      seeds.length === 8 ? 4 : 2,
+      winner(lastLower),
+      loser(upperFinal)
+    )
+    const grandFinal = add(
+      'grand_final',
+      'final',
+      1,
+      winner(upperFinal),
+      winner(lowerFinal)
+    )
+    const reset = add(
+      'grand_final_reset',
+      'final',
+      2,
+      winner(grandFinal),
+      loser(grandFinal)
+    )
+    reset.reset = 'conditional'
+    ordered.push(upperFinal, lowerFinal, grandFinal, reset)
+    fixtures.splice(0, fixtures.length, ...ordered)
+  }
+  const stageCounts = new Map<string, number>()
+  fixtures.forEach((fixture, index) => {
+    fixture.order = index
+    const stage = fixture.match.stage ?? ''
+    const tracks = config.stageTracks[stage] ?? []
+    const count = stageCounts.get(stage) ?? 0
+    fixture.match.track = tracks[count % tracks.length] ?? null
+    stageCounts.set(stage, count + 1)
+  })
   return {
     id: 'preview',
     config,

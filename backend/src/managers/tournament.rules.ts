@@ -89,8 +89,21 @@ export function resolveSlots(state: TournamentState): TournamentState {
   for (let pass = 0; pass <= result.fixtures.length; pass++) {
     let changed = false
     for (const fixture of result.fixtures) {
-      const user1 = resolve(fixture.slot1)
-      const user2 = resolve(fixture.slot2)
+      if (fixture.reset !== 'none') {
+        const grandFinal = result.fixtures.find(
+          f => f.match.stage === 'grand_final'
+        )?.match
+        let reset: typeof fixture.reset = 'conditional'
+        if (grandFinal && decided(grandFinal))
+          reset =
+            grandFinal.winner === grandFinal.user2 ? 'required' : 'unneeded'
+        if (reset !== fixture.reset) changed = true
+        fixture.reset = reset
+      }
+      const inactive =
+        fixture.reset === 'conditional' || fixture.reset === 'unneeded'
+      const user1 = inactive ? null : resolve(fixture.slot1)
+      const user2 = inactive ? null : resolve(fixture.slot2)
       if (fixture.match.user1 !== user1 || fixture.match.user2 !== user2)
         changed = true
       fixture.match.user1 = user1
@@ -131,8 +144,14 @@ export function overallStandings(state: TournamentState): {
   rows: { user: string; rank: number }[]
   completed: boolean
 } {
-  const final = state.fixtures.at(-1)
-  const completed = !!final && decided(final.match)
+  const final = state.fixtures
+    .filter(f => f.reset !== 'unneeded' && f.reset !== 'conditional')
+    .at(-1)
+  const completed =
+    !!final &&
+    decided(final.match) &&
+    (!state.fixtures.some(f => f.reset === 'required') ||
+      final.match.stage === 'grand_final_reset')
   const groups = state.groups.flatMap(g => groupStandings(state, g.id))
   const bracket = state.fixtures.filter(f => f.bracket !== 'group')
   const score = (p: Participant): number => {
@@ -146,6 +165,8 @@ export function overallStandings(state: TournamentState): {
       .filter(
         f =>
           decided(f.match) &&
+          (state.config.eliminationType === 'single' ||
+            f.bracket === 'lower') &&
           f.match.winner !== p.user &&
           (f.match.user1 === p.user || f.match.user2 === p.user)
       )

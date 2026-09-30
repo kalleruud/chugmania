@@ -14,6 +14,7 @@ import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import RatingManager from './rating.manager'
 import SessionManager from './session.manager'
+import TournamentManager from './tournament.manager'
 
 export default class TimeEntryManager {
   static readonly table = timeEntries
@@ -31,16 +32,16 @@ export default class TimeEntryManager {
   }
 
   // Returns all latest lap times for each user after a session.
-  static async getAllLatestAfterSession(
-    sessionId: Session['id']
-  ): Promise<TimeEntry[]> {
+  static getAllLatestAfterSession(sessionId: Session['id']): TimeEntry[] {
     const latestDatePerUser = db
       .select({
         user: timeEntries.user,
         maxDate: sql<Date>`max(${timeEntries.createdAt})`.as('maxDate'),
       })
       .from(timeEntries)
-      .where(eq(timeEntries.session, sessionId))
+      .where(
+        and(eq(timeEntries.session, sessionId), isNull(timeEntries.deletedAt))
+      )
       .groupBy(timeEntries.user)
       .as('latest_date')
 
@@ -60,10 +61,13 @@ export default class TimeEntryManager {
           eq(timeEntries.createdAt, latestDatePerUser.maxDate)
         )
       )
+      .where(
+        and(eq(timeEntries.session, sessionId), isNull(timeEntries.deletedAt))
+      )
       .groupBy(timeEntries.user, timeEntries.createdAt)
       .as('latest_best')
 
-    return await db
+    return db
       .select({ ...getTableColumns(timeEntries) })
       .from(timeEntries)
       .innerJoin(
@@ -74,7 +78,10 @@ export default class TimeEntryManager {
           eq(timeEntries.duration, latestBestPerUser.minDuration)
         )
       )
-      .where(eq(timeEntries.session, sessionId))
+      .where(
+        and(eq(timeEntries.session, sessionId), isNull(timeEntries.deletedAt))
+      )
+      .all()
   }
 
   static async onPostTimeEntry(
@@ -94,10 +101,12 @@ export default class TimeEntryManager {
       throw new Error(loc.no.error.messages.insufficient_permissions)
     }
 
-    await db.insert(timeEntries).values(request)
-    const signupChanged = request.session
-      ? await SessionManager.ensureSessionSignup(request.session, request.user)
-      : false
+    const signupChanged = TournamentManager.commit(() => {
+      db.insert(timeEntries).values(request).run()
+      return request.session
+        ? SessionManager.ensureSessionSignup(request.session, request.user)
+        : false
+    })
 
     console.debug(
       new Date().toISOString(),
@@ -106,12 +115,13 @@ export default class TimeEntryManager {
       request.duration
     )
 
-    await RatingManager.recalculate()
+    RatingManager.recalculate()
     broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
     if (signupChanged) {
       broadcast('all_sessions', await SessionManager.getAllSessions())
     }
     broadcast('all_rankings', RatingManager.onGetRatings())
+    await TournamentManager.publish(socket.id)
 
     return {
       success: true,
@@ -159,15 +169,20 @@ export default class TimeEntryManager {
       processedUpdates.createdAt = new Date(updates.createdAt)
     }
 
-    await db
-      .update(timeEntries)
-      .set(processedUpdates)
-      .where(eq(timeEntries.id, request.id))
-    const sessionId = processedUpdates.session ?? lapTime.session
-    const userId = processedUpdates.user ?? lapTime.user
-    const signupChanged = sessionId
-      ? await SessionManager.ensureSessionSignup(sessionId, userId)
-      : false
+    const signupChanged = TournamentManager.commit(() => {
+      db.update(timeEntries)
+        .set(processedUpdates)
+        .where(eq(timeEntries.id, request.id))
+        .run()
+      const sessionId =
+        processedUpdates.session === undefined
+          ? lapTime.session
+          : processedUpdates.session
+      const userId = processedUpdates.user ?? lapTime.user
+      return sessionId && !processedUpdates.deletedAt
+        ? SessionManager.ensureSessionSignup(sessionId, userId)
+        : false
+    })
 
     console.debug(
       new Date().toISOString(),
@@ -176,24 +191,25 @@ export default class TimeEntryManager {
       request.id
     )
 
-    await RatingManager.recalculate()
+    RatingManager.recalculate()
     broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
     if (signupChanged) {
       broadcast('all_sessions', await SessionManager.getAllSessions())
     }
     broadcast('all_rankings', RatingManager.onGetRatings())
+    await TournamentManager.publish(socket.id)
 
     return {
       success: true,
     }
   }
 
-  static async deleteTimeEntriesForUser(userId: User['id']): Promise<void> {
+  static deleteTimeEntriesForUser(userId: User['id']): void {
     const deletedAt = new Date()
-    await db
-      .update(timeEntries)
+    db.update(timeEntries)
       .set({ deletedAt })
       .where(eq(timeEntries.user, userId))
+      .run()
   }
 
   static async getAllTimeEntries(): Promise<TimeEntry[]> {

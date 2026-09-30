@@ -1,103 +1,65 @@
 import type { Ranking } from '@common/models/ranking'
-import type { Session } from '@common/models/session'
 import type { User } from '@common/models/user'
 import { RATING_CONSTANTS } from '@common/utils/constants'
+import { asc, desc, isNull } from 'drizzle-orm'
+import db from '../../database/database'
+import { sessions } from '../../database/schema'
 import MatchManager from './match.manager'
 import {
   MatchRatingCalculator,
   TrackRatingCalculator,
 } from './rating.calculator'
-import SessionManager from './session.manager'
 import TimeEntryManager from './timeEntry.manager'
 
 export default class RatingManager {
-  private static readonly matchCalculator: MatchRatingCalculator =
-    new MatchRatingCalculator()
-  private static readonly trackCalculator: TrackRatingCalculator =
-    new TrackRatingCalculator()
+  private static ratings = new Map<User['id'], Ranking>()
 
-  private static ratings: Map<User['id'], Ranking> = new Map()
-
-  private static reset() {
-    RatingManager.matchCalculator.reset()
-    RatingManager.trackCalculator.reset()
-    RatingManager.ratings = new Map()
-  }
-
-  static async recalculate() {
-    RatingManager.reset()
-
-    const sessions = await SessionManager.getAllSessions()
-    for (const session of sessions.toReversed()) {
-      await RatingManager.processSession(session.id)
+  static recalculate(): void {
+    const matchCalculator = new MatchRatingCalculator()
+    const trackCalculator = new TrackRatingCalculator()
+    matchCalculator.reset()
+    trackCalculator.reset()
+    const rows = db
+      .select()
+      .from(sessions)
+      .where(isNull(sessions.deletedAt))
+      .orderBy(asc(sessions.date), desc(sessions.createdAt))
+      .all()
+    for (const session of rows) {
+      matchCalculator.processMatches(MatchManager.getAllBySession(session.id))
+      trackCalculator.processTimeEntries(
+        TimeEntryManager.getAllLatestAfterSession(session.id)
+      )
     }
-
-    RatingManager.ratings = RatingManager.calculateRatings()
-  }
-
-  private static async processSession(sessionId: Session['id']) {
-    const matches = await MatchManager.getAllBySession(sessionId)
-    RatingManager.matchCalculator.processMatches(matches)
-
-    const timeEntries =
-      await TimeEntryManager.getAllLatestAfterSession(sessionId)
-    RatingManager.trackCalculator.processTimeEntries(timeEntries)
+    const matchRatings = matchCalculator.getAllRatings()
+    const trackRatings = trackCalculator.getAllRatings()
+    const players = new Set([...matchRatings.keys(), ...trackRatings.keys()])
+    const ranked = Array.from(players, user => {
+      const matchRating =
+        matchRatings.get(user) ?? RATING_CONSTANTS.NO_DATA_RATING
+      const trackRating =
+        trackRatings.get(user) ?? RATING_CONSTANTS.NO_DATA_RATING
+      return {
+        user,
+        matchRating,
+        trackRating,
+        totalRating:
+          matchRating * RATING_CONSTANTS.MATCH_WEIGHT +
+          trackRating * (1 - RATING_CONSTANTS.MATCH_WEIGHT),
+      }
+    }).sort((a, b) => b.totalRating - a.totalRating)
+    this.ratings = new Map(
+      ranked.map((row, index) => [row.user, { ...row, ranking: index + 1 }])
+    )
   }
 
   static getUserRatings(userId: string): Ranking | undefined {
-    if (RatingManager.ratings.size === 0) {
-      throw new Error('Ratings not calculated')
-    }
-    return RatingManager.ratings.get(userId)
+    return this.ratings.get(userId)
   }
 
-  // Returns all users with their ratings, sorted by ranking.
   static onGetRatings(): Ranking[] {
-    if (RatingManager.ratings.size === 0)
-      RatingManager.ratings = RatingManager.calculateRatings()
-
-    return Array.from(RatingManager.ratings.values()).sort(
+    return Array.from(this.ratings.values()).sort(
       (a, b) => b.ranking - a.ranking
     )
-  }
-
-  private static calculateRatings() {
-    const matchRatings = RatingManager.matchCalculator.getAllRatings()
-    const trackRatings = RatingManager.trackCalculator.getAllRatings()
-    const users = Array.from(
-      new Set([...matchRatings.keys(), ...trackRatings.keys()])
-    )
-
-    const ratings: Map<User['id'], Omit<Ranking, 'ranking'>> = new Map()
-    for (const userId of users) {
-      const matchRating =
-        matchRatings.get(userId) ?? RATING_CONSTANTS.NO_DATA_RATING
-      const trackRating =
-        trackRatings.get(userId) ?? RATING_CONSTANTS.NO_DATA_RATING
-
-      const totalRating =
-        matchRating * RATING_CONSTANTS.MATCH_WEIGHT +
-        trackRating * (1 - RATING_CONSTANTS.MATCH_WEIGHT)
-
-      ratings.set(userId, {
-        user: userId,
-        totalRating,
-        matchRating,
-        trackRating,
-      })
-    }
-
-    const newRatings: typeof RatingManager.ratings = new Map()
-    const rankings = Array.from(ratings.values()).sort(
-      (a, b) => b.totalRating - a.totalRating
-    )
-    for (let i = 0; i < rankings.length; i++) {
-      newRatings.set(rankings[i].user, {
-        ...rankings[i],
-        ranking: i + 1,
-      })
-    }
-
-    return newRatings
   }
 }

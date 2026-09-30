@@ -14,25 +14,30 @@ import db from '../../database/database'
 import { sessions, sessionSignups, users } from '../../database/schema'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
+import RatingManager from './rating.manager'
 import SessionScheduler from './session.scheduler'
+import TournamentManager from './tournament.manager'
 import UserManager from './user.manager'
 
 export default class SessionManager {
-  public static async ensureSessionSignup(
+  public static ensureSessionSignup(
     sessionId: string,
     userId: string
-  ): Promise<boolean> {
-    const existingSignup = await db.query.sessionSignups.findFirst({
-      where: and(
-        eq(sessionSignups.session, sessionId),
-        eq(sessionSignups.user, userId)
-      ),
-    })
+  ): boolean {
+    const existingSignup = db
+      .select()
+      .from(sessionSignups)
+      .where(
+        and(
+          eq(sessionSignups.session, sessionId),
+          eq(sessionSignups.user, userId)
+        )
+      )
+      .get()
 
     if (existingSignup && !existingSignup.deletedAt) return false
 
-    await db
-      .insert(sessionSignups)
+    db.insert(sessionSignups)
       .values({
         id: existingSignup?.id,
         session: sessionId,
@@ -43,6 +48,7 @@ export default class SessionManager {
         target: [sessionSignups.id],
         set: { response: 'yes', deletedAt: null },
       })
+      .run()
 
     return true
   }
@@ -77,7 +83,7 @@ export default class SessionManager {
       where: and(eq(sessions.id, id), isNull(sessions.deletedAt)),
     })
 
-    if (!session) {
+    if (!session || session.deletedAt) {
       console.warn(
         new Date().toISOString(),
         loc.no.error.messages.not_in_db(id)
@@ -153,6 +159,8 @@ export default class SessionManager {
     )
 
     broadcast('all_sessions', await SessionManager.getAllSessions())
+    broadcast('all_rankings', RatingManager.onGetRatings())
+    await TournamentManager.publish(socket.id)
     await SessionScheduler.start()
 
     return { success: true }
@@ -174,28 +182,35 @@ export default class SessionManager {
       where: eq(sessions.id, request.id),
     })
 
-    if (!session) {
+    if (!session || session.deletedAt) {
       throw new Error(loc.no.error.messages.not_in_db(request.id))
     }
 
     const id = request.id
-    const res = await db
-      .update(sessions)
-      .set({
-        name: request.name,
-        description: request.description,
-        location: request.location,
-        status: request.status,
-        date: request.date ? new Date(request.date) : undefined,
-        deletedAt: request.deletedAt ? new Date(request.deletedAt) : undefined,
-      })
-      .where(eq(sessions.id, session.id))
+    TournamentManager.commit(() => {
+      const res = db
+        .update(sessions)
+        .set({
+          name: request.name,
+          description: request.description,
+          location: request.location,
+          status: request.status,
+          date: request.date ? new Date(request.date) : undefined,
+          deletedAt: request.deletedAt
+            ? new Date(request.deletedAt)
+            : request.deletedAt,
+        })
+        .where(eq(sessions.id, session.id))
+        .run()
 
-    if (res.changes === 0) throw new Error('Update failed')
+      if (res.changes === 0) throw new Error('Update failed')
+    })
 
     console.debug(new Date().toISOString(), socket.id, 'Updated session', id)
 
     broadcast('all_sessions', await SessionManager.getAllSessions())
+    broadcast('all_rankings', RatingManager.onGetRatings())
+    await TournamentManager.publish(socket.id)
     await SessionScheduler.start()
 
     return { success: true }
@@ -205,7 +220,10 @@ export default class SessionManager {
     socket: TypedSocket,
     request: EventReq<'rsvp_session'>
   ): Promise<EventRes<'rsvp_session'>> {
-    if (!isRsvpSessionRequest(request)) {
+    if (
+      !isRsvpSessionRequest(request) ||
+      !['yes', 'no', 'maybe'].includes(request.response)
+    ) {
       throw new Error(
         loc.no.error.messages.invalid_request('RsvpSessionRequest')
       )
@@ -230,7 +248,7 @@ export default class SessionManager {
       where: eq(sessions.id, request.session),
     })
 
-    if (!session) {
+    if (!session || session.deletedAt) {
       throw new Error(loc.no.error.messages.not_in_db(request.session))
     }
 
@@ -238,18 +256,20 @@ export default class SessionManager {
       throw new Error(loc.no.session.errorMessages.no_edit_historical)
     }
 
-    await db
-      .insert(sessionSignups)
-      .values({
-        id: existingSignup?.id,
-        session: request.session,
-        user: request.user,
-        response: request.response,
-      })
-      .onConflictDoUpdate({
-        target: [sessionSignups.id],
-        set: { response: request.response, deletedAt: null },
-      })
+    TournamentManager.commit(() => {
+      db.insert(sessionSignups)
+        .values({
+          id: existingSignup?.id,
+          session: request.session,
+          user: request.user,
+          response: request.response,
+        })
+        .onConflictDoUpdate({
+          target: [sessionSignups.id],
+          set: { response: request.response, deletedAt: null },
+        })
+        .run()
+    })
 
     console.debug(
       new Date().toISOString(),
@@ -259,6 +279,8 @@ export default class SessionManager {
     )
 
     broadcast('all_sessions', await SessionManager.getAllSessions())
+    broadcast('all_rankings', RatingManager.onGetRatings())
+    await TournamentManager.publish(socket.id)
 
     return { success: true }
   }

@@ -117,3 +117,52 @@ test('qualification fallback orders highest ratings first and empty groups have 
   assert.equal(state.participants[0].user, 'player-7')
   assert.equal(groupStandings(state, state.groups[0].id)[0].user, 'player-7')
 })
+
+for (const advancers of [4, 8]) {
+  for (const reset of [false, true]) {
+    test(`double elimination ${advancers} players, reset ${reset}`, () => {
+      const { config, players } = input(advancers)
+      config.groupsCount = advancers
+      config.advancementCount = 1
+      config.eliminationType = 'double'
+      config.stageTracks = Object.fromEntries(
+        [
+          'semi',
+          'quarter',
+          'final',
+          'loser_quarter',
+          'loser_semi',
+          'loser_final',
+          'grand_final',
+          'grand_final_reset',
+        ].map(stage => [stage, ['track']])
+      )
+      let state = resolveSlots(generateTournament(config, players))
+      assert.equal(state.fixtures.length, advancers * 2 - 1)
+      assert.equal(state.fixtures.at(-1)?.reset, 'conditional')
+      for (let index = 0; index < state.fixtures.length; index++) {
+        const fixture = state.fixtures[index]
+        if (fixture.reset === 'unneeded') continue
+        assert.ok(fixture.match.user1, fixture.match.stage ?? '')
+        assert.ok(fixture.match.user2)
+        fixture.match.status = 'completed'
+        fixture.match.winner =
+          fixture.match.stage === 'grand_final' && reset
+            ? fixture.match.user2
+            : fixture.match.user1
+        state = resolveSlots(state)
+      }
+      assert.equal(tournamentDetails(state).completed, true)
+      assert.equal(
+        state.fixtures.at(-1)?.reset,
+        reset ? 'required' : 'unneeded'
+      )
+      assert.equal(
+        tournamentDetails(state).progress.decided,
+        advancers * 2 - (reset ? 1 : 2)
+      )
+      assert.equal(tournamentDetails(state).standings.length, advancers)
+      assert.equal(tournamentDetails(state).standings[0].rank, 1)
+    })
+  }
+}

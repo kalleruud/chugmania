@@ -1,13 +1,7 @@
 import { PageSubheader } from '@/components/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Empty } from '@/components/ui/empty'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { NativeSelect } from '@/components/ui/native-select'
 import { Spinner } from '@/components/ui/spinner'
 import UserRow from '@/components/user/UserRow'
 import { useAuth } from '@/contexts/AuthContext'
@@ -131,6 +125,13 @@ export default function SessionSignupPanel({
         </div>
       </div>
 
+      <p>
+        {RESPONSE_OPTIONS.map(
+          ({ response }) =>
+            `${loc.no.session.rsvp.responses[response]}: ${sortedSignups.filter(s => s.response === response).length}`
+        ).join(' · ')}
+      </p>
+
       {sortedSignups.length === 0 && (
         <Empty className='border border-input text-sm text-muted-foreground'>
           {loc.no.common.noItems}
@@ -159,24 +160,25 @@ export default function SessionSignupPanel({
                     highlight={isSelf}
                     hideRanking>
                     {(canManageSignups || (isUpcoming(session) && isSelf)) && (
-                      <Select
+                      <NativeSelect
                         value={response}
-                        onValueChange={value =>
-                          handleRsvp(value as SessionResponse, user)
-                        }
+                        aria-label={`${user.firstName}: RSVP`}
+                        onChange={event => {
+                          const value = event.target.value
+                          if (
+                            value === 'yes' ||
+                            value === 'no' ||
+                            value === 'maybe'
+                          )
+                            handleRsvp(value, user)
+                        }}
                         disabled={disabled}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent align='end'>
-                          {RESPONSE_OPTIONS.map(({ response, Icon }) => (
-                            <SelectItem key={response} value={response}>
-                              <Icon className='size-4' />
-                              {loc.no.session.rsvp.responses[response]}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        {RESPONSE_OPTIONS.map(({ response }) => (
+                          <option key={response} value={response}>
+                            {loc.no.session.rsvp.responses[response]}
+                          </option>
+                        ))}
+                      </NativeSelect>
                     )}
                   </UserRow>
                 )
