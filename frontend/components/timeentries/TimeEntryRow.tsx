@@ -181,7 +181,7 @@ export default function TimeEntryRow({
         className={twMerge('mr-auto', isDNF && 'text-muted-foreground')}
       />
 
-      {show.gap && gap && (
+      {show.gap && gap && !pending && (
         <GapPart
           gap={gap}
           gapType={gapType}

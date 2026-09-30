@@ -99,8 +99,8 @@ if (!isProduction) {
   server.on('close', () => void vite.close())
 } else {
   app.use(express.static('dist'))
-  app.get('*splat', (_req, res) =>
-    res.sendFile(path.resolve('dist/index.html'))
+  app.get('/{*splat}', (_req, res) =>
+    res.sendFile('index.html', { root: path.resolve('dist') })
   )
 }
 

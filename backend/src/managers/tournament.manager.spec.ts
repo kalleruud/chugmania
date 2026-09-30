@@ -1,0 +1,503 @@
+import type { Match } from '@common/models/match'
+import type {
+  ClientToServerEvents,
+  ServerToClientEvents,
+} from '@common/models/socket.io'
+import type {
+  Slot,
+  TournamentChange,
+  TournamentConfig,
+  TournamentDetails,
+} from '@common/models/tournament'
+import Database from 'better-sqlite3'
+import { drizzle } from 'drizzle-orm/better-sqlite3'
+import { migrate } from 'drizzle-orm/better-sqlite3/migrator'
+import jwt from 'jsonwebtoken'
+import assert from 'node:assert/strict'
+import { spawn, type ChildProcess } from 'node:child_process'
+import { createHash, randomUUID } from 'node:crypto'
+import { once } from 'node:events'
+import { mkdtempSync, rmSync } from 'node:fs'
+import { createServer } from 'node:net'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
+import { test } from 'node:test'
+import { io, type Socket } from 'socket.io-client'
+import * as schema from '../../database/schema'
+
+type Client = Socket<ServerToClientEvents, ClientToServerEvents>
+
+async function freePort(): Promise<number> {
+  const server = createServer()
+  server.listen(0, '127.0.0.1')
+  await once(server, 'listening')
+  const address = server.address()
+  assert.ok(address && typeof address !== 'string')
+  await new Promise<void>((resolve, reject) =>
+    server.close(error => (error ? reject(error) : resolve()))
+  )
+  return address.port
+}
+
+function parity(details: TournamentDetails) {
+  function dependency(slot: Slot) {
+    if (slot.kind === 'group_rank')
+      return {
+        ...slot,
+        groupId: details.groups.find(g => g.id === slot.groupId)?.name,
+      }
+    if (slot.kind === 'match_winner' || slot.kind === 'match_loser')
+      return {
+        ...slot,
+        matchId: details.matches.findIndex(m => m.id === slot.matchId),
+      }
+    return slot
+  }
+  return {
+    qualification: details.qualification.map(({ groupId, ...p }) => ({
+      ...p,
+      group: details.groups.find(g => g.id === groupId)?.name,
+    })),
+    groups: details.groups.map(({ id, ...g }) => g),
+    matches: details.matches.map(
+      ({ id, createdAt, updatedAt, tournament, ...m }) => ({
+        ...m,
+        tournament: tournament && {
+          ...tournament,
+          id: '',
+          readOnly: false,
+          dependencies: {
+            slot1: dependency(tournament.dependencies.slot1),
+            slot2: dependency(tournament.dependencies.slot2),
+          },
+        },
+      })
+    ),
+    workload: details.workloadSummary,
+    progress: details.progress,
+  }
+}
+
+test(
+  'real tournament commands, persistence, permissions and multiple clients',
+  { timeout: 90000 },
+  async t => {
+    const folder = mkdtempSync(path.join(tmpdir(), 'tournament-command-'))
+    const databasePath = path.join(folder, 'test.sqlite')
+    const sqlite = new Database(databasePath)
+    const db = drizzle(sqlite, { schema })
+    migrate(db, { migrationsFolder: 'drizzle' })
+    const passwordHash = createHash('sha512').update('test-password').digest()
+    const people = Array.from({ length: 12 }, (_, index) => ({
+      id: randomUUID(),
+      email: `player-${index}@example.test`,
+      firstName: `Player ${index}`,
+      role: index === 0 ? 'admin' : 'user',
+      passwordHash,
+    }))
+    for (const person of people)
+      db.insert(schema.users)
+        .values({ ...person, role: person.role === 'admin' ? 'admin' : 'user' })
+        .run()
+    const track = randomUUID()
+    const secondTrack = randomUUID()
+    db.insert(schema.tracks)
+      .values([
+        { id: track, number: 1, level: 'white', type: 'stadium' },
+        { id: secondTrack, number: 2, level: 'green', type: 'valley' },
+      ])
+      .run()
+    const session = randomUUID()
+    db.insert(schema.sessions)
+      .values({
+        id: session,
+        name: 'Integration Cup',
+        date: new Date(Date.now() + 86400000),
+      })
+      .run()
+    for (const player of people.slice(0, 8))
+      db.insert(schema.sessionSignups)
+        .values({ session, user: player.id, response: 'yes' })
+        .run()
+    for (const [index, player] of people.slice(0, 8).entries())
+      db.insert(schema.timeEntries)
+        .values({
+          user: player.id,
+          session,
+          track,
+          duration: 1000 + index * 10,
+        })
+        .run()
+    const port = await freePort()
+    const secret = randomUUID()
+    let processHandle: ChildProcess | undefined
+    let output = ''
+    function start() {
+      const child = spawn(
+        process.execPath,
+        ['--import', 'tsx', 'backend/src/server.ts'],
+        {
+          env: {
+            ...process.env,
+            NODE_ENV: 'production',
+            DATABASE_PATH: databasePath,
+            PORT: String(port),
+            ORIGIN: `http://127.0.0.1:${port}`,
+            SECRET: secret,
+          },
+          stdio: ['ignore', 'pipe', 'pipe'],
+        }
+      )
+      child.stdout.on('data', (chunk: Buffer) => {
+        output += chunk.toString()
+      })
+      child.stderr.on('data', (chunk: Buffer) => {
+        output += chunk.toString()
+      })
+      return child
+    }
+    const clients: Client[] = []
+    async function connect(user: string): Promise<Client> {
+      const client: Client = io(`http://127.0.0.1:${port}`, {
+        auth: { token: jwt.sign({ userId: user }, secret) },
+        transports: ['websocket'],
+        reconnection: true,
+        reconnectionDelay: 50,
+        timeout: 3000,
+      }).timeout(5000)
+      clients.push(client)
+      await Promise.race([
+        new Promise<void>(resolve =>
+          client.once('all_matches', () => resolve())
+        ),
+        new Promise<never>((_, reject) => {
+          const timer = setTimeout(() => reject(new Error(output)), 10000)
+          timer.unref()
+        }),
+      ])
+      return client
+    }
+    t.after(async () => {
+      clients.forEach(client => client.disconnect())
+      if (processHandle && processHandle.exitCode === null) {
+        processHandle.kill()
+        await once(processHandle, 'exit')
+      }
+      sqlite.close()
+      rmSync(folder, { recursive: true, force: true })
+    })
+    processHandle = start()
+    const admin = await connect(people[0].id)
+    const viewer = await connect(people[1].id)
+    const changes: TournamentChange[] = []
+    viewer.on('tournament_changed', change => changes.push(change))
+    const watched = await viewer.emitWithAck('get_tournament', { session })
+    assert.ok(watched.success)
+    const config: TournamentConfig = {
+      session,
+      name: 'Cup',
+      description: 'Integration',
+      qualificationTrack: track,
+      groupsCount: 2,
+      advancementCount: 2,
+      eliminationType: 'single',
+      stageTracks: {
+        group: [track, secondTrack],
+        semi: [track],
+        final: [secondTrack],
+      },
+    }
+    async function details(): Promise<TournamentDetails> {
+      const response = await admin.emitWithAck('get_tournament', { session })
+      assert.ok(response.success, JSON.stringify(response))
+      assert.ok(response.details)
+      return response.details
+    }
+    async function result(
+      match: Match,
+      status: 'planned' | 'completed' | 'cancelled',
+      winner: string | null
+    ) {
+      const response = await admin.emitWithAck('edit_match', {
+        type: 'EditMatchRequest',
+        id: match.id,
+        status,
+        winner,
+      })
+      assert.ok(response.success, JSON.stringify(response))
+    }
+    await t.test(
+      'preview and saved structure agree; permissions and concurrent creation',
+      async () => {
+        const forbidden = await viewer.emitWithAck('create_tournament', config)
+        assert.equal(forbidden.success, false)
+        const preview = await admin.emitWithAck('preview_tournament', config)
+        assert.ok(preview.success, JSON.stringify(preview))
+        const created = await Promise.all([
+          admin.emitWithAck('create_tournament', config),
+          admin.emitWithAck('create_tournament', config),
+        ])
+        assert.equal(created.filter(r => r.success).length, 1)
+        assert.deepEqual(parity(await details()), parity(preview.details))
+        assert.ok(changes.some(change => change.details?.config.name === 'Cup'))
+        const unresolved = (await details()).matches.find(m => !m.user1)
+        assert.ok(unresolved)
+        const invalid = await admin.emitWithAck('edit_match', {
+          type: 'EditMatchRequest',
+          id: unresolved.id,
+          status: 'completed',
+          winner: people[0].id,
+        })
+        assert.equal(invalid.success, false)
+      }
+    )
+    await t.test(
+      'qualification regeneration preserves retained records and tracks',
+      async () => {
+        const before = await details()
+        const retained = before.matches.filter(m => m.stage === 'group')
+        const posted = await admin.emitWithAck('post_time_entry', {
+          type: 'CreateTimeEntryRequest',
+          user: people[0].id,
+          session,
+          track,
+          duration: 999,
+        })
+        assert.ok(posted.success)
+        const after = await details()
+        for (const match of retained) {
+          const same = after.matches.find(
+            m =>
+              m.user1 === match.user1 &&
+              m.user2 === match.user2 &&
+              m.stage === 'group'
+          )
+          assert.equal(same?.id, match.id)
+          assert.equal(same.track, match.track)
+        }
+        assert.equal(
+          after.qualification.find(p => p.user === people[0].id)?.duration,
+          999
+        )
+      }
+    )
+    await t.test(
+      'freeze precedes ratings; late admission preserves fixtures; snapshot survives edits and undo',
+      async () => {
+        const before = await details()
+        const first = before.matches[0]
+        await result(first, 'completed', first.user1)
+        const frozen = await details()
+        assert.ok(frozen.frozen)
+        assert.deepEqual(frozen.qualification, before.qualification)
+        const posted = await admin.emitWithAck('post_time_entry', {
+          type: 'CreateTimeEntryRequest',
+          user: people[0].id,
+          session,
+          track,
+          duration: 1,
+        })
+        assert.ok(posted.success)
+        assert.deepEqual((await details()).qualification, frozen.qualification)
+        const admission = await admin.emitWithAck('rsvp_session', {
+          type: 'RsvpSessionRequest',
+          session,
+          user: people[8].id,
+          response: 'yes',
+        })
+        assert.ok(admission.success, JSON.stringify(admission))
+        const added = await details()
+        assert.equal(added.qualification.length, 9)
+        assert.equal(added.matches.length, frozen.matches.length + 4)
+        for (const old of frozen.matches) {
+          const same = added.matches.find(m => m.id === old.id)
+          assert.ok(same)
+          assert.equal(same.track, old.track)
+          assert.equal(same.winner, old.winner)
+        }
+        const again = await admin.emitWithAck('rsvp_session', {
+          type: 'RsvpSessionRequest',
+          session,
+          user: people[8].id,
+          response: 'yes',
+        })
+        assert.ok(again.success)
+        assert.equal((await details()).matches.length, added.matches.length)
+        await result(first, 'planned', null)
+        assert.ok((await details()).frozen)
+      }
+    )
+    await t.test(
+      'awards complete group play, close admission and protect decided downstream matches',
+      async () => {
+        for (const match of (await details()).matches.filter(
+          m => m.stage === 'group'
+        ))
+          await result(match, 'cancelled', match.user1)
+        const afterGroups = await details()
+        assert.ok(
+          afterGroups.matches
+            .filter(m => m.stage === 'semi')
+            .every(m => m.user1 && m.user2)
+        )
+        const admission = await admin.emitWithAck('rsvp_session', {
+          type: 'RsvpSessionRequest',
+          session,
+          user: people[9].id,
+          response: 'yes',
+        })
+        assert.ok(admission.success)
+        assert.equal((await details()).qualification.length, 9)
+        const semifinal = afterGroups.matches.find(m => m.stage === 'semi')
+        assert.ok(semifinal)
+        await result(semifinal, 'completed', semifinal.user1)
+        const before = await details()
+        const groupMatch = before.matches.find(m => m.stage === 'group')
+        assert.ok(groupMatch)
+        const bad = await admin.emitWithAck('edit_match', {
+          type: 'EditMatchRequest',
+          id: groupMatch.id,
+          status: 'planned',
+          winner: null,
+        })
+        assert.equal(bad.success, false)
+        assert.deepEqual(await details(), before)
+      }
+    )
+    await t.test(
+      'session cancellation/restoration, restart, and deletion preserve intended history',
+      async () => {
+        const cancel = await admin.emitWithAck('edit_session', {
+          type: 'EditSessionRequest',
+          id: session,
+          status: 'cancelled',
+        })
+        assert.ok(cancel.success)
+        assert.ok((await details()).cancelled)
+        const blocked = await admin.emitWithAck('edit_match', {
+          type: 'EditMatchRequest',
+          id: (await details()).matches[0].id,
+          status: 'planned',
+          winner: null,
+        })
+        assert.equal(blocked.success, false)
+        const restore = await admin.emitWithAck('edit_session', {
+          type: 'EditSessionRequest',
+          id: session,
+          status: 'confirmed',
+        })
+        assert.ok(restore.success)
+        const before = await details()
+        assert.ok(processHandle)
+        processHandle.kill()
+        await once(processHandle, 'exit')
+        const reconnect = new Promise<void>(resolve =>
+          admin.once('all_matches', () => resolve())
+        )
+        processHandle = start()
+        await reconnect
+        assert.deepEqual(await details(), before)
+      }
+    )
+    await t.test(
+      'CSV preserves every tournament table, JSON, snapshots and raw writes',
+      async () => {
+        const before = await details()
+        const tables: (
+          | 'tournaments'
+          | 'tournamentStages'
+          | 'tournamentGroups'
+          | 'tournamentPlayers'
+          | 'tournamentMatches'
+        )[] = [
+          'tournaments',
+          'tournamentStages',
+          'tournamentGroups',
+          'tournamentPlayers',
+          'tournamentMatches',
+        ]
+        for (const table of tables) {
+          const exported = await admin.emitWithAck('export_csv', { table })
+          assert.ok(exported.success, JSON.stringify(exported))
+          const imported = await admin.emitWithAck('import_csv', {
+            table,
+            content: exported.csv,
+          })
+          assert.ok(imported.success, JSON.stringify(imported))
+        }
+        assert.deepEqual(parity(await details()), parity(before))
+        const raw = await admin.emitWithAck('import_csv', {
+          table: 'tournaments',
+          content: `id,notReadyReason\n${before.id},Raw import marker`,
+        })
+        assert.ok(raw.success)
+        assert.equal((await details()).notReadyReason, 'Raw import marker')
+      }
+    )
+    await t.test(
+      'deletion preserves ordinary matches and laps; invalid roster recovers',
+      async () => {
+        const ordinary = await admin.emitWithAck('create_match', {
+          type: 'CreateMatchRequest',
+          session,
+          track,
+          user1: people[0].id,
+          user2: people[1].id,
+        })
+        assert.ok(ordinary.success)
+        const originalLaps = db.select().from(schema.timeEntries).all().length
+        const deletion = await admin.emitWithAck('delete_tournament', {
+          session,
+        })
+        assert.ok(deletion.success)
+        const deleted = await admin.emitWithAck('get_tournament', { session })
+        assert.ok(deleted.success)
+        assert.equal(deleted.details, null)
+        assert.equal(
+          db.select().from(schema.timeEntries).all().length,
+          originalLaps
+        )
+        assert.ok(
+          db
+            .select()
+            .from(schema.matches)
+            .all()
+            .some(m => !m.deletedAt)
+        )
+        const created = await admin.emitWithAck('create_tournament', config)
+        assert.ok(created.success, JSON.stringify(created))
+        for (const person of people.slice(3, 10)) {
+          const response = await admin.emitWithAck('rsvp_session', {
+            type: 'RsvpSessionRequest',
+            session,
+            user: person.id,
+            response: 'no',
+          })
+          assert.ok(response.success)
+        }
+        assert.ok((await details()).notReadyReason)
+        const response = await admin.emitWithAck('rsvp_session', {
+          type: 'RsvpSessionRequest',
+          session,
+          user: people[3].id,
+          response: 'yes',
+        })
+        assert.ok(response.success)
+        assert.equal((await details()).notReadyReason, null)
+        assert.equal((await details()).qualification.length, 4)
+        const cascade = await admin.emitWithAck('delete_session', {
+          type: 'DeleteSessionRequest',
+          id: session,
+        })
+        assert.ok(cascade.success)
+        assert.ok(
+          db
+            .select()
+            .from(schema.tournaments)
+            .all()
+            .every(row => row.deletedAt)
+        )
+      }
+    )
+  }
+)

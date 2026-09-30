@@ -27,9 +27,9 @@ export default function TournamentForm({
   session: string
   onCreated: () => void
 }) {
-  const { socket } = useConnection()
+  const { socket, isConnected } = useConnection()
   const { tracks, sessions, timeEntries, rankings } = useData()
-  const [config, setConfig] = useState<TournamentConfig>({
+  const [inputConfig, setConfig] = useState<TournamentConfig>({
     session,
     name: '',
     description: '',
@@ -50,48 +50,55 @@ export default function TournamentForm({
     sessions
       ?.find(s => s.id === session)
       ?.signups.filter(s => s.response === 'yes').length ?? 0
-  const options = configurationOptions(count, config.eliminationType)
+  const options = configurationOptions(count, inputConfig.eliminationType)
+  const choice =
+    options.find(
+      o =>
+        o.groups === inputConfig.groupsCount &&
+        o.advancement === inputConfig.advancementCount
+    ) ??
+    options.find(o => o.groups === inputConfig.groupsCount) ??
+    options.at(0)
+  const selectedConfig = {
+    ...inputConfig,
+    groupsCount: choice?.groups ?? inputConfig.groupsCount,
+    advancementCount: choice?.advancement ?? inputConfig.advancementCount,
+  }
+  const stages = usedStages(selectedConfig, count)
+  const config = {
+    ...selectedConfig,
+    stageTracks: Object.fromEntries(
+      Object.entries(selectedConfig.stageTracks).filter(([stage]) =>
+        stages.some(s => s === stage)
+      )
+    ),
+  }
   const groups = [...new Set(options.map(o => o.groups))]
   const advancements = options
     .filter(o => o.groups === config.groupsCount)
     .map(o => o.advancement)
-  const stages = usedStages(config, count)
   const items = tracks?.map(trackToLookupItem) ?? []
+  const sessionData = sessions?.find(s => s.id === session)
   const key = JSON.stringify({
     ...config,
     name: '',
     description: '',
-    count,
+    signups: sessionData?.signups,
+    status: sessionData?.status,
     timeEntries,
     rankings,
+    isConnected,
   })
   const ready =
     !!preview &&
     preview.key === key &&
     !loading &&
     !saving &&
+    !error &&
+    isConnected &&
     preview.details.matches.every(m => m.track) &&
     config.name.trim().length > 0
   function change(next: TournamentConfig) {
-    const valid = configurationOptions(count, next.eliminationType)
-    const choice =
-      valid.find(
-        o =>
-          o.groups === next.groupsCount &&
-          o.advancement === next.advancementCount
-      ) ??
-      valid.find(o => o.groups === next.groupsCount) ??
-      valid.at(0)
-    if (choice) {
-      next.groupsCount = choice.groups
-      next.advancementCount = choice.advancement
-    }
-    const used = usedStages(next, count)
-    next.stageTracks = Object.fromEntries(
-      Object.entries(next.stageTracks).filter(([stage]) =>
-        used.some(s => s === stage)
-      )
-    )
     setConfig(next)
   }
   useEffect(() => {
@@ -99,14 +106,19 @@ export default function TournamentForm({
     const timer = setTimeout(async () => {
       setLoading(true)
       setError('')
-      const response = await socket.emitWithAck('preview_tournament', config)
-      if (!active) return
-      setLoading(false)
-      if (!response.success) {
-        setError(response.message)
-        return
+      try {
+        const response = await socket.emitWithAck('preview_tournament', config)
+        if (!active) return
+        if (!response.success) throw new Error(response.message)
+        setPreview({ key, details: response.details })
+      } catch (error) {
+        if (!active) return
+        const message = error instanceof Error ? error.message : String(error)
+        setError(message)
+        if (config.qualificationTrack) toast.error(message)
+      } finally {
+        if (active) setLoading(false)
       }
-      setPreview({ key, details: response.details })
     }, 380)
     return () => {
       active = false
@@ -227,7 +239,7 @@ export default function TournamentForm({
           className='sr-only'
           tabIndex={-1}
           value={ready ? 'ready' : ''}
-          readOnly
+          onChange={() => {}}
           ref={node => {
             node?.setCustomValidity(ready ? '' : loc.no.tournament.tracks)
           }}

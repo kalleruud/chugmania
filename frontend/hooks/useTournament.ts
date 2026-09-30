@@ -18,18 +18,20 @@ export function useTournament(session: string) {
     let version = 0
     async function load() {
       const requestVersion = ++version
-      const response = await socket.emitWithAck('get_tournament', { session })
-      if (!active || requestVersion !== version) return
-      if (!response.success) {
-        toast.error(response.message)
-        return
+      try {
+        const response = await socket.emitWithAck('get_tournament', { session })
+        if (!active || requestVersion !== version) return
+        if (!response.success) throw new Error(response.message)
+        setState({ session, details: response.details })
+      } catch (error) {
+        if (!active || requestVersion !== version) return
+        setState({ session, details: null })
+        toast.error(error instanceof Error ? error.message : String(error))
       }
-      setState({ session, details: response.details })
     }
     function changed(change: TournamentChange) {
-      if (change.session !== session) return
-      version++
-      setState({ session, details: change.details })
+      if (!active || change.session !== session) return
+      void load()
       if (change.actor !== socket.id) toast.info(loc.no.tournament.changed)
     }
     socket.on('tournament_changed', changed)

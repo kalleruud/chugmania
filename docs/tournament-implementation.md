@@ -50,6 +50,42 @@ Run `npm test`, `npm run check`, and `npm run build`. Tests use disposable SQLit
 - `frontend/components/tournament/TournamentPanel.tsx`: shared preview/live presentation through existing rows.
 - `frontend/app/pages/TournamentCreatePage.tsx`: route and navigation.
 - `frontend/hooks/useTournament.ts`: fetch, subscription, reconnect and notifications.
-- Existing match Modules and rows: normal storage, rating input, slot labels and result editing.
-- Existing session/time-entry/user Modules: explicit tournament refresh for relevant changes.
-- Existing database schema, CSV mappings, socket contracts, locale and routing: integration.
+- `backend/src/managers/tournament.rules.spec.ts`: deterministic generation, progression, correction protection, and both double-elimination reset paths.
+- `backend/src/managers/tournament.manager.spec.ts`: real socket commands, permissions, concurrent creation, persistence/restart, freeze/admission, corrections, CSV and lifecycle integration.
+- `backend/database/database.spec.ts`: clean migration and upgrade preserving ordinary data.
+- `drizzle/0011_abandoned_storm.sql`, `drizzle/meta/0011_snapshot.json`: generated tournament migration and schema snapshot.
+- `CONTEXT.md`: domain language and module boundaries.
+- `docs/tournament-implementation.md`: staged implementation, lifecycle diagram and file inventory.
+
+### Changed files
+
+- `.env.example`: optional disposable database path.
+- `backend/database/database.ts`, `drizzle.config.ts`: honor `DATABASE_PATH`.
+- `backend/database/schema.ts`: tournament tables, slot dependencies, snapshots and uniqueness constraints.
+- `drizzle/meta/_journal.json`: register generated migration.
+- `backend/src/managers/admin.manager.ts`: all tournament tables in CSV import/export, publish imported state.
+- `backend/src/utils/csv-parser.ts`: parse JSON structures and snapshot timestamps without domain validation.
+- `backend/src/managers/match.manager.ts`: delegate tournament results, coordinate ordinary changes, return enriched matches.
+- `backend/src/managers/rating.manager.ts`: synchronous rating rebuild so freeze snapshots and mutations are atomic.
+- `backend/src/managers/session.manager.ts`: coordinate signup and session lifecycle mutations with tournament state.
+- `backend/src/managers/timeEntry.manager.ts`: coordinate qualification changes and implicit signups.
+- `backend/src/managers/user.manager.ts`: coordinate participant deletion.
+- `backend/src/server.ts`: register commands and support direct production route loads in hidden worktree directories.
+- `common/locale/locales.ts`: tournament labels, errors, stages and CSV table names.
+- `common/models/match.ts`: tournament metadata, dependency objects, round sizes and slot labels.
+- `common/models/socket.io.ts`: typed tournament commands and change event.
+- `frontend/App.tsx`: tournament creation route.
+- `frontend/app/pages/SessionPage.tsx`: session, participant and tournament tabs plus create/delete actions.
+- `frontend/components/combobox.tsx`: reuse lookup behavior for ordered multi-track selection.
+- `frontend/components/match/MatchInput.tsx`: lock tournament-owned fields and support awarded results.
+- `frontend/components/match/MatchList.tsx`: managed/read-only lists and preserved scheduling order.
+- `frontend/components/match/MatchRow.tsx`: unresolved labels, conditional resets, awards and result controls.
+- `frontend/components/session/SessionSignupPanel.tsx`: reuse signup summary and native response selector.
+- `frontend/components/timeentries/TimeEntryRow.tsx`: qualification rows and pending players without fabricated lap records or gaps.
+- `frontend/components/track/TrackLeaderboard.tsx`: separate tournament matches on session view and omit unneeded resets.
+- `frontend/contexts/TimeEntryInputContext.tsx`: current match data and tournament editing restrictions.
+- `package.json`: Node test-runner command using the existing TypeScript loader.
+
+## Completed verification
+
+All 16 tests pass, including real server/socket tests and disposable database migrations. `npm run check` and `npm run build` pass. Browser verification covered login, direct creation-route loading, configuration and preview, creation, the tournament tab, recording a result, qualification freezing, and persistence after reload. Historical data restoration remains a manual follow-up outside this implementation.

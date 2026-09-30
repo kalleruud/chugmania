@@ -1,10 +1,15 @@
 import type { matches } from '../../backend/database/schema'
 import { isRecord } from '../utils/utils'
+import type { Slot, TournamentFixture } from './tournament'
 
 export type Match = typeof matches.$inferSelect & {
   tournament?: {
     id: string
     label: string
+    dependencies: { slot1: Slot; slot2: Slot }
+    bracket: TournamentFixture['bracket']
+    round: number
+    roundSize: number | null
     slot1: string
     slot2: string
     readOnly: boolean
