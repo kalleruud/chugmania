@@ -8,14 +8,41 @@ import type {
   TournamentState,
 } from '@common/models/tournament'
 import { upperStage, validConfiguration } from '@common/utils/tournament'
+import { createHash } from 'node:crypto'
 import type { MatchStage } from '../../database/schema'
 import { qualificationOrder } from './tournament.rules'
 
-export function groupName(index: number): string {
-  let name = ''
-  for (let value = index + 1; value > 0; value = Math.floor((value - 1) / 26))
-    name = String.fromCharCode(65 + ((value - 1) % 26)) + name
-  return name
+const GROUP_NAMES = [
+  'Turbo',
+  'Apex',
+  'Nitro',
+  'Vortex',
+  'Blitz',
+  'Rocket',
+  'Comet',
+  'Storm',
+  'Thunder',
+  'Lightning',
+  'Phoenix',
+  'Falcon',
+  'Raptor',
+  'Cobra',
+  'Tornado',
+  'Inferno',
+]
+
+function groupNames(session: string, count: number): string[] {
+  const names = GROUP_NAMES.map(name => ({
+    name,
+    seed: createHash('sha256').update(`${session}:${name}`).digest('hex'),
+  }))
+    .toSorted((a, b) => a.seed.localeCompare(b.seed))
+    .map(row => row.name)
+  return Array.from({ length: count }, (_, index) => {
+    const name = names[index % names.length]
+    const cycle = Math.floor(index / names.length)
+    return cycle ? `${name} ${cycle + 1}` : name
+  })
 }
 export function snakeGroup(seed: number, groups: number): number {
   const position = seed % groups
@@ -62,9 +89,9 @@ export function generateTournament(
     throw new Error(loc.no.tournament.roster)
   const groups =
     assignedGroups ??
-    Array.from({ length: config.groupsCount }, (_, index) => ({
+    groupNames(config.session, config.groupsCount).map((name, index) => ({
       id: `group-${index}`,
-      name: groupName(index),
+      name,
     }))
   const participants = assignedGroups
     ? inputs.toSorted((a, b) => a.admission - b.admission)

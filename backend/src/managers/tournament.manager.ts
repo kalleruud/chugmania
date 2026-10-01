@@ -12,7 +12,7 @@ import {
 } from '@common/models/tournament'
 import { RATING_CONSTANTS } from '@common/utils/constants'
 import { usedStages, validConfiguration } from '@common/utils/tournament'
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, isNull, sql } from 'drizzle-orm'
 import { randomUUID } from 'node:crypto'
 import db, { database } from '../../database/database'
 import {
@@ -123,6 +123,7 @@ export default class TournamentManager {
           isNull(tournamentGroups.deletedAt)
         )
       )
+      .orderBy(sql`rowid`)
       .all()
     const playerRows = db
       .select()
@@ -172,12 +173,7 @@ export default class TournamentManager {
         admission: p.admission,
         groupId: p.groupId,
       })),
-      groups: groupRows
-        .map(g => ({ id: g.id, name: g.name }))
-        .sort(
-          (a, b) =>
-            a.name.length - b.name.length || a.name.localeCompare(b.name)
-        ),
+      groups: groupRows.map(g => ({ id: g.id, name: g.name })),
       fixtures: fixtureRows
         .map(({ fixture, match }) => ({
           id: fixture.id,
@@ -291,11 +287,11 @@ export default class TournamentManager {
   ): TournamentState {
     const result = structuredClone(next)
     const ids = new Map<string, string>()
-    for (const group of result.groups)
-      ids.set(
-        group.id,
-        before.groups.find(g => g.name === group.name)?.id ?? randomUUID()
-      )
+    result.groups.forEach((group, index) => {
+      const previous = before.groups.at(index)
+      ids.set(group.id, previous?.id ?? randomUUID())
+      if (previous) group.name = previous.name
+    })
     const key = (
       state: TournamentState,
       fixture: TournamentState['fixtures'][number]

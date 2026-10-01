@@ -65,7 +65,17 @@ test('one deterministic draft supplies preview, snake groups, all pairs and isol
   )
   assert.equal(
     tournamentDetails(draft).matches[12].tournament?.slot1,
-    'Vinner av gruppe A'
+    `Vinner av gruppe ${draft.groups[0].name}`
+  )
+  assert.equal(new Set(draft.groups.map(group => group.name)).size, 2)
+  assert.ok(draft.groups.every(group => group.name.length > 1))
+  const otherSession = generateTournament(
+    { ...config, session: 'other-session' },
+    players
+  )
+  assert.notDeepEqual(
+    draft.groups.map(group => group.name),
+    otherSession.groups.map(group => group.name)
   )
   const missing = generateTournament(
     { ...config, stageTracks: { group: ['track'] } },
