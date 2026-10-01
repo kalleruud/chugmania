@@ -13,13 +13,14 @@ import {
 } from '@common/utils/tournament'
 import { useEffect, useState, type SubmitEvent } from 'react'
 import { toast } from 'sonner'
-import Combobox, { ComboboxMulti } from '../combobox'
+import Combobox from '../combobox'
+import ComboboxMulti from '../ComboboxMulti'
+import { TrackRow } from '../track/TrackRow'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { NativeSelect } from '../ui/native-select'
 import { Spinner } from '../ui/spinner'
 import TournamentPanel from './TournamentPanel'
-import { TrackRow } from '../track/TrackRow'
 
 export default function TournamentForm({
   session,
@@ -219,6 +220,7 @@ export default function TournamentForm({
             <h3>{stageName(stage)}</h3>
             <ComboboxMulti
               items={items}
+              CustomRow={TrackRow}
               selected={(config.stageTracks[stage] ?? []).flatMap(id => {
                 const item = items.find(t => t.id === id)
                 return item ? [item] : []

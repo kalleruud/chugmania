@@ -19,7 +19,7 @@ import { twMerge } from 'tailwind-merge'
 import type { BaseRowProps } from './row/RowProps'
 import { Button } from './ui/button'
 
-type ComboboxProps<T extends ComboboxLookupItem> = {
+export type ComboboxProps<T extends ComboboxLookupItem> = {
   placeholder: string
   emptyLabel?: string
   items: T[]
@@ -208,74 +208,6 @@ export default function Combobox<T extends ComboboxLookupItem>({
           )}
         </PopoverContent>
       </Popover>
-    </div>
-  )
-}
-
-export function ComboboxMulti<T extends ComboboxLookupItem>({
-  items,
-  selected,
-  setSelected,
-  placeholder,
-  disabled,
-}: {
-  items: T[]
-  selected: T[]
-  setSelected: (items: T[]) => void
-  placeholder: string
-  disabled?: boolean
-}) {
-  function move(index: number, offset: number) {
-    const next = [...selected]
-    const [item] = next.splice(index, 1)
-    next.splice(index + offset, 0, item)
-    setSelected(next)
-  }
-  return (
-    <div className='flex flex-col gap-2'>
-      <Combobox
-        items={items.filter(item => !selected.some(s => s.id === item.id))}
-        selected={null}
-        setSelected={item => {
-          if (item) setSelected([...selected, item])
-        }}
-        placeholder={placeholder}
-        disabled={disabled}
-      />
-      {selected.map((item, index) => (
-        <div key={item.id} className='flex items-center gap-2'>
-          <span className='mr-auto'>
-            {index + 1}. {item.label}
-          </span>
-          <Button
-            type='button'
-            size='sm'
-            variant='outline'
-            aria-label={`Flytt ${item.label} opp`}
-            disabled={disabled || index === 0}
-            onClick={() => move(index, -1)}>
-            ↑
-          </Button>
-          <Button
-            type='button'
-            size='sm'
-            variant='outline'
-            aria-label={`Flytt ${item.label} ned`}
-            disabled={disabled || index === selected.length - 1}
-            onClick={() => move(index, 1)}>
-            ↓
-          </Button>
-          <Button
-            type='button'
-            size='sm'
-            variant='outline'
-            aria-label={`Fjern ${item.label}`}
-            disabled={disabled}
-            onClick={() => setSelected(selected.filter(s => s.id !== item.id))}>
-            ×
-          </Button>
-        </div>
-      ))}
     </div>
   )
 }

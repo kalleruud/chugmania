@@ -52,6 +52,7 @@ Run `npm test`, `npm run check`, and `npm run build`. Tests use disposable SQLit
 - `frontend/components/tournament/TournamentPanel.tsx`: shared preview/live presentation through existing rows.
 - `frontend/app/pages/TournamentCreatePage.tsx`: route and navigation.
 - `frontend/hooks/useTournament.ts`: fetch, subscription, reconnect and notifications.
+- `frontend/components/ComboboxMulti.tsx`: ordered multi-selection through the shared combobox, with custom rows for options and selected items.
 - `backend/src/managers/tournament.rules.spec.ts`: deterministic generation, progression, correction protection, and both double-elimination reset paths.
 - `backend/src/managers/tournament.manager.spec.ts`: real socket commands, permissions, concurrent creation, persistence/restart, freeze/admission, corrections, CSV and lifecycle integration.
 - `backend/database/database.spec.ts`: clean migration and upgrade preserving ordinary data.
@@ -79,7 +80,7 @@ Run `npm test`, `npm run check`, and `npm run build`. Tests use disposable SQLit
 - `common/models/socket.io.ts`: typed tournament commands and change event.
 - `frontend/App.tsx`: tournament creation route.
 - `frontend/app/pages/SessionPage.tsx`: session, participant and tournament tabs plus create/delete actions.
-- `frontend/components/combobox.tsx`: reuse lookup behavior for ordered multi-track selection.
+- `frontend/components/combobox.tsx`: shared lookup behavior and row contract reused by ordered multi-track selection.
 - `frontend/components/match/MatchInput.tsx`: lock tournament-owned fields and support awarded results.
 - `frontend/components/match/MatchList.tsx`: managed/read-only lists and preserved scheduling order.
 - `frontend/components/match/MatchRow.tsx`: unresolved labels, conditional resets, awards and result controls.
