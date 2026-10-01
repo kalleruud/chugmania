@@ -5,6 +5,7 @@ import { Lock } from 'lucide-react'
 import MatchList from '../match/MatchList'
 import { TimeEntryList } from '../timeentries/TimeEntryList'
 import { TrackRow } from '../track/TrackRow'
+import TournamentGroupPanel from './TournamentGroupPanel'
 
 export default function TournamentPanel({
   details,
@@ -68,31 +69,7 @@ export default function TournamentPanel({
 
       <div className='grid gap-4 xl:grid-cols-2'>
         {details.groups.map(group => (
-          <section key={group.id} className='rounded border p-3'>
-            <h3>Gruppe {group.name}</h3>
-            <table className='w-full'>
-              <thead>
-                <tr>
-                  <th className='text-left'>Spiller</th>
-                  <th>V</th>
-                  <th>T</th>
-                </tr>
-              </thead>
-              <tbody>
-                {group.standings.map(row => (
-                  <tr
-                    key={row.user}
-                    className={row.qualifies ? 'text-primary' : undefined}>
-                    <td>
-                      {row.rank}. {name(row.user)}
-                    </td>
-                    <td className='text-center'>{row.wins}</td>
-                    <td className='text-center'>{row.losses}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </section>
+          <TournamentGroupPanel key={group.id} group={group} />
         ))}
       </div>
       <MatchList matches={details.matches} managed readOnly={isPreview} />

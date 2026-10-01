@@ -50,6 +50,7 @@ Run `npm test`, `npm run check`, and `npm run build`. Tests use disposable SQLit
 - `backend/src/managers/tournament.details.ts`: shared read model and display metadata.
 - `frontend/components/tournament/TournamentForm.tsx`: configuration, server preview and readiness.
 - `frontend/components/tournament/TournamentPanel.tsx`: shared preview/live presentation through existing rows.
+- `frontend/components/tournament/TournamentGroupPanel.tsx`: group cards with ranked standings, win/loss columns and highlighted advancement places.
 - `frontend/app/pages/TournamentCreatePage.tsx`: route and navigation.
 - `frontend/hooks/useTournament.ts`: fetch, subscription, reconnect and notifications.
 - `frontend/components/ComboboxMulti.tsx`: ordered multi-selection through the shared combobox, with custom rows for options and selected items.
