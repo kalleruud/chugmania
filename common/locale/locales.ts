@@ -114,6 +114,7 @@ const no = {
   session: {
     title: 'Sessions',
     description: 'Oversikt over kommende og tidligere sessions.',
+    session: 'Session',
     past: 'Tidligere sessions',
     all: 'Alle sessions',
     edit: 'Rediger session',
@@ -121,7 +122,7 @@ const no = {
     location: 'Sted',
     date: 'Dato',
     time: 'Tid',
-    attendees: 'Deltakere',
+    participants: 'Deltakere',
     attendance: 'Påmelding',
     next: 'Neste session',
     form: {

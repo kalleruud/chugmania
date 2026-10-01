@@ -94,7 +94,7 @@ export default function SessionSignupPanel({
         <h3 className='px-2 pt-2'>
           {isUpcoming(session)
             ? loc.no.session.attendance
-            : loc.no.session.attendees}
+            : loc.no.session.participants}
         </h3>
       </div>
 

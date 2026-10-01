@@ -149,22 +149,26 @@ export default function SessionPage() {
         )}
       </div>
 
-      <Tabs defaultValue='session'>
-        <TabsList>
-          <TabsTrigger value='session'>Session</TabsTrigger>
-          <TabsTrigger value='participants'>Deltakere</TabsTrigger>
-          <TabsTrigger value='tournament'>
+      <Tabs defaultValue={loc.no.session.session}>
+        <TabsList className='w-full bg-background-secondary'>
+          <TabsTrigger value={loc.no.session.session}>
+            {loc.no.session.session}
+          </TabsTrigger>
+          <TabsTrigger value={loc.no.session.participants}>
+            {loc.no.session.participants}
+          </TabsTrigger>
+          <TabsTrigger value={loc.no.tournament.title}>
             {loc.no.tournament.title}
           </TabsTrigger>
         </TabsList>
-        <TabsContent value='participants'>
+        <TabsContent value={loc.no.session.participants}>
           <SessionSignupPanel
             className='rounded-sm border bg-background p-2'
             disabled={isCancelled}
             session={session}
           />
         </TabsContent>
-        <TabsContent value='session'>
+        <TabsContent value={loc.no.session.session}>
           {tracks.map(track => (
             <TrackLeaderboard
               key={track.id}
@@ -176,7 +180,7 @@ export default function SessionPage() {
             />
           ))}
         </TabsContent>
-        <TabsContent value='tournament'>
+        <TabsContent value={loc.no.tournament.title}>
           {tournament.loading && <Spinner />}
           {tournament.details && (
             <>
