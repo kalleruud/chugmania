@@ -1,7 +1,13 @@
 import { PageSubheader } from '@/components/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Empty } from '@/components/ui/empty'
-import { NativeSelect } from '@/components/ui/native-select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Spinner } from '@/components/ui/spinner'
 import UserRow from '@/components/user/UserRow'
 import { useAuth } from '@/contexts/AuthContext'
@@ -160,11 +166,9 @@ export default function SessionSignupPanel({
                     highlight={isSelf}
                     hideRanking>
                     {(canManageSignups || (isUpcoming(session) && isSelf)) && (
-                      <NativeSelect
+                      <Select
                         value={response}
-                        aria-label={`${user.firstName}: RSVP`}
-                        onChange={event => {
-                          const value = event.target.value
+                        onValueChange={value => {
                           if (
                             value === 'yes' ||
                             value === 'no' ||
@@ -173,12 +177,18 @@ export default function SessionSignupPanel({
                             handleRsvp(value, user)
                         }}
                         disabled={disabled}>
-                        {RESPONSE_OPTIONS.map(({ response }) => (
-                          <option key={response} value={response}>
-                            {loc.no.session.rsvp.responses[response]}
-                          </option>
-                        ))}
-                      </NativeSelect>
+                        <SelectTrigger aria-label={`${user.firstName}: RSVP`}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent align='end'>
+                          {RESPONSE_OPTIONS.map(({ response, Icon }) => (
+                            <SelectItem key={response} value={response}>
+                              <Icon className='size-4' />
+                              {loc.no.session.rsvp.responses[response]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     )}
                   </UserRow>
                 )
