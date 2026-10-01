@@ -12,30 +12,12 @@ import { createHash } from 'node:crypto'
 import type { MatchStage } from '../../database/schema'
 import { qualificationOrder } from './tournament.rules'
 
-const GROUP_NAMES = [
-  'Turbo',
-  'Apex',
-  'Nitro',
-  'Vortex',
-  'Blitz',
-  'Rocket',
-  'Comet',
-  'Storm',
-  'Thunder',
-  'Lightning',
-  'Phoenix',
-  'Falcon',
-  'Raptor',
-  'Cobra',
-  'Tornado',
-  'Inferno',
-]
-
 function groupNames(session: string, count: number): string[] {
-  const names = GROUP_NAMES.map(name => ({
-    name,
-    seed: createHash('sha256').update(`${session}:${name}`).digest('hex'),
-  }))
+  const names = loc.no.tournament.groupNames
+    .map(name => ({
+      name,
+      seed: createHash('sha256').update(`${session}:${name}`).digest('hex'),
+    }))
     .toSorted((a, b) => a.seed.localeCompare(b.seed))
     .map(row => row.name)
   return Array.from({ length: count }, (_, index) => {
