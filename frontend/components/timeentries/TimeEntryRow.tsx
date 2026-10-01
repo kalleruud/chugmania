@@ -7,6 +7,7 @@ import type {
 } from '@common/models/timeEntry'
 import { formatTime } from '@common/utils/time'
 import { MinusIcon } from '@heroicons/react/24/solid'
+import { ClipboardClock } from 'lucide-react'
 import {
   useEffect,
   useMemo,
@@ -164,12 +165,10 @@ export default function TimeEntryRow({
       )}
       title={lapTime.comment ?? undefined}
       {...rest}>
-      {show.pos &&
-        (pending ? (
-          <span className='w-6 flex-none' />
-        ) : (
-          <PositionBadgePart position={position ?? gap?.position} />
-        ))}
+      {show.pos && !pending && (
+        <PositionBadgePart position={position ?? gap?.position} />
+      )}
+      {pending && <ClipboardClock className='size-4 text-muted-foreground' />}
       <NameCellPart
         name={
           userInfo?.shortName ??
@@ -190,7 +189,9 @@ export default function TimeEntryRow({
       )}
       {show.time &&
         (pending ? (
-          <span>{loc.no.tournament.pending}</span>
+          <span className='text-muted-foreground'>
+            {loc.no.match.status.planned}
+          </span>
         ) : (
           <TimePart duration={lapTime.duration} />
         ))}

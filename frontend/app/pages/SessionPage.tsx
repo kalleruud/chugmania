@@ -67,7 +67,7 @@ export default function SessionPage() {
     )
   }
 
-  if (isLoadingData) {
+  if (isLoadingData || tournament.loading) {
     return (
       <div className='flex h-dvh w-full items-center-safe justify-center-safe'>
         <Spinner className='size-6' />
@@ -150,7 +150,10 @@ export default function SessionPage() {
         )}
       </div>
 
-      <Tabs defaultValue={loc.no.session.session}>
+      <Tabs
+        defaultValue={
+          tournament.details ? loc.no.tournament.title : loc.no.session.session
+        }>
         <TabsList className='w-full bg-background-secondary'>
           <TabsTrigger value={loc.no.session.session}>
             {loc.no.session.session}
@@ -182,7 +185,6 @@ export default function SessionPage() {
           ))}
         </TabsContent>
         <TabsContent value={loc.no.tournament.title}>
-          {tournament.loading && <Spinner />}
           {tournament.details && (
             <>
               <TournamentPanel details={tournament.details} />
@@ -203,15 +205,14 @@ export default function SessionPage() {
               )}
             </>
           )}
-          {!tournament.loading && !tournament.details && (
+          {!tournament.details && (
             <Empty className='border border-input text-sm text-muted-foreground'>
               {isLoggedIn && (
                 <Link to={`/sessions/${session.id}/tournament/create`}>
                   <Button
                     variant='outline'
                     size='sm'
-                    className='w-fit text-muted-foreground'
-                    onClick={() => {}}>
+                    className='w-fit text-muted-foreground'>
                     <PlusIcon />
                     {loc.no.tournament.create}
                   </Button>
