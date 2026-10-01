@@ -1,3 +1,4 @@
+import type { TimeEntry } from '@common/models/timeEntry'
 import type {
   Slot,
   TournamentDetails,
@@ -26,7 +27,10 @@ export function fixtureLabel(
     ? `${stage} ${siblings.indexOf(fixture) + 1}`
     : stage
 }
-export function tournamentDetails(state: TournamentState): TournamentDetails {
+export function tournamentDetails(
+  state: TournamentState,
+  entries: TimeEntry[] = []
+): TournamentDetails {
   const label = (slot: Slot): string => {
     if (slot.kind === 'player') return ''
     if (slot.kind === 'group_rank') {
@@ -39,6 +43,9 @@ export function tournamentDetails(state: TournamentState): TournamentDetails {
     return `${slot.kind === 'match_winner' ? 'Vinner' : 'Taper'} av ${feeder ? fixtureLabel(state, feeder) : ''}`
   }
   const qualification = state.participants.toSorted(qualificationOrder)
+  const qualificationEntries = entries.filter(
+    entry => !entry.deletedAt && qualification.some(p => p.user === entry.user)
+  )
   const active = state.fixtures.filter(
     f => f.reset !== 'unneeded' && f.reset !== 'conditional'
   )
@@ -58,6 +65,7 @@ export function tournamentDetails(state: TournamentState): TournamentDetails {
     frozen: !!state.frozenAt,
     cancelled: state.cancelled,
     notReadyReason: state.notReadyReason,
+    qualificationEntries,
     qualification: qualification.map((p, i) => ({
       ...p,
       rank: i + 1,

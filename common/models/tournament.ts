@@ -1,5 +1,6 @@
 import { isRecord } from '../utils/utils'
 import type { Match, MatchStatus } from './match'
+import type { TimeEntry } from './timeEntry'
 
 export type EliminationType = 'single' | 'double'
 export type TournamentConfig = {
@@ -65,6 +66,7 @@ export type TournamentDetails = {
     gapLeader: number | null
     gapPrevious: number | null
   })[]
+  qualificationEntries: TimeEntry[]
   groups: (TournamentGroup & { standings: Standing[] })[]
   matches: Match[]
   standings: { user: string; rank: number }[]

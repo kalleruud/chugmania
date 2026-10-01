@@ -6,6 +6,8 @@ The Tournament Module exposes commands through `tournament.manager.ts`. Its priv
 
 Historical restoration is excluded. CSV remains raw database writes without tournament validation. This document supersedes earlier tournament implementation plans.
 
+Preview persists missing qualification drafts as normal time entries. Repeated previews reuse them, and cancelled drafts are not recreated. Tournament details carries these entries directly to the shared `TimeEntryList` for editing and cancellation.
+
 ## Stages
 
 1. Working single elimination: schema, generation, persistence, freeze, progression, existing UI, preview, and realtime. Development milestone using a stable roster.

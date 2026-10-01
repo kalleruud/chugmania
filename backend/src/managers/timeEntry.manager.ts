@@ -40,7 +40,11 @@ export default class TimeEntryManager {
       })
       .from(timeEntries)
       .where(
-        and(eq(timeEntries.session, sessionId), isNull(timeEntries.deletedAt))
+        and(
+          eq(timeEntries.session, sessionId),
+          isNull(timeEntries.deletedAt),
+          eq(timeEntries.draft, false)
+        )
       )
       .groupBy(timeEntries.user)
       .as('latest_date')
@@ -62,7 +66,11 @@ export default class TimeEntryManager {
         )
       )
       .where(
-        and(eq(timeEntries.session, sessionId), isNull(timeEntries.deletedAt))
+        and(
+          eq(timeEntries.session, sessionId),
+          isNull(timeEntries.deletedAt),
+          eq(timeEntries.draft, false)
+        )
       )
       .groupBy(timeEntries.user, timeEntries.createdAt)
       .as('latest_best')
@@ -79,7 +87,11 @@ export default class TimeEntryManager {
         )
       )
       .where(
-        and(eq(timeEntries.session, sessionId), isNull(timeEntries.deletedAt))
+        and(
+          eq(timeEntries.session, sessionId),
+          isNull(timeEntries.deletedAt),
+          eq(timeEntries.draft, false)
+        )
       )
       .all()
   }

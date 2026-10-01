@@ -235,6 +235,23 @@ test(
         assert.equal(forbidden.success, false)
         const preview = await admin.emitWithAck('preview_tournament', config)
         assert.ok(preview.success, JSON.stringify(preview))
+        assert.equal(preview.details.qualificationEntries.length, 8)
+        const previewDrafts = preview.details.qualificationEntries.filter(
+          entry => entry.draft
+        )
+        assert.equal(previewDrafts.length, 4)
+        assert.ok(
+          previewDrafts.every(entry => entry.id && entry.duration === null)
+        )
+        const repeatedPreview = await admin.emitWithAck(
+          'preview_tournament',
+          config
+        )
+        assert.ok(repeatedPreview.success)
+        assert.deepEqual(
+          repeatedPreview.details.qualificationEntries.map(entry => entry.id),
+          preview.details.qualificationEntries.map(entry => entry.id)
+        )
         const created = await Promise.all([
           admin.emitWithAck('create_tournament', config),
           admin.emitWithAck('create_tournament', config),
@@ -278,6 +295,16 @@ test(
             player => player.user === drafts[1].user
           )?.sourceEntry,
           null
+        )
+        const previewAfterCancel = await admin.emitWithAck(
+          'preview_tournament',
+          config
+        )
+        assert.ok(previewAfterCancel.success)
+        assert.ok(
+          previewAfterCancel.details.qualificationEntries.every(
+            entry => entry.id !== drafts[1].id
+          )
         )
         assert.equal(
           db

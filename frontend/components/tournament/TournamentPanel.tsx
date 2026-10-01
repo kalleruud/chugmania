@@ -1,12 +1,9 @@
 import { useData } from '@/contexts/DataContext'
-import { useTimeEntryInput } from '@/contexts/TimeEntryInputContext'
 import loc from '@common/locale/locales'
-import type { GapType } from '@common/models/timeEntry'
 import type { TournamentDetails } from '@common/models/tournament'
-import { useState } from 'react'
+import { Lock } from 'lucide-react'
 import MatchList from '../match/MatchList'
-import TimeEntryRow from '../timeentries/TimeEntryRow'
-import { Button } from '../ui/button'
+import { TimeEntryList } from '../timeentries/TimeEntryList'
 
 export default function TournamentPanel({
   details,
@@ -15,11 +12,10 @@ export default function TournamentPanel({
   details: TournamentDetails
   isPreview?: boolean
 }) {
-  const { users, timeEntries } = useData()
-  const { open } = useTimeEntryInput()
-  const [gapType, setGapType] = useState<GapType>('leader')
+  const { users } = useData()
   const name = (id: string) => users?.find(u => u.id === id)?.firstName ?? id
   const workload = details.workloadSummary
+
   return (
     <div className='flex min-w-0 flex-col gap-6'>
       <header>
@@ -47,56 +43,20 @@ export default function TournamentPanel({
         )}
         {details.cancelled && <p role='status'>{loc.no.tournament.session}</p>}
       </header>
-      <section>
-        <div className='mb-2 flex items-center justify-between gap-2'>
-          <h3>
-            {loc.no.tournament.qualification}{' '}
-            {details.frozen && `· ${loc.no.tournament.frozen}`}
-          </h3>
-          <Button
-            type='button'
-            variant='outline'
-            size='sm'
-            onClick={() =>
-              setGapType(gapType === 'leader' ? 'interval' : 'leader')
-            }>
-            {gapType === 'leader'
-              ? loc.no.timeEntry.gap.leader
-              : loc.no.timeEntry.gap.interval}
-          </Button>
-        </div>
-        {details.qualification.map(p => (
-          <TimeEntryRow
-            key={p.user}
-            item={{ user: p.user, duration: p.duration, comment: null }}
-            pending={p.duration === null}
-            onClick={
-              isPreview
-                ? undefined
-                : () =>
-                    open(
-                      timeEntries?.find(
-                        entry => entry.id === p.sourceEntry
-                      ) ?? {
-                        user: p.user,
-                        session: details.config.session,
-                        track: details.config.qualificationTrack,
-                      }
-                    )
-            }
-            position={p.rank}
-            gap={{
-              position: p.rank,
-              leader: p.gapLeader ?? undefined,
-              previous: p.gapPrevious ?? undefined,
-            }}
-            gapType={gapType}
-            onChangeGapType={() =>
-              setGapType(gapType === 'leader' ? 'interval' : 'leader')
-            }
-            className='p-2'
-          />
-        ))}
+
+      <section className='flex flex-col gap-2 rounded-sm border bg-background p-2'>
+        <h3 className='flex items-center gap-2'>
+          {loc.no.tournament.qualification}
+          {details.frozen && (
+            <Lock aria-label={loc.no.tournament.frozen} size={16} />
+          )}
+        </h3>
+        <TimeEntryList
+          entries={details.qualificationEntries}
+          track={details.config.qualificationTrack}
+          session={details.config.session}
+          filter='all'
+        />
       </section>
       <div className='grid gap-4 xl:grid-cols-2'>
         {details.groups.map(group => (

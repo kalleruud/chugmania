@@ -19,6 +19,7 @@ import { Input } from '../ui/input'
 import { NativeSelect } from '../ui/native-select'
 import { Spinner } from '../ui/spinner'
 import TournamentPanel from './TournamentPanel'
+import { TrackRow } from '../track/TrackRow'
 
 export default function TournamentForm({
   session,
@@ -167,6 +168,7 @@ export default function TournamentForm({
             change({ ...config, qualificationTrack: item?.id ?? '' })
           }
           placeholder='Kvalifiseringsbane'
+          CustomRow={TrackRow}
         />
         <label>
           Grupper

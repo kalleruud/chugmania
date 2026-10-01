@@ -22,6 +22,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import { Empty } from '@/components/ui/empty'
 import { Spinner } from '@/components/ui/spinner'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuth } from '@/contexts/AuthContext'
@@ -29,7 +30,7 @@ import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
 import { useTournament } from '@/hooks/useTournament'
 import loc from '@common/locale/locales'
-import { PencilIcon, Trash2 } from 'lucide-react'
+import { PencilIcon, PlusIcon, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { toast } from 'sonner'
@@ -203,14 +204,20 @@ export default function SessionPage() {
             </>
           )}
           {!tournament.loading && !tournament.details && (
-            <p>
-              {loc.no.common.noItems}{' '}
-              {canEdit && !isCancelled && (
+            <Empty className='border border-input text-sm text-muted-foreground'>
+              {isLoggedIn && (
                 <Link to={`/sessions/${session.id}/tournament/create`}>
-                  {loc.no.tournament.create}
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    className='w-fit text-muted-foreground'
+                    onClick={() => {}}>
+                    <PlusIcon />
+                    {loc.no.tournament.create}
+                  </Button>
                 </Link>
               )}
-            </p>
+            </Empty>
           )}
         </TabsContent>
       </Tabs>

@@ -201,7 +201,20 @@ export default class TournamentManager {
   }
   static details(session: string): TournamentDetails | null {
     const state = this.load(session)
-    return state ? tournamentDetails(state) : null
+    return state ? this.toDetails(state) : null
+  }
+  static toDetails(state: TournamentState): TournamentDetails {
+    const entries = db
+      .select()
+      .from(timeEntries)
+      .where(
+        and(
+          eq(timeEntries.session, state.config.session),
+          eq(timeEntries.track, state.config.qualificationTrack)
+        )
+      )
+      .all()
+    return tournamentDetails(state, entries)
   }
   static validate(
     config: TournamentConfig,
@@ -507,7 +520,8 @@ export default class TournamentManager {
         .run()
     }
   }
-  static createQualificationDrafts(state: TournamentState): void {
+  static createQualificationDrafts(state: TournamentState): boolean {
+    let changed = false
     for (const participant of state.participants) {
       if (participant.duration !== null || participant.sourceEntry) continue
       const existing = db
@@ -537,7 +551,9 @@ export default class TournamentManager {
         })
         .run()
       participant.sourceEntry = id
+      changed = true
     }
+    return changed
   }
   static editMatch(request: EditMatchRequest): boolean {
     const link = db
@@ -657,9 +673,16 @@ export default class TournamentManager {
   ): Promise<EventRes<'preview_tournament'>> {
     await AuthManager.checkAuth(socket, ['admin', 'moderator'])
     if (!isTournamentConfig(request)) throw new Error(loc.no.tournament.invalid)
+    const { state, changed } = database.transaction(() => {
+      const state = TournamentManager.validate(request, false)
+      const changed = TournamentManager.createQualificationDrafts(state)
+      return { state, changed }
+    })()
+    if (changed)
+      broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
     return {
       success: true,
-      details: tournamentDetails(TournamentManager.validate(request, false)),
+      details: TournamentManager.toDetails(state),
     }
   }
   static async onCreate(
