@@ -4,6 +4,7 @@ import type { TournamentDetails } from '@common/models/tournament'
 import { Lock } from 'lucide-react'
 import MatchList from '../match/MatchList'
 import { TimeEntryList } from '../timeentries/TimeEntryList'
+import { TrackRow } from '../track/TrackRow'
 
 export default function TournamentPanel({
   details,
@@ -12,9 +13,12 @@ export default function TournamentPanel({
   details: TournamentDetails
   isPreview?: boolean
 }) {
-  const { users } = useData()
+  const { users, tracks } = useData()
   const name = (id: string) => users?.find(u => u.id === id)?.firstName ?? id
   const workload = details.workloadSummary
+  const qualiTrack = tracks?.find(
+    t => t.id === details.config.qualificationTrack
+  )
 
   return (
     <div className='flex min-w-0 flex-col gap-6'>
@@ -45,12 +49,15 @@ export default function TournamentPanel({
       </header>
 
       <section className='flex flex-col gap-2 rounded-sm border bg-background p-2'>
-        <h3 className='flex items-center gap-2'>
+        <h3 className='flex items-center gap-2 px-4 pt-4'>
           {loc.no.tournament.qualification}
           {details.frozen && (
             <Lock aria-label={loc.no.tournament.frozen} size={16} />
           )}
         </h3>
+
+        {qualiTrack && <TrackRow item={qualiTrack} />}
+
         <TimeEntryList
           entries={details.qualificationEntries}
           track={details.config.qualificationTrack}
@@ -58,6 +65,7 @@ export default function TournamentPanel({
           filter='all'
         />
       </section>
+
       <div className='grid gap-4 xl:grid-cols-2'>
         {details.groups.map(group => (
           <section key={group.id} className='rounded border p-3'>
