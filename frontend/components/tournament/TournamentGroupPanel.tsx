@@ -17,9 +17,10 @@ export default function TournamentGroupPanel({
     <section className='min-w-0 overflow-hidden rounded-sm border border-border bg-background'>
       <header className='flex flex-wrap items-center justify-between border-b border-border bg-background-secondary px-4 py-3'>
         <div className='min-w-0'>
-          <h3 className='truncate'>
-            {loc.no.tournament.group} {group.code}: {group.name}
-          </h3>
+          <p className='truncate font-f1 text-sm font-bold text-muted-foreground uppercase'>
+            {loc.no.tournament.group} {group.code}
+          </p>
+          <h3 className='truncate'>{group.name}</h3>
         </div>
       </header>
 
