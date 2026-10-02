@@ -3,7 +3,7 @@ import { useData } from '@/contexts/DataContext'
 import loc from '@common/locale/locales'
 import type { Match } from '@common/models/match'
 import type { TournamentDetails } from '@common/models/tournament'
-import { stageName } from '@common/utils/tournament'
+import { firstPendingMatch, stageName } from '@common/utils/tournament'
 import { Lock } from 'lucide-react'
 import MatchList from '../match/MatchList'
 import SegmentedProgress from '../SegmentedProgress'
@@ -28,6 +28,7 @@ export default function TournamentPanel({
     t => t.id === details.config.qualificationTrack
   )
   const matchesByStage = new Map<Match['stage'], Match[]>()
+  const featuredMatch = firstPendingMatch(details.matches)
   for (const match of details.matches) {
     const stageMatches = matchesByStage.get(match.stage) ?? []
     stageMatches.push(match)
@@ -119,7 +120,12 @@ export default function TournamentPanel({
             <h4 className='px-2 pt-2 text-sm text-muted-foreground'>
               {stageName(stage) || loc.no.match.title}
             </h4>
-            <MatchList matches={matches} managed readOnly={isPreview} />
+            <MatchList
+              matches={matches}
+              managed
+              readOnly={isPreview}
+              featuredMatchId={featuredMatch?.id}
+            />
           </section>
         ))}
       </section>

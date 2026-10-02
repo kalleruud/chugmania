@@ -1,5 +1,6 @@
 import loc from '@common/locale/locales'
 import type { Participant, TournamentConfig } from '@common/models/tournament'
+import { firstPendingMatch } from '@common/utils/tournament'
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { tournamentDetails } from './tournament.details'
@@ -139,6 +140,24 @@ test('qualification fallback orders highest ratings first and empty groups have 
   const state = generateTournament(config, players)
   assert.equal(state.participants[0].user, 'player-7')
   assert.equal(groupStandings(state, state.groups[0].id)[0].user, 'player-7')
+})
+test('only the first pending match is featured and inactive reset matches are skipped', () => {
+  const { config, players } = input()
+  const matches = tournamentDetails(generateTournament(config, players)).matches
+  assert.equal(firstPendingMatch(matches)?.id, matches[0].id)
+  matches[0].status = 'completed'
+  matches[1].status = 'cancelled'
+  assert.ok(matches[2].tournament)
+  matches[2].tournament.reset = 'conditional'
+  assert.ok(matches[3].tournament)
+  matches[3].tournament.reset = 'unneeded'
+  assert.equal(firstPendingMatch(matches)?.id, matches[4].id)
+  matches[4].status = 'completed'
+  assert.equal(firstPendingMatch(matches)?.id, matches[5].id)
+  matches.forEach(match => {
+    match.status = 'completed'
+  })
+  assert.equal(firstPendingMatch(matches), undefined)
 })
 
 for (const advancers of [4, 8]) {

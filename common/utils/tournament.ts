@@ -1,5 +1,6 @@
 import type { MatchStage } from '../../backend/database/schema'
 import loc from '../locale/locales'
+import type { Match } from '../models/match'
 import type { EliminationType, TournamentConfig } from '../models/tournament'
 
 export function validConfiguration(
@@ -47,6 +48,14 @@ export function stageName(stage: MatchStage | null): string {
   if (!stage) return ''
   if (stage.startsWith('round_')) return `${stage.slice(6)}-delsrunde`
   return loc.no.match.stage[stage]
+}
+export function firstPendingMatch(matches: Match[]): Match | undefined {
+  return matches.find(
+    match =>
+      match.status === 'planned' &&
+      match.tournament?.reset !== 'conditional' &&
+      match.tournament?.reset !== 'unneeded'
+  )
 }
 export function usedStages(
   config: TournamentConfig,

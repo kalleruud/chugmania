@@ -4,6 +4,7 @@ import { useData } from '@/contexts/DataContext'
 import loc from '@common/locale/locales'
 import type { EditMatchRequest, Match } from '@common/models/match'
 import type { UserInfo } from '@common/models/user'
+import { getUserFullName } from '@common/models/user'
 import { stageName } from '@common/utils/tournament'
 import { formatTrackName } from '@common/utils/track'
 import { CalendarIcon, MinusIcon } from '@heroicons/react/24/solid'
@@ -18,6 +19,7 @@ import { Label } from '../ui/label'
 export type MatchRowProps = BaseRowProps<Match> & {
   hideTrack?: boolean
   readOnly?: boolean
+  expanded?: boolean
 }
 
 export default function MatchRow({
@@ -26,6 +28,8 @@ export default function MatchRow({
   highlight,
   hideTrack,
   readOnly,
+  expanded,
+  children,
   ...rest
 }: Readonly<MatchRowProps>) {
   const { users, tracks, sessions } = useData()
@@ -91,20 +95,27 @@ export default function MatchRow({
     <div
       className={twMerge(
         'group relative flex cursor-pointer items-center justify-between rounded-sm p-2 transition-colors hover:bg-foreground/15',
+        expanded && 'flex-col items-stretch gap-6 p-6 sm:p-8',
         isCancelled && 'text-muted-foreground opacity-33',
         className,
         highlight && 'bg-foreground/3'
       )}
       {...rest}>
-      <div className='mt-1 grid w-full grid-cols-1 items-center gap-1 sm:grid-cols-2'>
+      <div
+        className={twMerge(
+          'mt-1 grid w-full grid-cols-1 items-center gap-1 sm:grid-cols-2',
+          expanded && 'gap-6 sm:grid-cols-1'
+        )}>
         <div
           className={twMerge(
             'flex w-full items-center justify-center gap-2',
+            expanded && 'gap-4 py-4',
             isCancelled && 'line-through'
           )}>
           <UserCell
-            className='flex-1 text-right'
+            className='min-w-0 flex-1 text-right'
             user={user1}
+            expanded={expanded}
             slotLabel={match.tournament?.slot1}
             isWinner={!!match.winner && match.winner === match.user1}
             onClick={() => user1 && handleSetWinner(user1.id)}
@@ -116,14 +127,16 @@ export default function MatchRow({
           <span
             className={twMerge(
               'mb-1 font-kh-interface text-sm font-black text-muted-foreground/50',
+              expanded && 'text-2xl text-primary',
               isCancelled && 'line-through'
             )}>
             {loc.no.match.vs}
           </span>
 
           <UserCell
-            className='flex-1'
+            className='min-w-0 flex-1'
             user={user2}
+            expanded={expanded}
             slotLabel={match.tournament?.slot2}
             isWinner={!!match.winner && match.winner === match.user2}
             onClick={() => user2 && handleSetWinner(user2.id)}
@@ -136,6 +149,7 @@ export default function MatchRow({
         <div
           className={twMerge(
             'flex items-center justify-center gap-2 sm:justify-start',
+            expanded && 'flex-wrap gap-3 sm:justify-center',
             (!track || hideTrack) && !session && !match.stage && 'hidden'
           )}>
           {track && !hideTrack && (
@@ -173,6 +187,7 @@ export default function MatchRow({
           )}
         </div>
       </div>
+      {children}
 
       {match.tournament?.awarded && <Badge>{loc.no.tournament.awarded}</Badge>}
       {match.tournament?.reset === 'conditional' && (
@@ -181,12 +196,19 @@ export default function MatchRow({
       {match.tournament?.reset === 'unneeded' && (
         <Badge>{loc.no.tournament.unneeded}</Badge>
       )}
-      <div className='absolute right-0 flex items-center'>
+      <div
+        className={twMerge(
+          'absolute right-0 flex items-center',
+          expanded && 'top-0'
+        )}>
         {canEdit && isPlanned && (
           <button
             type='button'
             title={loc.no.match.cancel}
-            className='m-2 hidden p-2 text-muted-foreground transition-colors group-hover:block hover:rounded-sm hover:bg-muted hover:text-primary-foreground'
+            className={twMerge(
+              'm-2 hidden p-2 text-muted-foreground transition-colors group-hover:block hover:rounded-sm hover:bg-muted hover:text-primary-foreground',
+              expanded && 'block'
+            )}
             onClick={e => {
               e.stopPropagation()
               handleCancel()
@@ -211,6 +233,7 @@ function UserCell({
   disabled,
   isCancelled,
   isCompleted,
+  expanded,
   ...props
 }: Readonly<
   {
@@ -221,6 +244,7 @@ function UserCell({
     disabled?: boolean
     isCancelled: boolean
     isCompleted: boolean
+    expanded?: boolean
   } & ComponentProps<'div'>
 >) {
   return (
@@ -234,6 +258,7 @@ function UserCell({
         }}
         className={twMerge(
           'border-b-2 border-transparent px-1 transition-all',
+          expanded && 'max-w-full',
           !isCancelled &&
             !isCompleted &&
             user &&
@@ -246,13 +271,21 @@ function UserCell({
         )}>
         <NameCellPart
           name={
-            user?.shortName ??
-            user?.lastName ??
-            user?.firstName ??
-            (slotLabel || loc.no.match.unknownUser)
+            expanded && user
+              ? getUserFullName(user)
+              : (user?.shortName ??
+                user?.lastName ??
+                user?.firstName ??
+                (slotLabel || loc.no.match.unknownUser))
+          }
+          className={
+            expanded ? 'text-lg whitespace-normal sm:text-3xl' : undefined
           }
         />
       </button>
+      {expanded && user && slotLabel && (
+        <p className='mt-2 text-sm text-muted-foreground'>{slotLabel}</p>
+      )}
     </div>
   )
 }

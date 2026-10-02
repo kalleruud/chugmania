@@ -254,6 +254,8 @@ const no = {
     edit: 'Rediger match',
     new: 'Ny match',
     noMatches: 'Ingen matcher funnet.',
+    upNext: 'Neste match',
+    duration: 'Tid',
     unknownUser: 'Ukjent',
     status: {
       planned: 'Planlagt',

@@ -5,6 +5,7 @@ import type { Match } from '@common/models/match'
 import { PlusIcon } from '@heroicons/react/24/solid'
 import { Button } from '../ui/button'
 import { Empty } from '../ui/empty'
+import MatchCard from './MatchCard'
 import MatchRow from './MatchRow'
 
 export type MatchListProps = {
@@ -15,6 +16,7 @@ export type MatchListProps = {
   managed?: boolean
   readOnly?: boolean
   hideTrack?: boolean
+  featuredMatchId?: string
 }
 
 export default function MatchList({
@@ -25,6 +27,7 @@ export default function MatchList({
   hideTrack,
   managed,
   readOnly,
+  featuredMatchId,
 }: Readonly<MatchListProps>) {
   const { isLoggedIn, loggedInUser } = useAuth()
   const { openMatch } = useTimeEntryInput()
@@ -49,23 +52,28 @@ export default function MatchList({
 
   return (
     <div className='flex flex-col gap-2'>
-      {matches.map(match => (
-        <MatchRow
-          key={match.id}
-          item={match}
-          highlight={
-            match.status !== 'cancelled' &&
-            isLoggedIn &&
-            (match.user1 === loggedInUser.id || match.user2 === loggedInUser.id)
-          }
-          className='rounded-sm bg-background-secondary p-2'
-          readOnly={readOnly}
-          onClick={() => {
-            if (!readOnly && !match.tournament?.readOnly) openMatch(match)
-          }}
-          hideTrack={hideTrack}
-        />
-      ))}
+      {matches.map(match => {
+        const MatchComponent =
+          match.id === featuredMatchId ? MatchCard : MatchRow
+        return (
+          <MatchComponent
+            key={match.id}
+            item={match}
+            highlight={
+              match.status !== 'cancelled' &&
+              isLoggedIn &&
+              (match.user1 === loggedInUser.id ||
+                match.user2 === loggedInUser.id)
+            }
+            className='rounded-sm bg-background-secondary p-2'
+            readOnly={readOnly}
+            onClick={() => {
+              if (!readOnly && !match.tournament?.readOnly) openMatch(match)
+            }}
+            hideTrack={hideTrack}
+          />
+        )
+      })}
 
       {isLoggedIn && !managed && (
         <Button
