@@ -5,6 +5,7 @@ import { Lock } from 'lucide-react'
 import MatchList from '../match/MatchList'
 import { TimeEntryList } from '../timeentries/TimeEntryList'
 import { TrackRow } from '../track/TrackRow'
+import UserRow from '../user/UserRow'
 import TournamentGroupPanel from './TournamentGroupPanel'
 
 export default function TournamentPanel({
@@ -15,7 +16,6 @@ export default function TournamentPanel({
   isPreview?: boolean
 }) {
   const { users, tracks } = useData()
-  const name = (id: string) => users?.find(u => u.id === id)?.firstName ?? id
   const workload = details.workloadSummary
   const qualiTrack = tracks?.find(
     t => t.id === details.config.qualificationTrack
@@ -67,23 +67,28 @@ export default function TournamentPanel({
         />
       </section>
 
-      <div className='grid gap-4 xl:grid-cols-2'>
+      <div className='grid gap-4 sm:grid-cols-2'>
         {details.groups.map(group => (
           <TournamentGroupPanel key={group.id} group={group} />
         ))}
       </div>
-      <MatchList matches={details.matches} managed readOnly={isPreview} />
-      <section>
-        <h3>
+
+      <section className='flex flex-col gap-2 rounded-sm border bg-background p-2'>
+        <h3 className='p-4'>{loc.no.match.title}</h3>
+        <MatchList matches={details.matches} managed readOnly={isPreview} />
+      </section>
+
+      <section className='flex flex-col gap-2 rounded-sm border bg-background p-2'>
+        <h3 className='p-4'>
           {details.completed
             ? loc.no.tournament.finalStandings
             : loc.no.tournament.provisional}
         </h3>
-        {details.standings.map(row => (
-          <p key={row.user}>
-            {row.rank}. {name(row.user)}
-          </p>
-        ))}
+        {details.standings.map(row => {
+          const user = users?.find(u => u.id === row.user)
+          if (!user) return null
+          return <UserRow item={user} />
+        })}
       </section>
     </div>
   )
