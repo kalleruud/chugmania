@@ -26,6 +26,7 @@ import type {
   TimeEntry,
 } from './timeEntry'
 import type {
+  DeleteTournamentRequest,
   TournamentChange,
   TournamentConfig,
   TournamentDetails,
@@ -85,7 +86,7 @@ export interface ClientToServerEvents {
     ) => void
   ) => void
   delete_tournament: (
-    request: TournamentRequest,
+    request: DeleteTournamentRequest,
     callback: (
       response: { success: true; details: null } | ErrorResponse
     ) => void

@@ -563,7 +563,7 @@ test(
       }
     )
     await t.test(
-      'deletion preserves ordinary matches and laps; invalid roster recovers',
+      'deletion can keep or delete related results; unrelated records survive and invalid roster recovers',
       async () => {
         const ordinary = await admin.emitWithAck('create_match', {
           type: 'CreateMatchRequest',
@@ -573,18 +573,50 @@ test(
           user2: people[1].id,
         })
         assert.ok(ordinary.success)
-        const originalLaps = db.select().from(schema.timeEntries).all().length
+        const originalLaps = db.select().from(schema.timeEntries).all()
+        const originalMatches = db.select().from(schema.matches).all()
+        const kept = await details()
+        const denied = await viewer.emitWithAck('delete_tournament', {
+          session,
+          deleteRelatedResults: true,
+        })
+        assert.equal(denied.success, false)
+        assert.ok((await details()).id)
         const deletion = await admin.emitWithAck('delete_tournament', {
           session,
+          deleteRelatedResults: false,
         })
         assert.ok(deletion.success)
         const deleted = await admin.emitWithAck('get_tournament', { session })
         assert.ok(deleted.success)
         assert.equal(deleted.details, null)
-        assert.equal(
-          db.select().from(schema.timeEntries).all().length,
+        assert.deepEqual(
+          db.select().from(schema.timeEntries).all(),
           originalLaps
         )
+        assert.deepEqual(
+          db
+            .select()
+            .from(schema.matches)
+            .all()
+            .map(({ updatedAt: ignored, ...match }) => match),
+          originalMatches.map(({ updatedAt: ignored, ...match }) => {
+            if (
+              !match.deletedAt &&
+              match.status === 'cancelled' &&
+              match.winner &&
+              kept.matches.some(fixture => fixture.id === match.id)
+            )
+              return { ...match, status: 'completed' }
+            return match
+          })
+        )
+        const retainedEdit = await admin.emitWithAck('edit_match', {
+          type: 'EditMatchRequest',
+          id: kept.matches[0].id,
+          comment: 'Kept match is editable',
+        })
+        assert.ok(retainedEdit.success)
         assert.ok(
           db
             .select()
@@ -594,6 +626,46 @@ test(
         )
         const created = await admin.emitWithAck('create_tournament', config)
         assert.ok(created.success, JSON.stringify(created))
+        const removed = await details()
+        const removeResults = await admin.emitWithAck('delete_tournament', {
+          session,
+          deleteRelatedResults: true,
+        })
+        assert.ok(removeResults.success)
+        const remainingMatches = db.select().from(schema.matches).all()
+        assert.ok(
+          remainingMatches
+            .filter(match =>
+              removed.matches.some(fixture => fixture.id === match.id)
+            )
+            .every(match => match.deletedAt)
+        )
+        assert.ok(
+          remainingMatches.find(
+            match => match.id === kept.matches[0].id && !match.deletedAt
+          )
+        )
+        assert.ok(
+          remainingMatches.some(
+            match =>
+              !match.deletedAt &&
+              !kept.matches.some(fixture => fixture.id === match.id)
+          )
+        )
+        const remainingLaps = db.select().from(schema.timeEntries).all()
+        assert.ok(
+          remainingLaps
+            .filter(entry =>
+              removed.qualificationEntries.some(lap => lap.id === entry.id)
+            )
+            .every(entry => entry.deletedAt)
+        )
+        assert.deepEqual(
+          remainingLaps.filter(entry => entry.track === secondTrack),
+          originalLaps.filter(entry => entry.track === secondTrack)
+        )
+        const recreated = await admin.emitWithAck('create_tournament', config)
+        assert.ok(recreated.success)
         for (const person of people.slice(3, 10)) {
           const response = await admin.emitWithAck('rsvp_session', {
             type: 'RsvpSessionRequest',

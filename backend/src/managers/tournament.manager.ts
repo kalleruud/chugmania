@@ -1,8 +1,9 @@
 import loc from '@common/locale/locales'
 import type { EditMatchRequest, Match } from '@common/models/match'
-import type { EventRes } from '@common/models/socket.io'
+import type { EventReq, EventRes } from '@common/models/socket.io'
 import type { TimeEntry } from '@common/models/timeEntry'
 import {
+  isDeleteTournamentRequest,
   isTournamentConfig,
   isTournamentRequest,
   type Participant,
@@ -13,7 +14,7 @@ import {
 } from '@common/models/tournament'
 import { RATING_CONSTANTS } from '@common/utils/constants'
 import { usedStages, validConfiguration } from '@common/utils/tournament'
-import { and, eq, isNull, sql } from 'drizzle-orm'
+import { and, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm'
 import { randomUUID } from 'node:crypto'
 import db, { database } from '../../database/database'
 import {
@@ -638,14 +639,53 @@ export default class TournamentManager {
     })
     return true
   }
-  static remove(session: string): void {
+  static remove(
+    session: string,
+    { deleteMatches, deleteLapTimes } = {
+      deleteMatches: true,
+      deleteLapTimes: false,
+    }
+  ): void {
     const state = this.load(session)
     if (!state) return
     const deletedAt = new Date()
-    for (const fixture of state.fixtures)
+    const relatedMatchIds = db
+      .select({ id: tournamentMatches.matchId })
+      .from(tournamentMatches)
+      .where(eq(tournamentMatches.tournament, state.id))
+    if (deleteMatches)
       db.update(matches)
         .set({ deletedAt })
-        .where(eq(matches.id, fixture.match.id))
+        .where(inArray(matches.id, relatedMatchIds))
+        .run()
+    else
+      db.update(matches)
+        .set({ status: 'completed' })
+        .where(
+          and(
+            inArray(matches.id, relatedMatchIds),
+            eq(matches.status, 'cancelled'),
+            isNotNull(matches.winner),
+            isNull(matches.deletedAt)
+          )
+        )
+        .run()
+    if (deleteLapTimes)
+      db.update(timeEntries)
+        .set({ deletedAt })
+        .where(
+          and(
+            eq(timeEntries.session, session),
+            eq(timeEntries.track, state.config.qualificationTrack),
+            inArray(
+              timeEntries.user,
+              db
+                .select({ user: tournamentPlayers.user })
+                .from(tournamentPlayers)
+                .where(eq(tournamentPlayers.tournament, state.id))
+            )
+          )
+        )
         .run()
     for (const table of [
       tournamentStages,
@@ -731,13 +771,18 @@ export default class TournamentManager {
   }
   static async onDelete(
     socket: TypedSocket,
-    request: { session: string }
+    request: EventReq<'delete_tournament'>
   ): Promise<EventRes<'delete_tournament'>> {
     await AuthManager.checkAuth(socket, ['admin', 'moderator'])
-    if (!isTournamentRequest(request))
+    if (!isDeleteTournamentRequest(request))
       throw new Error(loc.no.tournament.invalid)
     TournamentManager.session(request.session, true)
-    TournamentManager.commit(() => TournamentManager.remove(request.session))
+    TournamentManager.commit(() =>
+      TournamentManager.remove(request.session, {
+        deleteMatches: request.deleteRelatedResults,
+        deleteLapTimes: request.deleteRelatedResults,
+      })
+    )
     RatingManager.recalculate()
     broadcast('all_rankings', RatingManager.onGetRatings())
     await TournamentManager.publish(socket.id)

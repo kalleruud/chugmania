@@ -85,6 +85,9 @@ export type TournamentDetails = {
   }
 }
 export type TournamentRequest = { session: string }
+export type DeleteTournamentRequest = TournamentRequest & {
+  deleteRelatedResults: boolean
+}
 export type TournamentChange = {
   session: string
   details: TournamentDetails | null
@@ -114,5 +117,14 @@ export function isTournamentConfig(value: unknown): value is TournamentConfig {
         Array.isArray(tracks) &&
         tracks.every((track: unknown) => typeof track === 'string')
     )
+  )
+}
+export function isDeleteTournamentRequest(
+  value: unknown
+): value is DeleteTournamentRequest {
+  return (
+    isTournamentRequest(value) &&
+    'deleteRelatedResults' in value &&
+    typeof value.deleteRelatedResults === 'boolean'
   )
 }

@@ -2,6 +2,7 @@ import ConfirmationButton from '@/components/ConfirmationButton'
 import SessionCard from '@/components/session/SessionCard'
 import SessionForm from '@/components/session/SessionForm'
 import SessionSignupPanel from '@/components/session/SessionSignupPanel'
+import DeleteTournamentDialog from '@/components/tournament/DeleteTournamentDialog'
 import TournamentPanel from '@/components/tournament/TournamentPanel'
 import TrackLeaderboard from '@/components/track/TrackLeaderboard'
 import {
@@ -188,21 +189,7 @@ export default function SessionPage() {
           {tournament.details && (
             <>
               <TournamentPanel details={tournament.details} />
-              {canEdit && (
-                <ConfirmationButton
-                  variant='destructive'
-                  onClick={async () => {
-                    const response = await socket.emitWithAck(
-                      'delete_tournament',
-                      { session: session.id }
-                    )
-                    if (response.success)
-                      toast.success(loc.no.tournament.deleted)
-                    else toast.error(response.message)
-                  }}>
-                  {loc.no.common.delete}
-                </ConfirmationButton>
-              )}
+              {canEdit && <DeleteTournamentDialog session={session.id} />}
             </>
           )}
           {!tournament.details && (

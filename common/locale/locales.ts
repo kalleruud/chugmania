@@ -224,6 +224,11 @@ const no = {
     changed: 'Turneringen er oppdatert',
     saved: 'Turneringen er lagret',
     deleted: 'Turneringen er slettet',
+    deleteTitle: 'Slett turnering',
+    deleteDescription:
+      'Vil du beholde eller slette turneringens matcher og deltakernes kvalifiseringsrundetider? Andre matcher og rundetider beholdes.',
+    keepResults: 'Slett turnering, behold resultater',
+    deleteResults: 'Slett turnering og resultater',
     awarded: 'Tildelt seier',
     groupInfo: (count: number) =>
       count === 1

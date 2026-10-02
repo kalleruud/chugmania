@@ -34,7 +34,7 @@ flowchart TD
   Reset --> Complete
 ```
 
-Cancellation suspends play at its current phase; restoration resumes it. Deletion soft-deletes the tournament and its matches. Undo never unfreezes qualification or reopens admission.
+Cancellation suspends play at its current phase; restoration resumes it. Tournament deletion asks whether to keep or soft-delete its matches and participants' qualification laps. Kept matches become ordinary editable matches. Other session results are preserved. Undo never unfreezes qualification or reopens admission.
 
 ## Verification
 
