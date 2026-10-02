@@ -1,7 +1,9 @@
 import { useAuth } from '@/contexts/AuthContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@common/locale/locales'
+import type { Match } from '@common/models/match'
 import type { TournamentDetails } from '@common/models/tournament'
+import { stageName } from '@common/utils/tournament'
 import { Lock } from 'lucide-react'
 import MatchList from '../match/MatchList'
 import SegmentedProgress from '../SegmentedProgress'
@@ -25,6 +27,12 @@ export default function TournamentPanel({
   const qualiTrack = tracks?.find(
     t => t.id === details.config.qualificationTrack
   )
+  const matchesByStage = new Map<Match['stage'], Match[]>()
+  for (const match of details.matches) {
+    const stageMatches = matchesByStage.get(match.stage) ?? []
+    stageMatches.push(match)
+    matchesByStage.set(match.stage, stageMatches)
+  }
 
   return (
     <div className='flex min-w-0 flex-col gap-6'>
@@ -106,7 +114,14 @@ export default function TournamentPanel({
 
       <section className='flex flex-col gap-2 rounded-sm border bg-background p-2'>
         <h3 className='p-4'>{loc.no.match.title}</h3>
-        <MatchList matches={details.matches} managed readOnly={isPreview} />
+        {Array.from(matchesByStage, ([stage, matches]) => (
+          <section key={stage ?? 'none'} className='flex flex-col gap-2'>
+            <h4 className='px-2 pt-2 text-sm text-muted-foreground'>
+              {stageName(stage) || loc.no.match.title}
+            </h4>
+            <MatchList matches={matches} managed readOnly={isPreview} />
+          </section>
+        ))}
       </section>
 
       <section className='flex flex-col gap-2 rounded-sm border bg-background p-4'>
