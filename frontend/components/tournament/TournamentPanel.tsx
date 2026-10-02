@@ -100,8 +100,8 @@ export default function TournamentPanel({
         <MatchList matches={details.matches} managed readOnly={isPreview} />
       </section>
 
-      <section className='flex flex-col gap-2 rounded-sm border bg-background p-2'>
-        <h3 className='p-4'>
+      <section className='flex flex-col gap-2 rounded-sm border bg-background p-4'>
+        <h3 className='p-2'>
           {details.completed
             ? loc.no.tournament.finalStandings
             : loc.no.tournament.provisional}
@@ -109,7 +109,7 @@ export default function TournamentPanel({
         {details.standings.map(row => {
           const user = users?.find(u => u.id === row.user)
           if (!user) return null
-          return <UserRow item={user} />
+          return <UserRow className='p-0' item={user} rank={row.rank} />
         })}
       </section>
     </div>

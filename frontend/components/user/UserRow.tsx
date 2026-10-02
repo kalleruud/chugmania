@@ -41,7 +41,7 @@ export default function UserRow({
           {showRanking && (
             <p
               className={twMerge(
-                'font-kh-interface text-lg font-black text-primary tabular-nums',
+                'w-6 text-center font-kh-interface text-lg font-black text-primary tabular-nums',
                 !hideLink && highlight && 'group-hover:text-primary-foreground'
               )}>
               {ranking}

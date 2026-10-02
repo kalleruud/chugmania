@@ -296,7 +296,7 @@ const no = {
       update: {
         loading: 'Oppdaterer match...',
         success: 'Match oppdatert!',
-        error: 'Klarte ikke oppdatere match',
+        error: (err: Error) => err.message || 'Klarte ikke oppdatere match',
       },
       delete: {
         loading: 'Sletter match...',

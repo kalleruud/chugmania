@@ -1,3 +1,4 @@
+import loc from '@common/locale/locales'
 import type { Participant, TournamentConfig } from '@common/models/tournament'
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
@@ -120,7 +121,16 @@ test('normal results progress to a champion; decided downstream results protect 
   feeder.match.winner = feeder.match.user2
   assert.throws(
     () => protectResults(state, resolveSlots(proposed), feeder.id),
-    /Angre først/
+    (error: unknown) => {
+      assert.ok(error instanceof Error)
+      assert.match(
+        error.message,
+        /Kan ikke endre en match som andre matcher er avhengig av\./
+      )
+      assert.match(error.message, /Angre først resultatene i: .+/)
+      assert.equal(loc.no.match.toast.update.error(error), error.message)
+      return true
+    }
   )
 })
 test('qualification fallback orders highest ratings first and empty groups have standings', () => {
