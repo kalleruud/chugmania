@@ -199,8 +199,6 @@ test(
     assert.ok(watched.success)
     const config: TournamentConfig = {
       session,
-      name: 'Cup',
-      description: 'Integration',
       qualificationTrack: track,
       groupsCount: 2,
       advancementCount: 2,
@@ -317,7 +315,9 @@ test(
             .length,
           1
         )
-        assert.ok(changes.some(change => change.details?.config.name === 'Cup'))
+        assert.ok(
+          changes.some(change => change.details?.config.session === session)
+        )
         const unresolved = (await details()).matches.find(m => !m.user1)
         assert.ok(unresolved)
         const invalid = await admin.emitWithAck('edit_match', {

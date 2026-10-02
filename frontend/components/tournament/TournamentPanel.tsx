@@ -41,23 +41,16 @@ export default function TournamentPanel({
   return (
     <div className='flex min-w-0 flex-col gap-6'>
       <header className='flex flex-col gap-2 rounded-sm border bg-background p-4'>
-        {isPreview ? (
+        {isPreview && (
           <p>
             {workload.tracks} baner · {workload.qualificationLaps}{' '}
             kvalifiseringsrunde per spiller · {workload.minMatches}–
             {workload.maxMatches} matcher per spiller
           </p>
-        ) : (
-          <div className='flex flex-wrap items-start justify-between gap-4'>
-            <div className='min-w-0 flex-1'>
-              <h2>{details.config.name}</h2>
-              <p className='text-muted-foreground'>
-                {details.config.description}
-              </p>
-            </div>
-            {canEdit && (
-              <DeleteTournamentDialog session={details.config.session} />
-            )}
+        )}
+        {!isPreview && canEdit && (
+          <div className='flex justify-end'>
+            <DeleteTournamentDialog session={details.config.session} />
           </div>
         )}
         <SegmentedProgress

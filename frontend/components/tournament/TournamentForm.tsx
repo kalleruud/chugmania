@@ -17,7 +17,6 @@ import Combobox from '../combobox'
 import ComboboxMulti from '../ComboboxMulti'
 import { TrackRow } from '../track/TrackRow'
 import { Button } from '../ui/button'
-import { Input } from '../ui/input'
 import { NativeSelect } from '../ui/native-select'
 import { Spinner } from '../ui/spinner'
 import TournamentPanel from './TournamentPanel'
@@ -33,8 +32,6 @@ export default function TournamentForm({
   const { tracks, sessions, timeEntries, rankings } = useData()
   const [inputConfig, setConfig] = useState<TournamentConfig>({
     session,
-    name: '',
-    description: '',
     qualificationTrack: '',
     groupsCount: 1,
     advancementCount: 2,
@@ -83,8 +80,6 @@ export default function TournamentForm({
   const sessionData = sessions?.find(s => s.id === session)
   const key = JSON.stringify({
     ...config,
-    name: '',
-    description: '',
     signups: sessionData?.signups,
     status: sessionData?.status,
     timeEntries,
@@ -98,8 +93,7 @@ export default function TournamentForm({
     !saving &&
     !error &&
     isConnected &&
-    preview.details.matches.every(m => m.track) &&
-    config.name.trim().length > 0
+    preview.details.matches.every(m => m.track)
   function change(next: TournamentConfig) {
     setConfig(next)
   }
@@ -145,23 +139,6 @@ export default function TournamentForm({
   return (
     <div className='grid min-w-0 gap-6 lg:grid-cols-[minmax(16rem,22rem)_minmax(0,1fr)]'>
       <form onSubmit={submit} className='flex min-w-0 flex-col gap-4'>
-        <label>
-          Navn
-          <Input
-            required
-            value={config.name}
-            onChange={e => setConfig({ ...config, name: e.target.value })}
-          />
-        </label>
-        <label>
-          Beskrivelse
-          <Input
-            value={config.description}
-            onChange={e =>
-              setConfig({ ...config, description: e.target.value })
-            }
-          />
-        </label>
         <Combobox
           items={items}
           selected={items.find(t => t.id === config.qualificationTrack)}

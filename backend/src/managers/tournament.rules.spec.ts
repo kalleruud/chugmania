@@ -18,8 +18,6 @@ export function input(count = 8): {
   return {
     config: {
       session: 'session',
-      name: 'Cup',
-      description: '',
       qualificationTrack: 'track',
       groupsCount: 2,
       advancementCount: 2,

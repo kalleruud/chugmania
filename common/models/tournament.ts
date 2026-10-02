@@ -5,8 +5,6 @@ import type { TimeEntry } from './timeEntry'
 export type EliminationType = 'single' | 'double'
 export type TournamentConfig = {
   session: string
-  name: string
-  description: string
   qualificationTrack: string
   groupsCount: number
   advancementCount: number
@@ -104,8 +102,6 @@ export function isTournamentConfig(value: unknown): value is TournamentConfig {
   return (
     isRecord(value) &&
     typeof value.session === 'string' &&
-    typeof value.name === 'string' &&
-    typeof value.description === 'string' &&
     typeof value.qualificationTrack === 'string' &&
     Number.isInteger(value.groupsCount) &&
     Number.isInteger(value.advancementCount) &&

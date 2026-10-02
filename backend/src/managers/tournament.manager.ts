@@ -228,8 +228,6 @@ export default class TournamentManager {
     creating: boolean
   ): TournamentState {
     this.session(config.session)
-    if (creating && !config.name.trim())
-      throw new Error(loc.no.tournament.invalid)
     const available = new Set(
       db
         .select({ id: tracks.id })
