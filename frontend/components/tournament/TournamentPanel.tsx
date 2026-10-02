@@ -5,6 +5,7 @@ import { Lock } from 'lucide-react'
 import MatchList from '../match/MatchList'
 import { TimeEntryList } from '../timeentries/TimeEntryList'
 import { TrackRow } from '../track/TrackRow'
+import { Progress } from '../ui/progress'
 import UserRow from '../user/UserRow'
 import TournamentGroupPanel from './TournamentGroupPanel'
 
@@ -17,6 +18,9 @@ export default function TournamentPanel({
 }) {
   const { users, tracks } = useData()
   const workload = details.workloadSummary
+  const matchProgress = details.progress.total
+    ? (details.progress.decided / details.progress.total) * 100
+    : 0
   const qualiTrack = tracks?.find(
     t => t.id === details.config.qualificationTrack
   )
@@ -38,11 +42,12 @@ export default function TournamentPanel({
             </p>
           </>
         )}
-        <p>
-          {details.progress.decided} / {details.progress.total} matcher ·{' '}
-          {details.progress.groupDecided} / {details.progress.groupTotal}{' '}
-          gruppematcher
-        </p>
+        <div className='flex flex-col gap-2'>
+          <p className='text-sm text-muted-foreground'>
+            {details.progress.decided} / {details.progress.total} matcher
+          </p>
+          <Progress value={matchProgress} aria-label={loc.no.match.title} />
+        </div>
         {details.notReadyReason && (
           <p role='status' className='text-destructive'>
             {details.notReadyReason}
