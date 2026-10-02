@@ -123,11 +123,8 @@ test('normal results progress to a champion; decided downstream results protect 
     () => protectResults(state, resolveSlots(proposed), feeder.id),
     (error: unknown) => {
       assert.ok(error instanceof Error)
-      assert.match(
-        error.message,
-        /Kan ikke endre en match som andre matcher er avhengig av\./
-      )
-      assert.match(error.message, /Angre først resultatene i: .+/)
+      assert.ok(error.message.startsWith(loc.no.tournament.downstream))
+      assert.ok(error.message.length > loc.no.tournament.downstream.length)
       assert.equal(loc.no.match.toast.update.error(error), error.message)
       return true
     }

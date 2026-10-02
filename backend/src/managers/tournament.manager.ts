@@ -1,6 +1,7 @@
 import loc from '@common/locale/locales'
 import type { EditMatchRequest, Match } from '@common/models/match'
 import type { EventRes } from '@common/models/socket.io'
+import type { TimeEntry } from '@common/models/timeEntry'
 import {
   isTournamentConfig,
   isTournamentRequest,
@@ -100,6 +101,15 @@ export default class TournamentManager {
         and(eq(tournaments.session, session), isNull(tournaments.deletedAt))
       )
       .get()
+  }
+  static assertQualificationEditable(
+    session: TimeEntry['session'],
+    track: TimeEntry['track']
+  ): void {
+    if (!session) return
+    const tournament = this.active(session)
+    if (tournament?.frozenAt && tournament.config.qualificationTrack === track)
+      throw new Error(loc.no.tournament.qualificationLocked)
   }
   static session(session: string, allowCancelled = false) {
     const row = db

@@ -1,8 +1,10 @@
+import loc from '@common/locale/locales'
 import type { Match } from '@common/models/match'
 import type {
   ClientToServerEvents,
   ServerToClientEvents,
 } from '@common/models/socket.io'
+import type { EditTimeEntryRequest } from '@common/models/timeEntry'
 import type {
   Slot,
   TournamentChange,
@@ -358,7 +360,7 @@ test(
       }
     )
     await t.test(
-      'freeze precedes ratings; late admission preserves fixtures; snapshot survives edits and undo',
+      'freeze locks qualification laps; late admission preserves fixtures; undo keeps qualification locked',
       async () => {
         const before = await details()
         const first = before.matches[0]
@@ -366,6 +368,24 @@ test(
         const frozen = await details()
         assert.ok(frozen.frozen)
         assert.deepEqual(frozen.qualification, before.qualification)
+        const frozenEntries = db.select().from(schema.timeEntries).all()
+        const lap = frozen.qualificationEntries[0]
+        assert.ok(lap)
+        const edits: Partial<EditTimeEntryRequest>[] = [
+          { duration: 1 },
+          { deletedAt: new Date() },
+          { session: null },
+          { track: secondTrack },
+        ]
+        for (const edit of edits) {
+          const response = await admin.emitWithAck('edit_time_entry', {
+            ...edit,
+            type: 'EditTimeEntryRequest',
+            id: lap.id,
+          })
+          assert.equal(response.success, false)
+          assert.equal(response.message, loc.no.tournament.qualificationLocked)
+        }
         const posted = await admin.emitWithAck('post_time_entry', {
           type: 'CreateTimeEntryRequest',
           user: people[0].id,
@@ -373,7 +393,39 @@ test(
           track,
           duration: 1,
         })
-        assert.ok(posted.success)
+        assert.equal(posted.success, false)
+        assert.equal(posted.message, loc.no.tournament.qualificationLocked)
+        assert.deepEqual(
+          db.select().from(schema.timeEntries).all(),
+          frozenEntries
+        )
+        const otherTrack = await admin.emitWithAck('post_time_entry', {
+          type: 'CreateTimeEntryRequest',
+          user: people[0].id,
+          session,
+          track: secondTrack,
+          duration: 1234,
+        })
+        assert.ok(otherTrack.success)
+        const ordinaryLap = db
+          .select()
+          .from(schema.timeEntries)
+          .all()
+          .find(entry => entry.track === secondTrack)
+        assert.ok(ordinaryLap)
+        const moved = await admin.emitWithAck('edit_time_entry', {
+          type: 'EditTimeEntryRequest',
+          id: ordinaryLap.id,
+          track,
+        })
+        assert.equal(moved.success, false)
+        assert.equal(moved.message, loc.no.tournament.qualificationLocked)
+        const ordinaryEdit = await admin.emitWithAck('edit_time_entry', {
+          type: 'EditTimeEntryRequest',
+          id: ordinaryLap.id,
+          duration: 1235,
+        })
+        assert.ok(ordinaryEdit.success)
         assert.deepEqual((await details()).qualification, frozen.qualification)
         const admission = await admin.emitWithAck('rsvp_session', {
           type: 'RsvpSessionRequest',

@@ -217,6 +217,8 @@ const no = {
     qualification: 'Kvalifisering',
     pending: 'Venter',
     frozen: 'Kvalifisering låst',
+    qualificationLocked:
+      'Kan ikke endre rundetider etter at kvalifiseringen er låst.',
     finalStandings: 'Sluttresultat',
     provisional: 'Foreløpig resultat',
     changed: 'Turneringen er oppdatert',

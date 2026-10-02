@@ -114,6 +114,10 @@ export default class TimeEntryManager {
     }
 
     const signupChanged = TournamentManager.commit(() => {
+      TournamentManager.assertQualificationEditable(
+        request.session ?? null,
+        request.track
+      )
       db.insert(timeEntries)
         .values({ ...request, draft: false })
         .run()
@@ -184,6 +188,16 @@ export default class TimeEntryManager {
     const completesDraft = lapTime.draft && (processedUpdates.duration ?? 0) > 0
 
     const signupChanged = TournamentManager.commit(() => {
+      TournamentManager.assertQualificationEditable(
+        lapTime.session,
+        lapTime.track
+      )
+      TournamentManager.assertQualificationEditable(
+        processedUpdates.session === undefined
+          ? lapTime.session
+          : processedUpdates.session,
+        processedUpdates.track ?? lapTime.track
+      )
       db.update(timeEntries)
         .set({
           ...processedUpdates,
