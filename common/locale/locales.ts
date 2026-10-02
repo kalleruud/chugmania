@@ -191,7 +191,6 @@ const no = {
   },
   tournament: {
     title: 'Turnering',
-    roundRobin: 'Round robin',
     groupNames: [
       'Furries',
       'Degenerates',

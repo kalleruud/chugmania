@@ -2,10 +2,10 @@ import { isRecord } from '../utils/utils'
 import type { Match, MatchStatus } from './match'
 import type { TimeEntry } from './timeEntry'
 
-export type EliminationType = 'single' | 'double' | 'round_robin'
+export type EliminationType = 'single' | 'double'
 export type TournamentConfig = {
   session: string
-  qualificationTrack: string | null
+  qualificationTrack: string
   groupsCount: number
   advancementCount: number
   eliminationType: EliminationType
@@ -33,7 +33,6 @@ export type TournamentFixture = {
   slot1: Slot
   slot2: Slot
   reset: 'none' | 'conditional' | 'required' | 'unneeded'
-  playedAt: Date | null
   match: Match
 }
 export type TournamentState = {
@@ -103,16 +102,11 @@ export function isTournamentConfig(value: unknown): value is TournamentConfig {
   return (
     isRecord(value) &&
     typeof value.session === 'string' &&
-    (typeof value.qualificationTrack === 'string' ||
-      value.qualificationTrack === null) &&
+    typeof value.qualificationTrack === 'string' &&
     Number.isInteger(value.groupsCount) &&
     Number.isInteger(value.advancementCount) &&
     (value.eliminationType === 'single' ||
-      value.eliminationType === 'double' ||
-      value.eliminationType === 'round_robin') &&
-    (value.eliminationType === 'round_robin'
-      ? value.qualificationTrack === null
-      : typeof value.qualificationTrack === 'string') &&
+      value.eliminationType === 'double') &&
     isRecord(value.stageTracks) &&
     Object.values(value.stageTracks).every(
       tracks =>

@@ -1,17 +1,12 @@
 import loc from '@common/locale/locales'
 import type { Participant, TournamentConfig } from '@common/models/tournament'
-import {
-  configurationOptions,
-  firstPendingMatch,
-  usedStages,
-} from '@common/utils/tournament'
+import { firstPendingMatch } from '@common/utils/tournament'
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { tournamentDetails } from './tournament.details'
 import { generateTournament, schedulePairs } from './tournament.draft'
 import {
   groupStandings,
-  overallStandings,
   protectResults,
   resolveSlots,
 } from './tournament.rules'
@@ -161,136 +156,6 @@ test('only the first pending match is featured and inactive reset matches are sk
     match.status = 'completed'
   })
   assert.equal(firstPendingMatch(matches), undefined)
-})
-test('round robin generates only group play and completes only after every result', () => {
-  const { config, players } = input(4)
-  Object.assign(config, {
-    eliminationType: 'round_robin',
-    qualificationTrack: null,
-    groupsCount: 1,
-    advancementCount: 0,
-    stageTracks: { group: ['track'] },
-  })
-  const state = generateTournament(config, players)
-  assert.deepEqual(configurationOptions(2, 'round_robin'), [
-    { groups: 1, advancement: 0 },
-  ])
-  assert.deepEqual(usedStages(config, 4), ['group'])
-  assert.equal(state.fixtures.length, 6)
-  assert.ok(state.fixtures.every(fixture => fixture.bracket === 'group'))
-  assert.equal(tournamentDetails(state).workloadSummary.qualificationLaps, 0)
-  assert.equal(tournamentDetails(state).qualification.length, 0)
-  assert.ok(
-    state.participants.every(
-      player => player.duration === null && player.sourceEntry === null
-    )
-  )
-  assert.equal(tournamentDetails(state).workloadSummary.maxMatches, 3)
-  const champion = state.participants[0].user
-  const last = state.fixtures.at(-1)
-  assert.ok(last)
-  last.match.status = 'completed'
-  last.match.winner = last.match.user1
-  assert.equal(overallStandings(state).completed, false)
-  for (const fixture of state.fixtures) {
-    fixture.match.status = 'completed'
-    fixture.match.winner =
-      fixture.match.user1 === champion || fixture.match.user2 === champion
-        ? champion
-        : fixture.match.user1
-  }
-  assert.equal(overallStandings(state).completed, true)
-  assert.equal(overallStandings(state).rows[0].user, champion)
-  assert.ok(
-    groupStandings(state, state.groups[0].id).every(row => !row.qualifies)
-  )
-})
-
-for (const mode of ['single', 'double', 'round_robin']) {
-  test(`${mode}: head-to-head precedes qualification and the latest played rematch wins`, () => {
-    const { config, players } = input(4)
-    if (mode === 'single' || mode === 'double' || mode === 'round_robin')
-      config.eliminationType = mode
-    config.groupsCount = 1
-    config.advancementCount = mode === 'round_robin' ? 0 : 4
-    if (mode === 'round_robin') config.qualificationTrack = null
-    const state = generateTournament(config, players)
-    const [a, b, c, d] = players.map(player => player.user)
-    const slowerQualifier = state.participants.find(player => player.user === a)
-    assert.ok(slowerQualifier)
-    slowerQualifier.duration = 3000
-    const wins = new Map([
-      [`${a}:${b}`, a],
-      [`${a}:${c}`, a],
-      [`${a}:${d}`, d],
-      [`${b}:${c}`, b],
-      [`${b}:${d}`, b],
-      [`${c}:${d}`, c],
-    ])
-    for (const fixture of state.fixtures.filter(
-      fixture => fixture.bracket === 'group'
-    )) {
-      const key = [fixture.match.user1, fixture.match.user2].sort().join(':')
-      fixture.match.status = 'completed'
-      fixture.match.winner = wins.get(key) ?? null
-      fixture.playedAt = new Date(10)
-    }
-    const group = state.groups[0].id
-    assert.equal(groupStandings(state, group)[0].user, a)
-    const original = state.fixtures.find(
-      fixture =>
-        fixture.match.winner === a &&
-        (fixture.match.user1 === b || fixture.match.user2 === b)
-    )
-    assert.ok(original)
-    const older = structuredClone(original)
-    older.id = 'older'
-    older.match.id = older.id
-    older.playedAt = new Date(20)
-    older.match.updatedAt = new Date(9999)
-    const latest = structuredClone(original)
-    latest.id = 'latest'
-    latest.match.id = latest.id
-    latest.match.winner = b
-    latest.playedAt = new Date(30)
-    state.fixtures.push(latest, older)
-    assert.equal(groupStandings(state, group)[0].user, b)
-    assert.equal(
-      overallStandings(state).rows.find(row => row.user === b)?.rank,
-      1
-    )
-    const resolved = resolveSlots(state)
-    const firstBracket = resolved.fixtures.find(
-      fixture => fixture.bracket === 'upper'
-    )
-    if (firstBracket) assert.equal(firstBracket.match.user1, b)
-  })
-}
-
-test('circular head-to-head ties use a deterministic qualification fallback', () => {
-  const { config, players } = input(3)
-  Object.assign(config, {
-    eliminationType: 'round_robin',
-    qualificationTrack: null,
-    groupsCount: 1,
-    advancementCount: 0,
-  })
-  const state = generateTournament(config, players)
-  const [a, b, c] = players.map(player => player.user)
-  for (const fixture of state.fixtures) {
-    const pair = [fixture.match.user1, fixture.match.user2].sort().join(':')
-    fixture.match.status = 'completed'
-    fixture.match.winner =
-      new Map([
-        [`${a}:${b}`, a],
-        [`${a}:${c}`, c],
-        [`${b}:${c}`, b],
-      ]).get(pair) ?? null
-  }
-  const standings = groupStandings(state, state.groups[0].id)
-  assert.equal(standings[0].user, a)
-  state.fixtures.reverse()
-  assert.deepEqual(groupStandings(state, state.groups[0].id), standings)
 })
 
 for (const advancers of [4, 8]) {

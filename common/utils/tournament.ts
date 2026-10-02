@@ -9,8 +9,6 @@ export function validConfiguration(
   advancement: number,
   type: EliminationType
 ): boolean {
-  if (type === 'round_robin')
-    return count >= 2 && groups === 1 && advancement === 0
   const advancers = groups * advancement
   return (
     count >= 4 &&
@@ -26,8 +24,6 @@ export function validConfiguration(
   )
 }
 export function configurationOptions(count: number, type: EliminationType) {
-  if (type === 'round_robin')
-    return count >= 2 ? [{ groups: 1, advancement: 0 }] : []
   const options: { groups: number; advancement: number }[] = []
   for (let groups = 1; groups <= count; groups++) {
     for (
@@ -65,7 +61,6 @@ export function usedStages(
   config: TournamentConfig,
   count: number
 ): MatchStage[] {
-  if (config.eliminationType === 'round_robin') return ['group']
   const stages: MatchStage[] = []
   if (count > config.groupsCount) stages.push('group')
   const advancers = config.groupsCount * config.advancementCount

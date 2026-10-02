@@ -66,10 +66,6 @@ export default function TournamentForm({
   const stages = usedStages(selectedConfig, count)
   const config = {
     ...selectedConfig,
-    qualificationTrack:
-      selectedConfig.eliminationType === 'round_robin'
-        ? null
-        : selectedConfig.qualificationTrack,
     stageTracks: Object.fromEntries(
       Object.entries(selectedConfig.stageTracks).filter(([stage]) =>
         stages.some(s => s === stage)
@@ -143,18 +139,50 @@ export default function TournamentForm({
   return (
     <div className='grid min-w-0 gap-6 lg:grid-cols-[minmax(16rem,22rem)_minmax(0,1fr)]'>
       <form onSubmit={submit} className='flex min-w-0 flex-col gap-4'>
+        <Combobox
+          items={items}
+          selected={items.find(t => t.id === config.qualificationTrack)}
+          setSelected={item =>
+            change({ ...config, qualificationTrack: item?.id ?? '' })
+          }
+          placeholder='Kvalifiseringsbane'
+          CustomRow={TrackRow}
+        />
+        <label>
+          Grupper
+          <NativeSelect
+            value={config.groupsCount}
+            onChange={e =>
+              change({ ...config, groupsCount: Number(e.target.value) })
+            }>
+            {groups.map(g => (
+              <option key={g} value={g}>
+                {g}
+              </option>
+            ))}
+          </NativeSelect>
+        </label>
+        <label>
+          Videre fra hver gruppe
+          <NativeSelect
+            value={config.advancementCount}
+            onChange={e =>
+              change({ ...config, advancementCount: Number(e.target.value) })
+            }>
+            {advancements.map(a => (
+              <option key={a} value={a}>
+                {a}
+              </option>
+            ))}
+          </NativeSelect>
+        </label>
         <label>
           Format
           <NativeSelect
             value={config.eliminationType}
             onChange={e => {
-              const mode = e.target.value
-              if (
-                mode === 'single' ||
-                mode === 'double' ||
-                mode === 'round_robin'
-              )
-                change({ ...inputConfig, eliminationType: mode })
+              if (e.target.value === 'single' || e.target.value === 'double')
+                change({ ...config, eliminationType: e.target.value })
             }}>
             <option value='single'>Enkel eliminering</option>
             <option
@@ -162,53 +190,8 @@ export default function TournamentForm({
               disabled={configurationOptions(count, 'double').length === 0}>
               Dobbel eliminering
             </option>
-            <option value='round_robin'>{loc.no.tournament.roundRobin}</option>
           </NativeSelect>
         </label>
-        {config.eliminationType !== 'round_robin' && (
-          <>
-            <Combobox
-              items={items}
-              selected={items.find(t => t.id === config.qualificationTrack)}
-              setSelected={item =>
-                change({ ...config, qualificationTrack: item?.id ?? '' })
-              }
-              placeholder='Kvalifiseringsbane'
-              CustomRow={TrackRow}
-            />
-            <label>
-              Grupper
-              <NativeSelect
-                value={config.groupsCount}
-                onChange={e =>
-                  change({ ...config, groupsCount: Number(e.target.value) })
-                }>
-                {groups.map(g => (
-                  <option key={g} value={g}>
-                    {g}
-                  </option>
-                ))}
-              </NativeSelect>
-            </label>
-            <label>
-              Videre fra hver gruppe
-              <NativeSelect
-                value={config.advancementCount}
-                onChange={e =>
-                  change({
-                    ...config,
-                    advancementCount: Number(e.target.value),
-                  })
-                }>
-                {advancements.map(a => (
-                  <option key={a} value={a}>
-                    {a}
-                  </option>
-                ))}
-              </NativeSelect>
-            </label>
-          </>
-        )}
         {stages.map(stage => (
           <div key={stage}>
             <h3>{stageName(stage)}</h3>

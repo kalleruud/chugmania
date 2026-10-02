@@ -75,13 +75,9 @@ export function generateTournament(
       id: `group-${index}`,
       name,
     }))
-  const seededInputs =
-    config.eliminationType === 'round_robin'
-      ? inputs.map(player => ({ ...player, duration: null, sourceEntry: null }))
-      : inputs
   const participants = assignedGroups
-    ? seededInputs.toSorted((a, b) => a.admission - b.admission)
-    : seededInputs.toSorted(qualificationOrder).map((player, index) => ({
+    ? inputs.toSorted((a, b) => a.admission - b.admission)
+    : inputs.toSorted(qualificationOrder).map((player, index) => ({
         ...player,
         admission: index,
         groupId: groups[snakeGroup(index, groups.length)].id,
@@ -105,7 +101,6 @@ export function generateTournament(
       slot1,
       slot2,
       reset: 'none',
-      playedAt: null,
       match: {
         id,
         user1: null,
@@ -147,11 +142,7 @@ export function generateTournament(
     })
   }
   const seeds: Slot[] = []
-  for (
-    let rank = 1;
-    config.eliminationType !== 'round_robin' && rank <= config.advancementCount;
-    rank++
-  )
+  for (let rank = 1; rank <= config.advancementCount; rank++)
     groups.forEach(group =>
       seeds.push({ kind: 'group_rank', groupId: group.id, rank })
     )

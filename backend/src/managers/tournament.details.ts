@@ -57,7 +57,7 @@ export function tournamentDetails(
   const guaranteedBracketMatches =
     state.config.eliminationType === 'double' ? 2 : 1
   const bracketRounds = Math.log2(
-    Math.max(1, state.config.groupsCount * state.config.advancementCount)
+    state.config.groupsCount * state.config.advancementCount
   )
   return {
     id: state.id,
@@ -66,20 +66,18 @@ export function tournamentDetails(
     cancelled: state.cancelled,
     notReadyReason: state.notReadyReason,
     qualificationEntries,
-    qualification: state.config.qualificationTrack
-      ? qualification.map((p, i) => ({
-          ...p,
-          rank: i + 1,
-          gapLeader:
-            p.duration === null
-              ? null
-              : p.duration - (qualification[0].duration ?? 0),
-          gapPrevious:
-            p.duration === null
-              ? null
-              : p.duration - (qualification[i - 1]?.duration ?? p.duration),
-        }))
-      : [],
+    qualification: qualification.map((p, i) => ({
+      ...p,
+      rank: i + 1,
+      gapLeader:
+        p.duration === null
+          ? null
+          : p.duration - (qualification[0].duration ?? 0),
+      gapPrevious:
+        p.duration === null
+          ? null
+          : p.duration - (qualification[i - 1]?.duration ?? p.duration),
+    })),
     groups: state.groups.map(g => ({
       ...g,
       standings: groupStandings(state, g.id),
@@ -122,12 +120,10 @@ export function tournamentDetails(
     },
     workloadSummary: {
       tracks: new Set([
-        ...(state.config.qualificationTrack
-          ? [state.config.qualificationTrack]
-          : []),
+        state.config.qualificationTrack,
         ...state.fixtures.flatMap(f => (f.match.track ? [f.match.track] : [])),
       ]).size,
-      qualificationLaps: state.config.qualificationTrack ? 1 : 0,
+      qualificationLaps: 1,
       minMatches:
         Math.min(...groupSizes) -
         1 +

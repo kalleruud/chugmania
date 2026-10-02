@@ -4,7 +4,6 @@ import type {
   Participant,
   Slot,
   Standing,
-  TournamentFixture,
   TournamentState,
 } from '@common/models/tournament'
 
@@ -25,64 +24,6 @@ export function decided(match: Match): boolean {
     (match.winner === match.user1 || match.winner === match.user2)
   )
 }
-function directMatchOrder(
-  fixtures: TournamentFixture[]
-): (a: string, b: string) => number {
-  const winners = new Map<string, string>()
-  const pair = (a: string, b: string) => [a, b].sort().join(':')
-  const timestamp = (fixture: TournamentFixture) =>
-    new Date(
-      fixture.playedAt ?? fixture.match.updatedAt ?? fixture.match.createdAt
-    ).getTime()
-  for (const fixture of fixtures
-    .filter(fixture => !fixture.match.deletedAt && decided(fixture.match))
-    .toSorted(
-      (a, b) =>
-        timestamp(a) - timestamp(b) ||
-        a.order - b.order ||
-        a.id.localeCompare(b.id)
-    )) {
-    const match = fixture.match
-    if (match.user1 && match.user2 && match.winner)
-      winners.set(pair(match.user1, match.user2), match.winner)
-  }
-  return (a, b) => {
-    const winner = winners.get(pair(a, b))
-    if (!winner) return 0
-    return winner === a ? -1 : 1
-  }
-}
-function orderTies<T extends { user: string }>(
-  rows: T[],
-  primary: (a: T, b: T) => number,
-  fallback: (a: T, b: T) => number,
-  direct: (a: string, b: string) => number
-): T[] {
-  // ponytail: cubic within a tie; precompute incoming edges if fields grow large
-  const sorted = rows.toSorted(
-    (a, b) => primary(a, b) || fallback(a, b) || a.user.localeCompare(b.user)
-  )
-  const result: T[] = []
-  for (let start = 0; start < sorted.length; ) {
-    let end = start + 1
-    while (end < sorted.length && primary(sorted[start], sorted[end]) === 0)
-      end++
-    const tied = sorted.slice(start, end)
-    while (tied.length) {
-      const index = tied.findIndex(
-        player =>
-          !tied.some(
-            other =>
-              other.user !== player.user && direct(other.user, player.user) < 0
-          )
-      )
-      const [next] = tied.splice(Math.max(0, index), 1)
-      result.push(next)
-    }
-    start = end
-  }
-  return result
-}
 export function groupStandings(
   state: TournamentState,
   groupId: string
@@ -98,28 +39,29 @@ export function groupStandings(
       players.some(p => p.user === f.match.user1) &&
       players.some(p => p.user === f.match.user2)
   )
-  const rows = players.map(p => ({
-    user: p.user,
-    rank: 0,
-    wins: results.filter(f => f.match.winner === p.user).length,
-    losses: results.filter(
-      f =>
-        (f.match.user1 === p.user || f.match.user2 === p.user) &&
-        f.match.winner !== p.user
-    ).length,
-    qualifies: false,
-  }))
-  return orderTies(
-    rows,
-    (a, b) => b.wins - a.wins,
-    (a, b) =>
-      a.losses - b.losses || (rank.get(a.user) ?? 0) - (rank.get(b.user) ?? 0),
-    directMatchOrder(results)
-  ).map((row, index) => ({
-    ...row,
-    rank: index + 1,
-    qualifies: index < state.config.advancementCount,
-  }))
+  return players
+    .map(p => ({
+      user: p.user,
+      rank: 0,
+      wins: results.filter(f => f.match.winner === p.user).length,
+      losses: results.filter(
+        f =>
+          (f.match.user1 === p.user || f.match.user2 === p.user) &&
+          f.match.winner !== p.user
+      ).length,
+      qualifies: false,
+    }))
+    .sort(
+      (a, b) =>
+        b.wins - a.wins ||
+        a.losses - b.losses ||
+        (rank.get(a.user) ?? 0) - (rank.get(b.user) ?? 0)
+    )
+    .map((row, index) => ({
+      ...row,
+      rank: index + 1,
+      qualifies: index < state.config.advancementCount,
+    }))
 }
 export function groupComplete(state: TournamentState): boolean {
   return state.fixtures
@@ -202,21 +144,8 @@ export function overallStandings(state: TournamentState): {
   rows: { user: string; rank: number }[]
   completed: boolean
 } {
-  if (state.config.eliminationType === 'round_robin')
-    return {
-      completed: state.fixtures.length > 0 && groupComplete(state),
-      rows: groupStandings(state, state.groups[0].id).map(row => ({
-        user: row.user,
-        rank: row.rank,
-      })),
-    }
   const final = state.fixtures
-    .filter(
-      f =>
-        f.bracket !== 'group' &&
-        f.reset !== 'unneeded' &&
-        f.reset !== 'conditional'
-    )
+    .filter(f => f.reset !== 'unneeded' && f.reset !== 'conditional')
     .at(-1)
   const completed =
     !!final &&
@@ -250,13 +179,13 @@ export function overallStandings(state: TournamentState): {
     const row = groups.find(r => r.user === user)
     return row && row.wins + row.losses ? row.wins / (row.wins + row.losses) : 0
   }
-  const primary = (a: Participant, b: Participant) =>
-    score(b) - score(a) ||
-    (score(a) === 0 ? percentage(b.user) - percentage(a.user) : 0)
-  const direct = directMatchOrder(state.fixtures)
   const compare = (a: Participant, b: Participant) =>
-    primary(a, b) || direct(a.user, b.user) || sportingOrder(a, b)
-  const ordered = orderTies(state.participants, primary, sportingOrder, direct)
+    score(b) - score(a) ||
+    (score(a) === 0 ? percentage(b.user) - percentage(a.user) : 0) ||
+    sportingOrder(a, b)
+  const ordered = state.participants.toSorted(
+    (a, b) => compare(a, b) || a.user.localeCompare(b.user)
+  )
   let place = 0
   return {
     completed,
