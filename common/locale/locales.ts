@@ -210,6 +210,8 @@ const no = {
       'Cum Dumpsters',
     ],
     group: 'Gruppe',
+    groupMatches: 'Gruppematcher',
+    bracketMatches: 'Turneringsmatcher',
     create: 'Opprett turnering',
     preview: 'Forhåndsvisning',
     qualification: 'Kvalifisering',

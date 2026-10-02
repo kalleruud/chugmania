@@ -1,4 +1,5 @@
 import { PageSubheader } from '@/components/PageHeader'
+import SegmentedProgress from '@/components/SegmentedProgress'
 import { Button } from '@/components/ui/button'
 import { Empty } from '@/components/ui/empty'
 import {
@@ -131,12 +132,17 @@ export default function SessionSignupPanel({
         </div>
       </div>
 
-      <p>
-        {RESPONSE_OPTIONS.map(
-          ({ response }) =>
-            `${loc.no.session.rsvp.responses[response]}: ${sortedSignups.filter(s => s.response === response).length}`
-        ).join(' · ')}
-      </p>
+      <SegmentedProgress
+        segments={RESPONSE_OPTIONS.map(({ response }) => ({
+          label: loc.no.session.rsvp.responses[response],
+          value: sortedSignups.filter(s => s.response === response).length,
+          colorClassName: {
+            yes: 'bg-emerald-500',
+            maybe: 'bg-amber-500',
+            no: 'bg-red-500',
+          }[response],
+        }))}
+      />
 
       {sortedSignups.length === 0 && (
         <Empty className='border border-input text-sm text-muted-foreground'>
