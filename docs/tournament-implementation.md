@@ -8,6 +8,10 @@ Historical restoration is excluded. CSV remains raw database writes without tour
 
 Preview persists missing qualification drafts as normal time entries. Repeated previews reuse them, and cancelled drafts are not recreated. Tournament details carries these entries directly to the shared `TimeEntryList` for editing and cancellation.
 
+Round robin uses the same generator with one group and no qualification or bracket. Every participant plays every other participant; the winner is the player with the most wins after every match is decided. It needs at least two players.
+
+In every mode, tied results use the latest direct match from this tournament before qualification/rating. Group standings use group matches to avoid reseeding earlier rounds from later bracket results. Final standings use all tournament matches. Circular head-to-head ties fall back to qualification/rating. A persisted `playedAt` timestamp on tournament fixtures preserves play order through comment edits and CSV round trips; older results fall back to their existing timestamps.
+
 ## Stages
 
 1. Working single elimination: schema, generation, persistence, freeze, progression, existing UI, preview, and realtime. Development milestone using a stable roster.

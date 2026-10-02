@@ -92,6 +92,13 @@
       "when": 1790782943990,
       "tag": "0012_minor_silver_fox",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1790977617695,
+      "tag": "0013_wide_madripoor",
+      "breakpoints": true
     }
   ]
 }

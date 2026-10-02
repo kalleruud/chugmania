@@ -49,17 +49,19 @@ export default class TournamentManager {
   private static published = new Map<string, string>()
   static participants(config: TournamentConfig): Participant[] {
     const ratings = RatingManager.onGetRatings()
-    const laps = db
-      .select()
-      .from(timeEntries)
-      .where(
-        and(
-          eq(timeEntries.session, config.session),
-          eq(timeEntries.track, config.qualificationTrack),
-          isNull(timeEntries.deletedAt)
-        )
-      )
-      .all()
+    const laps = config.qualificationTrack
+      ? db
+          .select()
+          .from(timeEntries)
+          .where(
+            and(
+              eq(timeEntries.session, config.session),
+              eq(timeEntries.track, config.qualificationTrack),
+              isNull(timeEntries.deletedAt)
+            )
+          )
+          .all()
+      : []
     const signups = db
       .select({ user: sessionSignups.user })
       .from(sessionSignups)
@@ -194,6 +196,7 @@ export default class TournamentManager {
           order: fixture.order,
           slot1: fixture.slot1,
           slot2: fixture.slot2,
+          playedAt: fixture.playedAt,
           reset: fixture.reset,
           match,
         }))
@@ -211,16 +214,18 @@ export default class TournamentManager {
     return state ? this.toDetails(state) : null
   }
   static toDetails(state: TournamentState): TournamentDetails {
-    const entries = db
-      .select()
-      .from(timeEntries)
-      .where(
-        and(
-          eq(timeEntries.session, state.config.session),
-          eq(timeEntries.track, state.config.qualificationTrack)
-        )
-      )
-      .all()
+    const entries = state.config.qualificationTrack
+      ? db
+          .select()
+          .from(timeEntries)
+          .where(
+            and(
+              eq(timeEntries.session, state.config.session),
+              eq(timeEntries.track, state.config.qualificationTrack)
+            )
+          )
+          .all()
+      : []
     return tournamentDetails(state, entries)
   }
   static validate(
@@ -237,7 +242,8 @@ export default class TournamentManager {
         .map(t => t.id)
     )
     if (
-      !available.has(config.qualificationTrack) ||
+      (config.qualificationTrack !== null &&
+        !available.has(config.qualificationTrack)) ||
       Object.values(config.stageTracks)
         .flat()
         .some(id => !available.has(id))
@@ -334,6 +340,7 @@ export default class TournamentManager {
       const id = mapped(fixture.id)
       return {
         ...fixture,
+        playedAt: previous?.playedAt ?? fixture.playedAt,
         id,
         groupId: fixture.groupId ? mapped(fixture.groupId) : null,
         slot1: slot(fixture.slot1),
@@ -526,6 +533,7 @@ export default class TournamentManager {
     }
   }
   static createQualificationDrafts(state: TournamentState): boolean {
+    if (!state.config.qualificationTrack) return false
     let changed = false
     for (const participant of state.participants) {
       if (participant.duration !== null || participant.sourceEntry) continue
@@ -612,7 +620,10 @@ export default class TournamentManager {
         (status === 'completed' && !winner)
       )
         throw new Error(loc.no.tournament.result)
+      const wasDecided = decided(match)
       Object.assign(match, { status, winner, updatedAt: new Date() })
+      if (!decided(match)) fixture.playedAt = null
+      else if (!wasDecided) fixture.playedAt = match.updatedAt
       if (request.track !== undefined) {
         if (
           !request.track ||
@@ -668,7 +679,7 @@ export default class TournamentManager {
           )
         )
         .run()
-    if (deleteLapTimes)
+    if (deleteLapTimes && state.config.qualificationTrack)
       db.update(timeEntries)
         .set({ deletedAt })
         .where(

@@ -43,9 +43,13 @@ export default function TournamentPanel({
       <header className='flex flex-col gap-2 rounded-sm border bg-background p-4'>
         {isPreview && (
           <p>
-            {workload.tracks} baner · {workload.qualificationLaps}{' '}
-            kvalifiseringsrunde per spiller · {workload.minMatches}–
-            {workload.maxMatches} matcher per spiller
+            {workload.tracks} baner ·{' '}
+            {workload.qualificationLaps > 0 && (
+              <>
+                {workload.qualificationLaps} kvalifiseringsrunde per spiller ·
+              </>
+            )}
+            {workload.minMatches}–{workload.maxMatches} matcher per spiller
           </p>
         )}
         {!isPreview && canEdit && (
@@ -61,12 +65,17 @@ export default function TournamentPanel({
               total: details.progress.groupTotal,
               colorClassName: 'bg-emerald-500',
             },
-            {
-              label: loc.no.tournament.bracketMatches,
-              value: details.progress.decided - details.progress.groupDecided,
-              total: details.progress.total - details.progress.groupTotal,
-              colorClassName: 'bg-sky-500',
-            },
+            ...(details.config.eliminationType === 'round_robin'
+              ? []
+              : [
+                  {
+                    label: loc.no.tournament.bracketMatches,
+                    value:
+                      details.progress.decided - details.progress.groupDecided,
+                    total: details.progress.total - details.progress.groupTotal,
+                    colorClassName: 'bg-sky-500',
+                  },
+                ]),
           ]}
         />
         {details.notReadyReason && (
@@ -101,41 +110,45 @@ export default function TournamentPanel({
             <TournamentGroupPanel key={group.id} group={group} />
           ))}
         </div>
-        <div className='flex items-center gap-2 rounded p-2'>
-          <div className='size-2 rounded-full bg-primary-background' />
-          <p className='w-full text-sm text-muted-foreground'>
-            {loc.no.tournament.groupInfo(details.config.advancementCount)}
-          </p>
-        </div>
+        {details.config.eliminationType !== 'round_robin' && (
+          <div className='flex items-center gap-2 rounded p-2'>
+            <div className='size-2 rounded-full bg-primary-background' />
+            <p className='w-full text-sm text-muted-foreground'>
+              {loc.no.tournament.groupInfo(details.config.advancementCount)}
+            </p>
+          </div>
+        )}
       </section>
 
-      <details
-        open={!allMatchesPlayed}
-        className='group/quali rounded-sm border bg-background p-2'>
-        <summary className='flex cursor-pointer list-none items-center justify-between gap-2 p-4 [&::-webkit-details-marker]:hidden'>
-          <h3 className='flex items-center gap-2'>
-            {loc.no.tournament.qualification}
-            {details.frozen && (
-              <Lock aria-label={loc.no.tournament.frozen} size={16} />
-            )}
-          </h3>
-          <ChevronDown
-            aria-hidden
-            className='size-4 shrink-0 transition-transform group-open/quali:rotate-180'
-          />
-        </summary>
+      {details.config.qualificationTrack && (
+        <details
+          open={!allMatchesPlayed}
+          className='group/quali rounded-sm border bg-background p-2'>
+          <summary className='flex cursor-pointer list-none items-center justify-between gap-2 p-4 [&::-webkit-details-marker]:hidden'>
+            <h3 className='flex items-center gap-2'>
+              {loc.no.tournament.qualification}
+              {details.frozen && (
+                <Lock aria-label={loc.no.tournament.frozen} size={16} />
+              )}
+            </h3>
+            <ChevronDown
+              aria-hidden
+              className='size-4 shrink-0 transition-transform group-open/quali:rotate-180'
+            />
+          </summary>
 
-        <div className='flex flex-col gap-2'>
-          {qualiTrack && <TrackRow item={qualiTrack} />}
+          <div className='flex flex-col gap-2'>
+            {qualiTrack && <TrackRow item={qualiTrack} />}
 
-          <TimeEntryList
-            entries={details.qualificationEntries}
-            track={details.config.qualificationTrack}
-            session={details.config.session}
-            filter='all'
-          />
-        </div>
-      </details>
+            <TimeEntryList
+              entries={details.qualificationEntries}
+              track={details.config.qualificationTrack}
+              session={details.config.session}
+              filter='all'
+            />
+          </div>
+        </details>
+      )}
 
       <details
         open={!allMatchesPlayed}

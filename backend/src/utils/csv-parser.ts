@@ -9,6 +9,7 @@ export default class CsvParser {
     'date',
     'frozenAt',
     'admissionClosedAt',
+    'playedAt',
   ])
 
   static async toObjects(csv: string) {

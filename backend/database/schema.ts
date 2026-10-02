@@ -191,6 +191,7 @@ export const tournamentMatches = sqliteTable(
     order: integer().notNull(),
     slot1: text({ mode: 'json' }).$type<Slot>().notNull(),
     slot2: text({ mode: 'json' }).$type<Slot>().notNull(),
+    playedAt: integer('played_at', { mode: 'timestamp_ms' }),
     reset: text()
       .$type<'none' | 'conditional' | 'required' | 'unneeded'>()
       .notNull()
