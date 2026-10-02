@@ -239,9 +239,19 @@ test(
         admin.on('all_time_entries', onTimeEntries)
         const preview = await admin.emitWithAck('preview_tournament', config)
         assert.ok(preview.success, JSON.stringify(preview))
-        assert.equal(preview.details.qualificationEntries.length, 4)
+        assert.equal(preview.details.qualificationEntries.length, 8)
+        const previewDrafts = preview.details.qualificationEntries.filter(
+          entry => entry.draft
+        )
+        assert.equal(previewDrafts.length, 4)
         assert.ok(
-          preview.details.qualificationEntries.every(entry => !entry.draft)
+          previewDrafts.every(
+            entry =>
+              entry.id.startsWith('preview:') &&
+              entry.duration === null &&
+              entry.session === session &&
+              entry.track === track
+          )
         )
         assert.ok(
           preview.details.qualification
@@ -262,7 +272,12 @@ test(
           qualificationTrack: secondTrack,
         })
         assert.ok(changedPreview.success)
-        assert.equal(changedPreview.details.qualificationEntries.length, 0)
+        assert.equal(changedPreview.details.qualificationEntries.length, 8)
+        assert.ok(
+          changedPreview.details.qualificationEntries.every(
+            entry => entry.draft && entry.track === secondTrack
+          )
+        )
         const invalidPreview = await admin.emitWithAck('preview_tournament', {
           ...config,
           qualificationTrack: '',
@@ -284,6 +299,7 @@ test(
           .all()
           .filter(entry => entry.draft && !entry.deletedAt)
         assert.equal(drafts.length, 4)
+        assert.ok(drafts.every(entry => !entry.id.startsWith('preview:')))
         assert.ok(
           (await details()).qualification
             .filter(player => player.duration === null)
@@ -323,7 +339,7 @@ test(
         assert.ok(previewAfterCancel.success)
         assert.ok(
           previewAfterCancel.details.qualificationEntries.every(
-            entry => entry.id !== drafts[1].id
+            entry => entry.user !== drafts[1].user
           )
         )
         assert.equal(

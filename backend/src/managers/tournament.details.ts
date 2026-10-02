@@ -48,6 +48,29 @@ export function tournamentDetails(
   const qualificationEntries = entries.filter(
     entry => !entry.deletedAt && qualification.some(p => p.user === entry.user)
   )
+  if (state.id === 'preview') {
+    for (const participant of qualification) {
+      if (
+        participant.duration !== null ||
+        participant.sourceEntry ||
+        entries.some(entry => entry.user === participant.user && entry.draft)
+      )
+        continue
+      qualificationEntries.push({
+        id: `preview:${state.config.session}:${state.config.qualificationTrack}:${participant.user}`,
+        user: participant.user,
+        session: state.config.session,
+        track: state.config.qualificationTrack,
+        duration: null,
+        draft: true,
+        amount: 0.5,
+        comment: null,
+        createdAt: new Date(0),
+        updatedAt: null,
+        deletedAt: null,
+      })
+    }
+  }
   const active = state.fixtures.filter(
     f => f.reset !== 'unneeded' && f.reset !== 'conditional'
   )
