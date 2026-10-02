@@ -4,7 +4,7 @@ import loc from '@common/locale/locales'
 import type { Match } from '@common/models/match'
 import type { TournamentDetails } from '@common/models/tournament'
 import { firstPendingMatch, stageName } from '@common/utils/tournament'
-import { Lock } from 'lucide-react'
+import { ChevronDown, Lock } from 'lucide-react'
 import MatchList from '../match/MatchList'
 import SegmentedProgress from '../SegmentedProgress'
 import { TimeEntryList } from '../timeentries/TimeEntryList'
@@ -29,6 +29,9 @@ export default function TournamentPanel({
   )
   const matchesByStage = new Map<Match['stage'], Match[]>()
   const featuredMatch = firstPendingMatch(details.matches)
+  const allMatchesPlayed =
+    details.progress.total > 0 &&
+    details.progress.decided === details.progress.total
   for (const match of details.matches) {
     const stageMatches = matchesByStage.get(match.stage) ?? []
     stageMatches.push(match)
@@ -95,40 +98,67 @@ export default function TournamentPanel({
         </div>
       </section>
 
-      <section className='flex flex-col gap-2 rounded-sm border bg-background p-2'>
-        <h3 className='flex items-center gap-2 px-4 pt-4'>
-          {loc.no.tournament.qualification}
-          {details.frozen && (
-            <Lock aria-label={loc.no.tournament.frozen} size={16} />
-          )}
-        </h3>
+      <details
+        open={!allMatchesPlayed}
+        className='group/quali rounded-sm border bg-background p-2'>
+        <summary className='flex cursor-pointer list-none items-center justify-between gap-2 p-4 [&::-webkit-details-marker]:hidden'>
+          <h3 className='flex items-center gap-2'>
+            {loc.no.tournament.qualification}
+            {details.frozen && (
+              <Lock aria-label={loc.no.tournament.frozen} size={16} />
+            )}
+          </h3>
+          <ChevronDown
+            aria-hidden
+            className='size-4 shrink-0 transition-transform group-open/quali:rotate-180'
+          />
+        </summary>
 
-        {qualiTrack && <TrackRow item={qualiTrack} />}
+        <div className='flex flex-col gap-2'>
+          {qualiTrack && <TrackRow item={qualiTrack} />}
 
-        <TimeEntryList
-          entries={details.qualificationEntries}
-          track={details.config.qualificationTrack}
-          session={details.config.session}
-          filter='all'
-        />
-      </section>
+          <TimeEntryList
+            entries={details.qualificationEntries}
+            track={details.config.qualificationTrack}
+            session={details.config.session}
+            filter='all'
+          />
+        </div>
+      </details>
 
-      <section className='flex flex-col gap-2 rounded-sm border bg-background p-2'>
-        <h3 className='p-4'>{loc.no.match.title}</h3>
-        {Array.from(matchesByStage, ([stage, matches]) => (
-          <section key={stage ?? 'none'} className='flex flex-col gap-2'>
-            <h4 className='px-2 pt-2 text-sm text-muted-foreground'>
-              {stageName(stage) || loc.no.match.title}
-            </h4>
-            <MatchList
-              matches={matches}
-              managed
-              readOnly={isPreview}
-              featuredMatchId={featuredMatch?.id}
-            />
-          </section>
-        ))}
-      </section>
+      <details
+        open={!allMatchesPlayed}
+        className='group/matches rounded-sm border bg-background p-2'>
+        <summary className='flex cursor-pointer list-none items-center justify-between gap-2 p-4 [&::-webkit-details-marker]:hidden'>
+          <h3>{loc.no.match.title}</h3>
+          <ChevronDown
+            aria-hidden
+            className='size-4 shrink-0 transition-transform group-open/matches:rotate-180'
+          />
+        </summary>
+        <div className='flex flex-col gap-2'>
+          {Array.from(matchesByStage, ([stage, matches]) => (
+            <details
+              key={stage ?? 'none'}
+              open={!!firstPendingMatch(matches)}
+              className='group/stage'>
+              <summary className='flex cursor-pointer list-none items-center justify-between gap-2 p-2 text-sm text-muted-foreground [&::-webkit-details-marker]:hidden'>
+                <h4>{stageName(stage) || loc.no.match.title}</h4>
+                <ChevronDown
+                  aria-hidden
+                  className='size-4 shrink-0 transition-transform group-open/stage:rotate-180'
+                />
+              </summary>
+              <MatchList
+                matches={matches}
+                managed
+                readOnly={isPreview}
+                featuredMatchId={featuredMatch?.id}
+              />
+            </details>
+          ))}
+        </div>
+      </details>
 
       <section className='flex flex-col gap-2 rounded-sm border bg-background p-4'>
         <h3 className='p-2'>
