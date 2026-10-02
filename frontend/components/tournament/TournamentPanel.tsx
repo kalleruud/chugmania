@@ -81,11 +81,19 @@ export default function TournamentPanel({
         />
       </section>
 
-      <div className='grid gap-2 sm:grid-cols-2'>
-        {details.groups.map(group => (
-          <TournamentGroupPanel key={group.id} group={group} />
-        ))}
-      </div>
+      <section className='flex flex-col gap-1'>
+        <div className='grid gap-2 sm:grid-cols-2'>
+          {details.groups.map(group => (
+            <TournamentGroupPanel key={group.id} group={group} />
+          ))}
+        </div>
+        <div className='flex items-center gap-2 rounded p-2'>
+          <div className='size-2 rounded-full bg-primary-background' />
+          <p className='w-full text-sm text-muted-foreground'>
+            {loc.no.tournament.groupInfo(details.config.advancementCount)}
+          </p>
+        </div>
+      </section>
 
       <section className='flex flex-col gap-2 rounded-sm border bg-background p-2'>
         <h3 className='p-4'>{loc.no.match.title}</h3>

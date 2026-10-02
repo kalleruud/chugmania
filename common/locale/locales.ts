@@ -223,6 +223,10 @@ const no = {
     saved: 'Turneringen er lagret',
     deleted: 'Turneringen er slettet',
     awarded: 'Tildelt seier',
+    groupInfo: (count: number) =>
+      count === 1
+        ? 'Vinneren i hver gruppe går videre til sluttspillet.'
+        : `Topp ${count} spillere i hver gruppe går videre til sluttspillet.`,
     conditional: 'Hvis nødvendig',
     unneeded: 'Ikke nødvendig',
     invalid: 'Ugyldig turneringsoppsett',

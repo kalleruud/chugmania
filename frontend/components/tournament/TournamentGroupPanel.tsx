@@ -32,7 +32,13 @@ export default function TournamentGroupPanel({
               item={p.user}
               highlight={p.qualifies}
               rank={p.rank}
-            />
+              hideLink>
+              <p className='flex gap-1 font-kh-interface tabular-nums'>
+                {p.wins}
+                <span className='opacity-33'>|</span>
+                {p.losses}
+              </p>
+            </UserRow>
           )
         )}
       </div>

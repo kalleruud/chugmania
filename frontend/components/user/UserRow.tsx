@@ -42,7 +42,7 @@ export default function UserRow({
             <p
               className={twMerge(
                 'font-kh-interface text-lg font-black text-primary tabular-nums',
-                highlight && 'group-hover:text-primary-foreground'
+                !hideLink && highlight && 'group-hover:text-primary-foreground'
               )}>
               {ranking}
             </p>
@@ -53,7 +53,12 @@ export default function UserRow({
           )}
 
           {hideRanking && !showRanking && !showMissingRanking && (
-            <div className='h-4 w-1 rounded-full bg-primary' />
+            <div
+              className={twMerge(
+                'h-4 w-1 rounded-full bg-primary',
+                !hideLink && highlight && 'group-hover:bg-primary-foreground'
+              )}
+            />
           )}
 
           <ItemTitle className='mr-auto flex gap-1 font-f1 uppercase'>
@@ -82,7 +87,11 @@ export default function UserRow({
     return (
       <Item
         key={user.id}
-        className={twMerge('group', highlight && 'bg-foreground/3', className)}
+        className={twMerge(
+          'group',
+          highlight && 'bg-primary-background',
+          className
+        )}
         asChild
         {...props}>
         <div>{content}</div>
