@@ -39,7 +39,11 @@ export default function UserRow({
       <ItemContent className='relative z-10'>
         <div className='flex items-center gap-2'>
           {showRanking && (
-            <p className='font-kh-interface font-black text-primary tabular-nums'>
+            <p
+              className={twMerge(
+                'font-kh-interface text-lg font-black text-primary tabular-nums',
+                highlight && 'group-hover:text-primary-foreground'
+              )}>
               {ranking}
             </p>
           )}
@@ -63,7 +67,11 @@ export default function UserRow({
         </div>
       </ItemContent>
       {!hideLink && (
-        <ItemActions className='relative z-10'>
+        <ItemActions
+          className={twMerge(
+            'relative z-10',
+            highlight && 'text-primary group-hover:text-primary-foreground'
+          )}>
           <ChevronRight className='size-4' />
         </ItemActions>
       )}
@@ -74,7 +82,7 @@ export default function UserRow({
     return (
       <Item
         key={user.id}
-        className={twMerge(highlight && 'bg-foreground/3', className)}
+        className={twMerge('group', highlight && 'bg-foreground/3', className)}
         asChild
         {...props}>
         <div>{content}</div>
@@ -85,11 +93,16 @@ export default function UserRow({
   return (
     <Item
       key={user.id}
-      className={twMerge('relative', highlight && 'bg-foreground/3', className)}
+      className={twMerge(
+        'group relative',
+        highlight && 'bg-primary-background hover:bg-primary',
+        !highlight && 'hover:bg-accent/50',
+        className
+      )}
       {...props}>
       <div className='pointer-events-none contents'>{content}</div>
       <Link
-        className='absolute inset-0 z-0 rounded-sm transition-colors duration-100 hover:bg-accent/50'
+        className='absolute inset-0 z-0 rounded-sm transition-colors duration-100'
         to={`/users/${user.id}`}
         aria-label={`${user.firstName} ${user.lastName}`}
       />

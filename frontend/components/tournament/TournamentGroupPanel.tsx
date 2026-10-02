@@ -1,4 +1,5 @@
 import { useData } from '@/contexts/DataContext'
+import loc from '@common/locale/locales'
 import type { TournamentDetails } from '@common/models/tournament'
 import UserRow from '../user/UserRow'
 
@@ -14,8 +15,11 @@ export default function TournamentGroupPanel({
 
   return (
     <section className='min-w-0 overflow-hidden rounded-sm border border-border bg-background'>
-      <header className='flex flex-wrap items-center justify-between gap-3 border-b border-border bg-background-secondary px-4 py-3'>
-        <div className='min-w-0 pb-1'>
+      <header className='flex flex-wrap items-center justify-between border-b border-border bg-background-secondary px-4 py-3'>
+        <div className='min-w-0'>
+          <p className='truncate font-f1 text-sm font-bold text-muted-foreground uppercase'>
+            {loc.no.tournament.group}
+          </p>
           <h3 className='truncate'>{group.name}</h3>
         </div>
       </header>
@@ -24,7 +28,7 @@ export default function TournamentGroupPanel({
         {players.map(p =>
           p.user === undefined ? null : (
             <UserRow
-              className='px-2 py-3'
+              className='px-3 py-2'
               item={p.user}
               highlight={p.qualifies}
               rank={p.rank}

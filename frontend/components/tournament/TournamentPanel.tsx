@@ -23,7 +23,7 @@ export default function TournamentPanel({
 
   return (
     <div className='flex min-w-0 flex-col gap-6'>
-      <header>
+      <header className='flex flex-col gap-2 rounded-sm border bg-background p-4'>
         {isPreview ? (
           <p>
             {workload.tracks} baner · {workload.qualificationLaps}{' '}
@@ -33,7 +33,9 @@ export default function TournamentPanel({
         ) : (
           <>
             <h2>{details.config.name}</h2>
-            <p>{details.config.description}</p>
+            <p className='text-muted-foreground'>
+              {details.config.description}
+            </p>
           </>
         )}
         <p>
@@ -67,7 +69,7 @@ export default function TournamentPanel({
         />
       </section>
 
-      <div className='grid gap-4 sm:grid-cols-2'>
+      <div className='grid gap-2 sm:grid-cols-2'>
         {details.groups.map(group => (
           <TournamentGroupPanel key={group.id} group={group} />
         ))}

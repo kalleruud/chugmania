@@ -209,6 +209,7 @@ const no = {
       'Unwashed Buttholes',
       'Cum Dumpsters',
     ],
+    group: 'Gruppe',
     create: 'Opprett turnering',
     preview: 'Forhåndsvisning',
     qualification: 'Kvalifisering',
