@@ -84,6 +84,24 @@ export default function TournamentPanel({
         {details.cancelled && <p role='status'>{loc.no.tournament.session}</p>}
       </header>
 
+      {allMatchesPlayed && (
+        <section className='flex flex-col gap-2 rounded-sm border bg-background p-4'>
+          <h3 className='p-2'>{loc.no.tournament.finalStandings}</h3>
+          {details.standings.map(row => {
+            const user = users?.find(u => u.id === row.user)
+            if (!user) return null
+            return (
+              <UserRow
+                key={row.user}
+                className='p-0'
+                item={user}
+                rank={row.rank}
+              />
+            )
+          })}
+        </section>
+      )}
+
       <section className='flex flex-col gap-1'>
         <div className='grid gap-4 sm:grid-cols-2'>
           {details.groups.map(group => (
@@ -159,19 +177,6 @@ export default function TournamentPanel({
           ))}
         </div>
       </details>
-
-      <section className='flex flex-col gap-2 rounded-sm border bg-background p-4'>
-        <h3 className='p-2'>
-          {details.completed
-            ? loc.no.tournament.finalStandings
-            : loc.no.tournament.provisional}
-        </h3>
-        {details.standings.map(row => {
-          const user = users?.find(u => u.id === row.user)
-          if (!user) return null
-          return <UserRow className='p-0' item={user} rank={row.rank} />
-        })}
-      </section>
     </div>
   )
 }
