@@ -6,7 +6,7 @@ The Tournament Module exposes commands through `tournament.manager.ts`. Its priv
 
 Historical restoration is excluded. CSV remains raw database writes without tournament validation. This document supersedes earlier tournament implementation plans.
 
-Preview only reads existing data and generates an in-memory tournament; it never writes to the database. Its qualification list displays existing lap times and in-memory drafts for missing qualification laps without editing or creation controls. Saving the tournament persists missing qualification drafts as normal time entries, and cancelled drafts are not recreated. Saved tournament details carries these entries directly to the shared `TimeEntryList` for editing and cancellation.
+Preview only reads existing data and generates an in-memory tournament; it never writes to the database. Its qualification list displays existing lap times and in-memory drafts for missing qualification laps without editing or creation controls. Saving the tournament persists missing qualification drafts as normal time entries. Cancelled drafts are not recreated within an existing tournament; a new tournament ignores deleted drafts from previous tournaments. Saved tournament details carries these entries directly to the shared `TimeEntryList` for editing and cancellation.
 
 ## Stages
 

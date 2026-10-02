@@ -132,6 +132,17 @@ test(
           duration: 1000 + index * 10,
         })
         .run()
+    const oldDraft = randomUUID()
+    db.insert(schema.timeEntries)
+      .values({
+        id: oldDraft,
+        user: people[4].id,
+        session,
+        track,
+        draft: true,
+        deletedAt: new Date(),
+      })
+      .run()
     const port = await freePort()
     const secret = randomUUID()
     let processHandle: ChildProcess | undefined
@@ -299,6 +310,14 @@ test(
           .all()
           .filter(entry => entry.draft && !entry.deletedAt)
         assert.equal(drafts.length, 4)
+        assert.ok(drafts.some(entry => entry.user === people[4].id))
+        assert.ok(
+          db
+            .select()
+            .from(schema.timeEntries)
+            .all()
+            .find(entry => entry.id === oldDraft)?.deletedAt
+        )
         assert.ok(drafts.every(entry => !entry.id.startsWith('preview:')))
         assert.ok(
           (await details()).qualification

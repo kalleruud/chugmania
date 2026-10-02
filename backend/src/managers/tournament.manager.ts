@@ -211,13 +211,16 @@ export default class TournamentManager {
     return state ? this.toDetails(state) : null
   }
   static toDetails(state: TournamentState): TournamentDetails {
+    const isNewPreview =
+      state.id === 'preview' && !this.active(state.config.session)
     const entries = db
       .select()
       .from(timeEntries)
       .where(
         and(
           eq(timeEntries.session, state.config.session),
-          eq(timeEntries.track, state.config.qualificationTrack)
+          eq(timeEntries.track, state.config.qualificationTrack),
+          isNewPreview ? isNull(timeEntries.deletedAt) : undefined
         )
       )
       .all()
@@ -526,6 +529,7 @@ export default class TournamentManager {
     }
   }
   static createQualificationDrafts(state: TournamentState): void {
+    const isNewTournament = !this.active(state.config.session)
     for (const participant of state.participants) {
       if (participant.duration !== null || participant.sourceEntry) continue
       const existing = db
@@ -536,7 +540,8 @@ export default class TournamentManager {
             eq(timeEntries.user, participant.user),
             eq(timeEntries.session, state.config.session),
             eq(timeEntries.track, state.config.qualificationTrack),
-            eq(timeEntries.draft, true)
+            eq(timeEntries.draft, true),
+            isNewTournament ? isNull(timeEntries.deletedAt) : undefined
           )
         )
         .get()
