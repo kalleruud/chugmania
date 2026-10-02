@@ -65,7 +65,7 @@ export type TournamentDetails = {
     gapPrevious: number | null
   })[]
   qualificationEntries: TimeEntry[]
-  groups: (TournamentGroup & { standings: Standing[] })[]
+  groups: (TournamentGroup & { code: string; standings: Standing[] })[]
   matches: Match[]
   standings: { user: string; rank: number }[]
   completed: boolean

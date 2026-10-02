@@ -1,3 +1,4 @@
+import loc from '@common/locale/locales'
 import type { TimeEntry } from '@common/models/timeEntry'
 import type {
   Slot,
@@ -5,13 +6,19 @@ import type {
   TournamentFixture,
   TournamentState,
 } from '@common/models/tournament'
-import { stageName } from '@common/utils/tournament'
 import {
   decided,
   groupStandings,
   overallStandings,
   qualificationOrder,
 } from './tournament.rules'
+
+function groupCode(index: number): string {
+  let code = ''
+  for (let value = index + 1; value > 0; value = Math.floor((value - 1) / 26))
+    code = String.fromCharCode(65 + ((value - 1) % 26)) + code
+  return code || '?'
+}
 
 export function fixtureLabel(
   state: TournamentState,
@@ -20,12 +27,7 @@ export function fixtureLabel(
   const siblings = state.fixtures.filter(
     f => f.bracket === fixture.bracket && f.match.stage === fixture.match.stage
   )
-  const stage = stageName(fixture.match.stage)
-  if (fixture.groupId)
-    return `${state.groups.find(g => g.id === fixture.groupId)?.name ?? ''} · ${stage} ${siblings.indexOf(fixture) + 1}`
-  return siblings.length > 1
-    ? `${stage} ${siblings.indexOf(fixture) + 1}`
-    : stage
+  return `${loc.no.match.stageCode(fixture.match.stage)}${String(siblings.indexOf(fixture) + 1).padStart(2, '0')}`
 }
 export function tournamentDetails(
   state: TournamentState,
@@ -34,13 +36,13 @@ export function tournamentDetails(
   const label = (slot: Slot): string => {
     if (slot.kind === 'player') return ''
     if (slot.kind === 'group_rank') {
-      const group = state.groups.find(g => g.id === slot.groupId)?.name ?? ''
-      if (slot.rank === 1) return `Vinner av gruppe ${group}`
-      if (slot.rank === 2) return `Andreplass i gruppe ${group}`
-      return `${slot.rank}. plass i gruppe ${group}`
+      return loc.no.tournament.groupSlot(
+        slot.rank,
+        groupCode(state.groups.findIndex(g => g.id === slot.groupId))
+      )
     }
     const feeder = state.fixtures.find(f => f.id === slot.matchId)
-    return `${slot.kind === 'match_winner' ? 'Vinner' : 'Taper'} av ${feeder ? fixtureLabel(state, feeder) : ''}`
+    return `${slot.kind === 'match_winner' ? loc.no.tournament.winnerCode : loc.no.tournament.loserCode} ${feeder ? fixtureLabel(state, feeder) : '?'}`
   }
   const qualification = state.participants.toSorted(qualificationOrder)
   const qualificationEntries = entries.filter(
@@ -78,8 +80,9 @@ export function tournamentDetails(
           ? null
           : p.duration - (qualification[i - 1]?.duration ?? p.duration),
     })),
-    groups: state.groups.map(g => ({
+    groups: state.groups.map((g, index) => ({
       ...g,
+      code: groupCode(index),
       standings: groupStandings(state, g.id),
     })),
     matches: state.fixtures.map(f => ({

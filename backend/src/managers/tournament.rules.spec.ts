@@ -65,7 +65,7 @@ test('one deterministic draft supplies preview, snake groups, all pairs and isol
   )
   assert.equal(
     tournamentDetails(draft).matches[12].tournament?.slot1,
-    `Vinner av gruppe ${draft.groups[0].name}`
+    '1st Gr A'
   )
   assert.equal(new Set(draft.groups.map(group => group.name)).size, 2)
   assert.ok(draft.groups.every(group => group.name.length > 1))
@@ -127,6 +127,46 @@ test('normal results progress to a champion; decided downstream results protect 
       assert.equal(loc.no.match.toast.update.error(error), error.message)
       return true
     }
+  )
+})
+test('short match and group labels identify unresolved slots', () => {
+  const { config, players } = input()
+  config.groupsCount = 4
+  const details = tournamentDetails(generateTournament(config, players))
+  assert.equal(details.matches[0].tournament?.label, 'GS01')
+  assert.equal(
+    details.matches.filter(match => match.stage === 'quarter')[2].tournament
+      ?.label,
+    'QF03'
+  )
+  assert.equal(
+    details.matches.filter(match => match.stage === 'semi')[1].tournament
+      ?.slot1,
+    'W QF03'
+  )
+  assert.equal(
+    details.matches.find(match => match.stage === 'quarter')?.tournament?.slot2,
+    '2nd Gr D'
+  )
+  assert.deepEqual(
+    details.groups.map(group => group.code),
+    ['A', 'B', 'C', 'D']
+  )
+  assert.ok(details.groups.every(group => group.name.length > 1))
+  config.eliminationType = 'double'
+  const double = tournamentDetails(generateTournament(config, players))
+  assert.equal(
+    double.matches.find(match => match.stage === 'loser_quarter')?.tournament
+      ?.slot1,
+    'L QF01'
+  )
+  const larger = input(32)
+  larger.config.groupsCount = 32
+  larger.config.advancementCount = 1
+  assert.equal(
+    tournamentDetails(generateTournament(larger.config, larger.players))
+      .groups[26].code,
+    'AA'
   )
 })
 test('qualification fallback orders highest ratings first and empty groups have standings', () => {

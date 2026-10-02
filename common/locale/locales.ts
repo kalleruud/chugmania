@@ -14,6 +14,22 @@ import type {
 export type Localization = typeof no
 export type Locale = 'no'
 
+const matchStageCodes: Record<MatchStage, string> = {
+  group: 'GS',
+  eight: 'EF',
+  quarter: 'QF',
+  semi: 'SF',
+  bronze: 'BF',
+  final: 'F',
+  loser_eight: 'LEF',
+  loser_quarter: 'LQF',
+  loser_semi: 'LSF',
+  loser_bronze: 'LBF',
+  loser_final: 'LF',
+  grand_final: 'GF',
+  grand_final_reset: 'GFR',
+}
+
 const no = {
   chugmania: 'Chugmania',
   admin: {
@@ -210,6 +226,16 @@ const no = {
       'Cum Dumpsters',
     ],
     group: 'Gruppe',
+    groupSlot: (rank: number, code: string) => {
+      const suffixes: Record<number, string> = { 1: 'st', 2: 'nd', 3: 'rd' }
+      const suffix =
+        rank % 100 >= 11 && rank % 100 <= 13
+          ? 'th'
+          : (suffixes[rank % 10] ?? 'th')
+      return `${rank}${suffix} Gr ${code}`
+    },
+    winnerCode: 'W',
+    loserCode: 'L',
     groupMatches: 'Gruppematcher',
     bracketMatches: 'Turneringsmatcher',
     create: 'Opprett turnering',
@@ -277,6 +303,11 @@ const no = {
       grand_final: 'Grand finale',
       grand_final_reset: 'Avgjørende grand finale',
     } as Record<MatchStage, string>,
+    stageCode: (stage: MatchStage | null) => {
+      if (!stage) return 'M'
+      if (stage.startsWith('round_')) return `R${stage.slice(6)}-`
+      return matchStageCodes[stage]
+    },
     form: {
       user1: 'Spiller 1',
       user2: 'Spiller 2',
