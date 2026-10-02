@@ -109,6 +109,7 @@ export type TimeEntryListProps = {
   session?: string
   entries: TimeEntry[]
   filter?: FilterType
+  isPreview?: boolean
 }
 
 export function TimeEntryList({
@@ -118,6 +119,7 @@ export function TimeEntryList({
   session,
   entries,
   filter = 'best',
+  isPreview = false,
 }: Readonly<TimeEntryListProps>) {
   const { isLoggedIn } = useAuth()
   const [gapType, setGapType] = useState<GapType>('interval')
@@ -125,6 +127,8 @@ export function TimeEntryList({
   const { open } = useTimeEntryInput()
 
   const filteredEntries = filterEntries(entries, filterType)
+
+  if (filteredEntries.length === 0 && isPreview) return null
 
   if (filteredEntries.length === 0) {
     return (
@@ -191,8 +195,8 @@ export function TimeEntryList({
                 gapType === 'interval' ? filteredEntries.at(i - 1) : undefined,
                 gapType === 'leader' ? filteredEntries.at(0) : undefined
               )}
-              onClick={() => open(entry)}
-              className='px-4 py-3'
+              onClick={isPreview ? undefined : () => open(entry)}
+              className={isPreview ? 'cursor-default px-4 py-3' : 'px-4 py-3'}
               gapType={gapType}
               onChangeGapType={() =>
                 setGapType(gapType === 'leader' ? 'interval' : 'leader')
@@ -203,7 +207,7 @@ export function TimeEntryList({
         })}
       </div>
 
-      {isLoggedIn && (
+      {isLoggedIn && !isPreview && (
         <Button
           variant='ghost'
           size='sm'

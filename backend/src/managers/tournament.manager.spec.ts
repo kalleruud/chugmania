@@ -229,19 +229,24 @@ test(
       assert.ok(response.success, JSON.stringify(response))
     }
     await t.test(
-      'preview and saved structure agree; permissions and concurrent creation',
+      'preview never persists; saved structure agrees; permissions and concurrent creation',
       async () => {
         const forbidden = await viewer.emitWithAck('create_tournament', config)
         assert.equal(forbidden.success, false)
+        const databaseBeforePreview = sqlite.serialize()
+        let timeEntryBroadcasts = 0
+        const onTimeEntries = () => timeEntryBroadcasts++
+        admin.on('all_time_entries', onTimeEntries)
         const preview = await admin.emitWithAck('preview_tournament', config)
         assert.ok(preview.success, JSON.stringify(preview))
-        assert.equal(preview.details.qualificationEntries.length, 8)
-        const previewDrafts = preview.details.qualificationEntries.filter(
-          entry => entry.draft
-        )
-        assert.equal(previewDrafts.length, 4)
+        assert.equal(preview.details.qualificationEntries.length, 4)
         assert.ok(
-          previewDrafts.every(entry => entry.id && entry.duration === null)
+          preview.details.qualificationEntries.every(entry => !entry.draft)
+        )
+        assert.ok(
+          preview.details.qualification
+            .filter(player => player.duration === null)
+            .every(player => player.sourceEntry === null)
         )
         const repeatedPreview = await admin.emitWithAck(
           'preview_tournament',
@@ -252,12 +257,27 @@ test(
           repeatedPreview.details.qualificationEntries.map(entry => entry.id),
           preview.details.qualificationEntries.map(entry => entry.id)
         )
+        const changedPreview = await admin.emitWithAck('preview_tournament', {
+          ...config,
+          qualificationTrack: secondTrack,
+        })
+        assert.ok(changedPreview.success)
+        assert.equal(changedPreview.details.qualificationEntries.length, 0)
+        const invalidPreview = await admin.emitWithAck('preview_tournament', {
+          ...config,
+          qualificationTrack: '',
+        })
+        assert.equal(invalidPreview.success, false)
+        assert.deepEqual(sqlite.serialize(), databaseBeforePreview)
+        assert.equal(timeEntryBroadcasts, 0)
+        admin.off('all_time_entries', onTimeEntries)
         const created = await Promise.all([
           admin.emitWithAck('create_tournament', config),
           admin.emitWithAck('create_tournament', config),
         ])
         assert.equal(created.filter(r => r.success).length, 1)
         assert.deepEqual(parity(await details()), parity(preview.details))
+        assert.equal((await details()).qualificationEntries.length, 8)
         const drafts = db
           .select()
           .from(schema.timeEntries)

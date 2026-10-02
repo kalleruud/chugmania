@@ -129,6 +129,7 @@ export default function TournamentPanel({
           {qualiTrack && <TrackRow item={qualiTrack} />}
 
           <TimeEntryList
+            isPreview={isPreview}
             entries={details.qualificationEntries}
             track={details.config.qualificationTrack}
             session={details.config.session}
