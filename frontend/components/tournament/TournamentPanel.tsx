@@ -1,3 +1,4 @@
+import { useAuth } from '@/contexts/AuthContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@common/locale/locales'
 import type { TournamentDetails } from '@common/models/tournament'
@@ -7,6 +8,7 @@ import SegmentedProgress from '../SegmentedProgress'
 import { TimeEntryList } from '../timeentries/TimeEntryList'
 import { TrackRow } from '../track/TrackRow'
 import UserRow from '../user/UserRow'
+import DeleteTournamentDialog from './DeleteTournamentDialog'
 import TournamentGroupPanel from './TournamentGroupPanel'
 
 export default function TournamentPanel({
@@ -17,6 +19,8 @@ export default function TournamentPanel({
   isPreview?: boolean
 }) {
   const { users, tracks } = useData()
+  const { isLoggedIn, loggedInUser } = useAuth()
+  const canEdit = isLoggedIn && loggedInUser.role !== 'user'
   const workload = details.workloadSummary
   const qualiTrack = tracks?.find(
     t => t.id === details.config.qualificationTrack
@@ -32,12 +36,17 @@ export default function TournamentPanel({
             {workload.maxMatches} matcher per spiller
           </p>
         ) : (
-          <>
-            <h2>{details.config.name}</h2>
-            <p className='text-muted-foreground'>
-              {details.config.description}
-            </p>
-          </>
+          <div className='flex flex-wrap items-start justify-between gap-4'>
+            <div className='min-w-0 flex-1'>
+              <h2>{details.config.name}</h2>
+              <p className='text-muted-foreground'>
+                {details.config.description}
+              </p>
+            </div>
+            {canEdit && (
+              <DeleteTournamentDialog session={details.config.session} />
+            )}
+          </div>
         )}
         <SegmentedProgress
           segments={[

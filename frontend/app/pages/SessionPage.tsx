@@ -2,7 +2,6 @@ import ConfirmationButton from '@/components/ConfirmationButton'
 import SessionCard from '@/components/session/SessionCard'
 import SessionForm from '@/components/session/SessionForm'
 import SessionSignupPanel from '@/components/session/SessionSignupPanel'
-import DeleteTournamentDialog from '@/components/tournament/DeleteTournamentDialog'
 import TournamentPanel from '@/components/tournament/TournamentPanel'
 import TrackLeaderboard from '@/components/track/TrackLeaderboard'
 import {
@@ -187,10 +186,7 @@ export default function SessionPage() {
         </TabsContent>
         <TabsContent value={loc.no.tournament.title}>
           {tournament.details && (
-            <>
-              <TournamentPanel details={tournament.details} />
-              {canEdit && <DeleteTournamentDialog session={session.id} />}
-            </>
+            <TournamentPanel details={tournament.details} />
           )}
           {!tournament.details && (
             <Empty className='border border-input text-sm text-muted-foreground'>
