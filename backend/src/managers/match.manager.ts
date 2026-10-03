@@ -15,7 +15,7 @@ import { matches, sessions } from '../../database/schema'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import RatingManager from './rating.manager'
-import TournamentManager from './tournament.manager'
+import TournamentManager from './tournament/tournament.manager'
 
 export default class MatchManager {
   private static validateMatchState(

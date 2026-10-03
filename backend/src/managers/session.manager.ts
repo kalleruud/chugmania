@@ -17,7 +17,7 @@ import AuthManager from './auth.manager'
 import MatchManager from './match.manager'
 import RatingManager from './rating.manager'
 import SessionScheduler from './session.scheduler'
-import TournamentManager from './tournament.manager'
+import TournamentManager from './tournament/tournament.manager'
 import UserManager from './user.manager'
 
 export default class SessionManager {

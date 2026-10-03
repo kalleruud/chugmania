@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "7f105d8f-b2b5-4382-8a9f-b9b36b4d95fb",
+  "id": "cbdb7ca0-e3e9-47da-9af4-c6c784fb8d48",
   "prevId": "7dadc3fe-a426-4a2a-bc3e-a826ab24f2b9",
   "tables": {
     "matches": {
@@ -388,6 +388,14 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        },
+        "draft": {
+          "name": "draft",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
         },
         "amount_l": {
           "name": "amount_l",

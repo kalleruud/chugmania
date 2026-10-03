@@ -70,4 +70,5 @@ CREATE TABLE `tournaments` (
 	FOREIGN KEY (`session`) REFERENCES `sessions`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `active_session_tournament` ON `tournaments` (`session`) WHERE "tournaments"."deleted_at" IS NULL;
+CREATE UNIQUE INDEX `active_session_tournament` ON `tournaments` (`session`) WHERE "tournaments"."deleted_at" IS NULL;--> statement-breakpoint
+ALTER TABLE `time_entries` ADD `draft` integer DEFAULT false NOT NULL;

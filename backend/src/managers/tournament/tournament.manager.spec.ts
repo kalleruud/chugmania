@@ -22,7 +22,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { test } from 'node:test'
 import { io, type Socket } from 'socket.io-client'
-import * as schema from '../../database/schema'
+import * as schema from '../../../database/schema'
 
 type Client = Socket<ServerToClientEvents, ClientToServerEvents>
 

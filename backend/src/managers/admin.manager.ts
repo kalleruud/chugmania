@@ -28,7 +28,7 @@ import MatchManager from './match.manager'
 import RatingManager from './rating.manager'
 import SessionManager from './session.manager'
 import TimeEntryManager from './timeEntry.manager'
-import TournamentManager from './tournament.manager'
+import TournamentManager from './tournament/tournament.manager'
 import TrackManager from './track.manager'
 import UserManager from './user.manager'
 

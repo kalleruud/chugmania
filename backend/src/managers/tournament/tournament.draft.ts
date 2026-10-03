@@ -8,7 +8,7 @@ import type {
 } from '@common/models/tournament'
 import { upperStage, validConfiguration } from '@common/utils/tournament'
 import { createHash } from 'node:crypto'
-import type { MatchStage } from '../../database/schema'
+import type { MatchStage } from '../../../database/schema'
 import { seedingOrder } from './tournament.rules'
 
 function groupNames(session: string, count: number): string[] {

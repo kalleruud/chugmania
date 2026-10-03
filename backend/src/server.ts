@@ -23,7 +23,7 @@ import RatingManager from './managers/rating.manager'
 import SessionManager from './managers/session.manager'
 import SessionScheduler from './managers/session.scheduler'
 import TimeEntryManager from './managers/timeEntry.manager'
-import TournamentManager from './managers/tournament.manager'
+import TournamentManager from './managers/tournament/tournament.manager'
 import TrackManager from './managers/track.manager'
 import UserManager from './managers/user.manager'
 

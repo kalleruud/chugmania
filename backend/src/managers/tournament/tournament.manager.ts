@@ -15,7 +15,7 @@ import { RATING_CONSTANTS } from '@common/utils/constants'
 import { usedStages } from '@common/utils/tournament'
 import { and, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm'
 import { randomUUID } from 'node:crypto'
-import db, { database } from '../../database/database'
+import db, { database } from '../../../database/database'
 import {
   matches,
   sessions,
@@ -27,12 +27,12 @@ import {
   tournamentStages,
   tracks,
   users,
-} from '../../database/schema'
-import type { TypedSocket } from '../server'
-import { broadcast, broadcastTournament } from '../server'
-import AuthManager from './auth.manager'
-import MatchManager from './match.manager'
-import RatingManager from './rating.manager'
+} from '../../../database/schema'
+import type { TypedSocket } from '../../server'
+import { broadcast, broadcastTournament } from '../../server'
+import AuthManager from '../auth.manager'
+import MatchManager from '../match.manager'
+import RatingManager from '../rating.manager'
 import { tournamentDetails } from './tournament.details'
 import { generateTournament } from './tournament.draft'
 import { protectResults, resolveSlots } from './tournament.rules'
