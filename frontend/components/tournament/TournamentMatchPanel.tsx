@@ -2,7 +2,7 @@ import { useTournament } from '@/hooks/useTournament'
 import loc from '@common/locale/locales'
 import type { SessionWithSignups } from '@common/models/session'
 import { pendingMatches } from '@common/utils/tournament'
-import { Goal } from 'lucide-react'
+import { Radio } from 'lucide-react'
 import type { ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
 import MatchCard from '../match/MatchCard'
@@ -35,7 +35,7 @@ export default function TournamentMatchPanel({
         title={loc.no.match.live}
         description={session.name}
         to={'/sessions/' + session.id}
-        Icon={Goal}
+        Icon={Radio}
         iconClassName='animate-pulse'
       />
 
