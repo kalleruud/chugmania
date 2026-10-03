@@ -1,14 +1,23 @@
 import * as HeroIcons from '@heroicons/react/24/solid'
 import type { ComponentProps } from 'react'
 import { Link } from 'react-router'
-import { twMerge } from 'tailwind-merge'
+import { twMerge, type ClassNameValue } from 'tailwind-merge'
 
 type PageHeaderProps = {
   title: string
   description?: string | null
-  Icon?: (typeof HeroIcons)[keyof typeof HeroIcons]
   to?: string
-} & ComponentProps<'div'>
+} & (
+  | {
+      Icon?: undefined
+      iconClassName?: undefined
+    }
+  | {
+      Icon: (typeof HeroIcons)[keyof typeof HeroIcons]
+      iconClassName?: ClassNameValue
+    }
+) &
+  ComponentProps<'div'>
 
 export function PageHeader({
   title,
@@ -16,13 +25,16 @@ export function PageHeader({
   Icon,
   to,
   className,
+  iconClassName,
   ...props
 }: Readonly<PageHeaderProps>) {
   const content = (
     <div className='flex items-center justify-between'>
       <div className='flex flex-col' {...props}>
         <div className='flex items-center gap-2'>
-          {Icon && <Icon className='size-6 text-primary' />}
+          {Icon && (
+            <Icon className={twMerge('size-6 text-primary', iconClassName)} />
+          )}
           <h3 className='pt-0.5 text-foreground'>{title}</h3>
         </div>
         {description && (

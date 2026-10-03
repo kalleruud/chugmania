@@ -19,10 +19,6 @@ export default function Home() {
       <h1 className='text-primary'>Chugmania</h1>
       {loggedInUser && <UserCard user={loggedInUser} />}
 
-      {sessions?.filter(isOngoing).map(session => (
-        <TournamentMatchPanel key={session.id} session={session} />
-      ))}
-
       {loggedInUser?.role === 'admin' && (
         <PageHeader
           className='mx-2 my-0'
@@ -31,6 +27,15 @@ export default function Home() {
           to='/admin'
         />
       )}
+
+      {sessions?.filter(isOngoing).map(session => (
+        <TournamentMatchPanel
+          className='rounded-sm border bg-background p-2'
+          key={session.id}
+          session={session}
+        />
+      ))}
+
       <SessionsContent
         className='rounded-sm border bg-background p-2'
         showLink

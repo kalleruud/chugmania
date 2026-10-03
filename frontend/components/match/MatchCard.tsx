@@ -59,7 +59,7 @@ export default function MatchCard({
               <dt className='text-sm text-muted-foreground'>
                 {loc.no.match.form.comment}
               </dt>
-              <dd className='break-words whitespace-pre-wrap'>
+              <dd className='wrap-break-word whitespace-pre-wrap'>
                 {match.comment}
               </dd>
             </div>
