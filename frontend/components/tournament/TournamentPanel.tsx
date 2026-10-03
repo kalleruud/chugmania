@@ -177,7 +177,7 @@ export default function TournamentPanel({
             const played = activeMatches.filter(
               match => match.status === 'completed' || match.tournament?.awarded
             ).length
-            const isActive = played > 0 && played < activeMatches.length
+            const isActive = featuredMatch && matches.includes(featuredMatch)
             return (
               <details
                 key={stage ?? 'none'}
