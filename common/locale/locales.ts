@@ -243,7 +243,8 @@ const no = {
     bracketMatches: 'Turneringsmatcher',
     create: 'Opprett turnering',
     preview: 'Forhåndsvisning',
-    qualification: 'Kvalifisering',
+    qualification: 'Tie breaker',
+    tieBreakerTrack: 'Tie breaker-bane',
     qualificationDescription:
       'Ved likt resultat etter gruppespill eller utslagsrunde måles rundetider. Hver rundetid låses når den er registrert.',
     noTieBreakNeeded: 'Ingen tie-break-rundetider er nødvendige nå.',
@@ -259,7 +260,7 @@ const no = {
     deleted: 'Turneringen er slettet',
     deleteTitle: 'Slett turnering',
     deleteDescription:
-      'Vil du beholde eller slette turneringens matcher og deltakernes kvalifiseringsrundetider? Andre matcher og rundetider beholdes.',
+      'Vil du beholde eller slette turneringens matcher og deltakernes tie breaker-rundetider? Andre matcher og rundetider beholdes.',
     keepResults: 'Slett turnering, behold resultater',
     deleteResults: 'Slett turnering og resultater',
     awarded: 'Tildelt seier',

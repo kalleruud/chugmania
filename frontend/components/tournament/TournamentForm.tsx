@@ -145,7 +145,7 @@ export default function TournamentForm({
           setSelected={item =>
             change({ ...config, qualificationTrack: item?.id ?? '' })
           }
-          placeholder='Kvalifiseringsbane'
+          placeholder={loc.no.tournament.tieBreakerTrack}
           CustomRow={TrackRow}
         />
         <label>
