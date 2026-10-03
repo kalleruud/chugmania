@@ -145,13 +145,11 @@ export default function TournamentPanel({
                 label: loc.no.tournament.groupMatches,
                 value: details.progress.groupDecided,
                 total: details.progress.groupTotal,
-                colorClassName: 'bg-emerald-500',
               },
               {
                 label: loc.no.tournament.bracketMatches,
                 value: details.progress.decided - details.progress.groupDecided,
                 total: details.progress.total - details.progress.groupTotal,
-                colorClassName: 'bg-sky-500',
               },
             ]}
           />

@@ -5,18 +5,31 @@ type ProgressSegment = {
   label: string
   value: number
   total?: number
-  colorClassName: string
+  colorClassName?: string
 }
+
+const defaultColors = [
+  'bg-chart-2',
+  'bg-chart-4',
+  'bg-chart-1',
+  'bg-chart-3',
+  'bg-chart-5',
+]
 
 export default function SegmentedProgress({
   segments,
 }: {
   segments: ProgressSegment[]
 }) {
+  const coloredSegments = segments.map((segment, index) => ({
+    ...segment,
+    colorClassName:
+      segment.colorClassName ?? defaultColors[index % defaultColors.length],
+  }))
   return (
     <div className='flex flex-col gap-2'>
       <div className='flex overflow-hidden rounded-sm'>
-        {segments.map(segment => {
+        {coloredSegments.map(segment => {
           const total = segment.total ?? segment.value
           if (total <= 0) return null
           const percent = Math.min(
@@ -50,7 +63,7 @@ export default function SegmentedProgress({
         })}
       </div>
       <div className='flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground'>
-        {segments.map(segment => (
+        {coloredSegments.map(segment => (
           <span key={segment.label} className='flex items-center gap-2'>
             <span
               aria-hidden

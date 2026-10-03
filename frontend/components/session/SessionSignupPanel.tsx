@@ -136,11 +136,6 @@ export default function SessionSignupPanel({
         segments={RESPONSE_OPTIONS.map(({ response }) => ({
           label: loc.no.session.rsvp.responses[response],
           value: sortedSignups.filter(s => s.response === response).length,
-          colorClassName: {
-            yes: 'bg-emerald-500',
-            maybe: 'bg-amber-500',
-            no: 'bg-red-500',
-          }[response],
         }))}
       />
 
