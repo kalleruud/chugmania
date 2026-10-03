@@ -52,8 +52,7 @@ export default function TournamentPanel({
           <p className='text-sm text-muted-foreground'>
             {details.qualification.length}{' '}
             {loc.no.session.participants.toLowerCase()} ·{' '}
-            {details.groups.length} {loc.no.tournament.groups.toLowerCase()} ·{' '}
-            {isPreview ? loc.no.tournament.preview : loc.no.tournament.frozen}
+            {details.groups.length} {loc.no.tournament.groups.toLowerCase()}
           </p>
           {isPreview && (
             <p>
