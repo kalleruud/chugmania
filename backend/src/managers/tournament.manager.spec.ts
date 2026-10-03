@@ -291,6 +291,18 @@ test(
         ])
         assert.equal(created.filter(r => r.success).length, 1)
         assert.deepEqual(parity(await details()), parity(preview.details))
+        const saved = await details()
+        assert.ok(saved.frozen)
+        for (const response of ['no', 'yes']) {
+          const changed = await admin.emitWithAck('rsvp_session', {
+            type: 'RsvpSessionRequest',
+            session,
+            user: people[7].id,
+            response: response === 'yes' ? 'yes' : 'no',
+          })
+          assert.ok(changed.success)
+          assert.deepEqual(await details(), saved)
+        }
         assert.equal((await details()).qualificationEntries.length, 0)
         assert.equal(
           db
@@ -345,9 +357,10 @@ test(
       }
     )
     await t.test(
-      'freeze locks qualification laps; late admission preserves fixtures; undo keeps qualification locked',
+      'creation locks groups; signup and lap changes preserve fixtures; undo keeps groups locked',
       async () => {
         const before = await details()
+        assert.ok(before.frozen)
         const first = before.matches[0]
         await result(first, 'completed', first.user1)
         const frozen = await details()
@@ -425,8 +438,9 @@ test(
         })
         assert.ok(admission.success, JSON.stringify(admission))
         const added = await details()
-        assert.equal(added.qualification.length, 9)
-        assert.equal(added.matches.length, frozen.matches.length + 4)
+        assert.equal(added.qualification.length, 8)
+        assert.deepEqual(added.groups, frozen.groups)
+        assert.deepEqual(added.matches, frozen.matches)
         for (const old of frozen.matches) {
           const same = added.matches.find(m => m.id === old.id)
           assert.ok(same)
@@ -528,7 +542,7 @@ test(
           response: 'yes',
         })
         assert.ok(admission.success)
-        assert.equal((await details()).qualification.length, 9)
+        assert.equal((await details()).qualification.length, 8)
         const semifinal = afterGroups.matches.find(m => m.stage === 'semi')
         assert.ok(semifinal)
         await result(semifinal, 'completed', semifinal.user1)
@@ -616,7 +630,7 @@ test(
       }
     )
     await t.test(
-      'deletion can keep or delete related results; unrelated records survive and invalid roster recovers',
+      'deletion can keep or delete related results; unrelated records survive and saved roster stays fixed',
       async () => {
         const ordinary = await admin.emitWithAck('create_match', {
           type: 'CreateMatchRequest',
@@ -728,7 +742,7 @@ test(
           })
           assert.ok(response.success)
         }
-        assert.ok((await details()).notReadyReason)
+        assert.equal((await details()).notReadyReason, null)
         const response = await admin.emitWithAck('rsvp_session', {
           type: 'RsvpSessionRequest',
           session,
@@ -737,7 +751,10 @@ test(
         })
         assert.ok(response.success)
         assert.equal((await details()).notReadyReason, null)
-        assert.equal((await details()).qualification.length, 4)
+        assert.equal(
+          (await details()).qualification.length,
+          removed.qualification.length
+        )
         const cascade = await admin.emitWithAck('delete_session', {
           type: 'DeleteSessionRequest',
           id: session,

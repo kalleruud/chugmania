@@ -6,14 +6,14 @@ The Tournament Module exposes commands through `tournament.manager.ts`. Its priv
 
 Historical restoration is excluded. CSV remains raw database writes without tournament validation. This document supersedes earlier tournament implementation plans.
 
-Preview and creation use rating-based seeding and create no qualification laps. After group results settle, tied win/loss ratios request ordinary draft lap times, including ties among nonadvancing players across groups. Elimination-round placement ties request laps once that round settles. Completed attempts can resolve later ties; equal times request new drafts. Group lap snapshots remain stable during later placement attempts.
+Preview and creation use rating-based seeding and create no qualification laps. Creation locks the groups, participant roster, and match schedule; later session signup and rating changes do not regenerate the tournament. After group results settle, tied win/loss ratios request ordinary draft lap times, including ties among nonadvancing players across groups. Elimination-round placement ties request laps once that round settles. Completed attempts can resolve later ties; equal times request new drafts. Group lap snapshots remain stable during later placement attempts.
 
 Affected group-rank slots stay empty with short `TB VER v LEC` labels until their tie resolves. The existing `TimeEntryList` edits and cancels requested drafts. Cancelled drafts are not recreated automatically; the usual add action supplies a replacement. Backend checks allow only currently requested drafts and lock completed attempts. Corrections retire drafts that are no longer needed and protect played dependent matches. Final standings appear only after all active fixtures and ties are settled.
 
 ## Stages
 
 1. Working single elimination: schema, generation, persistence, freeze, progression, existing UI, preview, and realtime. Development milestone using a stable roster.
-2. Complete formats and lifecycle: double elimination/reset, changing rosters, preserved fixtures, admission, awards, corrections, session lifecycle, and reactive integration.
+2. Complete formats and lifecycle: double elimination/reset, fixed rosters, preserved fixtures, awards, corrections, session lifecycle, and reactive integration.
 3. Verification: pure and command tests, migration checks, CSV round trips, concurrent requests, restart and multiple clients, browser checks, typecheck and build.
 
 ## Lifecycle
@@ -23,14 +23,10 @@ flowchart TD
   Inputs[Configuration and rating-ranked participants] --> Generate[Shared tournament generator]
   Generate --> Preview[Preview]
   Preview -->|Create: reload inputs| Generate
-  Generate -->|Persist generated structure| Ready[Ready]
-  Ready -->|Input changes: regenerate and reconcile| Ready
-  Ready -->|Invalid roster| NotReady[Not ready]
-  NotReady -->|Roster valid| Ready
-  Ready -->|First group decision: freeze| Groups[Group play]
-  Ready -->|No group fixtures: freeze at creation| Bracket[Bracket play]
-  Groups -->|Admit new participant| Groups
-  Groups -->|All group results settled: close admission| GroupTies{Tied records?}
+  Generate -->|Persist and lock groups and roster| Ready[Ready]
+  Ready -->|Start group matches| Groups[Group play]
+  Ready -->|No group fixtures| Bracket[Bracket play]
+  Groups -->|All group results settled| GroupTies{Tied records?}
   GroupTies -->|Yes| Laps[Request draft tie-break laps]
   GroupTies -->|No| Bracket
   Laps -->|Distinct times: resolve affected slots| Bracket
@@ -64,7 +60,7 @@ Run `npm test`, `npm run check`, and `npm run build`. Tests use disposable SQLit
 - `frontend/hooks/useTournament.ts`: fetch, subscription, reconnect and notifications.
 - `frontend/components/ComboboxMulti.tsx`: ordered multi-selection through the shared combobox, with custom rows for options and selected items.
 - `backend/src/managers/tournament.rules.spec.ts`: deterministic generation, progression, correction protection, and both double-elimination reset paths.
-- `backend/src/managers/tournament.manager.spec.ts`: real socket commands, permissions, concurrent creation, persistence/restart, freeze/admission, corrections, CSV and lifecycle integration.
+- `backend/src/managers/tournament.manager.spec.ts`: real socket commands, permissions, concurrent creation, persistence/restart, fixed groups after creation, corrections, CSV and lifecycle integration.
 - `backend/database/database.spec.ts`: clean migration and upgrade preserving ordinary data.
 - `drizzle/0011_abandoned_storm.sql`, `drizzle/meta/0011_snapshot.json`: generated tournament migration and schema snapshot.
 - `drizzle/0012_minor_silver_fox.sql`, `drizzle/meta/0012_snapshot.json`: qualification draft flag migration and schema snapshot.

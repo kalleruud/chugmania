@@ -209,7 +209,6 @@ const no = {
     title: 'Turnering',
     adminPanel: 'Adminpanel',
     groups: 'Grupper',
-    qualificationOpen: 'Gruppefordeling åpen',
     groupNames: [
       'Furries',
       'Degenerates',

@@ -53,9 +53,7 @@ export default function TournamentPanel({
             {details.qualification.length}{' '}
             {loc.no.session.participants.toLowerCase()} ·{' '}
             {details.groups.length} {loc.no.tournament.groups.toLowerCase()} ·{' '}
-            {details.frozen
-              ? loc.no.tournament.frozen
-              : loc.no.tournament.qualificationOpen}
+            {isPreview ? loc.no.tournament.preview : loc.no.tournament.frozen}
           </p>
           {isPreview && (
             <p>

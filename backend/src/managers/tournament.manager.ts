@@ -13,7 +13,7 @@ import {
   type TournamentState,
 } from '@common/models/tournament'
 import { RATING_CONSTANTS } from '@common/utils/constants'
-import { usedStages, validConfiguration } from '@common/utils/tournament'
+import { usedStages } from '@common/utils/tournament'
 import { and, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm'
 import { randomUUID } from 'node:crypto'
 import db, { database } from '../../database/database'
@@ -37,10 +37,8 @@ import MatchManager from './match.manager'
 import RatingManager from './rating.manager'
 import TimeEntryManager from './timeEntry.manager'
 import { tournamentDetails } from './tournament.details'
-import { generateTournament, snakeGroup } from './tournament.draft'
+import { generateTournament } from './tournament.draft'
 import {
-  decided,
-  groupComplete,
   lapDuration,
   protectResults,
   resolveSlots,
@@ -223,8 +221,8 @@ export default class TournamentManager {
           match,
         }))
         .sort((a, b) => a.order - b.order),
-      frozenAt: row.frozenAt,
-      admissionClosedAt: row.admissionClosedAt,
+      frozenAt: row.frozenAt ?? row.createdAt,
+      admissionClosedAt: row.admissionClosedAt ?? row.createdAt,
       notReadyReason: row.notReadyReason,
       cancelled:
         db.select().from(sessions).where(eq(sessions.id, session)).get()
@@ -330,71 +328,6 @@ export default class TournamentManager {
     return result
   }
 
-  static reconcile(
-    before: TournamentState,
-    next: TournamentState
-  ): TournamentState {
-    const result = structuredClone(next)
-    const ids = new Map<string, string>()
-    result.groups.forEach((group, index) => {
-      const previous = before.groups.at(index)
-      ids.set(group.id, previous?.id ?? randomUUID())
-      if (previous) group.name = previous.name
-    })
-    const key = (
-      state: TournamentState,
-      fixture: TournamentState['fixtures'][number]
-    ): string => {
-      if (fixture.groupId)
-        return `${state.groups.find(g => g.id === fixture.groupId)?.name}:${[fixture.match.user1, fixture.match.user2].sort().join(':')}`
-      const peers = state.fixtures.filter(
-        f => f.bracket === fixture.bracket && f.round === fixture.round
-      )
-      return `${fixture.bracket}:${fixture.round}:${peers.indexOf(fixture)}`
-    }
-    const existing = new Map(before.fixtures.map(f => [key(before, f), f]))
-    for (const fixture of result.fixtures)
-      ids.set(
-        fixture.id,
-        existing.get(key(result, fixture))?.id ?? randomUUID()
-      )
-    const mapped = (id: string): string => {
-      const value = ids.get(id)
-      if (!value) throw new Error(loc.no.tournament.invalid)
-      return value
-    }
-    const slot = (value: Slot): Slot => {
-      if (value.kind === 'player') return value
-      if (value.kind === 'group_rank')
-        return { ...value, groupId: mapped(value.groupId) }
-      return { ...value, matchId: mapped(value.matchId) }
-    }
-    result.fixtures = result.fixtures.map(fixture => {
-      const previous = existing.get(key(result, fixture))
-      const id = mapped(fixture.id)
-      return {
-        ...fixture,
-        id,
-        groupId: fixture.groupId ? mapped(fixture.groupId) : null,
-        slot1: slot(fixture.slot1),
-        slot2: slot(fixture.slot2),
-        match: previous
-          ? { ...previous.match }
-          : { ...fixture.match, id, createdAt: new Date() },
-      }
-    })
-    result.groups.forEach(g => {
-      g.id = mapped(g.id)
-    })
-    result.participants.forEach(p => {
-      p.groupId = mapped(p.groupId)
-    })
-    result.id = before.id
-    result.frozenAt = before.frozenAt
-    result.admissionClosedAt = before.admissionClosedAt
-    result.cancelled = before.cancelled
-    return resolveSlots(result)
-  }
   static refreshAll(): void {
     for (const row of db
       .select()
@@ -412,56 +345,7 @@ export default class TournamentManager {
       }
       const before = this.load(row.session)
       if (!before || before.cancelled) continue
-      const inputs = this.participants(before.config)
-      if (!before.frozenAt) {
-        if (
-          !validConfiguration(
-            inputs.length,
-            before.config.groupsCount,
-            before.config.advancementCount,
-            before.config.eliminationType
-          )
-        ) {
-          db.update(tournaments)
-            .set({ notReadyReason: loc.no.tournament.roster })
-            .where(eq(tournaments.id, before.id))
-            .run()
-          continue
-        }
-        const state = this.reconcile(
-          before,
-          generateTournament(before.config, inputs)
-        )
-        if (groupComplete(state)) {
-          state.frozenAt = new Date()
-          state.admissionClosedAt = new Date()
-        }
-        this.save(state)
-      } else if (!before.admissionClosedAt) {
-        const entrants = inputs
-          .filter(
-            p => !before.participants.some(existing => existing.user === p.user)
-          )
-          .sort((a, b) => a.user.localeCompare(b.user))
-        const players = [...before.participants]
-        for (const entrant of entrants) {
-          const admission = Math.max(-1, ...players.map(p => p.admission)) + 1
-          players.push({
-            ...entrant,
-            admission,
-            groupId:
-              before.groups[snakeGroup(admission, before.groups.length)].id,
-          })
-        }
-        this.save(
-          this.reconcile(
-            before,
-            generateTournament(before.config, players, before.groups)
-          )
-        )
-      } else {
-        this.save(resolveSlots(this.refreshQualification(before)))
-      }
+      this.save(resolveSlots(this.refreshQualification(before)))
     }
   }
   static commit<T>(write: () => T): T {
@@ -719,12 +603,8 @@ export default class TournamentManager {
       }
       if (request.comment !== undefined) match.comment = request.comment
       if (request.duration !== undefined) match.duration = request.duration
-      if (!state.frozenAt && fixture.bracket === 'group' && decided(match))
-        state.frozenAt = new Date()
       const resolved = resolveSlots(state)
       protectResults(before, resolved, fixture.id)
-      if (groupComplete(resolved) && !resolved.admissionClosedAt)
-        resolved.admissionClosedAt = new Date()
       this.save(resolved)
     })
     return true
@@ -827,10 +707,8 @@ export default class TournamentManager {
       const state = TournamentManager.remap(
         TournamentManager.validate(request, true)
       )
-      if (groupComplete(state)) {
-        state.frozenAt = new Date()
-        state.admissionClosedAt = new Date()
-      }
+      state.frozenAt = new Date()
+      state.admissionClosedAt = state.frozenAt
       TournamentManager.save(state)
     })()
     await TournamentManager.publish(socket.id)
