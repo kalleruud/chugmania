@@ -1,6 +1,6 @@
 import { Item, ItemActions, ItemContent, ItemTitle } from '@/components/ui/item'
 import { useData } from '@/contexts/DataContext'
-import { type UserInfo } from '@common/models/user'
+import { getUserFullName, type UserInfo } from '@common/models/user'
 import { ChevronRight, Minus } from 'lucide-react'
 import { Link } from 'react-router'
 import { twMerge } from 'tailwind-merge'
@@ -36,12 +36,12 @@ export default function UserRow({
 
   const content = (
     <>
-      <ItemContent className='relative z-10'>
-        <div className='flex items-center gap-2'>
+      <ItemContent className='relative z-10 min-w-0'>
+        <div className='flex min-w-0 items-center gap-2'>
           {showRanking && (
             <p
               className={twMerge(
-                'w-6 text-center font-kh-interface text-lg font-black text-primary tabular-nums',
+                'w-6 shrink-0 text-center font-kh-interface text-lg font-black text-primary tabular-nums',
                 !hideLink && highlight && 'group-hover:text-primary-foreground'
               )}>
               {ranking}
@@ -49,32 +49,36 @@ export default function UserRow({
           )}
 
           {showMissingRanking && (
-            <Minus className='size-4 text-muted-foreground' />
+            <Minus className='size-4 shrink-0 text-muted-foreground' />
           )}
 
           {hideRanking && !showRanking && !showMissingRanking && (
             <div
               className={twMerge(
-                'h-4 w-1 rounded-full bg-primary',
+                'h-4 w-1 shrink-0 rounded-full bg-primary',
                 !hideLink && highlight && 'group-hover:bg-primary-foreground'
               )}
             />
           )}
 
-          <ItemTitle className='mr-auto flex gap-1 font-f1 uppercase'>
-            <span>{user.firstName}</span>
+          <ItemTitle
+            title={getUserFullName(user)}
+            className='mr-auto block w-auto min-w-0 flex-1 truncate font-f1 uppercase'>
+            <span>{user.firstName}</span>{' '}
             <span className='font-bold'>{user.lastName}</span>
           </ItemTitle>
 
           {children && (
-            <div className='pointer-events-auto relative z-10'>{children}</div>
+            <div className='pointer-events-auto relative z-10 shrink-0'>
+              {children}
+            </div>
           )}
         </div>
       </ItemContent>
       {!hideLink && (
         <ItemActions
           className={twMerge(
-            'relative z-10',
+            'relative z-10 shrink-0',
             highlight && 'text-primary group-hover:text-primary-foreground'
           )}>
           <ChevronRight className='size-4' />
@@ -88,7 +92,7 @@ export default function UserRow({
       <Item
         key={user.id}
         className={twMerge(
-          'group',
+          'group flex-nowrap',
           highlight && 'bg-primary-background',
           className
         )}
@@ -103,7 +107,7 @@ export default function UserRow({
     <Item
       key={user.id}
       className={twMerge(
-        'group relative',
+        'group relative flex-nowrap',
         highlight && 'bg-primary-background hover:bg-primary',
         !highlight && 'hover:bg-accent/50',
         className
