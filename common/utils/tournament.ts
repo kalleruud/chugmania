@@ -50,8 +50,12 @@ export function stageName(stage: MatchStage | null): string {
   return loc.no.match.stage[stage]
 }
 export function firstPendingMatch(matches: Match[]): Match | undefined {
-  return matches.find(
+  return pendingMatches(matches).at(0)
+}
+export function pendingMatches(matches: Match[]): Match[] {
+  return matches.filter(
     match =>
+      !match.deletedAt &&
       match.status === 'planned' &&
       match.tournament?.reset !== 'conditional' &&
       match.tournament?.reset !== 'unneeded'
