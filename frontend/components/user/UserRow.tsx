@@ -38,7 +38,7 @@ export default function UserRow({
 
   const content = (
     <>
-      <ItemContent className='relative z-10 flex-row items-center gap-2'>
+      <ItemContent className='relative z-10 min-w-0 flex-row items-center gap-2'>
         {showRanking && (
           <p
             className={twMerge(
@@ -63,9 +63,9 @@ export default function UserRow({
         )}
 
         <ItemTitle
-          className='mr-auto gap-1 truncate font-f1 uppercase'
+          className='mr-auto block min-w-0 flex-1 truncate font-f1 uppercase'
           title={getUserFullName(user)}>
-          {shortName || user.firstName}
+          {shortName || user.firstName}{' '}
           <span className='font-bold'>
             {shortName ? user.shortName : user.lastName}
           </span>
