@@ -339,8 +339,9 @@ export default class TournamentManager {
         if (user === undefined || user === fixture.match[key]) return
         const slot = fixture[slotKey]
         if (
-          fixture.match.status !== 'planned' ||
-          (fixture.match[key] && !slot.override)
+          fixture.bracket === 'group' &&
+          (fixture.match.status !== 'planned' ||
+            (fixture.match[key] && !slot.override))
         )
           throw new Error(loc.no.tournament.owned)
         if (
@@ -348,7 +349,9 @@ export default class TournamentManager {
           !state.participants.some(
             p =>
               p.user === user &&
-              (slot.kind !== 'group_rank' || p.groupId === slot.groupId)
+              (fixture.bracket !== 'group' ||
+                slot.kind !== 'group_rank' ||
+                p.groupId === slot.groupId)
           )
         )
           throw new Error(loc.no.tournament.invalidParticipant)
@@ -363,21 +366,6 @@ export default class TournamentManager {
       if (!match) throw new Error(loc.no.tournament.invalid)
       if (match.user1 && match.user1 === match.user2)
         throw new Error(loc.no.match.error.same_user)
-      if (
-        fixture.bracket !== 'group' &&
-        resolvedPlayers.fixtures.some(
-          other =>
-            other.id !== fixture.id &&
-            other.bracket === fixture.bracket &&
-            other.round === fixture.round &&
-            [match.user1, match.user2].some(
-              user =>
-                user &&
-                (user === other.match.user1 || user === other.match.user2)
-            )
-        )
-      )
-        throw new Error(loc.no.tournament.playerAssigned)
       const status = request.status ?? match.status
       const winner =
         request.winner === undefined ? match.winner : request.winner

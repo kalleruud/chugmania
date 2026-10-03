@@ -74,9 +74,10 @@ export function tournamentDetails(state: TournamentState): TournamentDetails {
         slot2: label(f.slot2),
         editableSlots: ['user1', 'user2'].filter(
           (key): key is 'user1' | 'user2' =>
-            f.match.status === 'planned' &&
-            ((key === 'user1' && (!f.match.user1 || !!f.slot1.override)) ||
-              (key === 'user2' && (!f.match.user2 || !!f.slot2.override)))
+            f.bracket !== 'group' ||
+            (f.match.status === 'planned' &&
+              ((key === 'user1' && (!f.match.user1 || !!f.slot1.override)) ||
+                (key === 'user2' && (!f.match.user2 || !!f.slot2.override))))
         ),
         readOnly:
           state.id === 'preview' ||

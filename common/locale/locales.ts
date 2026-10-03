@@ -268,9 +268,7 @@ const no = {
     tracks: 'Velg minst én bane for hver runde',
     exists: 'Sessionen har allerede en turnering',
     result: 'Velg to ulike, avklarte deltakere og en gyldig vinner',
-    playerAssigned:
-      'Spilleren er allerede satt opp i en annen match i denne runden.',
-    invalidParticipant: 'Velg en deltaker fra riktig turnering og gruppe.',
+    invalidParticipant: 'Velg en deltaker fra turneringen.',
     owned: 'Deltakere, session og runde styres av turneringen',
     downstream: 'Angre først resultatene i: ',
   },

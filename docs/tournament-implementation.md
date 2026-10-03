@@ -10,7 +10,7 @@ Preview and creation use rating-based seeding. Creation locks the groups, partic
 
 Equal win/loss ratios use the decided direct match in the current round. Missing direct results and circular multi-player ties remain unresolved; affected group-rank slots return null and stop progression. Ratings and lap times never break result ties. Final placements without a deciding head-to-head result share a rank.
 
-Admins and moderators can manually assign unresolved slots through the existing match editor. Overrides persist alongside the slot dependency and can be changed or cleared while the match is planned. Group-rank choices must belong to the source group; tournament results still require both players, and decided downstream matches remain protected.
+Admins and moderators can change either bracket player through the existing match editor, including resolved slots and participants from other groups. Overrides persist alongside the slot dependency; clearing restores automatic resolution. Temporary duplicates across matches allow sequential swaps. Tournament results still require two distinct players and a valid winner; planned downstream matches follow corrections, while decided downstream matches remain protected.
 
 There is no qualification track, lap draft generation, or tie-breaker panel. Existing lap records and applied migrations are preserved; tournaments no longer read or lock them. A lap-based tie-breaker system is deferred to a separate PR.
 

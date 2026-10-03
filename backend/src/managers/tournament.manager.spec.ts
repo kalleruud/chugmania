@@ -669,8 +669,6 @@ test(
         }
         const forbidden = await assign({ user1: player1.user }, viewer)
         assert.equal(forbidden.success, false)
-        const wrongGroup = await assign({ user1: player2.user })
-        assert.equal(wrongGroup.success, false)
         const outsider = await assign({ user1: people[0].id })
         assert.equal(outsider.success, false)
         assert.deepEqual(await cupDetails(), tied)
@@ -686,6 +684,21 @@ test(
         assert.deepEqual(parity(await cupDetails()), parity(tied))
         const both = await assign({ user1: player1.user, user2: player2.user })
         assert.ok(both.success)
+        const swapped = await assign({
+          user1: player2.user,
+          user2: player1.user,
+        })
+        assert.ok(swapped.success)
+        const swappedMatch = (await cupDetails()).matches.find(
+          m => m.id === semifinal.id
+        )
+        assert.equal(swappedMatch?.user1, player2.user)
+        assert.equal(swappedMatch.user2, player1.user)
+        const samePlayer = await assign({ user1: player1.user })
+        assert.equal(samePlayer.success, false)
+        assert.ok(
+          (await assign({ user1: player1.user, user2: player2.user })).success
+        )
         const saved = await cupDetails()
         const other = saved.matches.find(
           m => m.stage === 'semi' && m.id !== semifinal.id
@@ -696,8 +709,17 @@ test(
           id: other.id,
           user2: player1.user,
         })
-        assert.equal(duplicate.success, false)
-        assert.deepEqual(await cupDetails(), saved)
+        assert.ok(duplicate.success)
+        assert.ok(
+          (
+            await admin.emitWithAck('edit_match', {
+              type: 'EditMatchRequest',
+              id: other.id,
+              user2: null,
+            })
+          ).success
+        )
+        assert.deepEqual(parity(await cupDetails()), parity(saved))
         assert.ok(processHandle)
         processHandle.kill()
         await once(processHandle, 'exit')
@@ -706,7 +728,7 @@ test(
         )
         processHandle = start()
         await reconnect
-        assert.deepEqual(await cupDetails(), saved)
+        assert.deepEqual(parity(await cupDetails()), parity(saved))
         await result(semifinal, 'completed', player1.user)
         const others = tied.participants.filter(
           p => p.user !== player1.user && p.user !== player2.user
@@ -727,13 +749,41 @@ test(
           m => m.stage === 'final'
         )
         assert.ok(final?.user1 && final.user2)
-        await result(final, 'completed', final.user1)
+        assert.deepEqual(final.tournament?.editableSlots, ['user1', 'user2'])
+        const swapResolved = await admin.emitWithAck('edit_match', {
+          type: 'EditMatchRequest',
+          id: final.id,
+          user1: final.user2,
+          user2: final.user1,
+        })
+        assert.ok(swapResolved.success)
+        const restoreResolved = await admin.emitWithAck('edit_match', {
+          type: 'EditMatchRequest',
+          id: final.id,
+          user1: null,
+          user2: null,
+        })
+        assert.ok(restoreResolved.success)
+        const corrected = await admin.emitWithAck('edit_match', {
+          type: 'EditMatchRequest',
+          id: semifinal.id,
+          user1: player2.user,
+          user2: player1.user,
+          winner: player2.user,
+        })
+        assert.ok(corrected.success)
+        const updatedFinal = (await cupDetails()).matches.find(
+          m => m.id === final.id
+        )
+        assert.equal(updatedFinal?.user1, player2.user)
+        await result(updatedFinal, 'completed', updatedFinal.user1)
         const before = await cupDetails()
         const blocked = await admin.emitWithAck('edit_match', {
           type: 'EditMatchRequest',
           id: semifinal.id,
-          status: 'planned',
-          winner: null,
+          user1: player1.user,
+          user2: player2.user,
+          winner: player1.user,
         })
         assert.equal(blocked.success, false)
         assert.deepEqual(await cupDetails(), before)
