@@ -84,6 +84,35 @@ test('one deterministic draft supplies preview, snake groups, all pairs and isol
       .every(f => f.match.track === null)
   )
 })
+test('first bracket round pairs opposite advancing ranks across groups', () => {
+  for (const groupsCount of [2, 4, 8]) {
+    for (const advancementCount of [1, 2, 4, 8]) {
+      const { config, players } = input(
+        groupsCount * advancementCount + groupsCount
+      )
+      config.groupsCount = groupsCount
+      config.advancementCount = advancementCount
+      const draft = generateTournament(config, players)
+      const slots = new Set<string>()
+      for (const fixture of draft.fixtures.filter(
+        f => f.bracket === 'upper' && f.round === 1
+      )) {
+        assert.ok(
+          fixture.slot1.kind === 'group_rank' &&
+            fixture.slot2.kind === 'group_rank'
+        )
+        assert.notEqual(fixture.slot1.groupId, fixture.slot2.groupId)
+        assert.equal(
+          fixture.slot1.rank + fixture.slot2.rank,
+          advancementCount + 1
+        )
+        slots.add(`${fixture.slot1.groupId}:${fixture.slot1.rank}`)
+        slots.add(`${fixture.slot2.groupId}:${fixture.slot2.rank}`)
+      }
+      assert.equal(slots.size, groupsCount * advancementCount)
+    }
+  }
+})
 test('normal results progress to a champion; decided downstream results protect their feeders', () => {
   const { config, players } = input()
   let state = resolveSlots(generateTournament(config, players))
