@@ -90,7 +90,7 @@ export default function TournamentPanel({
           ))}
         </div>
         <div className='flex items-center gap-2 rounded p-2'>
-          <div className='size-2 rounded-full bg-primary-background' />
+          <div className='size-2 rounded-full bg-primary' />
           <p className='w-full text-sm text-muted-foreground'>
             {loc.no.tournament.groupInfo(details.config.advancementCount)}
           </p>
@@ -109,6 +109,7 @@ export default function TournamentPanel({
         </summary>
         <div className='flex flex-col gap-2'>
           <SegmentedProgress
+            className='px-2'
             segments={[
               {
                 label: loc.no.tournament.groupMatches,

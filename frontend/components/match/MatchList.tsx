@@ -57,13 +57,16 @@ export default function MatchList({
   return (
     <div className='flex flex-col gap-2'>
       {matches.map((match, index) => {
-        const MatchComponent =
-          match.id === featuredMatchId ? MatchCard : MatchRow
+        const isFeatured = match.id === featuredMatchId
+        const MatchComponent = isFeatured ? MatchCard : MatchRow
         const separatorTrack =
           trackSeparators &&
           (index === 0 || match.track !== matches.at(index - 1)?.track)
             ? tracks?.find(track => track.id === match.track)
             : undefined
+        const isMe =
+          isLoggedIn &&
+          (match.user1 === loggedInUser.id || match.user2 === loggedInUser.id)
         return (
           <Fragment key={match.id}>
             {separatorTrack && (
@@ -71,13 +74,8 @@ export default function MatchList({
             )}
             <MatchComponent
               item={match}
-              highlight={
-                match.status !== 'cancelled' &&
-                isLoggedIn &&
-                (match.user1 === loggedInUser.id ||
-                  match.user2 === loggedInUser.id)
-              }
-              className='rounded-sm bg-background-secondary p-2'
+              highlight={match.status !== 'cancelled' && (isMe || isFeatured)}
+              className='bg-background-secondary hover:bg-primary-foreground/6'
               onClick={() => {
                 if (!match.tournament?.readOnly) openMatch(match)
               }}

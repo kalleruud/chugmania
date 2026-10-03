@@ -55,10 +55,10 @@ export default function MatchCard({
   return (
     <div
       className={twMerge(
-        className,
-        'group relative flex cursor-pointer flex-col gap-6 rounded-sm border border-primary/40 bg-primary/5 p-6 transition-colors hover:bg-foreground/15 sm:p-8',
+        'group relative flex cursor-pointer flex-col gap-6 rounded-sm p-6 transition-colors sm:p-8',
         isCancelled && 'text-muted-foreground opacity-33',
-        highlight && 'bg-foreground/3'
+        className,
+        highlight && 'border border-primary/40 bg-primary/10 hover:bg-primary/12'
       )}
       {...props}>
       <div className='flex items-center gap-4 py-4'>
