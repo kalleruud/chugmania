@@ -66,7 +66,6 @@ export function SessionsContent({
       />
 
       <SubscribeButton className={twMerge(!canCreate && 'w-full')} />
-
       {ongoingSessions.length > 0 && (
         <SessionsList
           header={loc.no.session.status.ongoing}
@@ -74,7 +73,6 @@ export function SessionsContent({
           hideCreate
         />
       )}
-
       <SessionsList
         header={loc.no.session.status.upcoming}
         sessions={upcomingSessions}
