@@ -91,19 +91,19 @@ export default function MatchInput({
   const [comment, setComment] = useState(inputMatch.comment ?? '')
 
   const request = useMemo(() => {
-    if (!track) return undefined
+    if (isCreating && !track) return undefined
 
     return {
       user1: user1?.id ?? null,
       user2: user2?.id ?? null,
-      track: track.id,
+      track: track?.id,
       session: session?.id ?? null,
       winner: !winner || winner === 'none' ? null : winner,
       status: status,
       stage: stage ?? null,
       comment: comment.trim() === '' ? null : comment.trim(),
     } satisfies Omit<CreateMatchRequest | EditMatchRequest, 'type'> | undefined
-  }, [user1, user2, track, session, winner, status, stage, comment])
+  }, [isCreating, user1, user2, track, session, winner, status, stage, comment])
 
   function handleCreate(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -212,7 +212,7 @@ export default function MatchInput({
         {tracks && (
           <Combobox
             className='w-full'
-            required
+            required={isCreating}
             disabled={disabled}
             selected={track}
             setSelected={value => setTrack(value ?? null)}
