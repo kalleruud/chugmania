@@ -244,6 +244,8 @@ const no = {
     create: 'Opprett turnering',
     preview: 'Forhåndsvisning',
     qualification: 'Kvalifisering',
+    qualificationDescription:
+      'Rundetidene brukes til gruppefordeling og ved likt antall seire. Låses når første gruppematch er avgjort.',
     pending: 'Venter',
     frozen: 'Kvalifisering låst',
     qualificationLocked:

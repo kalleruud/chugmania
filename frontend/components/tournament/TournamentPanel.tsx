@@ -113,12 +113,17 @@ export default function TournamentPanel({
         }
         className='group/quali rounded-sm border bg-background p-2'>
         <summary className='flex cursor-pointer list-none items-center justify-between gap-2 p-4 [&::-webkit-details-marker]:hidden'>
-          <h3 className='flex items-center gap-2'>
-            {loc.no.tournament.qualification}
-            {details.frozen && (
-              <Lock aria-label={loc.no.tournament.frozen} size={16} />
-            )}
-          </h3>
+          <div className='flex min-w-0 flex-col gap-1'>
+            <h3 className='flex items-center gap-2'>
+              {loc.no.tournament.qualification}
+              {details.frozen && (
+                <Lock aria-label={loc.no.tournament.frozen} size={16} />
+              )}
+            </h3>
+            <p className='text-sm text-muted-foreground'>
+              {loc.no.tournament.qualificationDescription}
+            </p>
+          </div>
           <ChevronDown
             aria-hidden
             className='size-4 shrink-0 transition-transform group-open/quali:rotate-180'
