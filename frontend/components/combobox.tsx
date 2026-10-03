@@ -135,7 +135,7 @@ export default function Combobox<T extends ComboboxLookupItem>({
       <input
         type='hidden'
         required={required}
-        value={selected?.id}
+        value={selected?.id ?? ''}
         {...inputProps}
       />
       <Popover open={open} onOpenChange={setOpen} modal={true}>
