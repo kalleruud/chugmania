@@ -1,8 +1,11 @@
 import { useAuth } from '@/contexts/AuthContext'
+import { useData } from '@/contexts/DataContext'
 import { useTimeEntryInput } from '@/contexts/TimeEntryInputContext'
 import loc from '@common/locale/locales'
 import type { Match } from '@common/models/match'
 import { PlusIcon } from '@heroicons/react/24/solid'
+import { Fragment } from 'react'
+import { TrackRow } from '../track/TrackRow'
 import { Button } from '../ui/button'
 import { Empty } from '../ui/empty'
 import MatchCard from './MatchCard'
@@ -16,6 +19,7 @@ export type MatchListProps = {
   managed?: boolean
   readOnly?: boolean
   hideTrack?: boolean
+  trackSeparators?: boolean
   featuredMatchId?: string
 }
 
@@ -25,11 +29,13 @@ export default function MatchList({
   user,
   session,
   hideTrack,
+  trackSeparators,
   managed,
   readOnly,
   featuredMatchId,
 }: Readonly<MatchListProps>) {
   const { isLoggedIn, loggedInUser } = useAuth()
+  const { tracks } = useData()
   const { openMatch } = useTimeEntryInput()
 
   if (matches.length === 0) {
@@ -52,26 +58,39 @@ export default function MatchList({
 
   return (
     <div className='flex flex-col gap-2'>
-      {matches.map(match => {
+      {matches.map((match, index) => {
         const MatchComponent =
           match.id === featuredMatchId ? MatchCard : MatchRow
+        const separatorTrack =
+          trackSeparators &&
+          (index === 0 || match.track !== matches.at(index - 1)?.track)
+            ? tracks?.find(track => track.id === match.track)
+            : undefined
         return (
-          <MatchComponent
-            key={match.id}
-            item={match}
-            highlight={
-              match.status !== 'cancelled' &&
-              isLoggedIn &&
-              (match.user1 === loggedInUser.id ||
-                match.user2 === loggedInUser.id)
-            }
-            className='rounded-sm bg-background-secondary p-2'
-            readOnly={readOnly}
-            onClick={() => {
-              if (!readOnly && !match.tournament?.readOnly) openMatch(match)
-            }}
-            hideTrack={hideTrack}
-          />
+          <Fragment key={match.id}>
+            {separatorTrack && (
+              <TrackRow
+                item={separatorTrack}
+                hideLink
+                className='border-b px-2 py-3'
+              />
+            )}
+            <MatchComponent
+              item={match}
+              highlight={
+                match.status !== 'cancelled' &&
+                isLoggedIn &&
+                (match.user1 === loggedInUser.id ||
+                  match.user2 === loggedInUser.id)
+              }
+              className='rounded-sm bg-background-secondary p-2'
+              readOnly={readOnly}
+              onClick={() => {
+                if (!readOnly && !match.tournament?.readOnly) openMatch(match)
+              }}
+              hideTrack={hideTrack || trackSeparators}
+            />
+          </Fragment>
         )
       })}
 

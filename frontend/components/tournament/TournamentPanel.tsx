@@ -193,6 +193,7 @@ export default function TournamentPanel({
                 <MatchList
                   matches={matches}
                   managed
+                  trackSeparators
                   readOnly={isPreview}
                   featuredMatchId={featuredMatch?.id}
                 />
