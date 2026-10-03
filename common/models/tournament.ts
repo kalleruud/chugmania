@@ -15,10 +15,11 @@ export type Participant = {
   admission: number
   groupId: string
 }
-export type Slot =
+export type Slot = (
   | { kind: 'player'; user: string }
   | { kind: 'group_rank'; groupId: string; rank: number }
   | { kind: 'match_winner' | 'match_loser'; matchId: string }
+) & { override?: string }
 export type TournamentGroup = { id: string; name: string }
 export type TournamentFixture = {
   id: string

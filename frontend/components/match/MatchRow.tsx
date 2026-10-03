@@ -40,6 +40,7 @@ export default function MatchRow({
 
   const canEdit =
     isLoggedIn && loggedInUser.role !== 'user' && !match.tournament?.readOnly
+  const canSetResult = canEdit && !!match.user1 && !!match.user2
 
   const isCancelled = match.status === 'cancelled' && !match.tournament?.awarded
   const isCompleted =
@@ -114,7 +115,9 @@ export default function MatchRow({
             slotLabel={match.tournament?.slot1}
             isWinner={!!match.winner && match.winner === match.user1}
             onClick={() => user1 && handleSetWinner(user1.id)}
-            disabled={!canEdit || isCancelled || match.status !== 'planned'}
+            disabled={
+              !canSetResult || isCancelled || match.status !== 'planned'
+            }
             isCancelled={isCancelled}
             isCompleted={isCompleted}
           />
@@ -135,7 +138,9 @@ export default function MatchRow({
             slotLabel={match.tournament?.slot2}
             isWinner={!!match.winner && match.winner === match.user2}
             onClick={() => user2 && handleSetWinner(user2.id)}
-            disabled={!canEdit || isCancelled || match.status !== 'planned'}
+            disabled={
+              !canSetResult || isCancelled || match.status !== 'planned'
+            }
             isCancelled={isCancelled}
             isCompleted={isCompleted}
           />
@@ -196,7 +201,7 @@ export default function MatchRow({
           'absolute right-0 flex items-center',
           expanded && 'top-0'
         )}>
-        {canEdit && isPlanned && (
+        {canSetResult && isPlanned && (
           <button
             type='button'
             title={loc.no.match.cancel}

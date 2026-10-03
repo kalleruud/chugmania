@@ -322,27 +322,68 @@ export default class TournamentManager {
       const before = structuredClone(state)
       const fixture = state.fixtures.find(f => f.match.id === request.id)
       if (!fixture) throw new Error(loc.no.tournament.invalid)
-      const match = fixture.match
       if (
         request.deletedAt ||
-        (request.user1 !== undefined && request.user1 !== match.user1) ||
-        (request.user2 !== undefined && request.user2 !== match.user2) ||
-        (request.session !== undefined && request.session !== match.session) ||
-        (request.stage !== undefined && request.stage !== match.stage)
+        (request.session !== undefined &&
+          request.session !== fixture.match.session) ||
+        (request.stage !== undefined && request.stage !== fixture.match.stage)
       )
         throw new Error(loc.no.tournament.owned)
-      if (
-        !match.user1 ||
-        !match.user2 ||
-        fixture.reset === 'conditional' ||
-        fixture.reset === 'unneeded'
-      )
+      if (fixture.reset === 'conditional' || fixture.reset === 'unneeded')
         throw new Error(loc.no.tournament.result)
+      const setPlayer = (
+        key: 'user1' | 'user2',
+        slotKey: 'slot1' | 'slot2'
+      ) => {
+        const user = request[key]
+        if (user === undefined || user === fixture.match[key]) return
+        const slot = fixture[slotKey]
+        if (
+          fixture.match.status !== 'planned' ||
+          (fixture.match[key] && !slot.override)
+        )
+          throw new Error(loc.no.tournament.owned)
+        if (
+          user !== null &&
+          !state.participants.some(
+            p =>
+              p.user === user &&
+              (slot.kind !== 'group_rank' || p.groupId === slot.groupId)
+          )
+        )
+          throw new Error(loc.no.tournament.invalidParticipant)
+        slot.override = user ?? undefined
+      }
+      setPlayer('user1', 'slot1')
+      setPlayer('user2', 'slot2')
+      const resolvedPlayers = resolveSlots(state)
+      const match = resolvedPlayers.fixtures.find(
+        f => f.id === fixture.id
+      )?.match
+      if (!match) throw new Error(loc.no.tournament.invalid)
+      if (match.user1 && match.user1 === match.user2)
+        throw new Error(loc.no.match.error.same_user)
+      if (
+        fixture.bracket !== 'group' &&
+        resolvedPlayers.fixtures.some(
+          other =>
+            other.id !== fixture.id &&
+            other.bracket === fixture.bracket &&
+            other.round === fixture.round &&
+            [match.user1, match.user2].some(
+              user =>
+                user &&
+                (user === other.match.user1 || user === other.match.user2)
+            )
+        )
+      )
+        throw new Error(loc.no.tournament.playerAssigned)
       const status = request.status ?? match.status
       const winner =
         request.winner === undefined ? match.winner : request.winner
       if (
         !['planned', 'completed', 'cancelled'].includes(status) ||
+        (status !== 'planned' && (!match.user1 || !match.user2)) ||
         (winner !== null && winner !== match.user1 && winner !== match.user2) ||
         (status === 'planned' && winner) ||
         (status === 'completed' && !winner)
@@ -363,7 +404,7 @@ export default class TournamentManager {
       }
       if (request.comment !== undefined) match.comment = request.comment
       if (request.duration !== undefined) match.duration = request.duration
-      const resolved = resolveSlots(state)
+      const resolved = resolveSlots(resolvedPlayers)
       protectResults(before, resolved, fixture.id)
       this.save(resolved)
     })()

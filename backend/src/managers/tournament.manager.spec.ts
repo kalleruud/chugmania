@@ -1,4 +1,4 @@
-import type { Match } from '@common/models/match'
+import type { EditMatchRequest, Match } from '@common/models/match'
 import type {
   ClientToServerEvents,
   ServerToClientEvents,
@@ -599,6 +599,144 @@ test(
         })
         assert.ok(survivingCup.success)
         assert.deepEqual(survivingCup.details, otherCup.details)
+      }
+    )
+    await t.test(
+      'manual slot overrides resolve tied groups, persist and protect downstream results',
+      async () => {
+        const cupSession = randomUUID()
+        db.insert(schema.sessions)
+          .values({ id: cupSession, name: 'Tied Cup', date: new Date() })
+          .run()
+        for (const player of people.slice(4, 10))
+          db.insert(schema.sessionSignups)
+            .values({ session: cupSession, user: player.id, response: 'yes' })
+            .run()
+        const created = await admin.emitWithAck('create_tournament', {
+          ...config,
+          session: cupSession,
+        })
+        assert.ok(created.success && created.details)
+        async function cupDetails() {
+          const response = await admin.emitWithAck('get_tournament', {
+            session: cupSession,
+          })
+          assert.ok(response.success && response.details)
+          return response.details
+        }
+        for (const group of created.details.groups) {
+          const players = group.standings.map(row => row.user)
+          for (const match of created.details.matches.filter(
+            m => m.stage === 'group' && players.includes(m.user1 ?? '')
+          )) {
+            const winner =
+              (players.indexOf(match.user1 ?? '') + 1) % 3 ===
+              players.indexOf(match.user2 ?? '')
+                ? match.user1
+                : match.user2
+            await result(match, 'completed', winner)
+          }
+        }
+        const tied = await cupDetails()
+        const semifinal = tied.matches.find(m => m.stage === 'semi')
+        assert.ok(semifinal && !semifinal.user1 && !semifinal.user2)
+        assert.equal(semifinal.tournament?.readOnly, false)
+        assert.deepEqual(semifinal.tournament.editableSlots, ['user1', 'user2'])
+        const fixture = db
+          .select()
+          .from(schema.tournamentMatches)
+          .all()
+          .find(f => f.matchId === semifinal.id)
+        assert.ok(
+          fixture &&
+            fixture.slot1.kind === 'group_rank' &&
+            fixture.slot2.kind === 'group_rank'
+        )
+        const group1 = fixture.slot1.groupId
+        const group2 = fixture.slot2.groupId
+        const player1 = tied.participants.find(p => p.groupId === group1)
+        const player2 = tied.participants.find(p => p.groupId === group2)
+        assert.ok(player1 && player2)
+        const assign = (
+          players: Pick<EditMatchRequest, 'user1' | 'user2'>,
+          client = admin
+        ) => {
+          return client.emitWithAck('edit_match', {
+            type: 'EditMatchRequest',
+            id: semifinal.id,
+            ...players,
+          })
+        }
+        const forbidden = await assign({ user1: player1.user }, viewer)
+        assert.equal(forbidden.success, false)
+        const wrongGroup = await assign({ user1: player2.user })
+        assert.equal(wrongGroup.success, false)
+        const outsider = await assign({ user1: people[0].id })
+        assert.equal(outsider.success, false)
+        assert.deepEqual(await cupDetails(), tied)
+        const assigned = await assign({ user1: player1.user })
+        assert.ok(assigned.success)
+        const partial = (await cupDetails()).matches.find(
+          m => m.id === semifinal.id
+        )
+        assert.equal(partial?.user1, player1.user)
+        assert.equal(partial.user2, null)
+        const clear = await assign({ user1: null })
+        assert.ok(clear.success)
+        assert.deepEqual(parity(await cupDetails()), parity(tied))
+        const both = await assign({ user1: player1.user, user2: player2.user })
+        assert.ok(both.success)
+        const saved = await cupDetails()
+        const other = saved.matches.find(
+          m => m.stage === 'semi' && m.id !== semifinal.id
+        )
+        assert.ok(other)
+        const duplicate = await admin.emitWithAck('edit_match', {
+          type: 'EditMatchRequest',
+          id: other.id,
+          user2: player1.user,
+        })
+        assert.equal(duplicate.success, false)
+        assert.deepEqual(await cupDetails(), saved)
+        assert.ok(processHandle)
+        processHandle.kill()
+        await once(processHandle, 'exit')
+        const reconnect = new Promise<void>(resolve =>
+          admin.once('all_matches', () => resolve())
+        )
+        processHandle = start()
+        await reconnect
+        assert.deepEqual(await cupDetails(), saved)
+        await result(semifinal, 'completed', player1.user)
+        const others = tied.participants.filter(
+          p => p.user !== player1.user && p.user !== player2.user
+        )
+        const other1 = others.find(p => p.groupId === group2)
+        const other2 = others.find(p => p.groupId === group1)
+        assert.ok(other1 && other2)
+        const otherResult = await admin.emitWithAck('edit_match', {
+          type: 'EditMatchRequest',
+          id: other.id,
+          user1: other1.user,
+          user2: other2.user,
+          status: 'completed',
+          winner: other1.user,
+        })
+        assert.ok(otherResult.success)
+        const final = (await cupDetails()).matches.find(
+          m => m.stage === 'final'
+        )
+        assert.ok(final?.user1 && final.user2)
+        await result(final, 'completed', final.user1)
+        const before = await cupDetails()
+        const blocked = await admin.emitWithAck('edit_match', {
+          type: 'EditMatchRequest',
+          id: semifinal.id,
+          status: 'planned',
+          winner: null,
+        })
+        assert.equal(blocked.success, false)
+        assert.deepEqual(await cupDetails(), before)
       }
     )
   }

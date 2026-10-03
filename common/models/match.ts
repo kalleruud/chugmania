@@ -7,6 +7,7 @@ export type Match = typeof matches.$inferSelect & {
     label: string
     slot1: string
     slot2: string
+    editableSlots: ('user1' | 'user2')[]
     readOnly: boolean
     reset: 'none' | 'conditional' | 'required' | 'unneeded'
     awarded: boolean

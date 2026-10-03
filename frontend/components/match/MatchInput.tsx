@@ -169,12 +169,17 @@ export default function MatchInput({
           {users && (
             <Combobox
               className='w-full'
-              disabled={locked}
+              disabled={
+                disabled ||
+                (!!tournament && !tournament.editableSlots.includes('user1'))
+              }
               selected={user1}
               setSelected={value => setUser1(value ?? null)}
               items={users.map(userToLookupItem)}
               CustomRow={UserRow}
-              placeholder={loc.no.match.placeholder.selectUser1}
+              placeholder={
+                tournament?.slot1 || loc.no.match.placeholder.selectUser1
+              }
             />
           )}
         </div>
@@ -187,12 +192,17 @@ export default function MatchInput({
           {users && (
             <Combobox
               className='w-full'
-              disabled={locked}
+              disabled={
+                disabled ||
+                (!!tournament && !tournament.editableSlots.includes('user2'))
+              }
               selected={user2}
               setSelected={value => setUser2(value ?? null)}
               items={users.map(userToLookupItem)}
               CustomRow={UserRow}
-              placeholder={loc.no.match.placeholder.selectUser2}
+              placeholder={
+                tournament?.slot2 || loc.no.match.placeholder.selectUser2
+              }
             />
           )}
         </div>
@@ -274,7 +284,7 @@ export default function MatchInput({
           <Select
             value={status}
             onValueChange={handleSetStatus}
-            disabled={disabled}>
+            disabled={disabled || (!!tournament && (!user1 || !user2))}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>

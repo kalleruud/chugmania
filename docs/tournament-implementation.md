@@ -10,6 +10,8 @@ Preview and creation use rating-based seeding. Creation locks the groups, partic
 
 Equal win/loss ratios use the decided direct match in the current round. Missing direct results and circular multi-player ties remain unresolved; affected group-rank slots return null and stop progression. Ratings and lap times never break result ties. Final placements without a deciding head-to-head result share a rank.
 
+Admins and moderators can manually assign unresolved slots through the existing match editor. Overrides persist alongside the slot dependency and can be changed or cleared while the match is planned. Group-rank choices must belong to the source group; tournament results still require both players, and decided downstream matches remain protected.
+
 There is no qualification track, lap draft generation, or tie-breaker panel. Existing lap records and applied migrations are preserved; tournaments no longer read or lock them. A lap-based tie-breaker system is deferred to a separate PR.
 
 ## Stages
@@ -95,4 +97,4 @@ Run `npm test`, `npm run check`, and `npm run build`. Tests use disposable SQLit
 
 ## Completed verification
 
-All 21 tests pass, including real server/socket tests, disposable database migrations and the shared progress display. `npm run check` and `npm run build` pass. Coverage includes equal records, circular ties, matches from other rounds, null slots, preview isolation, fixed groups, unchanged tournament rows after ordinary lap/signup edits, participant deletion, unrelated tournaments surviving session deletion, and CSV boolean round trips. Historical data restoration remains a manual follow-up outside this implementation.
+All 22 tests pass, including real server/socket tests, disposable database migrations and the shared progress display. `npm run check` and `npm run build` pass. Coverage includes equal records, circular ties, matches from other rounds, null slots, preview isolation, fixed groups, unchanged tournament rows after ordinary lap/signup edits, participant deletion, unrelated tournaments surviving session deletion, CSV boolean round trips, and manual player assignment across restarts. Historical data restoration remains a manual follow-up outside this implementation.

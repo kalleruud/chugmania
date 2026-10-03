@@ -118,6 +118,7 @@ export function resolveSlots(state: TournamentState): TournamentState {
   )
   const groupsDone = groupComplete(result)
   const resolve = (slot: Slot): string | null => {
+    if (slot.override) return slot.override
     if (slot.kind === 'player') return slot.user
     if (slot.kind === 'group_rank')
       return groupsDone
