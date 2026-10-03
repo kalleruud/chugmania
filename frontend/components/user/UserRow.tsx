@@ -1,6 +1,6 @@
 import { Item, ItemActions, ItemContent, ItemTitle } from '@/components/ui/item'
 import { useData } from '@/contexts/DataContext'
-import { type UserInfo } from '@common/models/user'
+import { getUserFullName, type UserInfo } from '@common/models/user'
 import { ChevronRight, Minus } from 'lucide-react'
 import { Link } from 'react-router'
 import { twMerge } from 'tailwind-merge'
@@ -10,6 +10,7 @@ import { Spinner } from '../ui/spinner'
 type UserRowProps = BaseRowProps<UserInfo> & {
   hideRanking?: boolean
   rank?: number
+  shortName?: boolean
 }
 
 export default function UserRow({
@@ -20,6 +21,7 @@ export default function UserRow({
   hideRanking,
   children,
   rank,
+  shortName = false,
   ...props
 }: Readonly<UserRowProps>) {
   const { rankings, isLoadingData } = useData()
@@ -36,40 +38,44 @@ export default function UserRow({
 
   const content = (
     <>
-      <ItemContent className='relative z-10'>
-        <div className='flex items-center gap-2'>
-          {showRanking && (
-            <p
-              className={twMerge(
-                'w-6 text-center font-kh-interface text-lg font-black text-primary tabular-nums',
-                !hideLink && highlight && 'group-hover:text-primary-foreground'
-              )}>
-              {ranking}
-            </p>
-          )}
+      <ItemContent className='relative z-10 flex-row items-center gap-2'>
+        {showRanking && (
+          <p
+            className={twMerge(
+              'w-6 flex-none text-center font-kh-interface text-lg font-black text-primary tabular-nums',
+              !hideLink && highlight && 'group-hover:text-primary-foreground'
+            )}>
+            {ranking}
+          </p>
+        )}
 
-          {showMissingRanking && (
-            <Minus className='size-4 text-muted-foreground' />
-          )}
+        {showMissingRanking && (
+          <Minus className='size-4 flex-none text-muted-foreground' />
+        )}
 
-          {hideRanking && !showRanking && !showMissingRanking && (
-            <div
-              className={twMerge(
-                'h-4 w-1 rounded-full bg-primary',
-                !hideLink && highlight && 'group-hover:bg-primary-foreground'
-              )}
-            />
-          )}
+        {hideRanking && !showRanking && !showMissingRanking && (
+          <div
+            className={twMerge(
+              'h-4 w-1 flex-none rounded-full bg-primary',
+              !hideLink && highlight && 'group-hover:bg-primary-foreground'
+            )}
+          />
+        )}
 
-          <ItemTitle className='mr-auto flex gap-1 font-f1 uppercase'>
-            <span>{user.firstName}</span>
-            <span className='font-bold'>{user.lastName}</span>
-          </ItemTitle>
+        <ItemTitle
+          className='mr-auto gap-1 truncate font-f1 uppercase'
+          title={getUserFullName(user)}>
+          {shortName || user.firstName}
+          <span className='font-bold'>
+            {shortName ? user.shortName : user.lastName}
+          </span>
+        </ItemTitle>
 
-          {children && (
-            <div className='pointer-events-auto relative z-10'>{children}</div>
-          )}
-        </div>
+        {children && (
+          <div className='pointer-events-auto relative z-10 flex-none'>
+            {children}
+          </div>
+        )}
       </ItemContent>
       {!hideLink && (
         <ItemActions
@@ -88,7 +94,7 @@ export default function UserRow({
       <Item
         key={user.id}
         className={twMerge(
-          'group',
+          'group flex-nowrap',
           highlight && 'bg-primary-background',
           className
         )}
@@ -103,7 +109,7 @@ export default function UserRow({
     <Item
       key={user.id}
       className={twMerge(
-        'group relative',
+        'group relative flex-nowrap',
         highlight && 'bg-primary-background hover:bg-primary',
         !highlight && 'hover:bg-accent/50',
         className

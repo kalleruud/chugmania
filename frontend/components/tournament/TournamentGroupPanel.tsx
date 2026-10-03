@@ -28,11 +28,11 @@ export default function TournamentGroupPanel({
         {players.map(p =>
           p.user === undefined ? null : (
             <UserRow
+              key={p.user.id}
               className='px-3 py-2'
               item={p.user}
               highlight={p.qualifies}
-              rank={p.rank}
-              hideLink>
+              rank={p.rank}>
               <p className='flex gap-1 font-kh-interface tabular-nums'>
                 {p.wins}
                 <span className='opacity-33'>|</span>

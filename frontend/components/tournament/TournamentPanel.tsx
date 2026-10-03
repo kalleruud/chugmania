@@ -172,19 +172,23 @@ export default function TournamentPanel({
             const played = activeMatches.filter(
               match => match.status === 'completed' || match.tournament?.awarded
             ).length
+            const isActive = played > 0 && played < activeMatches.length
             return (
               <details
                 key={stage ?? 'none'}
                 open={!!firstPendingMatch(matches)}
                 className='group/stage'>
-                <summary className='flex cursor-pointer list-none items-center justify-between gap-2 p-2 text-sm text-muted-foreground [&::-webkit-details-marker]:hidden'>
-                  <h4 className='flex flex-wrap items-center gap-2'>
+                <summary className='flex cursor-pointer list-none items-center gap-2 p-2 text-sm text-muted-foreground [&::-webkit-details-marker]:hidden'>
+                  <h4 className='mr-auto flex flex-wrap items-center gap-2'>
                     {stageName(stage) || loc.no.match.title}
-                    <span className='text-xs tabular-nums'>
-                      {played}/{activeMatches.length}{' '}
-                      {loc.no.match.title.toLowerCase()}
-                    </span>
                   </h4>
+                  {isActive && (
+                    <div className='size-2 animate-pulse rounded-full bg-primary' />
+                  )}
+                  <span className='text-xs tabular-nums'>
+                    {played}/{activeMatches.length}{' '}
+                    {loc.no.match.title.toLowerCase()}
+                  </span>
                   <ChevronDown
                     aria-hidden
                     className='size-4 shrink-0 transition-transform group-open/stage:rotate-180'

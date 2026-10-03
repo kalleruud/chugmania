@@ -69,11 +69,7 @@ export default function MatchList({
         return (
           <Fragment key={match.id}>
             {separatorTrack && (
-              <TrackRow
-                item={separatorTrack}
-                hideLink
-                className='border-b px-2 py-3'
-              />
+              <TrackRow item={separatorTrack} className='border-b px-2 py-3' />
             )}
             <MatchComponent
               item={match}
