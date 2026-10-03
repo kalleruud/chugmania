@@ -192,7 +192,7 @@ export default function SessionPage() {
           )}
           {!tournament.details && (
             <Empty className='border border-input text-sm text-muted-foreground'>
-              {isLoggedIn && (
+              {isLoggedIn && isModerator && (
                 <Link to={`/sessions/${session.id}/tournament/create`}>
                   <Button
                     variant='outline'
