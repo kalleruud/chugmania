@@ -6,7 +6,9 @@ The Tournament Module exposes commands through `tournament.manager.ts`. Its priv
 
 Historical restoration is excluded. CSV remains raw database writes without tournament validation. This document supersedes earlier tournament implementation plans.
 
-Preview only reads existing data and generates an in-memory tournament; it never writes to the database. Its qualification list displays existing lap times and in-memory drafts for missing qualification laps without editing or creation controls. Saving the tournament persists missing qualification drafts as normal time entries. Cancelled drafts are not recreated within an existing tournament; a new tournament ignores deleted drafts from previous tournaments. Saved tournament details carries these entries directly to the shared `TimeEntryList` for editing and cancellation.
+Preview and creation use rating-based seeding and create no qualification laps. After group results settle, tied win/loss ratios request ordinary draft lap times, including ties among nonadvancing players across groups. Elimination-round placement ties request laps once that round settles. Completed attempts can resolve later ties; equal times request new drafts. Group lap snapshots remain stable during later placement attempts.
+
+Affected group-rank slots stay empty with short `TB VER v LEC` labels until their tie resolves. The existing `TimeEntryList` edits and cancels requested drafts. Cancelled drafts are not recreated automatically; the usual add action supplies a replacement. Backend checks allow only currently requested drafts and lock completed attempts. Corrections retire drafts that are no longer needed and protect played dependent matches. Final standings appear only after all active fixtures and ties are settled.
 
 ## Stages
 
@@ -18,7 +20,7 @@ Preview only reads existing data and generates an in-memory tournament; it never
 
 ```mermaid
 flowchart TD
-  Inputs[Configuration and qualification-ranked participants] --> Generate[Shared tournament generator]
+  Inputs[Configuration and rating-ranked participants] --> Generate[Shared tournament generator]
   Generate --> Preview[Preview]
   Preview -->|Create: reload inputs| Generate
   Generate -->|Persist generated structure| Ready[Ready]
@@ -28,13 +30,20 @@ flowchart TD
   Ready -->|First group decision: freeze| Groups[Group play]
   Ready -->|No group fixtures: freeze at creation| Bracket[Bracket play]
   Groups -->|Admit new participant| Groups
-  Groups -->|All fixtures decided: close admission| Bracket
-  Bracket -->|Deciding final| Complete[Completed]
+  Groups -->|All group results settled: close admission| GroupTies{Tied records?}
+  GroupTies -->|Yes| Laps[Request draft tie-break laps]
+  GroupTies -->|No| Bracket
+  Laps -->|Distinct times: resolve affected slots| Bracket
+  Laps -->|Equal times| Laps
+  Bracket -->|Elimination round settled with tied placements| PlacementLaps[Request or reuse placement laps]
+  PlacementLaps -->|Distinct times| Bracket
+  PlacementLaps -->|Equal times| PlacementLaps
+  Bracket -->|Final decided and all ties resolved| Complete[Completed]
   Bracket -->|Lower winner wins grand final| Reset[Reset required]
-  Reset --> Complete
+  Reset -->|All ties resolved| Complete
 ```
 
-Cancellation suspends play at its current phase; restoration resumes it. Tournament deletion asks whether to keep or soft-delete its matches and participants' qualification laps. Kept matches become ordinary editable matches. Other session results are preserved. Undo never unfreezes qualification or reopens admission.
+Cancellation suspends play at its current phase; restoration resumes it. Tournament deletion asks whether to keep or soft-delete its matches and participants' qualification laps. Kept matches become ordinary editable matches. Other session results are preserved. Undo never unfreezes the roster or reopens admission. Pending tie-break laps remain editable after roster freeze.
 
 ## Verification
 
@@ -93,4 +102,4 @@ Run `npm test`, `npm run check`, and `npm run build`. Tests use disposable SQLit
 
 ## Completed verification
 
-All 16 tests pass, including real server/socket tests and disposable database migrations. `npm run check` and `npm run build` pass. Browser verification covered login, direct creation-route loading, configuration and preview, creation, the tournament tab, recording a result, qualification freezing, and persistence after reload. Historical data restoration remains a manual follow-up outside this implementation.
+All 20 tests pass, including real server/socket tests and disposable database migrations. `npm run check` and `npm run build` pass. Browser verification covered login, direct creation-route loading, configuration and preview, creation, the tournament tab, recording a result, qualification freezing, and persistence after reload. On-demand tie-break coverage includes settled group ties, blocked slots and labels, nonadvancing and eliminated players, repeat attempts, cancellations, and backend lap locking. Historical data restoration remains a manual follow-up outside this implementation.

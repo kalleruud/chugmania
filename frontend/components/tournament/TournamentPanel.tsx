@@ -24,6 +24,7 @@ export default function TournamentPanel({
   const { isLoggedIn, loggedInUser } = useAuth()
   const canEdit = isLoggedIn && loggedInUser.role !== 'user'
   const workload = details.workloadSummary
+  const pendingLaps = details.qualificationEntries.some(entry => entry.draft)
   const qualiTrack = tracks?.find(
     t => t.id === details.config.qualificationTrack
   )
@@ -58,8 +59,7 @@ export default function TournamentPanel({
           </p>
           {isPreview && (
             <p>
-              {workload.tracks} baner · {workload.qualificationLaps}{' '}
-              kvalifiseringsrunde per spiller · {workload.minMatches}–
+              {workload.tracks} baner · {workload.minMatches}–
               {workload.maxMatches} matcher per spiller
             </p>
           )}
@@ -74,7 +74,7 @@ export default function TournamentPanel({
         </header>
       )}
 
-      {allMatchesPlayed && (
+      {details.completed && (
         <section className='flex flex-col gap-2 rounded-sm border bg-background p-4'>
           <h3 className='p-2'>{loc.no.tournament.finalStandings}</h3>
           {details.standings.map(row => {
@@ -107,16 +107,13 @@ export default function TournamentPanel({
       </section>
 
       <details
-        open={
-          !details.frozen &&
-          details.qualificationEntries.some(entry => entry.draft)
-        }
+        open={pendingLaps}
         className='group/quali rounded-sm border bg-background p-2'>
         <summary className='flex cursor-pointer list-none items-center justify-between gap-2 p-4 [&::-webkit-details-marker]:hidden'>
           <div className='flex min-w-0 flex-col gap-1'>
             <h3 className='flex items-center gap-2'>
               {loc.no.tournament.qualification}
-              {details.frozen && (
+              {details.qualificationEntries.length > 0 && !pendingLaps && (
                 <Lock aria-label={loc.no.tournament.frozen} size={16} />
               )}
             </h3>
@@ -133,13 +130,20 @@ export default function TournamentPanel({
         <div className='flex flex-col gap-2'>
           {qualiTrack && <TrackRow item={qualiTrack} />}
 
-          <TimeEntryList
-            isPreview={isPreview}
-            entries={details.qualificationEntries}
-            track={details.config.qualificationTrack}
-            session={details.config.session}
-            filter='all'
-          />
+          {details.qualificationEntries.length > 0 ||
+          details.tieBreaks.length > 0 ? (
+            <TimeEntryList
+              isPreview={isPreview}
+              entries={details.qualificationEntries}
+              track={details.config.qualificationTrack}
+              session={details.config.session}
+              filter='all'
+            />
+          ) : (
+            <p className='p-2 text-sm text-muted-foreground'>
+              {loc.no.tournament.noTieBreakNeeded}
+            </p>
+          )}
         </div>
       </details>
 
