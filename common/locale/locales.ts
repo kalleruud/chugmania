@@ -207,6 +207,9 @@ const no = {
   },
   tournament: {
     title: 'Turnering',
+    adminPanel: 'Adminpanel',
+    groups: 'Grupper',
+    qualificationOpen: 'Kvalifisering åpen',
     groupNames: [
       'Furries',
       'Degenerates',

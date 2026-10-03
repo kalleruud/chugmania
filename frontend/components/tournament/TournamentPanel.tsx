@@ -23,8 +23,6 @@ export default function TournamentPanel({
   const { users, tracks } = useData()
   const { isLoggedIn, loggedInUser } = useAuth()
   const canEdit = isLoggedIn && loggedInUser.role !== 'user'
-  const showHeader =
-    isPreview || canEdit || !!details.notReadyReason || details.cancelled
   const workload = details.workloadSummary
   const qualiTrack = tracks?.find(
     t => t.id === details.config.qualificationTrack
@@ -42,19 +40,28 @@ export default function TournamentPanel({
 
   return (
     <div className='flex min-w-0 flex-col gap-6'>
-      {showHeader && (
+      {canEdit && (
         <header className='flex flex-col gap-2 rounded-sm border bg-background p-4'>
+          <div className='flex items-center justify-between gap-2'>
+            <h3>{loc.no.tournament.adminPanel}</h3>
+            {!isPreview && (
+              <DeleteTournamentDialog session={details.config.session} />
+            )}
+          </div>
+          <p className='text-sm text-muted-foreground'>
+            {details.qualification.length}{' '}
+            {loc.no.session.participants.toLowerCase()} ·{' '}
+            {details.groups.length} {loc.no.tournament.groups.toLowerCase()} ·{' '}
+            {details.frozen
+              ? loc.no.tournament.frozen
+              : loc.no.tournament.qualificationOpen}
+          </p>
           {isPreview && (
             <p>
               {workload.tracks} baner · {workload.qualificationLaps}{' '}
               kvalifiseringsrunde per spiller · {workload.minMatches}–
               {workload.maxMatches} matcher per spiller
             </p>
-          )}
-          {!isPreview && canEdit && (
-            <div className='flex justify-end'>
-              <DeleteTournamentDialog session={details.config.session} />
-            </div>
           )}
           {details.notReadyReason && (
             <p role='status' className='text-destructive'>
