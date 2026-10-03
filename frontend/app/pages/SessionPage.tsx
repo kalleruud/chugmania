@@ -192,7 +192,7 @@ export default function SessionPage() {
           )}
           {!tournament.details && (
             <Empty className='border border-input text-sm text-muted-foreground'>
-              {isLoggedIn && isModerator && (
+              {canEdit ? (
                 <Link to={`/sessions/${session.id}/tournament/create`}>
                   <Button
                     variant='outline'
@@ -202,6 +202,8 @@ export default function SessionPage() {
                     {loc.no.tournament.create}
                   </Button>
                 </Link>
+              ) : (
+                loc.no.common.noItems
               )}
             </Empty>
           )}

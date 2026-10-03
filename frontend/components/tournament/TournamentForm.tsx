@@ -137,8 +137,10 @@ export default function TournamentForm({
     }
   }
   return (
-    <div className='grid min-w-0 gap-6 lg:grid-cols-[minmax(16rem,22rem)_minmax(0,1fr)]'>
-      <form onSubmit={submit} className='flex min-w-0 flex-col gap-4'>
+    <div className='grid min-w-0 gap-6'>
+      <form
+        onSubmit={submit}
+        className='flex min-w-0 flex-col gap-4 rounded-sm border bg-background p-2'>
         <Combobox
           items={items}
           selected={items.find(t => t.id === config.qualificationTrack)}
@@ -148,34 +150,36 @@ export default function TournamentForm({
           placeholder={loc.no.tournament.tieBreakerTrack}
           CustomRow={TrackRow}
         />
-        <label>
-          Grupper
-          <NativeSelect
-            value={config.groupsCount}
-            onChange={e =>
-              change({ ...config, groupsCount: Number(e.target.value) })
-            }>
-            {groups.map(g => (
-              <option key={g} value={g}>
-                {g}
-              </option>
-            ))}
-          </NativeSelect>
-        </label>
-        <label>
-          Videre fra hver gruppe
-          <NativeSelect
-            value={config.advancementCount}
-            onChange={e =>
-              change({ ...config, advancementCount: Number(e.target.value) })
-            }>
-            {advancements.map(a => (
-              <option key={a} value={a}>
-                {a}
-              </option>
-            ))}
-          </NativeSelect>
-        </label>
+        <div className='flex gap-2'>
+          <label className='w-full'>
+            Grupper
+            <NativeSelect
+              value={config.groupsCount}
+              onChange={e =>
+                change({ ...config, groupsCount: Number(e.target.value) })
+              }>
+              {groups.map(g => (
+                <option key={g} value={g}>
+                  {g}
+                </option>
+              ))}
+            </NativeSelect>
+          </label>
+          <label className='w-full'>
+            Videre fra hver gruppe
+            <NativeSelect
+              value={config.advancementCount}
+              onChange={e =>
+                change({ ...config, advancementCount: Number(e.target.value) })
+              }>
+              {advancements.map(a => (
+                <option key={a} value={a}>
+                  {a}
+                </option>
+              ))}
+            </NativeSelect>
+          </label>
+        </div>
         <label>
           Format
           <NativeSelect
@@ -235,7 +239,7 @@ export default function TournamentForm({
         </Button>
       </form>
       <div className='min-w-0 self-start lg:sticky lg:top-4'>
-        {loading && <Spinner />}
+        {loading && <Spinner className='mt-8 w-full' />}
         {preview && <TournamentPanel details={preview.details} isPreview />}
       </div>
     </div>
