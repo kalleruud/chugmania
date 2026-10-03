@@ -11,11 +11,13 @@ import {
   stageName,
   usedStages,
 } from '@common/utils/tournament'
+import { AlertCircleIcon } from 'lucide-react'
 import { useEffect, useState, type SubmitEvent } from 'react'
 import { toast } from 'sonner'
 import Combobox from '../combobox'
 import ComboboxMulti from '../ComboboxMulti'
 import { TrackRow } from '../track/TrackRow'
+import { Alert, AlertDescription, AlertTitle } from '../ui/alert'
 import { Button } from '../ui/button'
 import { NativeSelect } from '../ui/native-select'
 import { Spinner } from '../ui/spinner'
@@ -230,9 +232,11 @@ export default function TournamentForm({
           }}
         />
         {error && (
-          <p role='alert' className='text-destructive'>
-            {error}
-          </p>
+          <Alert variant='destructive'>
+            <AlertCircleIcon />
+            <AlertTitle>{loc.no.error.title}</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         )}
         <Button disabled={!ready} type='submit'>
           {loc.no.tournament.create}

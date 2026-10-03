@@ -11,10 +11,11 @@ type ProgressSegment = {
 }
 
 const defaultColors = [
-  'bg-[#FF9505]',
-  'bg-[#016FB9]',
-  'bg-[#4B8F8C]',
-  'bg-[#C04CFD]',
+  'bg-chart-2',
+  'bg-chart-5',
+  'bg-chart-3',
+  'bg-chart-4',
+  'bg-chart-1',
 ]
 
 type SegmentedProgressProps = {
