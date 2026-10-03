@@ -154,7 +154,7 @@ export default function SessionPage() {
         defaultValue={
           tournament.details ? loc.no.tournament.title : loc.no.session.session
         }>
-        <TabsList className='w-full bg-background-secondary'>
+        <TabsList className='-mt-2 mb-2 w-full bg-background-secondary'>
           <TabsTrigger value={loc.no.session.session}>
             {loc.no.session.session}
           </TabsTrigger>
@@ -172,7 +172,9 @@ export default function SessionPage() {
             session={session}
           />
         </TabsContent>
-        <TabsContent value={loc.no.session.session}>
+        <TabsContent
+          className='flex flex-col gap-4'
+          value={loc.no.session.session}>
           {tracks.map(track => (
             <TrackLeaderboard
               key={track.id}

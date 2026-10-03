@@ -1,4 +1,6 @@
 import { cn } from '@/lib/utils'
+import type { ComponentProps } from 'react'
+import { twMerge } from 'tailwind-merge'
 import { Progress } from './ui/progress'
 
 type ProgressSegment = {
@@ -15,18 +17,22 @@ const defaultColors = [
   'bg-[#C04CFD]',
 ]
 
-export default function SegmentedProgress({
-  segments,
-}: {
+type SegmentedProgressProps = {
   segments: ProgressSegment[]
-}) {
+} & ComponentProps<'div'>
+
+export default function SegmentedProgress({
+  className,
+  segments,
+  ...props
+}: Readonly<SegmentedProgressProps>) {
   const coloredSegments = segments.map((segment, index) => ({
     ...segment,
     colorClassName:
       segment.colorClassName ?? defaultColors[index % defaultColors.length],
   }))
   return (
-    <div className='flex flex-col gap-2'>
+    <div className={twMerge('flex flex-col gap-2', className)} {...props}>
       <div className='flex overflow-hidden rounded-sm'>
         {coloredSegments.map(segment => {
           const total = segment.total ?? segment.value
