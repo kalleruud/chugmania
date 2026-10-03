@@ -93,9 +93,6 @@ export default function TournamentForm({
     !error &&
     isConnected &&
     preview.details.matches.every(m => m.track)
-  function change(next: TournamentConfig) {
-    setConfig(next)
-  }
   useEffect(() => {
     let active = true
     const timer = setTimeout(async () => {
@@ -147,7 +144,7 @@ export default function TournamentForm({
             <NativeSelect
               value={config.groupsCount}
               onChange={e =>
-                change({ ...config, groupsCount: Number(e.target.value) })
+                setConfig({ ...config, groupsCount: Number(e.target.value) })
               }>
               {groups.map(g => (
                 <option key={g} value={g}>
@@ -161,7 +158,10 @@ export default function TournamentForm({
             <NativeSelect
               value={config.advancementCount}
               onChange={e =>
-                change({ ...config, advancementCount: Number(e.target.value) })
+                setConfig({
+                  ...config,
+                  advancementCount: Number(e.target.value),
+                })
               }>
               {advancements.map(a => (
                 <option key={a} value={a}>
@@ -177,7 +177,7 @@ export default function TournamentForm({
             value={config.eliminationType}
             onChange={e => {
               if (e.target.value === 'single' || e.target.value === 'double')
-                change({ ...config, eliminationType: e.target.value })
+                setConfig({ ...config, eliminationType: e.target.value })
             }}>
             <option value='single'>Enkel eliminering</option>
             <option
@@ -198,7 +198,7 @@ export default function TournamentForm({
                 return item ? [item] : []
               })}
               setSelected={selected =>
-                change({
+                setConfig({
                   ...config,
                   stageTracks: {
                     ...config.stageTracks,
@@ -210,16 +210,6 @@ export default function TournamentForm({
             />
           </div>
         ))}
-        <input
-          aria-label='Turneringen er klar'
-          className='sr-only'
-          tabIndex={-1}
-          value={ready ? 'ready' : ''}
-          onChange={() => {}}
-          ref={node => {
-            node?.setCustomValidity(ready ? '' : loc.no.tournament.tracks)
-          }}
-        />
         {error && (
           <Alert variant='destructive'>
             <AlertCircleIcon />

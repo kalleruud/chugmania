@@ -17,7 +17,6 @@ export type MatchListProps = {
   session?: string
   matches: Match[]
   managed?: boolean
-  readOnly?: boolean
   hideTrack?: boolean
   trackSeparators?: boolean
   featuredMatchId?: string
@@ -31,7 +30,6 @@ export default function MatchList({
   hideTrack,
   trackSeparators,
   managed,
-  readOnly,
   featuredMatchId,
 }: Readonly<MatchListProps>) {
   const { isLoggedIn, loggedInUser } = useAuth()
@@ -80,9 +78,8 @@ export default function MatchList({
                   match.user2 === loggedInUser.id)
               }
               className='rounded-sm bg-background-secondary p-2'
-              readOnly={readOnly}
               onClick={() => {
-                if (!readOnly && !match.tournament?.readOnly) openMatch(match)
+                if (!match.tournament?.readOnly) openMatch(match)
               }}
               hideTrack={hideTrack || trackSeparators}
             />

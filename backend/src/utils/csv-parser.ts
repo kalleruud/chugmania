@@ -134,6 +134,10 @@ export default class CsvParser {
     const val = value?.trim()
     if (!val) return null
 
+    if (key === 'draft' && (val === 'true' || val === 'false')) {
+      return { key, value: val === 'true' }
+    }
+
     if (['config', 'tracks', 'slot1', 'slot2'].includes(key)) {
       const parsed: unknown = JSON.parse(val)
       return { key, value: parsed }

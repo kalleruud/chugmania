@@ -70,15 +70,6 @@ export function tournamentDetails(state: TournamentState): TournamentDetails {
       tournament: {
         id: state.id,
         label: fixtureLabel(state, f),
-        dependencies: { slot1: f.slot1, slot2: f.slot2 },
-        bracket: f.bracket,
-        round: f.round,
-        roundSize:
-          f.bracket === 'upper'
-            ? state.fixtures.filter(
-                other => other.bracket === 'upper' && other.round === f.round
-              ).length * 2
-            : null,
         slot1: label(f.slot1),
         slot2: label(f.slot2),
         readOnly:

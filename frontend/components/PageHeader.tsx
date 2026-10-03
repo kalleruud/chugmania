@@ -1,23 +1,15 @@
 import * as HeroIcons from '@heroicons/react/24/solid'
 import type { ComponentProps } from 'react'
 import { Link } from 'react-router'
-import { twMerge, type ClassNameValue } from 'tailwind-merge'
+import { twMerge } from 'tailwind-merge'
 
 type PageHeaderProps = {
   title: string
   description?: string | null
   to?: string
-} & (
-  | {
-      Icon?: undefined
-      iconClassName?: undefined
-    }
-  | {
-      Icon: (typeof HeroIcons)[keyof typeof HeroIcons]
-      iconClassName?: ClassNameValue
-    }
-) &
-  ComponentProps<'div'>
+  Icon?: (typeof HeroIcons)[keyof typeof HeroIcons]
+  iconClassName?: string
+} & ComponentProps<'div'>
 
 export function PageHeader({
   title,

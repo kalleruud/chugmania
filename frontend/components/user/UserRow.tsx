@@ -10,7 +10,6 @@ import { Spinner } from '../ui/spinner'
 type UserRowProps = BaseRowProps<UserInfo> & {
   hideRanking?: boolean
   rank?: number
-  shortName?: boolean
 }
 
 export default function UserRow({
@@ -21,7 +20,6 @@ export default function UserRow({
   hideRanking,
   children,
   rank,
-  shortName = false,
   ...props
 }: Readonly<UserRowProps>) {
   const { rankings, isLoadingData } = useData()
@@ -53,7 +51,7 @@ export default function UserRow({
           <Minus className='size-4 flex-none text-muted-foreground' />
         )}
 
-        {hideRanking && !showRanking && !showMissingRanking && (
+        {hideRanking && (
           <div
             className={twMerge(
               'h-4 w-1 flex-none rounded-full bg-primary',
@@ -65,10 +63,7 @@ export default function UserRow({
         <ItemTitle
           className='mr-auto block min-w-0 flex-1 truncate font-f1 uppercase'
           title={getUserFullName(user)}>
-          {shortName || user.firstName}{' '}
-          <span className='font-bold'>
-            {shortName ? user.shortName : user.lastName}
-          </span>
+          {user.firstName} <span className='font-bold'>{user.lastName}</span>
         </ItemTitle>
 
         {children && (

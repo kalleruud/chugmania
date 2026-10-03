@@ -4,7 +4,6 @@ import type {
   ServerToClientEvents,
 } from '@common/models/socket.io'
 import type {
-  Slot,
   TournamentChange,
   TournamentConfig,
   TournamentDetails,
@@ -40,19 +39,6 @@ async function freePort(): Promise<number> {
 }
 
 function parity(details: TournamentDetails) {
-  function dependency(slot: Slot) {
-    if (slot.kind === 'group_rank')
-      return {
-        ...slot,
-        groupId: details.groups.find(g => g.id === slot.groupId)?.name,
-      }
-    if (slot.kind === 'match_winner' || slot.kind === 'match_loser')
-      return {
-        ...slot,
-        matchId: details.matches.findIndex(m => m.id === slot.matchId),
-      }
-    return slot
-  }
   return {
     participants: details.participants.map(({ groupId, ...p }) => ({
       ...p,
@@ -66,10 +52,6 @@ function parity(details: TournamentDetails) {
           ...tournament,
           id: '',
           readOnly: false,
-          dependencies: {
-            slot1: dependency(tournament.dependencies.slot1),
-            slot2: dependency(tournament.dependencies.slot2),
-          },
         },
       })
     ),
@@ -245,6 +227,7 @@ test(
         admin.on('all_time_entries', onTimeEntries)
         const preview = await admin.emitWithAck('preview_tournament', config)
         assert.ok(preview.success, JSON.stringify(preview))
+        assert.ok(preview.details.matches.every(m => m.tournament?.readOnly))
         const repeatedPreview = await admin.emitWithAck(
           'preview_tournament',
           config
@@ -306,6 +289,9 @@ test(
       'creation locks groups; lap and signup changes preserve fixtures',
       async () => {
         const before = await details()
+        const savedTournament = db.select().from(schema.tournaments).all()
+        const savedFixtures = db.select().from(schema.tournamentMatches).all()
+        const changeCount = changes.length
         const lap = await admin.emitWithAck('post_time_entry', {
           type: 'CreateTimeEntryRequest',
           user: people[0].id,
@@ -322,6 +308,15 @@ test(
         })
         assert.ok(signup.success)
         assert.deepEqual(await details(), before)
+        assert.deepEqual(
+          db.select().from(schema.tournaments).all(),
+          savedTournament
+        )
+        assert.deepEqual(
+          db.select().from(schema.tournamentMatches).all(),
+          savedFixtures
+        )
+        assert.equal(changes.length, changeCount)
       }
     )
     await t.test(
@@ -431,6 +426,17 @@ test(
           assert.ok(imported.success, JSON.stringify(imported))
         }
         assert.deepEqual(parity(await details()), parity(before))
+        const lapsBefore = db.select().from(schema.timeEntries).all()
+        const laps = await admin.emitWithAck('export_csv', {
+          table: 'timeEntries',
+        })
+        assert.ok(laps.success)
+        const importedLaps = await admin.emitWithAck('import_csv', {
+          table: 'timeEntries',
+          content: laps.csv,
+        })
+        assert.ok(importedLaps.success)
+        assert.deepEqual(db.select().from(schema.timeEntries).all(), lapsBefore)
         const raw = await admin.emitWithAck('import_csv', {
           table: 'tournaments',
           content: `id,notReadyReason\n${before.id},Raw import marker`,
@@ -555,6 +561,26 @@ test(
           (await details()).participants.length,
           removed.participants.length
         )
+        const savedRoster = await details()
+        const deletedPlayer = await admin.emitWithAck('delete_user', {
+          type: 'DeleteUserRequest',
+          id: people[2].id,
+        })
+        assert.ok(deletedPlayer.success)
+        assert.deepEqual(await details(), savedRoster)
+        const otherSession = randomUUID()
+        db.insert(schema.sessions)
+          .values({ id: otherSession, name: 'Other Cup', date: new Date() })
+          .run()
+        for (const player of people.slice(4, 12))
+          db.insert(schema.sessionSignups)
+            .values({ session: otherSession, user: player.id, response: 'yes' })
+            .run()
+        const otherCup = await admin.emitWithAck('create_tournament', {
+          ...config,
+          session: otherSession,
+        })
+        assert.ok(otherCup.success)
         const cascade = await admin.emitWithAck('delete_session', {
           type: 'DeleteSessionRequest',
           id: session,
@@ -565,8 +591,14 @@ test(
             .select()
             .from(schema.tournaments)
             .all()
+            .filter(row => row.session === session)
             .every(row => row.deletedAt)
         )
+        const survivingCup = await admin.emitWithAck('get_tournament', {
+          session: otherSession,
+        })
+        assert.ok(survivingCup.success)
+        assert.deepEqual(survivingCup.details, otherCup.details)
       }
     )
   }

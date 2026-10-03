@@ -10,13 +10,12 @@ import {
 } from '@common/models/user'
 import { tryCatchAsync } from '@common/utils/try-catch'
 import { eq, isNull } from 'drizzle-orm'
-import db from '../../database/database'
+import db, { database } from '../../database/database'
 import { users } from '../../database/schema'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import RatingManager from './rating.manager'
 import TimeEntryManager from './timeEntry.manager'
-import TournamentManager from './tournament.manager'
 
 export default class UserManager {
   static readonly table = users
@@ -187,13 +186,13 @@ export default class UserManager {
     await AuthManager.checkAuth(socket, ['admin'])
 
     const deletedUser = await UserManager.getUserById(request.id)
-    TournamentManager.commit(() => {
+    database.transaction(() => {
       db.update(users)
         .set({ deletedAt: new Date() })
         .where(eq(users.id, request.id))
         .run()
       TimeEntryManager.deleteTimeEntriesForUser(request.id)
-    })
+    })()
 
     console.info(
       new Date().toISOString(),
@@ -205,7 +204,6 @@ export default class UserManager {
     broadcast('all_users', await UserManager.getAllUsers())
     broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
     broadcast('all_rankings', RatingManager.onGetRatings())
-    await TournamentManager.publish(socket.id)
 
     return {
       success: true,

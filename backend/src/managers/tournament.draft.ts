@@ -4,7 +4,6 @@ import type {
   Slot,
   TournamentConfig,
   TournamentFixture,
-  TournamentGroup,
   TournamentState,
 } from '@common/models/tournament'
 import { upperStage, validConfiguration } from '@common/utils/tournament'
@@ -26,7 +25,7 @@ function groupNames(session: string, count: number): string[] {
     return cycle ? `${name} ${cycle + 1}` : name
   })
 }
-export function snakeGroup(seed: number, groups: number): number {
+function snakeGroup(seed: number, groups: number): number {
   const position = seed % groups
   return Math.floor(seed / groups) % 2 === 0 ? position : groups - 1 - position
 }
@@ -57,8 +56,7 @@ export function schedulePairs(players: string[]): [string, string][] {
 
 export function generateTournament(
   config: TournamentConfig,
-  inputs: Participant[],
-  assignedGroups?: TournamentGroup[]
+  inputs: Participant[]
 ): TournamentState {
   if (
     !validConfiguration(
@@ -69,19 +67,14 @@ export function generateTournament(
     )
   )
     throw new Error(loc.no.tournament.roster)
-  const groups =
-    assignedGroups ??
-    groupNames(config.session, config.groupsCount).map((name, index) => ({
-      id: `group-${index}`,
-      name,
-    }))
-  const participants = assignedGroups
-    ? inputs.toSorted((a, b) => a.admission - b.admission)
-    : inputs.toSorted(seedingOrder).map((player, index) => ({
-        ...player,
-        admission: index,
-        groupId: groups[snakeGroup(index, groups.length)].id,
-      }))
+  const groups = groupNames(config.session, config.groupsCount).map(
+    (name, index) => ({ id: `group-${index}`, name })
+  )
+  const participants = inputs.toSorted(seedingOrder).map((player, index) => ({
+    ...player,
+    admission: index,
+    groupId: groups[snakeGroup(index, groups.length)].id,
+  }))
   const fixtures: TournamentFixture[] = []
   const add = (
     stage: MatchStage,

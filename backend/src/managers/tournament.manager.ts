@@ -33,14 +33,13 @@ import { broadcast, broadcastTournament } from '../server'
 import AuthManager from './auth.manager'
 import MatchManager from './match.manager'
 import RatingManager from './rating.manager'
-import TimeEntryManager from './timeEntry.manager'
 import { tournamentDetails } from './tournament.details'
 import { generateTournament } from './tournament.draft'
 import { protectResults, resolveSlots } from './tournament.rules'
 
 export default class TournamentManager {
   private static published = new Map<string, string>()
-  static participants(config: TournamentConfig): Participant[] {
+  private static participants(config: TournamentConfig): Participant[] {
     const ratings = RatingManager.onGetRatings()
     const signups = db
       .select({ user: sessionSignups.user })
@@ -66,7 +65,7 @@ export default class TournamentManager {
       }
     })
   }
-  static active(session: string) {
+  private static active(session: string) {
     return db
       .select()
       .from(tournaments)
@@ -75,7 +74,7 @@ export default class TournamentManager {
       )
       .get()
   }
-  static session(session: string, allowCancelled = false) {
+  private static session(session: string, allowCancelled = false) {
     const row = db
       .select()
       .from(sessions)
@@ -85,7 +84,7 @@ export default class TournamentManager {
       throw new Error(loc.no.tournament.session)
     return row
   }
-  static load(session: string): TournamentState | null {
+  private static load(session: string): TournamentState | null {
     const row = this.active(session)
     if (!row) return null
     const groupRows = db
@@ -167,14 +166,11 @@ export default class TournamentManager {
           ?.status === 'cancelled',
     }
   }
-  static details(session: string): TournamentDetails | null {
+  private static details(session: string): TournamentDetails | null {
     const state = this.load(session)
-    return state ? this.toDetails(state) : null
+    return state ? tournamentDetails(state) : null
   }
-  static toDetails(state: TournamentState): TournamentDetails {
-    return tournamentDetails(state)
-  }
-  static validate(
+  private static validate(
     config: TournamentConfig,
     creating: boolean
   ): TournamentState {
@@ -206,7 +202,7 @@ export default class TournamentManager {
       throw new Error(loc.no.tournament.tracks)
     return state
   }
-  static remap(state: TournamentState): TournamentState {
+  private static remap(state: TournamentState): TournamentState {
     const result = structuredClone(state)
     result.id = randomUUID()
     const ids = new Map(
@@ -240,71 +236,8 @@ export default class TournamentManager {
     return result
   }
 
-  static refreshAll(): void {
-    for (const row of db
-      .select()
-      .from(tournaments)
-      .where(isNull(tournaments.deletedAt))
-      .all()) {
-      const session = db
-        .select()
-        .from(sessions)
-        .where(eq(sessions.id, row.session))
-        .get()
-      if (!session || session.deletedAt) {
-        this.remove(row.session)
-        continue
-      }
-      const before = this.load(row.session)
-      if (!before || before.cancelled) continue
-      this.save(resolveSlots(before))
-    }
-  }
-  static commit<T>(write: () => T): T {
-    try {
-      return database.transaction(() => {
-        const result = write()
-        RatingManager.recalculate()
-        this.refreshAll()
-        return result
-      })()
-    } catch (error) {
-      RatingManager.recalculate()
-      throw error
-    }
-  }
-  static save(state: TournamentState): void {
+  private static save(state: TournamentState): void {
     state = resolveSlots(state)
-    const previous = this.load(state.config.session)
-    if (previous) {
-      protectResults(previous, state, '')
-      const deletedAt = new Date()
-      for (const fixture of previous.fixtures.filter(
-        f => !state.fixtures.some(next => next.id === f.id)
-      )) {
-        db.update(matches)
-          .set({ deletedAt })
-          .where(eq(matches.id, fixture.match.id))
-          .run()
-        db.update(tournamentMatches)
-          .set({ deletedAt })
-          .where(eq(tournamentMatches.id, fixture.id))
-          .run()
-      }
-      for (const player of previous.participants.filter(
-        p => !state.participants.some(next => next.user === p.user)
-      ))
-        db.update(tournamentPlayers)
-          .set({ deletedAt })
-          .where(
-            and(
-              eq(tournamentPlayers.tournament, state.id),
-              eq(tournamentPlayers.user, player.user)
-            )
-          )
-          .run()
-    }
-
     const { stageTracks, ...config } = state.config
     const row = {
       id: state.id,
@@ -382,7 +315,7 @@ export default class TournamentManager {
       .get()
     if (!row) throw new Error(loc.no.tournament.invalid)
     this.session(row.session)
-    this.commit(() => {
+    database.transaction(() => {
       const state = this.load(row.session)
       if (!state || state.notReadyReason)
         throw new Error(loc.no.tournament.roster)
@@ -433,7 +366,7 @@ export default class TournamentManager {
       const resolved = resolveSlots(state)
       protectResults(before, resolved, fixture.id)
       this.save(resolved)
-    })
+    })()
     return true
   }
   static remove(
@@ -479,16 +412,18 @@ export default class TournamentManager {
       .where(eq(tournaments.id, state.id))
       .run()
   }
-  static async publish(actor: string | null = null): Promise<void> {
-    for (const row of db.select().from(sessions).all()) {
-      const details = this.details(row.id)
+  static publish(actor: string | null = null): void {
+    const rows = db
+      .select({ session: tournaments.session })
+      .from(tournaments)
+      .all()
+    for (const session of new Set(rows.map(row => row.session))) {
+      const details = this.details(session)
       const serialized = JSON.stringify(details)
-      if (this.published.get(row.id) === serialized) continue
-      this.published.set(row.id, serialized)
-      broadcastTournament({ session: row.id, details, actor })
+      if (this.published.get(session) === serialized) continue
+      this.published.set(session, serialized)
+      broadcastTournament({ session, details, actor })
     }
-    broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
-    broadcast('all_matches', await MatchManager.getAllMatches())
   }
   static async onPreview(
     socket: TypedSocket,
@@ -499,7 +434,7 @@ export default class TournamentManager {
     const state = TournamentManager.validate(request, false)
     return {
       success: true,
-      details: TournamentManager.toDetails(state),
+      details: tournamentDetails(state),
     }
   }
   static async onCreate(
@@ -518,7 +453,8 @@ export default class TournamentManager {
       state.admissionClosedAt = state.frozenAt
       TournamentManager.save(state)
     })()
-    await TournamentManager.publish(socket.id)
+    broadcast('all_matches', await MatchManager.getAllMatches())
+    TournamentManager.publish(socket.id)
     return {
       success: true,
       details: TournamentManager.details(request.session),
@@ -546,14 +482,15 @@ export default class TournamentManager {
     if (!isDeleteTournamentRequest(request))
       throw new Error(loc.no.tournament.invalid)
     TournamentManager.session(request.session, true)
-    TournamentManager.commit(() =>
+    database.transaction(() =>
       TournamentManager.remove(request.session, {
         deleteMatches: request.deleteRelatedResults,
       })
-    )
+    )()
     RatingManager.recalculate()
     broadcast('all_rankings', RatingManager.onGetRatings())
-    await TournamentManager.publish(socket.id)
+    broadcast('all_matches', await MatchManager.getAllMatches())
+    TournamentManager.publish(socket.id)
     return { success: true, details: null }
   }
   static enrich(rows: Match[]): Match[] {

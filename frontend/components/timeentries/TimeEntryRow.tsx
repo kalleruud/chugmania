@@ -7,7 +7,6 @@ import type {
 } from '@common/models/timeEntry'
 import { formatTime } from '@common/utils/time'
 import { MinusIcon } from '@heroicons/react/24/solid'
-import { ClipboardClock } from 'lucide-react'
 import {
   useEffect,
   useMemo,
@@ -18,10 +17,7 @@ import {
 import { twMerge } from 'tailwind-merge'
 import type { BaseRowProps } from '../row/RowProps'
 
-type TimeEntryRowProps = BaseRowProps<
-  Pick<TimeEntry, 'user' | 'duration' | 'comment'>
-> & {
-  pending?: boolean
+type TimeEntryRowProps = BaseRowProps<TimeEntry> & {
   position?: number | null
   gap?: LeaderboardEntryGap
   gapType?: GapType
@@ -119,8 +115,6 @@ function GapPart({
 export default function TimeEntryRow({
   className,
   item: lapTime,
-  pending,
-  position,
   gap,
   gapType,
   onChangeGapType,
@@ -132,7 +126,7 @@ export default function TimeEntryRow({
   const { users } = useData()
   const userInfo = users ? users.find(u => u.id === lapTime.user) : null
 
-  const isDNF = !lapTime.duration && !pending
+  const isDNF = !lapTime.duration
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -165,10 +159,7 @@ export default function TimeEntryRow({
       )}
       title={lapTime.comment ?? undefined}
       {...rest}>
-      {show.pos && !pending && (
-        <PositionBadgePart position={position ?? gap?.position} />
-      )}
-      {pending && <ClipboardClock className='size-4 text-muted-foreground' />}
+      {show.pos && <PositionBadgePart position={gap?.position} />}
       <NameCellPart
         name={
           userInfo?.shortName ??
@@ -180,21 +171,14 @@ export default function TimeEntryRow({
         className={twMerge('mr-auto', isDNF && 'text-muted-foreground')}
       />
 
-      {show.gap && gap && !pending && (
+      {show.gap && gap && (
         <GapPart
           gap={gap}
           gapType={gapType}
           onChangeGapType={onChangeGapType}
         />
       )}
-      {show.time &&
-        (pending ? (
-          <span className='text-muted-foreground'>
-            {loc.no.match.status.planned}
-          </span>
-        ) : (
-          <TimePart duration={lapTime.duration} />
-        ))}
+      {show.time && <TimePart duration={lapTime.duration} />}
     </div>
   )
 }

@@ -25,7 +25,7 @@ export default function TournamentMatchPanel({
 
   const matches = pendingMatches(details.matches)
   const current = matches.at(0)
-  const next = matches.slice(0, upcomingCount)
+  const next = matches.slice(1, upcomingCount + 1)
 
   if (!current) return null
 

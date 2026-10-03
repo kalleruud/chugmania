@@ -10,10 +10,11 @@ import {
 import type { EventReq, EventRes } from '@common/models/socket.io'
 import { isPast } from '@common/utils/date'
 import { and, asc, desc, eq, isNull } from 'drizzle-orm'
-import db from '../../database/database'
+import db, { database } from '../../database/database'
 import { sessions, sessionSignups, users } from '../../database/schema'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
+import MatchManager from './match.manager'
 import RatingManager from './rating.manager'
 import SessionScheduler from './session.scheduler'
 import TournamentManager from './tournament.manager'
@@ -159,8 +160,6 @@ export default class SessionManager {
     )
 
     broadcast('all_sessions', await SessionManager.getAllSessions())
-    broadcast('all_rankings', RatingManager.onGetRatings())
-    await TournamentManager.publish(socket.id)
     await SessionScheduler.start()
 
     return { success: true }
@@ -187,7 +186,7 @@ export default class SessionManager {
     }
 
     const id = request.id
-    TournamentManager.commit(() => {
+    database.transaction(() => {
       const res = db
         .update(sessions)
         .set({
@@ -204,13 +203,17 @@ export default class SessionManager {
         .run()
 
       if (res.changes === 0) throw new Error('Update failed')
-    })
+      if (request.deletedAt) TournamentManager.remove(session.id)
+    })()
 
     console.debug(new Date().toISOString(), socket.id, 'Updated session', id)
 
+    RatingManager.recalculate()
+    if (request.deletedAt)
+      broadcast('all_matches', await MatchManager.getAllMatches())
     broadcast('all_sessions', await SessionManager.getAllSessions())
     broadcast('all_rankings', RatingManager.onGetRatings())
-    await TournamentManager.publish(socket.id)
+    TournamentManager.publish(socket.id)
     await SessionScheduler.start()
 
     return { success: true }
@@ -256,20 +259,18 @@ export default class SessionManager {
       throw new Error(loc.no.session.errorMessages.no_edit_historical)
     }
 
-    TournamentManager.commit(() => {
-      db.insert(sessionSignups)
-        .values({
-          id: existingSignup?.id,
-          session: request.session,
-          user: request.user,
-          response: request.response,
-        })
-        .onConflictDoUpdate({
-          target: [sessionSignups.id],
-          set: { response: request.response, deletedAt: null },
-        })
-        .run()
-    })
+    db.insert(sessionSignups)
+      .values({
+        id: existingSignup?.id,
+        session: request.session,
+        user: request.user,
+        response: request.response,
+      })
+      .onConflictDoUpdate({
+        target: [sessionSignups.id],
+        set: { response: request.response, deletedAt: null },
+      })
+      .run()
 
     console.debug(
       new Date().toISOString(),
@@ -279,8 +280,6 @@ export default class SessionManager {
     )
 
     broadcast('all_sessions', await SessionManager.getAllSessions())
-    broadcast('all_rankings', RatingManager.onGetRatings())
-    await TournamentManager.publish(socket.id)
 
     return { success: true }
   }

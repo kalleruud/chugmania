@@ -157,7 +157,6 @@ export default function TournamentPanel({
                   matches={matches}
                   managed
                   trackSeparators
-                  readOnly={isPreview}
                   featuredMatchId={featuredMatch?.id}
                 />
               </details>

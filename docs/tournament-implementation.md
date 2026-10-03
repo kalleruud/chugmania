@@ -47,7 +47,7 @@ Run `npm test`, `npm run check`, and `npm run build`. Tests use disposable SQLit
 
 - `common/models/tournament.ts`: shared configuration, generated structure, dependencies and read model.
 - `common/utils/tournament.ts`: shared configuration options and stage names.
-- `backend/src/managers/tournament.manager.ts`: command validation, transactions, persistence, reconciliation and mutation coordination.
+- `backend/src/managers/tournament.manager.ts`: command validation, transactions, fixed-structure persistence, match updates and tournament notifications.
 - `backend/src/managers/tournament.draft.ts`: single generator for preview and creation, reusable scheduling.
 - `backend/src/managers/tournament.rules.ts`: seeding, head-to-head standings, progression and correction protection.
 - `backend/src/managers/tournament.details.ts`: shared read model and display metadata.
@@ -72,15 +72,15 @@ Run `npm test`, `npm run check`, and `npm run build`. Tests use disposable SQLit
 - `backend/database/schema.ts`: tournament tables, slot dependencies, snapshots and uniqueness constraints.
 - `drizzle/meta/_journal.json`: register generated migration.
 - `backend/src/managers/admin.manager.ts`: all tournament tables in CSV import/export, publish imported state.
-- `backend/src/utils/csv-parser.ts`: parse JSON structures and snapshot timestamps without domain validation.
+- `backend/src/utils/csv-parser.ts`: parse JSON structures, draft booleans and snapshot timestamps without domain validation.
 - `backend/src/managers/match.manager.ts`: delegate tournament results, coordinate ordinary changes, return enriched matches.
 - `backend/src/managers/rating.manager.ts`: synchronous rating rebuild so freeze snapshots and mutations are atomic.
-- `backend/src/managers/session.manager.ts`: coordinate signup and session lifecycle mutations with tournament state.
+- `backend/src/managers/session.manager.ts`: remove the affected tournament when deleting a session; publish cancellation/restoration through the canonical read model. Signups never rewrite tournaments.
 - `backend/src/managers/timeEntry.manager.ts`: coordinate ordinary lap changes and implicit signups.
-- `backend/src/managers/user.manager.ts`: coordinate participant deletion.
+- `backend/src/managers/user.manager.ts`: delete users and their lap times atomically while preserving saved tournament rosters.
 - `backend/src/server.ts`: register commands and support direct production route loads in hidden worktree directories.
 - `common/locale/locales.ts`: tournament labels, errors, stages and CSV table names.
-- `common/models/match.ts`: tournament metadata, dependency objects, round sizes and slot labels.
+- `common/models/match.ts`: compact tournament labels, slot labels and editing/reset state. Dependency objects remain private to tournament state.
 - `common/models/socket.io.ts`: typed tournament commands and change event.
 - `frontend/App.tsx`: tournament creation route.
 - `frontend/app/pages/SessionPage.tsx`: session, participant and tournament tabs plus create/delete actions.
@@ -91,8 +91,8 @@ Run `npm test`, `npm run check`, and `npm run build`. Tests use disposable SQLit
 - `frontend/components/session/SessionSignupPanel.tsx`: reuse signup summary and native response selector.
 - `frontend/components/track/TrackLeaderboard.tsx`: separate tournament matches on session view and omit unneeded resets.
 - `frontend/contexts/TimeEntryInputContext.tsx`: current match data and tournament editing restrictions.
-- `package.json`: Node test-runner command using the existing TypeScript loader.
+- `package.json`: run backend and frontend tests through the existing TypeScript loader and Node test runner.
 
 ## Completed verification
 
-All 20 tests pass, including real server/socket tests and disposable database migrations. `npm run check` and `npm run build` pass. Head-to-head coverage includes equal records, circular ties, matches from other rounds, null slots, preview isolation, fixed groups, and ordinary lap-time independence. Historical data restoration remains a manual follow-up outside this implementation.
+All 21 tests pass, including real server/socket tests, disposable database migrations and the shared progress display. `npm run check` and `npm run build` pass. Coverage includes equal records, circular ties, matches from other rounds, null slots, preview isolation, fixed groups, unchanged tournament rows after ordinary lap/signup edits, participant deletion, unrelated tournaments surviving session deletion, and CSV boolean round trips. Historical data restoration remains a manual follow-up outside this implementation.

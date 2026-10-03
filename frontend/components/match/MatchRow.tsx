@@ -18,7 +18,6 @@ import { Label } from '../ui/label'
 
 export type MatchRowProps = BaseRowProps<Match> & {
   hideTrack?: boolean
-  readOnly?: boolean
   expanded?: boolean
 }
 
@@ -27,7 +26,6 @@ export default function MatchRow({
   item: match,
   highlight,
   hideTrack,
-  readOnly,
   expanded,
   children,
   ...rest
@@ -41,10 +39,7 @@ export default function MatchRow({
   const session = sessions?.find(s => s.id === match.session)
 
   const canEdit =
-    isLoggedIn &&
-    loggedInUser.role !== 'user' &&
-    !readOnly &&
-    !match.tournament?.readOnly
+    isLoggedIn && loggedInUser.role !== 'user' && !match.tournament?.readOnly
 
   const isCancelled = match.status === 'cancelled' && !match.tournament?.awarded
   const isCompleted =

@@ -8,13 +8,12 @@ import {
 } from '@common/models/timeEntry'
 import type { User } from '@common/models/user'
 import { and, asc, eq, getTableColumns, isNull, sql } from 'drizzle-orm'
-import db from '../../database/database'
+import db, { database } from '../../database/database'
 import { timeEntries } from '../../database/schema'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import RatingManager from './rating.manager'
 import SessionManager from './session.manager'
-import TournamentManager from './tournament.manager'
 
 export default class TimeEntryManager {
   static readonly table = timeEntries
@@ -113,14 +112,14 @@ export default class TimeEntryManager {
       throw new Error(loc.no.error.messages.insufficient_permissions)
     }
 
-    const signupChanged = TournamentManager.commit(() => {
+    const signupChanged = database.transaction(() => {
       db.insert(timeEntries)
         .values({ ...request, draft: false })
         .run()
       return request.session
         ? SessionManager.ensureSessionSignup(request.session, request.user)
         : false
-    })
+    })()
 
     console.debug(
       new Date().toISOString(),
@@ -134,7 +133,7 @@ export default class TimeEntryManager {
       broadcast('all_sessions', await SessionManager.getAllSessions())
     }
     broadcast('all_rankings', RatingManager.onGetRatings())
-    await TournamentManager.publish(socket.id)
+    broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
 
     return {
       success: true,
@@ -183,7 +182,7 @@ export default class TimeEntryManager {
     }
     const completesDraft = lapTime.draft && (processedUpdates.duration ?? 0) > 0
 
-    const signupChanged = TournamentManager.commit(() => {
+    const signupChanged = database.transaction(() => {
       db.update(timeEntries)
         .set({
           ...processedUpdates,
@@ -199,7 +198,7 @@ export default class TimeEntryManager {
       return sessionId && !processedUpdates.deletedAt
         ? SessionManager.ensureSessionSignup(sessionId, userId)
         : false
-    })
+    })()
 
     console.debug(
       new Date().toISOString(),
@@ -213,7 +212,7 @@ export default class TimeEntryManager {
       broadcast('all_sessions', await SessionManager.getAllSessions())
     }
     broadcast('all_rankings', RatingManager.onGetRatings())
-    await TournamentManager.publish(socket.id)
+    broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
 
     return {
       success: true,

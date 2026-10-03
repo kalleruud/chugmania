@@ -147,7 +147,7 @@ export default class AdminManager {
     broadcast('all_time_entries', timeEntries)
     broadcast('all_matches', matches)
     broadcast('all_rankings', RatingManager.onGetRatings())
-    await TournamentManager.publish(socket.id)
+    TournamentManager.publish(socket.id)
 
     return {
       success: true,

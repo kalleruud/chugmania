@@ -15,7 +15,7 @@
     "db:gen": "drizzle-kit generate",
     "db:push": "drizzle-kit push --force",
     "db:studio": "drizzle-kit studio",
-    "test": "node --import tsx --test \"backend/**/*.spec.ts\""
+    "test": "tsx --tsconfig tsconfig.app.json --test \"backend/**/*.spec.ts\" \"frontend/**/*.test.tsx\""
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

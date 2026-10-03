@@ -100,7 +100,7 @@ export default function TimeEntryInputProvider({
       ? isLoggedIn && loggedInUser.role !== 'user' && !matchReadOnly
       : isEditingSelf ||
         !isEditing ||
-        (isLoggedIn && loggedInUser.role !== 'user' && !matchReadOnly)
+        (isLoggedIn && loggedInUser.role !== 'user')
 
   function open(
     editingTimeEntry: Parameters<TimeEntryInputContextType['open']>[0] = {}
