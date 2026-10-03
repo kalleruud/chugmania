@@ -54,14 +54,14 @@ export default function TournamentPanel({
             {loc.no.session.participants.toLowerCase()} ·{' '}
             {details.groups.length} {loc.no.tournament.groups.toLowerCase()}
           </p>
-          {isPreview && (
-            <p>
-              {workload.tracks} baner · {workload.minMatches}–
-              {workload.maxMatches} matcher per spiller
-            </p>
-          )}
+
+          <p>
+            {workload.tracks} baner · {workload.minMatches}–
+            {workload.maxMatches} matcher per spiller
+          </p>
+
           {details.notReadyReason && (
-            <p role='status' className='text-destructive'>
+            <p role='status' className='text-muted-foreground'>
               {details.notReadyReason}
             </p>
           )}
