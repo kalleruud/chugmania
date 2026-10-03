@@ -1,32 +1,95 @@
+import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
+import { useMatchWinner } from '@/hooks/useMatchWinner'
 import loc from '@common/locale/locales'
+import type { UserInfo } from '@common/models/user'
+import { getUserFullName } from '@common/models/user'
 import { formatDateWithYear, formatTimeOnly } from '@common/utils/date'
 import { formatTime } from '@common/utils/time'
+import { stageName } from '@common/utils/tournament'
+import { MinusIcon } from '@heroicons/react/24/solid'
+import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
+import { NameCellPart } from '../timeentries/TimeEntryRow'
 import { TrackRow } from '../track/TrackRow'
 import { Badge } from '../ui/badge'
-import MatchRow, { type MatchRowProps } from './MatchRow'
+import type { MatchProps } from './MatchProps'
 
 export default function MatchCard({
   item: match,
   className,
+  highlight,
   hideTrack,
+  children,
   ...props
-}: Readonly<MatchRowProps>) {
-  const { tracks, sessions } = useData()
+}: Readonly<MatchProps>) {
+  const { socket } = useConnection()
+  const { users, tracks, sessions } = useData()
+  const { canSetResult, setWinner } = useMatchWinner(match)
+  const user1 = users?.find(user => user.id === match.user1)
+  const user2 = users?.find(user => user.id === match.user2)
   const track = tracks?.find(track => track.id === match.track)
   const session = sessions?.find(session => session.id === match.session)
+  const isCancelled = match.status === 'cancelled' && !match.tournament?.awarded
+  const isCompleted =
+    match.status === 'completed' || !!match.tournament?.awarded
+  const canChooseWinner = canSetResult && match.status === 'planned'
+
+  function handleCancel() {
+    if (!canChooseWinner) return
+    toast.promise(
+      socket
+        .emitWithAck('edit_match', {
+          type: 'EditMatchRequest',
+          id: match.id,
+          status: 'cancelled',
+          winner: null,
+        })
+        .then(r => {
+          if (!r.success) throw new Error(r.message)
+        }),
+      loc.no.match.toast.update
+    )
+  }
 
   return (
-    <MatchRow
-      {...props}
-      item={match}
-      expanded
-      hideTrack
+    <div
       className={twMerge(
         className,
-        'border border-primary/40 bg-primary/5 p-6 sm:p-8'
-      )}>
+        'group relative flex cursor-pointer flex-col gap-6 rounded-sm border border-primary/40 bg-primary/5 p-6 transition-colors hover:bg-foreground/15 sm:p-8',
+        isCancelled && 'text-muted-foreground opacity-33',
+        highlight && 'bg-foreground/3'
+      )}
+      {...props}>
+      <div className='flex items-center gap-4 py-4'>
+        <Player
+          user={user1}
+          slotLabel={match.tournament?.slot1}
+          isWinner={!!match.winner && match.winner === match.user1}
+          isCompleted={isCompleted}
+          isCancelled={isCancelled}
+          disabled={!canChooseWinner}
+          onSelect={() => user1 && setWinner(user1.id)}
+          className='text-right'
+        />
+        <span className='mb-1 font-kh-interface text-2xl font-black text-primary'>
+          {loc.no.match.vs}
+        </span>
+        <Player
+          user={user2}
+          slotLabel={match.tournament?.slot2}
+          isWinner={!!match.winner && match.winner === match.user2}
+          isCompleted={isCompleted}
+          isCancelled={isCancelled}
+          disabled={!canChooseWinner}
+          onSelect={() => user2 && setWinner(user2.id)}
+        />
+      </div>
+      {match.stage && (
+        <Badge variant='outline' className='self-center text-muted-foreground'>
+          {match.tournament?.label ?? stageName(match.stage)}
+        </Badge>
+      )}
       <div className='flex flex-col gap-4 border-t border-primary/20 pt-4'>
         <div className='flex flex-wrap items-center justify-between gap-2'>
           <Badge>{loc.no.match.upNext}</Badge>
@@ -39,7 +102,8 @@ export default function MatchCard({
         )}
         {session && (
           <p className='text-sm text-muted-foreground'>
-            {formatDateWithYear(session.date)} · {formatTimeOnly(session.date)}
+            {session.name} · {formatDateWithYear(session.date)} ·{' '}
+            {formatTimeOnly(session.date)}
             {session.location && ` · ${session.location}`}
           </p>
         )}
@@ -66,6 +130,77 @@ export default function MatchCard({
           )}
         </dl>
       </div>
-    </MatchRow>
+      {children}
+      {match.tournament?.awarded && <Badge>{loc.no.tournament.awarded}</Badge>}
+      {match.tournament?.reset === 'conditional' && (
+        <Badge>{loc.no.tournament.conditional}</Badge>
+      )}
+      {match.tournament?.reset === 'unneeded' && (
+        <Badge>{loc.no.tournament.unneeded}</Badge>
+      )}
+      {canChooseWinner && (
+        <button
+          type='button'
+          title={loc.no.match.cancel}
+          className='absolute top-0 right-0 m-2 p-2 text-muted-foreground transition-colors hover:rounded-sm hover:bg-muted hover:text-primary-foreground'
+          onClick={e => {
+            e.stopPropagation()
+            handleCancel()
+          }}>
+          <MinusIcon className='size-4' />
+        </button>
+      )}
+    </div>
+  )
+}
+
+function Player({
+  user,
+  slotLabel,
+  isWinner,
+  isCompleted,
+  isCancelled,
+  disabled,
+  onSelect,
+  className,
+}: Readonly<{
+  user: UserInfo | undefined
+  slotLabel?: string
+  isWinner: boolean
+  isCompleted: boolean
+  isCancelled: boolean
+  disabled: boolean
+  onSelect: () => void
+  className?: string
+}>) {
+  return (
+    <div className={twMerge('min-w-0 flex-1', className)}>
+      <button
+        type='button'
+        disabled={disabled}
+        onClick={e => {
+          e.stopPropagation()
+          onSelect()
+        }}
+        className={twMerge(
+          'max-w-full border-b-2 border-transparent px-1 transition-all',
+          !disabled && 'hover:border-primary',
+          !isWinner && isCompleted && 'text-muted-foreground',
+          isWinner && 'border-primary',
+          !user && 'text-muted-foreground opacity-50',
+          disabled && 'pointer-events-none',
+          isCancelled && 'line-through'
+        )}>
+        <NameCellPart
+          name={
+            user ? getUserFullName(user) : slotLabel || loc.no.match.unknownUser
+          }
+          className='text-lg whitespace-normal sm:text-3xl'
+        />
+      </button>
+      {user && slotLabel && (
+        <p className='mt-2 text-sm text-muted-foreground'>{slotLabel}</p>
+      )}
+    </div>
   )
 }
