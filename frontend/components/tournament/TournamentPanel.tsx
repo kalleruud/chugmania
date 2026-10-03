@@ -23,6 +23,8 @@ export default function TournamentPanel({
   const { users, tracks } = useData()
   const { isLoggedIn, loggedInUser } = useAuth()
   const canEdit = isLoggedIn && loggedInUser.role !== 'user'
+  const showHeader =
+    isPreview || canEdit || !!details.notReadyReason || details.cancelled
   const workload = details.workloadSummary
   const qualiTrack = tracks?.find(
     t => t.id === details.config.qualificationTrack
@@ -40,42 +42,30 @@ export default function TournamentPanel({
 
   return (
     <div className='flex min-w-0 flex-col gap-6'>
-      <header className='flex flex-col gap-2 rounded-sm border bg-background p-4'>
-        {isPreview && (
-          <p>
-            {workload.tracks} baner · {workload.qualificationLaps}{' '}
-            kvalifiseringsrunde per spiller · {workload.minMatches}–
-            {workload.maxMatches} matcher per spiller
-          </p>
-        )}
-        {!isPreview && canEdit && (
-          <div className='flex justify-end'>
-            <DeleteTournamentDialog session={details.config.session} />
-          </div>
-        )}
-        <SegmentedProgress
-          segments={[
-            {
-              label: loc.no.tournament.groupMatches,
-              value: details.progress.groupDecided,
-              total: details.progress.groupTotal,
-              colorClassName: 'bg-emerald-500',
-            },
-            {
-              label: loc.no.tournament.bracketMatches,
-              value: details.progress.decided - details.progress.groupDecided,
-              total: details.progress.total - details.progress.groupTotal,
-              colorClassName: 'bg-sky-500',
-            },
-          ]}
-        />
-        {details.notReadyReason && (
-          <p role='status' className='text-destructive'>
-            {details.notReadyReason}
-          </p>
-        )}
-        {details.cancelled && <p role='status'>{loc.no.tournament.session}</p>}
-      </header>
+      {showHeader && (
+        <header className='flex flex-col gap-2 rounded-sm border bg-background p-4'>
+          {isPreview && (
+            <p>
+              {workload.tracks} baner · {workload.qualificationLaps}{' '}
+              kvalifiseringsrunde per spiller · {workload.minMatches}–
+              {workload.maxMatches} matcher per spiller
+            </p>
+          )}
+          {!isPreview && canEdit && (
+            <div className='flex justify-end'>
+              <DeleteTournamentDialog session={details.config.session} />
+            </div>
+          )}
+          {details.notReadyReason && (
+            <p role='status' className='text-destructive'>
+              {details.notReadyReason}
+            </p>
+          )}
+          {details.cancelled && (
+            <p role='status'>{loc.no.tournament.session}</p>
+          )}
+        </header>
+      )}
 
       {allMatchesPlayed && (
         <section className='flex flex-col gap-2 rounded-sm border bg-background p-4'>
@@ -149,26 +139,58 @@ export default function TournamentPanel({
           />
         </summary>
         <div className='flex flex-col gap-2'>
-          {Array.from(matchesByStage, ([stage, matches]) => (
-            <details
-              key={stage ?? 'none'}
-              open={!!firstPendingMatch(matches)}
-              className='group/stage'>
-              <summary className='flex cursor-pointer list-none items-center justify-between gap-2 p-2 text-sm text-muted-foreground [&::-webkit-details-marker]:hidden'>
-                <h4>{stageName(stage) || loc.no.match.title}</h4>
-                <ChevronDown
-                  aria-hidden
-                  className='size-4 shrink-0 transition-transform group-open/stage:rotate-180'
+          <SegmentedProgress
+            segments={[
+              {
+                label: loc.no.tournament.groupMatches,
+                value: details.progress.groupDecided,
+                total: details.progress.groupTotal,
+                colorClassName: 'bg-emerald-500',
+              },
+              {
+                label: loc.no.tournament.bracketMatches,
+                value: details.progress.decided - details.progress.groupDecided,
+                total: details.progress.total - details.progress.groupTotal,
+                colorClassName: 'bg-sky-500',
+              },
+            ]}
+          />
+          {Array.from(matchesByStage, ([stage, matches]) => {
+            const activeMatches = matches.filter(
+              match =>
+                match.tournament?.reset !== 'conditional' &&
+                match.tournament?.reset !== 'unneeded'
+            )
+            const played = activeMatches.filter(
+              match => match.status === 'completed' || match.tournament?.awarded
+            ).length
+            return (
+              <details
+                key={stage ?? 'none'}
+                open={!!firstPendingMatch(matches)}
+                className='group/stage'>
+                <summary className='flex cursor-pointer list-none items-center justify-between gap-2 p-2 text-sm text-muted-foreground [&::-webkit-details-marker]:hidden'>
+                  <h4 className='flex flex-wrap items-center gap-2'>
+                    {stageName(stage) || loc.no.match.title}
+                    <span className='text-xs tabular-nums'>
+                      {played}/{activeMatches.length}{' '}
+                      {loc.no.match.title.toLowerCase()}
+                    </span>
+                  </h4>
+                  <ChevronDown
+                    aria-hidden
+                    className='size-4 shrink-0 transition-transform group-open/stage:rotate-180'
+                  />
+                </summary>
+                <MatchList
+                  matches={matches}
+                  managed
+                  readOnly={isPreview}
+                  featuredMatchId={featuredMatch?.id}
                 />
-              </summary>
-              <MatchList
-                matches={matches}
-                managed
-                readOnly={isPreview}
-                featuredMatchId={featuredMatch?.id}
-              />
-            </details>
-          ))}
+              </details>
+            )
+          })}
         </div>
       </details>
     </div>
