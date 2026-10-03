@@ -9,8 +9,11 @@ import type {
 import {
   decided,
   groupStandings,
+  lapDuration,
   overallStandings,
   qualificationOrder,
+  sportingOrder,
+  tieBreaks,
 } from './tournament.rules'
 
 function groupCode(index: number): string {
@@ -31,11 +34,23 @@ export function fixtureLabel(
 }
 export function tournamentDetails(
   state: TournamentState,
-  entries: TimeEntry[] = []
+  entries: TimeEntry[] = [],
+  names: Map<string, string> = new Map()
 ): TournamentDetails {
+  const pending = tieBreaks(state)
   const label = (slot: Slot): string => {
     if (slot.kind === 'player') return ''
     if (slot.kind === 'group_rank') {
+      const tie = pending.find(
+        tie =>
+          tie.groupId === slot.groupId &&
+          slot.rank >= tie.rank &&
+          slot.rank < tie.rank + tie.users.length
+      )
+      if (tie)
+        return loc.no.tournament.tieBreaker(
+          tie.users.map(user => names.get(user) ?? user)
+        )
       return loc.no.tournament.groupSlot(
         slot.rank,
         groupCode(state.groups.findIndex(g => g.id === slot.groupId))
@@ -44,33 +59,17 @@ export function tournamentDetails(
     const feeder = state.fixtures.find(f => f.id === slot.matchId)
     return `${slot.kind === 'match_winner' ? loc.no.tournament.winnerCode : loc.no.tournament.loserCode} ${feeder ? fixtureLabel(state, feeder) : '?'}`
   }
-  const qualification = state.participants.toSorted(qualificationOrder)
+  const qualification = state.participants
+    .map(p => ({
+      ...p,
+      duration: lapDuration(p),
+      latestDuration: lapDuration(p),
+    }))
+    .toSorted((a, b) => sportingOrder(a, b) || qualificationOrder(a, b))
   const qualificationEntries = entries.filter(
-    entry => !entry.deletedAt && qualification.some(p => p.user === entry.user)
+    entry =>
+      !entry.deletedAt && qualification.some(p => p.sourceEntry === entry.id)
   )
-  if (state.id === 'preview') {
-    for (const participant of qualification) {
-      if (
-        participant.duration !== null ||
-        participant.sourceEntry ||
-        entries.some(entry => entry.user === participant.user && entry.draft)
-      )
-        continue
-      qualificationEntries.push({
-        id: `preview:${state.config.session}:${state.config.qualificationTrack}:${participant.user}`,
-        user: participant.user,
-        session: state.config.session,
-        track: state.config.qualificationTrack,
-        duration: null,
-        draft: true,
-        amount: 0.5,
-        comment: null,
-        createdAt: new Date(0),
-        updatedAt: null,
-        deletedAt: null,
-      })
-    }
-  }
   const active = state.fixtures.filter(
     f => f.reset !== 'unneeded' && f.reset !== 'conditional'
   )
@@ -88,6 +87,7 @@ export function tournamentDetails(
     id: state.id,
     config: state.config,
     frozen: !!state.frozenAt,
+    tieBreaks: pending,
     cancelled: state.cancelled,
     notReadyReason: state.notReadyReason,
     qualificationEntries,
@@ -149,7 +149,7 @@ export function tournamentDetails(
         state.config.qualificationTrack,
         ...state.fixtures.flatMap(f => (f.match.track ? [f.match.track] : [])),
       ]).size,
-      qualificationLaps: 1,
+      qualificationLaps: 0,
       minMatches:
         Math.min(...groupSizes) -
         1 +

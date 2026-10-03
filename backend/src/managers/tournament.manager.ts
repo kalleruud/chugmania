@@ -41,25 +41,16 @@ import { generateTournament, snakeGroup } from './tournament.draft'
 import {
   decided,
   groupComplete,
+  lapDuration,
   protectResults,
   resolveSlots,
+  tieBreaks,
 } from './tournament.rules'
 
 export default class TournamentManager {
   private static published = new Map<string, string>()
   static participants(config: TournamentConfig): Participant[] {
     const ratings = RatingManager.onGetRatings()
-    const laps = db
-      .select()
-      .from(timeEntries)
-      .where(
-        and(
-          eq(timeEntries.session, config.session),
-          eq(timeEntries.track, config.qualificationTrack),
-          isNull(timeEntries.deletedAt)
-        )
-      )
-      .all()
     const signups = db
       .select({ user: sessionSignups.user })
       .from(sessionSignups)
@@ -74,18 +65,10 @@ export default class TournamentManager {
       )
       .all()
     return [...new Set(signups.map(s => s.user))].map(user => {
-      const best = laps
-        .filter(l => l.user === user && l.duration !== null && l.duration > 0)
-        .sort(
-          (a, b) =>
-            (a.duration ?? 0) - (b.duration ?? 0) || a.id.localeCompare(b.id)
-        )
-        .at(0)
-      const draft = laps.find(l => l.user === user && l.draft)
       return {
         user,
-        duration: best?.duration ?? null,
-        sourceEntry: best?.id ?? draft?.id ?? null,
+        duration: null,
+        sourceEntry: null,
         rating:
           ratings.find(r => r.user === user)?.totalRating ??
           RATING_CONSTANTS.NO_DATA_RATING,
@@ -105,12 +88,54 @@ export default class TournamentManager {
   }
   static assertQualificationEditable(
     session: TimeEntry['session'],
-    track: TimeEntry['track']
+    track: TimeEntry['track'],
+    user: string,
+    entryId?: string,
+    updates?: Partial<TimeEntry>
   ): void {
     if (!session) return
-    const tournament = this.active(session)
-    if (tournament?.frozenAt && tournament.config.qualificationTrack === track)
+    const state = this.load(session)
+    if (!state || state.config.qualificationTrack !== track) return
+    const participant = state.participants.find(p => p.user === user)
+    const requested = tieBreaks(state).some(tie => tie.users.includes(user))
+    const source = participant?.sourceEntry
+      ? db
+          .select()
+          .from(timeEntries)
+          .where(eq(timeEntries.id, participant.sourceEntry))
+          .get()
+      : undefined
+    const validEntry = entryId
+      ? participant?.sourceEntry === entryId &&
+        source?.draft &&
+        !source.deletedAt
+      : !source || !!source.deletedAt
+    const changesIdentity =
+      updates &&
+      ((updates.user !== undefined && updates.user !== user) ||
+        (updates.track !== undefined && updates.track !== track) ||
+        (updates.session !== undefined && updates.session !== session))
+    if (state.cancelled || !requested || !validEntry || changesIdentity)
       throw new Error(loc.no.tournament.qualificationLocked)
+  }
+  static recordQualificationEntry(entry: TimeEntry): void {
+    if (!entry.session) return
+    const state = this.load(entry.session)
+    if (!state || state.config.qualificationTrack !== entry.track) return
+    const participant = state.participants.find(p => p.user === entry.user)
+    if (!participant) return
+    if (!entry.duration || entry.duration <= 0) {
+      db.update(timeEntries)
+        .set({ draft: true })
+        .where(eq(timeEntries.id, entry.id))
+        .run()
+    }
+    participant.sourceEntry = entry.id
+    participant.latestDuration =
+      entry.duration && entry.duration > 0 ? entry.duration : null
+    if (participant.duration === null)
+      participant.duration = participant.latestDuration
+    this.save(resolveSlots(state))
   }
   static session(session: string, allowCancelled = false) {
     const row = db
@@ -168,7 +193,7 @@ export default class TournamentManager {
         )
       )
       .all()
-    return {
+    return this.refreshQualification({
       id: row.id,
       config: {
         ...row.config,
@@ -204,27 +229,39 @@ export default class TournamentManager {
       cancelled:
         db.select().from(sessions).where(eq(sessions.id, session)).get()
           ?.status === 'cancelled',
-    }
+    })
   }
   static details(session: string): TournamentDetails | null {
     const state = this.load(session)
     return state ? this.toDetails(state) : null
   }
   static toDetails(state: TournamentState): TournamentDetails {
-    const isNewPreview =
-      state.id === 'preview' && !this.active(state.config.session)
     const entries = db
       .select()
       .from(timeEntries)
       .where(
         and(
           eq(timeEntries.session, state.config.session),
-          eq(timeEntries.track, state.config.qualificationTrack),
-          isNewPreview ? isNull(timeEntries.deletedAt) : undefined
+          eq(timeEntries.track, state.config.qualificationTrack)
         )
       )
       .all()
-    return tournamentDetails(state, entries)
+    const names = new Map(
+      db
+        .select({
+          id: users.id,
+          shortName: users.shortName,
+          firstName: users.firstName,
+          lastName: users.lastName,
+        })
+        .from(users)
+        .all()
+        .map(user => [
+          user.id,
+          user.shortName ?? user.lastName ?? user.firstName,
+        ])
+    )
+    return tournamentDetails(state, entries, names)
   }
   static validate(
     config: TournamentConfig,
@@ -406,7 +443,6 @@ export default class TournamentManager {
             p => !before.participants.some(existing => existing.user === p.user)
           )
           .sort((a, b) => a.user.localeCompare(b.user))
-        if (!entrants.length) continue
         const players = [...before.participants]
         for (const entrant of entrants) {
           const admission = Math.max(-1, ...players.map(p => p.admission)) + 1
@@ -423,6 +459,8 @@ export default class TournamentManager {
             generateTournament(before.config, players, before.groups)
           )
         )
+      } else {
+        this.save(resolveSlots(this.refreshQualification(before)))
       }
     }
   }
@@ -440,9 +478,12 @@ export default class TournamentManager {
     }
   }
   static save(state: TournamentState): void {
+    this.refreshQualification(state)
     this.createQualificationDrafts(state)
+    state = resolveSlots(state)
     const previous = this.load(state.config.session)
     if (previous) {
+      protectResults(previous, state, '')
       const deletedAt = new Date()
       for (const fixture of previous.fixtures.filter(
         f => !state.fixtures.some(next => next.id === f.id)
@@ -503,8 +544,9 @@ export default class TournamentManager {
         .run()
     }
     for (const player of state.participants) {
+      const { latestDuration: ignoredLatestDuration, ...storedPlayer } = player
       const row = {
-        ...player,
+        ...storedPlayer,
         id: `${state.id}:${player.user}`,
         tournament: state.id,
         deletedAt: null,
@@ -529,26 +571,49 @@ export default class TournamentManager {
     }
   }
   static createQualificationDrafts(state: TournamentState): void {
-    const isNewTournament = !this.active(state.config.session)
-    for (const participant of state.participants) {
-      if (participant.duration !== null || participant.sourceEntry) continue
-      const existing = db
-        .select()
-        .from(timeEntries)
-        .where(
-          and(
-            eq(timeEntries.user, participant.user),
-            eq(timeEntries.session, state.config.session),
-            eq(timeEntries.track, state.config.qualificationTrack),
-            eq(timeEntries.draft, true),
-            isNewTournament ? isNull(timeEntries.deletedAt) : undefined
+    const pending = tieBreaks(state)
+    const replay = new Set(
+      pending
+        .filter(tie =>
+          tie.users.every(user =>
+            state.participants.some(
+              p => p.user === user && lapDuration(p) !== null
+            )
           )
         )
+        .flatMap(tie => tie.users)
+    )
+    const requested = new Set(pending.flatMap(tie => tie.users))
+    for (const participant of state.participants.filter(
+      p => !requested.has(p.user)
+    )) {
+      if (!participant.sourceEntry) continue
+      const source = db
+        .select()
+        .from(timeEntries)
+        .where(eq(timeEntries.id, participant.sourceEntry))
         .get()
-      if (existing) {
-        if (!existing.deletedAt) participant.sourceEntry = existing.id
-        continue
+      if (!source?.draft) continue
+      db.update(timeEntries)
+        .set({ deletedAt: new Date() })
+        .where(eq(timeEntries.id, source.id))
+        .run()
+      participant.sourceEntry = null
+    }
+    for (const participant of state.participants.filter(p =>
+      requested.has(p.user)
+    )) {
+      if (replay.has(participant.user)) {
+        if (
+          pending.some(
+            tie => tie.groupId && tie.users.includes(participant.user)
+          )
+        )
+          participant.duration = null
+        participant.latestDuration = null
+        participant.sourceEntry = null
       }
+      if (lapDuration(participant) !== null || participant.sourceEntry) continue
       const id = randomUUID()
       db.insert(timeEntries)
         .values({
@@ -561,6 +626,31 @@ export default class TournamentManager {
         .run()
       participant.sourceEntry = id
     }
+  }
+  static refreshQualification(state: TournamentState): TournamentState {
+    for (const participant of state.participants) {
+      participant.latestDuration = participant.duration
+      if (!participant.sourceEntry) continue
+      const entry = db
+        .select()
+        .from(timeEntries)
+        .where(eq(timeEntries.id, participant.sourceEntry))
+        .get()
+      participant.latestDuration =
+        entry &&
+        !entry.deletedAt &&
+        entry.session === state.config.session &&
+        entry.track === state.config.qualificationTrack &&
+        entry.user === participant.user &&
+        !entry.draft &&
+        entry.duration &&
+        entry.duration > 0
+          ? entry.duration
+          : null
+      if (participant.duration === null)
+        participant.duration = participant.latestDuration
+    }
+    return state
   }
   static editMatch(request: EditMatchRequest): boolean {
     const link = db

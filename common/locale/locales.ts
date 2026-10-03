@@ -209,7 +209,7 @@ const no = {
     title: 'Turnering',
     adminPanel: 'Adminpanel',
     groups: 'Grupper',
-    qualificationOpen: 'Kvalifisering åpen',
+    qualificationOpen: 'Gruppefordeling åpen',
     groupNames: [
       'Furries',
       'Degenerates',
@@ -245,11 +245,13 @@ const no = {
     preview: 'Forhåndsvisning',
     qualification: 'Kvalifisering',
     qualificationDescription:
-      'Rundetidene brukes til gruppefordeling og ved likt antall seire. Låses når første gruppematch er avgjort.',
+      'Ved likt resultat etter gruppespill eller utslagsrunde måles rundetider. Hver rundetid låses når den er registrert.',
+    noTieBreakNeeded: 'Ingen tie-break-rundetider er nødvendige nå.',
+    tieBreaker: (names: string[]) => `TB ${names.join(' v ')}`,
     pending: 'Venter',
-    frozen: 'Kvalifisering låst',
+    frozen: 'Gruppefordeling låst',
     qualificationLocked:
-      'Kan ikke endre rundetider etter at kvalifiseringen er låst.',
+      'Kan bare endre en ventende tie-break-rundetid. Registrerte rundetider er låst.',
     finalStandings: 'Sluttresultat',
     provisional: 'Foreløpig resultat',
     changed: 'Turneringen er oppdatert',

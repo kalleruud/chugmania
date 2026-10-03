@@ -12,6 +12,7 @@ export type TournamentConfig = {
   stageTracks: Record<string, string[]>
 }
 export type Participant = {
+  latestDuration?: number | null
   user: string
   duration: number | null
   sourceEntry: string | null
@@ -53,10 +54,16 @@ export type Standing = {
   losses: number
   qualifies: boolean
 }
+export type TieBreak = {
+  groupId: string | null
+  rank: number
+  users: string[]
+}
 export type TournamentDetails = {
   id: string
   config: TournamentConfig
   frozen: boolean
+  tieBreaks: TieBreak[]
   cancelled: boolean
   notReadyReason: string | null
   qualification: (Participant & {

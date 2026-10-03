@@ -2,6 +2,7 @@ import loc from '@common/locale/locales'
 import type { Match } from '@common/models/match'
 import type {
   ClientToServerEvents,
+  EventRes,
   ServerToClientEvents,
 } from '@common/models/socket.io'
 import type { EditTimeEntryRequest } from '@common/models/timeEntry'
@@ -250,24 +251,11 @@ test(
         admin.on('all_time_entries', onTimeEntries)
         const preview = await admin.emitWithAck('preview_tournament', config)
         assert.ok(preview.success, JSON.stringify(preview))
-        assert.equal(preview.details.qualificationEntries.length, 8)
-        const previewDrafts = preview.details.qualificationEntries.filter(
-          entry => entry.draft
-        )
-        assert.equal(previewDrafts.length, 4)
+        assert.equal(preview.details.qualificationEntries.length, 0)
         assert.ok(
-          previewDrafts.every(
-            entry =>
-              entry.id.startsWith('preview:') &&
-              entry.duration === null &&
-              entry.session === session &&
-              entry.track === track
+          preview.details.qualification.every(
+            p => p.duration === null && p.sourceEntry === null
           )
-        )
-        assert.ok(
-          preview.details.qualification
-            .filter(player => player.duration === null)
-            .every(player => player.sourceEntry === null)
         )
         const repeatedPreview = await admin.emitWithAck(
           'preview_tournament',
@@ -283,7 +271,7 @@ test(
           qualificationTrack: secondTrack,
         })
         assert.ok(changedPreview.success)
-        assert.equal(changedPreview.details.qualificationEntries.length, 8)
+        assert.equal(changedPreview.details.qualificationEntries.length, 0)
         assert.ok(
           changedPreview.details.qualificationEntries.every(
             entry => entry.draft && entry.track === secondTrack
@@ -303,72 +291,14 @@ test(
         ])
         assert.equal(created.filter(r => r.success).length, 1)
         assert.deepEqual(parity(await details()), parity(preview.details))
-        assert.equal((await details()).qualificationEntries.length, 8)
-        const drafts = db
-          .select()
-          .from(schema.timeEntries)
-          .all()
-          .filter(entry => entry.draft && !entry.deletedAt)
-        assert.equal(drafts.length, 4)
-        assert.ok(drafts.some(entry => entry.user === people[4].id))
-        assert.ok(
-          db
-            .select()
-            .from(schema.timeEntries)
-            .all()
-            .find(entry => entry.id === oldDraft)?.deletedAt
-        )
-        assert.ok(drafts.every(entry => !entry.id.startsWith('preview:')))
-        assert.ok(
-          (await details()).qualification
-            .filter(player => player.duration === null)
-            .every(player => player.sourceEntry)
-        )
-
-        const completedDraft = await admin.emitWithAck('edit_time_entry', {
-          type: 'EditTimeEntryRequest',
-          id: drafts[0].id,
-          duration: 1500,
-        })
-        assert.ok(completedDraft.success)
+        assert.equal((await details()).qualificationEntries.length, 0)
         assert.equal(
           db
             .select()
             .from(schema.timeEntries)
             .all()
-            .find(entry => entry.id === drafts[0].id)?.draft,
-          false
-        )
-        const cancelledDraft = await admin.emitWithAck('edit_time_entry', {
-          type: 'EditTimeEntryRequest',
-          id: drafts[1].id,
-          deletedAt: new Date(),
-        })
-        assert.ok(cancelledDraft.success)
-        assert.equal(
-          (await details()).qualification.find(
-            player => player.user === drafts[1].user
-          )?.sourceEntry,
-          null
-        )
-        const previewAfterCancel = await admin.emitWithAck(
-          'preview_tournament',
-          config
-        )
-        assert.ok(previewAfterCancel.success)
-        assert.ok(
-          previewAfterCancel.details.qualificationEntries.every(
-            entry => entry.user !== drafts[1].user
-          )
-        )
-        assert.equal(
-          db
-            .select()
-            .from(schema.timeEntries)
-            .all()
-            .filter(entry => entry.user === drafts[1].user && entry.draft)
-            .length,
-          1
+            .filter(entry => entry.draft && !entry.deletedAt).length,
+          0
         )
         assert.ok(
           changes.some(change => change.details?.config.session === session)
@@ -385,7 +315,7 @@ test(
       }
     )
     await t.test(
-      'qualification regeneration preserves retained records and tracks',
+      'unrequested qualification laps cannot change seeding or fixtures',
       async () => {
         const before = await details()
         const retained = before.matches.filter(m => m.stage === 'group')
@@ -396,7 +326,7 @@ test(
           track,
           duration: 999,
         })
-        assert.ok(posted.success)
+        assert.equal(posted.success, false)
         const after = await details()
         for (const match of retained) {
           const same = after.matches.find(
@@ -410,7 +340,7 @@ test(
         }
         assert.equal(
           after.qualification.find(p => p.user === people[0].id)?.duration,
-          999
+          null
         )
       }
     )
@@ -424,7 +354,9 @@ test(
         assert.ok(frozen.frozen)
         assert.deepEqual(frozen.qualification, before.qualification)
         const frozenEntries = db.select().from(schema.timeEntries).all()
-        const lap = frozen.qualificationEntries[0]
+        const lap = frozenEntries.find(
+          entry => !entry.deletedAt && entry.track === track
+        )
         assert.ok(lap)
         const edits: Partial<EditTimeEntryRequest>[] = [
           { duration: 1 },
@@ -433,11 +365,14 @@ test(
           { track: secondTrack },
         ]
         for (const edit of edits) {
-          const response = await admin.emitWithAck('edit_time_entry', {
-            ...edit,
-            type: 'EditTimeEntryRequest',
-            id: lap.id,
-          })
+          const response: EventRes<'edit_time_entry'> = await admin.emitWithAck(
+            'edit_time_entry',
+            {
+              ...edit,
+              type: 'EditTimeEntryRequest',
+              id: lap.id,
+            }
+          )
           assert.equal(response.success, false)
           assert.equal(response.message, loc.no.tournament.qualificationLocked)
         }
@@ -517,7 +452,70 @@ test(
           m => m.stage === 'group'
         ))
           await result(match, 'cancelled', match.user1)
-        const afterGroups = await details()
+        let afterGroups = await details()
+        assert.ok(afterGroups.tieBreaks.length > 0)
+        assert.ok(afterGroups.qualificationEntries.some(entry => entry.draft))
+        const cancelled = afterGroups.qualificationEntries.find(
+          entry => entry.draft
+        )
+        assert.ok(cancelled)
+        const cancelDraft = await admin.emitWithAck('edit_time_entry', {
+          type: 'EditTimeEntryRequest',
+          id: cancelled.id,
+          deletedAt: new Date(),
+        })
+        assert.ok(cancelDraft.success)
+        assert.ok(
+          !(await details()).qualificationEntries.some(
+            entry => entry.id === cancelled.id
+          )
+        )
+        const replacement = await admin.emitWithAck('post_time_entry', {
+          type: 'CreateTimeEntryRequest',
+          user: cancelled.user,
+          session,
+          track,
+          draft: true,
+        })
+        assert.ok(replacement.success, JSON.stringify(replacement))
+        afterGroups = await details()
+        const attempts = afterGroups.qualificationEntries.filter(
+          entry => entry.draft
+        )
+        for (const entry of attempts) {
+          const equal = await admin.emitWithAck('edit_time_entry', {
+            type: 'EditTimeEntryRequest',
+            id: entry.id,
+            duration: 3000,
+          })
+          assert.ok(equal.success, JSON.stringify(equal))
+        }
+        afterGroups = await details()
+        assert.ok(afterGroups.tieBreaks.length > 0)
+        assert.ok(
+          afterGroups.qualificationEntries.some(
+            entry => entry.draft && !attempts.some(old => old.id === entry.id)
+          )
+        )
+        const locked = await admin.emitWithAck('edit_time_entry', {
+          type: 'EditTimeEntryRequest',
+          id: attempts[0].id,
+          duration: 1,
+        })
+        assert.equal(locked.success, false)
+        for (const entry of afterGroups.qualificationEntries.filter(
+          entry => entry.draft
+        )) {
+          const completed = await admin.emitWithAck('edit_time_entry', {
+            type: 'EditTimeEntryRequest',
+            id: entry.id,
+            duration:
+              2000 + people.findIndex(person => person.id === entry.user),
+          })
+          assert.ok(completed.success, JSON.stringify(completed))
+        }
+        afterGroups = await details()
+        assert.equal(afterGroups.tieBreaks.length, 0)
         assert.ok(
           afterGroups.matches
             .filter(m => m.stage === 'semi')
