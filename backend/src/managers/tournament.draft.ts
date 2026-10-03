@@ -10,7 +10,7 @@ import type {
 import { upperStage, validConfiguration } from '@common/utils/tournament'
 import { createHash } from 'node:crypto'
 import type { MatchStage } from '../../database/schema'
-import { qualificationOrder } from './tournament.rules'
+import { seedingOrder } from './tournament.rules'
 
 function groupNames(session: string, count: number): string[] {
   const names = loc.no.tournament.groupNames
@@ -77,7 +77,7 @@ export function generateTournament(
     }))
   const participants = assignedGroups
     ? inputs.toSorted((a, b) => a.admission - b.admission)
-    : inputs.toSorted(qualificationOrder).map((player, index) => ({
+    : inputs.toSorted(seedingOrder).map((player, index) => ({
         ...player,
         admission: index,
         groupId: groups[snakeGroup(index, groups.length)].id,

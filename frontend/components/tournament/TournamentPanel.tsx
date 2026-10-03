@@ -4,11 +4,9 @@ import loc from '@common/locale/locales'
 import type { Match } from '@common/models/match'
 import type { TournamentDetails } from '@common/models/tournament'
 import { firstPendingMatch, stageName } from '@common/utils/tournament'
-import { ChevronDown, Lock } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 import MatchList from '../match/MatchList'
 import SegmentedProgress from '../SegmentedProgress'
-import { TimeEntryList } from '../timeentries/TimeEntryList'
-import { TrackRow } from '../track/TrackRow'
 import UserRow from '../user/UserRow'
 import DeleteTournamentDialog from './DeleteTournamentDialog'
 import TournamentGroupPanel from './TournamentGroupPanel'
@@ -20,14 +18,10 @@ export default function TournamentPanel({
   details: TournamentDetails
   isPreview?: boolean
 }) {
-  const { users, tracks } = useData()
+  const { users } = useData()
   const { isLoggedIn, loggedInUser } = useAuth()
   const canEdit = isLoggedIn && loggedInUser.role !== 'user'
   const workload = details.workloadSummary
-  const pendingLaps = details.qualificationEntries.some(entry => entry.draft)
-  const qualiTrack = tracks?.find(
-    t => t.id === details.config.qualificationTrack
-  )
   const matchesByStage = new Map<Match['stage'], Match[]>()
   const featuredMatch = firstPendingMatch(details.matches)
   const allMatchesPlayed =
@@ -50,7 +44,7 @@ export default function TournamentPanel({
             )}
           </div>
           <p className='text-sm text-muted-foreground'>
-            {details.qualification.length}{' '}
+            {details.participants.length}{' '}
             {loc.no.session.participants.toLowerCase()} ·{' '}
             {details.groups.length} {loc.no.tournament.groups.toLowerCase()}
           </p>
@@ -102,47 +96,6 @@ export default function TournamentPanel({
           </p>
         </div>
       </section>
-
-      <details
-        open={pendingLaps}
-        className='group/quali rounded-sm border bg-background p-2'>
-        <summary className='flex cursor-pointer list-none items-center justify-between gap-2 p-4 [&::-webkit-details-marker]:hidden'>
-          <div className='flex min-w-0 flex-col gap-1'>
-            <h3 className='flex items-center gap-2'>
-              {loc.no.tournament.qualification}
-              {details.qualificationEntries.length > 0 && !pendingLaps && (
-                <Lock aria-label={loc.no.tournament.frozen} size={16} />
-              )}
-            </h3>
-            <p className='text-sm text-muted-foreground'>
-              {loc.no.tournament.qualificationDescription}
-            </p>
-          </div>
-          <ChevronDown
-            aria-hidden
-            className='size-4 shrink-0 transition-transform group-open/quali:rotate-180'
-          />
-        </summary>
-
-        <div className='flex flex-col gap-2'>
-          {qualiTrack && <TrackRow item={qualiTrack} />}
-
-          {details.qualificationEntries.length > 0 ||
-          details.tieBreaks.length > 0 ? (
-            <TimeEntryList
-              isPreview={isPreview}
-              entries={details.qualificationEntries}
-              track={details.config.qualificationTrack}
-              session={details.config.session}
-              filter='all'
-            />
-          ) : (
-            <p className='p-2 text-sm text-muted-foreground'>
-              {loc.no.tournament.noTieBreakNeeded}
-            </p>
-          )}
-        </div>
-      </details>
 
       <details
         open={!allMatchesPlayed}

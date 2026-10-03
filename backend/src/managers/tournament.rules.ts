@@ -4,25 +4,44 @@ import type {
   Participant,
   Slot,
   Standing,
-  TieBreak,
   TournamentState,
 } from '@common/models/tournament'
 
-export function sportingOrder(
-  a: Pick<Participant, 'duration'>,
-  b: Pick<Participant, 'duration'>
-): number {
-  if (a.duration !== null && b.duration === null) return -1
-  if (a.duration === null && b.duration !== null) return 1
-  return (a.duration ?? 0) - (b.duration ?? 0)
-}
-export function qualificationOrder(a: Participant, b: Participant): number {
+export function seedingOrder(a: Participant, b: Participant): number {
   return b.rating - a.rating || a.user.localeCompare(b.user)
 }
-export function lapDuration(player: Participant): number | null {
-  return player.latestDuration === undefined
-    ? player.duration
-    : player.latestDuration
+function headToHead(matches: Match[], a: string, b: string): string | null {
+  const match = matches.findLast(
+    match =>
+      decided(match) &&
+      ((match.user1 === a && match.user2 === b) ||
+        (match.user1 === b && match.user2 === a))
+  )
+  return match?.winner ?? null
+}
+function rankTiedPlayers(
+  users: string[],
+  matches: Match[]
+): { user: string; rank: number; resolved: boolean }[] {
+  const remaining = [...users]
+  const rows: { user: string; rank: number; resolved: boolean }[] = []
+  while (remaining.length) {
+    const winner = remaining.find(user =>
+      remaining.every(
+        other => user === other || headToHead(matches, user, other) === user
+      )
+    )
+    if (!winner) {
+      const rank = rows.length + 1
+      return [
+        ...rows,
+        ...remaining.map(user => ({ user, rank, resolved: false })),
+      ]
+    }
+    rows.push({ user: winner, rank: rows.length + 1, resolved: true })
+    remaining.splice(remaining.indexOf(winner), 1)
+  }
+  return rows
 }
 export function decided(match: Match): boolean {
   return (
@@ -39,17 +58,16 @@ export function groupStandings(
 ): Standing[] {
   const players = state.participants
     .filter(p => p.groupId === groupId)
-    .toSorted(qualificationOrder)
-  const rank = new Map(players.map((p, index) => [p.user, index]))
-  const durations = new Map(players.map(p => [p.user, p.duration]))
+    .toSorted(seedingOrder)
   const results = state.fixtures.filter(
     f =>
+      f.bracket === 'group' &&
       f.groupId === groupId &&
       decided(f.match) &&
       players.some(p => p.user === f.match.user1) &&
       players.some(p => p.user === f.match.user2)
   )
-  return players
+  const rows = players
     .map(p => ({
       user: p.user,
       rank: 0,
@@ -60,21 +78,30 @@ export function groupStandings(
           f.match.winner !== p.user
       ).length,
       qualifies: false,
+      resolved: false,
     }))
-    .sort(
-      (a, b) =>
-        winRatio(b) - winRatio(a) ||
-        sportingOrder(
-          { duration: durations.get(a.user) ?? null },
-          { duration: durations.get(b.user) ?? null }
-        ) ||
-        (rank.get(a.user) ?? 0) - (rank.get(b.user) ?? 0)
-    )
-    .map((row, index) => ({
-      ...row,
-      rank: index + 1,
-      qualifies: index < state.config.advancementCount,
-    }))
+    .sort((a, b) => winRatio(b) - winRatio(a))
+  const standings: Standing[] = []
+  for (let start = 0; start < rows.length; ) {
+    const tied = rows.filter(row => winRatio(row) === winRatio(rows[start]))
+    for (const place of rankTiedPlayers(
+      tied.map(row => row.user),
+      results.map(f => f.match)
+    )) {
+      const row = tied.find(row => row.user === place.user)
+      if (row)
+        standings.push({
+          ...row,
+          ...place,
+          rank: start + place.rank,
+          qualifies:
+            place.resolved &&
+            start + place.rank <= state.config.advancementCount,
+        })
+    }
+    start += tied.length
+  }
+  return standings
 }
 export function groupComplete(state: TournamentState): boolean {
   return state.fixtures
@@ -84,119 +111,19 @@ export function groupComplete(state: TournamentState): boolean {
 function winRatio(row: Pick<Standing, 'wins' | 'losses'>): number {
   return row.wins / (row.wins + row.losses || 1)
 }
-function unresolvedLaps(
-  players: Participant[],
-  groupId: string | null,
-  rank: number
-): TieBreak[] {
-  if (players.length < 2) return []
-  if (players.some(p => p.duration === null))
-    return [{ groupId, rank, users: players.map(p => p.user) }]
-  const ordered = players.toSorted(sportingOrder)
-  const times = new Map<number | null, Participant[]>()
-  for (const player of ordered) {
-    const sameTime = times.get(player.duration) ?? []
-    sameTime.push(player)
-    times.set(player.duration, sameTime)
-  }
-  return [...times.values()]
-    .filter(sameTime => sameTime.length > 1)
-    .map(sameTime => ({
-      groupId,
-      rank: rank + ordered.indexOf(sameTime[0]),
-      users: sameTime.map(p => p.user),
-    }))
-}
-export function groupTieBreaks(state: TournamentState): TieBreak[] {
-  if (!groupComplete(state)) return []
-  return state.groups.flatMap(group => {
-    const rows = groupStandings(state, group.id)
-    const records = new Map<number, Standing[]>()
-    for (const row of rows) {
-      const record = records.get(winRatio(row)) ?? []
-      record.push(row)
-      records.set(winRatio(row), record)
-    }
-    return [...records.values()].flatMap(record =>
-      unresolvedLaps(
-        record.flatMap(row =>
-          state.participants.filter(p => p.user === row.user)
-        ),
-        group.id,
-        record[0].rank
-      )
-    )
-  })
-}
-export function tieBreaks(state: TournamentState): TieBreak[] {
-  const groupTies = groupTieBreaks(state)
-  const placements = new Map<string, Participant[]>()
-  function add(key: string, player: Participant) {
-    const players = placements.get(key) ?? []
-    players.push(player)
-    placements.set(key, players)
-  }
-  if (groupComplete(state)) {
-    for (const group of state.groups) {
-      for (const row of groupStandings(state, group.id)) {
-        const mightAdvance = groupTies.some(
-          tie =>
-            tie.rank <= state.config.advancementCount &&
-            tie.users.includes(row.user)
-        )
-        if (row.qualifies || mightAdvance) continue
-        const player = state.participants.find(p => p.user === row.user)
-        if (player) add(`group:${winRatio(row)}`, player)
-      }
-    }
-  }
-  for (const player of state.participants) {
-    const loss = state.fixtures.findLast(
-      fixture =>
-        (fixture.bracket === 'lower' ||
-          (state.config.eliminationType === 'single' &&
-            fixture.bracket === 'upper')) &&
-        decided(fixture.match) &&
-        fixture.match.winner !== player.user &&
-        (fixture.match.user1 === player.user ||
-          fixture.match.user2 === player.user)
-    )
-    if (!loss) continue
-    const settled = state.fixtures
-      .filter(f => f.bracket === loss.bracket && f.round === loss.round)
-      .every(f => decided(f.match))
-    if (settled) add(`${loss.bracket}:${loss.round}`, player)
-  }
-  return [
-    ...groupTies,
-    ...[...placements.values()].flatMap(players =>
-      unresolvedLaps(
-        players.map(p => ({ ...p, duration: lapDuration(p) })),
-        null,
-        0
-      )
-    ),
-  ]
-}
 export function resolveSlots(state: TournamentState): TournamentState {
   const result = structuredClone(state)
   const standings = new Map(
     result.groups.map(group => [group.id, groupStandings(result, group.id)])
   )
   const groupsDone = groupComplete(result)
-  const pending = groupTieBreaks(result)
   const resolve = (slot: Slot): string | null => {
     if (slot.kind === 'player') return slot.user
     if (slot.kind === 'group_rank')
-      return groupsDone &&
-        !pending.some(
-          tie =>
-            tie.groupId === slot.groupId &&
-            slot.rank >= tie.rank &&
-            slot.rank < tie.rank + tie.users.length
-        )
-        ? (standings.get(slot.groupId)?.find(row => row.rank === slot.rank)
-            ?.user ?? null)
+      return groupsDone
+        ? (standings
+            .get(slot.groupId)
+            ?.find(row => row.rank === slot.rank && row.resolved)?.user ?? null)
         : null
     const match = result.fixtures.find(f => f.id === slot.matchId)?.match
     if (!match || !decided(match)) return null
@@ -298,22 +225,38 @@ export function overallStandings(state: TournamentState): {
   }
   const compare = (a: Participant, b: Participant) =>
     score(b) - score(a) ||
-    (score(a) === 0 ? percentage(b.user) - percentage(a.user) : 0) ||
-    sportingOrder({ duration: lapDuration(a) }, { duration: lapDuration(b) })
+    (score(a) === 0 ? percentage(b.user) - percentage(a.user) : 0)
   const ordered = state.participants.toSorted(
     (a, b) => compare(a, b) || a.user.localeCompare(b.user)
   )
-  let place = 0
+  const rows: { user: string; rank: number }[] = []
+  for (let start = 0; start < ordered.length; ) {
+    const tied = ordered.filter(player => compare(ordered[start], player) === 0)
+    const roundMatches = state.fixtures
+      .filter(f => {
+        if (score(ordered[start]) === 0) return f.bracket === 'group'
+        return (
+          (f.bracket === 'lower' ||
+            (state.config.eliminationType === 'single' &&
+              f.bracket === 'upper')) &&
+          100 + f.round === score(ordered[start])
+        )
+      })
+      .map(f => f.match)
+    rows.push(
+      ...rankTiedPlayers(
+        tied.map(p => p.user),
+        roundMatches
+      ).map(row => ({ user: row.user, rank: start + row.rank }))
+    )
+    start += tied.length
+  }
   return {
     completed:
       completed &&
       state.fixtures
         .filter(f => f.reset !== 'conditional' && f.reset !== 'unneeded')
-        .every(f => decided(f.match)) &&
-      tieBreaks(state).length === 0,
-    rows: ordered.map((p, i) => {
-      if (i === 0 || compare(ordered[i - 1], p) !== 0) place = i + 1
-      return { user: p.user, rank: place }
-    }),
+        .every(f => decided(f.match)),
+    rows,
   }
 }

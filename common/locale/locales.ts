@@ -242,16 +242,8 @@ const no = {
     bracketMatches: 'Turneringsmatcher',
     create: 'Opprett turnering',
     preview: 'Forhåndsvisning',
-    qualification: 'Tie breaker',
-    tieBreakerTrack: 'Tie breaker-bane',
-    qualificationDescription:
-      'Ved likt resultat etter gruppespill eller utslagsrunde måles rundetider. Hver rundetid låses når den er registrert.',
-    noTieBreakNeeded: 'Ingen tie-break-rundetider er nødvendige nå.',
-    tieBreaker: (names: string[]) => `TB ${names.join(' v ')}`,
     pending: 'Venter',
     frozen: 'Gruppefordeling låst',
-    qualificationLocked:
-      'Kan bare endre en ventende tie-break-rundetid. Registrerte rundetider er låst.',
     finalStandings: 'Sluttresultat',
     provisional: 'Foreløpig resultat',
     changed: 'Turneringen er oppdatert',
@@ -259,7 +251,7 @@ const no = {
     deleted: 'Turneringen er slettet',
     deleteTitle: 'Slett turnering',
     deleteDescription:
-      'Vil du beholde eller slette turneringens matcher og deltakernes tie breaker-rundetider? Andre matcher og rundetider beholdes.',
+      'Vil du beholde eller slette turneringens matcher? Andre matcher og rundetider beholdes.',
     keepResults: 'Slett turnering, behold resultater',
     deleteResults: 'Slett turnering og resultater',
     awarded: 'Tildelt seier',

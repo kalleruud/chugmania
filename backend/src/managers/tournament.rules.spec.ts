@@ -9,7 +9,6 @@ import {
   groupStandings,
   protectResults,
   resolveSlots,
-  tieBreaks,
 } from './tournament.rules'
 
 export function input(count = 8): {
@@ -19,7 +18,6 @@ export function input(count = 8): {
   return {
     config: {
       session: 'session',
-      qualificationTrack: 'track',
       groupsCount: 2,
       advancementCount: 2,
       eliminationType: 'single',
@@ -31,11 +29,9 @@ export function input(count = 8): {
     },
     players: Array.from({ length: count }, (_, index) => ({
       user: `player-${index}`,
-      duration: 1000 + index,
       rating: 1000 - index,
       admission: 0,
       groupId: '',
-      sourceEntry: index < 4 ? `entry-${index}` : null,
     })),
   }
 }
@@ -170,11 +166,8 @@ test('short match and group labels identify unresolved slots', () => {
     'AA'
   )
 })
-test('qualification fallback orders highest ratings first and empty groups have standings', () => {
+test('seeding orders highest ratings first and empty groups have standings', () => {
   const { config, players } = input()
-  players.forEach(p => {
-    p.duration = null
-  })
   players[7].rating = 2000
   const state = generateTournament(config, players)
   assert.equal(state.participants[0].user, 'player-7')
@@ -253,16 +246,45 @@ for (const advancers of [4, 8]) {
   }
 }
 
-test('settled group ties block slots, use short labels and wait for every requested lap', () => {
+test('equal group records use the direct match winner rather than seeding ratings', () => {
+  const { config, players } = input(4)
+  config.groupsCount = 1
+  players[1].rating = 2000
+  let state = generateTournament(config, players)
+  const winners = new Map([
+    ['player-0:player-1', 'player-0'],
+    ['player-0:player-2', 'player-0'],
+    ['player-0:player-3', 'player-3'],
+    ['player-1:player-2', 'player-1'],
+    ['player-1:player-3', 'player-1'],
+    ['player-2:player-3', 'player-2'],
+  ])
+  for (const fixture of state.fixtures.filter(f => f.bracket === 'group')) {
+    fixture.match.status = 'completed'
+    fixture.match.winner =
+      winners.get(
+        [fixture.match.user1, fixture.match.user2].sort().join(':')
+      ) ?? null
+  }
+  state = resolveSlots(state)
+  const rows = groupStandings(state, state.groups[0].id)
+  assert.deepEqual(
+    rows.map(row => [row.user, row.rank, row.resolved]),
+    [
+      ['player-0', 1, true],
+      ['player-1', 2, true],
+      ['player-2', 3, true],
+      ['player-3', 4, true],
+    ]
+  )
+  assert.equal(state.fixtures.at(-1)?.match.user1, 'player-0')
+  assert.equal(state.fixtures.at(-1)?.match.user2, 'player-1')
+})
+
+test('circular head-to-head results leave tied group slots empty', () => {
   const { config, players } = input(6)
   config.advancementCount = 1
-  players.forEach(p => {
-    p.duration = null
-    p.sourceEntry = null
-  })
   let state = generateTournament(config, players)
-  assert.equal(tieBreaks(state).length, 0)
-  assert.equal(tournamentDetails(state).qualificationEntries.length, 0)
   for (const group of state.groups) {
     const members = state.participants
       .filter(p => p.groupId === group.id)
@@ -278,67 +300,36 @@ test('settled group ties block slots, use short labels and wait for every reques
     }
   }
   state = resolveSlots(state)
-  assert.equal(tieBreaks(state).length, 2)
-  const names = new Map(players.map((p, i) => [p.user, `P${i}`]))
-  const final = tournamentDetails(state, [], names).matches.at(-1)
-  assert.ok(final)
-  assert.equal(final.user1, null)
-  assert.match(final.tournament?.slot1 ?? '', /^TB P\d v P\d v P\d$/)
-  state.participants[0].duration = 1000
-  assert.equal(resolveSlots(state).fixtures.at(-1)?.match.user1, null)
-  state.participants.forEach((p, index) => {
-    p.duration = 1000 + index
-  })
-  state = resolveSlots(state)
-  assert.equal(tieBreaks(state).length, 0)
-  assert.ok(state.fixtures.at(-1)?.match.user1)
-  assert.ok(state.fixtures.at(-1)?.match.user2)
+  assert.ok(
+    state.groups.every(group =>
+      groupStandings(state, group.id).every(
+        row => !row.resolved && !row.qualifies
+      )
+    )
+  )
+  assert.equal(state.fixtures.at(-1)?.match.user1, null)
+  assert.equal(state.fixtures.at(-1)?.match.user2, null)
+  assert.equal(tournamentDetails(state).completed, false)
 })
 
-test('eliminated players need laps after their round settles; repeat laps preserve group seeding', () => {
-  const { config, players } = input()
+test('a match in another round cannot resolve an otherwise tied group slot', () => {
+  const { config, players } = input(4)
+  config.groupsCount = 2
+  config.advancementCount = 1
   let state = generateTournament(config, players)
+  const group = state.groups[0]
+  const removed = state.fixtures.find(f => f.groupId === group.id)
+  assert.ok(removed)
+  removed.bracket = 'upper'
+  removed.groupId = null
+  removed.round = 99
+  removed.match.status = 'completed'
+  removed.match.winner = removed.match.user1
   for (const fixture of state.fixtures.filter(f => f.bracket === 'group')) {
     fixture.match.status = 'completed'
     fixture.match.winner = fixture.match.user1
   }
+  assert.ok(groupStandings(state, group.id).every(row => !row.resolved))
   state = resolveSlots(state)
-  const semis = state.fixtures.filter(f => f.match.stage === 'semi')
-  assert.equal(semis.length, 2)
-  semis[0].match.status = 'completed'
-  semis[0].match.winner = semis[0].match.user1
-  const loser1 = state.participants.find(p => p.user === semis[0].match.user2)
-  const loser2 = state.participants.find(p => p.user === semis[1].match.user2)
-  assert.ok(loser1 && loser2)
-  loser1.latestDuration = null
-  loser2.latestDuration = null
-  assert.ok(!tieBreaks(state).some(tie => tie.users.includes(loser1.user)))
-  semis[1].match.status = 'completed'
-  semis[1].match.winner = semis[1].match.user1
-  assert.ok(
-    tieBreaks(state).some(
-      tie =>
-        tie.groupId === null &&
-        tie.users.includes(loser1.user) &&
-        tie.users.includes(loser2.user)
-    )
-  )
-  loser1.latestDuration = 3000
-  loser2.latestDuration = 3000
-  assert.ok(tieBreaks(state).some(tie => tie.users.includes(loser1.user)))
-  loser1.latestDuration = 5000
-  loser2.latestDuration = 4000
-  const next = resolveSlots(state)
-  assert.deepEqual(
-    next.fixtures
-      .filter(f => f.match.stage === 'semi')
-      .map(f => [f.match.user1, f.match.user2]),
-    semis.map(f => [f.match.user1, f.match.user2])
-  )
-  assert.equal(tieBreaks(next).length, 0)
-  const final = next.fixtures.at(-1)
-  assert.ok(final)
-  final.match.status = 'completed'
-  final.match.winner = final.match.user1
-  assert.equal(tournamentDetails(next).completed, true)
+  assert.equal(state.fixtures.at(-1)?.match.user1, null)
 })

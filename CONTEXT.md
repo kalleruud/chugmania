@@ -3,8 +3,7 @@
 - **Tournament**: competition attached to one session; ordinary matches carry its results.
 - **Participant**: confirmed session player admitted to the tournament. Membership persists after play starts.
 - **Seeding**: rating order supplies initial group distribution; creation locks group membership and the roster structure.
-- **Tie-break lap**: requested only after group play or an elimination round settles. Equal win/loss ratios require lap times, including eliminated players. A completed time can resolve later ties; equal times require repeat attempts.
-- **Group lap snapshot**: the participant duration preserves settled group ordering; the source entry supplies the latest attempt for later placement ties. Later attempts cannot change settled group seeds.
+- **Head-to-head tie**: equal records are ranked by their decided direct match in the current round. A missing result or circular multi-player tie remains unresolved; dependent group-rank slots return null and block progression. Ratings seed groups but never break result ties.
 - **Tournament draft**: the generated structure before persistence. Preview and creation call the same generator. Saved tournaments are never regenerated after signup or rating changes.
 - **Slot dependency**: a player, group rank, match winner, or match loser supplying one side of a fixture.
 - **Tournament details**: the canonical read model used by preview, fetch, and realtime updates.

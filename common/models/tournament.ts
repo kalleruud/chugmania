@@ -1,21 +1,16 @@
 import { isRecord } from '../utils/utils'
 import type { Match, MatchStatus } from './match'
-import type { TimeEntry } from './timeEntry'
 
 export type EliminationType = 'single' | 'double'
 export type TournamentConfig = {
   session: string
-  qualificationTrack: string
   groupsCount: number
   advancementCount: number
   eliminationType: EliminationType
   stageTracks: Record<string, string[]>
 }
 export type Participant = {
-  latestDuration?: number | null
   user: string
-  duration: number | null
-  sourceEntry: string | null
   rating: number
   admission: number
   groupId: string
@@ -53,25 +48,15 @@ export type Standing = {
   wins: number
   losses: number
   qualifies: boolean
-}
-export type TieBreak = {
-  groupId: string | null
-  rank: number
-  users: string[]
+  resolved: boolean
 }
 export type TournamentDetails = {
   id: string
   config: TournamentConfig
   frozen: boolean
-  tieBreaks: TieBreak[]
   cancelled: boolean
   notReadyReason: string | null
-  qualification: (Participant & {
-    rank: number
-    gapLeader: number | null
-    gapPrevious: number | null
-  })[]
-  qualificationEntries: TimeEntry[]
+  participants: Participant[]
   groups: (TournamentGroup & { code: string; standings: Standing[] })[]
   matches: Match[]
   standings: { user: string; rank: number }[]
@@ -84,7 +69,6 @@ export type TournamentDetails = {
   }
   workloadSummary: {
     tracks: number
-    qualificationLaps: number
     minMatches: number
     maxMatches: number
   }
@@ -109,7 +93,6 @@ export function isTournamentConfig(value: unknown): value is TournamentConfig {
   return (
     isRecord(value) &&
     typeof value.session === 'string' &&
-    typeof value.qualificationTrack === 'string' &&
     Number.isInteger(value.groupsCount) &&
     Number.isInteger(value.advancementCount) &&
     (value.eliminationType === 'single' ||

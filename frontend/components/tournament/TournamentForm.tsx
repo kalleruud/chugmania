@@ -14,7 +14,6 @@ import {
 import { AlertCircleIcon } from 'lucide-react'
 import { useEffect, useState, type SubmitEvent } from 'react'
 import { toast } from 'sonner'
-import Combobox from '../combobox'
 import ComboboxMulti from '../ComboboxMulti'
 import { TrackRow } from '../track/TrackRow'
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert'
@@ -31,10 +30,9 @@ export default function TournamentForm({
   onCreated: () => void
 }) {
   const { socket, isConnected } = useConnection()
-  const { tracks, sessions, timeEntries, rankings } = useData()
+  const { tracks, sessions, rankings } = useData()
   const [inputConfig, setConfig] = useState<TournamentConfig>({
     session,
-    qualificationTrack: '',
     groupsCount: 1,
     advancementCount: 2,
     eliminationType: 'single',
@@ -84,7 +82,6 @@ export default function TournamentForm({
     ...config,
     signups: sessionData?.signups,
     status: sessionData?.status,
-    timeEntries,
     rankings,
     isConnected,
   })
@@ -113,7 +110,8 @@ export default function TournamentForm({
         if (!active) return
         const message = error instanceof Error ? error.message : String(error)
         setError(message)
-        if (config.qualificationTrack) toast.error(message)
+        if (Object.values(config.stageTracks).some(tracks => tracks.length))
+          toast.error(message)
       } finally {
         if (active) setLoading(false)
       }
@@ -143,15 +141,6 @@ export default function TournamentForm({
       <form
         onSubmit={submit}
         className='flex min-w-0 flex-col gap-4 rounded-sm border bg-background p-2'>
-        <Combobox
-          items={items}
-          selected={items.find(t => t.id === config.qualificationTrack)}
-          setSelected={item =>
-            change({ ...config, qualificationTrack: item?.id ?? '' })
-          }
-          placeholder={loc.no.tournament.tieBreakerTrack}
-          CustomRow={TrackRow}
-        />
         <div className='flex gap-2'>
           <label className='w-full'>
             Grupper

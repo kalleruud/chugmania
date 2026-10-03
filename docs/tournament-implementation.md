@@ -2,13 +2,15 @@
 
 ## Architecture
 
-The Tournament Module exposes commands through `tournament.manager.ts`. Its private implementation uses `tournament.draft.ts` for the single pure generator, `tournament.rules.ts` for ranking/progression, and `tournament.details.ts` for the canonical read model. Preview and creation call exactly the same generator; saving only assigns durable IDs and stores its output. Existing match records, rating calculations, editors, rows, qualification rows, lookup controls and toasts are reused.
+The Tournament Module exposes commands through `tournament.manager.ts`. Its private implementation uses `tournament.draft.ts` for the single pure generator, `tournament.rules.ts` for ranking/progression, and `tournament.details.ts` for the canonical read model. Preview and creation call exactly the same generator; saving only assigns durable IDs and stores its output. Existing match records, rating calculations, editors, rows, lookup controls and toasts are reused.
 
 Historical restoration is excluded. CSV remains raw database writes without tournament validation. This document supersedes earlier tournament implementation plans.
 
-Preview and creation use rating-based seeding and create no qualification laps. Creation locks the groups, participant roster, and match schedule; later session signup and rating changes do not regenerate the tournament. After group results settle, tied win/loss ratios request ordinary draft lap times, including ties among nonadvancing players across groups. Elimination-round placement ties request laps once that round settles. Completed attempts can resolve later ties; equal times request new drafts. Group lap snapshots remain stable during later placement attempts.
+Preview and creation use rating-based seeding. Creation locks the groups, participant roster, and match schedule; later session signup and rating changes do not regenerate the tournament.
 
-Affected group-rank slots stay empty with short `TB VER v LEC` labels until their tie resolves. The existing `TimeEntryList` edits and cancels requested drafts. Cancelled drafts are not recreated automatically; the usual add action supplies a replacement. Backend checks allow only currently requested drafts and lock completed attempts. Corrections retire drafts that are no longer needed and protect played dependent matches. Final standings appear only after all active fixtures and ties are settled.
+Equal win/loss ratios use the decided direct match in the current round. Missing direct results and circular multi-player ties remain unresolved; affected group-rank slots return null and stop progression. Ratings and lap times never break result ties. Final placements without a deciding head-to-head result share a rank.
+
+There is no qualification track, lap draft generation, or tie-breaker panel. Existing lap records and applied migrations are preserved; tournaments no longer read or lock them. A lap-based tie-breaker system is deferred to a separate PR.
 
 ## Stages
 
@@ -27,19 +29,15 @@ flowchart TD
   Ready -->|Start group matches| Groups[Group play]
   Ready -->|No group fixtures| Bracket[Bracket play]
   Groups -->|All group results settled| GroupTies{Tied records?}
-  GroupTies -->|Yes| Laps[Request draft tie-break laps]
-  GroupTies -->|No| Bracket
-  Laps -->|Distinct times: resolve affected slots| Bracket
-  Laps -->|Equal times| Laps
-  Bracket -->|Elimination round settled with tied placements| PlacementLaps[Request or reuse placement laps]
-  PlacementLaps -->|Distinct times| Bracket
-  PlacementLaps -->|Equal times| PlacementLaps
-  Bracket -->|Final decided and all ties resolved| Complete[Completed]
+  GroupTies -->|Direct match decides| Bracket
+  GroupTies -->|Missing result or circular tie| Blocked[Dependent player slot stays empty]
+  Blocked -->|Results corrected| GroupTies
+  Bracket -->|Final decided| Complete[Completed]
   Bracket -->|Lower winner wins grand final| Reset[Reset required]
-  Reset -->|All ties resolved| Complete
+  Reset --> Complete
 ```
 
-Cancellation suspends play at its current phase; restoration resumes it. Tournament deletion asks whether to keep or soft-delete its matches and participants' qualification laps. Kept matches become ordinary editable matches. Other session results are preserved. Undo never unfreezes the roster or reopens admission. Pending tie-break laps remain editable after roster freeze.
+Cancellation suspends play at its current phase; restoration resumes it. Tournament deletion asks whether to keep or soft-delete its matches. Lap times are preserved. Kept matches become ordinary editable matches. Other session results are preserved. Undo never unfreezes the roster or reopens admission.
 
 ## Verification
 
@@ -51,7 +49,7 @@ Run `npm test`, `npm run check`, and `npm run build`. Tests use disposable SQLit
 - `common/utils/tournament.ts`: shared configuration options and stage names.
 - `backend/src/managers/tournament.manager.ts`: command validation, transactions, persistence, reconciliation and mutation coordination.
 - `backend/src/managers/tournament.draft.ts`: single generator for preview and creation, reusable scheduling.
-- `backend/src/managers/tournament.rules.ts`: qualification, standings, progression and correction protection.
+- `backend/src/managers/tournament.rules.ts`: seeding, head-to-head standings, progression and correction protection.
 - `backend/src/managers/tournament.details.ts`: shared read model and display metadata.
 - `frontend/components/tournament/TournamentForm.tsx`: configuration, server preview and readiness.
 - `frontend/components/tournament/TournamentPanel.tsx`: shared preview/live presentation through existing rows.
@@ -71,14 +69,14 @@ Run `npm test`, `npm run check`, and `npm run build`. Tests use disposable SQLit
 
 - `.env.example`: optional disposable database path.
 - `backend/database/database.ts`, `drizzle.config.ts`: honor `DATABASE_PATH`.
-- `backend/database/schema.ts`: tournament tables, qualification drafts, slot dependencies, snapshots and uniqueness constraints.
+- `backend/database/schema.ts`: tournament tables, slot dependencies, snapshots and uniqueness constraints.
 - `drizzle/meta/_journal.json`: register generated migration.
 - `backend/src/managers/admin.manager.ts`: all tournament tables in CSV import/export, publish imported state.
 - `backend/src/utils/csv-parser.ts`: parse JSON structures and snapshot timestamps without domain validation.
 - `backend/src/managers/match.manager.ts`: delegate tournament results, coordinate ordinary changes, return enriched matches.
 - `backend/src/managers/rating.manager.ts`: synchronous rating rebuild so freeze snapshots and mutations are atomic.
 - `backend/src/managers/session.manager.ts`: coordinate signup and session lifecycle mutations with tournament state.
-- `backend/src/managers/timeEntry.manager.ts`: coordinate qualification changes and implicit signups.
+- `backend/src/managers/timeEntry.manager.ts`: coordinate ordinary lap changes and implicit signups.
 - `backend/src/managers/user.manager.ts`: coordinate participant deletion.
 - `backend/src/server.ts`: register commands and support direct production route loads in hidden worktree directories.
 - `common/locale/locales.ts`: tournament labels, errors, stages and CSV table names.
@@ -91,11 +89,10 @@ Run `npm test`, `npm run check`, and `npm run build`. Tests use disposable SQLit
 - `frontend/components/match/MatchList.tsx`: managed/read-only lists and preserved scheduling order.
 - `frontend/components/match/MatchRow.tsx`: unresolved labels, conditional resets, awards and result controls.
 - `frontend/components/session/SessionSignupPanel.tsx`: reuse signup summary and native response selector.
-- `frontend/components/timeentries/TimeEntryList.tsx`, `frontend/components/timeentries/TimeEntryRow.tsx`: editable qualification drafts and pending players without fabricated gaps.
 - `frontend/components/track/TrackLeaderboard.tsx`: separate tournament matches on session view and omit unneeded resets.
 - `frontend/contexts/TimeEntryInputContext.tsx`: current match data and tournament editing restrictions.
 - `package.json`: Node test-runner command using the existing TypeScript loader.
 
 ## Completed verification
 
-All 20 tests pass, including real server/socket tests and disposable database migrations. `npm run check` and `npm run build` pass. Browser verification covered login, direct creation-route loading, configuration and preview, creation, the tournament tab, recording a result, qualification freezing, and persistence after reload. On-demand tie-break coverage includes settled group ties, blocked slots and labels, nonadvancing and eliminated players, repeat attempts, cancellations, and backend lap locking. Historical data restoration remains a manual follow-up outside this implementation.
+All 20 tests pass, including real server/socket tests and disposable database migrations. `npm run check` and `npm run build` pass. Head-to-head coverage includes equal records, circular ties, matches from other rounds, null slots, preview isolation, fixed groups, and ordinary lap-time independence. Historical data restoration remains a manual follow-up outside this implementation.
