@@ -107,7 +107,10 @@ export default function TournamentPanel({
       </section>
 
       <details
-        open={!allMatchesPlayed}
+        open={
+          !details.frozen &&
+          details.qualificationEntries.some(entry => entry.draft)
+        }
         className='group/quali rounded-sm border bg-background p-2'>
         <summary className='flex cursor-pointer list-none items-center justify-between gap-2 p-4 [&::-webkit-details-marker]:hidden'>
           <h3 className='flex items-center gap-2'>
