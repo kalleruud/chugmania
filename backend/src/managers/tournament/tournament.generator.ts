@@ -9,7 +9,7 @@ import type {
 import { upperStage, validConfiguration } from '@common/utils/tournament'
 import { createHash } from 'node:crypto'
 import type { MatchStage } from '../../../database/schema'
-import { seedingOrder } from './tournament.rules'
+import { seedingOrder } from './tournament'
 
 function groupNames(session: string, count: number): string[] {
   const names = loc.no.tournament.groupNames
@@ -29,7 +29,7 @@ function snakeGroup(seed: number, groups: number): number {
   const position = seed % groups
   return Math.floor(seed / groups) % 2 === 0 ? position : groups - 1 - position
 }
-export function schedulePairs(players: string[]): [string, string][] {
+function schedulePairs(players: string[]): [string, string][] {
   const pending: [string, string][] = []
   players.forEach((player, index) =>
     players.slice(index + 1).forEach(other => pending.push([player, other]))

@@ -1,9 +1,11 @@
 import loc from '@common/locale/locales'
-import type { Match } from '@common/models/match'
+import type { EditMatchRequest, Match } from '@common/models/match'
 import type {
   Participant,
   Slot,
   Standing,
+  TournamentDetails,
+  TournamentFixture,
   TournamentState,
 } from '@common/models/tournament'
 
@@ -43,7 +45,7 @@ function rankTiedPlayers(
   }
   return rows
 }
-export function decided(match: Match): boolean {
+function decided(match: Match): boolean {
   return (
     (match.status === 'completed' || match.status === 'cancelled') &&
     !!match.user1 &&
@@ -52,10 +54,7 @@ export function decided(match: Match): boolean {
     (match.winner === match.user1 || match.winner === match.user2)
   )
 }
-export function groupStandings(
-  state: TournamentState,
-  groupId: string
-): Standing[] {
+function groupStandings(state: TournamentState, groupId: string): Standing[] {
   const players = state.participants
     .filter(p => p.groupId === groupId)
     .toSorted(seedingOrder)
@@ -103,7 +102,7 @@ export function groupStandings(
   }
   return standings
 }
-export function groupComplete(state: TournamentState): boolean {
+function groupComplete(state: TournamentState): boolean {
   return state.fixtures
     .filter(f => f.bracket === 'group')
     .every(f => decided(f.match))
@@ -111,7 +110,7 @@ export function groupComplete(state: TournamentState): boolean {
 function winRatio(row: Pick<Standing, 'wins' | 'losses'>): number {
   return row.wins / (row.wins + row.losses || 1)
 }
-export function resolveSlots(state: TournamentState): TournamentState {
+export function resolveTournament(state: TournamentState): TournamentState {
   const result = structuredClone(state)
   const standings = new Map(
     result.groups.map(group => [group.id, groupStandings(result, group.id)])
@@ -158,7 +157,7 @@ export function resolveSlots(state: TournamentState): TournamentState {
   }
   throw new Error(loc.no.tournament.invalid)
 }
-export function protectResults(
+function protectResults(
   before: TournamentState,
   after: TournamentState,
   editing: string
@@ -185,7 +184,7 @@ export function protectResults(
           .join(', ')
     )
 }
-export function overallStandings(state: TournamentState): {
+function overallStandings(state: TournamentState): {
   rows: { user: string; rank: number }[]
   completed: boolean
 } {
@@ -259,5 +258,184 @@ export function overallStandings(state: TournamentState): {
         .filter(f => f.reset !== 'conditional' && f.reset !== 'unneeded')
         .every(f => decided(f.match)),
     rows,
+  }
+}
+
+function editableSlots(fixture: TournamentFixture): ('user1' | 'user2')[] {
+  const keys: ('user1' | 'user2')[] = ['user1', 'user2']
+  return keys.filter(key => {
+    const slot = key === 'user1' ? fixture.slot1 : fixture.slot2
+    return (
+      fixture.bracket !== 'group' ||
+      (fixture.match.status === 'planned' &&
+        (!fixture.match[key] || !!slot.override))
+    )
+  })
+}
+
+export function editTournamentMatch(
+  state: TournamentState,
+  request: EditMatchRequest
+): TournamentState {
+  if (state.cancelled) throw new Error(loc.no.tournament.session)
+  if (state.notReadyReason) throw new Error(loc.no.tournament.roster)
+  const before = state
+  state = structuredClone(state)
+  const fixture = state.fixtures.find(f => f.match.id === request.id)
+  if (!fixture) throw new Error(loc.no.tournament.invalid)
+  if (
+    request.deletedAt ||
+    (request.session !== undefined &&
+      request.session !== fixture.match.session) ||
+    (request.stage !== undefined && request.stage !== fixture.match.stage)
+  )
+    throw new Error(loc.no.tournament.owned)
+  if (fixture.reset === 'conditional' || fixture.reset === 'unneeded')
+    throw new Error(loc.no.tournament.result)
+  const setPlayer = (key: 'user1' | 'user2', slotKey: 'slot1' | 'slot2') => {
+    const user = request[key]
+    if (user === undefined || user === fixture.match[key]) return
+    const slot = fixture[slotKey]
+    if (!editableSlots(fixture).includes(key))
+      throw new Error(loc.no.tournament.owned)
+    if (
+      user !== null &&
+      !state.participants.some(
+        p =>
+          p.user === user &&
+          (fixture.bracket !== 'group' ||
+            slot.kind !== 'group_rank' ||
+            p.groupId === slot.groupId)
+      )
+    )
+      throw new Error(loc.no.tournament.invalidParticipant)
+    slot.override = user ?? undefined
+  }
+  setPlayer('user1', 'slot1')
+  setPlayer('user2', 'slot2')
+  const resolvedPlayers = resolveTournament(state)
+  const match = resolvedPlayers.fixtures.find(f => f.id === fixture.id)?.match
+  if (!match) throw new Error(loc.no.tournament.invalid)
+  if (match.user1 && match.user1 === match.user2)
+    throw new Error(loc.no.match.error.same_user)
+  const status = request.status ?? match.status
+  const winner = request.winner === undefined ? match.winner : request.winner
+  if (
+    !['planned', 'completed', 'cancelled'].includes(status) ||
+    (status !== 'planned' && (!match.user1 || !match.user2)) ||
+    (winner !== null && winner !== match.user1 && winner !== match.user2) ||
+    (status === 'planned' && winner) ||
+    (status === 'completed' && !winner)
+  )
+    throw new Error(loc.no.tournament.result)
+  Object.assign(match, { status, winner, updatedAt: new Date() })
+  if (request.track !== undefined) {
+    if (!request.track) throw new Error(loc.no.tournament.tracks)
+    match.track = request.track
+  }
+  if (request.comment !== undefined) match.comment = request.comment
+  if (request.duration !== undefined) match.duration = request.duration
+  const resolved = resolveTournament(resolvedPlayers)
+  protectResults(before, resolved, fixture.id)
+  return resolved
+}
+
+function groupCode(index: number): string {
+  let code = ''
+  for (let value = index + 1; value > 0; value = Math.floor((value - 1) / 26))
+    code = String.fromCharCode(65 + ((value - 1) % 26)) + code
+  return code || '?'
+}
+
+function fixtureLabel(
+  state: TournamentState,
+  fixture: TournamentFixture
+): string {
+  const siblings = state.fixtures.filter(
+    f => f.bracket === fixture.bracket && f.match.stage === fixture.match.stage
+  )
+  return `${loc.no.match.stageCode(fixture.match.stage)}${String(siblings.indexOf(fixture) + 1).padStart(2, '0')}`
+}
+export function tournamentDetails(state: TournamentState): TournamentDetails {
+  const label = (slot: Slot): string => {
+    if (slot.kind === 'player') return ''
+    if (slot.kind === 'group_rank') {
+      return loc.no.tournament.groupSlot(
+        slot.rank,
+        groupCode(state.groups.findIndex(g => g.id === slot.groupId))
+      )
+    }
+    const feeder = state.fixtures.find(f => f.id === slot.matchId)
+    return `${slot.kind === 'match_winner' ? loc.no.tournament.winnerCode : loc.no.tournament.loserCode} ${feeder ? fixtureLabel(state, feeder) : '?'}`
+  }
+  const active = state.fixtures.filter(
+    f => f.reset !== 'unneeded' && f.reset !== 'conditional'
+  )
+  const group = state.fixtures.filter(f => f.bracket === 'group')
+  const overall = overallStandings(state)
+  const groupSizes = state.groups.map(
+    g => state.participants.filter(p => p.groupId === g.id).length
+  )
+  const guaranteedBracketMatches =
+    state.config.eliminationType === 'double' ? 2 : 1
+  const bracketRounds = Math.log2(
+    state.config.groupsCount * state.config.advancementCount
+  )
+  return {
+    id: state.id,
+    config: state.config,
+    frozen: !!state.frozenAt,
+    cancelled: state.cancelled,
+    notReadyReason: state.notReadyReason,
+    participants: state.participants.toSorted(seedingOrder),
+    groups: state.groups.map((g, index) => ({
+      ...g,
+      code: groupCode(index),
+      standings: groupStandings(state, g.id),
+    })),
+    matches: state.fixtures.map(f => ({
+      ...f.match,
+      tournament: {
+        id: state.id,
+        label: fixtureLabel(state, f),
+        slot1: label(f.slot1),
+        slot2: label(f.slot2),
+        editableSlots: editableSlots(f),
+        readOnly:
+          state.id === 'preview' ||
+          state.cancelled ||
+          !!state.notReadyReason ||
+          f.reset === 'conditional' ||
+          f.reset === 'unneeded',
+        reset: f.reset,
+        awarded: f.match.status === 'cancelled' && decided(f.match),
+      },
+    })),
+    standings: overall.rows,
+    completed: overall.completed,
+    progress: {
+      decided: active.filter(f => decided(f.match)).length,
+      total: active.length,
+      groupDecided: group.filter(f => decided(f.match)).length,
+      groupTotal: group.length,
+    },
+    workloadSummary: {
+      tracks: new Set([
+        ...state.fixtures.flatMap(f => (f.match.track ? [f.match.track] : [])),
+      ]).size,
+      minMatches:
+        Math.min(...groupSizes) -
+        1 +
+        (state.participants.length ===
+        state.config.groupsCount * state.config.advancementCount
+          ? guaranteedBracketMatches
+          : 0),
+      maxMatches:
+        Math.max(...groupSizes) -
+        1 +
+        (state.config.eliminationType === 'double'
+          ? bracketRounds * 2 + 1
+          : bracketRounds),
+    },
   }
 }
