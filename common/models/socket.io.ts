@@ -27,7 +27,6 @@ import type {
 } from './timeEntry'
 import type {
   DeleteTournamentRequest,
-  TournamentChange,
   TournamentConfig,
   TournamentDetails,
   TournamentRequest,
@@ -52,7 +51,10 @@ export type ErrorResponse = {
 import type { Ranking } from './ranking'
 
 export interface ServerToClientEvents {
-  tournament_changed: (change: TournamentChange) => void
+  all_tournaments: (
+    tournaments: TournamentDetails[],
+    actor?: string | null
+  ) => void
   user_data: (r: EventRes<'get_user_data'>) => void
   all_users: (r: UserInfo[]) => void
   all_tracks: (r: Track[]) => void
@@ -91,7 +93,6 @@ export interface ClientToServerEvents {
       response: { success: true; details: null } | ErrorResponse
     ) => void
   ) => void
-  unsubscribe_tournament: (request: TournamentRequest) => void
 
   connect: () => void
   disconnect: () => void

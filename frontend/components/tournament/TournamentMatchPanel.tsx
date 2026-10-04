@@ -1,5 +1,5 @@
 import { useAuth } from '@/contexts/AuthContext'
-import { useTournament } from '@/hooks/useTournament'
+import { useData } from '@/contexts/DataContext'
 import loc from '@common/locale/locales'
 import type { Match } from '@common/models/match'
 import type { SessionWithSignups } from '@common/models/session'
@@ -22,7 +22,8 @@ export default function TournamentMatchPanel({
   upcomingCount = 2,
   ...props
 }: Readonly<TournamentMatchPanelProps>) {
-  const { details } = useTournament(session.id)
+  const { tournaments } = useData()
+  const details = tournaments?.find(t => t.config.session === session.id)
   const { isLoggedIn, loggedInUser } = useAuth()
   if (!details || details.cancelled) return null
 

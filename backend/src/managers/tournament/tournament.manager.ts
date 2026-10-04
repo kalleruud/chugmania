@@ -29,7 +29,7 @@ import {
   users,
 } from '../../../database/schema'
 import type { TypedSocket } from '../../server'
-import { broadcast, broadcastTournament } from '../../server'
+import { broadcast } from '../../server'
 import AuthManager from '../auth.manager'
 import MatchManager from '../match.manager'
 import RatingManager from '../rating.manager'
@@ -41,7 +41,7 @@ import {
 import { generateTournament } from './tournament.generator'
 
 export default class TournamentManager {
-  private static published = new Map<string, string>()
+  private static published = ''
 
   private static participants(config: TournamentConfig): Participant[] {
     const ratings = RatingManager.onGetRatings()
@@ -394,17 +394,23 @@ export default class TournamentManager {
       .run()
   }
   static publish(actor: string | null = null): void {
-    const rows = db
+    const details = this.getAllTournaments()
+    const serialized = JSON.stringify(details)
+    if (this.published === serialized) return
+    this.published = serialized
+    broadcast('all_tournaments', details, actor)
+  }
+
+  static getAllTournaments(): TournamentDetails[] {
+    return db
       .select({ session: tournaments.session })
       .from(tournaments)
+      .where(isNull(tournaments.deletedAt))
       .all()
-    for (const session of new Set(rows.map(row => row.session))) {
-      const details = this.details(session)
-      const serialized = JSON.stringify(details)
-      if (this.published.get(session) === serialized) continue
-      this.published.set(session, serialized)
-      broadcastTournament({ session, details, actor })
-    }
+      .flatMap(row => {
+        const details = this.details(row.session)
+        return details ? [details] : []
+      })
   }
 
   static async onPreview(
@@ -451,7 +457,6 @@ export default class TournamentManager {
     if (!isTournamentRequest(request))
       throw new Error(loc.no.tournament.invalid)
     TournamentManager.session(request.session, true)
-    await socket.join(`tournament:${request.session}`)
     return {
       success: true,
       details: TournamentManager.details(request.session),

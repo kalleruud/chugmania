@@ -87,12 +87,6 @@ export type DeleteTournamentRequest = TournamentRequest & {
   deleteRelatedResults: boolean
 }
 
-export type TournamentChange = {
-  session: string
-  details: TournamentDetails | null
-  actor: string | null
-}
-
 export type MatchResult = { status: MatchStatus; winner: string | null }
 
 export function isTournamentRequest(
