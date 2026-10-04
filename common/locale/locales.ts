@@ -229,6 +229,34 @@ const no = {
       'Cum Dumpsters',
     ],
     group: 'Gruppe',
+    backToTournament: 'Tilbake til turneringen',
+    groupStandings: 'Gruppeplassering',
+    wins: 'Seiere',
+    losses: 'Tap',
+    matchesPlayed: 'Spilt',
+    winPercentage: 'Seiersprosent',
+    groupProgress: (decided: number, total: number) =>
+      `${decided} av ${total} gruppematcher avgjort`,
+    winPercentageInfo:
+      'Plasseringen avgjøres av seiersprosent, ikke antall seiere. Både 3–0 og 2–0 gir 100 %. Spillere uten avgjorte matcher vises med 0 %. Tildelte seiere teller med.',
+    percentageRanking: 'Plassert etter seiersprosent.',
+    headToHeadRanking:
+      'Ved lik seiersprosent avgjør disse innbyrdes resultatene rekkefølgen:',
+    decidingMatch: (label: string, winner: string, loser: string) =>
+      `${label}: ${winner} vant over ${loser}`,
+    sharedRank: (rank: number, players: string) =>
+      `Delt ${rank}. plass: ${players}.`,
+    missingDirectResults:
+      'Det mangler avgjorte innbyrdes matcher som kan bestemme rekkefølgen.',
+    unresolvedDirectResults:
+      'De innbyrdes resultatene gir ingen entydig rekkefølge.',
+    renameGroup: 'Endre gruppenavn',
+    groupName: 'Gruppenavn',
+    renameGroupDescription:
+      'Endre navnet uten å endre gruppekode, deltakere eller matcher.',
+    groupRenamed: 'Gruppenavnet er oppdatert',
+    invalidGroupName: 'Gruppenavnet må inneholde mellom 1 og 100 tegn.',
+    invalidGroup: 'Gruppen finnes ikke i denne turneringen.',
     groupSlot: (rank: number, code: string) => {
       const suffixes: Record<number, string> = { 1: 'st', 2: 'nd', 3: 'rd' }
       const suffix =

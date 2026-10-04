@@ -222,6 +222,19 @@ export default class TournamentSource {
     return { kind: row.kind, matchId: row.slotHolderId, ...override }
   }
 
+  static renameGroup(tournament: string, groupId: string, name: string): void {
+    db.update(tournamentGroups)
+      .set({ name, updatedAt: new Date() })
+      .where(
+        and(
+          eq(tournamentGroups.tournament, tournament),
+          eq(tournamentGroups.id, groupId),
+          isNull(tournamentGroups.deletedAt)
+        )
+      )
+      .run()
+  }
+
   static saveTournament(state: TournamentState): void {
     const { session, stageTracks, ...config } = state.config
     const row = {

@@ -1,11 +1,13 @@
 import { useData } from '@/contexts/DataContext'
 import loc from '@common/locale/locales'
 import type { TournamentDetails } from '@common/models/tournament'
+import { Link } from 'react-router'
 import UserRow from '../user/UserRow'
 
 export default function TournamentGroupPanel({
   group,
-}: Readonly<{ group: TournamentDetails['groups'][number] }>) {
+  href,
+}: Readonly<{ group: TournamentDetails['groups'][number]; href?: string }>) {
   const { users } = useData()
 
   const players = group.standings.map(s => ({
@@ -15,8 +17,15 @@ export default function TournamentGroupPanel({
 
   return (
     <section className='min-w-0 overflow-hidden rounded-sm border border-border bg-background'>
-      <header className='flex flex-wrap items-center justify-between border-b border-border bg-background-secondary px-4 py-3'>
-        <div className='min-w-0'>
+      <header className='relative flex flex-wrap items-center justify-between border-b border-border bg-background-secondary px-4 py-3'>
+        {href && (
+          <Link
+            to={href}
+            aria-label={`${loc.no.tournament.group} ${group.code}: ${group.name}`}
+            className='absolute inset-0 rounded-sm hover:bg-accent/50 focus-visible:outline-2 focus-visible:outline-primary'
+          />
+        )}
+        <div className='pointer-events-none relative min-w-0'>
           <p className='truncate font-f1 text-sm font-bold text-muted-foreground uppercase'>
             {loc.no.tournament.group} {group.code}
           </p>

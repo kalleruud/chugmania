@@ -4,6 +4,7 @@ import { isRecord } from '../utils/utils'
 export type Match = typeof matches.$inferSelect & {
   tournament?: {
     id: string
+    groupId: string | null
     label: string
     slot1: string
     slot2: string

@@ -4,6 +4,7 @@ import type {
   Participant,
   Slot,
   Standing,
+  StandingMatchExplanation,
   TournamentDetails,
   TournamentFixture,
   TournamentState,
@@ -22,36 +23,68 @@ export function seedingOrder(a: Participant, b: Participant): number {
   return b.rating - a.rating || a.user.localeCompare(b.user)
 }
 
-function headToHead(matches: Match[], a: string, b: string): string | null {
-  const match = matches.findLast(
+function headToHead(matches: Match[], a: string, b: string): Match | undefined {
+  return matches.findLast(
     match =>
       decided(match) &&
       ((match.user1 === a && match.user2 === b) ||
         (match.user1 === b && match.user2 === a))
   )
-  return match?.winner ?? null
 }
 
 function rankTiedPlayers(
   users: string[],
   matches: Match[]
-): { user: string; rank: number; resolved: boolean }[] {
+): Pick<Standing, 'user' | 'rank' | 'resolved' | 'explanation'>[] {
   const remaining = [...users]
-  const rows: { user: string; rank: number; resolved: boolean }[] = []
+  const rows: Pick<Standing, 'user' | 'rank' | 'resolved' | 'explanation'>[] =
+    []
+  const evidence: StandingMatchExplanation[] = []
   while (remaining.length) {
     const winner = remaining.find(user =>
       remaining.every(
-        other => user === other || headToHead(matches, user, other) === user
+        other =>
+          user === other || headToHead(matches, user, other)?.winner === user
       )
     )
     if (!winner) {
       const rank = rows.length + 1
+      const missingResults = remaining.some((user, index) =>
+        remaining
+          .slice(index + 1)
+          .some(other => !headToHead(matches, user, other))
+      )
       return [
         ...rows,
-        ...remaining.map(user => ({ user, rank, resolved: false })),
+        ...remaining.map(user => ({
+          user,
+          rank,
+          resolved: false,
+          explanation: {
+            kind: 'shared_rank',
+            users: [...remaining],
+            reason: missingResults ? 'missing_results' : 'unresolved_results',
+          } satisfies Standing['explanation'],
+        })),
       ]
     }
-    rows.push({ user: winner, rank: rows.length + 1, resolved: true })
+    for (const other of remaining) {
+      if (other === winner) continue
+      const match = headToHead(matches, winner, other)
+      if (match?.winner === winner)
+        evidence.push({ matchId: match.id, winner, loser: other })
+    }
+    const decidingMatches = evidence.filter(
+      match => match.winner === winner || match.loser === winner
+    )
+    rows.push({
+      user: winner,
+      rank: rows.length + 1,
+      resolved: true,
+      explanation: decidingMatches.length
+        ? { kind: 'head_to_head', matches: decidingMatches }
+        : { kind: 'win_percentage' },
+    })
     remaining.splice(remaining.indexOf(winner), 1)
   }
   return rows
@@ -105,6 +138,8 @@ function groupStandings(state: TournamentState, groupId: string): Standing[] {
         standings.push({
           ...row,
           ...place,
+          matchesPlayed: row.wins + row.losses,
+          winPercentage: winRatio(row) * 100,
           rank: start + place.rank,
           qualifies:
             place.resolved &&
@@ -424,11 +459,17 @@ export function tournamentDetails(state: TournamentState): TournamentDetails {
       ...g,
       code: groupCode(g.position),
       standings: groupStandings(state, g.id),
+      progress: {
+        decided: group.filter(f => f.groupId === g.id && decided(f.match))
+          .length,
+        total: group.filter(f => f.groupId === g.id).length,
+      },
     })),
     matches: state.fixtures.map(f => ({
       ...f.match,
       tournament: {
         id: state.id,
+        groupId: f.groupId,
         label: fixtureLabel(state, f),
         slot1: label(f.slot1),
         slot2: label(f.slot2),

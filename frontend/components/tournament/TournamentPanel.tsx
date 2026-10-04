@@ -90,7 +90,15 @@ export default function TournamentPanel({
       <section className='flex flex-col gap-1'>
         <div className='grid gap-4 sm:grid-cols-2'>
           {details.groups.map(group => (
-            <TournamentGroupPanel key={group.id} group={group} />
+            <TournamentGroupPanel
+              key={group.id}
+              group={group}
+              href={
+                isPreview
+                  ? undefined
+                  : `/sessions/${details.config.session}/tournament/groups/${group.id}`
+              }
+            />
           ))}
         </div>
         <div className='flex items-center gap-2 rounded p-2'>

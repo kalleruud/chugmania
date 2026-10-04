@@ -3,6 +3,7 @@ import type { EditMatchRequest, Match } from '@common/models/match'
 import type { EventReq, EventRes } from '@common/models/socket.io'
 import {
   isDeleteTournamentRequest,
+  isRenameTournamentGroupRequest,
   isTournamentConfig,
   isTournamentRequest,
   type Participant,
@@ -202,6 +203,31 @@ export default class TournamentManager {
       success: true,
       details: TournamentManager.details(request.session),
     }
+  }
+
+  static async onRenameGroup(
+    socket: TypedSocket,
+    request: EventReq<'rename_tournament_group'>
+  ): Promise<EventRes<'rename_tournament_group'>> {
+    await AuthManager.checkAuth(socket, ['admin', 'moderator'])
+    if (!isRenameTournamentGroupRequest(request))
+      throw new Error(loc.no.tournament.invalidGroupName)
+    TournamentManager.session(request.session, true)
+    const details = TournamentSource.transaction(() => {
+      const state = TournamentSource.loadTournament(request.session)
+      if (!state?.groups.some(group => group.id === request.groupId))
+        throw new Error(loc.no.tournament.invalidGroup)
+      TournamentSource.renameGroup(
+        state.id,
+        request.groupId,
+        request.name.trim()
+      )
+      const details = TournamentManager.details(request.session)
+      if (!details) throw new Error(loc.no.tournament.invalidGroup)
+      return details
+    })
+    TournamentManager.publish(socket.id)
+    return { success: true, details }
   }
 
   static async onDelete(
