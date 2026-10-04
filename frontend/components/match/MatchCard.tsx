@@ -1,4 +1,3 @@
-import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
 import { useMatch } from '@/hooks/useMatch'
 import loc from '@common/locale/locales'
@@ -7,8 +6,6 @@ import { getUserFullName } from '@common/models/user'
 import { formatDateWithYear, formatTimeOnly } from '@common/utils/date'
 import { formatTime } from '@common/utils/time'
 import { isInactiveFinalReset, stageName } from '@common/utils/tournament'
-import { MinusIcon } from '@heroicons/react/24/solid'
-import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
 import { NameCellPart } from '../timeentries/TimeEntryRow'
 import { TrackRow } from '../track/TrackRow'
@@ -23,7 +20,6 @@ export default function MatchCard({
   children,
   ...props
 }: Readonly<MatchProps>) {
-  const { socket } = useConnection()
   const { users, tracks, sessions } = useData()
   const { canSetResult, toggleWinner } = useMatch(match)
   const user1 = users?.find(user => user.id === match.user1)
@@ -34,23 +30,6 @@ export default function MatchCard({
   const isCompleted =
     match.status === 'completed' || !!match.tournament?.awarded
   const canChooseWinner = canSetResult && match.status === 'planned'
-
-  function handleCancel() {
-    if (!canChooseWinner) return
-    toast.promise(
-      socket
-        .emitWithAck('edit_match', {
-          type: 'EditMatchRequest',
-          id: match.id,
-          status: 'cancelled',
-          winner: null,
-        })
-        .then(r => {
-          if (!r.success) throw new Error(r.message)
-        }),
-      loc.no.match.toast.update
-    )
-  }
 
   return (
     <div
@@ -95,7 +74,7 @@ export default function MatchCard({
         <div className='flex flex-wrap items-center justify-between gap-2'>
           <Badge>{loc.no.match.upNext}</Badge>
           <span className='text-sm text-muted-foreground'>
-            {loc.no.match.status[match.status]}
+            {loc.no.common.status[match.status]}
           </span>
         </div>
         {track && !hideTrack && (
@@ -135,18 +114,6 @@ export default function MatchCard({
       {match.tournament?.awarded && <Badge>{loc.no.tournament.awarded}</Badge>}
       {isInactiveFinalReset(match) && match.status === 'planned' && (
         <Badge>{loc.no.tournament.conditional}</Badge>
-      )}
-      {canChooseWinner && (
-        <button
-          type='button'
-          title={loc.no.match.cancel}
-          className='absolute top-0 right-0 m-2 p-2 text-muted-foreground transition-colors hover:rounded-sm hover:bg-muted hover:text-primary-foreground'
-          onClick={e => {
-            e.stopPropagation()
-            handleCancel()
-          }}>
-          <MinusIcon className='size-4' />
-        </button>
       )}
     </div>
   )

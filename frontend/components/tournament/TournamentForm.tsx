@@ -15,6 +15,7 @@ import { AlertCircleIcon } from 'lucide-react'
 import { useEffect, useState, type SubmitEvent } from 'react'
 import { toast } from 'sonner'
 import ComboboxMulti from '../ComboboxMulti'
+import Combobox from '../combobox'
 import { TrackRow } from '../track/TrackRow'
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert'
 import { Button } from '../ui/button'
@@ -37,6 +38,7 @@ export default function TournamentForm({
     advancementCount: 2,
     eliminationType: 'single',
     stageTracks: {},
+    tieBreakerTrack: null,
   })
   const [preview, setPreview] = useState<{
     key: string
@@ -95,6 +97,7 @@ export default function TournamentForm({
     !saving &&
     !error &&
     isConnected &&
+    !!config.tieBreakerTrack &&
     preview.details.matches.every(m => m.track)
   useEffect(() => {
     let active = true
@@ -191,6 +194,21 @@ export default function TournamentForm({
               Dobbel eliminering
             </option>
           </NativeSelect>
+        </label>
+        <label>
+          {loc.no.tournament.tieBreakerTrack}
+          <Combobox
+            items={items}
+            CustomRow={TrackRow}
+            selected={
+              items.find(item => item.id === config.tieBreakerTrack) ?? null
+            }
+            setSelected={item =>
+              setConfig({ ...config, tieBreakerTrack: item?.id ?? null })
+            }
+            required
+            placeholder={loc.no.tournament.tieBreakerTrackRequired}
+          />
         </label>
         {stages.map(stage => (
           <div key={stage}>

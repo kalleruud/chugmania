@@ -111,6 +111,7 @@ io.on('connect', s => Connect(s))
 await SessionScheduler.start()
 
 // Calculate ratings
+TournamentManager.reconcileAll()
 RatingManager.recalculate()
 
 async function Connect(s: TypedSocket) {

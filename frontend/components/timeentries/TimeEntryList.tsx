@@ -7,16 +7,23 @@ import type {
   TimeEntry,
 } from '@common/models/timeEntry'
 import { PlusIcon } from '@heroicons/react/24/solid'
+import { Asterisk } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '../ui/button'
 import { Empty } from '../ui/empty'
 import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group'
-import TimeEntryRow from './TimeEntryRow'
+import TimeEntryRow, { Marker } from './TimeEntryRow'
 
 type FilterType = 'all' | 'best' | 'latest'
 
-function sortEntries(entries: TimeEntry[]): TimeEntry[] {
+function sortEntries<T extends TimeEntry>(entries: T[]): T[] {
   return entries.toSorted((a, b) => {
+    if ((a.status === 'completed') !== (b.status === 'completed'))
+      return a.status === 'completed' ? -1 : 1
+
+    if ((a.status === 'cancelled') !== (b.status === 'cancelled'))
+      return a.status === 'cancelled' ? 1 : -1
+
     // Entries with valid duration first, sorted by lowest duration
     if (a.duration && b.duration) {
       return a.duration - b.duration
@@ -33,14 +40,14 @@ function sortEntries(entries: TimeEntry[]): TimeEntry[] {
   })
 }
 
-function isBetterEntry(current: TimeEntry, existing: TimeEntry): boolean {
+function isBetterEntry<T extends TimeEntry>(current: T, existing: T): boolean {
   if (!current.duration) return false
   if (!existing.duration) return true
   return current.duration < existing.duration
 }
 
-function getBestByUser(entries: TimeEntry[]): TimeEntry[] {
-  const bestByUser = new Map<string, TimeEntry>()
+function getBestByUser<T extends TimeEntry>(entries: T[]): T[] {
+  const bestByUser = new Map<string, T>()
   for (const entry of entries) {
     const existing = bestByUser.get(entry.user)
     if (!existing || isBetterEntry(entry, existing)) {
@@ -50,8 +57,8 @@ function getBestByUser(entries: TimeEntry[]): TimeEntry[] {
   return Array.from(bestByUser.values())
 }
 
-function getLatestByUser(entries: TimeEntry[]): TimeEntry[] {
-  const latestByUser = new Map<string, TimeEntry>()
+function getLatestByUser<T extends TimeEntry>(entries: T[]): T[] {
+  const latestByUser = new Map<string, T>()
   for (const entry of entries) {
     const existing = latestByUser.get(entry.user)
     if (!existing || entry.createdAt > existing.createdAt) {
@@ -61,10 +68,10 @@ function getLatestByUser(entries: TimeEntry[]): TimeEntry[] {
   return Array.from(latestByUser.values())
 }
 
-function filterEntries(
-  entries: TimeEntry[],
+function filterEntries<T extends TimeEntry>(
+  entries: T[],
   filterType: FilterType
-): TimeEntry[] {
+): T[] {
   let filtered = entries
 
   if (filterType === 'best') {
@@ -82,7 +89,7 @@ function getGap(
   compareEntry: TimeEntry | undefined,
   leader?: TimeEntry
 ): LeaderboardEntryGap | undefined {
-  if (!entry.duration) return undefined
+  if (entry.status !== 'completed' || !entry.duration) return undefined
 
   // For leader gap type, calculate gap to the leader (first entry)
   if (leader) {
@@ -107,7 +114,7 @@ export type TimeEntryListProps = {
   track?: string
   user?: string
   session?: string
-  entries: TimeEntry[]
+  entries: (TimeEntry & { required?: boolean })[]
   filter?: FilterType
 }
 
@@ -184,6 +191,7 @@ export function TimeEntryList({
             <TimeEntryRow
               key={entry.id}
               item={entry}
+              required={entry.required === true}
               gap={getGap(
                 i + 1,
                 entry,
@@ -202,16 +210,42 @@ export function TimeEntryList({
         })}
       </div>
 
-      {isLoggedIn && (
-        <Button
-          variant='ghost'
-          size='sm'
-          className='w-fit text-muted-foreground'
-          onClick={() => open({ track, user, session })}>
-          <PlusIcon />
-          {loc.no.timeEntry.input.create.title}
-        </Button>
-      )}
+      <div className='flex items-center gap-4'>
+        {isLoggedIn && (
+          <Button
+            variant='ghost'
+            size='sm'
+            className='mr-auto w-fit text-muted-foreground'
+            onClick={() => open({ track, user, session })}>
+            <PlusIcon />
+            {loc.no.timeEntry.input.create.title}
+          </Button>
+        )}
+        {entries.find(e => e.comment) && (
+          <div className='flex gap-1'>
+            <Marker show Icon={Asterisk} />
+            <p className='line-clamp-1 truncate text-muted-foreground'>
+              {loc.no.match.form.comment}
+            </p>
+          </div>
+        )}
+        {entries.find(e => e.tieBreaker) && (
+          <div className='flex gap-1'>
+            <Marker className='text-yellow-500' show Icon={Asterisk} />
+            <p className='line-clamp-1 truncate text-muted-foreground'>
+              {loc.no.tournament.tieBreakers}
+            </p>
+          </div>
+        )}
+        {entries.find(e => e.required) && (
+          <div className='flex gap-2'>
+            <Marker show symbol='!' />
+            <p className='line-clamp-1 truncate text-muted-foreground'>
+              {loc.no.tournament.requiredTieBreaker}
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

@@ -20,9 +20,12 @@ import { broadcast } from '../../server'
 import AuthManager from '../auth.manager'
 import MatchManager from '../match.manager'
 import RatingManager from '../rating.manager'
+import TimeEntryManager from '../timeEntry.manager'
 import {
   editTournamentMatch,
+  protectResults,
   resolveTournament,
+  tieBreakerNeeds,
   tournamentDetails,
 } from './tournament'
 import { generateTournament } from './tournament.generator'
@@ -35,6 +38,7 @@ export default class TournamentManager {
     return TournamentSource.getConfirmedPlayerIds(config.session).map(user => {
       return {
         user,
+        globalRank: ratings.find(r => r.user === user)?.ranking ?? null,
         rating:
           ratings.find(r => r.user === user)?.totalRating ??
           RATING_CONSTANTS.NO_DATA_RATING,
@@ -51,7 +55,7 @@ export default class TournamentManager {
     return row
   }
 
-  private static details(session: string): TournamentDetails | null {
+  static details(session: string): TournamentDetails | null {
     const state = TournamentSource.loadTournament(session)
     return state ? tournamentDetails(state) : null
   }
@@ -68,6 +72,11 @@ export default class TournamentManager {
         .some(id => !available.has(id))
     )
       throw new Error(loc.no.tournament.tracks)
+    if (
+      (config.tieBreakerTrack && !available.has(config.tieBreakerTrack)) ||
+      (creating && !config.tieBreakerTrack)
+    )
+      throw new Error(loc.no.tournament.tieBreakerTrackRequired)
     const participants = this.participants(config)
     const state = resolveTournament(generateTournament(config, participants))
     const stages = getTournamentStages(config, participants.length)
@@ -131,8 +140,38 @@ export default class TournamentManager {
       )
         throw new Error(loc.no.tournament.tracks)
       TournamentSource.saveTournament(updated)
+      this.reconcile(row.session, state, request.id)
     })
     return true
+  }
+
+  static getState(session: string): TournamentState | null {
+    return TournamentSource.loadTournament(session)
+  }
+
+  // Resolve assignments, synchronize stage tie-breaker laps, then resolve again
+  // with the refreshed lap pool. Roll back if completed downstream matches change.
+  static reconcile(
+    session: string,
+    before?: TournamentState,
+    editing?: string
+  ): void {
+    TournamentSource.transaction(() => {
+      const state = this.getState(session)
+      if (!state || state.cancelled || !state.config.tieBreakerTrack) return
+      const automatic = resolveTournament(state)
+      TournamentSource.reconcileLaps(automatic, tieBreakerNeeds(automatic))
+      const refreshed = this.getState(session)
+      if (!refreshed) return
+      const resolved = resolveTournament(refreshed)
+      protectResults(before ?? state, resolved, editing)
+      TournamentSource.saveTournament(resolved)
+    })
+  }
+
+  static reconcileAll(): void {
+    for (const session of TournamentSource.getActiveSessionIds())
+      this.reconcile(session)
   }
 
   static remove(session: string, options = { deleteMatches: true }): void {
@@ -183,6 +222,7 @@ export default class TournamentManager {
       TournamentSource.saveTournament(state)
     })
     broadcast('all_matches', await MatchManager.getAllMatches())
+    broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
     TournamentManager.publish(socket.id)
     return {
       success: true,
@@ -220,6 +260,7 @@ export default class TournamentManager {
     RatingManager.recalculate()
     broadcast('all_rankings', RatingManager.onGetRatings())
     broadcast('all_matches', await MatchManager.getAllMatches())
+    broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
     TournamentManager.publish(socket.id)
     return { success: true, details: null }
   }
