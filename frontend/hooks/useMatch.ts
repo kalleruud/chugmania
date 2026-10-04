@@ -4,7 +4,7 @@ import loc from '@common/locale/locales'
 import type { EditMatchRequest, Match } from '@common/models/match'
 import { toast } from 'sonner'
 
-export function useMatchResultActions(match: Match) {
+export function useMatch(match: Match) {
   const { socket } = useConnection()
   const { isLoggedIn, loggedInUser } = useAuth()
   const canSetResult =

@@ -1,5 +1,5 @@
 import { useData } from '@/contexts/DataContext'
-import { useMatchResultActions } from '@/hooks/useMatchResultActions'
+import { useMatch } from '@/hooks/useMatch'
 import loc from '@common/locale/locales'
 import type { UserInfo } from '@common/models/user'
 import { isInactiveFinalReset, stageName } from '@common/utils/tournament'
@@ -21,7 +21,7 @@ export default function MatchRow({
   ...rest
 }: Readonly<MatchProps>) {
   const { users, tracks, sessions } = useData()
-  const { canSetResult, toggleWinner } = useMatchResultActions(match)
+  const { canSetResult, toggleWinner } = useMatch(match)
   const user1 = users?.find(u => u.id === match.user1)
   const user2 = users?.find(u => u.id === match.user2)
   const track = tracks?.find(t => t.id === match.track)

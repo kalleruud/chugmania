@@ -1,6 +1,6 @@
 import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
-import { useMatchResultActions } from '@/hooks/useMatchResultActions'
+import { useMatch } from '@/hooks/useMatch'
 import loc from '@common/locale/locales'
 import type { UserInfo } from '@common/models/user'
 import { getUserFullName } from '@common/models/user'
@@ -25,7 +25,7 @@ export default function MatchCard({
 }: Readonly<MatchProps>) {
   const { socket } = useConnection()
   const { users, tracks, sessions } = useData()
-  const { canSetResult, toggleWinner } = useMatchResultActions(match)
+  const { canSetResult, toggleWinner } = useMatch(match)
   const user1 = users?.find(user => user.id === match.user1)
   const user2 = users?.find(user => user.id === match.user2)
   const track = tracks?.find(track => track.id === match.track)
