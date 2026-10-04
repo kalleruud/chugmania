@@ -13,17 +13,17 @@ export type CreateTimeEntry = typeof timeEntries.$inferInsert
 
 export type CreateTimeEntryRequest = {
   type: 'CreateTimeEntryRequest'
-} & Omit<CreateTimeEntry, 'tieBreaker'>
+} & CreateTimeEntry
 
 export function isCreateTimeEntryRequest(
   data: unknown
-): data is CreateTimeEntry {
+): data is CreateTimeEntryRequest {
   if (!isRecord(data)) return false
   return (
     data.type === 'CreateTimeEntryRequest' &&
     typeof data.user === 'string' &&
     typeof data.track === 'string' &&
-    data.tieBreaker === undefined &&
+    (data.tieBreaker === undefined || data.tieBreaker === false) &&
     (data.status === undefined || isTimeEntryStatus(data.status))
   )
 }

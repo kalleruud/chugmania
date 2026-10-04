@@ -752,6 +752,16 @@ test.serial(
 
     const track = (await tournament.getState()).config.tieBreakerTrack
     assert(track)
+    await assert.rejects(
+      TimeEntryManager.onPostTimeEntry(tournament.socket, {
+        type: 'CreateTimeEntryRequest',
+        id: 'client-managed-tie-breaker',
+        user: 'cancel-a',
+        session: tournament.session.id,
+        track,
+        tieBreaker: true,
+      })
+    )
     for (const requestedStatus of ['planned', 'cancelled']) {
       const status: 'planned' | 'cancelled' =
         requestedStatus === 'planned' ? 'planned' : 'cancelled'
@@ -759,6 +769,7 @@ test.serial(
       await TimeEntryManager.onPostTimeEntry(tournament.socket, {
         type: 'CreateTimeEntryRequest',
         id,
+        tieBreaker: false,
         user: 'cancel-a',
         track,
         duration: 1000,
