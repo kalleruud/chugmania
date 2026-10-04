@@ -230,6 +230,89 @@ export function protectResults(
     )
 }
 
+function placementScore(
+  state: TournamentState,
+  player: Participant,
+  groups: Standing[],
+  bracket: TournamentFixture[],
+  final: TournamentFixture | undefined
+): number {
+  const completed = !!final && decided(final.match)
+  if (completed && final.match.winner === player.user)
+    return STANDING_PRIORITY.CHAMPION
+  if (
+    completed &&
+    (final.match.user1 === player.user || final.match.user2 === player.user)
+  )
+    return STANDING_PRIORITY.RUNNER_UP
+  const loss = bracket
+    .filter(
+      fixture =>
+        decided(fixture.match) &&
+        (state.config.eliminationType === 'single' ||
+          fixture.bracket === 'lower') &&
+        fixture.match.winner !== player.user &&
+        (fixture.match.user1 === player.user ||
+          fixture.match.user2 === player.user)
+    )
+    .at(-1)
+  if (loss) return STANDING_PRIORITY.ELIMINATED + loss.round
+  if (groups.find(row => row.user === player.user)?.qualifies)
+    return STANDING_PRIORITY.QUALIFIED
+  return STANDING_PRIORITY.GROUP_ONLY
+}
+
+function groupWinRatio(groups: Standing[], user: string): number {
+  const row = groups.find(row => row.user === user)
+  return row ? winRatio(row) : 0
+}
+
+function placementFixtures(
+  state: TournamentState,
+  score: number
+): TournamentFixture[] {
+  return state.fixtures.filter(fixture => {
+    if (score === STANDING_PRIORITY.GROUP_ONLY)
+      return fixture.bracket === 'group'
+    return (
+      (fixture.bracket === 'lower' ||
+        (state.config.eliminationType === 'single' &&
+          fixture.bracket === 'upper')) &&
+      STANDING_PRIORITY.ELIMINATED + fixture.round === score
+    )
+  })
+}
+
+function activePlacementContenders(
+  state: TournamentState,
+  groups: Standing[],
+  bracket: TournamentFixture[]
+): Set<string> {
+  const unresolved = groups
+    .filter(row => !row.resolved && row.rank <= state.config.advancementCount)
+    .map(row => row.user)
+  const assigned = bracket
+    .flatMap(fixture => [fixture.match.user1, fixture.match.user2])
+    .filter(user => user !== null)
+  return new Set([...unresolved, ...assigned])
+}
+
+function placementSettled(
+  state: TournamentState,
+  score: number,
+  fixtures: TournamentFixture[],
+  users: string[],
+  contenders: Set<string>
+): boolean {
+  if (score === STANDING_PRIORITY.GROUP_ONLY)
+    return groupComplete(state) && users.every(user => !contenders.has(user))
+  return (
+    score >= STANDING_PRIORITY.ELIMINATED &&
+    score < STANDING_PRIORITY.RUNNER_UP &&
+    stageComplete(fixtures)
+  )
+}
+
 function overallStandings(
   state: TournamentState,
   applyLaps = true
@@ -238,116 +321,57 @@ function overallStandings(
   completed: boolean
   needs: string[][]
 } {
-  const final = state.fixtures
-    .filter(f => !isInactiveFinalReset(f.match))
-    .at(-1)
-  const completed = !!final && decided(final.match)
-  const groups = state.groups.flatMap(g => groupStandings(state, g.id))
+  const fixtures = state.fixtures.filter(f => !isInactiveFinalReset(f.match))
+  const final = fixtures.at(-1)
+  const groups = state.groups.flatMap(group => groupStandings(state, group.id))
   const bracket = state.fixtures.filter(f => f.bracket !== 'group')
-  const score = (p: Participant): number => {
-    if (completed && final.match.winner === p.user)
-      return STANDING_PRIORITY.CHAMPION
-    if (
-      completed &&
-      (final.match.user1 === p.user || final.match.user2 === p.user)
-    )
-      return STANDING_PRIORITY.RUNNER_UP
-    const loss = bracket
-      .filter(
-        f =>
-          decided(f.match) &&
-          (state.config.eliminationType === 'single' ||
-            f.bracket === 'lower') &&
-          f.match.winner !== p.user &&
-          (f.match.user1 === p.user || f.match.user2 === p.user)
-      )
-      .at(-1)
-    if (loss) return STANDING_PRIORITY.ELIMINATED + loss.round
-    if (groups.find(row => row.user === p.user)?.qualifies)
-      return STANDING_PRIORITY.QUALIFIED
-    return STANDING_PRIORITY.GROUP_ONLY
-  }
-  const percentage = (user: string): number => {
-    const row = groups.find(r => r.user === user)
-    return row && row.wins + row.losses ? row.wins / (row.wins + row.losses) : 0
-  }
-  const compare = (a: Participant, b: Participant) =>
+  const contenders = activePlacementContenders(state, groups, bracket)
+  const scores = new Map(
+    state.participants.map(player => [
+      player.user,
+      placementScore(state, player, groups, bracket, final),
+    ])
+  )
+  const score = (player: Participant): number => scores.get(player.user) ?? 0
+  const compare = (a: Participant, b: Participant): number =>
     score(b) - score(a) ||
     (score(a) === STANDING_PRIORITY.GROUP_ONLY
-      ? percentage(b.user) - percentage(a.user)
+      ? groupWinRatio(groups, b.user) - groupWinRatio(groups, a.user)
       : 0)
   const ordered = state.participants.toSorted(
     (a, b) => compare(a, b) || a.user.localeCompare(b.user)
   )
   const rows: { user: string; rank: number }[] = []
   const needs: string[][] = []
-  const contenders = new Set(
-    state.groups.flatMap(g =>
-      groupStandings(state, g.id)
-        .filter(
-          row => !row.resolved && row.rank <= state.config.advancementCount
-        )
-        .map(row => row.user)
-    )
-  )
-  const bracketUsers = new Set(
-    bracket
-      .flatMap(f => [f.match.user1, f.match.user2])
-      .filter(user => user !== null)
-  )
   for (let start = 0; start < ordered.length; ) {
     const tied = ordered.filter(player => compare(ordered[start], player) === 0)
-    const roundMatches = state.fixtures
-      .filter(f => {
-        if (score(ordered[start]) === STANDING_PRIORITY.GROUP_ONLY)
-          return f.bracket === 'group'
-        return (
-          (f.bracket === 'lower' ||
-            (state.config.eliminationType === 'single' &&
-              f.bracket === 'upper')) &&
-          STANDING_PRIORITY.ELIMINATED + f.round === score(ordered[start])
+    const placement = score(ordered[start])
+    const round = placementFixtures(state, placement)
+    const ranked = rankTiedPlayers(
+      tied.map(player => player.user),
+      round.map(fixture => fixture.match),
+      users => {
+        const settled = placementSettled(
+          state,
+          placement,
+          round,
+          users,
+          contenders
         )
-      })
-      .map(f => f.match)
+        if (settled) needs.push(users)
+        return applyLaps && settled
+          ? rankLapTie(state, users, false)
+          : users.map(user => ({ user, rank: 1, resolved: false }))
+      }
+    )
     rows.push(
-      ...rankTiedPlayers(
-        tied.map(p => p.user),
-        roundMatches,
-        users => {
-          const groupOnly =
-            score(ordered[start]) === STANDING_PRIORITY.GROUP_ONLY
-          const settled = groupOnly
-            ? groupComplete(state) &&
-              users.every(
-                user => !contenders.has(user) && !bracketUsers.has(user)
-              )
-            : score(ordered[start]) >= STANDING_PRIORITY.ELIMINATED &&
-              score(ordered[start]) < STANDING_PRIORITY.RUNNER_UP &&
-              stageComplete(
-                state.fixtures.filter(
-                  f =>
-                    (f.bracket === 'lower' ||
-                      (state.config.eliminationType === 'single' &&
-                        f.bracket === 'upper')) &&
-                    STANDING_PRIORITY.ELIMINATED + f.round ===
-                      score(ordered[start])
-                )
-              )
-          if (settled) needs.push(users)
-          return applyLaps && settled
-            ? rankLapTie(state, users, false)
-            : users.map(user => ({ user, rank: 1, resolved: false }))
-        }
-      ).map(row => ({ user: row.user, rank: start + row.rank }))
+      ...ranked.map(row => ({ user: row.user, rank: start + row.rank }))
     )
     start += tied.length
   }
   return {
     completed:
-      completed &&
-      state.fixtures
-        .filter(f => !isInactiveFinalReset(f.match))
-        .every(f => decided(f.match)),
+      !!final && decided(final.match) && fixtures.every(f => decided(f.match)),
     rows,
     needs,
   }
