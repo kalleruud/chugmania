@@ -9,16 +9,17 @@ import MatchManager from '../backend/src/managers/match.manager'
 import TournamentManager from '../backend/src/managers/tournament/tournament.manager'
 import type { TypedSocket } from '../backend/src/server'
 import {
+  assertResponse,
+  createRsvps,
   createSession,
-  createSessionSignup,
-  createTrack,
+  createTracks,
   createUser,
   login,
 } from './utils'
 
 async function CreateTournament(options: {
   config: Omit<TournamentConfig, 'session' | 'stageTracks'>
-  tracks: number[]
+  tracks: number
   users: string[]
 }): Promise<{
   socket: TypedSocket
@@ -30,9 +31,11 @@ async function CreateTournament(options: {
     createUser(name, index === 0 ? 'admin' : 'user')
   )
   const socket = await login(players[0])
-  const tracks = options.tracks.map(number => createTrack(number))
-  const session = createSession()
-  for (const player of players) createSessionSignup(session, player)
+  const tracks = createTracks(options.tracks)
+  const session = await createSession(
+    socket,
+    await createRsvps({ yes: players.length, no: 0, maybe: 0 })
+  )
 
   const config: TournamentConfig = {
     ...options.config,
@@ -60,7 +63,7 @@ let tournament: Awaited<ReturnType<typeof CreateTournament>>
 beforeAll(async () => {
   tournament = await CreateTournament({
     config: { groupsCount: 2, advancementCount: 1, eliminationType: 'single' },
-    tracks: [1],
+    tracks: 1,
     users: ['alice', 'bob', 'charlie', 'daniel'],
   })
 })
@@ -80,13 +83,12 @@ test('creates and completes a simple tournament through API handlers', async () 
   for (const match of groupMatches) {
     assert(match.user1 && match.user2)
     groupWinners.push(match.user1)
-    const response = await MatchManager.onEditMatch(socket, {
+    await MatchManager.onEditMatch(socket, {
       type: 'EditMatchRequest',
       id: match.id,
       status: 'completed',
       winner: match.user1,
-    })
-    assert(response.success)
+    }).then(assertResponse)
   }
   const progressed = await TournamentManager.onGet(socket, {
     session: config.session,
@@ -97,13 +99,12 @@ test('creates and completes a simple tournament through API handlers', async () 
   )
   assert(final && final.user1 && final.user2)
   expect([final.user1, final.user2].toSorted()).toEqual(groupWinners.toSorted())
-  const result = await MatchManager.onEditMatch(socket, {
+  await MatchManager.onEditMatch(socket, {
     type: 'EditMatchRequest',
     id: final.id,
     status: 'completed',
     winner: final.user1,
-  })
-  assert(result.success)
+  }).then(assertResponse)
   const finished = await TournamentManager.onGet(socket, {
     session: config.session,
   })

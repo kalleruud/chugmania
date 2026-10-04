@@ -61,14 +61,19 @@ export async function createSession(
   s: TypedSocket,
   rsvpList: { user: string; response: SessionResponse }[]
 ): Promise<SessionWithSignups> {
-  const sessionId = Bun.randomUUIDv7()
+  const existingSessions = await SessionManager.getAllSessions()
 
   await SessionManager.onCreateSession(s, {
     type: 'CreateSessionRequest',
-    id: sessionId,
     name: 'Test Cup',
     date: new Date(0),
   }).then(assertResponse)
+
+  const created = (await SessionManager.getAllSessions()).find(
+    session => !existingSessions.some(existing => existing.id === session.id)
+  )
+  assert(created, 'Could not find the created session')
+  const sessionId = created.id
 
   await Promise.all(
     rsvpList.map(rsvp =>
@@ -101,6 +106,8 @@ export async function createRsvps(
   )
 }
 
-export function assertResponse(r: SuccessResponse | ErrorResponse) {
+export function assertResponse(
+  r: SuccessResponse | ErrorResponse
+): asserts r is SuccessResponse {
   assert(r.success, r.success ? 'CRITICAL ERROR' : r.message)
 }
