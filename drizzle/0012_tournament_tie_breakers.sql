@@ -18,12 +18,10 @@ CREATE TABLE `__new_time_entries` (
 	CONSTRAINT "time_entry_status" CHECK("status" IN ('planned', 'completed', 'cancelled'))
 );
 --> statement-breakpoint
-INSERT INTO `__new_time_entries`("id", "updated_at", "created_at", "deleted_at", "user", "track", "session", "duration_ms", "status", "tie_breaker", "amount_l", "comment") SELECT "id", "updated_at", "created_at", "deleted_at", "user", "track", "session", "duration_ms", CASE WHEN "draft" = 1 THEN 'planned' ELSE 'completed' END, 0, "amount_l", "comment" FROM `time_entries`;--> statement-breakpoint
+INSERT INTO `__new_time_entries`("id", "updated_at", "created_at", "deleted_at", "user", "track", "session", "duration_ms", "amount_l", "comment") SELECT "id", "updated_at", "created_at", "deleted_at", "user", "track", "session", "duration_ms", "amount_l", "comment" FROM `time_entries`;--> statement-breakpoint
 DROP TABLE `time_entries`;--> statement-breakpoint
 ALTER TABLE `__new_time_entries` RENAME TO `time_entries`;--> statement-breakpoint
 PRAGMA foreign_keys=ON;--> statement-breakpoint
 CREATE UNIQUE INDEX `session_track_user_tie_breaker` ON `time_entries` (`session`,`track`,`user`) WHERE "time_entries"."tie_breaker" = 1;--> statement-breakpoint
 ALTER TABLE `tournament_players` ADD `global_rank` integer;--> statement-breakpoint
 ALTER TABLE `tournaments` ADD `tie_breaker_track` text REFERENCES tracks(id);
---> statement-breakpoint
-UPDATE `tournaments` SET `tie_breaker_track` = (SELECT m.track FROM tournament_matches tm JOIN matches m ON m.id = tm.match_id JOIN tracks t ON t.id = m.track WHERE tm.tournament = tournaments.id AND tm.deleted_at IS NULL AND m.deleted_at IS NULL AND t.deleted_at IS NULL ORDER BY tm."order" LIMIT 1);

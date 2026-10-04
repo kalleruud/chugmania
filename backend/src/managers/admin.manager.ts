@@ -132,14 +132,7 @@ export default class AdminManager {
       'Received CSV file:',
       request.table
     )
-    const parsed = await CsvParser.toObjects(request.content)
-    const data = parsed.map(row => {
-      if (request.table !== 'timeEntries') return row
-      const { draft, ...entry } = row
-      if (entry.status === undefined && draft !== undefined)
-        entry.status = draft === true || draft === 1 ? 'planned' : 'completed'
-      return entry
-    })
+    const data = await CsvParser.toObjects(request.content)
     const results = await AdminManager.importRows(request.table, data)
 
     console.info(
