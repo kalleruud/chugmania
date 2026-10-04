@@ -30,6 +30,11 @@ const matchStageCodes: Record<MatchStage, string> = {
   grand_final_reset: 'GFR',
 }
 
+const cancellation = {
+  cancel: 'Avlys',
+  cancelled: 'Avlyst',
+}
+
 const no = {
   chugmania: 'Chugmania',
   admin: {
@@ -166,7 +171,7 @@ const no = {
     statusOptions: {
       confirmed: 'Bekreftet',
       tentative: 'Usikkert',
-      cancelled: 'Avlyst',
+      cancelled: cancellation.cancelled,
     } as Record<SessionStatus, string>,
     status: {
       past: 'Avsluttet',
@@ -213,9 +218,9 @@ const no = {
     tieBreakerTrackRequired: 'Velg én bane for tie-breakers',
     requiredTieBreaker: 'Påkrevd',
     optionalTieBreaker: 'Valgfri',
-    cancelTieBreaker: 'Avlys rundetid',
-    tieBreakerCancelled: 'Tie-breaker avlyst',
-    cancelledLap: 'Avlyst',
+    cancelTieBreaker: `${cancellation.cancel} rundetid`,
+    tieBreakerCancelled: `Tie-breaker ${cancellation.cancelled.toLowerCase()}`,
+    cancelledLap: cancellation.cancelled,
     adminPanel: 'Adminpanel',
     groups: 'Grupper',
     groupNames: [
@@ -270,7 +275,7 @@ const no = {
         : `Topp ${count} spillere i hver gruppe går videre til sluttspillet.`,
     conditional: 'Hvis nødvendig',
     invalid: 'Ugyldig turneringsoppsett',
-    session: 'Sessionen er slettet eller avlyst',
+    session: `Sessionen er slettet eller ${cancellation.cancelled.toLowerCase()}`,
     roster:
       'Deltakerlisten passer ikke turneringsoppsettet. Venter på flere deltakere.',
     tracks: 'Velg minst én bane for hver runde',
@@ -281,7 +286,7 @@ const no = {
     downstream: 'Angre først resultatene i: ',
   },
   match: {
-    cancel: 'Avlys',
+    cancel: cancellation.cancel,
     vs: 'vs',
     title: 'Matcher',
     description: '1v1 Konkurranser',
@@ -296,7 +301,7 @@ const no = {
     status: {
       planned: 'Planlagt',
       completed: 'Ferdig',
-      cancelled: 'Avlyst',
+      cancelled: cancellation.cancelled,
     } as Record<MatchStatus, string>,
     stage: {
       group: 'Gruppespill',
@@ -476,6 +481,7 @@ const no = {
     receivedUpdate: 'Spillerne ble oppdatert',
   },
   common: {
+    cancellation,
     confirm: 'Sikker?',
     now: 'Nå',
     new: 'Ny',
