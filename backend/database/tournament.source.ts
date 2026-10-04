@@ -6,6 +6,7 @@ import {
   type MatchStage,
   sessions,
   sessionSignups,
+  timeEntries,
   tournamentGroups,
   tournamentMatches,
   tournamentMatchSlots,
@@ -168,6 +169,7 @@ export default class TournamentSource {
         advancementCount: row.advancementCount,
         eliminationType: row.eliminationType,
         session: row.session,
+        tieBreakerTrack: row.tieBreakerTrack,
         stageTracks: Object.fromEntries(
           stageRows.map(s => [s.stage, s.tracks])
         ),
@@ -175,6 +177,7 @@ export default class TournamentSource {
       participants: playerRows.map(p => ({
         user: p.user,
         rating: p.rating,
+        globalRank: p.globalRank,
         admission: p.admission,
         groupId: p.groupId,
       })),
@@ -183,6 +186,19 @@ export default class TournamentSource {
         name: g.name,
         position: g.position,
       })),
+      tieBreakers: row.tieBreakerTrack
+        ? db
+            .select()
+            .from(timeEntries)
+            .where(
+              and(
+                eq(timeEntries.session, row.session),
+                eq(timeEntries.track, row.tieBreakerTrack),
+                eq(timeEntries.tieBreaker, true)
+              )
+            )
+            .all()
+        : [],
       fixtures: fixtureRows
         .map(({ fixture, match }) => ({
           id: fixture.id,
@@ -200,6 +216,42 @@ export default class TournamentSource {
       cancelled:
         db.select().from(sessions).where(eq(sessions.id, session)).get()
           ?.status === 'cancelled',
+    }
+  }
+
+  // Reuse required laps, restore applicable planned laps, and soft-delete unused
+  // planned laps while retaining completed and cancelled results.
+  static reconcileLaps(
+    state: TournamentState,
+    needs: Map<string, boolean>
+  ): void {
+    const track = state.config.tieBreakerTrack
+    if (!track) return
+    const laps = new Map(state.tieBreakers.map(lap => [lap.user, lap]))
+    for (const user of needs.keys()) {
+      const lap = laps.get(user)
+      if (!lap)
+        db.insert(timeEntries)
+          .values({
+            user,
+            track,
+            session: state.config.session,
+            tieBreaker: true,
+            status: 'planned',
+          })
+          .run()
+      else if (lap.status === 'planned' && lap.deletedAt)
+        db.update(timeEntries)
+          .set({ deletedAt: null })
+          .where(eq(timeEntries.id, lap.id))
+          .run()
+    }
+    for (const lap of state.tieBreakers) {
+      if (lap.status === 'planned' && !lap.deletedAt && !needs.has(lap.user))
+        db.update(timeEntries)
+          .set({ deletedAt: new Date() })
+          .where(eq(timeEntries.id, lap.id))
+          .run()
     }
   }
 
@@ -334,6 +386,13 @@ export default class TournamentSource {
     const state = this.loadTournament(session)
     if (!state) return
     const deletedAt = new Date()
+    for (const lap of state.tieBreakers) {
+      if (lap.status === 'planned')
+        db.update(timeEntries)
+          .set({ deletedAt })
+          .where(eq(timeEntries.id, lap.id))
+          .run()
+    }
     const relatedMatchIds = db
       .select({ id: tournamentMatches.matchId })
       .from(tournamentMatches)

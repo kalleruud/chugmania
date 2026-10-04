@@ -1,6 +1,7 @@
 import type { MatchStage } from '../../backend/database/schema'
 import { isRecord } from '../utils/utils'
 import type { Match, MatchStatus } from './match'
+import type { TimeEntry } from './timeEntry'
 
 export type EliminationType = 'single' | 'double'
 export type TournamentConfig = {
@@ -9,11 +10,13 @@ export type TournamentConfig = {
   advancementCount: number
   eliminationType: EliminationType
   stageTracks: Partial<Record<MatchStage, string[]>>
+  tieBreakerTrack: string | null
 }
 
 export type Participant = {
   user: string
   rating: number
+  globalRank: number | null
   admission: number
   groupId: string
 }
@@ -43,25 +46,11 @@ export type TournamentState = {
   participants: Participant[]
   groups: TournamentGroup[]
   fixtures: TournamentFixture[]
+  tieBreakers: TimeEntry[]
   frozenAt: Date | null
   notReadyReason: string | null
   cancelled: boolean
 }
-
-export type StandingMatchExplanation = {
-  matchId: string
-  winner: string
-  loser: string
-}
-
-export type StandingExplanation =
-  | { kind: 'win_percentage' }
-  | { kind: 'head_to_head'; matches: StandingMatchExplanation[] }
-  | {
-      kind: 'shared_rank'
-      users: string[]
-      reason: 'missing_results' | 'unresolved_results'
-    }
 
 export type Standing = {
   user: string
@@ -70,7 +59,7 @@ export type Standing = {
   losses: number
   matchesPlayed: number
   winPercentage: number
-  explanation: StandingExplanation
+  explanation: 'head_to_head' | 'tie_breaker' | null
   qualifies: boolean
   resolved: boolean
 }
@@ -88,6 +77,7 @@ export type TournamentDetails = {
     progress: { decided: number; total: number }
   })[]
   matches: Match[]
+  tieBreakers: (TimeEntry & { required: boolean })[]
   standings: { user: string; rank: number }[]
   completed: boolean
   progress: {
@@ -146,6 +136,8 @@ export function isTournamentConfig(value: unknown): value is TournamentConfig {
     Number.isInteger(value.advancementCount) &&
     (value.eliminationType === 'single' ||
       value.eliminationType === 'double') &&
+    (value.tieBreakerTrack === null ||
+      typeof value.tieBreakerTrack === 'string') &&
     isRecord(value.stageTracks) &&
     Object.values(value.stageTracks).every(
       tracks =>

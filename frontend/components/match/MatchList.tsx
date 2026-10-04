@@ -73,7 +73,6 @@ export default function MatchList({
               <TrackRow item={separatorTrack} className='border-b px-2 py-3' />
             )}
             <MatchComponent
-              id={`match-${match.id}`}
               item={match}
               highlight={match.status !== 'cancelled' && (isMe || isFeatured)}
               className='bg-background-secondary hover:bg-primary-foreground/6'

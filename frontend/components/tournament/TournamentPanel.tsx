@@ -14,6 +14,7 @@ import SegmentedProgress from '../SegmentedProgress'
 import UserRow from '../user/UserRow'
 import DeleteTournamentDialog from './DeleteTournamentDialog'
 import TournamentGroupPanel from './TournamentGroupPanel'
+import TournamentTieBreakerPanel from './TournamentTieBreakerPanel'
 
 export default function TournamentPanel({
   details,
@@ -108,6 +109,8 @@ export default function TournamentPanel({
           </p>
         </div>
       </section>
+
+      {!isPreview && <TournamentTieBreakerPanel details={details} />}
 
       <details
         open={!allMatchesPlayed}

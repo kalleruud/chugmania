@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils'
 import loc from '@common/locale/locales'
 import { firstPendingMatch } from '@common/utils/tournament'
 import { ChevronRight } from 'lucide-react'
+import { Fragment } from 'react'
 import { Link, useParams } from 'react-router'
 
 export default function TournamentGroupPage() {
@@ -129,7 +130,7 @@ export default function TournamentGroupPage() {
                 if (!user) return null
 
                 return (
-                  <>
+                  <Fragment key={standing.user}>
                     <tr className='tabular-nums'>
                       <td
                         className={cn(
@@ -167,15 +168,20 @@ export default function TournamentGroupPage() {
                         />
                       </td>
                     </tr>
-                    {/* <tr>
-                      <td colSpan={6} className={cn('border-l-2 px-3 pb-3')}>
-                        <TournamentStandingExplanation
-                          standing={standing}
-                          matches={matches}
-                        />
-                      </td>
-                    </tr> */}
-                  </>
+                    {standing.explanation && (
+                      <tr>
+                        <td
+                          colSpan={6}
+                          className='text-xs text-muted-foreground'>
+                          {
+                            loc.no.tournament.standingExplanation[
+                              standing.explanation
+                            ]
+                          }
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 )
               })}
             </tbody>

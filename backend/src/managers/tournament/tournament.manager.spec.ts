@@ -44,6 +44,7 @@ describe('Rename tournament groups', () => {
         groupsCount: 2,
         advancementCount: 1,
         eliminationType: 'single',
+        tieBreakerTrack: tracks[0].id,
         stageTracks: {
           group: tracks.map(track => track.id),
           final: tracks.map(track => track.id),

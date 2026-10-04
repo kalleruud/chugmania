@@ -95,6 +95,7 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
         data.map(tournament => ({
           ...tournament,
           matches: parseDatesArray(tournament.matches),
+          tieBreakers: parseDatesArray(tournament.tieBreakers),
         }))
       )
     })

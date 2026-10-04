@@ -10,6 +10,7 @@ function createState(count = 6, groupsCount = 1): TournamentState {
     (_, index) => ({
       user: `player-${index}`,
       rating: 1500 - index,
+      globalRank: index + 1,
       admission: index,
       groupId: '',
     })
@@ -21,6 +22,7 @@ function createState(count = 6, groupsCount = 1): TournamentState {
       advancementCount: 2,
       eliminationType: 'single',
       stageTracks: {},
+      tieBreakerTrack: null,
     },
     participants
   )
@@ -68,19 +70,15 @@ describe('Tournament group details', () => {
       },
     ])
     for (const row of group.standings.slice(0, 2)) {
-      expect(row.explanation).toEqual({
-        kind: 'shared_rank',
-        users: ['player-0', 'player-1'],
-        reason: 'missing_results',
-      })
+      expect(row.explanation).toBeNull()
       expect(row.resolved).toBe(false)
       expect(row.qualifies).toBe(false)
     }
   })
 
-  test('equal percentages are ordered by the deciding match, including its loser', () => {
+  test('equal percentages show a direct-match explanation only for the winner', () => {
     const state = createState(4)
-    const direct = setResult(state, 'player-0', 'player-1')
+    setResult(state, 'player-0', 'player-1')
     setResult(state, 'player-2', 'player-0')
     setResult(state, 'player-1', 'player-3')
     const group = tournamentDetails(state).groups[0]
@@ -102,14 +100,8 @@ describe('Tournament group details', () => {
         winPercentage: 50,
       },
     ])
-    for (const row of group.standings.slice(1, 3)) {
-      expect(row.explanation).toEqual({
-        kind: 'head_to_head',
-        matches: [
-          { matchId: direct.id, winner: 'player-0', loser: 'player-1' },
-        ],
-      })
-    }
+    expect(group.standings[1].explanation).toBe('head_to_head')
+    expect(group.standings[2].explanation).toBeNull()
   })
 
   test('a complete circular tie remains unresolved', () => {
@@ -120,19 +112,15 @@ describe('Tournament group details', () => {
     const rows = tournamentDetails(state).groups[0].standings.slice(0, 3)
     for (const row of rows) {
       expect(row).toMatchObject({ rank: 1, resolved: false, winPercentage: 50 })
-      expect(row.explanation).toEqual({
-        kind: 'shared_rank',
-        users: ['player-0', 'player-1', 'player-2'],
-        reason: 'unresolved_results',
-      })
+      expect(row.explanation).toBeNull()
     }
   })
 
-  test('three tied players retain evidence from each ranking step', () => {
+  test('three tied players show explanations only for the direct-match winners', () => {
     const state = createState()
-    const first = setResult(state, 'player-0', 'player-1')
-    const second = setResult(state, 'player-0', 'player-2')
-    const third = setResult(state, 'player-1', 'player-2')
+    setResult(state, 'player-0', 'player-1')
+    setResult(state, 'player-0', 'player-2')
+    setResult(state, 'player-1', 'player-2')
     setResult(state, 'player-3', 'player-0')
     setResult(state, 'player-4', 'player-0')
     setResult(state, 'player-1', 'player-3')
@@ -147,27 +135,11 @@ describe('Tournament group details', () => {
       'player-1',
       'player-2',
     ])
-    expect(rows[0].explanation).toEqual({
-      kind: 'head_to_head',
-      matches: [
-        { matchId: first.id, winner: 'player-0', loser: 'player-1' },
-        { matchId: second.id, winner: 'player-0', loser: 'player-2' },
-      ],
-    })
-    expect(rows[1].explanation).toEqual({
-      kind: 'head_to_head',
-      matches: [
-        { matchId: first.id, winner: 'player-0', loser: 'player-1' },
-        { matchId: third.id, winner: 'player-1', loser: 'player-2' },
-      ],
-    })
-    expect(rows[2].explanation).toEqual({
-      kind: 'head_to_head',
-      matches: [
-        { matchId: second.id, winner: 'player-0', loser: 'player-2' },
-        { matchId: third.id, winner: 'player-1', loser: 'player-2' },
-      ],
-    })
+    expect(rows.map(row => row.explanation)).toEqual([
+      'head_to_head',
+      'head_to_head',
+      null,
+    ])
   })
 
   test('unplayed and cancelled matches do not count, awarded wins do', () => {
@@ -217,17 +189,13 @@ describe('Tournament group details', () => {
       user: 'player-0',
       rank: 4,
       resolved: true,
-      explanation: { kind: 'head_to_head' },
+      explanation: 'head_to_head',
     })
     for (const row of rows.slice(1))
       expect(row).toMatchObject({
         rank: 5,
         resolved: false,
-        explanation: {
-          kind: 'shared_rank',
-          users: ['player-1', 'player-2', 'player-3'],
-          reason: 'unresolved_results',
-        },
+        explanation: null,
       })
   })
 
@@ -246,11 +214,8 @@ describe('Tournament group details', () => {
     state.fixtures.push(replay)
     const rows = tournamentDetails(state).groups[0].standings.slice(0, 2)
     expect(rows.map(row => row.user)).toEqual(['player-1', 'player-0'])
-    for (const row of rows)
-      expect(row.explanation).toEqual({
-        kind: 'head_to_head',
-        matches: [{ matchId: 'replay', winner: 'player-1', loser: 'player-0' }],
-      })
+    expect(rows[0].explanation).toBe('head_to_head')
+    expect(rows[1].explanation).toBeNull()
   })
 
   test('group identity selects only its fixtures, including planned matches', () => {

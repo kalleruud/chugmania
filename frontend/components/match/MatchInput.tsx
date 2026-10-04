@@ -289,7 +289,7 @@ export default function MatchInput({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {Object.entries(loc.no.match.status).map(([key, label]) => (
+              {Object.entries(loc.no.common.status).map(([key, label]) => (
                 <SelectItem key={key} value={key}>
                   {label}
                 </SelectItem>

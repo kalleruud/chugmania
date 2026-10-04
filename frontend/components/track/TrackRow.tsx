@@ -12,24 +12,36 @@ export function TrackRow({
   className,
   hideLink,
   highlight,
-}: Readonly<BaseRowProps<Track>>) {
+}: Readonly<BaseRowProps<Track | undefined>>) {
   const content = (
     <>
       <ItemContent>
         <ItemTitle className='font-kh-interface text-2xl tracking-tight tabular-nums'>
-          <p className='text-primary'>#</p>
-          {formatTrackName(track.number)}
+          <p
+            className={twMerge(
+              'text-primary',
+              !track && 'text-muted-foreground'
+            )}>
+            #
+          </p>
+          {track ? (
+            formatTrackName(track.number)
+          ) : (
+            <span className='text-muted-foreground/50'>000</span>
+          )}
         </ItemTitle>
       </ItemContent>
-      <div className='flex gap-2'>
-        <TrackBadge variant='outline' trackLevel={track.level}>
-          {track.level}
-        </TrackBadge>
-        <TrackBadge variant='outline' trackType={track.type}>
-          {track.type}
-        </TrackBadge>
-      </div>
-      {!hideLink && (
+      {track && (
+        <div className='flex gap-2'>
+          <TrackBadge variant='outline' trackLevel={track.level}>
+            {track.level}
+          </TrackBadge>
+          <TrackBadge variant='outline' trackType={track.type}>
+            {track.type}
+          </TrackBadge>
+        </div>
+      )}
+      {!hideLink && track && (
         <ItemActions>
           <ChevronRight className='size-4' />
         </ItemActions>
@@ -37,10 +49,10 @@ export function TrackRow({
     </>
   )
 
-  if (hideLink) {
+  if (hideLink || !track) {
     return (
       <Item
-        key={track.id}
+        key={track?.id}
         className={twMerge(highlight && 'bg-foreground/3', className)}
         asChild>
         <div>{content}</div>
