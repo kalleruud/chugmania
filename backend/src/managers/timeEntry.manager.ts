@@ -12,8 +12,10 @@ import db, { database } from '../../database/database'
 import { timeEntries } from '../../database/schema'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
+import MatchManager from './match.manager'
 import RatingManager from './rating.manager'
 import SessionManager from './session.manager'
+import TournamentManager from './tournament/tournament.manager'
 
 export default class TimeEntryManager {
   static readonly table = timeEntries
@@ -42,7 +44,7 @@ export default class TimeEntryManager {
         and(
           eq(timeEntries.session, sessionId),
           isNull(timeEntries.deletedAt),
-          eq(timeEntries.draft, false)
+          eq(timeEntries.status, 'completed')
         )
       )
       .groupBy(timeEntries.user)
@@ -68,7 +70,7 @@ export default class TimeEntryManager {
         and(
           eq(timeEntries.session, sessionId),
           isNull(timeEntries.deletedAt),
-          eq(timeEntries.draft, false)
+          eq(timeEntries.status, 'completed')
         )
       )
       .groupBy(timeEntries.user, timeEntries.createdAt)
@@ -89,7 +91,7 @@ export default class TimeEntryManager {
         and(
           eq(timeEntries.session, sessionId),
           isNull(timeEntries.deletedAt),
-          eq(timeEntries.draft, false)
+          eq(timeEntries.status, 'completed')
         )
       )
       .all()
@@ -114,7 +116,11 @@ export default class TimeEntryManager {
 
     const signupChanged = database.transaction(() => {
       db.insert(timeEntries)
-        .values({ ...request, draft: false })
+        .values({
+          ...request,
+          tieBreaker: false,
+          status: request.status ?? 'completed',
+        })
         .run()
       return request.session
         ? SessionManager.ensureSessionSignup(request.session, request.user)
@@ -167,7 +173,7 @@ export default class TimeEntryManager {
       throw new Error(loc.no.error.messages.insufficient_permissions)
     }
 
-    const { type, id, draft: ignoredDraft, ...updates } = request
+    const { type, id, ...updates } = request
 
     // Convert string dates to Date objects
     const processedUpdates = { ...updates }
@@ -180,16 +186,51 @@ export default class TimeEntryManager {
     if (typeof updates.createdAt === 'string') {
       processedUpdates.createdAt = new Date(updates.createdAt)
     }
-    const completesDraft = lapTime.draft && (processedUpdates.duration ?? 0) > 0
+    const requestedStatus = processedUpdates.status ?? lapTime.status
+    const completesLap =
+      lapTime.status === 'planned' &&
+      (processedUpdates.duration ?? 0) > 0 &&
+      requestedStatus !== 'cancelled'
+    const status = completesLap ? 'completed' : requestedStatus
+    if (lapTime.tieBreaker) {
+      if (
+        lapTime.deletedAt ||
+        lapTime.status === 'cancelled' ||
+        processedUpdates.deletedAt !== undefined ||
+        (processedUpdates.user !== undefined &&
+          processedUpdates.user !== lapTime.user) ||
+        (processedUpdates.track !== undefined &&
+          processedUpdates.track !== lapTime.track) ||
+        (processedUpdates.session !== undefined &&
+          processedUpdates.session !== lapTime.session) ||
+        (status === 'cancelled' &&
+          (!isModerator || lapTime.status !== 'planned')) ||
+        (status === 'completed' &&
+          (processedUpdates.duration === undefined
+            ? (lapTime.duration ?? 0)
+            : (processedUpdates.duration ?? 0)) <= 0) ||
+        (status === 'planned' && lapTime.status !== 'planned')
+      )
+        throw new Error(loc.no.tournament.owned)
+    }
+
+    if (lapTime.tieBreaker && status === 'cancelled')
+      processedUpdates.duration = null
 
     const signupChanged = database.transaction(() => {
+      const before =
+        lapTime.tieBreaker && lapTime.session
+          ? TournamentManager.getState(lapTime.session)
+          : null
+      if (before?.cancelled) throw new Error(loc.no.tournament.session)
       db.update(timeEntries)
         .set({
           ...processedUpdates,
-          draft: completesDraft ? false : lapTime.draft,
+          status,
         })
         .where(eq(timeEntries.id, request.id))
         .run()
+      if (before) TournamentManager.reconcile(before.config.session, before)
       const sessionId =
         processedUpdates.session === undefined
           ? lapTime.session
@@ -213,6 +254,10 @@ export default class TimeEntryManager {
     }
     broadcast('all_rankings', RatingManager.onGetRatings())
     broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
+    if (lapTime.tieBreaker) {
+      broadcast('all_matches', await MatchManager.getAllMatches())
+      TournamentManager.publish(socket.id)
+    }
 
     return {
       success: true,

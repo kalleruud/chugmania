@@ -71,7 +71,20 @@ export function NameCellPart({
   )
 }
 
-function TimePart({ duration }: Readonly<{ duration?: number | null }>) {
+function TimePart({
+  duration,
+  status,
+}: Readonly<{ duration?: number | null; status: TimeEntry['status'] }>) {
+  if (status === 'planned')
+    return (
+      <span className='text-muted-foreground'>{loc.no.tournament.pending}</span>
+    )
+  if (status === 'cancelled')
+    return (
+      <span className='text-muted-foreground'>
+        {loc.no.tournament.cancelledLap}
+      </span>
+    )
   const isDNF = !duration
   const label = duration
     ? formatTime(duration).replace(/^0/, '')
@@ -126,7 +139,7 @@ export default function TimeEntryRow({
   const { users } = useData()
   const userInfo = users ? users.find(u => u.id === lapTime.user) : null
 
-  const isDNF = !lapTime.duration
+  const isDNF = lapTime.status === 'completed' && !lapTime.duration
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -159,7 +172,9 @@ export default function TimeEntryRow({
       )}
       title={lapTime.comment ?? undefined}
       {...rest}>
-      {show.pos && <PositionBadgePart position={gap?.position} />}
+      {show.pos && lapTime.status === 'completed' && (gap || isDNF) && (
+        <PositionBadgePart position={gap?.position} />
+      )}
       <NameCellPart
         name={
           userInfo?.shortName ??
@@ -171,6 +186,9 @@ export default function TimeEntryRow({
         className={twMerge('mr-auto', isDNF && 'text-muted-foreground')}
       />
 
+      {lapTime.tieBreaker && (
+        <span className='text-xs text-muted-foreground'>Tie-breaker</span>
+      )}
       {show.gap && gap && (
         <GapPart
           gap={gap}
@@ -178,7 +196,9 @@ export default function TimeEntryRow({
           onChangeGapType={onChangeGapType}
         />
       )}
-      {show.time && <TimePart duration={lapTime.duration} />}
+      {show.time && (
+        <TimePart duration={lapTime.duration} status={lapTime.status} />
+      )}
     </div>
   )
 }

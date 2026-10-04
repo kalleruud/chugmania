@@ -17,6 +17,8 @@ type FilterType = 'all' | 'best' | 'latest'
 
 function sortEntries(entries: TimeEntry[]): TimeEntry[] {
   return entries.toSorted((a, b) => {
+    if ((a.status === 'completed') !== (b.status === 'completed'))
+      return a.status === 'completed' ? -1 : 1
     // Entries with valid duration first, sorted by lowest duration
     if (a.duration && b.duration) {
       return a.duration - b.duration
@@ -68,9 +70,13 @@ function filterEntries(
   let filtered = entries
 
   if (filterType === 'best') {
-    filtered = getBestByUser(entries)
+    filtered = getBestByUser(
+      entries.filter(entry => entry.status === 'completed')
+    )
   } else if (filterType === 'latest') {
-    filtered = getLatestByUser(entries)
+    filtered = getLatestByUser(
+      entries.filter(entry => entry.status === 'completed')
+    )
   }
 
   return sortEntries(filtered)
@@ -82,7 +88,7 @@ function getGap(
   compareEntry: TimeEntry | undefined,
   leader?: TimeEntry
 ): LeaderboardEntryGap | undefined {
-  if (!entry.duration) return undefined
+  if (entry.status !== 'completed' || !entry.duration) return undefined
 
   // For leader gap type, calculate gap to the leader (first entry)
   if (leader) {

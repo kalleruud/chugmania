@@ -48,7 +48,18 @@ export default function TimeEntryInputProvider({
   const [editingMatch, setEditingMatch] = useState<Partial<Match>>({})
   const { loggedInUser, isLoggedIn } = useAuth()
   const { socket } = useConnection()
-  const { matches } = useData()
+  const { matches, timeEntries, tournaments } = useData()
+  const currentTimeEntry = timeEntries?.find(
+    entry => entry.id === editingTimeEntry.id
+  )
+  const timeEntryTournament = tournaments?.find(
+    t => t.config.session === currentTimeEntry?.session
+  )
+  const timeEntryReadOnly =
+    !!editingTimeEntry.id &&
+    (!currentTimeEntry ||
+      currentTimeEntry.status === 'cancelled' ||
+      (currentTimeEntry.tieBreaker && !!timeEntryTournament?.cancelled))
   const currentMatch = matches?.find(m => m.id === editingMatch.id)
   const matchReadOnly =
     !!editingMatch.id && (!currentMatch || !!currentMatch.tournament?.readOnly)
@@ -98,9 +109,10 @@ export default function TimeEntryInputProvider({
   const canEdit =
     mode === 'match'
       ? isLoggedIn && loggedInUser.role !== 'user' && !matchReadOnly
-      : isEditingSelf ||
-        !isEditing ||
-        (isLoggedIn && loggedInUser.role !== 'user')
+      : !timeEntryReadOnly &&
+        (isEditingSelf ||
+          !isEditing ||
+          (isLoggedIn && loggedInUser.role !== 'user'))
 
   function open(
     editingTimeEntry: Parameters<TimeEntryInputContextType['open']>[0] = {}
@@ -182,7 +194,8 @@ export default function TimeEntryInputProvider({
           {mode === 'timeEntry' && (
             <TimeEntryInput
               id='inputForm'
-              inputTimeEntry={editingTimeEntry}
+              key={`${editingTimeEntry.id ?? 'new'}:${currentTimeEntry?.updatedAt ?? ''}`}
+              inputTimeEntry={currentTimeEntry ?? editingTimeEntry}
               disabled={!canEdit}
               onSubmitResponse={success => success && close()}
             />
@@ -204,7 +217,8 @@ export default function TimeEntryInputProvider({
             </DialogClose>
             {canEdit &&
               isEditing &&
-              !(mode === 'match' && editingMatch.tournament) && (
+              !(mode === 'match' && editingMatch.tournament) &&
+              !(mode === 'timeEntry' && editingTimeEntry.tieBreaker) && (
                 <ConfirmationButton
                   type='button'
                   variant='destructive'

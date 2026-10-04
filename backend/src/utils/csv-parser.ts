@@ -133,7 +133,10 @@ export default class CsvParser {
     const val = value?.trim()
     if (!val) return null
 
-    if (key === 'draft' && (val === 'true' || val === 'false')) {
+    if (
+      (key === 'draft' || key === 'tieBreaker') &&
+      (val === 'true' || val === 'false')
+    ) {
       return { key, value: val === 'true' }
     }
 

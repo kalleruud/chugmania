@@ -208,6 +208,14 @@ const no = {
   },
   tournament: {
     title: 'Turnering',
+    tieBreakers: 'Tie-breakers',
+    tieBreakerTrack: 'Tie-breaker-bane',
+    tieBreakerTrackRequired: 'Velg én bane for tie-breakers',
+    requiredTieBreaker: 'Påkrevd',
+    optionalTieBreaker: 'Valgfri',
+    cancelTieBreaker: 'Avlys rundetid',
+    tieBreakerCancelled: 'Tie-breaker avlyst',
+    cancelledLap: 'Avlyst',
     adminPanel: 'Adminpanel',
     groups: 'Grupper',
     groupNames: [
@@ -252,7 +260,7 @@ const no = {
     deleted: 'Turneringen er slettet',
     deleteTitle: 'Slett turnering',
     deleteDescription:
-      'Vil du beholde eller slette turneringens matcher? Andre matcher og rundetider beholdes.',
+      'Vil du beholde eller slette turneringens matcher? Andre matcher og fullførte rundetider beholdes. Planlagte tie-breakers slettes.',
     keepResults: 'Slett turnering, behold resultater',
     deleteResults: 'Slett turnering og resultater',
     awarded: 'Tildelt seier',

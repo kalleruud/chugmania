@@ -164,6 +164,8 @@ export default function TimeEntryInput({
   function handleUpdate(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!inputTimeEntry.id) return toast.error('Is not editing')
+    if (inputTimeEntry.tieBreaker && !request?.duration)
+      return toast.error(loc.no.timeEntry.input.validationError)
 
     toast.promise(
       socket
@@ -243,7 +245,11 @@ export default function TimeEntryInput({
         <Combobox
           className='w-full'
           required={true}
-          disabled={disabled || loggedInUser?.role === 'user'}
+          disabled={
+            disabled ||
+            inputTimeEntry.tieBreaker ||
+            loggedInUser?.role === 'user'
+          }
           placeholder={loc.no.timeEntry.input.placeholder.user}
           selected={selectedUser}
           setSelected={value => setSelectedUser(value ?? null)}
@@ -256,7 +262,7 @@ export default function TimeEntryInput({
         <Combobox
           className='w-full'
           required={true}
-          disabled={disabled}
+          disabled={disabled || inputTimeEntry.tieBreaker}
           placeholder={loc.no.timeEntry.input.placeholder.track}
           selected={selectedTrack}
           setSelected={value => setSelectedTrack(value ?? null)}
@@ -269,7 +275,7 @@ export default function TimeEntryInput({
         <Combobox
           className='w-full'
           required={false}
-          disabled={disabled}
+          disabled={disabled || inputTimeEntry.tieBreaker}
           placeholder={loc.no.timeEntry.input.placeholder.session}
           selected={selectedSession}
           setSelected={value => setSelectedSession(value ?? null)}

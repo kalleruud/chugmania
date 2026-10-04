@@ -89,6 +89,10 @@ export default class AdminManager {
       }
     }
 
+    const before = TournamentManager.getAllTournaments().flatMap(tournament => {
+      const state = TournamentManager.getState(tournament.config.session)
+      return state ? [state] : []
+    })
     let created = 0
     let updated = 0
     // Manual transaction management for better-sqlite3
@@ -105,6 +109,9 @@ export default class AdminManager {
         const res = db.update(table).set(update).where(eq(table.id, id)).run()
         updated += res.changes
       }
+      for (const state of before)
+        TournamentManager.reconcile(state.config.session, state)
+      TournamentManager.reconcileAll()
     })()
 
     return { created, updated }
@@ -125,7 +132,14 @@ export default class AdminManager {
       'Received CSV file:',
       request.table
     )
-    const data = await CsvParser.toObjects(request.content)
+    const parsed = await CsvParser.toObjects(request.content)
+    const data = parsed.map(row => {
+      if (request.table !== 'timeEntries') return row
+      const { draft, ...entry } = row
+      if (entry.status === undefined && draft !== undefined)
+        entry.status = draft === true || draft === 1 ? 'planned' : 'completed'
+      return entry
+    })
     const results = await AdminManager.importRows(request.table, data)
 
     console.info(

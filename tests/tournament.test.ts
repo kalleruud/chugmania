@@ -8,7 +8,9 @@ import { beforeAll, describe, expect, test } from 'bun:test'
 import assert from 'node:assert/strict'
 import type { MatchStage } from '../backend/database/schema'
 import MatchManager from '../backend/src/managers/match.manager'
+import RatingManager from '../backend/src/managers/rating.manager'
 import SessionManager from '../backend/src/managers/session.manager'
+import TimeEntryManager from '../backend/src/managers/timeEntry.manager'
 import TournamentManager from '../backend/src/managers/tournament/tournament.manager'
 import {
   assertResponse,
@@ -27,11 +29,12 @@ type TestMatch = {
   status: Match['status']
   track: number | null
   setWinner(name: string): Promise<void>
+  reopen(): Promise<void>
   setPlayers(players: Partial<Pick<Match, 'user1' | 'user2'>>): Promise<void>
 }
 
 async function CreateTournament(options: {
-  config: Omit<TournamentConfig, 'session' | 'stageTracks'>
+  config: Omit<TournamentConfig, 'session' | 'stageTracks' | 'tieBreakerTrack'>
   tracks: number
   users: string[]
 }) {
@@ -48,6 +51,7 @@ async function CreateTournament(options: {
     ...options.config,
     session: session.id,
     stageTracks: {},
+    tieBreakerTrack: tracks[0].id,
   }
   for (const stage of getTournamentStages(config, players.length))
     config.stageTracks[stage] = tracks.map(track => track.id)
@@ -96,6 +100,14 @@ async function CreateTournament(options: {
             winner: name,
           }).then(assertResponse)
         },
+        async reopen(): Promise<void> {
+          await MatchManager.onEditMatch(socket, {
+            type: 'EditMatchRequest',
+            id: match.id,
+            status: 'planned',
+            winner: null,
+          }).then(assertResponse)
+        },
         async setPlayers(
           players: Partial<Pick<Match, 'user1' | 'user2'>>
         ): Promise<void> {
@@ -115,6 +127,26 @@ async function CreateTournament(options: {
   }
 
   return {
+    socket,
+    players,
+    session,
+    async editLap(
+      user: string,
+      updates: {
+        duration?: number
+        status?: 'completed' | 'cancelled' | 'planned'
+      }
+    ) {
+      const lap = (await getDetails()).tieBreakers.find(
+        lap => lap.user === user
+      )
+      assert(lap, `Missing lap: ${user}`)
+      await TimeEntryManager.onEditTimeEntry(socket, {
+        type: 'EditTimeEntryRequest',
+        id: lap.id,
+        ...updates,
+      }).then(assertResponse)
+    },
     getMatches,
     getMatch,
     getState: getDetails,
@@ -293,6 +325,40 @@ describe('Complete simple tournament', () => {
 
     // Assert
     expect(state).toMatchObject(expected)
+    expect(state.tieBreakers).toHaveLength(6)
+    expect(
+      state.tieBreakers.every(lap => !lap.required && lap.status === 'planned')
+    ).toBe(true)
+    await tournament.editLap('charlie', { status: 'cancelled' })
+    expect(
+      (await tournament.getState()).tieBreakers.filter(
+        lap => lap.status === 'cancelled'
+      )
+    ).toHaveLength(1)
+    await tournament.editLap('daniel', { status: 'cancelled' })
+    expect(
+      (await tournament.getState()).standings.filter(row =>
+        ['charlie', 'daniel'].includes(row.user)
+      )
+    ).toEqual([
+      { user: 'charlie', rank: 3 },
+      { user: 'daniel', rank: 3 },
+    ])
+    for (const [index, user] of ['erin', 'frank', 'grace', 'hugo'].entries())
+      await tournament.editLap(user, { duration: 10000 + index * 1000 })
+    expect((await tournament.getState()).standings.slice(4)).toEqual([
+      { user: 'erin', rank: 5 },
+      { user: 'frank', rank: 6 },
+      { user: 'grace', rank: 7 },
+      { user: 'hugo', rank: 8 },
+    ])
+    const ids = (await tournament.getState()).tieBreakers
+      .map(lap => lap.id)
+      .sort()
+    TournamentManager.reconcileAll()
+    expect(
+      (await tournament.getState()).tieBreakers.map(lap => lap.id).sort()
+    ).toEqual(ids)
   })
 })
 
@@ -528,3 +594,182 @@ describe('Complete double elimination tournament with a manual tie-break', () =>
     ])
   })
 })
+
+test.serial(
+  'Simple tournament advances a victory circle using required lap times',
+  async () => {
+    const tournament = await CreateTournament({
+      config: {
+        groupsCount: 1,
+        advancementCount: 2,
+        eliminationType: 'single',
+      },
+      tracks: 1,
+      users: ['tie-a', 'tie-b', 'tie-c', 'tie-d'],
+    })
+    const groups = await tournament.getMatches('group')
+    await setResults(groups, {
+      'tie-a': ['tie-b', 'tie-d'],
+      'tie-b': ['tie-c', 'tie-d'],
+      'tie-c': ['tie-a', 'tie-d'],
+    })
+    let state = await tournament.getState()
+    expect(state.tieBreakers).toHaveLength(3)
+    expect(
+      state.tieBreakers.every(lap => lap.status === 'planned' && lap.required)
+    ).toBe(true)
+    expect(await tournament.getMatch('final')).toMatchObject({
+      user1: null,
+      user2: null,
+    })
+    const ids = state.tieBreakers.map(lap => lap.id).sort()
+    const reopened = groups.find(
+      match =>
+        [match.user1, match.user2].includes('tie-c') &&
+        [match.user1, match.user2].includes('tie-d')
+    )
+    assert(reopened)
+    await reopened.reopen()
+    expect((await tournament.getState()).tieBreakers).toHaveLength(0)
+    await reopened.setWinner('tie-c')
+    expect(
+      (await tournament.getState()).tieBreakers.map(lap => lap.id).sort()
+    ).toEqual(ids)
+    await tournament.editLap('tie-a', { duration: 30000 })
+    await tournament.editLap('tie-b', { duration: 20000 })
+    expect(await tournament.getMatch('final')).toMatchObject({
+      user1: null,
+      user2: null,
+    })
+    await tournament.editLap('tie-c', { duration: 10000 })
+    expect(await tournament.getMatch('final')).toMatchObject({
+      user1: 'tie-c',
+      user2: 'tie-b',
+    })
+    expect(
+      TimeEntryManager.getAllLatestAfterSession(tournament.session.id)
+        .map(lap => lap.user)
+        .sort()
+    ).toEqual(['tie-a', 'tie-b', 'tie-c'])
+    expect(RatingManager.getUserRatings('tie-c')).toBeDefined()
+    await (await tournament.getMatch('final')).setWinner('tie-c')
+    state = await tournament.getState()
+    expect(state.completed).toBe(true)
+    expect(state.progress).toMatchObject({ decided: 7, total: 7 })
+    expect(state.tieBreakers).toHaveLength(3)
+    expect(state.standings).toEqual([
+      { user: 'tie-c', rank: 1 },
+      { user: 'tie-b', rank: 2 },
+      { user: 'tie-a', rank: 3 },
+      { user: 'tie-d', rank: 4 },
+    ])
+    await assert.rejects(tournament.editLap('tie-a', { duration: 5000 }))
+    expect(
+      (await tournament.getState()).tieBreakers.find(
+        lap => lap.user === 'tie-a'
+      )?.duration
+    ).toBe(30000)
+  }
+)
+
+test.serial(
+  'Mandatory cancellations are individual and equal times use frozen ranking',
+  async () => {
+    const tournament = await CreateTournament({
+      config: {
+        groupsCount: 1,
+        advancementCount: 2,
+        eliminationType: 'single',
+      },
+      tracks: 1,
+      users: ['cancel-a', 'cancel-b', 'cancel-c', 'cancel-d'],
+    })
+    await setResults(await tournament.getMatches('group'), {
+      'cancel-a': ['cancel-b', 'cancel-d'],
+      'cancel-b': ['cancel-c', 'cancel-d'],
+      'cancel-c': ['cancel-a', 'cancel-d'],
+    })
+    const lap = (await tournament.getState()).tieBreakers.find(
+      lap => lap.user === 'cancel-b'
+    )
+    assert(lap)
+    const owner = tournament.players.find(player => player.id === 'cancel-b')
+    assert(owner)
+    await assert.rejects(
+      TimeEntryManager.onEditTimeEntry(await login(owner), {
+        type: 'EditTimeEntryRequest',
+        id: lap.id,
+        status: 'cancelled',
+      })
+    )
+    await tournament.editLap('cancel-c', { status: 'cancelled' })
+    expect(
+      (await tournament.getState()).tieBreakers.filter(
+        lap => lap.status === 'planned'
+      )
+    ).toHaveLength(2)
+    await tournament.editLap('cancel-a', { duration: 10000 })
+    await tournament.editLap('cancel-b', { duration: 10000 })
+    expect(await tournament.getMatch('final')).toMatchObject({
+      user1: 'cancel-a',
+      user2: 'cancel-b',
+    })
+    expect(
+      TimeEntryManager.getAllLatestAfterSession(tournament.session.id).some(
+        lap => lap.user === 'cancel-c'
+      )
+    ).toBe(false)
+    await assert.rejects(tournament.editLap('cancel-c', { duration: 5000 }))
+  }
+)
+
+test.serial(
+  'Multiple mandatory cancellations fall back to ranking and survive reopening',
+  async () => {
+    const tournament = await CreateTournament({
+      config: {
+        groupsCount: 1,
+        advancementCount: 2,
+        eliminationType: 'single',
+      },
+      tracks: 1,
+      users: ['fallback-a', 'fallback-b', 'fallback-c', 'fallback-d'],
+    })
+    const matches = await tournament.getMatches('group')
+    await setResults(matches, {
+      'fallback-a': ['fallback-b', 'fallback-d'],
+      'fallback-b': ['fallback-c', 'fallback-d'],
+      'fallback-c': ['fallback-a', 'fallback-d'],
+    })
+    const ids = (await tournament.getState()).tieBreakers
+      .map(lap => lap.id)
+      .sort()
+    for (const user of ['fallback-a', 'fallback-b', 'fallback-c'])
+      await tournament.editLap(user, { status: 'cancelled' })
+    expect(await tournament.getMatch('final')).toMatchObject({
+      user1: 'fallback-a',
+      user2: 'fallback-b',
+    })
+    const reopened = matches.find(
+      match =>
+        [match.user1, match.user2].includes('fallback-c') &&
+        [match.user1, match.user2].includes('fallback-d')
+    )
+    assert(reopened)
+    await reopened.reopen()
+    expect(await tournament.getMatch('final')).toMatchObject({
+      user1: null,
+      user2: null,
+    })
+    await reopened.setWinner('fallback-c')
+    const state = await tournament.getState()
+    expect(state.tieBreakers.map(lap => lap.id).sort()).toEqual(ids)
+    expect(state.tieBreakers.every(lap => lap.status === 'cancelled')).toBe(
+      true
+    )
+    expect(await tournament.getMatch('final')).toMatchObject({
+      user1: 'fallback-a',
+      user2: 'fallback-b',
+    })
+  }
+)

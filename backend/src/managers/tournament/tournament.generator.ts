@@ -298,6 +298,7 @@ export function generateTournament(
     participants,
     groups,
     fixtures,
+    tieBreakers: [],
     frozenAt: null,
     notReadyReason: null,
     cancelled: false,
