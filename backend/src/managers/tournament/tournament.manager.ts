@@ -65,7 +65,7 @@ export default class TournamentManager {
     config: TournamentConfig,
     creating: boolean
   ): TournamentState {
-    this.session(config.session)
+    TournamentManager.session(config.session)
     const available = new Set(TournamentSource.getAvailableTrackIds())
     if (
       Object.values(config.stageTracks)
@@ -78,7 +78,7 @@ export default class TournamentManager {
       (creating && !config.tieBreakerTrack)
     )
       throw new Error(loc.no.tournament.tieBreakerTrackRequired)
-    const participants = this.participants(config)
+    const participants = TournamentManager.participants(config)
     const state = resolveTournament(generateTournament(config, participants))
     const stages = getTournamentStages(config, participants.length)
     if (
@@ -129,7 +129,7 @@ export default class TournamentManager {
   static editMatch(request: EditMatchRequest): boolean {
     const row = TournamentSource.findMatchTournament(request.id)
     if (!row) return false
-    this.session(row.session)
+    TournamentManager.session(row.session)
     TournamentSource.transaction(() => {
       const state = TournamentSource.loadTournament(row.session)
       if (!state) throw new Error(loc.no.tournament.roster)
@@ -141,7 +141,7 @@ export default class TournamentManager {
       )
         throw new Error(loc.no.tournament.tracks)
       TournamentSource.saveTournament(updated)
-      this.reconcile(row.session, state, request.id)
+      TournamentManager.reconcile(row.session, state, request.id)
     })
     return true
   }
@@ -158,11 +158,11 @@ export default class TournamentManager {
     editing?: string
   ): void {
     TournamentSource.transaction(() => {
-      const state = this.getState(session)
+      const state = TournamentManager.getState(session)
       if (!state || state.cancelled || !state.config.tieBreakerTrack) return
       const automatic = resolveTournament(state)
       TournamentSource.reconcileLaps(automatic, tieBreakerNeeds(automatic))
-      const refreshed = this.getState(session)
+      const refreshed = TournamentManager.getState(session)
       if (!refreshed) return
       const resolved = resolveTournament(refreshed)
       protectResults(before ?? state, resolved, editing)
@@ -172,7 +172,7 @@ export default class TournamentManager {
 
   static reconcileAll(): void {
     for (const session of TournamentSource.getActiveSessionIds())
-      this.reconcile(session)
+      TournamentManager.reconcile(session)
   }
 
   static remove(session: string, options = { deleteMatches: true }): void {
@@ -180,16 +180,16 @@ export default class TournamentManager {
   }
 
   static publish(actor: string | null = null): void {
-    const details = this.getAllTournaments()
+    const details = TournamentManager.getAllTournaments()
     const serialized = JSON.stringify(details)
-    if (this.published === serialized) return
-    this.published = serialized
+    if (TournamentManager.published === serialized) return
+    TournamentManager.published = serialized
     broadcast('all_tournaments', details, actor)
   }
 
   static getAllTournaments(): TournamentDetails[] {
     return TournamentSource.getActiveSessionIds().flatMap(session => {
-      const details = this.details(session)
+      const details = TournamentManager.details(session)
       return details ? [details] : []
     })
   }
@@ -293,7 +293,9 @@ export default class TournamentManager {
 
   static enrich(rows: Match[]): Match[] {
     const details = new Map(
-      this.getAllTournaments().flatMap(t => t.matches.map(m => [m.id, m]))
+      TournamentManager.getAllTournaments().flatMap(t =>
+        t.matches.map(m => [m.id, m])
+      )
     )
     return rows.map(row => details.get(row.id) ?? row)
   }

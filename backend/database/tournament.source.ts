@@ -96,7 +96,7 @@ export default class TournamentSource {
   }
 
   static loadTournament(session: string): TournamentState | null {
-    const row = this.findActiveTournament(session)
+    const row = TournamentSource.findActiveTournament(session)
     if (!row) return null
     const groupRows = db
       .select()
@@ -206,8 +206,8 @@ export default class TournamentSource {
           bracket: fixture.bracket,
           round: fixture.round,
           order: fixture.order,
-          slot1: this.readSlot(slots.get(`${fixture.id}:1`)),
-          slot2: this.readSlot(slots.get(`${fixture.id}:2`)),
+          slot1: TournamentSource.readSlot(slots.get(`${fixture.id}:1`)),
+          slot2: TournamentSource.readSlot(slots.get(`${fixture.id}:2`)),
           match,
         }))
         .sort((a, b) => a.order - b.order),
@@ -383,7 +383,7 @@ export default class TournamentSource {
     session: string,
     { deleteMatches } = { deleteMatches: true }
   ): void {
-    const state = this.loadTournament(session)
+    const state = TournamentSource.loadTournament(session)
     if (!state) return
     const deletedAt = new Date()
     for (const lap of state.tieBreakers) {

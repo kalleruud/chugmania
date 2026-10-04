@@ -12,6 +12,7 @@ import {
 import { tournamentGroups } from '../../../database/schema'
 import TournamentSource from '../../../database/tournament.source'
 import { broadcast, type TypedSocket } from '../../server'
+import RatingManager from '../rating.manager'
 import TournamentManager from './tournament.manager'
 
 describe('Rename tournament groups', () => {
@@ -59,6 +60,24 @@ describe('Rename tournament groups', () => {
         otherGroupId = response.details.groups[0].id
       }
     }
+  })
+
+  test('static methods work without a class binding', () => {
+    const { loadTournament } = TournamentSource
+    const { getAllTournaments, enrich } = TournamentManager
+    const { recalculate, getUserRatings, onGetRatings } = RatingManager
+    recalculate()
+    expect(loadTournament(session)).toEqual(
+      TournamentSource.loadTournament(session)
+    )
+    expect(getAllTournaments()).toEqual(TournamentManager.getAllTournaments())
+    const matches = TournamentManager.details(session)?.matches
+    assert(matches)
+    expect(enrich(matches)).toEqual(TournamentManager.enrich(matches))
+    expect(onGetRatings()).toEqual(RatingManager.onGetRatings())
+    expect(getUserRatings('GroupPlayer')).toEqual(
+      RatingManager.getUserRatings('GroupPlayer')
+    )
   })
 
   test.serial(
