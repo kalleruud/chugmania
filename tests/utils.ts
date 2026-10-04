@@ -91,9 +91,10 @@ export async function createSession(
 }
 
 export async function createRsvps(
-  counts: Record<SessionResponse, number>
+  counts: Record<SessionResponse, number>,
+  candidates?: Pick<User, 'id'>[]
 ): Promise<Parameters<typeof createSession>[1]> {
-  const users = await UserManager.getAllUsers()
+  const users = candidates ?? (await UserManager.getAllUsers())
   const responses: SessionResponse[] = ['yes', 'no', 'maybe']
   let index = 0
 

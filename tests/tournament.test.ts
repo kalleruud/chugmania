@@ -4,7 +4,7 @@ import type {
   TournamentDetails,
 } from '@common/models/tournament'
 import { getTournamentStages } from '@common/utils/tournament'
-import { describe, expect, test } from 'bun:test'
+import { beforeAll, describe, expect, test } from 'bun:test'
 import assert from 'node:assert/strict'
 import type { MatchStage } from '../backend/database/schema'
 import MatchManager from '../backend/src/managers/match.manager'
@@ -27,6 +27,7 @@ type TestMatch = {
   status: Match['status']
   track: number | null
   setWinner(name: string): Promise<void>
+  setPlayers(players: Partial<Pick<Match, 'user1' | 'user2'>>): Promise<void>
 }
 
 async function CreateTournament(options: {
@@ -41,7 +42,7 @@ async function CreateTournament(options: {
   const tracks = createTracks(options.tracks)
   const session = await createSession(
     socket,
-    await createRsvps({ yes: players.length, no: 0, maybe: 0 })
+    await createRsvps({ yes: players.length, no: 0, maybe: 0 }, players)
   )
   const config: TournamentConfig = {
     ...options.config,
@@ -95,6 +96,15 @@ async function CreateTournament(options: {
             winner: name,
           }).then(assertResponse)
         },
+        async setPlayers(
+          players: Partial<Pick<Match, 'user1' | 'user2'>>
+        ): Promise<void> {
+          await MatchManager.onEditMatch(socket, {
+            type: 'EditMatchRequest',
+            id: match.id,
+            ...players,
+          }).then(assertResponse)
+        },
       }))
   }
 
@@ -108,6 +118,13 @@ async function CreateTournament(options: {
     getMatches,
     getMatch,
     getState: getDetails,
+    async getGroup(code: string): Promise<TournamentDetails['groups'][number]> {
+      const group = (await getDetails()).groups.find(
+        group => group.code === code
+      )
+      assert(group, `Unknown group: ${code}`)
+      return group
+    },
   }
 }
 
@@ -118,6 +135,23 @@ async function setWinners(
   assert.equal(matches.length, names.length, 'Provide one winner per match')
   for (const [index, match] of matches.entries())
     await match.setWinner(names[index])
+}
+
+async function setResults(
+  matches: TestMatch[],
+  results: Record<string, string[]>
+): Promise<void> {
+  for (const [winner, opponents] of Object.entries(results)) {
+    for (const opponent of opponents) {
+      const match = matches.find(
+        match =>
+          [match.user1, match.user2].includes(winner) &&
+          [match.user1, match.user2].includes(opponent)
+      )
+      assert(match, `Missing match: ${winner} vs ${opponent}`)
+      await match.setWinner(winner)
+    }
+  }
 }
 
 describe('Complete simple tournament', () => {
@@ -259,5 +293,238 @@ describe('Complete simple tournament', () => {
 
     // Assert
     expect(state).toMatchObject(expected)
+  })
+})
+
+describe('Complete double elimination tournament with a manual tie-break', () => {
+  let tournament: Awaited<ReturnType<typeof CreateTournament>>
+
+  beforeAll(async () => {
+    tournament = await CreateTournament({
+      config: {
+        groupsCount: 4,
+        advancementCount: 2,
+        eliminationType: 'double',
+      },
+      tracks: 2,
+      users: [
+        'amy',
+        'ben',
+        'cora',
+        'drew',
+        'eve',
+        'finn',
+        'gina',
+        'hal',
+        'ivy',
+        'jack',
+        'kate',
+        'liam',
+        'mia',
+      ],
+    })
+  })
+
+  test.serial('Triangle tie blocks quarterfinals', async () => {
+    // Arrange
+    const matches = await tournament.getMatches('group')
+    const results = {
+      amy: ['hal', 'ivy'],
+      hal: ['ivy'],
+      ben: ['gina'],
+      gina: ['jack'],
+      jack: ['ben'],
+      cora: ['finn', 'kate'],
+      finn: ['kate'],
+      drew: ['eve', 'liam', 'mia'],
+      eve: ['liam', 'mia'],
+      liam: ['mia'],
+    }
+    const tied = {
+      rank: 1,
+      wins: 1,
+      losses: 1,
+      resolved: false,
+      qualifies: false,
+    }
+
+    // Act
+    await setResults(matches, results)
+
+    // Assert
+    expect((await tournament.getGroup('B')).standings).toMatchObject([
+      { ...tied, user: 'ben' },
+      { ...tied, user: 'gina' },
+      { ...tied, user: 'jack' },
+    ])
+    expect(await tournament.getMatches('quarter')).toMatchObject([
+      { user1: 'amy', user2: 'eve' },
+      { user1: null, user2: 'finn' },
+      { user1: 'cora', user2: null },
+      { user1: 'drew', user2: 'hal' },
+    ])
+  })
+
+  test.serial('Choose tied players manually', async () => {
+    // Arrange
+    const quarters = await tournament.getMatches('quarter')
+
+    // Act
+    await quarters[1].setPlayers({ user1: 'ben' })
+    await quarters[2].setPlayers({ user2: 'gina' })
+
+    // Assert
+    expect(await tournament.getMatches('quarter')).toMatchObject([
+      { user1: 'amy', user2: 'eve' },
+      { user1: 'ben', user2: 'finn' },
+      { user1: 'cora', user2: 'gina' },
+      { user1: 'drew', user2: 'hal' },
+    ])
+  })
+
+  test.serial('Quarterfinal losers enter lower bracket', async () => {
+    // Arrange
+    const quarters = await tournament.getMatches('quarter')
+
+    // Act
+    await setWinners(quarters, ['amy', 'ben', 'cora', 'drew'])
+
+    // Assert
+    expect(await tournament.getMatches('loser_quarter')).toMatchObject([
+      { user1: 'eve', user2: 'finn', status: 'planned' },
+      { user1: 'gina', user2: 'hal', status: 'planned' },
+    ])
+  })
+
+  test.serial('Complete lower quarterfinals', async () => {
+    // Arrange
+    const lowerQuarters = await tournament.getMatches('loser_quarter')
+
+    // Act
+    await setWinners(lowerQuarters, ['finn', 'gina'])
+
+    // Assert
+    expect(await tournament.getMatches('loser_semi')).toMatchObject([
+      { user1: 'finn', user2: null },
+      { user1: 'gina', user2: null },
+      { user1: null, user2: null },
+    ])
+  })
+
+  test.serial('Upper semifinal losers drop down', async () => {
+    // Arrange
+    const semifinals = await tournament.getMatches('semi')
+
+    // Act
+    await setWinners(semifinals, ['amy', 'cora'])
+
+    // Assert
+    expect(await tournament.getMatches('loser_semi')).toMatchObject([
+      { user1: 'finn', user2: 'drew' },
+      { user1: 'gina', user2: 'ben' },
+      { user1: null, user2: null },
+    ])
+  })
+
+  test.serial('Complete lower semifinals', async () => {
+    // Arrange
+    const lowerSemifinals = await tournament.getMatches('loser_semi')
+
+    // Act
+    await lowerSemifinals[0].setWinner('finn')
+    await lowerSemifinals[1].setWinner('ben')
+    await lowerSemifinals[2].setWinner('ben')
+
+    // Assert
+    expect(await tournament.getMatch('loser_final')).toMatchObject({
+      user1: 'ben',
+      user2: null,
+    })
+  })
+
+  test.serial('Upper final loser gets a second chance', async () => {
+    // Arrange
+    const final = await tournament.getMatch('final')
+
+    // Act
+    await final.setWinner('amy')
+
+    // Assert
+    expect(await tournament.getMatch('loser_final')).toMatchObject({
+      user1: 'ben',
+      user2: 'cora',
+    })
+    expect(await tournament.getMatch('grand_final')).toMatchObject({
+      user1: 'amy',
+      user2: null,
+    })
+  })
+
+  test.serial('Lower champion reaches grand final', async () => {
+    // Arrange
+    const lowerFinal = await tournament.getMatch('loser_final')
+
+    // Act
+    await lowerFinal.setWinner('ben')
+
+    // Assert
+    expect(await tournament.getMatch('grand_final')).toMatchObject({
+      user1: 'amy',
+      user2: 'ben',
+      status: 'planned',
+    })
+    expect(await tournament.getMatch('grand_final_reset')).toMatchObject({
+      user1: null,
+      user2: null,
+      winner: null,
+    })
+  })
+
+  test.serial('Grand final forces a reset', async () => {
+    // Arrange
+    const grandFinal = await tournament.getMatch('grand_final')
+
+    // Act
+    await grandFinal.setWinner('ben')
+
+    // Assert
+    expect(await tournament.getMatch('grand_final_reset')).toMatchObject({
+      user1: 'ben',
+      user2: 'amy',
+      status: 'planned',
+    })
+    expect(await tournament.getState()).toMatchObject({
+      completed: false,
+      progress: { decided: 29, total: 30 },
+    })
+  })
+
+  test.serial('Reset decides final standings', async () => {
+    // Arrange
+    const reset = await tournament.getMatch('grand_final_reset')
+
+    // Act
+    await reset.setWinner('ben')
+
+    // Assert
+    expect(await tournament.getMatch('grand_final_reset')).toMatchObject({
+      winner: 'ben',
+      status: 'completed',
+    })
+    const state = await tournament.getState()
+    expect(state).toMatchObject({
+      completed: true,
+      progress: { decided: 30, total: 30, groupDecided: 15, groupTotal: 15 },
+    })
+    expect(state.standings.slice(0, 8)).toEqual([
+      { user: 'ben', rank: 1 },
+      { user: 'amy', rank: 2 },
+      { user: 'cora', rank: 3 },
+      { user: 'finn', rank: 4 },
+      { user: 'drew', rank: 5 },
+      { user: 'gina', rank: 5 },
+      { user: 'eve', rank: 7 },
+      { user: 'hal', rank: 7 },
+    ])
   })
 })
