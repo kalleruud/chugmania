@@ -93,6 +93,7 @@ export default class MatchManager {
     RatingManager.recalculate()
     broadcast('all_matches', await MatchManager.getAllMatches())
     broadcast('all_rankings', RatingManager.onGetRatings())
+    TournamentManager.publish(socket.id)
 
     return { success: true }
   }
@@ -148,6 +149,7 @@ export default class MatchManager {
     RatingManager.recalculate()
     broadcast('all_matches', await MatchManager.getAllMatches())
     broadcast('all_rankings', RatingManager.onGetRatings())
+    TournamentManager.publish(socket.id)
 
     return { success: true }
   }

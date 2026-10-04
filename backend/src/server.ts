@@ -141,8 +141,9 @@ async function Connect(s: TypedSocket) {
   setup(s, 'rsvp_session', SessionManager.onRsvpSession)
   setup(s, 'delete_session', SessionManager.onDeleteSession)
 
-  setup(s, 'preview_tournament', TournamentManager.onPreview)
   setup(s, 'create_tournament', TournamentManager.onCreate)
+  setup(s, 'update_tournament', TournamentManager.onUpdate)
+  setup(s, 'start_tournament', TournamentManager.onStart)
   setup(s, 'get_tournament', TournamentManager.onGet)
   setup(s, 'delete_tournament', TournamentManager.onDelete)
   setup(s, 'create_match', MatchManager.onCreateMatch)

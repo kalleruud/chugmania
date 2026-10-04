@@ -243,6 +243,21 @@ const no = {
     bracketMatches: 'Turneringsmatcher',
     create: 'Opprett turnering',
     preview: 'Forhåndsvisning',
+    preparation: 'Forberedelse',
+    start: 'Start turnering',
+    startConfirm: 'Bekreft start og lås turneringen',
+    started: 'Turneringen er startet',
+    saveChanges: 'Lagre endringer',
+    discard: 'Forkast endringer',
+    unsaved: 'Ulagrede endringer. Lagre for å oppdatere forhåndsvisningen.',
+    conflict:
+      'Turneringen er endret. Se gjennom det oppdaterte oppsettet før du prøver igjen.',
+    configConflict:
+      'Oppsettet er endret av en annen administrator. Last inn det lagrede oppsettet før du fortsetter.',
+    reload: 'Last inn lagret oppsett',
+    draftDeleteDescription:
+      'Vil du slette turneringsoppsettet og forhåndsvisningen?',
+
     pending: 'Venter',
     frozen: 'Gruppefordeling låst',
     finalStandings: 'Sluttresultat',

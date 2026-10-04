@@ -52,12 +52,24 @@ async function CreateTournament(options: {
   for (const stage of getTournamentStages(config, players.length))
     config.stageTracks[stage] = tracks.map(track => track.id)
 
-  const preview = await TournamentManager.onPreview(socket, config)
-  assertResponse(preview)
-  const unsaved = await TournamentManager.onGet(socket, { session: session.id })
-  assertResponse(unsaved)
-  assert.equal(unsaved.details, null, 'Preview must not persist a tournament')
-  assertResponse(await TournamentManager.onCreate(socket, config))
+  const draft = await TournamentManager.onCreate(socket, {
+    session: session.id,
+  })
+  assertResponse(draft)
+  assert(draft.details?.configKey)
+  const saved = await TournamentManager.onUpdate(socket, {
+    config,
+    configKey: draft.details.configKey,
+  })
+  assertResponse(saved)
+  assert(saved.details?.previewKey)
+  assert.equal(saved.details.status, 'draft')
+  assertResponse(
+    await TournamentManager.onStart(socket, {
+      session: session.id,
+      previewKey: saved.details.previewKey,
+    })
+  )
   await assert.rejects(
     SessionManager.onCreateSession(socket, {
       type: 'CreateSessionRequest',

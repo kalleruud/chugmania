@@ -413,7 +413,22 @@ export function tournamentDetails(state: TournamentState): TournamentDetails {
   const bracketRounds = Math.log2(
     state.config.groupsCount * state.config.advancementCount
   )
+  const hasFixtures = state.fixtures.length > 0
+  const minGroupMatches = groupSizes.length ? Math.min(...groupSizes) - 1 : 0
+  const maxGroupMatches = groupSizes.length ? Math.max(...groupSizes) - 1 : 0
+  const minBracketMatches =
+    state.participants.length ===
+    state.config.groupsCount * state.config.advancementCount
+      ? guaranteedBracketMatches
+      : 0
+  const maxBracketMatches =
+    state.config.eliminationType === 'double'
+      ? bracketRounds * 2 + 1
+      : bracketRounds
   return {
+    status: state.frozenAt ? 'started' : 'draft',
+    configKey: null,
+    previewKey: null,
     id: state.id,
     config: state.config,
     frozen: !!state.frozenAt,
@@ -434,15 +449,15 @@ export function tournamentDetails(state: TournamentState): TournamentDetails {
         slot2: label(f.slot2),
         editableSlots: editableSlots(f),
         readOnly:
-          state.id === 'preview' ||
+          !state.frozenAt ||
           state.cancelled ||
           !!state.notReadyReason ||
           isInactiveFinalReset(f.match),
         awarded: f.match.status === 'cancelled' && decided(f.match),
       },
     })),
-    standings: overall.rows,
-    completed: overall.completed,
+    standings: state.groups.length ? overall.rows : [],
+    completed: !!state.frozenAt && overall.completed,
     progress: {
       decided: active.filter(f => decided(f.match)).length,
       total: active.length,
@@ -453,19 +468,8 @@ export function tournamentDetails(state: TournamentState): TournamentDetails {
       tracks: new Set([
         ...state.fixtures.flatMap(f => (f.match.track ? [f.match.track] : [])),
       ]).size,
-      minMatches:
-        Math.min(...groupSizes) -
-        1 +
-        (state.participants.length ===
-        state.config.groupsCount * state.config.advancementCount
-          ? guaranteedBracketMatches
-          : 0),
-      maxMatches:
-        Math.max(...groupSizes) -
-        1 +
-        (state.config.eliminationType === 'double'
-          ? bracketRounds * 2 + 1
-          : bracketRounds),
+      minMatches: hasFixtures ? minGroupMatches + minBracketMatches : 0,
+      maxMatches: hasFixtures ? maxGroupMatches + maxBracketMatches : 0,
     },
   }
 }

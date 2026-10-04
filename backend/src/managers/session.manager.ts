@@ -281,6 +281,7 @@ export default class SessionManager {
     )
 
     broadcast('all_sessions', await SessionManager.getAllSessions())
+    TournamentManager.publish(socket.id)
 
     return { success: true }
   }

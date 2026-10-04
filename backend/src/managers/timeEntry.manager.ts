@@ -14,6 +14,7 @@ import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import RatingManager from './rating.manager'
 import SessionManager from './session.manager'
+import TournamentManager from './tournament/tournament.manager'
 
 export default class TimeEntryManager {
   static readonly table = timeEntries
@@ -133,6 +134,7 @@ export default class TimeEntryManager {
       broadcast('all_sessions', await SessionManager.getAllSessions())
     }
     broadcast('all_rankings', RatingManager.onGetRatings())
+    TournamentManager.publish(socket.id)
     broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
 
     return {
@@ -212,6 +214,7 @@ export default class TimeEntryManager {
       broadcast('all_sessions', await SessionManager.getAllSessions())
     }
     broadcast('all_rankings', RatingManager.onGetRatings())
+    TournamentManager.publish(socket.id)
     broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
 
     return {

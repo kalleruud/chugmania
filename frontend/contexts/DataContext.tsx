@@ -8,6 +8,7 @@ import type { Track } from '@common/models/track'
 import type { UserInfo } from '@common/models/user'
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -17,7 +18,12 @@ import {
 import { toast } from 'sonner'
 import { useConnection } from './ConnectionContext'
 
-type DataContextType =
+type DataContextType = {
+  applyTournamentDetails: (
+    details: TournamentDetails | null,
+    session: string
+  ) => void
+} & (
   | {
       isLoadingData: false
       tracks: Track[]
@@ -38,6 +44,7 @@ type DataContextType =
       rankings?: never
       tournaments?: never
     }
+)
 
 const DataContext = createContext<DataContextType | undefined>(undefined)
 
@@ -65,6 +72,10 @@ function parseDatesArray<T extends Record<string, unknown>>(arr: T[]): T[] {
   return arr.map(parseDates)
 }
 
+function parseTournament(details: TournamentDetails): TournamentDetails {
+  return { ...details, matches: parseDatesArray(details.matches) }
+}
+
 export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
   const { socket } = useConnection()
 
@@ -80,6 +91,19 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [tournaments, setTournaments] =
     useState<DataContextType['tournaments']>(undefined)
 
+  const applyTournamentDetails = useCallback(
+    (details: TournamentDetails | null, session: string) => {
+      setTournaments(previous => {
+        if (!previous) return previous
+        const remaining = previous.filter(
+          tournament => tournament.config.session !== session
+        )
+        return details ? [...remaining, parseTournament(details)] : remaining
+      })
+    },
+    []
+  )
+
   useEffect(() => {
     let previousTournaments: string | undefined
     socket.on('all_tournaments', (data, actor) => {
@@ -91,12 +115,7 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
       )
         toast.info(loc.no.tournament.changed)
       previousTournaments = serialized
-      setTournaments(
-        data.map(tournament => ({
-          ...tournament,
-          matches: parseDatesArray(tournament.matches),
-        }))
-      )
+      setTournaments(data.map(parseTournament))
     })
     socket.on('all_sessions', data => {
       setSessions(parseDatesArray(data))
@@ -143,10 +162,11 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
       rankings === undefined ||
       tournaments === undefined
     ) {
-      return { isLoadingData: true }
+      return { isLoadingData: true, applyTournamentDetails }
     }
     return {
       isLoadingData: false,
+      applyTournamentDetails,
       timeEntries,
       sessions,
       tracks,
@@ -155,7 +175,16 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
       rankings,
       tournaments,
     }
-  }, [tracks, timeEntries, users, sessions, matches, rankings, tournaments])
+  }, [
+    tracks,
+    timeEntries,
+    users,
+    sessions,
+    matches,
+    rankings,
+    tournaments,
+    applyTournamentDetails,
+  ])
 
   return <DataContext.Provider value={context}>{children}</DataContext.Provider>
 }

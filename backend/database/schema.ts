@@ -10,7 +10,11 @@ import {
   uniqueIndex,
 } from 'drizzle-orm/sqlite-core'
 import { randomUUID } from 'node:crypto'
-import type { EliminationType, Slot } from '../../common/models/tournament'
+import type {
+  EliminationType,
+  Slot,
+  TournamentStatus,
+} from '../../common/models/tournament'
 
 const metadata = {
   id: text().primaryKey().$defaultFn(randomUUID),
@@ -133,6 +137,7 @@ export const tournaments = sqliteTable(
       .$type<EliminationType>()
       .notNull()
       .default('single'),
+    status: text().$type<TournamentStatus>().notNull().default('started'),
     frozenAt: integer('frozen_at', { mode: 'timestamp_ms' }),
     notReadyReason: text('not_ready_reason'),
   },

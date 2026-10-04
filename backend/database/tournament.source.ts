@@ -1,9 +1,14 @@
-import type { Slot, TournamentState } from '@common/models/tournament'
+import {
+  isMatchStage,
+  type Slot,
+  type TournamentConfig,
+  type TournamentState,
+  type TournamentStatus,
+} from '@common/models/tournament'
 import { and, asc, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
 import db, { database } from './database'
 import {
   matches,
-  type MatchStage,
   sessions,
   sessionSignups,
   tournamentGroups,
@@ -96,7 +101,7 @@ export default class TournamentSource {
 
   static loadTournament(session: string): TournamentState | null {
     const row = this.findActiveTournament(session)
-    if (!row) return null
+    if (!row || row.status !== 'started') return null
     const groupRows = db
       .select()
       .from(tournamentGroups)
@@ -115,16 +120,6 @@ export default class TournamentSource {
         and(
           eq(tournamentPlayers.tournament, row.id),
           isNull(tournamentPlayers.deletedAt)
-        )
-      )
-      .all()
-    const stageRows = db
-      .select()
-      .from(tournamentStages)
-      .where(
-        and(
-          eq(tournamentStages.tournament, row.id),
-          isNull(tournamentStages.deletedAt)
         )
       )
       .all()
@@ -163,15 +158,7 @@ export default class TournamentSource {
       .all()
     return {
       id: row.id,
-      config: {
-        groupsCount: row.groupsCount,
-        advancementCount: row.advancementCount,
-        eliminationType: row.eliminationType,
-        session: row.session,
-        stageTracks: Object.fromEntries(
-          stageRows.map(s => [s.stage, s.tracks])
-        ),
-      },
+      config: this.loadConfig(row),
       participants: playerRows.map(p => ({
         user: p.user,
         rating: p.rating,
@@ -222,35 +209,80 @@ export default class TournamentSource {
     return { kind: row.kind, matchId: row.slotHolderId, ...override }
   }
 
-  static saveTournament(state: TournamentState): void {
-    const { session, stageTracks, ...config } = state.config
+  static loadConfig(row: typeof tournaments.$inferSelect): TournamentConfig {
+    const stages = db
+      .select()
+      .from(tournamentStages)
+      .where(
+        and(
+          eq(tournamentStages.tournament, row.id),
+          isNull(tournamentStages.deletedAt)
+        )
+      )
+      .all()
+    return {
+      session: row.session,
+      groupsCount: row.groupsCount,
+      advancementCount: row.advancementCount,
+      eliminationType: row.eliminationType,
+      stageTracks: Object.fromEntries(
+        stages.map(stage => [stage.stage, stage.tracks])
+      ),
+    }
+  }
+
+  static saveConfig(
+    id: string,
+    config: TournamentConfig,
+    status: TournamentStatus = 'draft',
+    frozenAt: Date | null = null,
+    notReadyReason: string | null = null
+  ): void {
+    const { stageTracks } = config
     const row = {
-      id: state.id,
-      session,
-      ...config,
-      frozenAt: state.frozenAt,
-      notReadyReason: state.notReadyReason,
+      id,
+      session: config.session,
+      groupsCount: config.groupsCount,
+      advancementCount: config.advancementCount,
+      eliminationType: config.eliminationType,
+      status,
+      frozenAt,
+      notReadyReason,
     }
     db.insert(tournaments)
       .values(row)
       .onConflictDoUpdate({ target: tournaments.id, set: row })
       .run()
+    db.update(tournamentStages)
+      .set({ deletedAt: new Date() })
+      .where(eq(tournamentStages.tournament, id))
+      .run()
     for (const [stage, tracks] of Object.entries(stageTracks)) {
-      if (!tracks) continue
-      const row = {
-        id: `${state.id}:${stage}`,
-        tournament: state.id,
-        stage: stage as MatchStage,
-        tracks,
-      }
+      if (!tracks || !isMatchStage(stage)) continue
       db.insert(tournamentStages)
-        .values(row)
+        .values({
+          id: `${id}:${stage}`,
+          tournament: id,
+          stage,
+          tracks,
+          deletedAt: null,
+        })
         .onConflictDoUpdate({
           target: [tournamentStages.tournament, tournamentStages.stage],
-          set: { tracks },
+          set: { tracks, deletedAt: null },
         })
         .run()
     }
+  }
+
+  static saveTournament(state: TournamentState): void {
+    this.saveConfig(
+      state.id,
+      state.config,
+      'started',
+      state.frozenAt,
+      state.notReadyReason
+    )
     for (const group of state.groups) {
       const row = { ...group, tournament: state.id }
       db.insert(tournamentGroups)
@@ -318,7 +350,7 @@ export default class TournamentSource {
     session: string,
     { deleteMatches } = { deleteMatches: true }
   ): void {
-    const state = this.loadTournament(session)
+    const state = this.findActiveTournament(session)
     if (!state) return
     const deletedAt = new Date()
     const relatedMatchIds = db

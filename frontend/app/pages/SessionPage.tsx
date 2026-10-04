@@ -2,7 +2,7 @@ import ConfirmationButton from '@/components/ConfirmationButton'
 import SessionCard from '@/components/session/SessionCard'
 import SessionForm from '@/components/session/SessionForm'
 import SessionSignupPanel from '@/components/session/SessionSignupPanel'
-import TournamentPanel from '@/components/tournament/TournamentPanel'
+import TournamentTab from '@/components/tournament/TournamentTab'
 import TrackLeaderboard from '@/components/track/TrackLeaderboard'
 import {
   Breadcrumb,
@@ -22,21 +22,21 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { Empty } from '@/components/ui/empty'
 import { Spinner } from '@/components/ui/spinner'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@common/locale/locales'
-import { PencilIcon, PlusIcon, Trash2 } from 'lucide-react'
+import { PencilIcon, Trash2 } from 'lucide-react'
 import { useState } from 'react'
-import { Link, useParams } from 'react-router'
+import { useParams, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
 import { SubscribeButton } from './SessionsPage'
 
 export default function SessionPage() {
   const { id } = useParams()
+  const [searchParams] = useSearchParams()
   const { socket } = useConnection()
   const { sessions, tracks, tournaments, isLoadingData } = useData()
   const { loggedInUser, isLoggedIn, isLoading } = useAuth()
@@ -151,7 +151,9 @@ export default function SessionPage() {
 
       <Tabs
         defaultValue={
-          tournament ? loc.no.tournament.title : loc.no.session.session
+          tournament || searchParams.get('tab') === 'tournament'
+            ? loc.no.tournament.title
+            : loc.no.session.session
         }>
         <TabsList className='-mt-2 mb-2 w-full bg-background-secondary'>
           <TabsTrigger value={loc.no.session.session}>
@@ -186,24 +188,7 @@ export default function SessionPage() {
           ))}
         </TabsContent>
         <TabsContent value={loc.no.tournament.title}>
-          {tournament && <TournamentPanel details={tournament} />}
-          {!tournament && (
-            <Empty className='border border-input text-sm text-muted-foreground'>
-              {canEdit ? (
-                <Link to={`/sessions/${session.id}/tournament/create`}>
-                  <Button
-                    variant='outline'
-                    size='sm'
-                    className='w-fit text-muted-foreground'>
-                    <PlusIcon />
-                    {loc.no.tournament.create}
-                  </Button>
-                </Link>
-              ) : (
-                loc.no.common.noItems
-              )}
-            </Empty>
-          )}
+          <TournamentTab session={session} />
         </TabsContent>
       </Tabs>
     </div>

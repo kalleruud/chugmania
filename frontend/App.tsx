@@ -8,7 +8,7 @@ import { ErrorPage } from './app/pages/ErrorPage'
 import Home from './app/pages/HomePage'
 import SessionPage from './app/pages/SessionPage'
 import SessionsPage from './app/pages/SessionsPage'
-import TournamentCreatePage from './app/pages/TournamentCreatePage'
+import TournamentCreateRedirect from './app/pages/TournamentCreateRedirect'
 import TrackPage from './app/pages/TrackPage'
 import TracksPage from './app/pages/TracksPage'
 import UserPage from './app/pages/UserPage'
@@ -43,7 +43,7 @@ createRoot(root).render(
                       <Route path='sessions' element={<SessionsPage />} />
                       <Route
                         path='sessions/:id/tournament/create'
-                        element={<TournamentCreatePage />}
+                        element={<TournamentCreateRedirect />}
                       />
                       <Route path='sessions/:id' element={<SessionPage />} />
                       <Route path='admin' element={<AdminPage />} />
