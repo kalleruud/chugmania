@@ -1,58 +1,41 @@
 import type { TournamentConfig } from '@common/models/tournament'
-import { expect, test } from 'bun:test'
+import { beforeAll, expect, test } from 'bun:test'
 import assert from 'node:assert/strict'
-import { createHash } from 'node:crypto'
-import {
-  sessions,
-  sessionSignups,
-  tracks,
-  users,
-} from '../backend/database/schema'
-import AuthManager from '../backend/src/managers/auth.manager'
 import MatchManager from '../backend/src/managers/match.manager'
 import TournamentManager from '../backend/src/managers/tournament/tournament.manager'
-import { createSocket, db } from './setup'
+import type { TypedSocket } from '../backend/src/server'
+import {
+  createSession,
+  createSessionSignup,
+  createTrack,
+  createUser,
+  login,
+} from './utils'
 
-test('creates and completes a simple tournament through API handlers', async () => {
-  const playerIds = ['alice', 'bob', 'charlie', 'daniel']
-  const passwordHash = createHash('sha512').update('test-password').digest()
-  for (const [index, id] of playerIds.entries())
-    db.insert(users)
-      .values({
-        id,
-        email: `${id}@example.test`,
-        firstName: id,
-        role: index === 0 ? 'admin' : 'user',
-        passwordHash,
-      })
-      .run()
-  db.insert(tracks)
-    .values({ id: 'track', number: 1, level: 'white', type: 'stadium' })
-    .run()
-  db.insert(sessions)
-    .values({ id: 'session', name: 'Test Cup', date: new Date(0) })
-    .run()
-  for (const user of playerIds)
-    db.insert(sessionSignups)
-      .values({ session: 'session', user, response: 'yes' })
-      .run()
+let socket: TypedSocket
+let config: TournamentConfig
 
-  const socket = createSocket()
-  const login = await AuthManager.onLogin(socket, {
-    type: 'LoginRequest',
-    email: 'alice@example.test',
-    password: 'test-password',
-  })
-  assert(login.success)
-  socket.handshake.auth.token = login.token
+beforeAll(async () => {
+  const admin = createUser('alice', 'admin')
+  const players = [
+    admin,
+    ...['bob', 'charlie', 'daniel'].map(name => createUser(name)),
+  ]
+  socket = await login(admin)
+  const track = createTrack()
+  const session = createSession()
+  for (const player of players) createSessionSignup(session, player)
 
-  const config: TournamentConfig = {
-    session: 'session',
+  config = {
+    session: session.id,
     groupsCount: 2,
     advancementCount: 1,
     eliminationType: 'single',
-    stageTracks: { group: ['track'], final: ['track'] },
+    stageTracks: { group: [track.id], final: [track.id] },
   }
+})
+
+test('creates and completes a simple tournament through API handlers', async () => {
   const preview = await TournamentManager.onPreview(socket, config)
   assert(preview.success)
   expect(preview.details.groups).toHaveLength(2)

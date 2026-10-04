@@ -3,7 +3,6 @@ import { afterAll, mock } from 'bun:test'
 import { drizzle } from 'drizzle-orm/bun-sqlite'
 import { migrate } from 'drizzle-orm/bun-sqlite/migrator'
 import * as schema from '../backend/database/schema'
-import type { TypedSocket } from '../backend/src/server'
 
 process.env.SECRET = 'test-secret'
 process.env.DATABASE_PATH = ':memory:'
@@ -16,8 +15,3 @@ migrate(db, { migrationsFolder: 'drizzle' })
 mock.module('../backend/database/database', () => ({ default: db, database }))
 mock.module('../backend/src/server', () => ({ broadcast: mock() }))
 afterAll(() => database.close())
-
-export function createSocket(): TypedSocket {
-  const auth: Record<string, unknown> = { token: '' }
-  return { id: 'test-client', handshake: { auth } } as TypedSocket
-}
