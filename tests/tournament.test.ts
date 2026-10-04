@@ -1,3 +1,4 @@
+import type { ExportCsvRequest } from '@common/models/importCsv'
 import type { Match } from '@common/models/match'
 import type {
   TournamentConfig,
@@ -5,13 +6,27 @@ import type {
 } from '@common/models/tournament'
 import { getTournamentStages } from '@common/utils/tournament'
 import { beforeAll, describe, expect, test } from 'bun:test'
+import { eq, inArray } from 'drizzle-orm'
 import assert from 'node:assert/strict'
+import db, { database } from '../backend/database/database'
 import type { MatchStage } from '../backend/database/schema'
+import {
+  matches,
+  timeEntries,
+  tournamentGroups,
+  tournamentMatches,
+  tournamentMatchSlots,
+  tournamentPlayers,
+  tournaments,
+  tournamentStages,
+} from '../backend/database/schema'
+import AdminManager from '../backend/src/managers/admin.manager'
 import MatchManager from '../backend/src/managers/match.manager'
 import RatingManager from '../backend/src/managers/rating.manager'
 import SessionManager from '../backend/src/managers/session.manager'
 import TimeEntryManager from '../backend/src/managers/timeEntry.manager'
 import TournamentManager from '../backend/src/managers/tournament/tournament.manager'
+import CsvParser from '../backend/src/utils/csv-parser'
 import {
   assertResponse,
   createRsvps,
@@ -859,6 +874,147 @@ test.serial(
     expect(await tournament.getMatch('final')).toMatchObject({
       user1: 'fallback-a',
       user2: 'fallback-b',
+    })
+  }
+)
+
+test.serial(
+  'Tournament CSV restoration waits for all dependent rows',
+  async () => {
+    const tournament = await CreateTournament({
+      config: {
+        groupsCount: 1,
+        advancementCount: 2,
+        eliminationType: 'single',
+      },
+      tracks: 1,
+      users: ['restore-a', 'restore-b', 'restore-c', 'restore-d'],
+    })
+    await setResults(await tournament.getMatches('group'), {
+      'restore-a': ['restore-b', 'restore-d'],
+      'restore-b': ['restore-c', 'restore-d'],
+      'restore-c': ['restore-a', 'restore-d'],
+    })
+    const state = await tournament.getState()
+    const fixtures = db
+      .select()
+      .from(tournamentMatches)
+      .where(eq(tournamentMatches.tournament, state.id))
+      .all()
+    const fixtureIds = fixtures.map(fixture => fixture.id)
+    const slots = db
+      .select()
+      .from(tournamentMatchSlots)
+      .where(inArray(tournamentMatchSlots.tournamentMatch, fixtureIds))
+      .all()
+    const backups: {
+      table: ExportCsvRequest['table']
+      rows: Record<string, unknown>[]
+    }[] = [
+      {
+        table: 'tournaments',
+        rows: db
+          .select()
+          .from(tournaments)
+          .where(eq(tournaments.id, state.id))
+          .all(),
+      },
+      {
+        table: 'tournamentGroups',
+        rows: db
+          .select()
+          .from(tournamentGroups)
+          .where(eq(tournamentGroups.tournament, state.id))
+          .all(),
+      },
+      {
+        table: 'matches',
+        rows: db
+          .select()
+          .from(matches)
+          .where(eq(matches.session, tournament.session.id))
+          .all(),
+      },
+      {
+        table: 'timeEntries',
+        rows: db
+          .select()
+          .from(timeEntries)
+          .where(eq(timeEntries.session, tournament.session.id))
+          .all(),
+      },
+      { table: 'tournamentMatches', rows: fixtures },
+      { table: 'tournamentMatchSlots', rows: slots.slice(0, slots.length / 2) },
+      {
+        table: 'tournamentPlayers',
+        rows: db
+          .select()
+          .from(tournamentPlayers)
+          .where(eq(tournamentPlayers.tournament, state.id))
+          .all(),
+      },
+      {
+        table: 'tournamentStages',
+        rows: db
+          .select()
+          .from(tournamentStages)
+          .where(eq(tournamentStages.tournament, state.id))
+          .all(),
+      },
+      { table: 'tournamentMatchSlots', rows: slots.slice(slots.length / 2) },
+    ]
+    database.transaction(() => {
+      db.delete(tournamentMatchSlots)
+        .where(inArray(tournamentMatchSlots.tournamentMatch, fixtureIds))
+        .run()
+      db.delete(tournamentMatches)
+        .where(eq(tournamentMatches.tournament, state.id))
+        .run()
+      db.delete(tournamentPlayers)
+        .where(eq(tournamentPlayers.tournament, state.id))
+        .run()
+      db.delete(tournamentGroups)
+        .where(eq(tournamentGroups.tournament, state.id))
+        .run()
+      db.delete(tournamentStages)
+        .where(eq(tournamentStages.tournament, state.id))
+        .run()
+      db.delete(tournaments).where(eq(tournaments.id, state.id)).run()
+      db.delete(timeEntries)
+        .where(eq(timeEntries.session, tournament.session.id))
+        .run()
+      db.delete(matches).where(eq(matches.session, tournament.session.id)).run()
+    })()
+    for (const [index, backup] of backups.entries()) {
+      const content = CsvParser.toCsv(backup.rows)
+      assert(content)
+      const result = await AdminManager.onImportCsv(tournament.socket, {
+        table: backup.table,
+        content,
+      })
+      assertResponse(result)
+      expect(result.created).toBe(backup.rows.length)
+      if (index < backups.length - 1) {
+        expect(TournamentManager.getState(tournament.session.id)).toBeNull()
+        expect(
+          TournamentManager.getAllTournaments().some(t => t.id === state.id)
+        ).toBe(false)
+      }
+    }
+    const restored = await tournament.getState()
+    expect(restored.matches).toHaveLength(state.matches.length)
+    expect(restored.tieBreakers.map(lap => lap.id).sort()).toEqual(
+      state.tieBreakers.map(lap => lap.id).sort()
+    )
+    expect(
+      restored.tieBreakers.every(
+        lap => lap.status === 'planned' && lap.required
+      )
+    ).toBe(true)
+    await tournament.editLap('restore-a', { duration: 1000 })
+    expect(await tournament.getMatch('final')).toMatchObject({
+      user1: 'restore-a',
+      user2: null,
     })
   }
 )
