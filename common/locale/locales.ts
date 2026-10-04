@@ -231,6 +231,7 @@ const no = {
     group: 'Gruppe',
     backToTournament: 'Tilbake til turneringen',
     groupStandings: 'Gruppeplassering',
+    rank: 'Plass',
     wins: 'Seiere',
     losses: 'Tap',
     matchesPlayed: 'Spilt',

@@ -11,11 +11,11 @@ import {
 } from '@/components/ui/breadcrumb'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
-import UserRow from '@/components/user/UserRow'
 import { useAuth } from '@/contexts/AuthContext'
 import { useData } from '@/contexts/DataContext'
 import { cn } from '@/lib/utils'
 import loc from '@common/locale/locales'
+import { getUserFullName } from '@common/models/user'
 import { firstPendingMatch } from '@common/utils/tournament'
 import { Link, useParams } from 'react-router'
 
@@ -94,57 +94,87 @@ export default function TournamentGroupPage() {
         <p className='text-sm text-muted-foreground'>
           {loc.no.tournament.winPercentageInfo}
         </p>
-        {group.standings.map(standing => {
-          const user = users.find(user => user.id === standing.user)
-          if (!user) return null
-          return (
-            <div
-              key={standing.user}
-              className={cn(
-                'flex flex-col gap-3 rounded-sm border border-l-2 border-l-transparent bg-background-secondary p-3',
-                standing.qualifies && 'border-l-primary'
-              )}>
-              <UserRow item={user} rank={standing.rank} />
-              <dl className='grid grid-cols-2 gap-3 text-sm sm:grid-cols-4'>
-                <div>
-                  <dt className='text-muted-foreground'>
-                    {loc.no.tournament.wins}
-                  </dt>
-                  <dd className='font-bold tabular-nums'>{standing.wins}</dd>
-                </div>
-                <div>
-                  <dt className='text-muted-foreground'>
-                    {loc.no.tournament.losses}
-                  </dt>
-                  <dd className='font-bold tabular-nums'>{standing.losses}</dd>
-                </div>
-                <div>
-                  <dt className='text-muted-foreground'>
-                    {loc.no.tournament.matchesPlayed}
-                  </dt>
-                  <dd className='font-bold tabular-nums'>
-                    {standing.matchesPlayed}
-                  </dd>
-                </div>
-                <div>
-                  <dt className='text-muted-foreground'>
-                    {loc.no.tournament.winPercentage}
-                  </dt>
-                  <dd className='font-bold tabular-nums'>
-                    {standing.winPercentage.toLocaleString('nb-NO', {
-                      maximumFractionDigits: 1,
-                    })}{' '}
-                    %
-                  </dd>
-                </div>
-              </dl>
-              <TournamentStandingExplanation
-                standing={standing}
-                matches={matches}
-              />
-            </div>
-          )
-        })}
+        <div className='overflow-x-auto'>
+          <table className='w-full min-w-[32rem] text-sm'>
+            <caption className='sr-only'>
+              {loc.no.tournament.groupStandings}
+            </caption>
+            <thead className='border-b text-muted-foreground'>
+              <tr>
+                <th scope='col' className='px-3 py-2 text-left font-medium'>
+                  {loc.no.tournament.rank}
+                </th>
+                <th scope='col' className='px-3 py-2 text-left font-medium'>
+                  {loc.no.user.role.user}
+                </th>
+                <th scope='col' className='px-3 py-2 text-right font-medium'>
+                  {loc.no.tournament.wins}
+                </th>
+                <th scope='col' className='px-3 py-2 text-right font-medium'>
+                  {loc.no.tournament.losses}
+                </th>
+                <th scope='col' className='px-3 py-2 text-right font-medium'>
+                  {loc.no.tournament.matchesPlayed}
+                </th>
+                <th scope='col' className='px-3 py-2 text-right font-medium'>
+                  {loc.no.tournament.winPercentage}
+                </th>
+              </tr>
+            </thead>
+            {group.standings.map(standing => {
+              const user = users.find(user => user.id === standing.user)
+              if (!user) return null
+              const progressionBorder = standing.qualifies
+                ? 'border-l-primary'
+                : 'border-l-transparent'
+              return (
+                <tbody
+                  key={standing.user}
+                  className='border-b bg-background-secondary last:border-b-0'>
+                  <tr className='tabular-nums'>
+                    <td
+                      className={cn(
+                        'border-l-2 px-3 py-3 font-bold',
+                        progressionBorder
+                      )}>
+                      {standing.rank}
+                    </td>
+                    <th
+                      scope='row'
+                      className='max-w-64 min-w-36 px-3 py-3 text-left font-normal'>
+                      <Link
+                        to={`/users/${user.id}`}
+                        className='font-f1 text-xs break-words uppercase underline underline-offset-4 hover:text-primary'>
+                        {getUserFullName(user)}
+                      </Link>
+                    </th>
+                    <td className='px-3 py-3 text-right'>{standing.wins}</td>
+                    <td className='px-3 py-3 text-right'>{standing.losses}</td>
+                    <td className='px-3 py-3 text-right'>
+                      {standing.matchesPlayed}
+                    </td>
+                    <td className='px-3 py-3 text-right font-bold'>
+                      {standing.winPercentage.toLocaleString('nb-NO', {
+                        maximumFractionDigits: 1,
+                      })}{' '}
+                      %
+                    </td>
+                  </tr>
+                  <tr>
+                    <td
+                      colSpan={6}
+                      className={cn('border-l-2 px-3 pb-3', progressionBorder)}>
+                      <TournamentStandingExplanation
+                        standing={standing}
+                        matches={matches}
+                      />
+                    </td>
+                  </tr>
+                </tbody>
+              )
+            })}
+          </table>
+        </div>
         <p className='text-sm text-muted-foreground'>
           {loc.no.tournament.groupInfo(tournament.config.advancementCount)}
         </p>
