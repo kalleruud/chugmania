@@ -7,9 +7,9 @@ import type {
   TournamentDetails,
 } from '@common/models/tournament'
 import {
-  configurationOptions,
+  getTournamentConfigurationOptions,
+  getTournamentStages,
   stageName,
-  usedStages,
 } from '@common/utils/tournament'
 import { AlertCircleIcon } from 'lucide-react'
 import { useEffect, useState, type SubmitEvent } from 'react'
@@ -49,7 +49,10 @@ export default function TournamentForm({
     sessions
       ?.find(s => s.id === session)
       ?.signups.filter(s => s.response === 'yes').length ?? 0
-  const options = configurationOptions(count, inputConfig.eliminationType)
+  const options = getTournamentConfigurationOptions(
+    count,
+    inputConfig.eliminationType
+  )
   const choice =
     options.find(
       o =>
@@ -63,7 +66,7 @@ export default function TournamentForm({
     groupsCount: choice?.groups ?? inputConfig.groupsCount,
     advancementCount: choice?.advancement ?? inputConfig.advancementCount,
   }
-  const stages = usedStages(selectedConfig, count)
+  const stages = getTournamentStages(selectedConfig, count)
   const config = {
     ...selectedConfig,
     stageTracks: Object.fromEntries(
@@ -182,7 +185,9 @@ export default function TournamentForm({
             <option value='single'>Enkel eliminering</option>
             <option
               value='double'
-              disabled={configurationOptions(count, 'double').length === 0}>
+              disabled={
+                getTournamentConfigurationOptions(count, 'double').length === 0
+              }>
               Dobbel eliminering
             </option>
           </NativeSelect>

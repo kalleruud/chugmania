@@ -24,15 +24,20 @@ export function validateConfiguration(
   )
 }
 
-export function configurationOptions(count: number, type: EliminationType) {
+export function getTournamentConfigurationOptions(
+  playerCount: number,
+  eliminationType: EliminationType
+) {
   const options: { groups: number; advancement: number }[] = []
-  for (let groups = 1; groups <= count; groups++) {
+  for (let groups = 1; groups <= playerCount; groups++) {
     for (
       let advancement = 1;
-      advancement <= Math.floor(count / groups);
+      advancement <= Math.floor(playerCount / groups);
       advancement++
     ) {
-      if (validateConfiguration(count, groups, advancement, type))
+      if (
+        validateConfiguration(playerCount, groups, advancement, eliminationType)
+      )
         options.push({ groups, advancement })
     }
   }
@@ -70,12 +75,12 @@ function isPendingMatch(match: Match) {
   )
 }
 
-export function usedStages(
+export function getTournamentStages(
   config: TournamentConfig,
-  count: number
+  playerCount: number
 ): MatchStage[] {
   const stages: MatchStage[] = []
-  if (count > config.groupsCount) stages.push('group')
+  if (playerCount > config.groupsCount) stages.push('group')
   const advancers = config.groupsCount * config.advancementCount
   for (let size = advancers; size >= 2; size /= 2) stages.push(upperStage(size))
   if (config.eliminationType === 'double') {

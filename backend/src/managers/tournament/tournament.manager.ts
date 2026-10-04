@@ -12,7 +12,7 @@ import {
   type TournamentState,
 } from '@common/models/tournament'
 import { RATING_CONSTANTS } from '@common/utils/constants'
-import { usedStages } from '@common/utils/tournament'
+import { getTournamentStages } from '@common/utils/tournament'
 import { randomUUID } from 'node:crypto'
 import TournamentSource from '../../../database/tournament.source'
 import type { TypedSocket } from '../../server'
@@ -70,7 +70,7 @@ export default class TournamentManager {
       throw new Error(loc.no.tournament.tracks)
     const participants = this.participants(config)
     const state = resolveTournament(generateTournament(config, participants))
-    const stages = usedStages(config, participants.length)
+    const stages = getTournamentStages(config, participants.length)
     if (
       Object.keys(config.stageTracks).some(
         stage => !stages.some(s => s === stage)
