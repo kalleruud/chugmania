@@ -1,7 +1,9 @@
 # Output
 .output
 /build
+/coverage
 .plans/
+/backup
 
 # OS
 .DS_Store

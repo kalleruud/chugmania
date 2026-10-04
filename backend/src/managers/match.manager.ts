@@ -15,7 +15,7 @@ import { matches, sessions } from '../../database/schema'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import RatingManager from './rating.manager'
-import TournamentManager from './tournament.manager'
+import TournamentManager from './tournament/tournament.manager'
 
 export default class MatchManager {
   private static validateMatchState(
@@ -48,16 +48,17 @@ export default class MatchManager {
       .where(isNull(matches.deletedAt))
       .orderBy(desc(sql`COALESCE(${sessions.date}, ${matches.createdAt})`))
 
-    return matchRows
+    return TournamentManager.enrich(matchRows)
   }
 
   // Returns matches sorted by creation date, most recent first.
-  public static async getAllBySession(sessionId: string): Promise<Match[]> {
-    return await db
+  public static getAllBySession(sessionId: string): Match[] {
+    return db
       .select({ ...getTableColumns(matches) })
       .from(matches)
       .where(and(eq(matches.session, sessionId), isNull(matches.deletedAt)))
       .orderBy(desc(matches.createdAt))
+      .all()
   }
 
   static async onCreateMatch(
@@ -85,15 +86,14 @@ export default class MatchManager {
       stage: request.stage,
       comment: request.comment,
     }
-    const [match] = await db.insert(matches).values(matchData).returning()
+    db.insert(matches).values(matchData).run()
 
     console.debug(new Date().toISOString(), socket.id, 'Created match')
 
-    await RatingManager.recalculate()
+    RatingManager.recalculate()
     broadcast('all_matches', await MatchManager.getAllMatches())
     broadcast('all_rankings', RatingManager.onGetRatings())
 
-    if (match.winner) await TournamentManager.onMatchCompleted(match.id)
     return { success: true }
   }
 
@@ -115,11 +115,17 @@ export default class MatchManager {
       throw new Error(loc.no.error.messages.not_in_db(request.id))
     }
 
+    if (TournamentManager.editMatch(request)) {
+      RatingManager.recalculate()
+      broadcast('all_rankings', RatingManager.onGetRatings())
+      broadcast('all_matches', await MatchManager.getAllMatches())
+      TournamentManager.publish(socket.id)
+      return { success: true }
+    }
     MatchManager.validateMatchState(request, preImageMatch)
 
     const id = request.id
-    const [res] = await db
-      .update(matches)
+    db.update(matches)
       .set({
         user1: request.user1,
         user2: request.user2,
@@ -135,17 +141,14 @@ export default class MatchManager {
           : request.deletedAt,
       })
       .where(eq(matches.id, preImageMatch.id))
-      .returning()
+      .run()
 
     console.debug(new Date().toISOString(), socket.id, 'Updated match', id)
 
-    await RatingManager.recalculate()
+    RatingManager.recalculate()
     broadcast('all_matches', await MatchManager.getAllMatches())
     broadcast('all_rankings', RatingManager.onGetRatings())
 
-    if (res.winner && preImageMatch.winner !== res.winner) {
-      await TournamentManager.onMatchCompleted(res.id)
-    }
     return { success: true }
   }
 

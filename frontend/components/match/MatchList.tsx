@@ -1,10 +1,14 @@
 import { useAuth } from '@/contexts/AuthContext'
+import { useData } from '@/contexts/DataContext'
 import { useTimeEntryInput } from '@/contexts/TimeEntryInputContext'
 import loc from '@common/locale/locales'
 import type { Match } from '@common/models/match'
 import { PlusIcon } from '@heroicons/react/24/solid'
+import { Fragment } from 'react'
+import { TrackRow } from '../track/TrackRow'
 import { Button } from '../ui/button'
 import { Empty } from '../ui/empty'
+import MatchCard from './MatchCard'
 import MatchRow from './MatchRow'
 
 export type MatchListProps = {
@@ -12,7 +16,10 @@ export type MatchListProps = {
   user?: string
   session?: string
   matches: Match[]
+  managed?: boolean
   hideTrack?: boolean
+  trackSeparators?: boolean
+  featuredMatchId?: string
 }
 
 export default function MatchList({
@@ -21,14 +28,18 @@ export default function MatchList({
   user,
   session,
   hideTrack,
+  trackSeparators,
+  managed,
+  featuredMatchId,
 }: Readonly<MatchListProps>) {
   const { isLoggedIn, loggedInUser } = useAuth()
+  const { tracks } = useData()
   const { openMatch } = useTimeEntryInput()
 
   if (matches.length === 0) {
     return (
       <Empty className='border border-input text-sm text-muted-foreground'>
-        {isLoggedIn && (
+        {isLoggedIn && !managed && (
           <Button
             variant='outline'
             size='sm'
@@ -45,22 +56,36 @@ export default function MatchList({
 
   return (
     <div className='flex flex-col gap-2'>
-      {matches.map(match => (
-        <MatchRow
-          key={match.id}
-          item={match}
-          highlight={
-            match.status !== 'cancelled' &&
-            isLoggedIn &&
-            (match.user1 === loggedInUser.id || match.user2 === loggedInUser.id)
-          }
-          className='rounded-sm bg-background-secondary p-2'
-          onClick={() => openMatch(match)}
-          hideTrack={hideTrack}
-        />
-      ))}
+      {matches.map((match, index) => {
+        const isFeatured = match.id === featuredMatchId
+        const MatchComponent = isFeatured ? MatchCard : MatchRow
+        const separatorTrack =
+          trackSeparators &&
+          (index === 0 || match.track !== matches.at(index - 1)?.track)
+            ? tracks?.find(track => track.id === match.track)
+            : undefined
+        const isMe =
+          isLoggedIn &&
+          (match.user1 === loggedInUser.id || match.user2 === loggedInUser.id)
+        return (
+          <Fragment key={match.id}>
+            {separatorTrack && (
+              <TrackRow item={separatorTrack} className='border-b px-2 py-3' />
+            )}
+            <MatchComponent
+              item={match}
+              highlight={match.status !== 'cancelled' && (isMe || isFeatured)}
+              className='bg-background-secondary hover:bg-primary-foreground/6'
+              onClick={() => {
+                if (!match.tournament?.readOnly) openMatch(match)
+              }}
+              hideTrack={hideTrack || trackSeparators}
+            />
+          </Fragment>
+        )
+      })}
 
-      {isLoggedIn && (
+      {isLoggedIn && !managed && (
         <Button
           variant='ghost'
           size='sm'

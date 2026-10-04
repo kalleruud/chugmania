@@ -4,7 +4,6 @@ import { ErrorBoundary } from 'react-error-boundary'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router'
 import Layout from './app/Layout'
 import { ErrorPage } from './app/pages/ErrorPage'
-import Home from './app/pages/HomePage'
 import { Toaster } from './components/ui/sonner'
 import { Spinner } from './components/ui/spinner'
 import { AuthProvider } from './contexts/AuthContext'
@@ -15,8 +14,9 @@ import TimeEntryInputProvider from './contexts/TimeEntryInputContext'
 import './index.css'
 
 const AdminPage = lazy(() => import('./app/pages/AdminPage'))
-const CreateTournamentPage = lazy(
-  () => import('./app/pages/CreateTournamentPage')
+const Home = lazy(() => import('./app/pages/HomePage'))
+const TournamentCreatePage = lazy(
+  () => import('./app/pages/TournamentCreatePage')
 )
 const SessionPage = lazy(() => import('./app/pages/SessionPage'))
 const SessionsPage = lazy(() => import('./app/pages/SessionsPage'))
@@ -55,8 +55,8 @@ createRoot(root).render(
                         <Route path='sessions/:id' element={<SessionPage />} />
                         <Route path='admin' element={<AdminPage />} />
                         <Route
-                          path='tournaments/create'
-                          element={<CreateTournamentPage />}
+                          path='sessions/:id/tournament/create'
+                          element={<TournamentCreatePage />}
                         />
                         <Route path='*' element={<Navigate to='/' replace />} />
                       </Route>

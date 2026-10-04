@@ -1,7 +1,13 @@
 name: Validate
 
 on:
+  push:
+    branches: [main]
   pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -14,15 +20,26 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
 
       - name: Install dependencies
         run: npm ci
 
       - name: Run check
-        run: npm run check
+        run: bun run check
 
-      - name: Build Docker image
-        run: docker build -t chugmania .
+      - name: Run tests with coverage
+        run: bun run test --coverage --coverage-reporter=lcov
+
+      - name: Report coverage
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        uses: 70-10/bun-coverage-report-action@v1.0.3
+        with:
+          lcov-path: coverage/lcov.info

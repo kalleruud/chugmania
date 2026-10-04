@@ -1,284 +1,235 @@
 import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
-import { sessionToLookupItem } from '@/lib/lookup-utils'
+import { trackToLookupItem } from '@/lib/lookup-utils'
 import loc from '@common/locale/locales'
 import type {
-  CreateTournament,
-  TournamentEliminationType,
-  TournamentPreview,
+  TournamentConfig,
+  TournamentDetails,
 } from '@common/models/tournament'
-import { Users } from 'lucide-react'
 import {
-  useEffect,
-  useMemo,
-  useState,
-  type ComponentProps,
-  type SubmitEvent,
-} from 'react'
-import { useNavigate, useSearchParams } from 'react-router'
+  getTournamentConfigurationOptions,
+  getTournamentStages,
+  stageName,
+} from '@common/utils/tournament'
+import { AlertCircleIcon } from 'lucide-react'
+import { useEffect, useState, type SubmitEvent } from 'react'
 import { toast } from 'sonner'
-import Combobox from '../combobox'
-import { Field, SelectField, TextField } from '../FormFields'
-import { PageHeader, PageSubheader } from '../PageHeader'
-import { SessionRow } from '../session/SessionRow'
-import { Alert, AlertTitle } from '../ui/alert'
+import ComboboxMulti from '../ComboboxMulti'
+import { TrackRow } from '../track/TrackRow'
+import { Alert, AlertDescription, AlertTitle } from '../ui/alert'
+import { Button } from '../ui/button'
+import { NativeSelect } from '../ui/native-select'
 import { Spinner } from '../ui/spinner'
-import GroupCard from './GroupCard'
+import TournamentPanel from './TournamentPanel'
 
-type TournamentFormProps = Partial<CreateTournament> & ComponentProps<'form'>
-
-function calculateMaxMatchesPerPlayer(
-  playersPerGroup: number,
-  totalAdvancingPlayers: number,
-  eliminationType: TournamentEliminationType
-): number {
-  if (playersPerGroup < 2) {
-    return 0
-  }
-
-  // Group stage (round-robin)
-  const groupStageMatches = playersPerGroup - 1
-
-  // Normalize advancing players to next power of two
-  const bracketSize = Math.pow(
-    2,
-    Math.ceil(Math.log2(Math.max(1, totalAdvancingPlayers)))
+export default function TournamentForm({
+  session,
+  onCreated,
+}: {
+  session: string
+  onCreated: () => void
+}) {
+  const { socket, isConnected } = useConnection()
+  const { tracks, sessions, rankings } = useData()
+  const [inputConfig, setConfig] = useState<TournamentConfig>({
+    session,
+    groupsCount: 1,
+    advancementCount: 2,
+    eliminationType: 'single',
+    stageTracks: {},
+  })
+  const [preview, setPreview] = useState<{
+    key: string
+    details: TournamentDetails
+  } | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const count =
+    sessions
+      ?.find(s => s.id === session)
+      ?.signups.filter(s => s.response === 'yes').length ?? 0
+  const options = getTournamentConfigurationOptions(
+    count,
+    inputConfig.eliminationType
   )
-
-  const rounds = Math.log2(bracketSize)
-
-  let knockoutMatches: number
-
-  if (eliminationType === 'single') {
-    knockoutMatches = rounds
-  } else {
-    // Matches your actual double-elimination structure
-    knockoutMatches = rounds + 2
+  const choice =
+    options.find(
+      o =>
+        o.groups === inputConfig.groupsCount &&
+        o.advancement === inputConfig.advancementCount
+    ) ??
+    options.find(o => o.groups === inputConfig.groupsCount) ??
+    options.at(0)
+  const selectedConfig = {
+    ...inputConfig,
+    groupsCount: choice?.groups ?? inputConfig.groupsCount,
+    advancementCount: choice?.advancement ?? inputConfig.advancementCount,
   }
-
-  return groupStageMatches + knockoutMatches
-}
-
-export default function TournamentForm(props: Readonly<TournamentFormProps>) {
-  const { socket } = useConnection()
-  const navigate = useNavigate()
-  const { sessions, users, isLoadingData } = useData()
-  const [searchParams, setSearchParams] = useSearchParams()
-
-  const selectedSessionId = searchParams.get('session')
-
-  const [preview, setPreview] = useState<TournamentPreview | undefined>(
-    undefined
-  )
-
-  const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
-  const [groupsCount, setGroupsCount] = useState(2)
-  const [advancementCount, setAdvancementCount] = useState(1)
-  const [eliminationType, setEliminationType] =
-    useState<TournamentEliminationType>('single')
-
-  const session = sessions?.find(s => s.id === selectedSessionId)
-  const signedUpPlayers = useMemo(() => {
-    if (!session || !users) return []
-    return session.signups
-      .filter(s => s.response === 'yes')
-      .map(s => users.find(u => u.id === s.user.id))
-      .filter(u => u !== undefined)
-  }, [session, users])
-
-  const maxMatchesPerPlayer = useMemo(() => {
-    return calculateMaxMatchesPerPlayer(
-      preview?.groups.at(-1)?.players.length ?? 0,
-      advancementCount * groupsCount,
-      eliminationType
-    )
-  }, [preview, advancementCount, groupsCount, eliminationType])
-
-  function handleSessionChange(sessionId: string) {
-    if (sessionId) {
-      setSearchParams(prev => {
-        prev.set('session', sessionId)
-        return prev
-      })
-    } else {
-      setSearchParams(prev => {
-        prev.delete('session')
-        return prev
-      })
+  const stages = getTournamentStages(selectedConfig, count)
+  const config = {
+    ...selectedConfig,
+    stageTracks: Object.fromEntries(
+      Object.entries(selectedConfig.stageTracks).filter(([stage]) =>
+        stages.some(s => s === stage)
+      )
+    ),
+  }
+  const groups = [...new Set(options.map(o => o.groups))]
+  const advancements = options
+    .filter(o => o.groups === config.groupsCount)
+    .map(o => o.advancement)
+  const items = tracks?.map(trackToLookupItem) ?? []
+  const sessionData = sessions?.find(s => s.id === session)
+  const key = JSON.stringify({
+    ...config,
+    signups: sessionData?.signups,
+    status: sessionData?.status,
+    rankings,
+    isConnected,
+  })
+  const ready =
+    !!preview &&
+    preview.key === key &&
+    !loading &&
+    !saving &&
+    !error &&
+    isConnected &&
+    preview.details.matches.every(m => m.track)
+  useEffect(() => {
+    let active = true
+    const timer = setTimeout(async () => {
+      setLoading(true)
+      setError('')
+      try {
+        const response = await socket.emitWithAck('preview_tournament', config)
+        if (!active) return
+        if (!response.success) throw new Error(response.message)
+        setPreview({ key, details: response.details })
+      } catch (error) {
+        if (!active) return
+        const message = error instanceof Error ? error.message : String(error)
+        setError(message)
+        if (Object.values(config.stageTracks).some(tracks => tracks?.length))
+          toast.error(message)
+      } finally {
+        if (active) setLoading(false)
+      }
+    }, 380)
+    return () => {
+      active = false
+      clearTimeout(timer)
+    }
+  }, [key, socket])
+  async function submit(event: SubmitEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!ready) return
+    setSaving(true)
+    try {
+      const response = await socket.emitWithAck('create_tournament', config)
+      if (!response.success) throw new Error(response.message)
+      toast.success(loc.no.tournament.saved)
+      onCreated()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : String(error))
+    } finally {
+      setSaving(false)
     }
   }
-
-  const requestPreview = () => {
-    if (!selectedSessionId || name === '') return
-    socket
-      .emitWithAck('get_tournament_preview', {
-        type: 'TournamentPreviewRequest',
-        session: selectedSessionId,
-        name,
-        description: description === '' ? undefined : description,
-        groupsCount,
-        advancementCount,
-        eliminationType,
-      })
-      .then(r => {
-        if (!r.success) return toast.error(r.message)
-        setPreview(r.tournament)
-      })
-  }
-
-  useEffect(() => {
-    requestPreview()
-  }, [selectedSessionId, groupsCount, advancementCount, eliminationType])
-
-  const handleSubmit = (e: SubmitEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    if (!selectedSessionId)
-      return toast.error(loc.no.error.messages.session_not_selected)
-    toast.promise(
-      socket
-        .emitWithAck('create_tournament', {
-          type: 'CreateTournamentRequest',
-          session: selectedSessionId,
-          name,
-          description,
-          groupsCount,
-          advancementCount,
-          eliminationType,
-        })
-        .then(r => {
-          if (!r.success) throw new Error(r.message)
-          navigate(`/sessions/${selectedSessionId}`)
-        }),
-      loc.no.tournament.toast.create
-    )
-  }
-
-  if (isLoadingData)
-    return (
-      <div className='flex h-dvh-safe w-full items-center justify-center'>
-        <Spinner />
-      </div>
-    )
-
   return (
-    <form className='flex flex-col gap-4' onSubmit={handleSubmit} {...props}>
-      <div className='flex flex-col gap-4 rounded-sm border bg-background p-4'>
-        <Field
-          id='name'
-          name={loc.no.tournament.form.name}
-          type='text'
-          required
-          value={name}
-          onChange={e => setName(e.target.value)}
-        />
-
-        <TextField
-          id='description'
-          name={loc.no.tournament.form.description}
-          value={description}
-          onChange={e => setDescription(e.target.value)}
-        />
-
-        <div className='flex flex-col gap-2'>
-          <Combobox
-            id='session'
-            name={loc.no.tournament.form.session}
-            required
-            placeholder={loc.no.tournament.form.session}
-            items={sessions
-              .filter(s => s.status !== 'cancelled')
-              .map(sessionToLookupItem)}
-            selected={session ? sessionToLookupItem(session) : null}
-            setSelected={value => handleSessionChange(value?.id ?? '')}
-            limit={2}
-            CustomRow={SessionRow}
-          />
-          {session && (
-            <Alert>
-              <Users />
-              <AlertTitle>{signedUpPlayers.length} spillere</AlertTitle>
-            </Alert>
-          )}
-        </div>
-
+    <div className='grid min-w-0 gap-6'>
+      <form
+        onSubmit={submit}
+        className='flex min-w-0 flex-col gap-4 rounded-sm border bg-background p-2'>
         <div className='flex gap-2'>
-          <SelectField
-            id='groupsCount'
-            name={loc.no.tournament.form.groupsCount}
-            entries={Array.from(
-              { length: Math.ceil(Math.log2(signedUpPlayers.length / 2)) },
-              (_, i) => ({
-                key: (2 ** (i + 1)).toString(),
-                label: `${2 ** (i + 1)}`,
-              })
-            )}
-            value={groupsCount.toString()}
-            onValueChange={value => setGroupsCount(Number(value))}
-          />
-
-          <SelectField
-            id='advancementCount'
-            name={loc.no.tournament.form.advancementCount}
-            entries={Array.from(
-              { length: Math.ceil(signedUpPlayers.length / groupsCount) },
-              (_, i) => ({
-                key: (i + 1).toString(),
-                label: (i + 1).toString(),
-              })
-            )}
-            value={advancementCount.toString()}
-            onValueChange={value => setAdvancementCount(Number(value))}
-          />
+          <label className='w-full'>
+            Grupper
+            <NativeSelect
+              value={config.groupsCount}
+              onChange={e =>
+                setConfig({ ...config, groupsCount: Number(e.target.value) })
+              }>
+              {groups.map(g => (
+                <option key={g} value={g}>
+                  {g}
+                </option>
+              ))}
+            </NativeSelect>
+          </label>
+          <label className='w-full'>
+            Videre fra hver gruppe
+            <NativeSelect
+              value={config.advancementCount}
+              onChange={e =>
+                setConfig({
+                  ...config,
+                  advancementCount: Number(e.target.value),
+                })
+              }>
+              {advancements.map(a => (
+                <option key={a} value={a}>
+                  {a}
+                </option>
+              ))}
+            </NativeSelect>
+          </label>
         </div>
-
-        <SelectField
-          id='eliminationType'
-          name={loc.no.tournament.form.eliminationType}
-          entries={Object.entries(loc.no.tournament.eliminationType).map(
-            ([key, label]) => ({
-              key,
-              label,
-            })
-          )}
-          value={eliminationType}
-          onValueChange={value =>
-            setEliminationType(value as TournamentEliminationType)
-          }
-        />
+        <label>
+          Format
+          <NativeSelect
+            value={config.eliminationType}
+            onChange={e => {
+              if (e.target.value === 'single' || e.target.value === 'double')
+                setConfig({ ...config, eliminationType: e.target.value })
+            }}>
+            <option value='single'>Enkel eliminering</option>
+            <option
+              value='double'
+              disabled={
+                getTournamentConfigurationOptions(count, 'double').length === 0
+              }>
+              Dobbel eliminering
+            </option>
+          </NativeSelect>
+        </label>
+        {stages.map(stage => (
+          <div key={stage}>
+            <h3>{stageName(stage)}</h3>
+            <ComboboxMulti
+              items={items}
+              CustomRow={TrackRow}
+              selected={(config.stageTracks[stage] ?? []).flatMap(id => {
+                const item = items.find(t => t.id === id)
+                return item ? [item] : []
+              })}
+              setSelected={selected =>
+                setConfig({
+                  ...config,
+                  stageTracks: {
+                    ...config.stageTracks,
+                    [stage]: selected.map(t => t.id),
+                  },
+                })
+              }
+              placeholder='Velg baner i rekkefølge'
+            />
+          </div>
+        ))}
+        {error && (
+          <Alert variant='destructive'>
+            <AlertCircleIcon />
+            <AlertTitle>{loc.no.error.title}</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        <Button disabled={!ready} type='submit'>
+          {loc.no.tournament.create}
+        </Button>
+      </form>
+      <div className='min-w-0 self-start lg:sticky lg:top-4'>
+        {loading && <Spinner className='mt-8 w-full' />}
+        {preview && <TournamentPanel details={preview.details} isPreview />}
       </div>
-
-      {preview && (
-        <div className='flex flex-col gap-4 rounded-sm border bg-background p-4'>
-          <PageSubheader className='p-0' title={'Forhåndsvisning'} />
-          <PageHeader
-            className='p-0'
-            title={preview.name}
-            description={preview.description}
-          />
-
-          <div className='flex flex-col gap-2'>
-            <div className='flex items-center justify-between'>
-              <span>Totalt antall matcher</span>
-              <span>{preview.matches.length}</span>
-            </div>
-            <div className='flex items-center justify-between'>
-              <span>Antal matcher per spiller</span>
-              <span>{`${(preview.groups.at(0)?.players.length ?? 0) - 1} - ${maxMatchesPerPlayer}`}</span>
-            </div>
-          </div>
-
-          <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
-            {preview.groups.map(group => (
-              <GroupCard
-                key={group.id}
-                group={group}
-                advancementCount={preview.advancementCount}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-    </form>
+    </div>
   )
 }

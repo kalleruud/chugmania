@@ -1,8 +1,9 @@
+import loc from '@common/locale/locales'
 import type { Match } from '@common/models/match'
 import type { Ranking } from '@common/models/ranking'
 import type { SessionWithSignups } from '@common/models/session'
 import type { TimeEntry } from '@common/models/timeEntry'
-import type { TournamentWithDetails } from '@common/models/tournament'
+import type { TournamentDetails } from '@common/models/tournament'
 import type { Track } from '@common/models/track'
 import type { UserInfo } from '@common/models/user'
 import {
@@ -13,6 +14,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { toast } from 'sonner'
 import { useConnection } from './ConnectionContext'
 
 type DataContextType =
@@ -24,7 +26,7 @@ type DataContextType =
       sessions: SessionWithSignups[]
       matches: Match[]
       rankings: Ranking[]
-      tournaments: TournamentWithDetails[]
+      tournaments: TournamentDetails[]
     }
   | {
       isLoadingData: true
@@ -79,6 +81,23 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
     useState<DataContextType['tournaments']>(undefined)
 
   useEffect(() => {
+    let previousTournaments: string | undefined
+    socket.on('all_tournaments', (data, actor) => {
+      const serialized = JSON.stringify(data)
+      if (
+        previousTournaments !== undefined &&
+        previousTournaments !== serialized &&
+        actor !== socket.id
+      )
+        toast.info(loc.no.tournament.changed)
+      previousTournaments = serialized
+      setTournaments(
+        data.map(tournament => ({
+          ...tournament,
+          matches: parseDatesArray(tournament.matches),
+        }))
+      )
+    })
     socket.on('all_sessions', data => {
       setSessions(parseDatesArray(data))
     })
@@ -101,10 +120,6 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
 
     socket.on('all_rankings', data => {
       setRankings(data)
-    })
-
-    socket.on('all_tournaments', data => {
-      setTournaments(parseDatesArray(data))
     })
 
     return () => {

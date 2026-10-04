@@ -9,14 +9,16 @@ import { eq } from 'drizzle-orm'
 import type { SQLiteTable } from 'drizzle-orm/sqlite-core'
 import db, { database } from '../../database/database'
 import {
-  groupPlayers,
-  groups,
   matches,
   sessions,
   sessionSignups,
   timeEntries,
+  tournamentGroups,
   tournamentMatches,
+  tournamentMatchSlots,
+  tournamentPlayers,
   tournaments,
+  tournamentStages,
   tracks,
   users,
 } from '../../database/schema'
@@ -27,34 +29,39 @@ import MatchManager from './match.manager'
 import RatingManager from './rating.manager'
 import SessionManager from './session.manager'
 import TimeEntryManager from './timeEntry.manager'
+import TournamentManager from './tournament/tournament.manager'
 import TrackManager from './track.manager'
 import UserManager from './user.manager'
 
 export default class AdminManager {
   private static readonly EXCLUDED_COL_EXPORT = {
+    tournaments: new Set(),
+    tournamentStages: new Set(),
+    tournamentGroups: new Set(),
+    tournamentPlayers: new Set(),
+    tournamentMatches: new Set(),
+    tournamentMatchSlots: new Set(),
     users: new Set(['passwordHash']),
     tracks: new Set(),
     sessions: new Set(),
     timeEntries: new Set(),
     sessionSignups: new Set(),
     matches: new Set(),
-    tournaments: new Set(),
-    groups: new Set(),
-    groupPlayers: new Set(),
-    tournamentMatches: new Set(),
   } satisfies Record<ExportCsvRequest['table'], Set<string>>
 
   private static readonly TABLE_MAP = {
+    tournaments,
+    tournamentStages,
+    tournamentGroups,
+    tournamentPlayers,
+    tournamentMatches,
+    tournamentMatchSlots,
     users: users,
     tracks: tracks,
     sessions: sessions,
     timeEntries: timeEntries,
     sessionSignups: sessionSignups,
     matches: matches,
-    tournaments: tournaments,
-    groups: groups,
-    groupPlayers: groupPlayers,
-    tournamentMatches: tournamentMatches,
   } satisfies Record<ExportCsvRequest['table'], SQLiteTable>
 
   private static async importRows(
@@ -127,7 +134,7 @@ export default class AdminManager {
       `Imported ${data.length} ${request.table}`
     )
 
-    await RatingManager.recalculate()
+    RatingManager.recalculate()
 
     const [users, tracks, sessions, timeEntries, matches] = await Promise.all([
       UserManager.getAllUsers(),
@@ -143,6 +150,7 @@ export default class AdminManager {
     broadcast('all_time_entries', timeEntries)
     broadcast('all_matches', matches)
     broadcast('all_rankings', RatingManager.onGetRatings())
+    TournamentManager.publish(socket.id)
 
     return {
       success: true,

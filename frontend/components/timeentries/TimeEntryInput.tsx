@@ -247,10 +247,10 @@ export default function TimeEntryInput({
           placeholder={loc.no.timeEntry.input.placeholder.user}
           selected={selectedUser}
           setSelected={value => setSelectedUser(value ?? null)}
-          limit={2}
+          limit={4}
           align='start'
           items={users.map(userToLookupItem)}
-          CustomRow={UserRow}
+          CustomRow={props => <UserRow {...props} hideRanking />}
         />
 
         <Combobox
@@ -260,7 +260,7 @@ export default function TimeEntryInput({
           placeholder={loc.no.timeEntry.input.placeholder.track}
           selected={selectedTrack}
           setSelected={value => setSelectedTrack(value ?? null)}
-          limit={2}
+          limit={4}
           align='start'
           items={tracks.map(trackToLookupItem)}
           CustomRow={TrackRow}
@@ -273,7 +273,7 @@ export default function TimeEntryInput({
           placeholder={loc.no.timeEntry.input.placeholder.session}
           selected={selectedSession}
           setSelected={value => setSelectedSession(value ?? null)}
-          limit={2}
+          limit={4}
           align='start'
           items={sessions
             .filter(s => s.status !== 'cancelled')

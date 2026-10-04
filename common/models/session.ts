@@ -26,7 +26,11 @@ export function isCreateSessionRequest(
   data: unknown
 ): data is CreateSessionRequest {
   if (!isRecord(data)) return false
-  return data.type === 'CreateSessionRequest' && typeof data.name === 'string'
+  return (
+    data.type === 'CreateSessionRequest' &&
+    typeof data.name === 'string' &&
+    (data.id === undefined || typeof data.id === 'string')
+  )
 }
 
 export type EditSessionRequest = Partial<CreateSession> & {

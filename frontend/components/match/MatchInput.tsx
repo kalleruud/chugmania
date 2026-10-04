@@ -60,6 +60,8 @@ export default function MatchInput({
 
   const currentOngoingSession = sessions?.find(s => isOngoing(s))
 
+  const tournament = inputMatch.tournament
+  const locked = disabled || !!tournament
   const isCreating = !inputMatch.id
   const initialUser1: UserInfo | null =
     users?.find(u => u.id === inputMatch.user1) ?? null
@@ -89,19 +91,19 @@ export default function MatchInput({
   const [comment, setComment] = useState(inputMatch.comment ?? '')
 
   const request = useMemo(() => {
-    if (!track) return undefined
+    if (isCreating && !track) return undefined
 
     return {
       user1: user1?.id ?? null,
       user2: user2?.id ?? null,
-      track: track.id,
+      track: track?.id,
       session: session?.id ?? null,
       winner: !winner || winner === 'none' ? null : winner,
       status: status,
       stage: stage ?? null,
       comment: comment.trim() === '' ? null : comment.trim(),
     } satisfies Omit<CreateMatchRequest | EditMatchRequest, 'type'> | undefined
-  }, [user1, user2, track, session, winner, status, stage, comment])
+  }, [isCreating, user1, user2, track, session, winner, status, stage, comment])
 
   function handleCreate(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -147,12 +149,12 @@ export default function MatchInput({
       return
     }
     setWinner(userId)
-    setStatus('completed')
+    if (status !== 'cancelled' || !tournament) setStatus('completed')
   }
 
   function handleSetStatus(status: MatchStatus) {
     setStatus(status)
-    if (status !== 'completed') {
+    if (status === 'planned' || (status === 'cancelled' && !tournament)) {
       setWinner('none')
     }
   }
@@ -167,12 +169,17 @@ export default function MatchInput({
           {users && (
             <Combobox
               className='w-full'
-              disabled={disabled}
+              disabled={
+                disabled ||
+                (!!tournament && !tournament.editableSlots.includes('user1'))
+              }
               selected={user1}
               setSelected={value => setUser1(value ?? null)}
               items={users.map(userToLookupItem)}
               CustomRow={UserRow}
-              placeholder={loc.no.match.placeholder.selectUser1}
+              placeholder={
+                tournament?.slot1 || loc.no.match.placeholder.selectUser1
+              }
             />
           )}
         </div>
@@ -185,12 +192,17 @@ export default function MatchInput({
           {users && (
             <Combobox
               className='w-full'
-              disabled={disabled}
+              disabled={
+                disabled ||
+                (!!tournament && !tournament.editableSlots.includes('user2'))
+              }
               selected={user2}
               setSelected={value => setUser2(value ?? null)}
               items={users.map(userToLookupItem)}
               CustomRow={UserRow}
-              placeholder={loc.no.match.placeholder.selectUser2}
+              placeholder={
+                tournament?.slot2 || loc.no.match.placeholder.selectUser2
+              }
             />
           )}
         </div>
@@ -200,7 +212,7 @@ export default function MatchInput({
         {tracks && (
           <Combobox
             className='w-full'
-            required
+            required={isCreating}
             disabled={disabled}
             selected={track}
             setSelected={value => setTrack(value ?? null)}
@@ -212,7 +224,7 @@ export default function MatchInput({
         {sessions && (
           <Combobox
             className='w-full'
-            disabled={disabled}
+            disabled={locked}
             selected={session}
             setSelected={value => setSession(value ?? null)}
             items={sessions.map(sessionToLookupItem)}
@@ -229,7 +241,7 @@ export default function MatchInput({
             <Select
               value={stage ?? undefined}
               onValueChange={v => setStage(v as MatchStage)}
-              disabled={disabled}>
+              disabled={locked}>
               <SelectTrigger>
                 <SelectValue placeholder={loc.no.match.placeholder.none} />
               </SelectTrigger>
@@ -272,7 +284,7 @@ export default function MatchInput({
           <Select
             value={status}
             onValueChange={handleSetStatus}
-            disabled={disabled}>
+            disabled={disabled || (!!tournament && (!user1 || !user2))}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -291,7 +303,11 @@ export default function MatchInput({
           <Select
             value={winner ?? undefined}
             onValueChange={handleSetWinner}
-            disabled={disabled || status !== 'completed'}>
+            disabled={
+              disabled ||
+              (status !== 'completed' &&
+                !(tournament && status === 'cancelled'))
+            }>
             <SelectTrigger>
               <SelectValue placeholder={loc.no.match.placeholder.none} />
             </SelectTrigger>
