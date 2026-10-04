@@ -117,7 +117,7 @@ function TimePart({
   if (status !== 'completed')
     return (
       <span className='text-muted-foreground'>
-        {loc.no.match.status[status]}
+        {loc.no.common.status[status]}
       </span>
     )
   const isDNF = !duration

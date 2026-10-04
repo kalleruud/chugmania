@@ -326,7 +326,7 @@ export default function TimeEntryInput({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {Object.entries(loc.no.match.status).map(([value, label]) => (
+                {Object.entries(loc.no.common.status).map(([value, label]) => (
                   <SelectItem key={value} value={value}>
                     {label}
                   </SelectItem>
