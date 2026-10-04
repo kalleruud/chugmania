@@ -13,10 +13,15 @@ import { db } from './setup'
 
 const PASSWORD = 'test-password'
 
-export function createUser(name: string, role: User['role'] = 'user'): User {
+export function createUser(
+  name: string,
+  role: User['role'] = 'user',
+  id?: string
+): User {
   return db
     .insert(users)
     .values({
+      id,
       email: `${name}@example.test`,
       firstName: name,
       role,
