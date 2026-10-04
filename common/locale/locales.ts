@@ -30,9 +30,36 @@ const matchStageCodes: Record<MatchStage, string> = {
   grand_final_reset: 'GFR',
 }
 
-const cancellation = {
-  cancel: 'Avlys',
+const common = {
+  cancelEntity: 'Avlys',
   cancelled: 'Avlyst',
+  confirm: 'Sikker?',
+  now: 'Nå',
+  new: 'Ny',
+  edit: 'Rediger',
+  delete: 'Slett',
+  save: 'Lagre',
+  showAll: 'Vis alle',
+  show: 'Vis',
+  hide: 'Skjul',
+  home: 'Hjem',
+  continue: 'Kjør',
+  back: 'Tilbake',
+  cancel: getRandomItem([
+    'Abort mission',
+    'Avbryt',
+    'Cap',
+    'Føkk dette',
+    'Nah',
+    'Jeg ombestemte meg',
+    'Regretti spaghetti',
+    'Vil ikke',
+  ]),
+  noItems: getRandomItem([
+    'Det finnes ikke en dritt her 🥵',
+    'Her var det tomt...',
+    'Har du gått feil?',
+  ]),
 }
 
 const no = {
@@ -171,7 +198,7 @@ const no = {
     statusOptions: {
       confirmed: 'Bekreftet',
       tentative: 'Usikkert',
-      cancelled: cancellation.cancelled,
+      cancelled: common.cancelled,
     } as Record<SessionStatus, string>,
     status: {
       past: 'Avsluttet',
@@ -218,9 +245,6 @@ const no = {
     tieBreakerTrackRequired: 'Velg én bane for tie-breakers',
     requiredTieBreaker: 'Påkrevd',
     optionalTieBreaker: 'Valgfri',
-    cancelTieBreaker: `${cancellation.cancel} rundetid`,
-    tieBreakerCancelled: `Tie-breaker ${cancellation.cancelled.toLowerCase()}`,
-    cancelledLap: cancellation.cancelled,
     adminPanel: 'Adminpanel',
     groups: 'Grupper',
     groupNames: [
@@ -275,7 +299,7 @@ const no = {
         : `Topp ${count} spillere i hver gruppe går videre til sluttspillet.`,
     conditional: 'Hvis nødvendig',
     invalid: 'Ugyldig turneringsoppsett',
-    session: `Sessionen er slettet eller ${cancellation.cancelled.toLowerCase()}`,
+    session: `Sessionen er slettet eller ${common.cancelled.toLowerCase()}`,
     roster:
       'Deltakerlisten passer ikke turneringsoppsettet. Venter på flere deltakere.',
     tracks: 'Velg minst én bane for hver runde',
@@ -286,7 +310,6 @@ const no = {
     downstream: 'Angre først resultatene i: ',
   },
   match: {
-    cancel: cancellation.cancel,
     vs: 'vs',
     title: 'Matcher',
     description: '1v1 Konkurranser',
@@ -301,7 +324,7 @@ const no = {
     status: {
       planned: 'Planlagt',
       completed: 'Ferdig',
-      cancelled: cancellation.cancelled,
+      cancelled: common.cancelled,
     } as Record<MatchStatus, string>,
     stage: {
       group: 'Gruppespill',
@@ -480,36 +503,7 @@ const no = {
     description: 'Oversikt over alle spillere.',
     receivedUpdate: 'Spillerne ble oppdatert',
   },
-  common: {
-    cancellation,
-    confirm: 'Sikker?',
-    now: 'Nå',
-    new: 'Ny',
-    edit: 'Rediger',
-    delete: 'Slett',
-    save: 'Lagre',
-    showAll: 'Vis alle',
-    show: 'Vis',
-    hide: 'Skjul',
-    home: 'Hjem',
-    continue: 'Kjør',
-    back: 'Tilbake',
-    cancel: getRandomItem([
-      'Abort mission',
-      'Avbryt',
-      'Cap',
-      'Føkk dette',
-      'Nah',
-      'Jeg ombestemte meg',
-      'Regretti spaghetti',
-      'Vil ikke',
-    ]),
-    noItems: getRandomItem([
-      'Det finnes ikke en dritt her 🥵',
-      'Her var det tomt...',
-      'Har du gått feil?',
-    ]),
-  },
+  common,
 } as const
 
 const loc: Record<Locale, Localization> = {

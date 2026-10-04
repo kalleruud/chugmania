@@ -139,7 +139,7 @@ export default function MatchCard({
       {canChooseWinner && (
         <button
           type='button'
-          title={loc.no.match.cancel}
+          title={loc.no.common.cancelEntity}
           className='absolute top-0 right-0 m-2 p-2 text-muted-foreground transition-colors hover:rounded-sm hover:bg-muted hover:text-primary-foreground'
           onClick={e => {
             e.stopPropagation()
