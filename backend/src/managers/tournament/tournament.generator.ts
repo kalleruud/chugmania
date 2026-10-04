@@ -68,7 +68,7 @@ export function generateTournament(
   )
     throw new Error(loc.no.tournament.roster)
   const groups = groupNames(config.session, config.groupsCount).map(
-    (name, index) => ({ id: `group-${index}`, name })
+    (name, position) => ({ id: `group-${position}`, name, position })
   )
   const participants = inputs.toSorted(seedingOrder).map((player, index) => ({
     ...player,
@@ -241,7 +241,6 @@ export function generateTournament(
     groups,
     fixtures,
     frozenAt: null,
-    admissionClosedAt: null,
     notReadyReason: null,
     cancelled: false,
   }

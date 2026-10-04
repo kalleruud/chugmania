@@ -125,10 +125,9 @@ export const tournaments = sqliteTable(
       .notNull()
       .references(() => sessions.id),
     config: text({ mode: 'json' })
-      .$type<Omit<TournamentConfig, 'stageTracks'>>()
+      .$type<Omit<TournamentConfig, 'session' | 'stageTracks'>>()
       .notNull(),
     frozenAt: integer('frozen_at', { mode: 'timestamp_ms' }),
-    admissionClosedAt: integer('admission_closed_at', { mode: 'timestamp_ms' }),
     notReadyReason: text('not_ready_reason'),
   },
   table => [
@@ -152,6 +151,7 @@ export const tournamentGroups = sqliteTable('tournament_groups', {
     .notNull()
     .references(() => tournaments.id),
   name: text().notNull(),
+  position: integer().notNull().default(0),
 })
 export const tournamentPlayers = sqliteTable(
   'tournament_players',
@@ -167,8 +167,6 @@ export const tournamentPlayers = sqliteTable(
       .notNull()
       .references(() => tournamentGroups.id),
     admission: integer().notNull(),
-    duration: integer(),
-    sourceEntry: text('source_entry'),
     rating: integer().notNull(),
   },
   table => [

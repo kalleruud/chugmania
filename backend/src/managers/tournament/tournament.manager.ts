@@ -13,7 +13,7 @@ import {
 } from '@common/models/tournament'
 import { RATING_CONSTANTS } from '@common/utils/constants'
 import { usedStages } from '@common/utils/tournament'
-import { and, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm'
+import { and, asc, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
 import { randomUUID } from 'node:crypto'
 import db, { database } from '../../../database/database'
 import {
@@ -99,7 +99,7 @@ export default class TournamentManager {
           isNull(tournamentGroups.deletedAt)
         )
       )
-      .orderBy(sql`rowid`)
+      .orderBy(asc(tournamentGroups.position))
       .all()
     const playerRows = db
       .select()
@@ -137,6 +137,7 @@ export default class TournamentManager {
       id: row.id,
       config: {
         ...row.config,
+        session: row.session,
         stageTracks: Object.fromEntries(
           stageRows.map(s => [s.stage, s.tracks])
         ),
@@ -147,7 +148,11 @@ export default class TournamentManager {
         admission: p.admission,
         groupId: p.groupId,
       })),
-      groups: groupRows.map(g => ({ id: g.id, name: g.name })),
+      groups: groupRows.map(g => ({
+        id: g.id,
+        name: g.name,
+        position: g.position,
+      })),
       fixtures: fixtureRows
         .map(({ fixture, match }) => ({
           id: fixture.id,
@@ -162,7 +167,6 @@ export default class TournamentManager {
         }))
         .sort((a, b) => a.order - b.order),
       frozenAt: row.frozenAt ?? row.createdAt,
-      admissionClosedAt: row.admissionClosedAt ?? row.createdAt,
       notReadyReason: row.notReadyReason,
       cancelled:
         db.select().from(sessions).where(eq(sessions.id, session)).get()
@@ -240,13 +244,12 @@ export default class TournamentManager {
   }
 
   private static save(state: TournamentState): void {
-    const { stageTracks, ...config } = state.config
+    const { session, stageTracks, ...config } = state.config
     const row = {
       id: state.id,
-      session: config.session,
+      session,
       config,
       frozenAt: state.frozenAt,
-      admissionClosedAt: state.admissionClosedAt,
       notReadyReason: state.notReadyReason,
     }
     db.insert(tournaments)
@@ -416,7 +419,6 @@ export default class TournamentManager {
         TournamentManager.validate(request, true)
       )
       state.frozenAt = new Date()
-      state.admissionClosedAt = state.frozenAt
       TournamentManager.save(state)
     })()
     broadcast('all_matches', await MatchManager.getAllMatches())

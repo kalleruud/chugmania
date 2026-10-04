@@ -20,7 +20,7 @@ export type Slot = (
   | { kind: 'group_rank'; groupId: string; rank: number }
   | { kind: 'match_winner' | 'match_loser'; matchId: string }
 ) & { override?: string }
-export type TournamentGroup = { id: string; name: string }
+export type TournamentGroup = { id: string; name: string; position: number }
 export type TournamentFixture = {
   id: string
   groupId: string | null
@@ -39,7 +39,6 @@ export type TournamentState = {
   groups: TournamentGroup[]
   fixtures: TournamentFixture[]
   frozenAt: Date | null
-  admissionClosedAt: Date | null
   notReadyReason: string | null
   cancelled: boolean
 }

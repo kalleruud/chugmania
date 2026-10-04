@@ -362,7 +362,7 @@ export function tournamentDetails(state: TournamentState): TournamentDetails {
     if (slot.kind === 'group_rank') {
       return loc.no.tournament.groupSlot(
         slot.rank,
-        groupCode(state.groups.findIndex(g => g.id === slot.groupId))
+        groupCode(state.groups.find(g => g.id === slot.groupId)?.position ?? -1)
       )
     }
     const feeder = state.fixtures.find(f => f.id === slot.matchId)
@@ -388,9 +388,9 @@ export function tournamentDetails(state: TournamentState): TournamentDetails {
     cancelled: state.cancelled,
     notReadyReason: state.notReadyReason,
     participants: state.participants.toSorted(seedingOrder),
-    groups: state.groups.map((g, index) => ({
+    groups: state.groups.map(g => ({
       ...g,
-      code: groupCode(index),
+      code: groupCode(g.position),
       standings: groupStandings(state, g.id),
     })),
     matches: state.fixtures.map(f => ({
