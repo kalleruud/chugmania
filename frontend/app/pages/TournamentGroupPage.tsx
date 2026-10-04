@@ -1,6 +1,5 @@
 import MatchList from '@/components/match/MatchList'
 import RenameTournamentGroupDialog from '@/components/tournament/RenameTournamentGroupDialog'
-import TournamentStandingExplanation from '@/components/tournament/TournamentStandingExplanation'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -17,6 +16,7 @@ import { useData } from '@/contexts/DataContext'
 import { cn } from '@/lib/utils'
 import loc from '@common/locale/locales'
 import { firstPendingMatch } from '@common/utils/tournament'
+import { ChevronRight } from 'lucide-react'
 import { Link, useParams } from 'react-router'
 
 export default function TournamentGroupPage() {
@@ -117,7 +117,7 @@ export default function TournamentGroupPage() {
                 <th scope='col' className='text-right font-medium'>
                   {loc.no.tournament.matchesPlayed}
                 </th>
-                <th scope='col' className='text-right font-medium'>
+                <th scope='col' className='font-medium'>
                   {loc.no.tournament.winPercentage}
                 </th>
               </tr>
@@ -141,10 +141,15 @@ export default function TournamentGroupPage() {
                       <th
                         scope='row'
                         className='block min-w-0 flex-1 truncate text-start font-f1 uppercase'>
-                        <span className='mr-1 font-medium'>
-                          {user.firstName}
-                        </span>
-                        <span className='font-bold'>{user.lastName}</span>
+                        <Button variant='ghost' size='sm' asChild>
+                          <Link to={'/users/' + user.id}>
+                            <span className='mr-1 font-medium'>
+                              {user.firstName}
+                            </span>
+                            <span className='font-bold'>{user.lastName}</span>
+                            <ChevronRight className='size-4 text-muted-foreground' />
+                          </Link>
+                        </Button>
                       </th>
                       <td className='text-right font-kh-interface'>
                         {standing.wins}
@@ -162,14 +167,14 @@ export default function TournamentGroupPage() {
                         />
                       </td>
                     </tr>
-                    <tr>
+                    {/* <tr>
                       <td colSpan={6} className={cn('border-l-2 px-3 pb-3')}>
                         <TournamentStandingExplanation
                           standing={standing}
                           matches={matches}
                         />
                       </td>
-                    </tr>
+                    </tr> */}
                   </>
                 )
               })}
@@ -178,15 +183,15 @@ export default function TournamentGroupPage() {
         </div>
 
         <div className='flex items-center gap-2 rounded p-2'>
-          <div className='h-4 rounded-full border-l-2 border-primary' />
-          <p className='w-full text-sm text-muted-foreground'>
+          <div className='size-2 rounded-full bg-primary' />
+          <p className='text-sm text-muted-foreground'>
             {loc.no.tournament.groupInfo(tournament.config.advancementCount)}
           </p>
         </div>
       </section>
 
       <section className='flex flex-col gap-4 rounded-sm border bg-background p-4'>
-        <h2 className='text-xl break-words sm:text-2xl'>
+        <h2 className='text-xl wrap-break-word sm:text-2xl'>
           {loc.no.tournament.groupMatches}
         </h2>
         <MatchList
