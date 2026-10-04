@@ -3,6 +3,7 @@ import {
   blob,
   check,
   foreignKey,
+  index,
   integer,
   sqliteTable,
   text,
@@ -208,8 +209,6 @@ export const tournamentMatches = sqliteTable(
     bracket: text().$type<'group' | 'upper' | 'lower' | 'final'>().notNull(),
     round: integer().notNull(),
     order: integer().notNull(),
-    slot1: text({ mode: 'json' }).$type<Slot>().notNull(),
-    slot2: text({ mode: 'json' }).$type<Slot>().notNull(),
     finalResetStatus: text('final_reset_status')
       .$type<'none' | 'conditional' | 'required' | 'unneeded'>()
       .notNull()
@@ -231,6 +230,37 @@ export const tournamentMatches = sqliteTable(
     check(
       'tournament_match_reset',
       sql`${table.finalResetStatus} IN ('none', 'conditional', 'required', 'unneeded')`
+    ),
+  ]
+)
+
+export const tournamentMatchSlots = sqliteTable(
+  'tournament_match_slots',
+  {
+    ...metadata,
+    tournamentMatch: text('tournament_match')
+      .notNull()
+      .references(() => tournamentMatches.id),
+    position: integer().$type<1 | 2>().notNull(),
+    kind: text().$type<Slot['kind']>().notNull(),
+    slotHolderId: text('slot_holder_id').notNull(),
+    rank: integer(),
+    overrideUser: text('override_user').references(() => users.id),
+  },
+  table => [
+    uniqueIndex('tournament_match_slot_position').on(
+      table.tournamentMatch,
+      table.position
+    ),
+    index('tournament_slot_holder').on(table.kind, table.slotHolderId),
+    check('tournament_slot_position', sql`${table.position} IN (1, 2)`),
+    check(
+      'tournament_slot_kind',
+      sql`${table.kind} IN ('player', 'group_rank', 'match_winner', 'match_loser')`
+    ),
+    check(
+      'tournament_slot_rank',
+      sql`(${table.kind} = 'group_rank' AND ${table.rank} IS NOT NULL AND ${table.rank} > 0) OR (${table.kind} != 'group_rank' AND ${table.rank} IS NULL)`
     ),
   ]
 )

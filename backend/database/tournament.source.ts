@@ -1,4 +1,4 @@
-import type { TournamentState } from '@common/models/tournament'
+import type { Slot, TournamentState } from '@common/models/tournament'
 import { and, asc, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
 import db, { database } from './database'
 import {
@@ -8,6 +8,7 @@ import {
   sessionSignups,
   tournamentGroups,
   tournamentMatches,
+  tournamentMatchSlots,
   tournamentPlayers,
   tournaments,
   tournamentStages,
@@ -127,6 +128,27 @@ export default class TournamentSource {
         )
       )
       .all()
+    const slotRows = db
+      .select({ slot: tournamentMatchSlots })
+      .from(tournamentMatchSlots)
+      .innerJoin(
+        tournamentMatches,
+        eq(tournamentMatches.id, tournamentMatchSlots.tournamentMatch)
+      )
+      .where(
+        and(
+          eq(tournamentMatches.tournament, row.id),
+          isNull(tournamentMatchSlots.deletedAt),
+          isNull(tournamentMatches.deletedAt)
+        )
+      )
+      .all()
+    const slots = new Map(
+      slotRows.map(({ slot }) => [
+        `${slot.tournamentMatch}:${slot.position}`,
+        slot,
+      ])
+    )
     const fixtureRows = db
       .select({ fixture: tournamentMatches, match: matches })
       .from(tournamentMatches)
@@ -168,8 +190,8 @@ export default class TournamentSource {
           bracket: fixture.bracket,
           round: fixture.round,
           order: fixture.order,
-          slot1: fixture.slot1,
-          slot2: fixture.slot2,
+          slot1: this.readSlot(slots.get(`${fixture.id}:1`)),
+          slot2: this.readSlot(slots.get(`${fixture.id}:2`)),
           finalResetStatus: fixture.finalResetStatus,
           match,
         }))
@@ -180,6 +202,25 @@ export default class TournamentSource {
         db.select().from(sessions).where(eq(sessions.id, session)).get()
           ?.status === 'cancelled',
     }
+  }
+
+  private static readSlot(
+    row: typeof tournamentMatchSlots.$inferSelect | undefined
+  ): Slot {
+    if (!row) throw new Error('Tournament match slot is missing')
+    const override = row.overrideUser ? { override: row.overrideUser } : {}
+    if (row.kind === 'player')
+      return { kind: row.kind, user: row.slotHolderId, ...override }
+    if (row.kind === 'group_rank') {
+      if (row.rank === null) throw new Error('Tournament group rank is missing')
+      return {
+        kind: row.kind,
+        groupId: row.slotHolderId,
+        rank: row.rank,
+        ...override,
+      }
+    }
+    return { kind: row.kind, matchId: row.slotHolderId, ...override }
   }
 
   static saveTournament(state: TournamentState): void {
@@ -236,12 +277,41 @@ export default class TournamentSource {
         .values(match)
         .onConflictDoUpdate({ target: matches.id, set: match })
         .run()
-      const { match: ignored, ...fields } = fixture
+      const { match: ignored, slot1, slot2, ...fields } = fixture
       const row = { ...fields, tournament: state.id, matchId: match.id }
       db.insert(tournamentMatches)
         .values(row)
         .onConflictDoUpdate({ target: tournamentMatches.id, set: row })
         .run()
+      const slots: [1 | 2, Slot][] = [
+        [1, slot1],
+        [2, slot2],
+      ]
+      for (const [position, slot] of slots) {
+        let slotHolderId: string
+        if (slot.kind === 'player') slotHolderId = slot.user
+        else if (slot.kind === 'group_rank') slotHolderId = slot.groupId
+        else slotHolderId = slot.matchId
+        const fields = {
+          tournamentMatch: fixture.id,
+          position,
+          kind: slot.kind,
+          slotHolderId,
+          rank: slot.kind === 'group_rank' ? slot.rank : null,
+          overrideUser: slot.override ?? null,
+          deletedAt: null,
+        }
+        db.insert(tournamentMatchSlots)
+          .values({ id: `${fixture.id}:${position}`, ...fields })
+          .onConflictDoUpdate({
+            target: [
+              tournamentMatchSlots.tournamentMatch,
+              tournamentMatchSlots.position,
+            ],
+            set: fields,
+          })
+          .run()
+      }
     }
   }
 
@@ -256,6 +326,18 @@ export default class TournamentSource {
       .select({ id: tournamentMatches.matchId })
       .from(tournamentMatches)
       .where(eq(tournamentMatches.tournament, state.id))
+    db.update(tournamentMatchSlots)
+      .set({ deletedAt })
+      .where(
+        inArray(
+          tournamentMatchSlots.tournamentMatch,
+          db
+            .select({ id: tournamentMatches.id })
+            .from(tournamentMatches)
+            .where(eq(tournamentMatches.tournament, state.id))
+        )
+      )
+      .run()
     if (deleteMatches)
       db.update(matches)
         .set({ deletedAt })

@@ -57,6 +57,7 @@ const no = {
       tournamentGroups: 'Grupper',
       tournamentPlayers: 'Turneringsdeltakere',
       tournamentMatches: 'Turneringsmatcher',
+      tournamentMatchSlots: 'Matchplasser',
       sessionSignups: 'Sesssion Signups',
       sessions: 'Sessions',
       timeEntries: 'Rundetider',

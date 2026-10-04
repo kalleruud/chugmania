@@ -11,6 +11,26 @@ CREATE TABLE `tournament_groups` (
 --> statement-breakpoint
 CREATE UNIQUE INDEX `tournament_group_position` ON `tournament_groups` (`tournament`,`position`);--> statement-breakpoint
 CREATE UNIQUE INDEX `tournament_group_owner` ON `tournament_groups` (`tournament`,`id`);--> statement-breakpoint
+CREATE TABLE `tournament_match_slots` (
+	`id` text PRIMARY KEY NOT NULL,
+	`updated_at` integer,
+	`created_at` integer NOT NULL,
+	`deleted_at` integer,
+	`tournament_match` text NOT NULL,
+	`position` integer NOT NULL,
+	`kind` text NOT NULL,
+	`slot_holder_id` text NOT NULL,
+	`rank` integer,
+	`override_user` text,
+	FOREIGN KEY (`tournament_match`) REFERENCES `tournament_matches`(`id`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`override_user`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE no action,
+	CONSTRAINT "tournament_slot_position" CHECK("tournament_match_slots"."position" IN (1, 2)),
+	CONSTRAINT "tournament_slot_kind" CHECK("tournament_match_slots"."kind" IN ('player', 'group_rank', 'match_winner', 'match_loser')),
+	CONSTRAINT "tournament_slot_rank" CHECK(("tournament_match_slots"."kind" = 'group_rank' AND "tournament_match_slots"."rank" IS NOT NULL AND "tournament_match_slots"."rank" > 0) OR ("tournament_match_slots"."kind" != 'group_rank' AND "tournament_match_slots"."rank" IS NULL))
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `tournament_match_slot_position` ON `tournament_match_slots` (`tournament_match`,`position`);--> statement-breakpoint
+CREATE INDEX `tournament_slot_holder` ON `tournament_match_slots` (`kind`,`slot_holder_id`);--> statement-breakpoint
 CREATE TABLE `tournament_matches` (
 	`id` text PRIMARY KEY NOT NULL,
 	`updated_at` integer,
@@ -22,8 +42,6 @@ CREATE TABLE `tournament_matches` (
 	`bracket` text NOT NULL,
 	`round` integer NOT NULL,
 	`order` integer NOT NULL,
-	`slot1` text NOT NULL,
-	`slot2` text NOT NULL,
 	`final_reset_status` text DEFAULT 'none' NOT NULL,
 	FOREIGN KEY (`tournament`) REFERENCES `tournaments`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`match_id`) REFERENCES `matches`(`id`) ON UPDATE no action ON DELETE no action,
