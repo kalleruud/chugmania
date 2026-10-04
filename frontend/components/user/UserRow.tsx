@@ -61,7 +61,7 @@ export default function UserRow({
         )}
 
         <ItemTitle
-          className='mr-auto block min-w-0 flex-1 truncate font-f1 uppercase'
+          className='mr-auto block min-w-0 flex-1 truncate text-start font-f1 uppercase'
           title={getUserFullName(user)}>
           {user.firstName} <span className='font-bold'>{user.lastName}</span>
         </ItemTitle>

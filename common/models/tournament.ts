@@ -9,18 +9,22 @@ export type TournamentConfig = {
   eliminationType: EliminationType
   stageTracks: Record<string, string[]>
 }
+
 export type Participant = {
   user: string
   rating: number
   admission: number
   groupId: string
 }
+
 export type Slot = (
   | { kind: 'player'; user: string }
   | { kind: 'group_rank'; groupId: string; rank: number }
   | { kind: 'match_winner' | 'match_loser'; matchId: string }
 ) & { override?: string }
+
 export type TournamentGroup = { id: string; name: string; position: number }
+
 export type TournamentFixture = {
   id: string
   groupId: string | null
@@ -32,6 +36,7 @@ export type TournamentFixture = {
   reset: 'none' | 'conditional' | 'required' | 'unneeded'
   match: Match
 }
+
 export type TournamentState = {
   id: string
   config: TournamentConfig
@@ -42,6 +47,7 @@ export type TournamentState = {
   notReadyReason: string | null
   cancelled: boolean
 }
+
 export type Standing = {
   user: string
   rank: number
@@ -50,6 +56,7 @@ export type Standing = {
   qualifies: boolean
   resolved: boolean
 }
+
 export type TournamentDetails = {
   id: string
   config: TournamentConfig
@@ -73,15 +80,19 @@ export type TournamentDetails = {
     maxMatches: number
   }
 }
+
 export type TournamentRequest = { session: string }
+
 export type DeleteTournamentRequest = TournamentRequest & {
   deleteRelatedResults: boolean
 }
+
 export type TournamentChange = {
   session: string
   details: TournamentDetails | null
   actor: string | null
 }
+
 export type MatchResult = { status: MatchStatus; winner: string | null }
 
 export function isTournamentRequest(
@@ -89,6 +100,7 @@ export function isTournamentRequest(
 ): value is TournamentRequest {
   return isRecord(value) && typeof value.session === 'string'
 }
+
 export function isTournamentConfig(value: unknown): value is TournamentConfig {
   return (
     isRecord(value) &&
@@ -105,6 +117,7 @@ export function isTournamentConfig(value: unknown): value is TournamentConfig {
     )
   )
 }
+
 export function isDeleteTournamentRequest(
   value: unknown
 ): value is DeleteTournamentRequest {

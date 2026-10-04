@@ -152,6 +152,7 @@ async function Connect(s: TypedSocket) {
     if (isTournamentRequest(request))
       void s.leave(`tournament:${request.session}`)
   })
+  
   setup(s, 'create_match', MatchManager.onCreateMatch)
   setup(s, 'edit_match', MatchManager.onEditMatch)
   setup(s, 'delete_match', MatchManager.onDeleteMatch)
