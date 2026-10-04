@@ -92,6 +92,13 @@
       "when": 1791071985089,
       "tag": "0012_right_talos",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1791072206232,
+      "tag": "0013_tan_scarlet_spider",
+      "breakpoints": true
     }
   ]
 }

@@ -265,7 +265,10 @@ export default class TournamentManager {
       }
       db.insert(tournamentStages)
         .values(row)
-        .onConflictDoUpdate({ target: tournamentStages.id, set: row })
+        .onConflictDoUpdate({
+          target: [tournamentStages.tournament, tournamentStages.stage],
+          set: { tracks },
+        })
         .run()
     }
     for (const group of state.groups) {

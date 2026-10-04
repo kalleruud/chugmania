@@ -137,22 +137,35 @@ export const tournaments = sqliteTable(
   ]
 )
 
-export const tournamentStages = sqliteTable('tournament_stages', {
-  ...metadata,
-  tournament: text()
-    .notNull()
-    .references(() => tournaments.id),
-  stage: text().notNull(),
-  tracks: text({ mode: 'json' }).$type<string[]>().notNull(),
-})
-export const tournamentGroups = sqliteTable('tournament_groups', {
-  ...metadata,
-  tournament: text()
-    .notNull()
-    .references(() => tournaments.id),
-  name: text().notNull(),
-  position: integer().notNull().default(0),
-})
+export const tournamentStages = sqliteTable(
+  'tournament_stages',
+  {
+    ...metadata,
+    tournament: text()
+      .notNull()
+      .references(() => tournaments.id),
+    stage: text().notNull(),
+    tracks: text({ mode: 'json' }).$type<string[]>().notNull(),
+  },
+  table => [uniqueIndex('tournament_stage').on(table.tournament, table.stage)]
+)
+export const tournamentGroups = sqliteTable(
+  'tournament_groups',
+  {
+    ...metadata,
+    tournament: text()
+      .notNull()
+      .references(() => tournaments.id),
+    name: text().notNull(),
+    position: integer().notNull().default(0),
+  },
+  table => [
+    uniqueIndex('tournament_group_position').on(
+      table.tournament,
+      table.position
+    ),
+  ]
+)
 export const tournamentPlayers = sqliteTable(
   'tournament_players',
   {
@@ -194,5 +207,10 @@ export const tournamentMatches = sqliteTable(
       .notNull()
       .default('none'),
   },
-  table => [uniqueIndex('tournament_match_record').on(table.matchId)]
+  table => [
+    uniqueIndex('tournament_match_record').on(table.matchId),
+    uniqueIndex('tournament_match_order')
+      .on(table.tournament, table.order)
+      .where(sql`${table.deletedAt} IS NULL`),
+  ]
 )
