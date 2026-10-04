@@ -6,8 +6,9 @@ import { twMerge } from 'tailwind-merge'
 type PageHeaderProps = {
   title: string
   description?: string | null
-  Icon?: (typeof HeroIcons)[keyof typeof HeroIcons]
   to?: string
+  Icon?: (typeof HeroIcons)[keyof typeof HeroIcons]
+  iconClassName?: string
 } & ComponentProps<'div'>
 
 export function PageHeader({
@@ -16,13 +17,16 @@ export function PageHeader({
   Icon,
   to,
   className,
+  iconClassName,
   ...props
 }: Readonly<PageHeaderProps>) {
   const content = (
     <div className='flex items-center justify-between'>
       <div className='flex flex-col' {...props}>
         <div className='flex items-center gap-2'>
-          {Icon && <Icon className='size-6 text-primary' />}
+          {Icon && (
+            <Icon className={twMerge('size-6 text-primary', iconClassName)} />
+          )}
           <h3 className='pt-0.5 text-foreground'>{title}</h3>
         </div>
         {description && (

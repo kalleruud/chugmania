@@ -19,6 +19,7 @@ import RatingManager from './managers/rating.manager'
 import SessionManager from './managers/session.manager'
 import SessionScheduler from './managers/session.scheduler'
 import TimeEntryManager from './managers/timeEntry.manager'
+import TournamentManager from './managers/tournament/tournament.manager'
 import TrackManager from './managers/track.manager'
 import UserManager from './managers/user.manager'
 
@@ -64,6 +65,7 @@ async function emitData(socket: TypedSocket) {
   socket.emit('all_time_entries', timeEntries)
   socket.emit('all_matches', matches)
   socket.emit('all_rankings', RatingManager.onGetRatings())
+  socket.emit('all_tournaments', TournamentManager.getAllTournaments())
 }
 
 export function broadcast<Ev extends ProtectedServerEvent>(
@@ -94,8 +96,8 @@ if (!isProduction) {
   server.on('close', () => void vite.close())
 } else {
   app.use(express.static('dist'))
-  app.get('*splat', (_req, res) =>
-    res.sendFile(path.resolve('dist/index.html'))
+  app.get('/{*splat}', (_req, res) =>
+    res.sendFile('index.html', { root: path.resolve('dist') })
   )
 }
 
@@ -109,7 +111,7 @@ io.on('connect', s => Connect(s))
 await SessionScheduler.start()
 
 // Calculate ratings
-await RatingManager.recalculate()
+RatingManager.recalculate()
 
 async function Connect(s: TypedSocket) {
   console.debug(new Date().toISOString(), s.id, 'Connected')
@@ -139,6 +141,10 @@ async function Connect(s: TypedSocket) {
   setup(s, 'rsvp_session', SessionManager.onRsvpSession)
   setup(s, 'delete_session', SessionManager.onDeleteSession)
 
+  setup(s, 'preview_tournament', TournamentManager.onPreview)
+  setup(s, 'create_tournament', TournamentManager.onCreate)
+  setup(s, 'get_tournament', TournamentManager.onGet)
+  setup(s, 'delete_tournament', TournamentManager.onDelete)
   setup(s, 'create_match', MatchManager.onCreateMatch)
   setup(s, 'edit_match', MatchManager.onEditMatch)
   setup(s, 'delete_match', MatchManager.onDeleteMatch)

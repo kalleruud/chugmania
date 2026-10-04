@@ -1,6 +1,6 @@
 import { Item, ItemActions, ItemContent, ItemTitle } from '@/components/ui/item'
 import { useData } from '@/contexts/DataContext'
-import { type UserInfo } from '@common/models/user'
+import { getUserFullName, type UserInfo } from '@common/models/user'
 import { ChevronRight, Minus } from 'lucide-react'
 import { Link } from 'react-router'
 import { twMerge } from 'tailwind-merge'
@@ -9,6 +9,7 @@ import { Spinner } from '../ui/spinner'
 
 type UserRowProps = BaseRowProps<UserInfo> & {
   hideRanking?: boolean
+  rank?: number
 }
 
 export default function UserRow({
@@ -18,6 +19,7 @@ export default function UserRow({
   highlight,
   hideRanking,
   children,
+  rank,
   ...props
 }: Readonly<UserRowProps>) {
   const { rankings, isLoadingData } = useData()
@@ -26,43 +28,56 @@ export default function UserRow({
     return <Spinner className='size-4' />
   }
 
-  const ranking = rankings.find(r => r.user === user.id)
+  const ranking =
+    rank === undefined ? rankings.find(r => r.user === user.id)?.ranking : rank
+
+  const showRanking = !hideRanking && ranking
+  const showMissingRanking = !hideRanking && !ranking
 
   const content = (
     <>
-      <ItemContent className='relative z-10'>
-        <div className='flex items-center gap-2'>
-          <div className='h-4 w-1 rounded-full bg-primary' />
+      <ItemContent className='relative z-10 min-w-0 flex-row items-center gap-2'>
+        {showRanking && (
+          <p
+            className={twMerge(
+              'w-6 flex-none text-center font-kh-interface text-lg font-black text-primary tabular-nums',
+              !hideLink && highlight && 'group-hover:text-primary-foreground'
+            )}>
+            {ranking}
+          </p>
+        )}
 
-          <ItemTitle className='mr-auto flex gap-1 font-f1 uppercase'>
-            <span>{user.firstName}</span>
-            <span className='font-bold'>{user.lastName}</span>
-          </ItemTitle>
+        {showMissingRanking && (
+          <Minus className='size-4 flex-none text-muted-foreground' />
+        )}
 
-          {!hideRanking && ranking && (
-            <div
-              className={twMerge(
-                'flex items-center justify-end gap-0.5 font-kh-interface text-muted-foreground tabular-nums',
-                ranking.ranking === 1 && 'text-yellow-400',
-                ranking.ranking === 2 && 'text-gray-300',
-                ranking.ranking === 3 && 'text-amber-600'
-              )}>
-              <span className='w-2 text-end'>#</span>
-              <span className='w-4 font-black'>{ranking.ranking}</span>
-            </div>
-          )}
+        {hideRanking && (
+          <div
+            className={twMerge(
+              'h-4 w-1 flex-none rounded-full bg-primary',
+              !hideLink && highlight && 'group-hover:bg-primary-foreground'
+            )}
+          />
+        )}
 
-          {!hideRanking && !ranking && (
-            <Minus className='size-4 text-muted-foreground' />
-          )}
+        <ItemTitle
+          className='mr-auto block min-w-0 flex-1 truncate text-start font-f1 uppercase'
+          title={getUserFullName(user)}>
+          {user.firstName} <span className='font-bold'>{user.lastName}</span>
+        </ItemTitle>
 
-          {children && (
-            <div className='pointer-events-auto relative z-10'>{children}</div>
-          )}
-        </div>
+        {children && (
+          <div className='pointer-events-auto relative z-10 flex-none'>
+            {children}
+          </div>
+        )}
       </ItemContent>
       {!hideLink && (
-        <ItemActions className='relative z-10'>
+        <ItemActions
+          className={twMerge(
+            'relative z-10',
+            highlight && 'text-primary group-hover:text-primary-foreground'
+          )}>
           <ChevronRight className='size-4' />
         </ItemActions>
       )}
@@ -73,7 +88,11 @@ export default function UserRow({
     return (
       <Item
         key={user.id}
-        className={twMerge(highlight && 'bg-foreground/3', className)}
+        className={twMerge(
+          'group flex-nowrap',
+          highlight && 'bg-primary-background',
+          className
+        )}
         asChild
         {...props}>
         <div>{content}</div>
@@ -84,11 +103,16 @@ export default function UserRow({
   return (
     <Item
       key={user.id}
-      className={twMerge('relative', highlight && 'bg-foreground/3', className)}
+      className={twMerge(
+        'group relative flex-nowrap',
+        highlight && 'bg-primary-background hover:bg-primary',
+        !highlight && 'hover:bg-accent/50',
+        className
+      )}
       {...props}>
       <div className='pointer-events-none contents'>{content}</div>
       <Link
-        className='absolute inset-0 z-0 rounded-sm transition-colors duration-100 hover:bg-accent/50'
+        className='absolute inset-0 z-0 rounded-sm transition-colors duration-100'
         to={`/users/${user.id}`}
         aria-label={`${user.firstName} ${user.lastName}`}
       />

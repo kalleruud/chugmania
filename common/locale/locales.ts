@@ -14,6 +14,22 @@ import type {
 export type Localization = typeof no
 export type Locale = 'no'
 
+const matchStageCodes: Record<MatchStage, string> = {
+  group: 'GS',
+  eight: 'EF',
+  quarter: 'QF',
+  semi: 'SF',
+  bronze: 'BF',
+  final: 'F',
+  loser_eight: 'LEF',
+  loser_quarter: 'LQF',
+  loser_semi: 'LSF',
+  loser_bronze: 'LBF',
+  loser_final: 'LF',
+  grand_final: 'GF',
+  grand_final_reset: 'GFR',
+}
+
 const no = {
   chugmania: 'Chugmania',
   admin: {
@@ -36,6 +52,12 @@ const no = {
       error: (err: Error) => `Kunne ikke importere tabellen: ${err.message}`,
     },
     tables: {
+      tournaments: 'Turneringer',
+      tournamentStages: 'Turneringsbaner',
+      tournamentGroups: 'Grupper',
+      tournamentPlayers: 'Turneringsdeltakere',
+      tournamentMatches: 'Turneringsmatcher',
+      tournamentMatchSlots: 'Matchplasser',
       sessionSignups: 'Sesssion Signups',
       sessions: 'Sessions',
       timeEntries: 'Rundetider',
@@ -109,6 +131,7 @@ const no = {
   session: {
     title: 'Sessions',
     description: 'Oversikt over kommende og tidligere sessions.',
+    session: 'Session',
     past: 'Tidligere sessions',
     all: 'Alle sessions',
     edit: 'Rediger session',
@@ -116,7 +139,7 @@ const no = {
     location: 'Sted',
     date: 'Dato',
     time: 'Tid',
-    attendees: 'Deltakere',
+    participants: 'Deltakere',
     attendance: 'Påmelding',
     next: 'Neste session',
     form: {
@@ -183,6 +206,72 @@ const no = {
       no_edit_historical: 'Du kan ikke endre svar på en session tilbake i tid.',
     },
   },
+  tournament: {
+    title: 'Turnering',
+    adminPanel: 'Adminpanel',
+    groups: 'Grupper',
+    groupNames: [
+      'Furries',
+      'Degenerates',
+      'Knob Gobblers',
+      'Pedo Flies',
+      'Chug Goblins',
+      'Basement Dwellers',
+      'Mouth Breathers',
+      'Dumpster Gremlins',
+      'Sweaty Tryhards',
+      'Professional Disappointments',
+      'Beer Bandits',
+      'Certified Disasters',
+      'Feral Raccoons',
+      'Bottom Feeders',
+      'Unwashed Buttholes',
+      'Cum Dumpsters',
+    ],
+    group: 'Gruppe',
+    groupSlot: (rank: number, code: string) => {
+      const suffixes: Record<number, string> = { 1: 'st', 2: 'nd', 3: 'rd' }
+      const suffix =
+        rank % 100 >= 11 && rank % 100 <= 13
+          ? 'th'
+          : (suffixes[rank % 10] ?? 'th')
+      return `${rank}${suffix} Gr ${code}`
+    },
+    winnerCode: 'W',
+    loserCode: 'L',
+    groupMatches: 'Gruppematcher',
+    bracketMatches: 'Turneringsmatcher',
+    create: 'Opprett turnering',
+    preview: 'Forhåndsvisning',
+    pending: 'Venter',
+    frozen: 'Gruppefordeling låst',
+    finalStandings: 'Sluttresultat',
+    provisional: 'Foreløpig resultat',
+    changed: 'Turneringen er oppdatert',
+    saved: 'Turneringen er lagret',
+    deleted: 'Turneringen er slettet',
+    deleteTitle: 'Slett turnering',
+    deleteDescription:
+      'Vil du beholde eller slette turneringens matcher? Andre matcher og rundetider beholdes.',
+    keepResults: 'Slett turnering, behold resultater',
+    deleteResults: 'Slett turnering og resultater',
+    awarded: 'Tildelt seier',
+    groupInfo: (count: number) =>
+      count === 1
+        ? 'Vinneren i hver gruppe går videre til sluttspillet.'
+        : `Topp ${count} spillere i hver gruppe går videre til sluttspillet.`,
+    conditional: 'Hvis nødvendig',
+    invalid: 'Ugyldig turneringsoppsett',
+    session: 'Sessionen er slettet eller avlyst',
+    roster:
+      'Deltakerlisten passer ikke turneringsoppsettet. Venter på flere deltakere.',
+    tracks: 'Velg minst én bane for hver runde',
+    exists: 'Sessionen har allerede en turnering',
+    result: 'Velg to ulike, avklarte deltakere og en gyldig vinner',
+    invalidParticipant: 'Velg en deltaker fra turneringen.',
+    owned: 'Deltakere, session og runde styres av turneringen',
+    downstream: 'Angre først resultatene i: ',
+  },
   match: {
     cancel: 'Avlys',
     vs: 'vs',
@@ -191,6 +280,10 @@ const no = {
     edit: 'Rediger match',
     new: 'Ny match',
     noMatches: 'Ingen matcher funnet.',
+    live: 'LIVE',
+    next: 'Neste',
+    upNext: 'Neste match',
+    duration: 'Tid',
     unknownUser: 'Ukjent',
     status: {
       planned: 'Planlagt',
@@ -210,7 +303,13 @@ const no = {
       loser_bronze: 'Taperbronsefinale',
       loser_final: 'Taperfinale',
       grand_final: 'Grand finale',
+      grand_final_reset: 'Avgjørende grand finale',
     } as Record<MatchStage, string>,
+    stageCode: (stage: MatchStage | null) => {
+      if (!stage) return 'M'
+      if (stage.startsWith('round_')) return `R${stage.slice(6)}-`
+      return matchStageCodes[stage]
+    },
     form: {
       user1: 'Spiller 1',
       user2: 'Spiller 2',
@@ -239,7 +338,7 @@ const no = {
       update: {
         loading: 'Oppdaterer match...',
         success: 'Match oppdatert!',
-        error: 'Klarte ikke oppdatere match',
+        error: (err: Error) => err.message || 'Klarte ikke oppdatere match',
       },
       delete: {
         loading: 'Sletter match...',
