@@ -1,89 +1,44 @@
-import { useAuth } from '@/contexts/AuthContext'
-import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
+import { useMatchWinner } from '@/hooks/useMatchWinner'
 import loc from '@common/locale/locales'
-import type { EditMatchRequest, Match } from '@common/models/match'
 import type { UserInfo } from '@common/models/user'
+import { stageName } from '@common/utils/tournament'
 import { formatTrackName } from '@common/utils/track'
-import { CalendarIcon, MinusIcon } from '@heroicons/react/24/solid'
+import { CalendarIcon } from '@heroicons/react/24/solid'
 import type { ComponentProps } from 'react'
-import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
-import type { BaseRowProps } from '../row/RowProps'
 import { NameCellPart } from '../timeentries/TimeEntryRow'
 import { Badge } from '../ui/badge'
 import { Label } from '../ui/label'
-
-export type MatchRowProps = BaseRowProps<Match> & { hideTrack?: boolean }
+import type { MatchProps } from './MatchProps'
 
 export default function MatchRow({
   className,
   item: match,
   highlight,
   hideTrack,
+  children,
   ...rest
-}: Readonly<MatchRowProps>) {
+}: Readonly<MatchProps>) {
   const { users, tracks, sessions } = useData()
-  const { socket } = useConnection()
-  const { isLoggedIn, loggedInUser } = useAuth()
+  const { canSetResult, setWinner } = useMatchWinner(match)
   const user1 = users?.find(u => u.id === match.user1)
   const user2 = users?.find(u => u.id === match.user2)
   const track = tracks?.find(t => t.id === match.track)
   const session = sessions?.find(s => s.id === match.session)
 
-  const canEdit = isLoggedIn && loggedInUser.role !== 'user'
-
-  const isCancelled = match.status === 'cancelled'
-  const isCompleted = match.status === 'completed'
+  const isCancelled = match.status === 'cancelled' && !match.tournament?.awarded
+  const isCompleted =
+    match.status === 'completed' || !!match.tournament?.awarded
   const isPlanned = match.status === 'planned'
-
-  function handleSetWinner(userId: string) {
-    if (!canEdit) return
-
-    const isWinner = match.winner === userId
-    const newWinner = isWinner ? null : userId
-    const newStatus = isWinner ? 'planned' : 'completed'
-
-    const payload: EditMatchRequest = {
-      type: 'EditMatchRequest',
-      id: match.id,
-      winner: newWinner,
-      status: newStatus,
-    }
-
-    toast.promise(
-      socket.emitWithAck('edit_match', payload).then(r => {
-        if (!r.success) throw new Error(r.message)
-      }),
-      loc.no.match.toast.update
-    )
-  }
-
-  function handleCancel() {
-    if (!canEdit) return
-
-    const payload: EditMatchRequest = {
-      type: 'EditMatchRequest',
-      id: match.id,
-      status: 'cancelled',
-      winner: null,
-    }
-
-    toast.promise(
-      socket.emitWithAck('edit_match', payload).then(r => {
-        if (!r.success) throw new Error(r.message)
-      }),
-      loc.no.match.toast.update
-    )
-  }
 
   return (
     <div
       className={twMerge(
-        'group relative flex cursor-pointer items-center justify-between rounded-sm p-2 transition-colors hover:bg-foreground/15',
+        'group relative flex cursor-pointer items-center justify-between rounded-sm p-2 transition-colors',
         isCancelled && 'text-muted-foreground opacity-33',
         className,
-        highlight && 'bg-foreground/3'
+        highlight && 'border border-primary/20 bg-primary/5 hover:bg-primary/10'
       )}
       {...rest}>
       <div className='mt-1 grid w-full grid-cols-1 items-center gap-1 sm:grid-cols-2'>
@@ -93,11 +48,14 @@ export default function MatchRow({
             isCancelled && 'line-through'
           )}>
           <UserCell
-            className='flex-1 text-right'
+            className='min-w-0 flex-1 text-right'
             user={user1}
+            slotLabel={match.tournament?.slot1}
             isWinner={!!match.winner && match.winner === match.user1}
-            onClick={() => user1 && handleSetWinner(user1.id)}
-            disabled={!canEdit || isCancelled || match.status !== 'planned'}
+            onClick={() => user1 && setWinner(user1.id)}
+            disabled={
+              !canSetResult || isCancelled || match.status !== 'planned'
+            }
             isCancelled={isCancelled}
             isCompleted={isCompleted}
           />
@@ -111,11 +69,14 @@ export default function MatchRow({
           </span>
 
           <UserCell
-            className='flex-1'
+            className='min-w-0 flex-1'
             user={user2}
+            slotLabel={match.tournament?.slot2}
             isWinner={!!match.winner && match.winner === match.user2}
-            onClick={() => user2 && handleSetWinner(user2.id)}
-            disabled={!canEdit || isCancelled || match.status !== 'planned'}
+            onClick={() => user2 && setWinner(user2.id)}
+            disabled={
+              !canSetResult || isCancelled || match.status !== 'planned'
+            }
             isCancelled={isCancelled}
             isCompleted={isCompleted}
           />
@@ -156,36 +117,30 @@ export default function MatchRow({
                 'text-muted-foreground',
                 isCancelled && 'line-through'
               )}>
-              {loc.no.match.stage[match.stage]}
+              {match.tournament?.label ?? stageName(match.stage)}
             </Badge>
           )}
         </div>
       </div>
+      {children}
 
-      <div className='absolute right-0 flex items-center'>
-        {canEdit && isPlanned && (
-          <button
-            type='button'
-            title={loc.no.match.cancel}
-            className='m-2 hidden p-2 text-muted-foreground transition-colors group-hover:block hover:rounded-sm hover:bg-muted hover:text-primary-foreground'
-            onClick={e => {
-              e.stopPropagation()
-              handleCancel()
-            }}>
-            <MinusIcon className='size-4' />
-          </button>
-        )}
-
-        {isPlanned && (
-          <span className='mr-5 size-2 animate-pulse rounded-full bg-primary group-hover:hidden' />
-        )}
-      </div>
+      {match.tournament?.awarded && <Badge>{loc.no.tournament.awarded}</Badge>}
+      {match.tournament?.reset === 'conditional' && (
+        <Badge>{loc.no.tournament.conditional}</Badge>
+      )}
+      {match.tournament?.reset === 'unneeded' && (
+        <Badge>{loc.no.tournament.unneeded}</Badge>
+      )}
+      {isPlanned && (
+        <span className='absolute right-0 mr-5 size-2 animate-pulse rounded-full bg-primary' />
+      )}
     </div>
   )
 }
 
 function UserCell({
   user,
+  slotLabel,
   isWinner,
   onClick,
   disabled,
@@ -197,6 +152,7 @@ function UserCell({
     user: UserInfo | undefined
     isWinner: boolean
     onClick?: () => void
+    slotLabel?: string
     disabled?: boolean
     isCancelled: boolean
     isCompleted: boolean
@@ -228,7 +184,7 @@ function UserCell({
             user?.shortName ??
             user?.lastName ??
             user?.firstName ??
-            loc.no.match.unknownUser
+            (slotLabel || loc.no.match.unknownUser)
           }
         />
       </button>

@@ -5,7 +5,7 @@ import { mkdirSync } from 'node:fs'
 import path, { dirname } from 'node:path'
 import * as schema from '../database/schema'
 
-const db_url = 'data/db.sqlite'
+const db_url = process.env.DATABASE_PATH ?? 'data/db.sqlite'
 mkdirSync(dirname(db_url), { recursive: true })
 const database = new Database(db_url)
 database.pragma('journal_mode = WAL')

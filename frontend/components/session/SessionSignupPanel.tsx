@@ -1,4 +1,5 @@
 import { PageSubheader } from '@/components/PageHeader'
+import SegmentedProgress from '@/components/SegmentedProgress'
 import { Button } from '@/components/ui/button'
 import { Empty } from '@/components/ui/empty'
 import {
@@ -100,7 +101,7 @@ export default function SessionSignupPanel({
         <h3 className='px-2 pt-2'>
           {isUpcoming(session)
             ? loc.no.session.attendance
-            : loc.no.session.attendees}
+            : loc.no.session.participants}
         </h3>
       </div>
 
@@ -130,6 +131,13 @@ export default function SessionSignupPanel({
           ))}
         </div>
       </div>
+
+      <SegmentedProgress
+        segments={RESPONSE_OPTIONS.map(({ response }) => ({
+          label: loc.no.session.rsvp.responses[response],
+          value: sortedSignups.filter(s => s.response === response).length,
+        }))}
+      />
 
       {sortedSignups.length === 0 && (
         <Empty className='border border-input text-sm text-muted-foreground'>
@@ -161,11 +169,16 @@ export default function SessionSignupPanel({
                     {(canManageSignups || (isUpcoming(session) && isSelf)) && (
                       <Select
                         value={response}
-                        onValueChange={value =>
-                          handleRsvp(value as SessionResponse, user)
-                        }
+                        onValueChange={value => {
+                          if (
+                            value === 'yes' ||
+                            value === 'no' ||
+                            value === 'maybe'
+                          )
+                            handleRsvp(value, user)
+                        }}
                         disabled={disabled}>
-                        <SelectTrigger>
+                        <SelectTrigger aria-label={`${user.firstName}: RSVP`}>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent align='end'>

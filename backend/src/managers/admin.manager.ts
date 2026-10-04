@@ -13,6 +13,11 @@ import {
   sessions,
   sessionSignups,
   timeEntries,
+  tournamentGroups,
+  tournamentMatches,
+  tournamentPlayers,
+  tournaments,
+  tournamentStages,
   tracks,
   users,
 } from '../../database/schema'
@@ -23,11 +28,17 @@ import MatchManager from './match.manager'
 import RatingManager from './rating.manager'
 import SessionManager from './session.manager'
 import TimeEntryManager from './timeEntry.manager'
+import TournamentManager from './tournament/tournament.manager'
 import TrackManager from './track.manager'
 import UserManager from './user.manager'
 
 export default class AdminManager {
   private static readonly EXCLUDED_COL_EXPORT = {
+    tournaments: new Set(),
+    tournamentStages: new Set(),
+    tournamentGroups: new Set(),
+    tournamentPlayers: new Set(),
+    tournamentMatches: new Set(),
     users: new Set(['passwordHash']),
     tracks: new Set(),
     sessions: new Set(),
@@ -37,6 +48,11 @@ export default class AdminManager {
   } satisfies Record<ExportCsvRequest['table'], Set<string>>
 
   private static readonly TABLE_MAP = {
+    tournaments,
+    tournamentStages,
+    tournamentGroups,
+    tournamentPlayers,
+    tournamentMatches,
     users: users,
     tracks: tracks,
     sessions: sessions,
@@ -115,7 +131,7 @@ export default class AdminManager {
       `Imported ${data.length} ${request.table}`
     )
 
-    await RatingManager.recalculate()
+    RatingManager.recalculate()
 
     const [users, tracks, sessions, timeEntries, matches] = await Promise.all([
       UserManager.getAllUsers(),
@@ -131,6 +147,7 @@ export default class AdminManager {
     broadcast('all_time_entries', timeEntries)
     broadcast('all_matches', matches)
     broadcast('all_rankings', RatingManager.onGetRatings())
+    TournamentManager.publish(socket.id)
 
     return {
       success: true,

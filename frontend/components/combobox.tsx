@@ -19,7 +19,7 @@ import { twMerge } from 'tailwind-merge'
 import type { BaseRowProps } from './row/RowProps'
 import { Button } from './ui/button'
 
-type ComboboxProps<T extends ComboboxLookupItem> = {
+export type ComboboxProps<T extends ComboboxLookupItem> = {
   placeholder: string
   emptyLabel?: string
   items: T[]
@@ -135,7 +135,7 @@ export default function Combobox<T extends ComboboxLookupItem>({
       <input
         type='hidden'
         required={required}
-        value={selected?.id}
+        value={selected?.id ?? ''}
         {...inputProps}
       />
       <Popover open={open} onOpenChange={setOpen} modal={true}>

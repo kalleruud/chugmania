@@ -1,5 +1,15 @@
-import { blob, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import { sql } from 'drizzle-orm'
+import {
+  blob,
+  check,
+  foreignKey,
+  integer,
+  sqliteTable,
+  text,
+  uniqueIndex,
+} from 'drizzle-orm/sqlite-core'
 import { randomUUID } from 'node:crypto'
+import type { Slot, TournamentConfig } from '../../common/models/tournament'
 
 const metadata = {
   id: text().primaryKey().$defaultFn(randomUUID),
@@ -17,6 +27,8 @@ export type SessionResponse = 'yes' | 'no' | 'maybe'
 export type SessionStatus = 'confirmed' | 'tentative' | 'cancelled'
 export type MatchStatus = 'planned' | 'completed' | 'cancelled'
 export type MatchStage =
+  | `round_${number}`
+  | 'grand_final_reset'
   | 'group'
   | 'eight'
   | 'quarter'
@@ -86,6 +98,7 @@ export const timeEntries = sqliteTable('time_entries', {
     .references(() => tracks.id),
   session: text().references(() => sessions.id),
   duration: integer('duration_ms'),
+  draft: integer({ mode: 'boolean' }).notNull().default(false),
   amount: integer('amount_l').notNull().default(0.5),
   comment: text(),
 })
@@ -105,3 +118,116 @@ export const matches = sqliteTable('matches', {
     .notNull()
     .$default(() => 'planned'),
 })
+
+export const tournaments = sqliteTable(
+  'tournaments',
+  {
+    ...metadata,
+    session: text()
+      .notNull()
+      .references(() => sessions.id),
+    config: text({ mode: 'json' })
+      .$type<Omit<TournamentConfig, 'session' | 'stageTracks'>>()
+      .notNull(),
+    frozenAt: integer('frozen_at', { mode: 'timestamp_ms' }),
+    notReadyReason: text('not_ready_reason'),
+  },
+  table => [
+    uniqueIndex('active_session_tournament')
+      .on(table.session)
+      .where(sql`${table.deletedAt} IS NULL`),
+  ]
+)
+
+export const tournamentStages = sqliteTable(
+  'tournament_stages',
+  {
+    ...metadata,
+    tournament: text()
+      .notNull()
+      .references(() => tournaments.id),
+    stage: text().notNull(),
+    tracks: text({ mode: 'json' }).$type<string[]>().notNull(),
+  },
+  table => [uniqueIndex('tournament_stage').on(table.tournament, table.stage)]
+)
+export const tournamentGroups = sqliteTable(
+  'tournament_groups',
+  {
+    ...metadata,
+    tournament: text()
+      .notNull()
+      .references(() => tournaments.id),
+    name: text().notNull(),
+    position: integer().notNull().default(0),
+  },
+  table => [
+    uniqueIndex('tournament_group_position').on(
+      table.tournament,
+      table.position
+    ),
+    uniqueIndex('tournament_group_owner').on(table.tournament, table.id),
+  ]
+)
+export const tournamentPlayers = sqliteTable(
+  'tournament_players',
+  {
+    ...metadata,
+    tournament: text()
+      .notNull()
+      .references(() => tournaments.id),
+    user: text()
+      .notNull()
+      .references(() => users.id),
+    groupId: text('group_id').notNull(),
+    admission: integer().notNull(),
+    rating: integer().notNull(),
+  },
+  table => [
+    uniqueIndex('tournament_participant').on(table.tournament, table.user),
+    foreignKey({
+      columns: [table.tournament, table.groupId],
+      foreignColumns: [tournamentGroups.tournament, tournamentGroups.id],
+    }),
+  ]
+)
+export const tournamentMatches = sqliteTable(
+  'tournament_matches',
+  {
+    ...metadata,
+    tournament: text()
+      .notNull()
+      .references(() => tournaments.id),
+    matchId: text('match_id')
+      .notNull()
+      .references(() => matches.id),
+    groupId: text('group_id'),
+    bracket: text().$type<'group' | 'upper' | 'lower' | 'final'>().notNull(),
+    round: integer().notNull(),
+    order: integer().notNull(),
+    slot1: text({ mode: 'json' }).$type<Slot>().notNull(),
+    slot2: text({ mode: 'json' }).$type<Slot>().notNull(),
+    reset: text()
+      .$type<'none' | 'conditional' | 'required' | 'unneeded'>()
+      .notNull()
+      .default('none'),
+  },
+  table => [
+    uniqueIndex('tournament_match_record').on(table.matchId),
+    uniqueIndex('tournament_match_order')
+      .on(table.tournament, table.order)
+      .where(sql`${table.deletedAt} IS NULL`),
+    foreignKey({
+      columns: [table.tournament, table.groupId],
+      foreignColumns: [tournamentGroups.tournament, tournamentGroups.id],
+    }),
+    check(
+      'tournament_match_bracket',
+      sql`${table.bracket} IN ('group', 'upper', 'lower', 'final')`
+    ),
+    check(
+      'tournament_match_reset',
+      sql`${table.reset} IN ('none', 'conditional', 'required', 'unneeded')`
+    ),
+  ]
+)

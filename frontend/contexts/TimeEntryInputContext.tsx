@@ -25,6 +25,7 @@ import {
   type ReactNode,
 } from 'react'
 import { toast } from 'sonner'
+import { useData } from './DataContext'
 
 type TimeEntryInputContextType = {
   state: 'open' | 'closed'
@@ -47,6 +48,10 @@ export default function TimeEntryInputProvider({
   const [editingMatch, setEditingMatch] = useState<Partial<Match>>({})
   const { loggedInUser, isLoggedIn } = useAuth()
   const { socket } = useConnection()
+  const { matches } = useData()
+  const currentMatch = matches?.find(m => m.id === editingMatch.id)
+  const matchReadOnly =
+    !!editingMatch.id && (!currentMatch || !!currentMatch.tournament?.readOnly)
 
   const matchLocaleStrings = editingMatch.id
     ? {
@@ -92,7 +97,7 @@ export default function TimeEntryInputProvider({
 
   const canEdit =
     mode === 'match'
-      ? isLoggedIn && loggedInUser.role !== 'user'
+      ? isLoggedIn && loggedInUser.role !== 'user' && !matchReadOnly
       : isEditingSelf ||
         !isEditing ||
         (isLoggedIn && loggedInUser.role !== 'user')
@@ -186,7 +191,8 @@ export default function TimeEntryInputProvider({
           {mode === 'match' && (
             <MatchInput
               id='inputForm'
-              inputMatch={editingMatch}
+              key={`${editingMatch.id ?? 'new'}:${currentMatch?.updatedAt ?? ''}:${currentMatch?.winner ?? ''}`}
+              inputMatch={currentMatch ?? editingMatch}
               disabled={!canEdit}
               onSubmitResponse={success => success && close()}
             />
@@ -196,15 +202,17 @@ export default function TimeEntryInputProvider({
             <DialogClose asChild>
               <Button variant='outline'>{loc.no.common.cancel}</Button>
             </DialogClose>
-            {canEdit && isEditing && (
-              <ConfirmationButton
-                type='button'
-                variant='destructive'
-                onClick={handleDelete}>
-                <Trash2 />
-                {loc.no.common.delete}
-              </ConfirmationButton>
-            )}
+            {canEdit &&
+              isEditing &&
+              !(mode === 'match' && editingMatch.tournament) && (
+                <ConfirmationButton
+                  type='button'
+                  variant='destructive'
+                  onClick={handleDelete}>
+                  <Trash2 />
+                  {loc.no.common.delete}
+                </ConfirmationButton>
+              )}
 
             {isEditing ? (
               <ConfirmationButton form='inputForm' disabled={!canEdit}>
