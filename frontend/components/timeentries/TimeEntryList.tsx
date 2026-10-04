@@ -7,11 +7,12 @@ import type {
   TimeEntry,
 } from '@common/models/timeEntry'
 import { PlusIcon } from '@heroicons/react/24/solid'
+import { Asterisk } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '../ui/button'
 import { Empty } from '../ui/empty'
 import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group'
-import TimeEntryRow from './TimeEntryRow'
+import TimeEntryRow, { Marker } from './TimeEntryRow'
 
 type FilterType = 'all' | 'best' | 'latest'
 
@@ -19,6 +20,10 @@ function sortEntries<T extends TimeEntry>(entries: T[]): T[] {
   return entries.toSorted((a, b) => {
     if ((a.status === 'completed') !== (b.status === 'completed'))
       return a.status === 'completed' ? -1 : 1
+
+    if ((a.status === 'cancelled') !== (b.status === 'cancelled'))
+      return a.status === 'cancelled' ? 1 : -1
+
     // Entries with valid duration first, sorted by lowest duration
     if (a.duration && b.duration) {
       return a.duration - b.duration
@@ -205,16 +210,42 @@ export function TimeEntryList({
         })}
       </div>
 
-      {isLoggedIn && (
-        <Button
-          variant='ghost'
-          size='sm'
-          className='w-fit text-muted-foreground'
-          onClick={() => open({ track, user, session })}>
-          <PlusIcon />
-          {loc.no.timeEntry.input.create.title}
-        </Button>
-      )}
+      <div className='flex items-center gap-4'>
+        {isLoggedIn && (
+          <Button
+            variant='ghost'
+            size='sm'
+            className='mr-auto w-fit text-muted-foreground'
+            onClick={() => open({ track, user, session })}>
+            <PlusIcon />
+            {loc.no.timeEntry.input.create.title}
+          </Button>
+        )}
+        {entries.find(e => e.comment) && (
+          <div className='flex gap-1'>
+            <Marker show Icon={Asterisk} />
+            <p className='line-clamp-1 truncate text-muted-foreground'>
+              {loc.no.match.form.comment}
+            </p>
+          </div>
+        )}
+        {entries.find(e => e.tieBreaker) && (
+          <div className='flex gap-1'>
+            <Marker className='text-yellow-500' show Icon={Asterisk} />
+            <p className='line-clamp-1 truncate text-muted-foreground'>
+              {loc.no.tournament.tieBreakers}
+            </p>
+          </div>
+        )}
+        {entries.find(e => e.required) && (
+          <div className='flex gap-2'>
+            <Marker show symbol='!' />
+            <p className='line-clamp-1 truncate text-muted-foreground'>
+              {loc.no.tournament.requiredTieBreaker}
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
