@@ -102,7 +102,7 @@ export default function TournamentPanel({
           ))}
         </div>
         <div className='flex items-center gap-2 rounded p-2'>
-          <div className='size-2 rounded-full bg-primary' />
+          <div className='h-4 border-l-2 border-primary' />
           <p className='w-full text-sm text-muted-foreground'>
             {loc.no.tournament.groupInfo(details.config.advancementCount)}
           </p>

@@ -14,6 +14,7 @@ import { Spinner } from '@/components/ui/spinner'
 import UserRow from '@/components/user/UserRow'
 import { useAuth } from '@/contexts/AuthContext'
 import { useData } from '@/contexts/DataContext'
+import { cn } from '@/lib/utils'
 import loc from '@common/locale/locales'
 import { firstPendingMatch } from '@common/utils/tournament'
 import { Link, useParams } from 'react-router'
@@ -99,12 +100,11 @@ export default function TournamentGroupPage() {
           return (
             <div
               key={standing.user}
-              className='flex flex-col gap-3 rounded-sm border bg-background-secondary p-3'>
-              <UserRow
-                item={user}
-                rank={standing.rank}
-                highlight={standing.qualifies}
-              />
+              className={cn(
+                'flex flex-col gap-3 rounded-sm border border-l-2 border-l-transparent bg-background-secondary p-3',
+                standing.qualifies && 'border-l-primary'
+              )}>
+              <UserRow item={user} rank={standing.rank} />
               <dl className='grid grid-cols-2 gap-3 text-sm sm:grid-cols-4'>
                 <div>
                   <dt className='text-muted-foreground'>

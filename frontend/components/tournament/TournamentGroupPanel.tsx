@@ -1,4 +1,5 @@
 import { useData } from '@/contexts/DataContext'
+import { cn } from '@/lib/utils'
 import loc from '@common/locale/locales'
 import type { TournamentDetails } from '@common/models/tournament'
 import { ChevronRight } from 'lucide-react'
@@ -43,18 +44,20 @@ export default function TournamentGroupPanel({
       <div className='p-2'>
         {players.map(p =>
           p.user === undefined ? null : (
-            <UserRow
+            <div
               key={p.user.id}
-              className='px-3 py-2'
-              item={p.user}
-              highlight={p.qualifies}
-              rank={p.rank}>
-              <p className='flex gap-1 font-kh-interface tabular-nums'>
-                {p.wins}
-                <span className='opacity-33'>|</span>
-                {p.losses}
-              </p>
-            </UserRow>
+              className={cn(
+                'border-l-2',
+                p.qualifies ? 'border-primary' : 'border-transparent'
+              )}>
+              <UserRow className='px-3 py-2' item={p.user} rank={p.rank}>
+                <p className='flex gap-1 font-kh-interface tabular-nums'>
+                  {p.wins}
+                  <span className='opacity-33'>|</span>
+                  {p.losses}
+                </p>
+              </UserRow>
+            </div>
           )
         )}
       </div>
