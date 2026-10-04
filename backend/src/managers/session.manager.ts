@@ -145,6 +145,7 @@ export default class SessionManager {
     await AuthManager.checkAuth(socket, ['admin', 'moderator'])
 
     await db.insert(sessions).values({
+      id: request.id,
       name: request.name,
       description: request.description,
       location: request.location,

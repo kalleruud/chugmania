@@ -6,6 +6,7 @@ import { getTournamentStages } from '@common/utils/tournament'
 import { beforeAll, expect, test } from 'bun:test'
 import assert from 'node:assert/strict'
 import MatchManager from '../backend/src/managers/match.manager'
+import SessionManager from '../backend/src/managers/session.manager'
 import TournamentManager from '../backend/src/managers/tournament/tournament.manager'
 import type { TypedSocket } from '../backend/src/server'
 import {
@@ -70,6 +71,17 @@ beforeAll(async () => {
 
 test('creates and completes a simple tournament through API handlers', async () => {
   const { socket, config, details, preview } = tournament
+  await assert.rejects(
+    SessionManager.onCreateSession(socket, {
+      type: 'CreateSessionRequest',
+      id: config.session,
+      name: 'Duplicate Cup',
+      date: new Date(0),
+    })
+  )
+  expect((await SessionManager.getSession(config.session))?.name).toBe(
+    'Test Cup'
+  )
   expect(preview.groups).toHaveLength(2)
   expect(preview.matches).toHaveLength(3)
   const groupMatches = details.matches.filter(match => match.stage === 'group')
