@@ -41,10 +41,10 @@ export async function login(user: Pick<User, 'email'>): Promise<TypedSocket> {
   return socket
 }
 
-export function createTrack(): Track {
+export function createTrack(number = 1): Track {
   return db
     .insert(tracks)
-    .values({ number: 1, level: 'white', type: 'stadium' })
+    .values({ number, level: 'white', type: 'stadium' })
     .returning()
     .get()
 }

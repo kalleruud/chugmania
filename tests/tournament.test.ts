@@ -1,4 +1,8 @@
-import type { TournamentConfig } from '@common/models/tournament'
+import type {
+  TournamentConfig,
+  TournamentDetails,
+} from '@common/models/tournament'
+import { getTournamentStages } from '@common/utils/tournament'
 import { beforeAll, expect, test } from 'bun:test'
 import assert from 'node:assert/strict'
 import MatchManager from '../backend/src/managers/match.manager'
@@ -12,34 +16,34 @@ import {
   login,
 } from './utils'
 
-let socket: TypedSocket
-let config: TournamentConfig
-
-beforeAll(async () => {
-  const admin = createUser('alice', 'admin')
-  const players = [
-    admin,
-    ...['bob', 'charlie', 'daniel'].map(name => createUser(name)),
-  ]
-  socket = await login(admin)
-  const track = createTrack()
+async function CreateTournament(options: {
+  config: Omit<TournamentConfig, 'session' | 'stageTracks'>
+  tracks: number[]
+  users: string[]
+}): Promise<{
+  socket: TypedSocket
+  config: TournamentConfig
+  details: TournamentDetails
+  preview: TournamentDetails
+}> {
+  const players = options.users.map((name, index) =>
+    createUser(name, index === 0 ? 'admin' : 'user')
+  )
+  const socket = await login(players[0])
+  const tracks = options.tracks.map(number => createTrack(number))
   const session = createSession()
   for (const player of players) createSessionSignup(session, player)
 
-  config = {
+  const config: TournamentConfig = {
+    ...options.config,
     session: session.id,
-    groupsCount: 2,
-    advancementCount: 1,
-    eliminationType: 'single',
-    stageTracks: { group: [track.id], final: [track.id] },
+    stageTracks: {},
   }
-})
+  for (const stage of getTournamentStages(config, players.length))
+    config.stageTracks[stage] = tracks.map(track => track.id)
 
-test('creates and completes a simple tournament through API handlers', async () => {
   const preview = await TournamentManager.onPreview(socket, config)
   assert(preview.success)
-  expect(preview.details.groups).toHaveLength(2)
-  expect(preview.details.matches).toHaveLength(3)
   const unsaved = await TournamentManager.onGet(socket, {
     session: config.session,
   })
@@ -48,16 +52,27 @@ test('creates and completes a simple tournament through API handlers', async () 
 
   const created = await TournamentManager.onCreate(socket, config)
   assert(created.success && created.details)
-  const groupMatches = created.details.matches.filter(
-    match => match.stage === 'group'
-  )
+  return { socket, config, details: created.details, preview: preview.details }
+}
+
+let tournament: Awaited<ReturnType<typeof CreateTournament>>
+
+beforeAll(async () => {
+  tournament = await CreateTournament({
+    config: { groupsCount: 2, advancementCount: 1, eliminationType: 'single' },
+    tracks: [1],
+    users: ['alice', 'bob', 'charlie', 'daniel'],
+  })
+})
+
+test('creates and completes a simple tournament through API handlers', async () => {
+  const { socket, config, details, preview } = tournament
+  expect(preview.groups).toHaveLength(2)
+  expect(preview.matches).toHaveLength(3)
+  const groupMatches = details.matches.filter(match => match.stage === 'group')
   expect(groupMatches).toHaveLength(2)
-  expect(created.details.groups.map(group => group.standings.length)).toEqual([
-    2, 2,
-  ])
-  const plannedFinal = created.details.matches.find(
-    match => match.stage === 'final'
-  )
+  expect(details.groups.map(group => group.standings.length)).toEqual([2, 2])
+  const plannedFinal = details.matches.find(match => match.stage === 'final')
   assert(plannedFinal)
   expect([plannedFinal.user1, plannedFinal.user2]).toEqual([null, null])
 
