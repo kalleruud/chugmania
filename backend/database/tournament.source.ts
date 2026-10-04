@@ -167,7 +167,7 @@ export default class TournamentSource {
           order: fixture.order,
           slot1: fixture.slot1,
           slot2: fixture.slot2,
-          reset: fixture.reset,
+          finalResetStatus: fixture.finalResetStatus,
           match,
         }))
         .sort((a, b) => a.order - b.order),

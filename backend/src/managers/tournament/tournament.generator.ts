@@ -85,7 +85,7 @@ function createFixture(
     order: index,
     slot1,
     slot2,
-    reset: 'none',
+    finalResetStatus: 'none',
     match: {
       id,
       user1: null,
@@ -226,7 +226,7 @@ function createDoubleEliminationBracket(
     winner(grandFinal),
     loser(grandFinal)
   )
-  reset.reset = 'conditional'
+  reset.finalResetStatus = 'conditional'
   ordered.push(upperFinal, lowerFinal, grandFinal, reset)
   return ordered
 }

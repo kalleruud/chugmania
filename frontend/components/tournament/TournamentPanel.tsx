@@ -126,8 +126,8 @@ export default function TournamentPanel({
           {Array.from(matchesByStage, ([stage, matches]) => {
             const activeMatches = matches.filter(
               match =>
-                match.tournament?.reset !== 'conditional' &&
-                match.tournament?.reset !== 'unneeded'
+                match.tournament?.finalResetStatus !== 'conditional' &&
+                match.tournament?.finalResetStatus !== 'unneeded'
             )
             const played = activeMatches.filter(
               match => match.status === 'completed' || match.tournament?.awarded

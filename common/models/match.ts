@@ -9,7 +9,7 @@ export type Match = typeof matches.$inferSelect & {
     slot2: string
     editableSlots: ('user1' | 'user2')[]
     readOnly: boolean
-    reset: 'none' | 'conditional' | 'required' | 'unneeded'
+    finalResetStatus: 'none' | 'conditional' | 'required' | 'unneeded'
     awarded: boolean
   }
 }

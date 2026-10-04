@@ -70,8 +70,8 @@ function isPendingMatch(match: Match) {
   return (
     !match.deletedAt &&
     match.status === 'planned' &&
-    match.tournament?.reset !== 'conditional' &&
-    match.tournament?.reset !== 'unneeded'
+    match.tournament?.finalResetStatus !== 'conditional' &&
+    match.tournament?.finalResetStatus !== 'unneeded'
   )
 }
 

@@ -207,7 +207,7 @@ export const tournamentMatches = sqliteTable(
     order: integer().notNull(),
     slot1: text({ mode: 'json' }).$type<Slot>().notNull(),
     slot2: text({ mode: 'json' }).$type<Slot>().notNull(),
-    reset: text()
+    finalResetStatus: text('final_reset_status')
       .$type<'none' | 'conditional' | 'required' | 'unneeded'>()
       .notNull()
       .default('none'),
@@ -227,7 +227,7 @@ export const tournamentMatches = sqliteTable(
     ),
     check(
       'tournament_match_reset',
-      sql`${table.reset} IN ('none', 'conditional', 'required', 'unneeded')`
+      sql`${table.finalResetStatus} IN ('none', 'conditional', 'required', 'unneeded')`
     ),
   ]
 )

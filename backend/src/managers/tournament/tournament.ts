@@ -148,19 +148,20 @@ export function resolveTournament(state: TournamentState): TournamentState {
   for (let pass = 0; pass <= result.fixtures.length; pass++) {
     let changed = false
     for (const fixture of result.fixtures) {
-      if (fixture.reset !== 'none') {
+      if (fixture.finalResetStatus !== 'none') {
         const grandFinal = result.fixtures.find(
           f => f.match.stage === 'grand_final'
         )?.match
-        let reset: typeof fixture.reset = 'conditional'
+        let finalResetStatus: typeof fixture.finalResetStatus = 'conditional'
         if (grandFinal && decided(grandFinal))
-          reset =
+          finalResetStatus =
             grandFinal.winner === grandFinal.user2 ? 'required' : 'unneeded'
-        if (reset !== fixture.reset) changed = true
-        fixture.reset = reset
+        if (finalResetStatus !== fixture.finalResetStatus) changed = true
+        fixture.finalResetStatus = finalResetStatus
       }
       const inactive =
-        fixture.reset === 'conditional' || fixture.reset === 'unneeded'
+        fixture.finalResetStatus === 'conditional' ||
+        fixture.finalResetStatus === 'unneeded'
       const user1 = inactive ? null : resolve(fixture.slot1)
       const user2 = inactive ? null : resolve(fixture.slot2)
       if (fixture.match.user1 !== user1 || fixture.match.user2 !== user2)
@@ -187,7 +188,7 @@ function protectResults(
           next.id === f.id &&
           (next.match.user1 !== f.match.user1 ||
             next.match.user2 !== f.match.user2 ||
-            next.reset !== f.reset)
+            next.finalResetStatus !== f.finalResetStatus)
       )
   )
   if (affected.length)
@@ -206,12 +207,16 @@ function overallStandings(state: TournamentState): {
   completed: boolean
 } {
   const final = state.fixtures
-    .filter(f => f.reset !== 'unneeded' && f.reset !== 'conditional')
+    .filter(
+      f =>
+        f.finalResetStatus !== 'unneeded' &&
+        f.finalResetStatus !== 'conditional'
+    )
     .at(-1)
   const completed =
     !!final &&
     decided(final.match) &&
-    (!state.fixtures.some(f => f.reset === 'required') ||
+    (!state.fixtures.some(f => f.finalResetStatus === 'required') ||
       final.match.stage === 'grand_final_reset')
   const groups = state.groups.flatMap(g => groupStandings(state, g.id))
   const bracket = state.fixtures.filter(f => f.bracket !== 'group')
@@ -277,7 +282,11 @@ function overallStandings(state: TournamentState): {
     completed:
       completed &&
       state.fixtures
-        .filter(f => f.reset !== 'conditional' && f.reset !== 'unneeded')
+        .filter(
+          f =>
+            f.finalResetStatus !== 'conditional' &&
+            f.finalResetStatus !== 'unneeded'
+        )
         .every(f => decided(f.match)),
     rows,
   }
@@ -312,7 +321,10 @@ export function editTournamentMatch(
     (request.stage !== undefined && request.stage !== fixture.match.stage)
   )
     throw new Error(loc.no.tournament.owned)
-  if (fixture.reset === 'conditional' || fixture.reset === 'unneeded')
+  if (
+    fixture.finalResetStatus === 'conditional' ||
+    fixture.finalResetStatus === 'unneeded'
+  )
     throw new Error(loc.no.tournament.result)
   const setPlayer = (key: 'user1' | 'user2', slotKey: 'slot1' | 'slot2') => {
     const user = request[key]
@@ -397,7 +409,8 @@ export function tournamentDetails(state: TournamentState): TournamentDetails {
     return `${slot.kind === 'match_winner' ? loc.no.tournament.winnerCode : loc.no.tournament.loserCode} ${feeder ? fixtureLabel(state, feeder) : '?'}`
   }
   const active = state.fixtures.filter(
-    f => f.reset !== 'unneeded' && f.reset !== 'conditional'
+    f =>
+      f.finalResetStatus !== 'unneeded' && f.finalResetStatus !== 'conditional'
   )
   const group = state.fixtures.filter(f => f.bracket === 'group')
   const overall = overallStandings(state)
@@ -433,9 +446,9 @@ export function tournamentDetails(state: TournamentState): TournamentDetails {
           state.id === 'preview' ||
           state.cancelled ||
           !!state.notReadyReason ||
-          f.reset === 'conditional' ||
-          f.reset === 'unneeded',
-        reset: f.reset,
+          f.finalResetStatus === 'conditional' ||
+          f.finalResetStatus === 'unneeded',
+        finalResetStatus: f.finalResetStatus,
         awarded: f.match.status === 'cancelled' && decided(f.match),
       },
     })),

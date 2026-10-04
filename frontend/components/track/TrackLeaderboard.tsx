@@ -43,7 +43,7 @@ export default function TrackLeaderboard({
 
   const filteredMatches = matches
     .filter(m => !excludeTournamentMatches || !m.tournament)
-    .filter(m => m.tournament?.reset !== 'unneeded')
+    .filter(m => m.tournament?.finalResetStatus !== 'unneeded')
     .filter(m => !session || session === m.session)
     .filter(m => !user || user === m.user1 || user === m.user2)
     .filter(m => track.id === m.track)

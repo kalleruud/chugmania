@@ -125,10 +125,10 @@ export default function MatchRow({
       {children}
 
       {match.tournament?.awarded && <Badge>{loc.no.tournament.awarded}</Badge>}
-      {match.tournament?.reset === 'conditional' && (
+      {match.tournament?.finalResetStatus === 'conditional' && (
         <Badge>{loc.no.tournament.conditional}</Badge>
       )}
-      {match.tournament?.reset === 'unneeded' && (
+      {match.tournament?.finalResetStatus === 'unneeded' && (
         <Badge>{loc.no.tournament.unneeded}</Badge>
       )}
       {isPlanned && (
