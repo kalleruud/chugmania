@@ -1,9 +1,9 @@
 import type { ExportCsvRequest } from '@common/models/importCsv'
+import type { MatchStatus } from '@common/models/match'
 import type { GapType } from '@common/models/timeEntry'
 import { getRandomItem } from '@common/utils/utils'
 import type {
   MatchStage,
-  MatchStatus,
   SessionResponse,
   SessionStatus,
   TrackLevel,
@@ -28,38 +28,6 @@ const matchStageCodes: Record<MatchStage, string> = {
   loser_final: 'LF',
   grand_final: 'GF',
   grand_final_reset: 'GFR',
-}
-
-const common = {
-  cancelEntity: 'Avlys',
-  cancelled: 'Avlyst',
-  confirm: 'Sikker?',
-  now: 'Nå',
-  new: 'Ny',
-  edit: 'Rediger',
-  delete: 'Slett',
-  save: 'Lagre',
-  showAll: 'Vis alle',
-  show: 'Vis',
-  hide: 'Skjul',
-  home: 'Hjem',
-  continue: 'Kjør',
-  back: 'Tilbake',
-  cancel: getRandomItem([
-    'Abort mission',
-    'Avbryt',
-    'Cap',
-    'Føkk dette',
-    'Nah',
-    'Jeg ombestemte meg',
-    'Regretti spaghetti',
-    'Vil ikke',
-  ]),
-  noItems: getRandomItem([
-    'Det finnes ikke en dritt her 🥵',
-    'Her var det tomt...',
-    'Har du gått feil?',
-  ]),
 }
 
 const no = {
@@ -198,7 +166,7 @@ const no = {
     statusOptions: {
       confirmed: 'Bekreftet',
       tentative: 'Usikkert',
-      cancelled: common.cancelled,
+      cancelled: 'Avlyst',
     } as Record<SessionStatus, string>,
     status: {
       past: 'Avsluttet',
@@ -299,7 +267,7 @@ const no = {
         : `Topp ${count} spillere i hver gruppe går videre til sluttspillet.`,
     conditional: 'Hvis nødvendig',
     invalid: 'Ugyldig turneringsoppsett',
-    session: `Sessionen er slettet eller ${common.cancelled.toLowerCase()}`,
+    session: `Sessionen er slettet eller avlyst`,
     roster:
       'Deltakerlisten passer ikke turneringsoppsettet. Venter på flere deltakere.',
     tracks: 'Velg minst én bane for hver runde',
@@ -321,11 +289,6 @@ const no = {
     upNext: 'Neste match',
     duration: 'Tid',
     unknownUser: 'Ukjent',
-    status: {
-      planned: 'Planlagt',
-      completed: 'Ferdig',
-      cancelled: common.cancelled,
-    } as Record<MatchStatus, string>,
     stage: {
       group: 'Gruppespill',
       eight: 'Åttendelsfinale',
@@ -503,7 +466,41 @@ const no = {
     description: 'Oversikt over alle spillere.',
     receivedUpdate: 'Spillerne ble oppdatert',
   },
-  common,
+  common: {
+    cancelEntity: 'Avlys',
+    status: {
+      planned: 'Planlagt',
+      completed: 'Ferdig',
+      cancelled: 'Avlyst',
+    } as Record<MatchStatus, string>,
+    confirm: 'Sikker?',
+    now: 'Nå',
+    new: 'Ny',
+    edit: 'Rediger',
+    delete: 'Slett',
+    save: 'Lagre',
+    showAll: 'Vis alle',
+    show: 'Vis',
+    hide: 'Skjul',
+    home: 'Hjem',
+    continue: 'Kjør',
+    back: 'Tilbake',
+    cancel: getRandomItem([
+      'Abort mission',
+      'Avbryt',
+      'Cap',
+      'Føkk dette',
+      'Nah',
+      'Jeg ombestemte meg',
+      'Regretti spaghetti',
+      'Vil ikke',
+    ]),
+    noItems: getRandomItem([
+      'Det finnes ikke en dritt her 🥵',
+      'Her var det tomt...',
+      'Har du gått feil?',
+    ]),
+  },
 } as const
 
 const loc: Record<Locale, Localization> = {
