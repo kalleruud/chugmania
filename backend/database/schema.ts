@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm'
 import {
   blob,
+  check,
   foreignKey,
   integer,
   sqliteTable,
@@ -220,5 +221,13 @@ export const tournamentMatches = sqliteTable(
       columns: [table.tournament, table.groupId],
       foreignColumns: [tournamentGroups.tournament, tournamentGroups.id],
     }),
+    check(
+      'tournament_match_bracket',
+      sql`${table.bracket} IN ('group', 'upper', 'lower', 'final')`
+    ),
+    check(
+      'tournament_match_reset',
+      sql`${table.reset} IN ('none', 'conditional', 'required', 'unneeded')`
+    ),
   ]
 )
