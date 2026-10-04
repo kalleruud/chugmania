@@ -14,4 +14,5 @@ migrate(db, { migrationsFolder: 'drizzle' })
 
 mock.module('../backend/database/database', () => ({ default: db, database }))
 mock.module('../backend/src/server', () => ({ broadcast: mock() }))
+
 afterAll(() => database.close())
