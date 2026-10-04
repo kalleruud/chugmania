@@ -82,36 +82,8 @@
     {
       "idx": 11,
       "version": "6",
-      "when": 1791065152826,
-      "tag": "0011_breezy_anthem",
-      "breakpoints": true
-    },
-    {
-      "idx": 12,
-      "version": "6",
-      "when": 1791071985089,
-      "tag": "0012_right_talos",
-      "breakpoints": true
-    },
-    {
-      "idx": 13,
-      "version": "6",
-      "when": 1791072206232,
-      "tag": "0013_tan_scarlet_spider",
-      "breakpoints": true
-    },
-    {
-      "idx": 14,
-      "version": "6",
-      "when": 1791072331153,
-      "tag": "0014_equal_logan",
-      "breakpoints": true
-    },
-    {
-      "idx": 15,
-      "version": "6",
-      "when": 1791072477849,
-      "tag": "0015_bizarre_silverclaw",
+      "when": 1791072969563,
+      "tag": "0011_tournament",
       "breakpoints": true
     }
   ]

@@ -1,5 +1,17 @@
+CREATE TABLE `tournament_groups` (
+	`id` text PRIMARY KEY NOT NULL,
+	`updated_at` integer,
+	`created_at` integer NOT NULL,
+	`deleted_at` integer,
+	`tournament` text NOT NULL,
+	`name` text NOT NULL,
+	`position` integer DEFAULT 0 NOT NULL,
+	FOREIGN KEY (`tournament`) REFERENCES `tournaments`(`id`) ON UPDATE no action ON DELETE no action
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `tournament_group_position` ON `tournament_groups` (`tournament`,`position`);--> statement-breakpoint
 CREATE UNIQUE INDEX `tournament_group_owner` ON `tournament_groups` (`tournament`,`id`);--> statement-breakpoint
-CREATE TABLE `__new_tournament_matches` (
+CREATE TABLE `tournament_matches` (
 	`id` text PRIMARY KEY NOT NULL,
 	`updated_at` integer,
 	`created_at` integer NOT NULL,
@@ -15,14 +27,14 @@ CREATE TABLE `__new_tournament_matches` (
 	`reset` text DEFAULT 'none' NOT NULL,
 	FOREIGN KEY (`tournament`) REFERENCES `tournaments`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`match_id`) REFERENCES `matches`(`id`) ON UPDATE no action ON DELETE no action,
-	FOREIGN KEY (`tournament`,`group_id`) REFERENCES `tournament_groups`(`tournament`,`id`) ON UPDATE no action ON DELETE no action
-);--> statement-breakpoint
-INSERT INTO `__new_tournament_matches`("id", "updated_at", "created_at", "deleted_at", "tournament", "match_id", "group_id", "bracket", "round", "order", "slot1", "slot2", "reset") SELECT "id", "updated_at", "created_at", "deleted_at", "tournament", "match_id", "group_id", "bracket", "round", "order", "slot1", "slot2", "reset" FROM `tournament_matches`;--> statement-breakpoint
-DROP TABLE `tournament_matches`;--> statement-breakpoint
-ALTER TABLE `__new_tournament_matches` RENAME TO `tournament_matches`;--> statement-breakpoint
+	FOREIGN KEY (`tournament`,`group_id`) REFERENCES `tournament_groups`(`tournament`,`id`) ON UPDATE no action ON DELETE no action,
+	CONSTRAINT "tournament_match_bracket" CHECK("tournament_matches"."bracket" IN ('group', 'upper', 'lower', 'final')),
+	CONSTRAINT "tournament_match_reset" CHECK("tournament_matches"."reset" IN ('none', 'conditional', 'required', 'unneeded'))
+);
+--> statement-breakpoint
 CREATE UNIQUE INDEX `tournament_match_record` ON `tournament_matches` (`match_id`);--> statement-breakpoint
 CREATE UNIQUE INDEX `tournament_match_order` ON `tournament_matches` (`tournament`,`order`) WHERE "tournament_matches"."deleted_at" IS NULL;--> statement-breakpoint
-CREATE TABLE `__new_tournament_players` (
+CREATE TABLE `tournament_players` (
 	`id` text PRIMARY KEY NOT NULL,
 	`updated_at` integer,
 	`created_at` integer NOT NULL,
@@ -35,11 +47,36 @@ CREATE TABLE `__new_tournament_players` (
 	FOREIGN KEY (`tournament`) REFERENCES `tournaments`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`user`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`tournament`,`group_id`) REFERENCES `tournament_groups`(`tournament`,`id`) ON UPDATE no action ON DELETE no action
-);--> statement-breakpoint
-INSERT INTO `__new_tournament_players`("id", "updated_at", "created_at", "deleted_at", "tournament", "user", "group_id", "admission", "rating") SELECT "id", "updated_at", "created_at", "deleted_at", "tournament", "user", "group_id", "admission", "rating" FROM `tournament_players`;--> statement-breakpoint
-DROP TABLE `tournament_players`;--> statement-breakpoint
-ALTER TABLE `__new_tournament_players` RENAME TO `tournament_players`;--> statement-breakpoint
+);
+--> statement-breakpoint
 CREATE UNIQUE INDEX `tournament_participant` ON `tournament_players` (`tournament`,`user`);--> statement-breakpoint
+CREATE TABLE `tournament_stages` (
+	`id` text PRIMARY KEY NOT NULL,
+	`updated_at` integer,
+	`created_at` integer NOT NULL,
+	`deleted_at` integer,
+	`tournament` text NOT NULL,
+	`stage` text NOT NULL,
+	`tracks` text NOT NULL,
+	FOREIGN KEY (`tournament`) REFERENCES `tournaments`(`id`) ON UPDATE no action ON DELETE no action
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `tournament_stage` ON `tournament_stages` (`tournament`,`stage`);--> statement-breakpoint
+CREATE TABLE `tournaments` (
+	`id` text PRIMARY KEY NOT NULL,
+	`updated_at` integer,
+	`created_at` integer NOT NULL,
+	`deleted_at` integer,
+	`session` text NOT NULL,
+	`config` text NOT NULL,
+	`frozen_at` integer,
+	`not_ready_reason` text,
+	FOREIGN KEY (`session`) REFERENCES `sessions`(`id`) ON UPDATE no action ON DELETE no action
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `active_session_tournament` ON `tournaments` (`session`) WHERE "tournaments"."deleted_at" IS NULL;--> statement-breakpoint
+ALTER TABLE `time_entries` ADD `draft` integer DEFAULT false NOT NULL;
+--> statement-breakpoint
 CREATE TRIGGER tournament_match_session_insert
 BEFORE INSERT ON tournament_matches
 WHEN NEW.deleted_at IS NULL AND EXISTS (
@@ -81,4 +118,3 @@ WHEN NEW.deleted_at IS NULL AND (NEW.session IS NOT OLD.session OR OLD.deleted_a
 BEGIN
 	SELECT RAISE(ABORT, 'Tournament match must belong to the tournament session');
 END;
-
