@@ -6,10 +6,10 @@ import type {
 import { getTournamentStages } from '@common/utils/tournament'
 import { describe, expect, test } from 'bun:test'
 import assert from 'node:assert/strict'
+import type { MatchStage } from '../backend/database/schema'
 import MatchManager from '../backend/src/managers/match.manager'
 import SessionManager from '../backend/src/managers/session.manager'
 import TournamentManager from '../backend/src/managers/tournament/tournament.manager'
-import type { TypedSocket } from '../backend/src/server'
 import {
   assertResponse,
   createRsvps,
@@ -19,18 +19,23 @@ import {
   login,
 } from './utils'
 
+type TestMatch = {
+  stage: MatchStage | null
+  user1: string | null
+  user2: string | null
+  winner: string | null
+  status: Match['status']
+  track: number | null
+  setWinner(name: string): Promise<void>
+}
+
 async function CreateTournament(options: {
   config: Omit<TournamentConfig, 'session' | 'stageTracks'>
   tracks: number
   users: string[]
-}): Promise<{
-  socket: TypedSocket
-  config: TournamentConfig
-  details: TournamentDetails
-  preview: TournamentDetails
-}> {
+}) {
   const players = options.users.map((name, index) =>
-    createUser(name, index === 0 ? 'admin' : 'user')
+    createUser(name, index === 0 ? 'admin' : 'user', name)
   )
   const socket = await login(players[0])
   const tracks = createTracks(options.tracks)
@@ -38,7 +43,6 @@ async function CreateTournament(options: {
     socket,
     await createRsvps({ yes: players.length, no: 0, maybe: 0 })
   )
-
   const config: TournamentConfig = {
     ...options.config,
     session: session.id,
@@ -48,51 +52,80 @@ async function CreateTournament(options: {
     config.stageTracks[stage] = tracks.map(track => track.id)
 
   const preview = await TournamentManager.onPreview(socket, config)
-  assert(preview.success)
-  const unsaved = await TournamentManager.onGet(socket, {
-    session: config.session,
-  })
-  assert(unsaved.success)
+  assertResponse(preview)
+  const unsaved = await TournamentManager.onGet(socket, { session: session.id })
+  assertResponse(unsaved)
   assert.equal(unsaved.details, null, 'Preview must not persist a tournament')
+  assertResponse(await TournamentManager.onCreate(socket, config))
+  await assert.rejects(
+    SessionManager.onCreateSession(socket, {
+      type: 'CreateSessionRequest',
+      id: session.id,
+      name: 'Duplicate Cup',
+      date: new Date(0),
+    })
+  )
+  assert.equal((await SessionManager.getSession(session.id))?.name, 'Test Cup')
 
-  const created = await TournamentManager.onCreate(socket, config)
-  assert(created.success && created.details)
-  return { socket, config, details: created.details, preview: preview.details }
-}
-
-describe('Complete simple tournament', () => {
-  let tournament: Awaited<ReturnType<typeof CreateTournament>>
-  let semifinalLosers: string[]
-  let champion: string
-  let runnerUp: string
-
-  async function getTournament(): Promise<TournamentDetails> {
-    const response = await TournamentManager.onGet(tournament.socket, {
-      session: tournament.config.session,
+  async function getDetails(): Promise<TournamentDetails> {
+    const response = await TournamentManager.onGet(socket, {
+      session: session.id,
     })
     assertResponse(response)
     assert(response.details)
     return response.details
   }
 
-  async function completeMatches(matches: Match[]): Promise<string[]> {
-    const winners: string[] = []
-    for (const match of matches) {
-      assert(match.user1 && match.user2)
-      winners.push(match.user1)
-      await MatchManager.onEditMatch(tournament.socket, {
-        type: 'EditMatchRequest',
-        id: match.id,
-        status: 'completed',
-        winner: match.user1,
-      }).then(assertResponse)
-    }
-    return winners
+  async function getMatches(stage: MatchStage): Promise<TestMatch[]> {
+    const details = await getDetails()
+    return details.matches
+      .filter(match => match.stage === stage)
+      .map(match => ({
+        stage: match.stage,
+        user1: match.user1,
+        user2: match.user2,
+        winner: match.winner,
+        status: match.status,
+        track: tracks.find(track => track.id === match.track)?.number ?? null,
+        async setWinner(name: string): Promise<void> {
+          await MatchManager.onEditMatch(socket, {
+            type: 'EditMatchRequest',
+            id: match.id,
+            status: 'completed',
+            winner: name,
+          }).then(assertResponse)
+        },
+      }))
   }
+
+  async function getMatch(stage: MatchStage): Promise<TestMatch> {
+    const matches = await getMatches(stage)
+    assert.equal(matches.length, 1, `Expected one ${stage} match`)
+    return matches[0]
+  }
+
+  return {
+    getMatches,
+    getMatch,
+    getState: getDetails,
+  }
+}
+
+async function setWinners(
+  matches: TestMatch[],
+  names: string[]
+): Promise<void> {
+  assert.equal(matches.length, names.length, 'Provide one winner per match')
+  for (const [index, match] of matches.entries())
+    await match.setWinner(names[index])
+}
+
+describe('Complete simple tournament', () => {
+  let tournament: Awaited<ReturnType<typeof CreateTournament>>
 
   test.serial('Create tournament', async () => {
     // Arrange
-    const options: Parameters<typeof CreateTournament>[0] = {
+    const config: Parameters<typeof CreateTournament>[0] = {
       config: {
         groupsCount: 4,
         advancementCount: 1,
@@ -110,195 +143,121 @@ describe('Complete simple tournament', () => {
         'hugo',
       ],
     }
+    const planned = { status: 'planned', winner: null, track: 1 }
+    const unresolved = { ...planned, user1: null, user2: null }
 
     // Act
-    tournament = await CreateTournament(options)
-    const { socket, config, details, preview } = tournament
-    const duplicateSession = SessionManager.onCreateSession(socket, {
-      type: 'CreateSessionRequest',
-      id: config.session,
-      name: 'Duplicate Cup',
-      date: new Date(0),
-    })
+    tournament = await CreateTournament(config)
 
     // Assert
-    expect(details.config).toEqual(config)
-    expect(details.config).toMatchObject(options.config)
-    expect(preview.groups).toHaveLength(4)
-    expect(preview.matches).toHaveLength(7)
-    expect(details.groups.map(group => group.standings.length)).toEqual([
-      2, 2, 2, 2,
-    ])
-    expect(
-      details.matches.filter(match => match.stage === 'group')
-    ).toHaveLength(4)
-    expect(
-      details.matches.filter(match => match.stage === 'semi')
-    ).toHaveLength(2)
-    expect(
-      details.matches.filter(match => match.stage === 'final')
-    ).toHaveLength(1)
-    expect(details.matches.every(match => match.status === 'planned')).toBe(
-      true
-    )
-    expect(
-      details.matches.every(
-        match => match.track === config.stageTracks.group?.[0]
-      )
-    ).toBe(true)
-    expect(
-      details.matches
-        .filter(match => match.stage !== 'group')
-        .map(match => [match.user1, match.user2])
-    ).toEqual([
-      [null, null],
-      [null, null],
-      [null, null],
-    ])
-    expect(details.completed).toBe(false)
-    expect(details.progress).toEqual({
-      decided: 0,
-      total: 7,
-      groupDecided: 0,
-      groupTotal: 4,
+    expect(await tournament.getState()).toMatchObject({
+      config: config.config,
+      completed: false,
+      progress: { decided: 0, total: 7, groupDecided: 0, groupTotal: 4 },
     })
-    await assert.rejects(duplicateSession)
-    expect((await SessionManager.getSession(config.session))?.name).toBe(
-      'Test Cup'
-    )
+    expect(await tournament.getMatches('group')).toMatchObject([
+      { ...planned, user1: 'alice', user2: 'hugo' },
+      { ...planned, user1: 'bob', user2: 'grace' },
+      { ...planned, user1: 'charlie', user2: 'frank' },
+      { ...planned, user1: 'daniel', user2: 'erin' },
+    ])
+    expect(await tournament.getMatches('semi')).toMatchObject([
+      unresolved,
+      unresolved,
+    ])
+    expect(await tournament.getMatch('final')).toMatchObject(unresolved)
   })
 
   test.serial('Complete group stage', async () => {
     // Arrange
-    const before = await getTournament()
-    const matches = before.matches.filter(match => match.stage === 'group')
+    const matches = await tournament.getMatches('group')
 
     // Act
-    const winners = await completeMatches(matches)
-    const after = await getTournament()
-    const semifinals = after.matches.filter(match => match.stage === 'semi')
+    await setWinners(matches, ['alice', 'bob', 'charlie', 'daniel'])
 
     // Assert
-    expect(
-      after.matches
-        .filter(match => match.stage === 'group')
-        .every(match => match.status === 'completed')
-    ).toBe(true)
-    expect(
-      semifinals.flatMap(match => [match.user1, match.user2]).toSorted()
-    ).toEqual(winners.toSorted())
-    expect(
-      after.groups
-        .flatMap(group =>
-          group.standings
-            .filter(player => player.qualifies)
-            .map(player => player.user)
-        )
-        .toSorted()
-    ).toEqual(winners.toSorted())
-    expect(semifinals.every(match => match.status === 'planned')).toBe(true)
-    expect(after.matches.find(match => match.stage === 'final')).toMatchObject({
+    expect(await tournament.getMatches('group')).toMatchObject([
+      { winner: 'alice', status: 'completed' },
+      { winner: 'bob', status: 'completed' },
+      { winner: 'charlie', status: 'completed' },
+      { winner: 'daniel', status: 'completed' },
+    ])
+    expect(await tournament.getMatches('semi')).toMatchObject([
+      { user1: 'alice', user2: 'daniel', status: 'planned' },
+      { user1: 'bob', user2: 'charlie', status: 'planned' },
+    ])
+    expect(await tournament.getMatch('final')).toMatchObject({
       user1: null,
       user2: null,
       status: 'planned',
     })
-    expect(after.progress).toEqual({
-      decided: 4,
-      total: 7,
-      groupDecided: 4,
-      groupTotal: 4,
+    expect(await tournament.getState()).toMatchObject({
+      completed: false,
+      progress: { decided: 4 },
     })
-    expect(after.completed).toBe(false)
   })
 
   test.serial('Complete semifinals', async () => {
     // Arrange
-    const before = await getTournament()
-    const matches = before.matches.filter(match => match.stage === 'semi')
-    semifinalLosers = matches.map(match => {
-      assert(match.user2)
-      return match.user2
-    })
+    const matches = await tournament.getMatches('semi')
 
     // Act
-    const winners = await completeMatches(matches)
-    const after = await getTournament()
-    const final = after.matches.find(match => match.stage === 'final')
-    assert(final)
+    await setWinners(matches, ['alice', 'bob'])
 
     // Assert
-    expect(
-      after.matches
-        .filter(match => match.stage === 'semi')
-        .every(match => match.status === 'completed')
-    ).toBe(true)
-    expect([final.user1, final.user2].toSorted()).toEqual(winners.toSorted())
-    expect(final.status).toBe('planned')
-    expect(after.progress.decided).toBe(6)
-    expect(after.completed).toBe(false)
+    expect(await tournament.getMatches('semi')).toMatchObject([
+      { winner: 'alice', status: 'completed' },
+      { winner: 'bob', status: 'completed' },
+    ])
+    expect(await tournament.getMatch('final')).toMatchObject({
+      user1: 'alice',
+      user2: 'bob',
+      status: 'planned',
+    })
+    expect(await tournament.getState()).toMatchObject({
+      completed: false,
+      progress: { decided: 6 },
+    })
   })
 
   test.serial('Complete final', async () => {
     // Arrange
-    const before = await getTournament()
-    const final = before.matches.find(match => match.stage === 'final')
-    assert(final && final.user1 && final.user2)
-    champion = final.user1
-    runnerUp = final.user2
+    const final = await tournament.getMatch('final')
 
     // Act
-    await completeMatches([final])
-    const after = await getTournament()
+    await final.setWinner('alice')
 
     // Assert
-    expect(after.matches.find(match => match.id === final.id)).toMatchObject({
+    expect(await tournament.getMatch('final')).toMatchObject({
+      winner: 'alice',
       status: 'completed',
-      winner: champion,
     })
-    expect(after.matches.filter(match => match.status === 'planned')).toEqual(
-      []
-    )
-    expect(after.completed).toBe(true)
   })
 
   test.serial('Verify final result and tournament state', async () => {
     // Arrange
-    const groupLosers = tournament.details.matches
-      .filter(match => match.stage === 'group')
-      .map(match => {
-        assert(match.user2)
-        return match.user2
-      })
-    const expected = [
-      { user: champion, rank: 1 },
-      { user: runnerUp, rank: 2 },
-      ...semifinalLosers.map(user => ({ user, rank: 3 })),
-      ...groupLosers.map(user => ({ user, rank: 5 })),
-    ]
-
-    // Act
-    const finished = await getTournament()
-
-    // Assert
-    expect(finished.standings).toHaveLength(8)
-    for (const row of expected)
-      expect(
-        finished.standings.find(standing => standing.user === row.user)
-      ).toEqual(row)
-    expect(finished.progress).toEqual({
-      decided: 7,
-      total: 7,
-      groupDecided: 4,
-      groupTotal: 4,
-    })
-    expect(finished.matches.every(match => match.status === 'completed')).toBe(
-      true
-    )
-    expect(finished).toMatchObject({
+    const expected = {
       completed: true,
       frozen: true,
       cancelled: false,
       notReadyReason: null,
-    })
+      progress: { decided: 7, total: 7, groupDecided: 4, groupTotal: 4 },
+      standings: [
+        { user: 'alice', rank: 1 },
+        { user: 'bob', rank: 2 },
+        { user: 'charlie', rank: 3 },
+        { user: 'daniel', rank: 3 },
+        { user: 'erin', rank: 5 },
+        { user: 'frank', rank: 5 },
+        { user: 'grace', rank: 5 },
+        { user: 'hugo', rank: 5 },
+      ],
+    }
+
+    // Act
+    const state = await tournament.getState()
+
+    // Assert
+    expect(state).toMatchObject(expected)
   })
 })
