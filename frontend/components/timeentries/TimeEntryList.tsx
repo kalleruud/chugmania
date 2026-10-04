@@ -147,7 +147,10 @@ export function TimeEntryList({
         <ToggleGroup
           type='single'
           value={filterType}
-          onValueChange={value => setFilterType(value as FilterType)}
+          onValueChange={value => {
+            if (value === 'all' || value === 'best' || value === 'latest')
+              setFilterType(value)
+          }}
           variant='outline'
           size='sm'>
           <ToggleGroupItem value='all' aria-label='Show all entries'>
@@ -166,7 +169,9 @@ export function TimeEntryList({
         <ToggleGroup
           type='single'
           value={gapType}
-          onValueChange={value => setGapType(value as GapType)}
+          onValueChange={value => {
+            if (value === 'leader' || value === 'interval') setGapType(value)
+          }}
           variant='outline'
           size='sm'>
           <ToggleGroupItem value='leader' aria-label='Gap to leader'>
