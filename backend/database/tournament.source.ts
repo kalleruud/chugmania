@@ -162,22 +162,6 @@ export default class TournamentSource {
         )
       )
       .all()
-    const playerIds = new Set(playerRows.map(player => player.user))
-    const stages = new Set(stageRows.map(stage => stage.stage))
-    const incomplete =
-      groupRows.length !== row.groupsCount ||
-      !playerRows.length ||
-      !fixtureRows.length ||
-      fixtureRows.some(
-        ({ fixture, match }) =>
-          !slots.has(`${fixture.id}:1`) ||
-          !slots.has(`${fixture.id}:2`) ||
-          !match.stage ||
-          !stages.has(match.stage) ||
-          (match.user1 !== null && !playerIds.has(match.user1)) ||
-          (match.user2 !== null && !playerIds.has(match.user2))
-      )
-    if (incomplete) return null
     return {
       id: row.id,
       config: {
