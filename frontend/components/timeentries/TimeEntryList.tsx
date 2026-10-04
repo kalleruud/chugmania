@@ -148,8 +148,7 @@ export function TimeEntryList({
           type='single'
           value={filterType}
           onValueChange={value => {
-            if (value === 'all' || value === 'best' || value === 'latest')
-              setFilterType(value)
+            if (value !== '') setFilterType(value as FilterType)
           }}
           variant='outline'
           size='sm'>
@@ -170,7 +169,7 @@ export function TimeEntryList({
           type='single'
           value={gapType}
           onValueChange={value => {
-            if (value === 'leader' || value === 'interval') setGapType(value)
+            if (value !== '') setGapType(value as GapType)
           }}
           variant='outline'
           size='sm'>
