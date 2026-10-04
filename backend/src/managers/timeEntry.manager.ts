@@ -1,7 +1,11 @@
 import loc from '@common/locale/locales'
 import type { Session } from '@common/models/session'
 import type { EventReq, EventRes } from '@common/models/socket.io'
-import type { TimeEntry } from '@common/models/timeEntry'
+import type {
+  CreateTimeEntry,
+  EditTimeEntryRequest,
+  TimeEntry,
+} from '@common/models/timeEntry'
 import {
   isCreateTimeEntryRequest,
   isEditTimeEntryRequest,
@@ -16,6 +20,10 @@ import MatchManager from './match.manager'
 import RatingManager from './rating.manager'
 import SessionManager from './session.manager'
 import TournamentManager from './tournament/tournament.manager'
+
+type TimeEntryUpdates = Partial<CreateTimeEntry> & {
+  status: TimeEntry['status']
+}
 
 export default class TimeEntryManager {
   static readonly table = timeEntries
@@ -153,112 +161,126 @@ export default class TimeEntryManager {
     socket: TypedSocket,
     request: EventReq<'edit_time_entry'>
   ): Promise<EventRes<'edit_time_entry'>> {
-    if (!isEditTimeEntryRequest(request)) {
-      throw new Error(
-        loc.no.error.messages.invalid_request('EditTimeEntryRequest')
-      )
-    }
-
-    const [user, lapTime] = await Promise.all([
-      AuthManager.checkAuth(socket),
-      db.query.timeEntries.findFirst({
-        where: eq(timeEntries.id, request.id),
-      }),
-    ])
-    if (!lapTime) {
-      throw new Error(loc.no.error.messages.not_in_db(request.id))
-    }
-
-    // Check permissions: admins/mods can edit any, users only their own
-    const isModerator = user.role !== 'user'
-    const isOwner = lapTime.user === user.id
-    if (!isModerator && !isOwner) {
-      throw new Error(loc.no.error.messages.insufficient_permissions)
-    }
-
-    const { type, id, ...updates } = request
-
-    // Convert string dates to Date objects
-    const processedUpdates = { ...updates }
-    if (typeof updates.deletedAt === 'string') {
-      processedUpdates.deletedAt = new Date(updates.deletedAt)
-    }
-    if (typeof updates.updatedAt === 'string') {
-      processedUpdates.updatedAt = new Date(updates.updatedAt)
-    }
-    if (typeof updates.createdAt === 'string') {
-      processedUpdates.createdAt = new Date(updates.createdAt)
-    }
-    const requestedStatus = processedUpdates.status ?? lapTime.status
-    const duration =
-      processedUpdates.duration === undefined
-        ? lapTime.duration
-        : processedUpdates.duration
-    const status = (duration ?? 0) > 0 ? 'completed' : requestedStatus
-    if (lapTime.tieBreaker) {
-      if (
-        lapTime.deletedAt ||
-        (lapTime.status === 'cancelled' && !isModerator) ||
-        processedUpdates.deletedAt !== undefined ||
-        (processedUpdates.user !== undefined &&
-          processedUpdates.user !== lapTime.user) ||
-        (processedUpdates.track !== undefined &&
-          processedUpdates.track !== lapTime.track) ||
-        (processedUpdates.session !== undefined &&
-          processedUpdates.session !== lapTime.session) ||
-        (status !== lapTime.status && status !== 'completed' && !isModerator) ||
-        (status === 'completed' && (duration ?? 0) <= 0)
-      )
-        throw new Error(loc.no.tournament.owned)
-    }
-
-    if (lapTime.tieBreaker && status === 'cancelled')
-      processedUpdates.duration = null
-
-    const signupChanged = database.transaction(() => {
-      const before =
-        lapTime.tieBreaker && lapTime.session
-          ? TournamentManager.getState(lapTime.session)
-          : null
-      if (before?.cancelled) throw new Error(loc.no.tournament.session)
-      db.update(timeEntries)
-        .set({
-          ...processedUpdates,
-          status,
-        })
-        .where(eq(timeEntries.id, request.id))
-        .run()
-      if (before) TournamentManager.reconcile(before.config.session, before)
-      const sessionId =
-        processedUpdates.session === undefined
-          ? lapTime.session
-          : processedUpdates.session
-      const userId = processedUpdates.user ?? lapTime.user
-      return sessionId && !processedUpdates.deletedAt
-        ? SessionManager.ensureSessionSignup(sessionId, userId)
-        : false
-    })()
-
+    const { lapTime, updates } = await this.prepareTimeEntryEdit(
+      socket,
+      request
+    )
+    const signupChanged = this.saveTimeEntryEdit(lapTime, updates)
     console.debug(
       new Date().toISOString(),
       socket.id,
       'Updated time entry',
       request.id
     )
+    await this.publishTimeEntryEdit(
+      signupChanged,
+      lapTime.tieBreaker,
+      socket.id
+    )
+    return { success: true }
+  }
 
+  private static async prepareTimeEntryEdit(
+    socket: TypedSocket,
+    request: EventReq<'edit_time_entry'>
+  ): Promise<{ lapTime: TimeEntry; updates: TimeEntryUpdates }> {
+    if (!isEditTimeEntryRequest(request))
+      throw new Error(
+        loc.no.error.messages.invalid_request('EditTimeEntryRequest')
+      )
+    const [user, lapTime] = await Promise.all([
+      AuthManager.checkAuth(socket),
+      db.query.timeEntries.findFirst({ where: eq(timeEntries.id, request.id) }),
+    ])
+    if (!lapTime) throw new Error(loc.no.error.messages.not_in_db(request.id))
+    const updates = this.normalizeTimeEntryUpdates(request, lapTime)
+    this.validateTimeEntryEdit(user, lapTime, updates)
+    return { lapTime, updates }
+  }
+
+  private static normalizeTimeEntryUpdates(
+    request: EditTimeEntryRequest,
+    lapTime: TimeEntry
+  ): TimeEntryUpdates {
+    const { type, id, ...updates } = request
+    const processed = { ...updates }
+    if (typeof updates.deletedAt === 'string')
+      processed.deletedAt = new Date(updates.deletedAt)
+    if (typeof updates.updatedAt === 'string')
+      processed.updatedAt = new Date(updates.updatedAt)
+    if (typeof updates.createdAt === 'string')
+      processed.createdAt = new Date(updates.createdAt)
+    const duration =
+      processed.duration === undefined ? lapTime.duration : processed.duration
+    const status =
+      (duration ?? 0) > 0 ? 'completed' : (processed.status ?? lapTime.status)
+    if (lapTime.tieBreaker && status === 'cancelled') processed.duration = null
+    return { ...processed, status }
+  }
+
+  private static validateTimeEntryEdit(
+    user: Pick<User, 'id' | 'role'>,
+    lapTime: TimeEntry,
+    updates: TimeEntryUpdates
+  ): void {
+    const isModerator = user.role !== 'user'
+    if (!isModerator && lapTime.user !== user.id)
+      throw new Error(loc.no.error.messages.insufficient_permissions)
+    if (!lapTime.tieBreaker) return
+    const duration =
+      updates.duration === undefined ? lapTime.duration : updates.duration
+    if (
+      lapTime.deletedAt ||
+      (lapTime.status === 'cancelled' && !isModerator) ||
+      updates.deletedAt !== undefined ||
+      (updates.user !== undefined && updates.user !== lapTime.user) ||
+      (updates.track !== undefined && updates.track !== lapTime.track) ||
+      (updates.session !== undefined && updates.session !== lapTime.session) ||
+      (updates.status !== lapTime.status &&
+        updates.status !== 'completed' &&
+        !isModerator) ||
+      (updates.status === 'completed' && (duration ?? 0) <= 0)
+    )
+      throw new Error(loc.no.tournament.owned)
+  }
+
+  private static saveTimeEntryEdit(
+    lapTime: TimeEntry,
+    updates: TimeEntryUpdates
+  ): boolean {
+    return database.transaction(() => {
+      const before =
+        lapTime.tieBreaker && lapTime.session
+          ? TournamentManager.getState(lapTime.session)
+          : null
+      if (before?.cancelled) throw new Error(loc.no.tournament.session)
+      db.update(timeEntries)
+        .set(updates)
+        .where(eq(timeEntries.id, lapTime.id))
+        .run()
+      if (before) TournamentManager.reconcile(before.config.session, before)
+      const sessionId =
+        updates.session === undefined ? lapTime.session : updates.session
+      const userId = updates.user ?? lapTime.user
+      return sessionId && !updates.deletedAt
+        ? SessionManager.ensureSessionSignup(sessionId, userId)
+        : false
+    })()
+  }
+
+  private static async publishTimeEntryEdit(
+    signupChanged: boolean,
+    tieBreaker: boolean,
+    actor: string
+  ): Promise<void> {
     RatingManager.recalculate()
-    if (signupChanged) {
+    if (signupChanged)
       broadcast('all_sessions', await SessionManager.getAllSessions())
-    }
     broadcast('all_rankings', RatingManager.onGetRatings())
-    broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
-    if (lapTime.tieBreaker) {
+    broadcast('all_time_entries', await this.getAllTimeEntries())
+    if (tieBreaker) {
       broadcast('all_matches', await MatchManager.getAllMatches())
-      TournamentManager.publish(socket.id)
-    }
-
-    return {
-      success: true,
+      TournamentManager.publish(actor)
     }
   }
 
