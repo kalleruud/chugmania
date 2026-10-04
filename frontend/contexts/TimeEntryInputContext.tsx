@@ -58,7 +58,8 @@ export default function TimeEntryInputProvider({
   const timeEntryReadOnly =
     !!editingTimeEntry.id &&
     (!currentTimeEntry ||
-      currentTimeEntry.status === 'cancelled' ||
+      (currentTimeEntry.status === 'cancelled' &&
+        loggedInUser?.role === 'user') ||
       (currentTimeEntry.tieBreaker && !!timeEntryTournament?.cancelled))
   const currentMatch = matches?.find(m => m.id === editingMatch.id)
   const matchReadOnly =

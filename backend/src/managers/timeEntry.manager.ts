@@ -119,7 +119,10 @@ export default class TimeEntryManager {
         .values({
           ...request,
           tieBreaker: false,
-          status: request.status ?? 'completed',
+          status:
+            (request.duration ?? 0) > 0
+              ? 'completed'
+              : (request.status ?? 'completed'),
         })
         .run()
       return request.session
@@ -187,15 +190,15 @@ export default class TimeEntryManager {
       processedUpdates.createdAt = new Date(updates.createdAt)
     }
     const requestedStatus = processedUpdates.status ?? lapTime.status
-    const completesLap =
-      lapTime.status === 'planned' &&
-      (processedUpdates.duration ?? 0) > 0 &&
-      requestedStatus !== 'cancelled'
-    const status = completesLap ? 'completed' : requestedStatus
+    const duration =
+      processedUpdates.duration === undefined
+        ? lapTime.duration
+        : processedUpdates.duration
+    const status = (duration ?? 0) > 0 ? 'completed' : requestedStatus
     if (lapTime.tieBreaker) {
       if (
         lapTime.deletedAt ||
-        lapTime.status === 'cancelled' ||
+        (lapTime.status === 'cancelled' && !isModerator) ||
         processedUpdates.deletedAt !== undefined ||
         (processedUpdates.user !== undefined &&
           processedUpdates.user !== lapTime.user) ||
@@ -203,13 +206,8 @@ export default class TimeEntryManager {
           processedUpdates.track !== lapTime.track) ||
         (processedUpdates.session !== undefined &&
           processedUpdates.session !== lapTime.session) ||
-        (status === 'cancelled' &&
-          (!isModerator || lapTime.status !== 'planned')) ||
-        (status === 'completed' &&
-          (processedUpdates.duration === undefined
-            ? (lapTime.duration ?? 0)
-            : (processedUpdates.duration ?? 0)) <= 0) ||
-        (status === 'planned' && lapTime.status !== 'planned')
+        (status !== lapTime.status && status !== 'completed' && !isModerator) ||
+        (status === 'completed' && (duration ?? 0) <= 0)
       )
         throw new Error(loc.no.tournament.owned)
     }

@@ -719,7 +719,73 @@ test.serial(
         lap => lap.user === 'cancel-c'
       )
     ).toBe(false)
-    await assert.rejects(tournament.editLap('cancel-c', { duration: 5000 }))
+    await tournament.editLap('cancel-c', { status: 'planned' })
+    expect(await tournament.getMatch('final')).toMatchObject({
+      user1: null,
+      user2: null,
+    })
+    await tournament.editLap('cancel-c', {
+      duration: 5000,
+      status: 'cancelled',
+    })
+    expect(
+      (await tournament.getState()).tieBreakers.find(
+        lap => lap.user === 'cancel-c'
+      )?.status
+    ).toBe('completed')
+    expect(await tournament.getMatch('final')).toMatchObject({
+      user1: 'cancel-c',
+      user2: 'cancel-a',
+    })
+
+    const track = (await tournament.getState()).config.tieBreakerTrack
+    assert(track)
+    for (const requestedStatus of ['planned', 'cancelled']) {
+      const status: 'planned' | 'cancelled' =
+        requestedStatus === 'planned' ? 'planned' : 'cancelled'
+      const id = `positive-duration-${status}`
+      await TimeEntryManager.onPostTimeEntry(tournament.socket, {
+        type: 'CreateTimeEntryRequest',
+        id,
+        user: 'cancel-a',
+        track,
+        duration: 1000,
+        status,
+      }).then(assertResponse)
+      expect(
+        (await TimeEntryManager.getAllTimeEntries()).find(lap => lap.id === id)
+          ?.status
+      ).toBe('completed')
+      await TimeEntryManager.onEditTimeEntry(tournament.socket, {
+        type: 'EditTimeEntryRequest',
+        id,
+        status,
+      }).then(assertResponse)
+      expect(
+        (await TimeEntryManager.getAllTimeEntries()).find(lap => lap.id === id)
+          ?.status
+      ).toBe('completed')
+      await TimeEntryManager.onEditTimeEntry(tournament.socket, {
+        type: 'EditTimeEntryRequest',
+        id,
+        duration: null,
+        status,
+      }).then(assertResponse)
+      expect(
+        (await TimeEntryManager.getAllTimeEntries()).find(lap => lap.id === id)
+          ?.status
+      ).toBe(status)
+      await TimeEntryManager.onEditTimeEntry(tournament.socket, {
+        type: 'EditTimeEntryRequest',
+        id,
+        duration: 2000,
+        status,
+      }).then(assertResponse)
+      expect(
+        (await TimeEntryManager.getAllTimeEntries()).find(lap => lap.id === id)
+          ?.status
+      ).toBe('completed')
+    }
   }
 )
 
