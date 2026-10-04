@@ -12,6 +12,7 @@ import type {
 export function seedingOrder(a: Participant, b: Participant): number {
   return b.rating - a.rating || a.user.localeCompare(b.user)
 }
+
 function headToHead(matches: Match[], a: string, b: string): string | null {
   const match = matches.findLast(
     match =>
@@ -21,6 +22,7 @@ function headToHead(matches: Match[], a: string, b: string): string | null {
   )
   return match?.winner ?? null
 }
+
 function rankTiedPlayers(
   users: string[],
   matches: Match[]
@@ -45,6 +47,7 @@ function rankTiedPlayers(
   }
   return rows
 }
+
 function decided(match: Match): boolean {
   return (
     (match.status === 'completed' || match.status === 'cancelled') &&
@@ -54,6 +57,7 @@ function decided(match: Match): boolean {
     (match.winner === match.user1 || match.winner === match.user2)
   )
 }
+
 function groupStandings(state: TournamentState, groupId: string): Standing[] {
   const players = state.participants
     .filter(p => p.groupId === groupId)
@@ -102,14 +106,17 @@ function groupStandings(state: TournamentState, groupId: string): Standing[] {
   }
   return standings
 }
+
 function groupComplete(state: TournamentState): boolean {
   return state.fixtures
     .filter(f => f.bracket === 'group')
     .every(f => decided(f.match))
 }
+
 function winRatio(row: Pick<Standing, 'wins' | 'losses'>): number {
   return row.wins / (row.wins + row.losses || 1)
 }
+
 export function resolveTournament(state: TournamentState): TournamentState {
   const result = structuredClone(state)
   const standings = new Map(
@@ -157,6 +164,7 @@ export function resolveTournament(state: TournamentState): TournamentState {
   }
   throw new Error(loc.no.tournament.invalid)
 }
+
 function protectResults(
   before: TournamentState,
   after: TournamentState,
@@ -184,6 +192,7 @@ function protectResults(
           .join(', ')
     )
 }
+
 function overallStandings(state: TournamentState): {
   rows: { user: string; rank: number }[]
   completed: boolean
@@ -356,6 +365,7 @@ function fixtureLabel(
   )
   return `${loc.no.match.stageCode(fixture.match.stage)}${String(siblings.indexOf(fixture) + 1).padStart(2, '0')}`
 }
+
 export function tournamentDetails(state: TournamentState): TournamentDetails {
   const label = (slot: Slot): string => {
     if (slot.kind === 'player') return ''

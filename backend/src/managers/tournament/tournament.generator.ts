@@ -6,7 +6,7 @@ import type {
   TournamentFixture,
   TournamentState,
 } from '@common/models/tournament'
-import { upperStage, validConfiguration } from '@common/utils/tournament'
+import { upperStage, validateConfiguration } from '@common/utils/tournament'
 import { createHash } from 'node:crypto'
 import type { MatchStage } from '../../../database/schema'
 import { seedingOrder } from './tournament'
@@ -25,10 +25,12 @@ function groupNames(session: string, count: number): string[] {
     return cycle ? `${name} ${cycle + 1}` : name
   })
 }
+
 function snakeGroup(seed: number, groups: number): number {
   const position = seed % groups
   return Math.floor(seed / groups) % 2 === 0 ? position : groups - 1 - position
 }
+
 function schedulePairs(players: string[]): [string, string][] {
   const pending: [string, string][] = []
   players.forEach((player, index) =>
@@ -59,7 +61,7 @@ export function generateTournament(
   inputs: Participant[]
 ): TournamentState {
   if (
-    !validConfiguration(
+    !validateConfiguration(
       inputs.length,
       config.groupsCount,
       config.advancementCount,

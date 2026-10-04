@@ -3,7 +3,7 @@ import loc from '../locale/locales'
 import type { Match } from '../models/match'
 import type { EliminationType, TournamentConfig } from '../models/tournament'
 
-export function validConfiguration(
+export function validateConfiguration(
   count: number,
   groups: number,
   advancement: number,
@@ -23,6 +23,7 @@ export function validConfiguration(
     (type === 'single' || advancers === 4 || advancers === 8)
   )
 }
+
 export function configurationOptions(count: number, type: EliminationType) {
   const options: { groups: number; advancement: number }[] = []
   for (let groups = 1; groups <= count; groups++) {
@@ -31,12 +32,13 @@ export function configurationOptions(count: number, type: EliminationType) {
       advancement <= Math.floor(count / groups);
       advancement++
     ) {
-      if (validConfiguration(count, groups, advancement, type))
+      if (validateConfiguration(count, groups, advancement, type))
         options.push({ groups, advancement })
     }
   }
   return options
 }
+
 export function upperStage(size: number): MatchStage {
   if (size === 2) return 'final'
   if (size === 4) return 'semi'
@@ -44,23 +46,30 @@ export function upperStage(size: number): MatchStage {
   if (size === 16) return 'eight'
   return `round_${size}`
 }
+
 export function stageName(stage: MatchStage | null): string {
   if (!stage) return ''
   if (stage.startsWith('round_')) return `${stage.slice(6)}-delsrunde`
   return loc.no.match.stage[stage]
 }
+
 export function firstPendingMatch(matches: Match[]): Match | undefined {
-  return pendingMatches(matches).at(0)
+  return matches.find(isPendingMatch)
 }
+
 export function pendingMatches(matches: Match[]): Match[] {
-  return matches.filter(
-    match =>
-      !match.deletedAt &&
-      match.status === 'planned' &&
-      match.tournament?.reset !== 'conditional' &&
-      match.tournament?.reset !== 'unneeded'
+  return matches.filter(isPendingMatch)
+}
+
+function isPendingMatch(match: Match) {
+  return (
+    !match.deletedAt &&
+    match.status === 'planned' &&
+    match.tournament?.reset !== 'conditional' &&
+    match.tournament?.reset !== 'unneeded'
   )
 }
+
 export function usedStages(
   config: TournamentConfig,
   count: number

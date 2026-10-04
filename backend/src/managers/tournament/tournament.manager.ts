@@ -42,6 +42,7 @@ import { generateTournament } from './tournament.generator'
 
 export default class TournamentManager {
   private static published = new Map<string, string>()
+
   private static participants(config: TournamentConfig): Participant[] {
     const ratings = RatingManager.onGetRatings()
     const signups = db
@@ -68,6 +69,7 @@ export default class TournamentManager {
       }
     })
   }
+
   private static active(session: string) {
     return db
       .select()
@@ -77,6 +79,7 @@ export default class TournamentManager {
       )
       .get()
   }
+
   private static session(session: string, allowCancelled = false) {
     const row = db
       .select()
@@ -87,6 +90,7 @@ export default class TournamentManager {
       throw new Error(loc.no.tournament.session)
     return row
   }
+
   private static load(session: string): TournamentState | null {
     const row = this.active(session)
     if (!row) return null
@@ -173,10 +177,12 @@ export default class TournamentManager {
           ?.status === 'cancelled',
     }
   }
+
   private static details(session: string): TournamentDetails | null {
     const state = this.load(session)
     return state ? tournamentDetails(state) : null
   }
+
   private static validate(
     config: TournamentConfig,
     creating: boolean
@@ -209,6 +215,7 @@ export default class TournamentManager {
       throw new Error(loc.no.tournament.tracks)
     return state
   }
+
   private static remap(state: TournamentState): TournamentState {
     const result = structuredClone(state)
     result.id = randomUUID()
@@ -304,6 +311,7 @@ export default class TournamentManager {
         .run()
     }
   }
+
   static editMatch(request: EditMatchRequest): boolean {
     const link = db
       .select()
@@ -341,6 +349,7 @@ export default class TournamentManager {
     })()
     return true
   }
+
   static remove(
     session: string,
     { deleteMatches } = { deleteMatches: true }
@@ -397,6 +406,7 @@ export default class TournamentManager {
       broadcastTournament({ session, details, actor })
     }
   }
+
   static async onPreview(
     socket: TypedSocket,
     request: TournamentConfig
@@ -409,6 +419,7 @@ export default class TournamentManager {
       details: tournamentDetails(state),
     }
   }
+
   static async onCreate(
     socket: TypedSocket,
     request: TournamentConfig
@@ -431,6 +442,7 @@ export default class TournamentManager {
       details: TournamentManager.details(request.session),
     }
   }
+
   static async onGet(
     socket: TypedSocket,
     request: { session: string }
@@ -445,6 +457,7 @@ export default class TournamentManager {
       details: TournamentManager.details(request.session),
     }
   }
+
   static async onDelete(
     socket: TypedSocket,
     request: EventReq<'delete_tournament'>
@@ -464,6 +477,7 @@ export default class TournamentManager {
     TournamentManager.publish(socket.id)
     return { success: true, details: null }
   }
+
   static enrich(rows: Match[]): Match[] {
     const details = new Map(
       db
