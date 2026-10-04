@@ -1,6 +1,6 @@
 import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
-import { useMatchWinner } from '@/hooks/useMatchWinner'
+import { useMatchResultActions } from '@/hooks/useMatchResultActions'
 import loc from '@common/locale/locales'
 import type { UserInfo } from '@common/models/user'
 import { getUserFullName } from '@common/models/user'
@@ -25,7 +25,7 @@ export default function MatchCard({
 }: Readonly<MatchProps>) {
   const { socket } = useConnection()
   const { users, tracks, sessions } = useData()
-  const { canSetResult, setWinner } = useMatchWinner(match)
+  const { canSetResult, toggleWinner } = useMatchResultActions(match)
   const user1 = users?.find(user => user.id === match.user1)
   const user2 = users?.find(user => user.id === match.user2)
   const track = tracks?.find(track => track.id === match.track)
@@ -70,7 +70,7 @@ export default function MatchCard({
           isCompleted={isCompleted}
           isCancelled={isCancelled}
           disabled={!canChooseWinner}
-          onSelect={() => user1 && setWinner(user1.id)}
+          onSelect={() => user1 && toggleWinner(user1.id)}
           className='text-right'
         />
         <span className='mb-1 font-kh-interface text-2xl font-black text-primary'>
@@ -83,7 +83,7 @@ export default function MatchCard({
           isCompleted={isCompleted}
           isCancelled={isCancelled}
           disabled={!canChooseWinner}
-          onSelect={() => user2 && setWinner(user2.id)}
+          onSelect={() => user2 && toggleWinner(user2.id)}
         />
       </div>
       {match.stage && (

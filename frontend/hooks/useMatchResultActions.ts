@@ -4,7 +4,7 @@ import loc from '@common/locale/locales'
 import type { EditMatchRequest, Match } from '@common/models/match'
 import { toast } from 'sonner'
 
-export function useMatchWinner(match: Match) {
+export function useMatchResultActions(match: Match) {
   const { socket } = useConnection()
   const { isLoggedIn, loggedInUser } = useAuth()
   const canSetResult =
@@ -14,7 +14,7 @@ export function useMatchWinner(match: Match) {
     !!match.user1 &&
     !!match.user2
 
-  function setWinner(userId: string) {
+  function toggleWinner(userId: string) {
     if (!canSetResult) return
     const isWinner = match.winner === userId
     const payload: EditMatchRequest = {
@@ -31,5 +31,5 @@ export function useMatchWinner(match: Match) {
     )
   }
 
-  return { canSetResult, setWinner }
+  return { canSetResult, toggleWinner }
 }

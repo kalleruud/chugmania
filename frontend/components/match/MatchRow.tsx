@@ -1,5 +1,5 @@
 import { useData } from '@/contexts/DataContext'
-import { useMatchWinner } from '@/hooks/useMatchWinner'
+import { useMatchResultActions } from '@/hooks/useMatchResultActions'
 import loc from '@common/locale/locales'
 import type { UserInfo } from '@common/models/user'
 import { stageName } from '@common/utils/tournament'
@@ -21,7 +21,7 @@ export default function MatchRow({
   ...rest
 }: Readonly<MatchProps>) {
   const { users, tracks, sessions } = useData()
-  const { canSetResult, setWinner } = useMatchWinner(match)
+  const { canSetResult, toggleWinner } = useMatchResultActions(match)
   const user1 = users?.find(u => u.id === match.user1)
   const user2 = users?.find(u => u.id === match.user2)
   const track = tracks?.find(t => t.id === match.track)
@@ -52,7 +52,7 @@ export default function MatchRow({
             user={user1}
             slotLabel={match.tournament?.slot1}
             isWinner={!!match.winner && match.winner === match.user1}
-            onClick={() => user1 && setWinner(user1.id)}
+            onClick={() => user1 && toggleWinner(user1.id)}
             disabled={
               !canSetResult || isCancelled || match.status !== 'planned'
             }
@@ -73,7 +73,7 @@ export default function MatchRow({
             user={user2}
             slotLabel={match.tournament?.slot2}
             isWinner={!!match.winner && match.winner === match.user2}
-            onClick={() => user2 && setWinner(user2.id)}
+            onClick={() => user2 && toggleWinner(user2.id)}
             disabled={
               !canSetResult || isCancelled || match.status !== 'planned'
             }
