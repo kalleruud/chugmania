@@ -23,7 +23,7 @@ export default function TournamentGroupPanel({
           <Link
             to={href}
             aria-label={`${loc.no.tournament.group} ${group.code}: ${group.name}`}
-            className='absolute inset-0 rounded-sm hover:bg-accent/50 focus-visible:outline-2 focus-visible:outline-primary'
+            className='absolute inset-0 rounded-sm transition-colors hover:bg-accent/50 focus-visible:outline-2 focus-visible:outline-primary'
           />
         )}
         <div className='pointer-events-none relative min-w-0 flex-1'>

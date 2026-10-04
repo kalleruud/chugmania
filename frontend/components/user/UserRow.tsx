@@ -40,7 +40,7 @@ export default function UserRow({
         {showRanking && (
           <p
             className={twMerge(
-              'w-6 flex-none text-center font-kh-interface text-lg font-black text-primary tabular-nums',
+              'w-6 flex-none text-center font-kh-interface text-lg font-black text-primary tabular-nums transition-colors',
               !hideLink && highlight && 'group-hover:text-primary-foreground'
             )}>
             {ranking}
@@ -54,7 +54,7 @@ export default function UserRow({
         {hideRanking && (
           <div
             className={twMerge(
-              'h-4 w-1 flex-none rounded-full bg-primary',
+              'h-4 w-1 flex-none rounded-full bg-primary transition-colors',
               !hideLink && highlight && 'group-hover:bg-primary-foreground'
             )}
           />
@@ -75,7 +75,7 @@ export default function UserRow({
       {!hideLink && (
         <ItemActions
           className={twMerge(
-            'relative z-10',
+            'relative z-10 transition-colors',
             highlight && 'text-primary group-hover:text-primary-foreground'
           )}>
           <ChevronRight className='size-4' />
