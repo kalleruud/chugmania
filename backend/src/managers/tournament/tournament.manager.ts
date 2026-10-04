@@ -154,7 +154,7 @@ export default class TournamentManager {
   static reconcile(
     session: string,
     before?: TournamentState,
-    editing = ''
+    editing?: string
   ): void {
     TournamentSource.transaction(() => {
       const state = this.getState(session)

@@ -205,7 +205,7 @@ export function resolveTournament(state: TournamentState): TournamentState {
 export function protectResults(
   before: TournamentState,
   after: TournamentState,
-  editing = ''
+  editing?: string
 ): void {
   const affected = before.fixtures.filter(
     f =>
