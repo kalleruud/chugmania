@@ -13,9 +13,11 @@ export function useTournament(session: string) {
     session: string
     details: TournamentDetails | null
   } | null>(null)
+  
   useEffect(() => {
     let active = true
     let version = 0
+    
     async function load() {
       const requestVersion = ++version
       try {
@@ -29,14 +31,18 @@ export function useTournament(session: string) {
         toast.error(error instanceof Error ? error.message : String(error))
       }
     }
+
     function changed(change: TournamentChange) {
       if (!active || change.session !== session) return
       void load()
       if (change.actor !== socket.id) toast.info(loc.no.tournament.changed)
     }
+
     socket.on('tournament_changed', changed)
     socket.on('connect', load)
+
     if (socket.connected) void load()
+
     return () => {
       active = false
       socket.off('tournament_changed', changed)
@@ -44,6 +50,7 @@ export function useTournament(session: string) {
       socket.emit('unsubscribe_tournament', { session })
     }
   }, [session, socket])
+  
   return {
     details: state?.session === session ? state.details : null,
     loading: state?.session !== session,
