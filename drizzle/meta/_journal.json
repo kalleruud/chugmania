@@ -99,6 +99,13 @@
       "when": 1791072206232,
       "tag": "0013_tan_scarlet_spider",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1791072331153,
+      "tag": "0014_equal_logan",
+      "breakpoints": true
     }
   ]
 }

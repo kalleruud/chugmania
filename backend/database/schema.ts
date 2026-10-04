@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm'
 import {
   blob,
+  foreignKey,
   integer,
   sqliteTable,
   text,
@@ -164,6 +165,7 @@ export const tournamentGroups = sqliteTable(
       table.tournament,
       table.position
     ),
+    uniqueIndex('tournament_group_owner').on(table.tournament, table.id),
   ]
 )
 export const tournamentPlayers = sqliteTable(
@@ -176,14 +178,16 @@ export const tournamentPlayers = sqliteTable(
     user: text()
       .notNull()
       .references(() => users.id),
-    groupId: text('group_id')
-      .notNull()
-      .references(() => tournamentGroups.id),
+    groupId: text('group_id').notNull(),
     admission: integer().notNull(),
     rating: integer().notNull(),
   },
   table => [
     uniqueIndex('tournament_participant').on(table.tournament, table.user),
+    foreignKey({
+      columns: [table.tournament, table.groupId],
+      foreignColumns: [tournamentGroups.tournament, tournamentGroups.id],
+    }),
   ]
 )
 export const tournamentMatches = sqliteTable(
@@ -196,7 +200,7 @@ export const tournamentMatches = sqliteTable(
     matchId: text('match_id')
       .notNull()
       .references(() => matches.id),
-    groupId: text('group_id').references(() => tournamentGroups.id),
+    groupId: text('group_id'),
     bracket: text().$type<'group' | 'upper' | 'lower' | 'final'>().notNull(),
     round: integer().notNull(),
     order: integer().notNull(),
@@ -212,5 +216,9 @@ export const tournamentMatches = sqliteTable(
     uniqueIndex('tournament_match_order')
       .on(table.tournament, table.order)
       .where(sql`${table.deletedAt} IS NULL`),
+    foreignKey({
+      columns: [table.tournament, table.groupId],
+      foreignColumns: [tournamentGroups.tournament, tournamentGroups.id],
+    }),
   ]
 )
