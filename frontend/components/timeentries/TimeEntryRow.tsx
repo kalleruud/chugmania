@@ -18,6 +18,7 @@ import { twMerge } from 'tailwind-merge'
 import type { BaseRowProps } from '../row/RowProps'
 
 type TimeEntryRowProps = BaseRowProps<TimeEntry> & {
+  required?: boolean
   position?: number | null
   gap?: LeaderboardEntryGap
   gapType?: GapType
@@ -52,12 +53,14 @@ function PositionBadgePart({
 
 export function NameCellPart({
   name,
+  required = false,
   hasComment = false,
   className,
   ...props
 }: Readonly<
   {
     name: string
+    required?: boolean
     hasComment?: boolean
   } & ComponentProps<'div'>
 >) {
@@ -66,6 +69,7 @@ export function NameCellPart({
       className={twMerge('font-f1-bold truncate uppercase', className)}
       {...props}>
       {name}
+      {required && <span className='text-primary'> !</span>}
       {hasComment && <span className='text-primary'> *</span>}
     </div>
   )
@@ -128,6 +132,7 @@ function GapPart({
 export default function TimeEntryRow({
   className,
   item: lapTime,
+  required,
   gap,
   gapType,
   onChangeGapType,
@@ -182,6 +187,7 @@ export default function TimeEntryRow({
           userInfo?.firstName ??
           loc.no.match.unknownUser
         }
+        required={required}
         hasComment={!!lapTime.comment}
         className={twMerge('mr-auto', isDNF && 'text-muted-foreground')}
       />

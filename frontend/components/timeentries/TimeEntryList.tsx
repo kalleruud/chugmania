@@ -15,7 +15,7 @@ import TimeEntryRow from './TimeEntryRow'
 
 type FilterType = 'all' | 'best' | 'latest'
 
-function sortEntries(entries: TimeEntry[]): TimeEntry[] {
+function sortEntries<T extends TimeEntry>(entries: T[]): T[] {
   return entries.toSorted((a, b) => {
     if ((a.status === 'completed') !== (b.status === 'completed'))
       return a.status === 'completed' ? -1 : 1
@@ -35,14 +35,14 @@ function sortEntries(entries: TimeEntry[]): TimeEntry[] {
   })
 }
 
-function isBetterEntry(current: TimeEntry, existing: TimeEntry): boolean {
+function isBetterEntry<T extends TimeEntry>(current: T, existing: T): boolean {
   if (!current.duration) return false
   if (!existing.duration) return true
   return current.duration < existing.duration
 }
 
-function getBestByUser(entries: TimeEntry[]): TimeEntry[] {
-  const bestByUser = new Map<string, TimeEntry>()
+function getBestByUser<T extends TimeEntry>(entries: T[]): T[] {
+  const bestByUser = new Map<string, T>()
   for (const entry of entries) {
     const existing = bestByUser.get(entry.user)
     if (!existing || isBetterEntry(entry, existing)) {
@@ -52,8 +52,8 @@ function getBestByUser(entries: TimeEntry[]): TimeEntry[] {
   return Array.from(bestByUser.values())
 }
 
-function getLatestByUser(entries: TimeEntry[]): TimeEntry[] {
-  const latestByUser = new Map<string, TimeEntry>()
+function getLatestByUser<T extends TimeEntry>(entries: T[]): T[] {
+  const latestByUser = new Map<string, T>()
   for (const entry of entries) {
     const existing = latestByUser.get(entry.user)
     if (!existing || entry.createdAt > existing.createdAt) {
@@ -63,20 +63,16 @@ function getLatestByUser(entries: TimeEntry[]): TimeEntry[] {
   return Array.from(latestByUser.values())
 }
 
-function filterEntries(
-  entries: TimeEntry[],
+function filterEntries<T extends TimeEntry>(
+  entries: T[],
   filterType: FilterType
-): TimeEntry[] {
+): T[] {
   let filtered = entries
 
   if (filterType === 'best') {
-    filtered = getBestByUser(
-      entries.filter(entry => entry.status === 'completed')
-    )
+    filtered = getBestByUser(entries)
   } else if (filterType === 'latest') {
-    filtered = getLatestByUser(
-      entries.filter(entry => entry.status === 'completed')
-    )
+    filtered = getLatestByUser(entries)
   }
 
   return sortEntries(filtered)
@@ -113,7 +109,7 @@ export type TimeEntryListProps = {
   track?: string
   user?: string
   session?: string
-  entries: TimeEntry[]
+  entries: (TimeEntry & { required?: boolean })[]
   filter?: FilterType
 }
 
@@ -190,6 +186,7 @@ export function TimeEntryList({
             <TimeEntryRow
               key={entry.id}
               item={entry}
+              required={entry.required === true}
               gap={getGap(
                 i + 1,
                 entry,
