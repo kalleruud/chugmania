@@ -344,8 +344,16 @@ describe('Complete simple tournament', () => {
       { user: 'charlie', rank: 3 },
       { user: 'daniel', rank: 3 },
     ])
-    for (const [index, user] of ['erin', 'frank', 'grace', 'hugo'].entries())
+    for (const [index, user] of ['erin', 'frank', 'grace', 'hugo'].entries()) {
       await tournament.editLap(user, { duration: 10000 + index * 1000 })
+      if (index === 0)
+        expect((await tournament.getState()).standings.slice(4)).toEqual([
+          { user: 'erin', rank: 5 },
+          { user: 'frank', rank: 6 },
+          { user: 'grace', rank: 6 },
+          { user: 'hugo', rank: 6 },
+        ])
+    }
     expect((await tournament.getState()).standings.slice(4)).toEqual([
       { user: 'erin', rank: 5 },
       { user: 'frank', rank: 6 },
@@ -636,10 +644,14 @@ test.serial(
       (await tournament.getState()).tieBreakers.map(lap => lap.id).sort()
     ).toEqual(ids)
     await tournament.editLap('tie-a', { duration: 30000 })
+    expect(await tournament.getMatch('final')).toMatchObject({
+      user1: 'tie-a',
+      user2: null,
+    })
     await tournament.editLap('tie-b', { duration: 20000 })
     expect(await tournament.getMatch('final')).toMatchObject({
-      user1: null,
-      user2: null,
+      user1: 'tie-b',
+      user2: 'tie-a',
     })
     await tournament.editLap('tie-c', { duration: 10000 })
     expect(await tournament.getMatch('final')).toMatchObject({
@@ -721,8 +733,8 @@ test.serial(
     ).toBe(false)
     await tournament.editLap('cancel-c', { status: 'planned' })
     expect(await tournament.getMatch('final')).toMatchObject({
-      user1: null,
-      user2: null,
+      user1: 'cancel-a',
+      user2: 'cancel-b',
     })
     await tournament.editLap('cancel-c', {
       duration: 5000,

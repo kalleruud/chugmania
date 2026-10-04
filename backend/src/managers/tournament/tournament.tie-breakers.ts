@@ -25,25 +25,22 @@ export function rankLapTie(
   const laps = new Map(
     state.tieBreakers.filter(lap => !lap.deletedAt).map(lap => [lap.user, lap])
   )
-  const ready = users.every(user => {
+  const lapOrder = (user: string): number => {
     const lap = laps.get(user)
-    return (
-      lap?.status === 'cancelled' ||
-      (lap?.status === 'completed' && (lap.duration ?? 0) > 0)
-    )
-  })
-  if (!ready) return users.map(user => ({ user, rank: 1, resolved: false }))
+    if (lap?.status === 'completed' && (lap.duration ?? 0) > 0) return 0
+    return lap?.status === 'cancelled' ? 2 : 1
+  }
   const players = new Map(
     state.participants.map(player => [player.user, player])
   )
   const ordered = users.toSorted((a, b) => {
     const lapA = laps.get(a)
     const lapB = laps.get(b)
-    const cancelledA = lapA?.status === 'cancelled'
-    const cancelledB = lapB?.status === 'cancelled'
-    if (cancelledA !== cancelledB) return cancelledA ? 1 : -1
+    const orderA = lapOrder(a)
+    const orderB = lapOrder(b)
+    if (orderA !== orderB) return orderA - orderB
     const duration = (lapA?.duration ?? 0) - (lapB?.duration ?? 0)
-    if (!cancelledA && duration) return duration
+    if (orderA === 0 && duration) return duration
     const playerA = players.get(a)
     const playerB = players.get(b)
     return (
@@ -55,15 +52,20 @@ export function rankLapTie(
   const firstCancelled = ordered.findIndex(
     user => laps.get(user)?.status === 'cancelled'
   )
-  return ordered.map((user, index) => ({
-    user,
-    rank:
-      !required && firstCancelled >= 0 && index >= firstCancelled
-        ? firstCancelled + 1
-        : index + 1,
-    resolved:
-      required ||
-      laps.get(user)?.status !== 'cancelled' ||
-      firstCancelled === ordered.length - 1,
-  }))
+  const firstPlanned = ordered.findIndex(user => lapOrder(user) === 1)
+  return ordered.map((user, index) => {
+    if (lapOrder(user) === 1)
+      return { user, rank: firstPlanned + 1, resolved: false }
+    return {
+      user,
+      rank:
+        !required && firstCancelled >= 0 && index >= firstCancelled
+          ? firstCancelled + 1
+          : index + 1,
+      resolved:
+        required ||
+        laps.get(user)?.status !== 'cancelled' ||
+        firstCancelled === ordered.length - 1,
+    }
+  })
 }
