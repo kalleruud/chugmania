@@ -9,6 +9,14 @@ import type {
   TournamentState,
 } from '@common/models/tournament'
 
+const STANDING_PRIORITY = {
+  CHAMPION: 10000,
+  RUNNER_UP: 9999,
+  ELIMINATED: 100,
+  QUALIFIED: 99,
+  GROUP_ONLY: 0,
+}
+
 export function seedingOrder(a: Participant, b: Participant): number {
   return b.rating - a.rating || a.user.localeCompare(b.user)
 }
@@ -208,12 +216,13 @@ function overallStandings(state: TournamentState): {
   const groups = state.groups.flatMap(g => groupStandings(state, g.id))
   const bracket = state.fixtures.filter(f => f.bracket !== 'group')
   const score = (p: Participant): number => {
-    if (completed && final.match.winner === p.user) return 10000
+    if (completed && final.match.winner === p.user)
+      return STANDING_PRIORITY.CHAMPION
     if (
       completed &&
       (final.match.user1 === p.user || final.match.user2 === p.user)
     )
-      return 9999
+      return STANDING_PRIORITY.RUNNER_UP
     const loss = bracket
       .filter(
         f =>
@@ -224,9 +233,10 @@ function overallStandings(state: TournamentState): {
           (f.match.user1 === p.user || f.match.user2 === p.user)
       )
       .at(-1)
-    if (loss) return 100 + loss.round
-    if (groups.find(row => row.user === p.user)?.qualifies) return 99
-    return 0
+    if (loss) return STANDING_PRIORITY.ELIMINATED + loss.round
+    if (groups.find(row => row.user === p.user)?.qualifies)
+      return STANDING_PRIORITY.QUALIFIED
+    return STANDING_PRIORITY.GROUP_ONLY
   }
   const percentage = (user: string): number => {
     const row = groups.find(r => r.user === user)
@@ -234,7 +244,9 @@ function overallStandings(state: TournamentState): {
   }
   const compare = (a: Participant, b: Participant) =>
     score(b) - score(a) ||
-    (score(a) === 0 ? percentage(b.user) - percentage(a.user) : 0)
+    (score(a) === STANDING_PRIORITY.GROUP_ONLY
+      ? percentage(b.user) - percentage(a.user)
+      : 0)
   const ordered = state.participants.toSorted(
     (a, b) => compare(a, b) || a.user.localeCompare(b.user)
   )
@@ -243,12 +255,13 @@ function overallStandings(state: TournamentState): {
     const tied = ordered.filter(player => compare(ordered[start], player) === 0)
     const roundMatches = state.fixtures
       .filter(f => {
-        if (score(ordered[start]) === 0) return f.bracket === 'group'
+        if (score(ordered[start]) === STANDING_PRIORITY.GROUP_ONLY)
+          return f.bracket === 'group'
         return (
           (f.bracket === 'lower' ||
             (state.config.eliminationType === 'single' &&
               f.bracket === 'upper')) &&
-          100 + f.round === score(ordered[start])
+          STANDING_PRIORITY.ELIMINATED + f.round === score(ordered[start])
         )
       })
       .map(f => f.match)
@@ -350,9 +363,14 @@ export function editTournamentMatch(
 }
 
 function groupCode(index: number): string {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
   let code = ''
-  for (let value = index + 1; value > 0; value = Math.floor((value - 1) / 26))
-    code = String.fromCharCode(65 + ((value - 1) % 26)) + code
+  for (
+    let value = index + 1;
+    value > 0;
+    value = Math.floor((value - 1) / alphabet.length)
+  )
+    code = alphabet[(value - 1) % alphabet.length] + code
   return code || '?'
 }
 
