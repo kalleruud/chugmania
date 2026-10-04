@@ -9,7 +9,7 @@ import {
   uniqueIndex,
 } from 'drizzle-orm/sqlite-core'
 import { randomUUID } from 'node:crypto'
-import type { Slot, TournamentConfig } from '../../common/models/tournament'
+import type { EliminationType, Slot } from '../../common/models/tournament'
 
 const metadata = {
   id: text().primaryKey().$defaultFn(randomUUID),
@@ -126,9 +126,12 @@ export const tournaments = sqliteTable(
     session: text()
       .notNull()
       .references(() => sessions.id),
-    config: text({ mode: 'json' })
-      .$type<Omit<TournamentConfig, 'session' | 'stageTracks'>>()
-      .notNull(),
+    groupsCount: integer('groups_count').notNull().default(1),
+    advancementCount: integer('advancement_count').notNull().default(2),
+    eliminationType: text('elimination_type')
+      .$type<EliminationType>()
+      .notNull()
+      .default('single'),
     frozenAt: integer('frozen_at', { mode: 'timestamp_ms' }),
     notReadyReason: text('not_ready_reason'),
   },
@@ -146,7 +149,7 @@ export const tournamentStages = sqliteTable(
     tournament: text()
       .notNull()
       .references(() => tournaments.id),
-    stage: text().notNull(),
+    stage: text().$type<MatchStage>().notNull(),
     tracks: text({ mode: 'json' }).$type<string[]>().notNull(),
   },
   table => [uniqueIndex('tournament_stage').on(table.tournament, table.stage)]

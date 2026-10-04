@@ -137,7 +137,7 @@ export default class CsvParser {
       return { key, value: val === 'true' }
     }
 
-    if (['config', 'tracks', 'slot1', 'slot2'].includes(key)) {
+    if (['tracks', 'slot1', 'slot2'].includes(key)) {
       const parsed: unknown = JSON.parse(val)
       return { key, value: parsed }
     }

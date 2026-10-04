@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "f3af86c0-ea78-4c16-9804-e616d2dde31b",
+  "id": "22c2b1fc-7440-404e-8494-47fba297dbd8",
   "prevId": "7dadc3fe-a426-4a2a-bc3e-a826ab24f2b9",
   "tables": {
     "matches": {
@@ -964,12 +964,29 @@
           "notNull": true,
           "autoincrement": false
         },
-        "config": {
-          "name": "config",
+        "groups_count": {
+          "name": "groups_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 1
+        },
+        "advancement_count": {
+          "name": "advancement_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 2
+        },
+        "elimination_type": {
+          "name": "elimination_type",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false
+          "autoincrement": false,
+          "default": "'single'"
         },
         "frozen_at": {
           "name": "frozen_at",

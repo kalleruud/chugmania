@@ -244,7 +244,7 @@ function assignStageTracks(
   fixtures.forEach((fixture, index) => {
     fixture.order = index
     const stage = fixture.match.stage ?? ''
-    const tracks = stageTracks[stage] ?? []
+    const tracks = stage ? (stageTracks[stage] ?? []) : []
     const count = stageCounts.get(stage) ?? 0
     const total = stageTotals.get(stage) ?? 0
     fixture.match.track =

@@ -110,7 +110,7 @@ export default function TournamentForm({
         if (!active) return
         const message = error instanceof Error ? error.message : String(error)
         setError(message)
-        if (Object.values(config.stageTracks).some(tracks => tracks.length))
+        if (Object.values(config.stageTracks).some(tracks => tracks?.length))
           toast.error(message)
       } finally {
         if (active) setLoading(false)

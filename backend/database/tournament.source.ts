@@ -3,6 +3,7 @@ import { and, asc, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
 import db, { database } from './database'
 import {
   matches,
+  type MatchStage,
   sessions,
   sessionSignups,
   tournamentGroups,
@@ -141,7 +142,9 @@ export default class TournamentSource {
     return {
       id: row.id,
       config: {
-        ...row.config,
+        groupsCount: row.groupsCount,
+        advancementCount: row.advancementCount,
+        eliminationType: row.eliminationType,
         session: row.session,
         stageTracks: Object.fromEntries(
           stageRows.map(s => [s.stage, s.tracks])
@@ -184,7 +187,7 @@ export default class TournamentSource {
     const row = {
       id: state.id,
       session,
-      config,
+      ...config,
       frozenAt: state.frozenAt,
       notReadyReason: state.notReadyReason,
     }
@@ -193,10 +196,11 @@ export default class TournamentSource {
       .onConflictDoUpdate({ target: tournaments.id, set: row })
       .run()
     for (const [stage, tracks] of Object.entries(stageTracks)) {
+      if (!tracks) continue
       const row = {
         id: `${state.id}:${stage}`,
         tournament: state.id,
-        stage,
+        stage: stage as MatchStage,
         tracks,
       }
       db.insert(tournamentStages)

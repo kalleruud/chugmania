@@ -64,7 +64,7 @@ export default class TournamentManager {
     const available = new Set(TournamentSource.getAvailableTrackIds())
     if (
       Object.values(config.stageTracks)
-        .flat()
+        .flatMap(tracks => tracks ?? [])
         .some(id => !available.has(id))
     )
       throw new Error(loc.no.tournament.tracks)

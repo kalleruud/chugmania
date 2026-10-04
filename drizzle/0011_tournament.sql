@@ -68,7 +68,9 @@ CREATE TABLE `tournaments` (
 	`created_at` integer NOT NULL,
 	`deleted_at` integer,
 	`session` text NOT NULL,
-	`config` text NOT NULL,
+	`groups_count` integer DEFAULT 1 NOT NULL,
+	`advancement_count` integer DEFAULT 2 NOT NULL,
+	`elimination_type` text DEFAULT 'single' NOT NULL,
 	`frozen_at` integer,
 	`not_ready_reason` text,
 	FOREIGN KEY (`session`) REFERENCES `sessions`(`id`) ON UPDATE no action ON DELETE no action

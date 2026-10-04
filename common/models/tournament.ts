@@ -1,3 +1,4 @@
+import type { MatchStage } from '../../backend/database/schema'
 import { isRecord } from '../utils/utils'
 import type { Match, MatchStatus } from './match'
 
@@ -7,7 +8,7 @@ export type TournamentConfig = {
   groupsCount: number
   advancementCount: number
   eliminationType: EliminationType
-  stageTracks: Record<string, string[]>
+  stageTracks: Partial<Record<MatchStage, string[]>>
 }
 
 export type Participant = {
