@@ -42,12 +42,10 @@ CREATE TABLE `tournament_matches` (
 	`bracket` text NOT NULL,
 	`round` integer NOT NULL,
 	`order` integer NOT NULL,
-	`final_reset_status` text DEFAULT 'none' NOT NULL,
 	FOREIGN KEY (`tournament`) REFERENCES `tournaments`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`match_id`) REFERENCES `matches`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`tournament`,`group_id`) REFERENCES `tournament_groups`(`tournament`,`id`) ON UPDATE no action ON DELETE no action,
-	CONSTRAINT "tournament_match_bracket" CHECK("tournament_matches"."bracket" IN ('group', 'upper', 'lower', 'final')),
-	CONSTRAINT "tournament_match_reset" CHECK("tournament_matches"."final_reset_status" IN ('none', 'conditional', 'required', 'unneeded'))
+	CONSTRAINT "tournament_match_bracket" CHECK("tournament_matches"."bracket" IN ('group', 'upper', 'lower', 'final'))
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `tournament_match_record` ON `tournament_matches` (`match_id`);--> statement-breakpoint

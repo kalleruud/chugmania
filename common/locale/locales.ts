@@ -261,7 +261,6 @@ const no = {
         ? 'Vinneren i hver gruppe går videre til sluttspillet.'
         : `Topp ${count} spillere i hver gruppe går videre til sluttspillet.`,
     conditional: 'Hvis nødvendig',
-    unneeded: 'Ikke nødvendig',
     invalid: 'Ugyldig turneringsoppsett',
     session: 'Sessionen er slettet eller avlyst',
     roster:

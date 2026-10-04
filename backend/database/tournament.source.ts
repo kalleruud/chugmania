@@ -192,7 +192,6 @@ export default class TournamentSource {
           order: fixture.order,
           slot1: this.readSlot(slots.get(`${fixture.id}:1`)),
           slot2: this.readSlot(slots.get(`${fixture.id}:2`)),
-          finalResetStatus: fixture.finalResetStatus,
           match,
         }))
         .sort((a, b) => a.order - b.order),

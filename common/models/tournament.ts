@@ -34,7 +34,6 @@ export type TournamentFixture = {
   order: number
   slot1: Slot
   slot2: Slot
-  finalResetStatus: 'none' | 'conditional' | 'required' | 'unneeded'
   match: Match
 }
 

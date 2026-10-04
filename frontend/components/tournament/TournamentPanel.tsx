@@ -3,7 +3,11 @@ import { useData } from '@/contexts/DataContext'
 import loc from '@common/locale/locales'
 import type { Match } from '@common/models/match'
 import type { TournamentDetails } from '@common/models/tournament'
-import { firstPendingMatch, stageName } from '@common/utils/tournament'
+import {
+  firstPendingMatch,
+  isInactiveFinalReset,
+  stageName,
+} from '@common/utils/tournament'
 import { ChevronDown } from 'lucide-react'
 import MatchList from '../match/MatchList'
 import SegmentedProgress from '../SegmentedProgress'
@@ -125,9 +129,7 @@ export default function TournamentPanel({
           />
           {Array.from(matchesByStage, ([stage, matches]) => {
             const activeMatches = matches.filter(
-              match =>
-                match.tournament?.finalResetStatus !== 'conditional' &&
-                match.tournament?.finalResetStatus !== 'unneeded'
+              match => !isInactiveFinalReset(match)
             )
             const played = activeMatches.filter(
               match => match.status === 'completed' || match.tournament?.awarded

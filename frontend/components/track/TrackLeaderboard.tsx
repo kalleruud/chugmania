@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useData } from '@/contexts/DataContext'
 import loc from '@common/locale/locales'
 import type { Track } from '@common/models/track'
+import { isInactiveFinalReset } from '@common/utils/tournament'
 import type { ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
 import {
@@ -43,7 +44,7 @@ export default function TrackLeaderboard({
 
   const filteredMatches = matches
     .filter(m => !excludeTournamentMatches || !m.tournament)
-    .filter(m => m.tournament?.finalResetStatus !== 'unneeded')
+    .filter(m => !isInactiveFinalReset(m))
     .filter(m => !session || session === m.session)
     .filter(m => !user || user === m.user1 || user === m.user2)
     .filter(m => track.id === m.track)

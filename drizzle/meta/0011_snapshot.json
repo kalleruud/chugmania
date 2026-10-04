@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "9c2b05f3-2e24-4390-b68c-47020765a975",
+  "id": "d505a8d6-ca96-479c-ad77-22fcf078aaa5",
   "prevId": "7dadc3fe-a426-4a2a-bc3e-a826ab24f2b9",
   "tables": {
     "matches": {
@@ -759,14 +759,6 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
-        },
-        "final_reset_status": {
-          "name": "final_reset_status",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'none'"
         }
       },
       "indexes": {
@@ -836,10 +828,6 @@
         "tournament_match_bracket": {
           "name": "tournament_match_bracket",
           "value": "\"tournament_matches\".\"bracket\" IN ('group', 'upper', 'lower', 'final')"
-        },
-        "tournament_match_reset": {
-          "name": "tournament_match_reset",
-          "value": "\"tournament_matches\".\"final_reset_status\" IN ('none', 'conditional', 'required', 'unneeded')"
         }
       }
     },

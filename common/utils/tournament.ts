@@ -70,9 +70,12 @@ function isPendingMatch(match: Match) {
   return (
     !match.deletedAt &&
     match.status === 'planned' &&
-    match.tournament?.finalResetStatus !== 'conditional' &&
-    match.tournament?.finalResetStatus !== 'unneeded'
+    !isInactiveFinalReset(match)
   )
+}
+
+export function isInactiveFinalReset(match: Match): boolean {
+  return match.stage === 'grand_final_reset' && (!match.user1 || !match.user2)
 }
 
 export function getTournamentStages(

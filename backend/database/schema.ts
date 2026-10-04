@@ -209,10 +209,6 @@ export const tournamentMatches = sqliteTable(
     bracket: text().$type<'group' | 'upper' | 'lower' | 'final'>().notNull(),
     round: integer().notNull(),
     order: integer().notNull(),
-    finalResetStatus: text('final_reset_status')
-      .$type<'none' | 'conditional' | 'required' | 'unneeded'>()
-      .notNull()
-      .default('none'),
   },
   table => [
     uniqueIndex('tournament_match_record').on(table.matchId),
@@ -226,10 +222,6 @@ export const tournamentMatches = sqliteTable(
     check(
       'tournament_match_bracket',
       sql`${table.bracket} IN ('group', 'upper', 'lower', 'final')`
-    ),
-    check(
-      'tournament_match_reset',
-      sql`${table.finalResetStatus} IN ('none', 'conditional', 'required', 'unneeded')`
     ),
   ]
 )

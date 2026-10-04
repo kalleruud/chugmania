@@ -8,6 +8,7 @@ import type {
   TournamentFixture,
   TournamentState,
 } from '@common/models/tournament'
+import { isInactiveFinalReset } from '@common/utils/tournament'
 
 const STANDING_PRIORITY = {
   CHAMPION: 10000,
@@ -145,23 +146,31 @@ export function resolveTournament(state: TournamentState): TournamentState {
     if (slot.kind === 'match_winner') return match.winner
     return match.winner === match.user1 ? match.user2 : match.user1
   }
+  const grandFinal = result.fixtures.find(
+    f => f.match.stage === 'grand_final'
+  )?.match
   for (let pass = 0; pass <= result.fixtures.length; pass++) {
     let changed = false
     for (const fixture of result.fixtures) {
-      if (fixture.finalResetStatus !== 'none') {
-        const grandFinal = result.fixtures.find(
-          f => f.match.stage === 'grand_final'
-        )?.match
-        let finalResetStatus: typeof fixture.finalResetStatus = 'conditional'
-        if (grandFinal && decided(grandFinal))
-          finalResetStatus =
-            grandFinal.winner === grandFinal.user2 ? 'required' : 'unneeded'
-        if (finalResetStatus !== fixture.finalResetStatus) changed = true
-        fixture.finalResetStatus = finalResetStatus
-      }
       const inactive =
-        fixture.finalResetStatus === 'conditional' ||
-        fixture.finalResetStatus === 'unneeded'
+        fixture.match.stage === 'grand_final_reset' &&
+        (!grandFinal ||
+          !decided(grandFinal) ||
+          grandFinal.winner !== grandFinal.user2)
+      if (inactive) {
+        const status =
+          grandFinal && decided(grandFinal) ? 'cancelled' : 'planned'
+        if (fixture.match.status !== status || fixture.match.winner)
+          changed = true
+        fixture.match.status = status
+        fixture.match.winner = null
+      } else if (
+        isInactiveFinalReset(fixture.match) &&
+        fixture.match.status === 'cancelled'
+      ) {
+        fixture.match.status = 'planned'
+        changed = true
+      }
       const user1 = inactive ? null : resolve(fixture.slot1)
       const user2 = inactive ? null : resolve(fixture.slot2)
       if (fixture.match.user1 !== user1 || fixture.match.user2 !== user2)
@@ -188,7 +197,7 @@ function protectResults(
           next.id === f.id &&
           (next.match.user1 !== f.match.user1 ||
             next.match.user2 !== f.match.user2 ||
-            next.finalResetStatus !== f.finalResetStatus)
+            next.match.status !== f.match.status)
       )
   )
   if (affected.length)
@@ -207,17 +216,9 @@ function overallStandings(state: TournamentState): {
   completed: boolean
 } {
   const final = state.fixtures
-    .filter(
-      f =>
-        f.finalResetStatus !== 'unneeded' &&
-        f.finalResetStatus !== 'conditional'
-    )
+    .filter(f => !isInactiveFinalReset(f.match))
     .at(-1)
-  const completed =
-    !!final &&
-    decided(final.match) &&
-    (!state.fixtures.some(f => f.finalResetStatus === 'required') ||
-      final.match.stage === 'grand_final_reset')
+  const completed = !!final && decided(final.match)
   const groups = state.groups.flatMap(g => groupStandings(state, g.id))
   const bracket = state.fixtures.filter(f => f.bracket !== 'group')
   const score = (p: Participant): number => {
@@ -282,11 +283,7 @@ function overallStandings(state: TournamentState): {
     completed:
       completed &&
       state.fixtures
-        .filter(
-          f =>
-            f.finalResetStatus !== 'conditional' &&
-            f.finalResetStatus !== 'unneeded'
-        )
+        .filter(f => !isInactiveFinalReset(f.match))
         .every(f => decided(f.match)),
     rows,
   }
@@ -321,10 +318,7 @@ export function editTournamentMatch(
     (request.stage !== undefined && request.stage !== fixture.match.stage)
   )
     throw new Error(loc.no.tournament.owned)
-  if (
-    fixture.finalResetStatus === 'conditional' ||
-    fixture.finalResetStatus === 'unneeded'
-  )
+  if (isInactiveFinalReset(fixture.match))
     throw new Error(loc.no.tournament.result)
   const setPlayer = (key: 'user1' | 'user2', slotKey: 'slot1' | 'slot2') => {
     const user = request[key]
@@ -408,10 +402,7 @@ export function tournamentDetails(state: TournamentState): TournamentDetails {
     const feeder = state.fixtures.find(f => f.id === slot.matchId)
     return `${slot.kind === 'match_winner' ? loc.no.tournament.winnerCode : loc.no.tournament.loserCode} ${feeder ? fixtureLabel(state, feeder) : '?'}`
   }
-  const active = state.fixtures.filter(
-    f =>
-      f.finalResetStatus !== 'unneeded' && f.finalResetStatus !== 'conditional'
-  )
+  const active = state.fixtures.filter(f => !isInactiveFinalReset(f.match))
   const group = state.fixtures.filter(f => f.bracket === 'group')
   const overall = overallStandings(state)
   const groupSizes = state.groups.map(
@@ -446,9 +437,7 @@ export function tournamentDetails(state: TournamentState): TournamentDetails {
           state.id === 'preview' ||
           state.cancelled ||
           !!state.notReadyReason ||
-          f.finalResetStatus === 'conditional' ||
-          f.finalResetStatus === 'unneeded',
-        finalResetStatus: f.finalResetStatus,
+          isInactiveFinalReset(f.match),
         awarded: f.match.status === 'cancelled' && decided(f.match),
       },
     })),

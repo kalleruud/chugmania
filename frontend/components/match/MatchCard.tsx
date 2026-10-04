@@ -6,7 +6,7 @@ import type { UserInfo } from '@common/models/user'
 import { getUserFullName } from '@common/models/user'
 import { formatDateWithYear, formatTimeOnly } from '@common/utils/date'
 import { formatTime } from '@common/utils/time'
-import { stageName } from '@common/utils/tournament'
+import { isInactiveFinalReset, stageName } from '@common/utils/tournament'
 import { MinusIcon } from '@heroicons/react/24/solid'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
@@ -133,11 +133,8 @@ export default function MatchCard({
       </div>
       {children}
       {match.tournament?.awarded && <Badge>{loc.no.tournament.awarded}</Badge>}
-      {match.tournament?.finalResetStatus === 'conditional' && (
+      {isInactiveFinalReset(match) && match.status === 'planned' && (
         <Badge>{loc.no.tournament.conditional}</Badge>
-      )}
-      {match.tournament?.finalResetStatus === 'unneeded' && (
-        <Badge>{loc.no.tournament.unneeded}</Badge>
       )}
       {canChooseWinner && (
         <button

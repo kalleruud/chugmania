@@ -2,7 +2,7 @@ import { useData } from '@/contexts/DataContext'
 import { useMatchResultActions } from '@/hooks/useMatchResultActions'
 import loc from '@common/locale/locales'
 import type { UserInfo } from '@common/models/user'
-import { stageName } from '@common/utils/tournament'
+import { isInactiveFinalReset, stageName } from '@common/utils/tournament'
 import { formatTrackName } from '@common/utils/track'
 import { CalendarIcon } from '@heroicons/react/24/solid'
 import type { ComponentProps } from 'react'
@@ -125,11 +125,8 @@ export default function MatchRow({
       {children}
 
       {match.tournament?.awarded && <Badge>{loc.no.tournament.awarded}</Badge>}
-      {match.tournament?.finalResetStatus === 'conditional' && (
+      {isInactiveFinalReset(match) && isPlanned && (
         <Badge>{loc.no.tournament.conditional}</Badge>
-      )}
-      {match.tournament?.finalResetStatus === 'unneeded' && (
-        <Badge>{loc.no.tournament.unneeded}</Badge>
       )}
       {isPlanned && (
         <span className='absolute right-0 mr-5 size-2 animate-pulse rounded-full bg-primary' />
