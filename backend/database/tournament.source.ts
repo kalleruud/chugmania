@@ -219,6 +219,8 @@ export default class TournamentSource {
     }
   }
 
+  // Reuse required laps, restore applicable planned laps, and soft-delete unused
+  // planned laps while retaining completed and cancelled results.
   static reconcileLaps(
     state: TournamentState,
     needs: Map<string, boolean>

@@ -149,6 +149,8 @@ export default class TournamentManager {
     return TournamentSource.loadTournament(session)
   }
 
+  // Resolve assignments, synchronize stage tie-breaker laps, then resolve again
+  // with the refreshed lap pool. Roll back if completed downstream matches change.
   static reconcile(
     session: string,
     before?: TournamentState,
