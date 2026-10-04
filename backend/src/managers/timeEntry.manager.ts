@@ -161,18 +161,18 @@ export default class TimeEntryManager {
     socket: TypedSocket,
     request: EventReq<'edit_time_entry'>
   ): Promise<EventRes<'edit_time_entry'>> {
-    const { lapTime, updates } = await this.prepareTimeEntryEdit(
+    const { lapTime, updates } = await TimeEntryManager.prepareTimeEntryEdit(
       socket,
       request
     )
-    const signupChanged = this.saveTimeEntryEdit(lapTime, updates)
+    const signupChanged = TimeEntryManager.saveTimeEntryEdit(lapTime, updates)
     console.debug(
       new Date().toISOString(),
       socket.id,
       'Updated time entry',
       request.id
     )
-    await this.publishTimeEntryEdit(
+    await TimeEntryManager.publishTimeEntryEdit(
       signupChanged,
       lapTime.tieBreaker,
       socket.id
@@ -193,8 +193,8 @@ export default class TimeEntryManager {
       db.query.timeEntries.findFirst({ where: eq(timeEntries.id, request.id) }),
     ])
     if (!lapTime) throw new Error(loc.no.error.messages.not_in_db(request.id))
-    const updates = this.normalizeTimeEntryUpdates(request, lapTime)
-    this.validateTimeEntryEdit(user, lapTime, updates)
+    const updates = TimeEntryManager.normalizeTimeEntryUpdates(request, lapTime)
+    TimeEntryManager.validateTimeEntryEdit(user, lapTime, updates)
     return { lapTime, updates }
   }
 
@@ -277,7 +277,7 @@ export default class TimeEntryManager {
     if (signupChanged)
       broadcast('all_sessions', await SessionManager.getAllSessions())
     broadcast('all_rankings', RatingManager.onGetRatings())
-    broadcast('all_time_entries', await this.getAllTimeEntries())
+    broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
     if (tieBreaker) {
       broadcast('all_matches', await MatchManager.getAllMatches())
       TournamentManager.publish(actor)

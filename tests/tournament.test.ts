@@ -141,7 +141,8 @@ async function CreateTournament(options: {
         lap => lap.user === user
       )
       assert(lap, `Missing lap: ${user}`)
-      await TimeEntryManager.onEditTimeEntry(socket, {
+      const { onEditTimeEntry } = TimeEntryManager
+      await onEditTimeEntry(socket, {
         type: 'EditTimeEntryRequest',
         id: lap.id,
         ...updates,
