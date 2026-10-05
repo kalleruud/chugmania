@@ -40,8 +40,8 @@ export default function UserRow({
         {showRanking && (
           <p
             className={twMerge(
-              'w-6 flex-none text-center font-kh-interface text-lg font-black text-primary tabular-nums transition-colors',
-              !hideLink && highlight && 'group-hover:text-primary-foreground'
+              'w-6 flex-none text-center font-kh-interface text-lg font-black tabular-nums transition-colors',
+              highlight && 'text-primary'
             )}>
             {ranking}
           </p>
@@ -52,12 +52,7 @@ export default function UserRow({
         )}
 
         {hideRanking && (
-          <div
-            className={twMerge(
-              'h-4 w-1 flex-none rounded-full bg-primary transition-colors',
-              !hideLink && highlight && 'group-hover:bg-primary-foreground'
-            )}
-          />
+          <div className='h-4 w-1 flex-none rounded-full bg-primary transition-colors' />
         )}
 
         <ItemTitle
@@ -73,11 +68,7 @@ export default function UserRow({
         )}
       </ItemContent>
       {!hideLink && (
-        <ItemActions
-          className={twMerge(
-            'relative z-10 transition-colors',
-            highlight && 'text-primary group-hover:text-primary-foreground'
-          )}>
+        <ItemActions className='relative z-10 transition-colors'>
           <ChevronRight className='size-4' />
         </ItemActions>
       )}
@@ -88,11 +79,7 @@ export default function UserRow({
     return (
       <Item
         key={user.id}
-        className={twMerge(
-          'group flex-nowrap',
-          highlight && 'bg-primary-background',
-          className
-        )}
+        className={twMerge('group flex-nowrap', className)}
         asChild
         {...props}>
         <div>{content}</div>
@@ -104,9 +91,7 @@ export default function UserRow({
     <Item
       key={user.id}
       className={twMerge(
-        'group relative flex-nowrap',
-        highlight && 'bg-primary-background hover:bg-primary',
-        !highlight && 'hover:bg-accent/50',
+        'group relative flex-nowrap hover:bg-accent/50',
         className
       )}
       {...props}>

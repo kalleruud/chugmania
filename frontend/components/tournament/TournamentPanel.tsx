@@ -94,6 +94,7 @@ export default function TournamentPanel({
             <TournamentGroupPanel
               key={group.id}
               group={group}
+              advancementCount={details.config.advancementCount}
               href={
                 isPreview
                   ? undefined
@@ -103,7 +104,6 @@ export default function TournamentPanel({
           ))}
         </div>
         <div className='flex items-center gap-2 rounded p-2'>
-          <div className='h-4 rounded-full border-l-2 border-primary' />
           <p className='w-full text-sm text-muted-foreground'>
             {loc.no.tournament.groupInfo(details.config.advancementCount)}
           </p>

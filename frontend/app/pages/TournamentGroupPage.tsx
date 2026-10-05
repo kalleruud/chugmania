@@ -135,7 +135,8 @@ export default function TournamentGroupPage() {
                       <td
                         className={cn(
                           'text-center font-kh-interface font-bold',
-                          standing.qualifies && 'text-primary'
+                          standing.rank <= tournament.config.advancementCount &&
+                            'text-primary'
                         )}>
                         {standing.rank}
                       </td>
