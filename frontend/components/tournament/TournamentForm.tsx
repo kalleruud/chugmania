@@ -14,7 +14,6 @@ import ComboboxMulti from '../ComboboxMulti'
 import Combobox from '../combobox'
 import { TrackRow } from '../track/TrackRow'
 import { Button } from '../ui/button'
-import { Input } from '../ui/input'
 import { NativeSelect } from '../ui/native-select'
 import DeleteTournamentDialog from './DeleteTournamentDialog'
 
@@ -138,29 +137,31 @@ export default function TournamentForm({
         <div className='flex gap-2'>
           <label className='w-full'>
             Grupper
-            <Input
-              type='number'
-              min={1}
-              step={1}
-              required
+            <NativeSelect
               value={config.groupsCount}
               onChange={e =>
                 change({ ...config, groupsCount: Number(e.target.value) })
-              }
-            />
+              }>
+              {[1, 2, 4, 8, 16].map(count => (
+                <option key={count} value={count}>
+                  {count}
+                </option>
+              ))}
+            </NativeSelect>
           </label>
           <label className='w-full'>
             Videre fra hver gruppe
-            <Input
-              type='number'
-              min={1}
-              step={1}
-              required
+            <NativeSelect
               value={config.advancementCount}
               onChange={e =>
                 change({ ...config, advancementCount: Number(e.target.value) })
-              }
-            />
+              }>
+              {[1, 2, 3, 4].map(count => (
+                <option key={count} value={count}>
+                  {count}
+                </option>
+              ))}
+            </NativeSelect>
           </label>
         </div>
         <label>
