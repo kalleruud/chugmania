@@ -11,6 +11,7 @@ import {
 import { ChevronDown } from 'lucide-react'
 import MatchList from '../match/MatchList'
 import SegmentedProgress from '../SegmentedProgress'
+import { Empty } from '../ui/empty'
 import UserRow from '../user/UserRow'
 import DeleteTournamentDialog from './DeleteTournamentDialog'
 import TournamentGroupPanel from './TournamentGroupPanel'
@@ -26,6 +27,8 @@ export default function TournamentPanel({
   const { users } = useData()
   const { isLoggedIn, loggedInUser } = useAuth()
   const canEdit = isLoggedIn && loggedInUser.role !== 'user'
+  const awaitingSignups =
+    details.notReadyReason === loc.no.tournament.awaitingSignups
   const workload = details.workloadSummary
   const matchesByStage = new Map<Match['stage'], Match[]>()
   const featuredMatch = firstPendingMatch(details.matches)
@@ -57,7 +60,7 @@ export default function TournamentPanel({
             {workload.maxMatches} matcher per spiller
           </p>
 
-          {details.notReadyReason && (
+          {details.notReadyReason && !awaitingSignups && (
             <p role='status' className='text-muted-foreground'>
               {details.notReadyReason}
             </p>
@@ -77,7 +80,7 @@ export default function TournamentPanel({
             {details.participants.length}{' '}
             {loc.no.session.participants.toLowerCase()}
           </p>
-          {details.notReadyReason && (
+          {details.notReadyReason && !awaitingSignups && (
             <p role='status'>{details.notReadyReason}</p>
           )}
         </header>
@@ -123,6 +126,14 @@ export default function TournamentPanel({
             </p>
           </div>
         </section>
+      )}
+
+      {awaitingSignups && (
+        <Empty
+          role='status'
+          className='border border-input text-sm text-muted-foreground'>
+          {loc.no.tournament.awaitingSignups}
+        </Empty>
       )}
 
       {!isPreview && <TournamentTieBreakerPanel details={details} />}
