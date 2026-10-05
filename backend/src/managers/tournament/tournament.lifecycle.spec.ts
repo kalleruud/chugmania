@@ -169,7 +169,7 @@ describe('Tournament preparation lifecycle', () => {
       })
       expect(f.draft.groups).toHaveLength(1)
       expect(f.draft.groups[0].standings).toEqual([])
-      expect(f.draft.notReadyReason).toBe('Awaiting signups')
+      expect(f.draft.notReadyReason).toBe('Venter på påmeldinger')
       expect(f.draft.config).toEqual({
         session: f.session.id,
         groupsCount: 1,
@@ -182,7 +182,7 @@ describe('Tournament preparation lifecycle', () => {
       const saved = await f.save({ ...f.draft.config, groupsCount: 2 })
       expect(saved.config.groupsCount).toBe(2)
       expect(saved.groups).toHaveLength(2)
-      expect(saved.notReadyReason).toBe('Awaiting signups')
+      expect(saved.notReadyReason).toBe('Venter på påmeldinger')
       expect(graphCounts(f.session.id, f.draft.id)).toEqual(emptyGraph)
       assert(saved.previewKey)
       await assert.rejects(
@@ -217,7 +217,7 @@ describe('Tournament preparation lifecycle', () => {
       const saved = await f.save(config)
       expect(saved.groups).toHaveLength(4)
       expect(saved.matches).toEqual([])
-      expect(saved.notReadyReason).toBe('Awaiting signups')
+      expect(saved.notReadyReason).toBe('Venter på påmeldinger')
       await f.save({ ...config, advancementCount: 7 })
       expect(
         TournamentManager.getDetails(f.session.id)?.config.advancementCount
@@ -238,7 +238,7 @@ describe('Tournament preparation lifecycle', () => {
       expect(partial.groups).toHaveLength(4)
       expect(partial.groups.flatMap(group => group.standings)).toHaveLength(6)
       expect(partial.matches).toEqual([])
-      expect(partial.notReadyReason).toBe('Awaiting signups')
+      expect(partial.notReadyReason).toBe('Venter på påmeldinger')
       const ready = await f.save({ ...config, groupsCount: 2 })
       expect(ready.groups).toHaveLength(2)
       expect(ready.matches.length).toBeGreaterThan(0)
