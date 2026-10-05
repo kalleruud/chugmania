@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "069c0b2d-f661-4eec-a3cb-03d185f0397c",
+  "id": "ba18bec9-3ab6-4897-9cac-78654ed20f49",
   "prevId": "471f88ea-4f35-4a45-8c3b-35a80b3d185f",
   "tables": {
     "matches": {
@@ -1138,6 +1138,21 @@
           "autoincrement": false,
           "default": "'started'"
         },
+        "owner": {
+          "name": "owner",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "preview_visibility": {
+          "name": "preview_visibility",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'visible'"
+        },
         "tie_breaker_track": {
           "name": "tie_breaker_track",
           "type": "text",
@@ -1177,6 +1192,19 @@
           "tableTo": "sessions",
           "columnsFrom": [
             "session"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "tournaments_owner_users_id_fk": {
+          "name": "tournaments_owner_users_id_fk",
+          "tableFrom": "tournaments",
+          "tableTo": "users",
+          "columnsFrom": [
+            "owner"
           ],
           "columnsTo": [
             "id"
