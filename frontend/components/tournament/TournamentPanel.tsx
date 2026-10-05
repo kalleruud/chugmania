@@ -55,9 +55,8 @@ export default function TournamentPanel({
             {details.groups.length} {loc.no.tournament.groups.toLowerCase()}
           </p>
 
-          <p>
-            {workload.tracks} baner · {workload.minMatches}–
-            {workload.maxMatches} matcher per spiller
+          <p className='text-sm text-muted-foreground'>
+            {loc.no.tournament.groupInfo(details.config.advancementCount)}
           </p>
 
           {details.notReadyReason && !awaitingSignups && (
@@ -76,13 +75,40 @@ export default function TournamentPanel({
           <h3>
             {loc.no.tournament.preparation} · {loc.no.tournament.preview}
           </h3>
-          <p className='text-sm text-muted-foreground'>
-            {details.participants.length}{' '}
-            {loc.no.session.participants.toLowerCase()}
-          </p>
-          {details.notReadyReason && !awaitingSignups && (
-            <p role='status'>{details.notReadyReason}</p>
-          )}
+          <dl className='grid grid-cols-2 gap-4 text-sm sm:grid-cols-4'>
+            <div>
+              <dt className='text-muted-foreground'>
+                {loc.no.session.participants}
+              </dt>
+              <dd className='font-kh-interface text-lg tabular-nums'>
+                {details.participants.length}
+              </dd>
+            </div>
+            <div>
+              <dt className='text-muted-foreground'>
+                {loc.no.tournament.groups}
+              </dt>
+              <dd className='font-kh-interface text-lg tabular-nums'>
+                {details.groups.length}
+              </dd>
+            </div>
+            <div>
+              <dt className='text-muted-foreground'>Baner</dt>
+              <dd className='font-kh-interface text-lg tabular-nums'>
+                {workload.tracks}
+              </dd>
+            </div>
+            <div>
+              <dt className='text-muted-foreground'>
+                Estimerte runder per spiller
+              </dt>
+              <dd className='font-kh-interface text-lg tabular-nums'>
+                {details.matches.length > 0
+                  ? `${workload.minMatches}–${workload.maxMatches}`
+                  : '–'}
+              </dd>
+            </div>
+          </dl>
         </header>
       )}
       {details.completed && (
@@ -118,12 +144,6 @@ export default function TournamentPanel({
                 }
               />
             ))}
-          </div>
-          <div className='flex items-center gap-2 rounded p-2'>
-            <div className='size-2 rounded-full bg-primary' />
-            <p className='w-full text-sm text-muted-foreground'>
-              {loc.no.tournament.groupInfo(details.config.advancementCount)}
-            </p>
           </div>
         </section>
       )}

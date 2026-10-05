@@ -164,6 +164,9 @@ export default function TournamentForm({
             </NativeSelect>
           </label>
         </div>
+        <p className='text-sm text-muted-foreground'>
+          {loc.no.tournament.groupInfo(config.advancementCount)}
+        </p>
         <label>
           Format
           <NativeSelect
@@ -215,6 +218,12 @@ export default function TournamentForm({
           </div>
         ))}
       </fieldset>
+      {details.notReadyReason &&
+        details.notReadyReason !== loc.no.tournament.awaitingSignups && (
+          <p role='status' className='text-sm text-muted-foreground'>
+            {details.notReadyReason}
+          </p>
+        )}
       {dirty && (
         <p role='status' className='text-sm text-muted-foreground'>
           {loc.no.tournament.unsaved}
