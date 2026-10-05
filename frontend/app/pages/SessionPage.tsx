@@ -22,13 +22,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import { Empty } from '@/components/ui/empty'
 import { Spinner } from '@/components/ui/spinner'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
+import { useTimeEntryInput } from '@/contexts/TimeEntryInputContext'
 import loc from '@common/locale/locales'
-import { PencilIcon, Trash2 } from 'lucide-react'
+import { isInactiveFinalReset } from '@common/utils/tournament'
+import { PencilIcon, PlusIcon, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useParams, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
@@ -37,8 +40,10 @@ import { SubscribeButton } from './SessionsPage'
 export default function SessionPage() {
   const { id } = useParams()
   const [searchParams] = useSearchParams()
-  const { socket } = useConnection()
-  const { sessions, tracks, tournaments, isLoadingData } = useData()
+  const { socket, isConnected } = useConnection()
+  const { open, openMatch } = useTimeEntryInput()
+  const { sessions, tracks, timeEntries, matches, tournaments, isLoadingData } =
+    useData()
   const { loggedInUser, isLoggedIn, isLoading } = useAuth()
   const [editDialogOpen, setEditDialogOpen] = useState(false)
 
@@ -79,6 +84,19 @@ export default function SessionPage() {
 
   const isCancelled = session.status === 'cancelled'
   const tournament = tournaments.find(t => t.config.session === session.id)
+  const sessionTracks = tracks.filter(track => {
+    const hasLaps = timeEntries.some(
+      entry => entry.session === session.id && entry.track === track.id
+    )
+    const hasMatches = matches.some(
+      match =>
+        match.session === session.id &&
+        match.track === track.id &&
+        !match.tournament &&
+        !isInactiveFinalReset(match)
+    )
+    return hasLaps || hasMatches
+  })
 
   return (
     <div className='flex flex-col gap-6'>
@@ -176,7 +194,33 @@ export default function SessionPage() {
         <TabsContent
           className='flex flex-col gap-4'
           value={loc.no.session.session}>
-          {tracks.map(track => (
+          {sessionTracks.length === 0 && (
+            <Empty className='border border-input'>
+              <p className='text-sm text-muted-foreground'>
+                {loc.no.session.noResults}
+              </p>
+              <div className='flex flex-wrap justify-center gap-2'>
+                <Button
+                  type='button'
+                  size='sm'
+                  disabled={!isLoggedIn || !isConnected || isCancelled}
+                  onClick={() => open({ session: session.id })}>
+                  <PlusIcon />
+                  {loc.no.timeEntry.input.create.title}
+                </Button>
+                <Button
+                  type='button'
+                  size='sm'
+                  variant='outline'
+                  disabled={!canEdit || !isConnected || isCancelled}
+                  onClick={() => openMatch({ session: session.id })}>
+                  <PlusIcon />
+                  {loc.no.match.new}
+                </Button>
+              </div>
+            </Empty>
+          )}
+          {sessionTracks.map(track => (
             <TrackLeaderboard
               key={track.id}
               track={track}

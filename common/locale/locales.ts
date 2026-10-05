@@ -132,6 +132,7 @@ const no = {
     title: 'Sessions',
     description: 'Oversikt over kommende og tidligere sessions.',
     session: 'Session',
+    noResults: 'Ingen rundetider eller matcher registrert.',
     past: 'Tidligere sessions',
     all: 'Alle sessions',
     edit: 'Rediger session',
