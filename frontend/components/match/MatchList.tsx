@@ -59,17 +59,19 @@ export default function MatchList({
       {matches.map((match, index) => {
         const isFeatured = match.id === featuredMatchId
         const MatchComponent = isFeatured ? MatchCard : MatchRow
-        const separatorTrack =
+        const showTrackSeparator =
           trackSeparators &&
           (index === 0 || match.track !== matches.at(index - 1)?.track)
-            ? tracks?.find(track => track.id === match.track)
-            : undefined
+        const separatorTrack =
+          match.track === null
+            ? null
+            : tracks?.find(track => track.id === match.track)
         const isMe =
           isLoggedIn &&
           (match.user1 === loggedInUser.id || match.user2 === loggedInUser.id)
         return (
           <Fragment key={match.id}>
-            {separatorTrack && (
+            {showTrackSeparator && separatorTrack !== undefined && (
               <TrackRow item={separatorTrack} className='border-b px-2 py-3' />
             )}
             <MatchComponent
