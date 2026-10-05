@@ -174,6 +174,7 @@ const no = {
       upcoming: 'Kommer',
     },
     rsvp: {
+      signup: 'Meld meg på',
       change: 'Endre svar',
       responses: {
         yes: 'Skal',

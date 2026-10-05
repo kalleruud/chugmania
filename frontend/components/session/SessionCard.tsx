@@ -19,6 +19,7 @@ import {
 } from '@heroicons/react/24/solid'
 import { type ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
+import SessionSignupButton from './SessionSignupButton'
 
 type SessionCardProps = {
   session: SessionWithSignups
@@ -56,7 +57,12 @@ export default function SessionCard({
         className
       )}
       {...props}>
-      <h1 className='text-3xl tracking-wide'>{session.name}</h1>
+      <div className='flex flex-wrap items-center justify-between gap-2'>
+        <h1 className='min-w-0 text-3xl tracking-wide wrap-break-word'>
+          {session.name}
+        </h1>
+        <SessionSignupButton key={session.id} session={session} />
+      </div>
       {session.description && (
         <p className='text-muted-foreground'>{session.description}</p>
       )}
