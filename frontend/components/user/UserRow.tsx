@@ -48,12 +48,7 @@ export default function UserRow({
         )}
 
         {showMissingRanking && (
-          <Minus
-            className={twMerge(
-              'size-4 flex-none text-muted-foreground',
-              highlight && 'text-primary'
-            )}
-          />
+          <Minus className='size-4 flex-none text-muted-foreground' />
         )}
 
         {hideRanking && (
