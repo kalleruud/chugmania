@@ -4,9 +4,22 @@
 
 - `npm run dev` – dev mode (port 6996), this is usually already running, avoid to run it yourself.
 - `npm run check` – typecheck + Prettier format check (run before commits)
+- `npm test` – run Bun tests with `tests/setup.ts` preloaded
+- `npm test -- tests/tournament.test.ts` – run a specific test file
 - `npm run build` – build frontend + backend
 - `npm run db:gen` – generate Drizzle migration after schema changes
-- No test framework yet; place tests as `*.spec.ts` (backend) or `*.test.tsx` (frontend) next to sources
+
+## Writing Tests
+
+- Follow [tests/tournament.test.ts](tests/tournament.test.ts); place new tests in `tests/<feature>.test.ts`.
+- Use `bun:test` (`describe`, `test`, `expect`) and `node:assert/strict` for narrowing and rejected operations. Do not introduce another test framework.
+- Write behavior-focused integration scenarios that call real manager request handlers and verify the returned or fetched state. Arrange data, perform the action, then assert the outcome.
+- Reuse [tests/utils.ts](tests/utils.ts) for users, login, tracks, sessions, RSVPs, and `assertResponse`. Keep feature-specific helpers in the test file; share them only when another test file needs them.
+- Use the migrated in-memory SQLite database from [tests/setup.ts](tests/setup.ts). Keep database and server boundary mocks there; exercise real authentication, business logic, ratings, and tournament generation.
+- Group related workflows with `describe` and use `test.serial` when cases share state or build on earlier steps. Await every mutation before checking its effects.
+- Give separate scenarios distinct user names and IDs because the database is shared across the run.
+- Cover the meaningful success path and relevant invalid requests, permissions, or regressions. Use `assertResponse` for successful responses, `assert.rejects` for thrown failures, and verify broadcast payloads when testing reactive changes.
+- Run `npm test` and `npm run check` before committing test or behavior changes. Formatting and typechecking do not run the tests.
 
 ## Code Style
 
@@ -66,7 +79,7 @@ Brief description of what and why in 1-2 sentences.
 - Feature/fix is testable and verifiable
 - Code follows existing patterns
 - All edge cases handled
-- Tests pass with `npm run check`
+- Tests pass with `npm test`, and `npm run check` passes
 
 ## Implementation Steps
 
