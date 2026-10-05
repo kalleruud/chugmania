@@ -46,7 +46,7 @@ export default function TournamentGroupPanel({
         )}
       </header>
 
-      <div className='p-2'>
+      <div className='min-h-16 p-2'>
         {players.map(p =>
           p.user === undefined ? null : (
             <UserRow
