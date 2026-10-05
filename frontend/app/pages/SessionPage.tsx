@@ -196,13 +196,11 @@ export default function SessionPage() {
           value={loc.no.session.session}>
           {sessionTracks.length === 0 && (
             <Empty className='border border-input'>
-              <p className='text-sm text-muted-foreground'>
-                {loc.no.session.noResults}
-              </p>
               <div className='flex flex-wrap justify-center gap-2'>
                 <Button
                   type='button'
                   size='sm'
+                  variant='outline'
                   disabled={!isLoggedIn || !isConnected || isCancelled}
                   onClick={() => open({ session: session.id })}>
                   <PlusIcon />

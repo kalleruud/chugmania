@@ -1,3 +1,4 @@
+import { ChevronDown, ChevronUp } from 'lucide-react'
 import Combobox, {
   type ComboboxLookupItem,
   type ComboboxProps,
@@ -39,8 +40,7 @@ export default function ComboboxMulti<T extends ComboboxLookupItem>({
         disabled={disabled}
       />
       {selected.map((item, index) => (
-        <div key={item.id} className='flex min-w-0 items-center gap-2'>
-          <span>{index + 1}.</span>
+        <div key={item.id} className='flex min-w-0 items-center gap-1 px-1'>
           <div className='mr-auto min-w-0 flex-1'>
             {CustomRow ? (
               <CustomRow item={item} hideLink className='w-full p-0' />
@@ -50,26 +50,26 @@ export default function ComboboxMulti<T extends ComboboxLookupItem>({
           </div>
           <Button
             type='button'
-            size='sm'
-            variant='outline'
+            size='icon-sm'
+            variant='ghost'
             aria-label={`Flytt ${item.label} opp`}
             disabled={disabled || index === 0}
             onClick={() => move(index, -1)}>
-            ↑
+            <ChevronUp />
           </Button>
           <Button
             type='button'
-            size='sm'
-            variant='outline'
+            size='icon-sm'
+            variant='ghost'
             aria-label={`Flytt ${item.label} ned`}
             disabled={disabled || index === selected.length - 1}
             onClick={() => move(index, 1)}>
-            ↓
+            <ChevronDown />
           </Button>
           <Button
             type='button'
-            size='sm'
-            variant='outline'
+            size='icon-sm'
+            variant='destructive'
             aria-label={`Fjern ${item.label}`}
             disabled={disabled}
             onClick={() => setSelected(selected.filter(s => s.id !== item.id))}>
