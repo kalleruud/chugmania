@@ -7,17 +7,14 @@ import type {
   TournamentConfig,
   TournamentDetails,
 } from '@common/models/tournament'
-import {
-  getTournamentConfigurationOptions,
-  getTournamentStages,
-  stageName,
-} from '@common/utils/tournament'
+import { getTournamentStages, stageName } from '@common/utils/tournament'
 import { useState, type SubmitEvent } from 'react'
 import { toast } from 'sonner'
 import ComboboxMulti from '../ComboboxMulti'
 import Combobox from '../combobox'
 import { TrackRow } from '../track/TrackRow'
 import { Button } from '../ui/button'
+import { Input } from '../ui/input'
 import { NativeSelect } from '../ui/native-select'
 import DeleteTournamentDialog from './DeleteTournamentDialog'
 
@@ -48,22 +45,10 @@ export default function TournamentForm({
   const conflict = dirty && editor.configKey !== details.configKey
   const disabled = saving || starting || !isConnected || details.cancelled
   const count = details.participants.length
-  const options = getTournamentConfigurationOptions(
-    count,
-    config.eliminationType
+  const stages = getTournamentStages(
+    config,
+    Math.max(count, config.groupsCount + 1)
   )
-  const groups = [
-    ...new Set([config.groupsCount, ...options.map(o => o.groups)]),
-  ].toSorted((a, b) => a - b)
-  const advancements = [
-    ...new Set([
-      config.advancementCount,
-      ...options
-        .filter(o => o.groups === config.groupsCount)
-        .map(o => o.advancement),
-    ]),
-  ].toSorted((a, b) => a - b)
-  const stages = getTournamentStages(config, count)
   const items =
     tracks?.filter(track => !track.deletedAt).map(trackToLookupItem) ?? []
 
@@ -153,31 +138,29 @@ export default function TournamentForm({
         <div className='flex gap-2'>
           <label className='w-full'>
             Grupper
-            <NativeSelect
+            <Input
+              type='number'
+              min={1}
+              step={1}
+              required
               value={config.groupsCount}
               onChange={e =>
                 change({ ...config, groupsCount: Number(e.target.value) })
-              }>
-              {groups.map(group => (
-                <option key={group} value={group}>
-                  {group}
-                </option>
-              ))}
-            </NativeSelect>
+              }
+            />
           </label>
           <label className='w-full'>
             Videre fra hver gruppe
-            <NativeSelect
+            <Input
+              type='number'
+              min={1}
+              step={1}
+              required
               value={config.advancementCount}
               onChange={e =>
                 change({ ...config, advancementCount: Number(e.target.value) })
-              }>
-              {advancements.map(advancement => (
-                <option key={advancement} value={advancement}>
-                  {advancement}
-                </option>
-              ))}
-            </NativeSelect>
+              }
+            />
           </label>
         </div>
         <label>

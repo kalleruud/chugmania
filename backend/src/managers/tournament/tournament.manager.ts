@@ -34,7 +34,10 @@ import {
   tieBreakerNeeds,
   tournamentDetails,
 } from './tournament'
-import { generateTournament } from './tournament.generator'
+import {
+  generateTournament,
+  generateTournamentGroups,
+} from './tournament.generator'
 
 export default class TournamentManager {
   private static published = ''
@@ -94,12 +97,11 @@ export default class TournamentManager {
     let state: TournamentState = {
       id: row.id,
       config,
-      participants,
-      groups: [],
+      ...generateTournamentGroups(config, participants),
       fixtures: [],
       tieBreakers: [],
       frozenAt: null,
-      notReadyReason: loc.no.tournament.roster,
+      notReadyReason: loc.no.tournament.awaitingSignups,
       cancelled,
     }
     if (valid) {
@@ -127,7 +129,10 @@ export default class TournamentManager {
           ? loc.no.tournament.tracks
           : null
     }
-    if (!config.tieBreakerTrack || !available.has(config.tieBreakerTrack))
+    if (
+      valid &&
+      (!config.tieBreakerTrack || !available.has(config.tieBreakerTrack))
+    )
       state.notReadyReason = loc.no.tournament.tieBreakerTrackRequired
     if (cancelled) state.notReadyReason = loc.no.tournament.session
     return state

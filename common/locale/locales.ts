@@ -301,6 +301,7 @@ const no = {
     conditional: 'Hvis nødvendig',
     invalid: 'Ugyldig turneringsoppsett',
     session: `Sessionen er slettet eller avlyst`,
+    awaitingSignups: 'Awaiting signups',
     roster:
       'Deltakerlisten passer ikke turneringsoppsettet. Venter på flere deltakere.',
     tracks: 'Velg minst én bane for hver runde',

@@ -588,7 +588,7 @@ export function tournamentDetails(state: TournamentState): TournamentDetails {
         awarded: f.match.status === 'cancelled' && decided(f.match),
       },
     })),
-    standings: state.groups.length ? overall.rows : [],
+    standings: state.fixtures.length ? overall.rows : [],
     completed: !!state.frozenAt && overall.completed,
     progress: {
       decided: active.filter(f => decided(f.match)).length,

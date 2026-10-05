@@ -162,12 +162,14 @@ describe('Tournament preparation lifecycle', () => {
       expect(f.draft).toMatchObject({
         status: 'draft',
         frozen: false,
-        groups: [],
         matches: [],
         standings: [],
         completed: false,
         workloadSummary: { tracks: 0, minMatches: 0, maxMatches: 0 },
       })
+      expect(f.draft.groups).toHaveLength(1)
+      expect(f.draft.groups[0].standings).toEqual([])
+      expect(f.draft.notReadyReason).toBe('Awaiting signups')
       expect(f.draft.config).toEqual({
         session: f.session.id,
         groupsCount: 1,
@@ -179,7 +181,8 @@ describe('Tournament preparation lifecycle', () => {
       expect(graphCounts(f.session.id, f.draft.id)).toEqual(emptyGraph)
       const saved = await f.save({ ...f.draft.config, groupsCount: 2 })
       expect(saved.config.groupsCount).toBe(2)
-      expect(saved.notReadyReason).toBeTruthy()
+      expect(saved.groups).toHaveLength(2)
+      expect(saved.notReadyReason).toBe('Awaiting signups')
       expect(graphCounts(f.session.id, f.draft.id)).toEqual(emptyGraph)
       assert(saved.previewKey)
       await assert.rejects(
@@ -192,6 +195,55 @@ describe('Tournament preparation lifecycle', () => {
       await assert.rejects(
         TournamentManager.onCreate(f.socket, { session: f.session.id })
       )
+    }
+  )
+
+  test.serial(
+    'shows configured groups and incoming signups before brackets can be generated',
+    async () => {
+      const f = await fixture(0)
+      const config = {
+        ...f.draft.config,
+        groupsCount: 4,
+        advancementCount: 2,
+        tieBreakerTrack: f.selectedTracks[0].id,
+        stageTracks: {
+          group: [f.selectedTracks[0].id],
+          quarter: [f.selectedTracks[0].id],
+          semi: [f.selectedTracks[0].id],
+          final: [f.selectedTracks[0].id],
+        },
+      }
+      const saved = await f.save(config)
+      expect(saved.groups).toHaveLength(4)
+      expect(saved.matches).toEqual([])
+      expect(saved.notReadyReason).toBe('Awaiting signups')
+      await f.save({ ...config, advancementCount: 7 })
+      expect(
+        TournamentManager.getDetails(f.session.id)?.config.advancementCount
+      ).toBe(7)
+      await f.save(config)
+      for (const player of f.players) {
+        assertResponse(
+          await SessionManager.onRsvpSession(f.socket, {
+            type: 'RsvpSessionRequest',
+            session: f.session.id,
+            user: player.id,
+            response: 'yes',
+          })
+        )
+      }
+      const partial = TournamentManager.getDetails(f.session.id)
+      assert(partial)
+      expect(partial.groups).toHaveLength(4)
+      expect(partial.groups.flatMap(group => group.standings)).toHaveLength(6)
+      expect(partial.matches).toEqual([])
+      expect(partial.notReadyReason).toBe('Awaiting signups')
+      const ready = await f.save({ ...config, groupsCount: 2 })
+      expect(ready.groups).toHaveLength(2)
+      expect(ready.matches.length).toBeGreaterThan(0)
+      expect(ready.notReadyReason).toBeNull()
+      expect(graphCounts(f.session.id, f.draft.id)).toEqual(emptyGraph)
     }
   )
 
@@ -336,7 +388,7 @@ describe('Tournament preparation lifecycle', () => {
       const invalid = TournamentManager.getDetails(f.session.id)
       assert(invalid?.previewKey)
       expect(invalid.config).toEqual(saved.config)
-      expect(invalid.groups).toHaveLength(0)
+      expect(invalid.groups).toHaveLength(2)
       expect(invalid.matches).toHaveLength(0)
       expect(invalid.standings).toHaveLength(0)
       expect(invalid.notReadyReason).toBeTruthy()

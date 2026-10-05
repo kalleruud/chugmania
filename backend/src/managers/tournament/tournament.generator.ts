@@ -251,6 +251,21 @@ function assignStageTracks(
   })
 }
 
+export function generateTournamentGroups(
+  config: TournamentConfig,
+  inputs: Participant[]
+): Pick<TournamentState, 'groups' | 'participants'> {
+  const groups = groupNames(config.session, config.groupsCount).map(
+    (name, position) => ({ id: `group-${position}`, name, position })
+  )
+  const participants = inputs.toSorted(seedingOrder).map((player, index) => ({
+    ...player,
+    admission: index,
+    groupId: groups[snakeGroup(index, groups.length)].id,
+  }))
+  return { groups, participants }
+}
+
 export function generateTournament(
   config: TournamentConfig,
   inputs: Participant[]
@@ -264,14 +279,7 @@ export function generateTournament(
     )
   )
     throw new Error(loc.no.tournament.roster)
-  const groups = groupNames(config.session, config.groupsCount).map(
-    (name, position) => ({ id: `group-${position}`, name, position })
-  )
-  const participants = inputs.toSorted(seedingOrder).map((player, index) => ({
-    ...player,
-    admission: index,
-    groupId: groups[snakeGroup(index, groups.length)].id,
-  }))
+  const { groups, participants } = generateTournamentGroups(config, inputs)
   let fixtures: TournamentFixture[] = []
   const add: AddFixture = (stage, bracket, round, slot1, slot2, groupId) => {
     const fixture = createFixture(
