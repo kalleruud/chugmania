@@ -145,10 +145,15 @@ export default function TournamentGroupPage() {
                         className='-ml-2 block min-w-0 flex-1 truncate text-start font-f1 uppercase'>
                         <Button variant='ghost' size='sm' asChild>
                           <Link to={'/users/' + user.id}>
-                            <span className='mr-1 font-medium'>
+                            <span className='font-bold sm:hidden'>
+                              {user.shortName || user.firstName}
+                            </span>
+                            <span className='mr-1 hidden font-medium sm:inline'>
                               {user.firstName}
                             </span>
-                            <span className='font-bold'>{user.lastName}</span>
+                            <span className='hidden font-bold sm:inline'>
+                              {user.lastName}
+                            </span>
                             <ChevronRight className='size-4 text-muted-foreground' />
                           </Link>
                         </Button>
