@@ -72,9 +72,6 @@ export default function TournamentPanel({
 
       {isPreview && (
         <header className='flex flex-col gap-2 rounded-sm border bg-background p-4'>
-          <h3>
-            {loc.no.tournament.preparation} · {loc.no.tournament.preview}
-          </h3>
           <dl className='grid grid-cols-2 gap-4 text-sm sm:grid-cols-4'>
             <div>
               <dt className='text-muted-foreground'>
@@ -111,6 +108,7 @@ export default function TournamentPanel({
           </dl>
         </header>
       )}
+
       {details.completed && (
         <section className='flex flex-col gap-2 rounded-sm border bg-background p-4'>
           <h3 className='p-2'>{loc.no.tournament.finalStandings}</h3>
