@@ -4,7 +4,7 @@ import type {
 } from '@common/models/tournament'
 import { getTournamentStages } from '@common/utils/tournament'
 import { Database } from 'bun:sqlite'
-import { describe, expect, test } from 'bun:test'
+import { describe, expect, spyOn, test } from 'bun:test'
 import { eq } from 'drizzle-orm'
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
@@ -34,6 +34,7 @@ import MatchManager from '../match.manager'
 import SessionManager from '../session.manager'
 import TimeEntryManager from '../timeEntry.manager'
 import UserManager from '../user.manager'
+import * as TournamentGenerator from './tournament.generator'
 import TournamentManager from './tournament.manager'
 
 async function fixture(count = 4) {
@@ -327,6 +328,74 @@ describe('Tournament preparation lifecycle', () => {
         TournamentSource.findActiveTournament(f.session.id)?.deletedAt
       ).toBeNull()
       expect(graphCounts(f.session.id, f.draft.id)).toEqual(emptyGraph)
+    }
+  )
+
+  test.serial(
+    'reuses cached previews and refreshes them when configuration or signups change',
+    async () => {
+      const f = await fixture()
+      const preview = await f.ready()
+      const generate = spyOn(TournamentGenerator, 'generateTournament')
+      const generations = () =>
+        generate.mock.calls.filter(
+          ([config]) => config.session === f.session.id
+        ).length
+      try {
+        for (let visit = 0; visit < 3; visit++) {
+          const fetched = await TournamentManager.onGet(f.viewer, {
+            session: f.session.id,
+          })
+          assertResponse(fetched)
+          expect(fetched.details).toEqual(preview)
+          expect(TournamentManager.getAllTournaments()).toContainEqual(preview)
+        }
+        expect(generations()).toBe(0)
+        const copy = TournamentManager.getDetails(f.session.id)
+        assert(copy)
+        copy.groups[0].name = 'Changed by a caller'
+        expect(TournamentManager.getDetails(f.session.id)).toEqual(preview)
+        const saved = await f.save({
+          ...preview.config,
+          groupsCount: 2,
+          advancementCount: 1,
+        })
+        expect(generations()).toBe(1)
+        expect(TournamentManager.getDetails(f.session.id)).toEqual(saved)
+        expect(generations()).toBe(1)
+        assertResponse(
+          await SessionManager.onRsvpSession(f.socket, {
+            type: 'RsvpSessionRequest',
+            session: f.session.id,
+            user: f.players[4].id,
+            response: 'yes',
+          })
+        )
+        const joined = TournamentManager.getDetails(f.session.id)
+        assert(joined)
+        expect(joined.participants).toHaveLength(5)
+        expect(joined.previewKey).not.toBe(saved.previewKey)
+        expect(generations()).toBe(2)
+        assertResponse(
+          await SessionManager.onRsvpSession(f.socket, {
+            type: 'RsvpSessionRequest',
+            session: f.session.id,
+            user: f.players[4].id,
+            response: 'no',
+          })
+        )
+        expect(TournamentManager.getDetails(f.session.id)).toEqual(saved)
+        expect(generations()).toBe(3)
+        assertResponse(
+          await TournamentManager.onDelete(f.socket, {
+            session: f.session.id,
+            deleteRelatedResults: true,
+          })
+        )
+        expect(TournamentManager.getDetails(f.session.id)).toBeNull()
+      } finally {
+        generate.mockRestore()
+      }
     }
   )
 

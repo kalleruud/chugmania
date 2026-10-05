@@ -41,6 +41,7 @@ import {
 
 export default class TournamentManager {
   private static published = ''
+  private static previews = new Map<string, TournamentDetails>()
 
   private static participants(config: TournamentConfig): Participant[] {
     const ratings = RatingManager.onGetRatings()
@@ -140,30 +141,41 @@ export default class TournamentManager {
 
   static getDetails(session: string): TournamentDetails | null {
     const row = TournamentSource.findActiveTournament(session)
-    if (!row) return null
-    if (row.status === 'started') {
+    if (!row || row.status === 'started') {
+      this.previews.delete(session)
+      if (!row) return null
       const state = TournamentSource.loadTournament(session)
       return state ? tournamentDetails(state) : null
     }
-    const state = this.draftState(session)
-    const configKey = this.configKey(row.id, state.config)
+    const config = TournamentSource.loadConfig(row)
+    const participants = this.participants(config)
+    const configKey = this.configKey(row.id, config)
     const available = new Set(TournamentSource.getAvailableTrackIds())
     const requiredTracks = getTournamentStages(
-      state.config,
-      state.participants.length
-    ).flatMap(stage => state.config.stageTracks[stage] ?? [])
+      config,
+      participants.length
+    ).flatMap(stage => config.stageTracks[stage] ?? [])
     const previewKey = this.hash({
       configKey,
-      participants: state.participants
-        .map(p => ({ user: p.user, rating: p.rating }))
+      participants: participants
+        .map(p => ({
+          user: p.user,
+          rating: p.rating,
+          globalRank: p.globalRank,
+        }))
         .toSorted((a, b) => a.user.localeCompare(b.user)),
       sessionStatus: this.session(session, true).status,
-      tracks: [...requiredTracks, state.config.tieBreakerTrack].map(id => [
+      tracks: [...requiredTracks, config.tieBreakerTrack].map(id => [
         id,
         !!id && available.has(id),
       ]),
     })
-    return { ...tournamentDetails(state), configKey, previewKey }
+    const cached = this.previews.get(session)
+    if (cached?.previewKey === previewKey) return structuredClone(cached)
+    const state = this.draftState(session)
+    const details = { ...tournamentDetails(state), configKey, previewKey }
+    this.previews.set(session, details)
+    return structuredClone(details)
   }
 
   private static conflict(session: string): TournamentConflictResponse {
@@ -263,6 +275,7 @@ export default class TournamentManager {
 
   static remove(session: string, options = { deleteMatches: true }): void {
     TournamentSource.removeTournament(session, options)
+    this.previews.delete(session)
   }
 
   static publish(actor: string | null = null): void {
