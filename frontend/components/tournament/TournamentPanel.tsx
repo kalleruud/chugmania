@@ -92,7 +92,7 @@ export default function TournamentPanel({
             </div>
             <div>
               <dt className='text-muted-foreground'>
-                Estimerte runder per spiller
+                {loc.no.tournament.roundsPerPlayer}
               </dt>
               <dd className='font-kh-interface text-lg tabular-nums'>
                 {workload.matches > 0

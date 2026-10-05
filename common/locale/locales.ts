@@ -217,6 +217,7 @@ const no = {
     optionalTieBreaker: 'Valgfri',
     adminPanel: 'Adminpanel',
     groups: 'Grupper',
+    roundsPerPlayer: 'Runder per spiller',
     groupNames: [
       'Furries',
       'Degenerates',
