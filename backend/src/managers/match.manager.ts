@@ -15,6 +15,7 @@ import { matches, sessions } from '../../database/schema'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import RatingManager from './rating.manager'
+import TimeEntryManager from './timeEntry.manager'
 import TournamentManager from './tournament/tournament.manager'
 
 export default class MatchManager {
@@ -120,6 +121,7 @@ export default class MatchManager {
       RatingManager.recalculate()
       broadcast('all_rankings', RatingManager.onGetRatings())
       broadcast('all_matches', await MatchManager.getAllMatches())
+      broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
       TournamentManager.publish(socket.id)
       return { success: true }
     }

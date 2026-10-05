@@ -15,6 +15,7 @@ import {
 import { useState, type SubmitEvent } from 'react'
 import { toast } from 'sonner'
 import ComboboxMulti from '../ComboboxMulti'
+import Combobox from '../combobox'
 import { TrackRow } from '../track/TrackRow'
 import { Button } from '../ui/button'
 import { NativeSelect } from '../ui/native-select'
@@ -190,6 +191,21 @@ export default function TournamentForm({
             <option value='single'>Enkel eliminering</option>
             <option value='double'>Dobbel eliminering</option>
           </NativeSelect>
+        </label>
+        <label>
+          {loc.no.tournament.tieBreakerTrack}
+          <Combobox
+            items={items}
+            CustomRow={TrackRow}
+            selected={
+              items.find(item => item.id === config.tieBreakerTrack) ?? null
+            }
+            setSelected={item =>
+              change({ ...config, tieBreakerTrack: item?.id ?? null })
+            }
+            required
+            placeholder={loc.no.tournament.tieBreakerTrackRequired}
+          />
         </label>
         {stages.map(stage => (
           <div key={stage}>

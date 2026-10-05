@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "471f88ea-4f35-4a45-8c3b-35a80b3d185f",
-  "prevId": "d505a8d6-ca96-479c-ad77-22fcf078aaa5",
+  "id": "069c0b2d-f661-4eec-a3cb-03d185f0397c",
+  "prevId": "471f88ea-4f35-4a45-8c3b-35a80b3d185f",
   "tables": {
     "matches": {
       "name": "matches",
@@ -1129,6 +1129,14 @@
           "notNull": true,
           "autoincrement": false,
           "default": "'single'"
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'started'"
         },
         "tie_breaker_track": {
           "name": "tie_breaker_track",

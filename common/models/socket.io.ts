@@ -27,6 +27,7 @@ import type {
 } from './timeEntry'
 import type {
   DeleteTournamentRequest,
+  RenameTournamentGroupRequest,
   StartTournamentRequest,
   TournamentConflictResponse,
   TournamentDetails,
@@ -99,6 +100,12 @@ export interface ClientToServerEvents {
       response:
         | { success: true; details: TournamentDetails | null }
         | ErrorResponse
+    ) => void
+  ) => void
+  rename_tournament_group: (
+    request: RenameTournamentGroupRequest,
+    callback: (
+      response: { success: true; details: TournamentDetails } | ErrorResponse
     ) => void
   ) => void
   delete_tournament: (

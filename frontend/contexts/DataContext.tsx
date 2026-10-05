@@ -73,7 +73,11 @@ function parseDatesArray<T extends Record<string, unknown>>(arr: T[]): T[] {
 }
 
 function parseTournament(details: TournamentDetails): TournamentDetails {
-  return { ...details, matches: parseDatesArray(details.matches) }
+  return {
+    ...details,
+    matches: parseDatesArray(details.matches),
+    tieBreakers: parseDatesArray(details.tieBreakers),
+  }
 }
 
 export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {

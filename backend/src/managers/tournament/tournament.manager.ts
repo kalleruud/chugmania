@@ -3,6 +3,7 @@ import type { EditMatchRequest, Match } from '@common/models/match'
 import type { EventReq, EventRes } from '@common/models/socket.io'
 import {
   isDeleteTournamentRequest,
+  isRenameTournamentGroupRequest,
   isStartTournamentRequest,
   isTournamentRequest,
   isUpdateTournamentRequest,
@@ -25,9 +26,12 @@ import { broadcast } from '../../server'
 import AuthManager from '../auth.manager'
 import MatchManager from '../match.manager'
 import RatingManager from '../rating.manager'
+import TimeEntryManager from '../timeEntry.manager'
 import {
   editTournamentMatch,
+  protectResults,
   resolveTournament,
+  tieBreakerNeeds,
   tournamentDetails,
 } from './tournament'
 import { generateTournament } from './tournament.generator'
@@ -40,6 +44,7 @@ export default class TournamentManager {
     return TournamentSource.getConfirmedPlayerIds(config.session).map(user => {
       return {
         user,
+        globalRank: ratings.find(r => r.user === user)?.ranking ?? null,
         rating:
           ratings.find(r => r.user === user)?.totalRating ??
           RATING_CONSTANTS.NO_DATA_RATING,
@@ -92,6 +97,7 @@ export default class TournamentManager {
       participants,
       groups: [],
       fixtures: [],
+      tieBreakers: [],
       frozenAt: null,
       notReadyReason: loc.no.tournament.roster,
       cancelled,
@@ -121,6 +127,8 @@ export default class TournamentManager {
           ? loc.no.tournament.tracks
           : null
     }
+    if (!config.tieBreakerTrack || !available.has(config.tieBreakerTrack))
+      state.notReadyReason = loc.no.tournament.tieBreakerTrackRequired
     if (cancelled) state.notReadyReason = loc.no.tournament.session
     return state
   }
@@ -145,7 +153,10 @@ export default class TournamentManager {
         .map(p => ({ user: p.user, rating: p.rating }))
         .toSorted((a, b) => a.user.localeCompare(b.user)),
       sessionStatus: this.session(session, true).status,
-      tracks: requiredTracks.map(id => [id, available.has(id)]),
+      tracks: [...requiredTracks, state.config.tieBreakerTrack].map(id => [
+        id,
+        !!id && available.has(id),
+      ]),
     })
     return { ...tournamentDetails(state), configKey, previewKey }
   }
@@ -199,7 +210,7 @@ export default class TournamentManager {
   static editMatch(request: EditMatchRequest): boolean {
     const row = TournamentSource.findMatchTournament(request.id)
     if (!row) return false
-    this.session(row.session)
+    TournamentManager.session(row.session)
     TournamentSource.transaction(() => {
       const state = TournamentSource.loadTournament(row.session)
       if (!state) throw new Error(loc.no.tournament.roster)
@@ -211,8 +222,38 @@ export default class TournamentManager {
       )
         throw new Error(loc.no.tournament.tracks)
       TournamentSource.saveTournament(updated)
+      TournamentManager.reconcile(row.session, state, request.id)
     })
     return true
+  }
+
+  static getState(session: string): TournamentState | null {
+    return TournamentSource.loadTournament(session)
+  }
+
+  // Resolve assignments, synchronize stage tie-breaker laps, then resolve again
+  // with the refreshed lap pool. Roll back if completed downstream matches change.
+  static reconcile(
+    session: string,
+    before?: TournamentState,
+    editing?: string
+  ): void {
+    TournamentSource.transaction(() => {
+      const state = TournamentManager.getState(session)
+      if (!state || state.cancelled || !state.config.tieBreakerTrack) return
+      const automatic = resolveTournament(state)
+      TournamentSource.reconcileLaps(automatic, tieBreakerNeeds(automatic))
+      const refreshed = TournamentManager.getState(session)
+      if (!refreshed) return
+      const resolved = resolveTournament(refreshed)
+      protectResults(before ?? state, resolved, editing)
+      TournamentSource.saveTournament(resolved)
+    })
+  }
+
+  static reconcileAll(): void {
+    for (const session of TournamentSource.getActiveSessionIds())
+      TournamentManager.reconcile(session)
   }
 
   static remove(session: string, options = { deleteMatches: true }): void {
@@ -220,10 +261,10 @@ export default class TournamentManager {
   }
 
   static publish(actor: string | null = null): void {
-    const details = this.getAllTournaments()
+    const details = TournamentManager.getAllTournaments()
     const serialized = JSON.stringify(details)
-    if (this.published === serialized) return
-    this.published = serialized
+    if (TournamentManager.published === serialized) return
+    TournamentManager.published = serialized
     broadcast('all_tournaments', details, actor)
   }
 
@@ -252,6 +293,7 @@ export default class TournamentManager {
           advancementCount: 2,
           eliminationType: 'single',
           stageTracks: {},
+          tieBreakerTrack: null,
         })
         return {
           success: true,
@@ -326,6 +368,7 @@ export default class TournamentManager {
     )
     if (response.success) {
       broadcast('all_matches', await MatchManager.getAllMatches())
+      broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
       TournamentManager.publish(socket.id)
     }
     return response
@@ -345,6 +388,31 @@ export default class TournamentManager {
     }
   }
 
+  static async onRenameGroup(
+    socket: TypedSocket,
+    request: EventReq<'rename_tournament_group'>
+  ): Promise<EventRes<'rename_tournament_group'>> {
+    await AuthManager.checkAuth(socket, ['admin', 'moderator'])
+    if (!isRenameTournamentGroupRequest(request))
+      throw new Error(loc.no.tournament.invalidGroupName)
+    TournamentManager.session(request.session, true)
+    const details = TournamentSource.transaction(() => {
+      const state = TournamentSource.loadTournament(request.session)
+      if (!state?.groups.some(group => group.id === request.groupId))
+        throw new Error(loc.no.tournament.invalidGroup)
+      TournamentSource.renameGroup(
+        state.id,
+        request.groupId,
+        request.name.trim()
+      )
+      const details = TournamentManager.getDetails(request.session)
+      if (!details) throw new Error(loc.no.tournament.invalidGroup)
+      return details
+    })
+    TournamentManager.publish(socket.id)
+    return { success: true, details }
+  }
+
   static async onDelete(
     socket: TypedSocket,
     request: EventReq<'delete_tournament'>
@@ -361,6 +429,7 @@ export default class TournamentManager {
     RatingManager.recalculate()
     broadcast('all_rankings', RatingManager.onGetRatings())
     broadcast('all_matches', await MatchManager.getAllMatches())
+    broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
     TournamentManager.publish(socket.id)
     return { success: true, details: null }
   }

@@ -38,6 +38,14 @@ import { useData } from '../../contexts/DataContext'
 import { TextField } from '../FormFields'
 import { SessionRow } from '../session/SessionRow'
 import { TrackRow } from '../track/TrackRow'
+import { Label } from '../ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../ui/select'
 import { Spinner } from '../ui/spinner'
 import UserRow from '../user/UserRow'
 
@@ -90,6 +98,17 @@ export default function TimeEntryInput({
   const [selectedTrack, setSelectedTrack] = useState(initialTrack)
   const [selectedSession, setSelectedSession] = useState(initialSession)
   const [comment, setComment] = useState(inputTimeEntry.comment ?? '')
+  const [status, setStatus] = useState<TimeEntry['status']>(
+    inputTimeEntry.status ?? 'completed'
+  )
+  const hasDuration = inputListToMs(digits) > 0
+  const effectiveStatus = hasDuration ? 'completed' : status
+  const isModerator = !!loggedInUser && loggedInUser.role !== 'user'
+
+  function handleSetStatus(value: string) {
+    if (value === 'planned' || value === 'completed' || value === 'cancelled')
+      setStatus(value)
+  }
 
   const request = useMemo(() => {
     if (!selectedUser?.id || !selectedTrack?.id) return undefined
@@ -98,6 +117,7 @@ export default function TimeEntryInput({
 
     return {
       duration: durationToPost,
+      status: effectiveStatus,
       user: selectedUser.id,
       track: selectedTrack.id,
       session: selectedSession?.id ?? null,
@@ -112,6 +132,7 @@ export default function TimeEntryInput({
     isCreating,
     digits,
     comment,
+    effectiveStatus,
   ])
 
   const DIGIT = /^\d$/
@@ -164,6 +185,13 @@ export default function TimeEntryInput({
   function handleUpdate(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!inputTimeEntry.id) return toast.error('Is not editing')
+    if (
+      !request ||
+      (inputTimeEntry.tieBreaker &&
+        request.status === 'completed' &&
+        !request.duration)
+    )
+      return toast.error(loc.no.timeEntry.input.validationError)
 
     toast.promise(
       socket
@@ -243,7 +271,11 @@ export default function TimeEntryInput({
         <Combobox
           className='w-full'
           required={true}
-          disabled={disabled || loggedInUser?.role === 'user'}
+          disabled={
+            disabled ||
+            inputTimeEntry.tieBreaker ||
+            loggedInUser?.role === 'user'
+          }
           placeholder={loc.no.timeEntry.input.placeholder.user}
           selected={selectedUser}
           setSelected={value => setSelectedUser(value ?? null)}
@@ -256,7 +288,7 @@ export default function TimeEntryInput({
         <Combobox
           className='w-full'
           required={true}
-          disabled={disabled}
+          disabled={disabled || inputTimeEntry.tieBreaker}
           placeholder={loc.no.timeEntry.input.placeholder.track}
           selected={selectedTrack}
           setSelected={value => setSelectedTrack(value ?? null)}
@@ -269,7 +301,7 @@ export default function TimeEntryInput({
         <Combobox
           className='w-full'
           required={false}
-          disabled={disabled}
+          disabled={disabled || inputTimeEntry.tieBreaker}
           placeholder={loc.no.timeEntry.input.placeholder.session}
           selected={selectedSession}
           setSelected={value => setSelectedSession(value ?? null)}
@@ -281,6 +313,28 @@ export default function TimeEntryInput({
           CustomRow={SessionRow}
         />
 
+        {isModerator && (
+          <div className='flex flex-col gap-1'>
+            <Label htmlFor='time-entry-status'>
+              {loc.no.match.form.status}
+            </Label>
+            <Select
+              value={effectiveStatus}
+              onValueChange={handleSetStatus}
+              disabled={disabled || hasDuration}>
+              <SelectTrigger id='time-entry-status'>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(loc.no.common.status).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
         <TextField
           id='comment'
           name='Comment'

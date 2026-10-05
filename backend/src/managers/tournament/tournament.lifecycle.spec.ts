@@ -75,7 +75,11 @@ async function fixture(count = 4) {
         selectedTracks.map(track => track.id),
       ])
     )
-    return save({ ...draft.config, stageTracks })
+    return save({
+      ...draft.config,
+      stageTracks,
+      tieBreakerTrack: selectedTracks[0].id,
+    })
   }
   return {
     socket,
@@ -170,6 +174,7 @@ describe('Tournament preparation lifecycle', () => {
         advancementCount: 2,
         eliminationType: 'single',
         stageTracks: {},
+        tieBreakerTrack: null,
       })
       expect(graphCounts(f.session.id, f.draft.id)).toEqual(emptyGraph)
       const saved = await f.save({ ...f.draft.config, groupsCount: 2 })
@@ -187,6 +192,64 @@ describe('Tournament preparation lifecycle', () => {
       await assert.rejects(
         TournamentManager.onCreate(f.socket, { session: f.session.id })
       )
+    }
+  )
+
+  test.serial(
+    'requires an available tie-breaker track before start and keeps group renaming',
+    async () => {
+      const f = await fixture()
+      const ready = await f.ready()
+      const missing = await f.save({ ...ready.config, tieBreakerTrack: null })
+      assert(missing.previewKey)
+      expect(missing.notReadyReason).toBeTruthy()
+      await assert.rejects(
+        TournamentManager.onStart(f.socket, {
+          session: f.session.id,
+          previewKey: missing.previewKey,
+        })
+      )
+      expect(graphCounts(f.session.id, f.draft.id)).toEqual(emptyGraph)
+      await assert.rejects(
+        TournamentManager.onRenameGroup(f.socket, {
+          session: f.session.id,
+          groupId: missing.groups[0].id,
+          name: 'Draft group',
+        })
+      )
+      const saved = await f.ready()
+      assert(saved.previewKey)
+      db.update(tracks)
+        .set({ deletedAt: new Date() })
+        .where(eq(tracks.id, f.selectedTracks[0].id))
+        .run()
+      const stale = await TournamentManager.onStart(f.socket, {
+        session: f.session.id,
+        previewKey: saved.previewKey,
+      })
+      assert(!stale.success && 'code' in stale)
+      expect(stale.code).toBe('conflict')
+      expect(graphCounts(f.session.id, f.draft.id)).toEqual(emptyGraph)
+      db.update(tracks)
+        .set({ deletedAt: null })
+        .where(eq(tracks.id, f.selectedTracks[0].id))
+        .run()
+      const started = await TournamentManager.onStart(f.socket, {
+        session: f.session.id,
+        previewKey: saved.previewKey,
+      })
+      assertResponse(started)
+      assert(started.details)
+      expect(started.details.config.tieBreakerTrack).toBe(
+        f.selectedTracks[0].id
+      )
+      const renamed = await TournamentManager.onRenameGroup(f.moderatorSocket, {
+        session: f.session.id,
+        groupId: started.details.groups[0].id,
+        name: 'Merged group',
+      })
+      assertResponse(renamed)
+      expect(renamed.details.groups[0].name).toBe('Merged group')
     }
   )
 
@@ -658,7 +721,7 @@ describe('Tournament preparation lifecycle', () => {
     const database = new Database(':memory:')
     try {
       for (const file of readdirSync(directory)
-        .filter(file => file.endsWith('.sql') && file < '0012')
+        .filter(file => file.endsWith('.sql') && file < '0013')
         .toSorted())
         database.run(readFileSync(`${directory}/${file}`, 'utf8'))
       database.run(
@@ -668,7 +731,7 @@ describe('Tournament preparation lifecycle', () => {
         "INSERT INTO tournaments (id, created_at, session) VALUES ('legacy', 1, 'legacy-session')"
       )
       database.run(
-        readFileSync(`${directory}/0012_tournament_draft_status.sql`, 'utf8')
+        readFileSync(`${directory}/0013_tournament_draft_status.sql`, 'utf8')
       )
       expect(
         database

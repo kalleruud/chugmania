@@ -14,6 +14,7 @@ import SegmentedProgress from '../SegmentedProgress'
 import UserRow from '../user/UserRow'
 import DeleteTournamentDialog from './DeleteTournamentDialog'
 import TournamentGroupPanel from './TournamentGroupPanel'
+import TournamentTieBreakerPanel from './TournamentTieBreakerPanel'
 
 export default function TournamentPanel({
   details,
@@ -103,7 +104,16 @@ export default function TournamentPanel({
         <section className='flex flex-col gap-1'>
           <div className='grid gap-4 sm:grid-cols-2'>
             {details.groups.map(group => (
-              <TournamentGroupPanel key={group.id} group={group} />
+              <TournamentGroupPanel
+                key={group.id}
+                group={group}
+                advancementCount={details.config.advancementCount}
+                href={
+                  isPreview
+                    ? undefined
+                    : `/sessions/${details.config.session}/tournament/groups/${group.id}`
+                }
+              />
             ))}
           </div>
           <div className='flex items-center gap-2 rounded p-2'>
@@ -114,6 +124,8 @@ export default function TournamentPanel({
           </div>
         </section>
       )}
+
+      {!isPreview && <TournamentTieBreakerPanel details={details} />}
 
       {details.matches.length > 0 && (
         <details

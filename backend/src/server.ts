@@ -111,6 +111,7 @@ io.on('connect', s => Connect(s))
 await SessionScheduler.start()
 
 // Calculate ratings
+TournamentManager.reconcileAll()
 RatingManager.recalculate()
 
 async function Connect(s: TypedSocket) {
@@ -145,6 +146,7 @@ async function Connect(s: TypedSocket) {
   setup(s, 'update_tournament', TournamentManager.onUpdate)
   setup(s, 'start_tournament', TournamentManager.onStart)
   setup(s, 'get_tournament', TournamentManager.onGet)
+  setup(s, 'rename_tournament_group', TournamentManager.onRenameGroup)
   setup(s, 'delete_tournament', TournamentManager.onDelete)
   setup(s, 'create_match', MatchManager.onCreateMatch)
   setup(s, 'edit_match', MatchManager.onEditMatch)

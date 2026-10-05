@@ -93,20 +93,35 @@ export const sessionSignups = sqliteTable('session_signups', {
   response: text().$type<SessionResponse>().notNull(),
 })
 
-export const timeEntries = sqliteTable('time_entries', {
-  ...metadata,
-  user: text()
-    .notNull()
-    .references(() => users.id),
-  track: text()
-    .notNull()
-    .references(() => tracks.id),
-  session: text().references(() => sessions.id),
-  duration: integer('duration_ms'),
-  draft: integer({ mode: 'boolean' }).notNull().default(false),
-  amount: integer('amount_l').notNull().default(0.5),
-  comment: text(),
-})
+export const timeEntries = sqliteTable(
+  'time_entries',
+  {
+    ...metadata,
+    user: text()
+      .notNull()
+      .references(() => users.id),
+    track: text()
+      .notNull()
+      .references(() => tracks.id),
+    session: text().references(() => sessions.id),
+    duration: integer('duration_ms'),
+    status: text().$type<MatchStatus>().notNull().default('completed'),
+    tieBreaker: integer('tie_breaker', { mode: 'boolean' })
+      .notNull()
+      .default(false),
+    amount: integer('amount_l').notNull().default(0.5),
+    comment: text(),
+  },
+  table => [
+    uniqueIndex('session_track_user_tie_breaker')
+      .on(table.session, table.track, table.user)
+      .where(sql`${table.tieBreaker} = 1`),
+    check(
+      'time_entry_status',
+      sql`${table.status} IN ('planned', 'completed', 'cancelled')`
+    ),
+  ]
+)
 
 export const matches = sqliteTable('matches', {
   ...metadata,
@@ -138,6 +153,7 @@ export const tournaments = sqliteTable(
       .notNull()
       .default('single'),
     status: text().$type<TournamentStatus>().notNull().default('started'),
+    tieBreakerTrack: text('tie_breaker_track').references(() => tracks.id),
     frozenAt: integer('frozen_at', { mode: 'timestamp_ms' }),
     notReadyReason: text('not_ready_reason'),
   },
@@ -191,6 +207,7 @@ export const tournamentPlayers = sqliteTable(
     groupId: text('group_id').notNull(),
     admission: integer().notNull(),
     rating: integer().notNull(),
+    globalRank: integer('global_rank'),
   },
   table => [
     uniqueIndex('tournament_participant').on(table.tournament, table.user),

@@ -1,9 +1,9 @@
 import type { ExportCsvRequest } from '@common/models/importCsv'
+import type { MatchStatus } from '@common/models/match'
 import type { GapType } from '@common/models/timeEntry'
 import { getRandomItem } from '@common/utils/utils'
 import type {
   MatchStage,
-  MatchStatus,
   SessionResponse,
   SessionStatus,
   TrackLevel,
@@ -208,6 +208,11 @@ const no = {
   },
   tournament: {
     title: 'Turnering',
+    tieBreakers: 'Tie-breakers',
+    tieBreakerTrack: 'Tie-breaker-bane',
+    tieBreakerTrackRequired: 'Velg én bane for tie-breakers',
+    requiredTieBreaker: 'Påkrevd',
+    optionalTieBreaker: 'Valgfri',
     adminPanel: 'Adminpanel',
     groups: 'Grupper',
     groupNames: [
@@ -229,6 +234,24 @@ const no = {
       'Cum Dumpsters',
     ],
     group: 'Gruppe',
+    groupStandings: 'Gruppeplassering',
+    rank: '#',
+    wins: 'W',
+    losses: 'L',
+    matchesPlayed: 'PL',
+    winPercentage: '%',
+    groupProgress: (decided: number, total: number) =>
+      `${decided} av ${total} gruppematcher avgjort`,
+    standingExplanation: {
+      head_to_head: 'Avgjort ved direkte match',
+      tie_breaker: 'Avgjort ved tie breaker runde',
+    },
+    renameGroup: 'Endre navn',
+    groupName: 'Gruppenavn',
+    renameGroupDescription: 'Du klarte ikke dy deg nei, tenkte meg det...',
+    groupRenamed: 'Gruppenavnet er oppdatert',
+    invalidGroupName: 'Gruppenavnet må inneholde mellom 1 og 100 tegn.',
+    invalidGroup: 'Gruppen finnes ikke i denne turneringen.',
     groupSlot: (rank: number, code: string) => {
       const suffixes: Record<number, string> = { 1: 'st', 2: 'nd', 3: 'rd' }
       const suffix =
@@ -267,7 +290,7 @@ const no = {
     deleted: 'Turneringen er slettet',
     deleteTitle: 'Slett turnering',
     deleteDescription:
-      'Vil du beholde eller slette turneringens matcher? Andre matcher og rundetider beholdes.',
+      'Vil du beholde eller slette turneringens matcher? Andre matcher og fullførte rundetider beholdes. Planlagte tie-breakers slettes.',
     keepResults: 'Slett turnering, behold resultater',
     deleteResults: 'Slett turnering og resultater',
     awarded: 'Tildelt seier',
@@ -277,7 +300,7 @@ const no = {
         : `Topp ${count} spillere i hver gruppe går videre til sluttspillet.`,
     conditional: 'Hvis nødvendig',
     invalid: 'Ugyldig turneringsoppsett',
-    session: 'Sessionen er slettet eller avlyst',
+    session: `Sessionen er slettet eller avlyst`,
     roster:
       'Deltakerlisten passer ikke turneringsoppsettet. Venter på flere deltakere.',
     tracks: 'Velg minst én bane for hver runde',
@@ -288,7 +311,6 @@ const no = {
     downstream: 'Angre først resultatene i: ',
   },
   match: {
-    cancel: 'Avlys',
     vs: 'vs',
     title: 'Matcher',
     description: '1v1 Konkurranser',
@@ -300,11 +322,6 @@ const no = {
     upNext: 'Neste match',
     duration: 'Tid',
     unknownUser: 'Ukjent',
-    status: {
-      planned: 'Planlagt',
-      completed: 'Ferdig',
-      cancelled: 'Avlyst',
-    } as Record<MatchStatus, string>,
     stage: {
       group: 'Gruppespill',
       eight: 'Åttendelsfinale',
@@ -483,6 +500,12 @@ const no = {
     receivedUpdate: 'Spillerne ble oppdatert',
   },
   common: {
+    cancelEntity: 'Avlys',
+    status: {
+      planned: 'Planlagt',
+      completed: 'Ferdig',
+      cancelled: 'Avlyst',
+    } as Record<MatchStatus, string>,
     confirm: 'Sikker?',
     now: 'Nå',
     new: 'Ny',

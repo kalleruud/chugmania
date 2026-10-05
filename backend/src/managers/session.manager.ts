@@ -17,6 +17,7 @@ import AuthManager from './auth.manager'
 import MatchManager from './match.manager'
 import RatingManager from './rating.manager'
 import SessionScheduler from './session.scheduler'
+import TimeEntryManager from './timeEntry.manager'
 import TournamentManager from './tournament/tournament.manager'
 import UserManager from './user.manager'
 
@@ -210,8 +211,10 @@ export default class SessionManager {
     console.debug(new Date().toISOString(), socket.id, 'Updated session', id)
 
     RatingManager.recalculate()
-    if (request.deletedAt)
+    if (request.deletedAt) {
       broadcast('all_matches', await MatchManager.getAllMatches())
+      broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
+    }
     broadcast('all_sessions', await SessionManager.getAllSessions())
     broadcast('all_rankings', RatingManager.onGetRatings())
     TournamentManager.publish(socket.id)
