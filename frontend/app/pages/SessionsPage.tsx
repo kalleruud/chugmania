@@ -71,6 +71,7 @@ export function SessionsContent({
           header={loc.no.session.status.ongoing}
           sessions={ongoingSessions}
           hideCreate
+          featured
         />
       )}
       <SessionsList

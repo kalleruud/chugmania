@@ -12,9 +12,14 @@ import loc from '@common/locale/locales'
 import type { SessionWithSignups } from '@common/models/session'
 import { isOngoing, isUpcoming } from '@common/utils/date'
 import { ChevronRight } from 'lucide-react'
+import type { ComponentProps } from 'react'
 import { Link } from 'react-router'
 import { twMerge } from 'tailwind-merge'
 import type { BaseRowProps } from '../row/RowProps'
+
+export type SesssionComponentProps = BaseRowProps<SessionWithSignups> & {
+  description?: string
+} & ComponentProps<'div'>
 
 export function SessionRow({
   item: session,
@@ -22,7 +27,7 @@ export function SessionRow({
   className,
   hideLink,
   highlight,
-}: Readonly<BaseRowProps<SessionWithSignups> & { description?: string }>) {
+}: Readonly<SesssionComponentProps>) {
   const { loggedInUser, isLoggedIn } = useAuth()
   const distance = useDistanceToNow({ date: session.date })
 

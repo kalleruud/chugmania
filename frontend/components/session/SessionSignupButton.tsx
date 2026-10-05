@@ -4,7 +4,7 @@ import type { SessionResponse } from '@backend/database/schema'
 import loc from '@common/locale/locales'
 import type { SessionWithSignups } from '@common/models/session'
 import { isPast } from '@common/utils/date'
-import { PlusIcon } from 'lucide-react'
+import { CircleCheck } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '../ui/button'
@@ -61,9 +61,10 @@ export default function SessionSignupButton({
       <Button
         type='button'
         size='sm'
+        variant={disabled ? 'outline' : 'default'}
         disabled={disabled}
         onClick={() => updateSignup('yes')}>
-        <PlusIcon />
+        <CircleCheck />
         {loc.no.session.rsvp.signup}
       </Button>
     )

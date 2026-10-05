@@ -19,6 +19,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '../ui/dialog'
+import SessionCard from './SessionCard'
 import SessionForm from './SessionForm'
 import { SessionRow } from './SessionRow'
 
@@ -28,6 +29,7 @@ type SessionsListProps = {
   collapsed?: boolean
   sessions: SessionWithSignups[]
   hideCreate?: boolean
+  featured?: boolean
 }
 
 export default function SessionsList({
@@ -35,6 +37,7 @@ export default function SessionsList({
   header,
   sessions,
   hideCreate,
+  featured,
   ...rest
 }: Readonly<SessionsListProps & ComponentProps<'div'>>) {
   const { sessions: sd } = useData()
@@ -42,6 +45,8 @@ export default function SessionsList({
   const [open, setOpen] = useState(false)
 
   const isModerator = isLoggedIn && loggedInUser.role !== 'user'
+
+  const SessionComponent = featured ? SessionCard : SessionRow
 
   if (sd === undefined) {
     return (
@@ -58,12 +63,12 @@ export default function SessionsList({
     <div className={twMerge('flex flex-col', className)} {...rest}>
       <PageSubheader title={header} description={sessions.length.toString()} />
       {sessions.length > 0 ? (
-        <div className={twMerge('rounded-sm bg-background-secondary')}>
+        <div className='flex flex-col gap-2'>
           {sessions.map(session => (
-            <SessionRow
+            <SessionComponent
               key={session.id}
               item={session}
-              className='py-3 first:pt-4 last:pb-4'
+              className='rounded-sm bg-background-secondary p-4'
             />
           ))}
         </div>

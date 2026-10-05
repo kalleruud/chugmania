@@ -118,7 +118,7 @@ export default function SessionPage() {
         </BreadcrumbList>
       </Breadcrumb>
 
-      <SessionCard className='px-2' session={session} />
+      <SessionCard className='px-2' item={session} hideLink />
 
       <div className='flex items-center gap-1'>
         <SubscribeButton className='flex-1' />
