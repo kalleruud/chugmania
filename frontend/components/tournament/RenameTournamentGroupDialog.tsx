@@ -71,7 +71,9 @@ export default function RenameTournamentGroupDialog({
         setOpen(value)
       }}>
       <DialogTrigger asChild>
-        <Button variant='outline'>{loc.no.tournament.renameGroup}</Button>
+        <Button variant='outline' size='sm'>
+          {loc.no.tournament.renameGroup}
+        </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -81,11 +83,14 @@ export default function RenameTournamentGroupDialog({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={rename} className='flex flex-col gap-4'>
-          <Label htmlFor={inputId}>{loc.no.tournament.groupName}</Label>
+          <Label className='sr-only' htmlFor={inputId}>
+            {loc.no.tournament.groupName}
+          </Label>
           <Input
             id={inputId}
             value={name}
             required
+            placeholder={loc.no.tournament.groupName}
             maxLength={MAX_TOURNAMENT_GROUP_NAME_LENGTH}
             disabled={pending}
             aria-invalid={!!error}

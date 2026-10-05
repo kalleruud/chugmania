@@ -244,13 +244,12 @@ const no = {
     groupProgress: (decided: number, total: number) =>
       `${decided} av ${total} gruppematcher avgjort`,
     standingExplanation: {
-      head_to_head: 'Avgjort ved innbyrdes match',
+      head_to_head: 'Avgjort ved direkte match',
       tie_breaker: 'Avgjort ved tie breaker runde',
     },
-    renameGroup: 'Endre gruppenavn',
+    renameGroup: 'Endre navn',
     groupName: 'Gruppenavn',
-    renameGroupDescription:
-      'Endre navnet uten å endre gruppekode, deltakere eller matcher.',
+    renameGroupDescription: 'Du klarte ikke dy deg nei, tenkte meg det...',
     groupRenamed: 'Gruppenavnet er oppdatert',
     invalidGroupName: 'Gruppenavnet må inneholde mellom 1 og 100 tegn.',
     invalidGroup: 'Gruppen finnes ikke i denne turneringen.',

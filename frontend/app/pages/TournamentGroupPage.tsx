@@ -72,7 +72,7 @@ export default function TournamentGroupPage() {
         </BreadcrumbList>
       </Breadcrumb>
 
-      <header className='flex flex-wrap items-start justify-between gap-4'>
+      <header className='flex flex-wrap items-end justify-between gap-4'>
         <div className='min-w-0'>
           <p className='font-f1 text-sm text-muted-foreground uppercase'>
             {loc.no.tournament.group} {group.code}
@@ -95,7 +95,7 @@ export default function TournamentGroupPage() {
       </header>
 
       <section>
-        <div className='rounded bg-background-secondary px-1'>
+        <div className='rounded border bg-background-secondary px-1'>
           <table className='table-auto border-separate border-spacing-x-4 border-spacing-y-3'>
             <caption className='sr-only'>
               {loc.no.tournament.groupStandings}
@@ -171,7 +171,7 @@ export default function TournamentGroupPage() {
                     {standing.explanation && (
                       <tr>
                         <td
-                          colSpan={6}
+                          colSpan={2}
                           className='text-xs text-muted-foreground'>
                           {
                             loc.no.tournament.standingExplanation[
@@ -207,11 +207,6 @@ export default function TournamentGroupPage() {
           featuredMatchId={featuredMatch?.id}
         />
       </section>
-      <Button asChild variant='outline' className='w-fit'>
-        <Link to={`/sessions/${session.id}`}>
-          {loc.no.tournament.backToTournament}
-        </Link>
-      </Button>
     </div>
   )
 }
