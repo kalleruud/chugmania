@@ -55,10 +55,6 @@ export default function TournamentPanel({
             {details.groups.length} {loc.no.tournament.groups.toLowerCase()}
           </p>
 
-          <p className='text-sm text-muted-foreground'>
-            {loc.no.tournament.groupInfo(details.config.advancementCount)}
-          </p>
-
           {details.notReadyReason && !awaitingSignups && (
             <p role='status' className='text-muted-foreground'>
               {details.notReadyReason}
@@ -142,6 +138,12 @@ export default function TournamentPanel({
                 }
               />
             ))}
+          </div>
+          <div className='flex items-center gap-2 rounded p-2'>
+            <div className='size-2 rounded-full bg-primary' />
+            <p className='w-full text-sm text-muted-foreground'>
+              {loc.no.tournament.groupInfo(details.config.advancementCount)}
+            </p>
           </div>
         </section>
       )}

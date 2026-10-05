@@ -164,9 +164,6 @@ export default function TournamentForm({
             </NativeSelect>
           </label>
         </div>
-        <p className='text-sm text-muted-foreground'>
-          {loc.no.tournament.groupInfo(config.advancementCount)}
-        </p>
         <label>
           Format
           <NativeSelect
