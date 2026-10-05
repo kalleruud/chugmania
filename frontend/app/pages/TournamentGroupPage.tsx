@@ -142,7 +142,7 @@ export default function TournamentGroupPage() {
                       </td>
                       <th
                         scope='row'
-                        className='block min-w-0 flex-1 truncate text-start font-f1 uppercase'>
+                        className='-ml-2 block min-w-0 flex-1 truncate text-start font-f1 uppercase'>
                         <Button variant='ghost' size='sm' asChild>
                           <Link to={'/users/' + user.id}>
                             <span className='mr-1 font-medium'>
