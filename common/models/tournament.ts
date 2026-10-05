@@ -57,6 +57,9 @@ export type Standing = {
   rank: number
   wins: number
   losses: number
+  matchesPlayed: number
+  winPercentage: number
+  explanation: 'head_to_head' | 'tie_breaker' | null
   qualifies: boolean
   resolved: boolean
 }
@@ -68,7 +71,11 @@ export type TournamentDetails = {
   cancelled: boolean
   notReadyReason: string | null
   participants: Participant[]
-  groups: (TournamentGroup & { code: string; standings: Standing[] })[]
+  groups: (TournamentGroup & {
+    code: string
+    standings: Standing[]
+    progress: { decided: number; total: number }
+  })[]
   matches: Match[]
   tieBreakers: (TimeEntry & { required: boolean })[]
   standings: { user: string; rank: number }[]
@@ -87,6 +94,27 @@ export type TournamentDetails = {
 }
 
 export type TournamentRequest = { session: string }
+
+export const MAX_TOURNAMENT_GROUP_NAME_LENGTH = 100
+
+export type RenameTournamentGroupRequest = TournamentRequest & {
+  groupId: string
+  name: string
+}
+
+export function isRenameTournamentGroupRequest(
+  value: unknown
+): value is RenameTournamentGroupRequest {
+  return (
+    isTournamentRequest(value) &&
+    'groupId' in value &&
+    typeof value.groupId === 'string' &&
+    'name' in value &&
+    typeof value.name === 'string' &&
+    value.name.trim().length > 0 &&
+    value.name.trim().length <= MAX_TOURNAMENT_GROUP_NAME_LENGTH
+  )
+}
 
 export type DeleteTournamentRequest = TournamentRequest & {
   deleteRelatedResults: boolean

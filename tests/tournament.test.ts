@@ -141,7 +141,8 @@ async function CreateTournament(options: {
         lap => lap.user === user
       )
       assert(lap, `Missing lap: ${user}`)
-      await TimeEntryManager.onEditTimeEntry(socket, {
+      const { onEditTimeEntry } = TimeEntryManager
+      await onEditTimeEntry(socket, {
         type: 'EditTimeEntryRequest',
         id: lap.id,
         ...updates,
@@ -630,6 +631,9 @@ test.serial(
       user1: null,
       user2: null,
     })
+    expect(
+      state.groups[0].standings.every(row => row.explanation === null)
+    ).toBe(true)
     const ids = state.tieBreakers.map(lap => lap.id).sort()
     const reopened = groups.find(
       match =>
@@ -658,6 +662,11 @@ test.serial(
       user1: 'tie-c',
       user2: 'tie-b',
     })
+    expect(
+      (await tournament.getState()).groups[0].standings
+        .slice(0, 3)
+        .map(row => row.explanation)
+    ).toEqual(['tie_breaker', 'tie_breaker', 'tie_breaker'])
     expect(
       TimeEntryManager.getAllLatestAfterSession(tournament.session.id)
         .map(lap => lap.user)

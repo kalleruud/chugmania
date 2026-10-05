@@ -40,9 +40,10 @@ function rankTiedPlayers(
     users: string[],
     offset: number
   ) => { user: string; rank: number; resolved: boolean }[]
-): { user: string; rank: number; resolved: boolean }[] {
+): Pick<Standing, 'user' | 'rank' | 'resolved' | 'explanation'>[] {
   const remaining = [...users]
-  const rows: { user: string; rank: number; resolved: boolean }[] = []
+  const rows: Pick<Standing, 'user' | 'rank' | 'resolved' | 'explanation'>[] =
+    []
   while (remaining.length) {
     const winner = remaining.find(user =>
       remaining.every(
@@ -55,10 +56,21 @@ function rankTiedPlayers(
         : remaining.map(user => ({ user, rank: 1, resolved: false }))
       return [
         ...rows,
-        ...tied.map(row => ({ ...row, rank: rows.length + row.rank })),
+        ...tied.map<
+          Pick<Standing, 'user' | 'rank' | 'resolved' | 'explanation'>
+        >(row => ({
+          ...row,
+          rank: rows.length + row.rank,
+          explanation: row.resolved ? 'tie_breaker' : null,
+        })),
       ]
     }
-    rows.push({ user: winner, rank: rows.length + 1, resolved: true })
+    rows.push({
+      user: winner,
+      rank: rows.length + 1,
+      resolved: true,
+      explanation: remaining.length > 1 ? 'head_to_head' : null,
+    })
     remaining.splice(remaining.indexOf(winner), 1)
   }
   return rows
@@ -124,6 +136,8 @@ function groupStandings(
         standings.push({
           ...row,
           ...place,
+          matchesPlayed: row.wins + row.losses,
+          winPercentage: winRatio(row) * 100,
           rank: start + place.rank,
           qualifies:
             place.resolved &&
@@ -530,6 +544,11 @@ export function tournamentDetails(state: TournamentState): TournamentDetails {
       ...g,
       code: groupCode(g.position),
       standings: groupStandings(state, g.id),
+      progress: {
+        decided: group.filter(f => f.groupId === g.id && decided(f.match))
+          .length,
+        total: group.filter(f => f.groupId === g.id).length,
+      },
     })),
     tieBreakers: state.tieBreakers
       .filter(lap => !lap.deletedAt)
@@ -541,6 +560,7 @@ export function tournamentDetails(state: TournamentState): TournamentDetails {
       ...f.match,
       tournament: {
         id: state.id,
+        groupId: f.groupId,
         label: fixtureLabel(state, f),
         slot1: label(f.slot1),
         slot2: label(f.slot2),

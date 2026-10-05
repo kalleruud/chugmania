@@ -48,17 +48,17 @@ export default class RatingManager {
           trackRating * (1 - RATING_CONSTANTS.MATCH_WEIGHT),
       }
     }).sort((a, b) => b.totalRating - a.totalRating)
-    this.ratings = new Map(
+    RatingManager.ratings = new Map(
       ranked.map((row, index) => [row.user, { ...row, ranking: index + 1 }])
     )
   }
 
   static getUserRatings(userId: string): Ranking | undefined {
-    return this.ratings.get(userId)
+    return RatingManager.ratings.get(userId)
   }
 
   static onGetRatings(): Ranking[] {
-    return Array.from(this.ratings.values()).sort(
+    return Array.from(RatingManager.ratings.values()).sort(
       (a, b) => b.ranking - a.ranking
     )
   }
