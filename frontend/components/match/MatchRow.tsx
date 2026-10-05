@@ -128,9 +128,6 @@ export default function MatchRow({
       {isInactiveFinalReset(match) && isPlanned && (
         <Badge>{loc.no.tournament.conditional}</Badge>
       )}
-      {isPlanned && (
-        <span className='absolute right-0 mr-5 size-2 animate-pulse rounded-full bg-primary' />
-      )}
     </div>
   )
 }
