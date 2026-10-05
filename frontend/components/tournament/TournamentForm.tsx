@@ -3,9 +3,10 @@ import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
 import { trackToLookupItem } from '@/lib/lookup-utils'
 import loc from '@common/locale/locales'
-import type {
-  TournamentConfig,
-  TournamentDetails,
+import {
+  isPreviewVisibility,
+  type TournamentConfig,
+  type TournamentDetails,
 } from '@common/models/tournament'
 import { getTournamentStages, stageName } from '@common/utils/tournament'
 import { useState, type SubmitEvent } from 'react'
@@ -164,6 +165,20 @@ export default function TournamentForm({
             </NativeSelect>
           </label>
         </div>
+        <label>
+          Forhåndsvisning for deltakere
+          <NativeSelect
+            value={config.previewVisibility}
+            onChange={event => {
+              if (isPreviewVisibility(event.target.value))
+                change({ ...config, previewVisibility: event.target.value })
+            }}>
+            <option value='visible'>Vis alt</option>
+            <option value='hide_tracks'>Skjul baner</option>
+            <option value='groups_only'>Skjul sluttspill</option>
+            <option value='stats_only'>Skjul alt</option>
+          </NativeSelect>
+        </label>
         <label>
           Format
           <NativeSelect

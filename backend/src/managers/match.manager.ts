@@ -17,6 +17,7 @@ import AuthManager from './auth.manager'
 import RatingManager from './rating.manager'
 import TimeEntryManager from './timeEntry.manager'
 import TournamentManager from './tournament/tournament.manager'
+import TournamentSecurity from './tournament/tournament.security'
 
 export default class MatchManager {
   private static validateMatchState(
@@ -49,7 +50,9 @@ export default class MatchManager {
       .where(isNull(matches.deletedAt))
       .orderBy(desc(sql`COALESCE(${sessions.date}, ${matches.createdAt})`))
 
-    return TournamentManager.enrich(matchRows)
+    return TournamentManager.enrich(
+      TournamentSecurity.visibleMatches(matchRows)
+    )
   }
 
   // Returns matches sorted by creation date, most recent first.

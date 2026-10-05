@@ -7,6 +7,7 @@ import type {
   ServerToClientEvents,
   SocketData,
 } from '@common/models/socket.io'
+import type { TournamentDetails } from '@common/models/tournament'
 import express from 'express'
 import { createServer } from 'node:http'
 import path from 'node:path'
@@ -20,6 +21,7 @@ import SessionManager from './managers/session.manager'
 import SessionScheduler from './managers/session.scheduler'
 import TimeEntryManager from './managers/timeEntry.manager'
 import TournamentManager from './managers/tournament/tournament.manager'
+import TournamentSecurity from './managers/tournament/tournament.security'
 import TrackManager from './managers/track.manager'
 import UserManager from './managers/user.manager'
 
@@ -49,7 +51,10 @@ export type TypedSocket = Socket<
   SocketData
 >
 
-type ProtectedServerEvent = Exclude<keyof ServerToClientEvents, 'user_data'>
+type ProtectedServerEvent = Exclude<
+  keyof ServerToClientEvents,
+  'user_data' | 'all_tournaments'
+>
 
 async function emitData(socket: TypedSocket) {
   const [users, tracks, sessions, timeEntries, matches] = await Promise.all([
@@ -65,7 +70,7 @@ async function emitData(socket: TypedSocket) {
   socket.emit('all_time_entries', timeEntries)
   socket.emit('all_matches', matches)
   socket.emit('all_rankings', RatingManager.onGetRatings())
-  socket.emit('all_tournaments', TournamentManager.getAllTournaments())
+  TournamentSecurity.emit(socket, TournamentManager.getAllTournaments())
 }
 
 export function broadcast<Ev extends ProtectedServerEvent>(
@@ -76,6 +81,15 @@ export function broadcast<Ev extends ProtectedServerEvent>(
     if (socket.data.userId) {
       socket.emit(ev, ...args)
     }
+  })
+}
+
+export function broadcastTournaments(
+  details: TournamentDetails[],
+  actor: string | null = null
+): void {
+  io.sockets.sockets.forEach(socket => {
+    if (socket.data.userId) TournamentSecurity.emit(socket, details, actor)
   })
 }
 

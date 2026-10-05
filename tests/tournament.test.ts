@@ -34,7 +34,14 @@ type TestMatch = {
 }
 
 async function CreateTournament(options: {
-  config: Omit<TournamentConfig, 'session' | 'stageTracks' | 'tieBreakerTrack'>
+  config: Omit<
+    TournamentConfig,
+    | 'session'
+    | 'stageTracks'
+    | 'tieBreakerTrack'
+    | 'owner'
+    | 'previewVisibility'
+  >
   tracks: number
   users: string[]
 }) {
@@ -50,6 +57,8 @@ async function CreateTournament(options: {
   const config: TournamentConfig = {
     ...options.config,
     session: session.id,
+    owner: players[0].id,
+    previewVisibility: 'visible',
     stageTracks: {},
     tieBreakerTrack: tracks[0].id,
   }

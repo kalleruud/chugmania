@@ -50,9 +50,8 @@ export default function TournamentPanel({
             <DeleteTournamentDialog session={details.config.session} />
           </div>
           <p className='text-sm text-muted-foreground'>
-            {details.participants.length}{' '}
-            {loc.no.session.participants.toLowerCase()} ·{' '}
-            {details.groups.length} {loc.no.tournament.groups.toLowerCase()}
+            {workload.participants} {loc.no.session.participants.toLowerCase()}{' '}
+            · {workload.groups} {loc.no.tournament.groups.toLowerCase()}
           </p>
 
           {details.notReadyReason && !awaitingSignups && (
@@ -74,7 +73,7 @@ export default function TournamentPanel({
                 {loc.no.session.participants}
               </dt>
               <dd className='font-kh-interface text-lg tabular-nums'>
-                {details.participants.length}
+                {workload.participants}
               </dd>
             </div>
             <div>
@@ -82,7 +81,7 @@ export default function TournamentPanel({
                 {loc.no.tournament.groups}
               </dt>
               <dd className='font-kh-interface text-lg tabular-nums'>
-                {details.groups.length}
+                {workload.groups}
               </dd>
             </div>
             <div>
@@ -96,7 +95,7 @@ export default function TournamentPanel({
                 Estimerte runder per spiller
               </dt>
               <dd className='font-kh-interface text-lg tabular-nums'>
-                {details.matches.length > 0
+                {workload.matches > 0
                   ? `${workload.minMatches}–${workload.maxMatches}`
                   : '–'}
               </dd>

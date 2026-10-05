@@ -12,6 +12,7 @@ import {
 import { randomUUID } from 'node:crypto'
 import type {
   EliminationType,
+  PreviewVisibility,
   Slot,
   TournamentStatus,
 } from '../../common/models/tournament'
@@ -153,6 +154,11 @@ export const tournaments = sqliteTable(
       .notNull()
       .default('single'),
     status: text().$type<TournamentStatus>().notNull().default('started'),
+    owner: text().references(() => users.id),
+    previewVisibility: text('preview_visibility')
+      .$type<PreviewVisibility>()
+      .notNull()
+      .default('visible'),
     tieBreakerTrack: text('tie_breaker_track').references(() => tracks.id),
     frozenAt: integer('frozen_at', { mode: 'timestamp_ms' }),
     notReadyReason: text('not_ready_reason'),

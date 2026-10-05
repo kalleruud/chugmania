@@ -286,6 +286,8 @@ export default class TournamentSource {
       .all()
     return {
       session: row.session,
+      owner: row.owner,
+      previewVisibility: row.previewVisibility,
       groupsCount: row.groupsCount,
       advancementCount: row.advancementCount,
       eliminationType: row.eliminationType,
@@ -307,6 +309,8 @@ export default class TournamentSource {
     const row = {
       id,
       session: config.session,
+      owner: config.owner,
+      previewVisibility: config.previewVisibility,
       groupsCount: config.groupsCount,
       advancementCount: config.advancementCount,
       eliminationType: config.eliminationType,

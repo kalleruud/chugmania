@@ -22,7 +22,7 @@ import {
 import { createHash, randomUUID } from 'node:crypto'
 import TournamentSource from '../../../database/tournament.source'
 import type { TypedSocket } from '../../server'
-import { broadcast } from '../../server'
+import { broadcast, broadcastTournaments } from '../../server'
 import AuthManager from '../auth.manager'
 import MatchManager from '../match.manager'
 import RatingManager from '../rating.manager'
@@ -38,9 +38,9 @@ import {
   generateTournament,
   generateTournamentGroups,
 } from './tournament.generator'
+import TournamentSecurity from './tournament.security'
 
 export default class TournamentManager {
-  private static published = ''
   private static previews = new Map<string, TournamentDetails>()
 
   private static participants(config: TournamentConfig): Participant[] {
@@ -178,12 +178,15 @@ export default class TournamentManager {
     return structuredClone(details)
   }
 
-  private static conflict(session: string): TournamentConflictResponse {
+  private static conflict(
+    session: string,
+    userId: string
+  ): TournamentConflictResponse {
     return {
       success: false,
       code: 'conflict',
       message: loc.no.tournament.conflict,
-      details: this.getDetails(session),
+      details: TournamentSecurity.view(this.getDetails(session), userId),
     }
   }
 
@@ -280,10 +283,7 @@ export default class TournamentManager {
 
   static publish(actor: string | null = null): void {
     const details = TournamentManager.getAllTournaments()
-    const serialized = JSON.stringify(details)
-    if (TournamentManager.published === serialized) return
-    TournamentManager.published = serialized
-    broadcast('all_tournaments', details, actor)
+    broadcastTournaments(details, actor)
   }
 
   static getAllTournaments(): TournamentDetails[] {
@@ -297,7 +297,7 @@ export default class TournamentManager {
     socket: TypedSocket,
     request: EventReq<'create_tournament'>
   ): Promise<EventRes<'create_tournament'>> {
-    await AuthManager.checkAuth(socket, ['admin', 'moderator'])
+    const user = await AuthManager.checkAuth(socket, ['admin', 'moderator'])
     if (!isTournamentRequest(request))
       throw new Error(loc.no.tournament.invalid)
     TournamentManager.session(request.session)
@@ -307,6 +307,8 @@ export default class TournamentManager {
           throw new Error(loc.no.tournament.exists)
         TournamentSource.saveConfig(randomUUID(), {
           session: request.session,
+          owner: user.id,
+          previewVisibility: 'visible',
           groupsCount: 1,
           advancementCount: 2,
           eliminationType: 'single',
@@ -315,7 +317,10 @@ export default class TournamentManager {
         })
         return {
           success: true,
-          details: TournamentManager.getDetails(request.session),
+          details: TournamentSecurity.view(
+            TournamentManager.getDetails(request.session),
+            user.id
+          ),
         }
       }
     )
@@ -327,7 +332,7 @@ export default class TournamentManager {
     socket: TypedSocket,
     request: EventReq<'update_tournament'>
   ): Promise<EventRes<'update_tournament'>> {
-    await AuthManager.checkAuth(socket, ['admin', 'moderator'])
+    const user = await AuthManager.checkAuth(socket)
     if (!isUpdateTournamentRequest(request))
       throw new Error(loc.no.tournament.invalid)
     const response = TournamentSource.transaction(
@@ -337,16 +342,26 @@ export default class TournamentManager {
           request.config.session
         )
         const details = TournamentManager.getDetails(request.config.session)
+        if (row)
+          TournamentSecurity.authorize(
+            user.id,
+            TournamentSource.loadConfig(row),
+            row.status,
+            request.config
+          )
         if (
           !row ||
           row.status !== 'draft' ||
           details?.configKey !== request.configKey
         )
-          return TournamentManager.conflict(request.config.session)
+          return TournamentManager.conflict(request.config.session, user.id)
         TournamentSource.saveConfig(row.id, request.config)
         return {
           success: true,
-          details: TournamentManager.getDetails(request.config.session),
+          details: TournamentSecurity.view(
+            TournamentManager.getDetails(request.config.session),
+            user.id
+          ),
         }
       }
     )
@@ -358,7 +373,7 @@ export default class TournamentManager {
     socket: TypedSocket,
     request: EventReq<'start_tournament'>
   ): Promise<EventRes<'start_tournament'>> {
-    await AuthManager.checkAuth(socket, ['admin', 'moderator'])
+    const user = await AuthManager.checkAuth(socket)
     if (!isStartTournamentRequest(request))
       throw new Error(loc.no.tournament.invalid)
     const response = TournamentSource.transaction(
@@ -367,20 +382,30 @@ export default class TournamentManager {
         RatingManager.recalculate()
         const row = TournamentSource.findActiveTournament(request.session)
         const details = TournamentManager.getDetails(request.session)
+        if (row)
+          TournamentSecurity.authorize(
+            user.id,
+            TournamentSource.loadConfig(row),
+            row.status
+          )
         if (
           !row ||
           row.status !== 'draft' ||
           details?.previewKey !== request.previewKey
         )
-          return TournamentManager.conflict(request.session)
+          return TournamentManager.conflict(request.session, user.id)
         const state = TournamentManager.draftState(request.session)
         if (state.notReadyReason) throw new Error(state.notReadyReason)
         const frozen = TournamentManager.remap(state, row.id)
         frozen.frozenAt = new Date()
+        frozen.config.previewVisibility = 'visible'
         TournamentSource.saveTournament(frozen)
         return {
           success: true,
-          details: TournamentManager.getDetails(request.session),
+          details: TournamentSecurity.view(
+            TournamentManager.getDetails(request.session),
+            user.id
+          ),
         }
       }
     )
@@ -396,13 +421,16 @@ export default class TournamentManager {
     socket: TypedSocket,
     request: { session: string }
   ): Promise<EventRes<'get_tournament'>> {
-    await AuthManager.checkAuth(socket)
+    const user = await AuthManager.checkAuth(socket)
     if (!isTournamentRequest(request))
       throw new Error(loc.no.tournament.invalid)
     TournamentManager.session(request.session, true)
     return {
       success: true,
-      details: TournamentManager.getDetails(request.session),
+      details: TournamentSecurity.view(
+        TournamentManager.getDetails(request.session),
+        user.id
+      ),
     }
   }
 
@@ -410,12 +438,13 @@ export default class TournamentManager {
     socket: TypedSocket,
     request: EventReq<'rename_tournament_group'>
   ): Promise<EventRes<'rename_tournament_group'>> {
-    await AuthManager.checkAuth(socket, ['admin', 'moderator'])
+    const user = await AuthManager.checkAuth(socket)
     if (!isRenameTournamentGroupRequest(request))
       throw new Error(loc.no.tournament.invalidGroupName)
     TournamentManager.session(request.session, true)
     const details = TournamentSource.transaction(() => {
       const state = TournamentSource.loadTournament(request.session)
+      if (state) TournamentSecurity.authorize(user.id, state.config, 'started')
       if (!state?.groups.some(group => group.id === request.groupId))
         throw new Error(loc.no.tournament.invalidGroup)
       TournamentSource.renameGroup(
@@ -428,17 +457,28 @@ export default class TournamentManager {
       return details
     })
     TournamentManager.publish(socket.id)
-    return { success: true, details }
+    const view = TournamentSecurity.view(details, user.id)
+    if (!view) throw new Error(loc.no.error.messages.insufficient_permissions)
+    return { success: true, details: view }
   }
 
   static async onDelete(
     socket: TypedSocket,
     request: EventReq<'delete_tournament'>
   ): Promise<EventRes<'delete_tournament'>> {
-    await AuthManager.checkAuth(socket, ['admin', 'moderator'])
+    const user = await AuthManager.checkAuth(socket)
     if (!isDeleteTournamentRequest(request))
       throw new Error(loc.no.tournament.invalid)
     TournamentManager.session(request.session, true)
+    const row = TournamentSource.findActiveTournament(request.session)
+    if (row)
+      TournamentSecurity.authorize(
+        user.id,
+        TournamentSource.loadConfig(row),
+        row.status
+      )
+    else if (user.role === 'user')
+      throw new Error(loc.no.error.messages.insufficient_permissions)
     TournamentSource.transaction(() =>
       TournamentManager.remove(request.session, {
         deleteMatches: request.deleteRelatedResults,

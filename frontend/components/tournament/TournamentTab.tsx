@@ -64,7 +64,9 @@ export default function TournamentTab({
   if (details.status === 'started') return <TournamentPanel details={details} />
   return (
     <div className='flex min-w-0 flex-col gap-6'>
-      {canEdit && <TournamentForm key={details.id} details={details} />}
+      {details.canConfigure && (
+        <TournamentForm key={details.id} details={details} />
+      )}
       <TournamentPanel details={details} isPreview />
     </div>
   )

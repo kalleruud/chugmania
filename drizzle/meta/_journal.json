@@ -99,6 +99,13 @@
       "when": 1791166109254,
       "tag": "0013_tournament_draft_status",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1791233677295,
+      "tag": "0014_tournament_preview_security",
+      "breakpoints": true
     }
   ]
 }

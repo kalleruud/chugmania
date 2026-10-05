@@ -5,8 +5,26 @@ import type { TimeEntry } from './timeEntry'
 
 export type EliminationType = 'single' | 'double'
 export type TournamentStatus = 'draft' | 'started'
+export type PreviewVisibility =
+  | 'visible'
+  | 'hide_tracks'
+  | 'groups_only'
+  | 'stats_only'
+
+export function isPreviewVisibility(
+  value: unknown
+): value is PreviewVisibility {
+  return (
+    value === 'visible' ||
+    value === 'hide_tracks' ||
+    value === 'groups_only' ||
+    value === 'stats_only'
+  )
+}
 export type TournamentConfig = {
   session: string
+  owner: string | null
+  previewVisibility: PreviewVisibility
   groupsCount: number
   advancementCount: number
   eliminationType: EliminationType
@@ -67,6 +85,7 @@ export type Standing = {
 
 export type TournamentDetails = {
   status: TournamentStatus
+  canConfigure: boolean
   configKey: string | null
   previewKey: string | null
   id: string
@@ -91,6 +110,9 @@ export type TournamentDetails = {
     groupTotal: number
   }
   workloadSummary: {
+    participants: number
+    groups: number
+    matches: number
     tracks: number
     minMatches: number
     maxMatches: number
@@ -176,6 +198,8 @@ export function isTournamentConfig(value: unknown): value is TournamentConfig {
   return (
     isRecord(value) &&
     typeof value.session === 'string' &&
+    (value.owner === null || typeof value.owner === 'string') &&
+    isPreviewVisibility(value.previewVisibility) &&
     typeof value.groupsCount === 'number' &&
     Number.isSafeInteger(value.groupsCount) &&
     value.groupsCount > 0 &&

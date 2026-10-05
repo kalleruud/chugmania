@@ -547,6 +547,7 @@ export function tournamentDetails(state: TournamentState): TournamentDetails {
   const needs = tieBreakerNeeds(state)
   return {
     status: state.frozenAt ? 'started' : 'draft',
+    canConfigure: false,
     configKey: null,
     previewKey: null,
     id: state.id,
@@ -597,6 +598,9 @@ export function tournamentDetails(state: TournamentState): TournamentDetails {
       groupTotal: group.length,
     },
     workloadSummary: {
+      participants: state.participants.length,
+      groups: state.groups.length,
+      matches: active.length,
       tracks: new Set([
         ...state.fixtures.flatMap(f => (f.match.track ? [f.match.track] : [])),
       ]).size,

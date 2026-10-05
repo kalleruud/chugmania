@@ -20,6 +20,7 @@ import MatchManager from './match.manager'
 import RatingManager from './rating.manager'
 import SessionManager from './session.manager'
 import TournamentManager from './tournament/tournament.manager'
+import TournamentSecurity from './tournament/tournament.security'
 
 type TimeEntryUpdates = Partial<CreateTimeEntry> & {
   status: TimeEntry['status']
@@ -304,6 +305,6 @@ export default class TimeEntryManager {
         asc(timeEntries.createdAt)
       )
 
-    return data
+    return TournamentSecurity.visibleTimeEntries(data)
   }
 }
