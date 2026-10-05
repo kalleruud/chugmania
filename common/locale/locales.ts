@@ -234,7 +234,6 @@ const no = {
       'Cum Dumpsters',
     ],
     group: 'Gruppe',
-    backToTournament: 'Tilbake til turneringen',
     groupStandings: 'Gruppeplassering',
     rank: '#',
     wins: 'W',

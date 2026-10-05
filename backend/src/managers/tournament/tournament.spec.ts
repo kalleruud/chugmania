@@ -104,7 +104,7 @@ describe('Tournament group details', () => {
     expect(group.standings[2].explanation).toBeNull()
   })
 
-  test('a complete circular tie remains unresolved', () => {
+  test('circular direct results leave a shared rank', () => {
     const state = createState(4)
     setResult(state, 'player-0', 'player-1')
     setResult(state, 'player-1', 'player-2')

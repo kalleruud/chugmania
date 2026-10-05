@@ -56,17 +56,13 @@ function rankTiedPlayers(
         : remaining.map(user => ({ user, rank: 1, resolved: false }))
       return [
         ...rows,
-        ...tied.map(
-          row =>
-            ({
-              ...row,
-              rank: rows.length + row.rank,
-              explanation: row.resolved ? 'tie_breaker' : null,
-            }) satisfies Pick<
-              Standing,
-              'user' | 'rank' | 'resolved' | 'explanation'
-            >
-        ),
+        ...tied.map<
+          Pick<Standing, 'user' | 'rank' | 'resolved' | 'explanation'>
+        >(row => ({
+          ...row,
+          rank: rows.length + row.rank,
+          explanation: row.resolved ? 'tie_breaker' : null,
+        })),
       ]
     }
     rows.push({

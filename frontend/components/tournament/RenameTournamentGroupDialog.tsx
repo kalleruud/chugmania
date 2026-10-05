@@ -29,18 +29,16 @@ export default function RenameTournamentGroupDialog({
   const [open, setOpen] = useState(false)
   const [name, setName] = useState(group.name)
   const [pending, setPending] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
   async function rename(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
     if (pending) return
     const trimmed = name.trim()
     if (!trimmed || trimmed.length > MAX_TOURNAMENT_GROUP_NAME_LENGTH) {
-      setError(loc.no.tournament.invalidGroupName)
+      toast.error(loc.no.tournament.invalidGroupName)
       return
     }
     setPending(true)
-    setError(null)
     try {
       const response = await socket.emitWithAck('rename_tournament_group', {
         session,
@@ -51,9 +49,7 @@ export default function RenameTournamentGroupDialog({
       toast.success(loc.no.tournament.groupRenamed)
       setOpen(false)
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      setError(message)
-      toast.error(message)
+      toast.error(error instanceof Error ? error.message : String(error))
     } finally {
       setPending(false)
     }
@@ -64,10 +60,7 @@ export default function RenameTournamentGroupDialog({
       open={open}
       onOpenChange={value => {
         if (pending) return
-        if (value) {
-          setName(group.name)
-          setError(null)
-        }
+        if (value) setName(group.name)
         setOpen(value)
       }}>
       <DialogTrigger asChild>
@@ -93,21 +86,8 @@ export default function RenameTournamentGroupDialog({
             placeholder={loc.no.tournament.groupName}
             maxLength={MAX_TOURNAMENT_GROUP_NAME_LENGTH}
             disabled={pending}
-            aria-invalid={!!error}
-            aria-describedby={error ? `${inputId}-error` : undefined}
-            onChange={event => {
-              setName(event.target.value)
-              setError(null)
-            }}
+            onChange={event => setName(event.target.value)}
           />
-          {error && (
-            <p
-              id={`${inputId}-error`}
-              role='alert'
-              className='text-destructive'>
-              {error}
-            </p>
-          )}
           <DialogFooter>
             <DialogClose asChild>
               <Button type='button' variant='ghost' disabled={pending}>
