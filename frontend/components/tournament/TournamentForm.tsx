@@ -196,7 +196,7 @@ export default function TournamentForm({
         </label>
         {stages.map(stage => (
           <div key={stage}>
-            <h3>{stageName(stage)}</h3>
+            <p>{stageName(stage)}</p>
             <ComboboxMulti
               items={items}
               CustomRow={TrackRow}
