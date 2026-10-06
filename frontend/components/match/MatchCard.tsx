@@ -24,7 +24,10 @@ export default function MatchCard({
   const { canSetResult, toggleWinner } = useMatch(match)
   const user1 = users?.find(user => user.id === match.user1)
   const user2 = users?.find(user => user.id === match.user2)
-  const track = tracks?.find(track => track.id === match.track)
+  const track =
+    match.track === null
+      ? null
+      : tracks?.find(track => track.id === match.track)
   const session = sessions?.find(session => session.id === match.session)
   const isCancelled = match.status === 'cancelled' && !match.tournament?.awarded
   const isCompleted =
@@ -77,7 +80,7 @@ export default function MatchCard({
             {loc.no.common.status[match.status]}
           </span>
         </div>
-        {track && !hideTrack && (
+        {track !== undefined && !hideTrack && (
           <TrackRow item={track} hideLink className='p-0' />
         )}
         {session && (

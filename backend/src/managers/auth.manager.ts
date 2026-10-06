@@ -80,7 +80,7 @@ export default class AuthManager {
     const { userId } = await AuthManager.verify(socket.handshake.auth.token)
     const user = await UserManager.getUserById(userId)
 
-    if (allowedRoles && !allowedRoles.includes(user.role)) {
+    if (user.deletedAt || (allowedRoles && !allowedRoles.includes(user.role))) {
       throw new Error(loc.no.error.messages.insufficient_permissions)
     }
 

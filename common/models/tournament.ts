@@ -1,11 +1,34 @@
-import type { MatchStage } from '../../backend/database/schema'
 import { isRecord } from '../utils/utils'
-import type { Match, MatchStatus } from './match'
+import {
+  isMatchStage,
+  type Match,
+  type MatchStage,
+  type MatchStatus,
+} from './match'
 import type { TimeEntry } from './timeEntry'
 
 export type EliminationType = 'single' | 'double'
+export type TournamentStatus = 'draft' | 'started'
+export type PreviewVisibility =
+  | 'visible'
+  | 'hide_tracks'
+  | 'groups_only'
+  | 'stats_only'
+
+export function isPreviewVisibility(
+  value: unknown
+): value is PreviewVisibility {
+  return (
+    value === 'visible' ||
+    value === 'hide_tracks' ||
+    value === 'groups_only' ||
+    value === 'stats_only'
+  )
+}
 export type TournamentConfig = {
   session: string
+  owner: string | null
+  previewVisibility: PreviewVisibility
   groupsCount: number
   advancementCount: number
   eliminationType: EliminationType
@@ -65,9 +88,12 @@ export type Standing = {
 }
 
 export type TournamentDetails = {
+  status: TournamentStatus
+  canConfigure: boolean
+  configKey: string | null
+  previewKey: string | null
   id: string
   config: TournamentConfig
-  frozen: boolean
   cancelled: boolean
   notReadyReason: string | null
   participants: Participant[]
@@ -87,6 +113,9 @@ export type TournamentDetails = {
     groupTotal: number
   }
   workloadSummary: {
+    participants: number
+    groups: number
+    matches: number
     tracks: number
     minMatches: number
     maxMatches: number
@@ -94,6 +123,19 @@ export type TournamentDetails = {
 }
 
 export type TournamentRequest = { session: string }
+
+export type UpdateTournamentRequest = {
+  config: TournamentConfig
+  configKey: string
+}
+
+export type StartTournamentRequest = TournamentRequest & { previewKey: string }
+
+export type TournamentConflictResponse = {
+  success: false
+  message: string
+  details: TournamentDetails | null
+}
 
 export const MAX_TOURNAMENT_GROUP_NAME_LENGTH = 100
 
@@ -132,15 +174,22 @@ export function isTournamentConfig(value: unknown): value is TournamentConfig {
   return (
     isRecord(value) &&
     typeof value.session === 'string' &&
-    Number.isInteger(value.groupsCount) &&
-    Number.isInteger(value.advancementCount) &&
+    (value.owner === null || typeof value.owner === 'string') &&
+    isPreviewVisibility(value.previewVisibility) &&
+    typeof value.groupsCount === 'number' &&
+    Number.isSafeInteger(value.groupsCount) &&
+    value.groupsCount > 0 &&
+    typeof value.advancementCount === 'number' &&
+    Number.isSafeInteger(value.advancementCount) &&
+    value.advancementCount > 0 &&
     (value.eliminationType === 'single' ||
       value.eliminationType === 'double') &&
     (value.tieBreakerTrack === null ||
       typeof value.tieBreakerTrack === 'string') &&
     isRecord(value.stageTracks) &&
-    Object.values(value.stageTracks).every(
-      tracks =>
+    Object.entries(value.stageTracks).every(
+      ([stage, tracks]) =>
+        isMatchStage(stage) &&
         Array.isArray(tracks) &&
         tracks.every((track: unknown) => typeof track === 'string')
     )
@@ -154,5 +203,25 @@ export function isDeleteTournamentRequest(
     isTournamentRequest(value) &&
     'deleteRelatedResults' in value &&
     typeof value.deleteRelatedResults === 'boolean'
+  )
+}
+
+export function isUpdateTournamentRequest(
+  value: unknown
+): value is UpdateTournamentRequest {
+  return (
+    isRecord(value) &&
+    isTournamentConfig(value.config) &&
+    typeof value.configKey === 'string'
+  )
+}
+
+export function isStartTournamentRequest(
+  value: unknown
+): value is StartTournamentRequest {
+  return (
+    isTournamentRequest(value) &&
+    'previewKey' in value &&
+    typeof value.previewKey === 'string'
   )
 }

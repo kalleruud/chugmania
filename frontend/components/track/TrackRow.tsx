@@ -12,7 +12,7 @@ export function TrackRow({
   className,
   hideLink,
   highlight,
-}: Readonly<BaseRowProps<Track | undefined>>) {
+}: Readonly<BaseRowProps<Track | null | undefined>>) {
   const content = (
     <>
       <ItemContent>

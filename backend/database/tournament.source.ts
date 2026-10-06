@@ -1,9 +1,28 @@
-import type { Slot, TournamentState } from '@common/models/tournament'
-import { and, asc, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
+import { isMatchStage, type Match } from '@common/models/match'
+import type { TimeEntry } from '@common/models/timeEntry'
+import {
+  type Slot,
+  type TournamentConfig,
+  type TournamentFixture,
+  type TournamentState,
+} from '@common/models/tournament'
+import {
+  and,
+  asc,
+  eq,
+  getTableColumns,
+  inArray,
+  isNotNull,
+  isNull,
+} from 'drizzle-orm'
+import type {
+  IndexColumn,
+  SQLiteTable,
+  SQLiteUpdateSetSource,
+} from 'drizzle-orm/sqlite-core'
 import db, { database } from './database'
 import {
   matches,
-  type MatchStage,
   sessions,
   sessionSignups,
   timeEntries,
@@ -17,9 +36,69 @@ import {
   users,
 } from './schema'
 
+const activeDraft = and(
+  eq(tournaments.status, 'draft'),
+  isNull(tournaments.deletedAt)
+)
+
+function activeTournamentRows(
+  table:
+    | typeof tournamentStages
+    | typeof tournamentGroups
+    | typeof tournamentPlayers
+    | typeof tournamentMatches,
+  tournament: string
+) {
+  return and(eq(table.tournament, tournament), isNull(table.deletedAt))
+}
+
 export default class TournamentSource {
+  private static upsert<T extends SQLiteTable>(
+    table: T,
+    row: T['$inferInsert'] & SQLiteUpdateSetSource<T>,
+    target: IndexColumn | IndexColumn[] = getTableColumns(table).id
+  ): void {
+    const set: SQLiteUpdateSetSource<T> = { ...row }
+    Reflect.deleteProperty(set, 'id')
+    db.insert(table).values(row).onConflictDoUpdate({ target, set }).run()
+  }
+
   static transaction<T>(work: () => T): T {
     return database.transaction(work)()
+  }
+
+  static visibleMatches(rows: Match[]): Match[] {
+    const hidden = new Set(
+      db
+        .select({ id: tournamentMatches.matchId })
+        .from(tournamentMatches)
+        .innerJoin(
+          tournaments,
+          eq(tournaments.id, tournamentMatches.tournament)
+        )
+        .where(activeDraft)
+        .all()
+        .map(row => row.id)
+    )
+    return rows.filter(row => !hidden.has(row.id))
+  }
+
+  static visibleTimeEntries(rows: TimeEntry[]): TimeEntry[] {
+    const hidden = new Set(
+      db
+        .select({ session: tournaments.session })
+        .from(tournaments)
+        .where(activeDraft)
+        .all()
+        .map(row => row.session)
+    )
+    return rows.filter(
+      row =>
+        row.status !== 'planned' ||
+        !row.tieBreaker ||
+        !row.session ||
+        !hidden.has(row.session)
+    )
   }
 
   static getConfirmedPlayerIds(session: string): string[] {
@@ -96,39 +175,70 @@ export default class TournamentSource {
   }
 
   static loadTournament(session: string): TournamentState | null {
-    const row = TournamentSource.findActiveTournament(session)
-    if (!row) return null
-    const groupRows = db
-      .select()
+    const row = this.findActiveTournament(session)
+    if (!row || row.status !== 'started') return null
+    return {
+      id: row.id,
+      config: this.loadConfig(row),
+      participants: this.loadPlayers(row.id),
+      groups: this.loadGroups(row.id),
+      tieBreakers: this.loadLaps(row),
+      fixtures: this.loadFixtures(row.id),
+      frozenAt: row.frozenAt ?? row.createdAt,
+      notReadyReason: row.notReadyReason,
+      cancelled:
+        db.select().from(sessions).where(eq(sessions.id, session)).get()
+          ?.status === 'cancelled',
+    }
+  }
+
+  private static loadGroups(tournament: string): TournamentState['groups'] {
+    return db
+      .select({
+        id: tournamentGroups.id,
+        name: tournamentGroups.name,
+        position: tournamentGroups.position,
+      })
       .from(tournamentGroups)
-      .where(
-        and(
-          eq(tournamentGroups.tournament, row.id),
-          isNull(tournamentGroups.deletedAt)
-        )
-      )
+      .where(activeTournamentRows(tournamentGroups, tournament))
       .orderBy(asc(tournamentGroups.position))
       .all()
-    const playerRows = db
-      .select()
+  }
+
+  private static loadPlayers(
+    tournament: string
+  ): TournamentState['participants'] {
+    return db
+      .select({
+        user: tournamentPlayers.user,
+        rating: tournamentPlayers.rating,
+        globalRank: tournamentPlayers.globalRank,
+        admission: tournamentPlayers.admission,
+        groupId: tournamentPlayers.groupId,
+      })
       .from(tournamentPlayers)
-      .where(
-        and(
-          eq(tournamentPlayers.tournament, row.id),
-          isNull(tournamentPlayers.deletedAt)
-        )
-      )
+      .where(activeTournamentRows(tournamentPlayers, tournament))
       .all()
-    const stageRows = db
+  }
+
+  private static loadLaps(
+    row: typeof tournaments.$inferSelect
+  ): TournamentState['tieBreakers'] {
+    if (!row.tieBreakerTrack) return []
+    return db
       .select()
-      .from(tournamentStages)
+      .from(timeEntries)
       .where(
         and(
-          eq(tournamentStages.tournament, row.id),
-          isNull(tournamentStages.deletedAt)
+          eq(timeEntries.session, row.session),
+          eq(timeEntries.track, row.tieBreakerTrack),
+          eq(timeEntries.tieBreaker, true)
         )
       )
       .all()
+  }
+
+  private static loadFixtures(tournament: string): TournamentFixture[] {
     const slotRows = db
       .select({ slot: tournamentMatchSlots })
       .from(tournamentMatchSlots)
@@ -138,9 +248,8 @@ export default class TournamentSource {
       )
       .where(
         and(
-          eq(tournamentMatches.tournament, row.id),
-          isNull(tournamentMatchSlots.deletedAt),
-          isNull(tournamentMatches.deletedAt)
+          activeTournamentRows(tournamentMatches, tournament),
+          isNull(tournamentMatchSlots.deletedAt)
         )
       )
       .all()
@@ -150,73 +259,28 @@ export default class TournamentSource {
         slot,
       ])
     )
-    const fixtureRows = db
+    return db
       .select({ fixture: tournamentMatches, match: matches })
       .from(tournamentMatches)
       .innerJoin(matches, eq(tournamentMatches.matchId, matches.id))
       .where(
         and(
-          eq(tournamentMatches.tournament, row.id),
-          isNull(tournamentMatches.deletedAt),
+          activeTournamentRows(tournamentMatches, tournament),
           isNull(matches.deletedAt)
         )
       )
+      .orderBy(asc(tournamentMatches.order))
       .all()
-    return {
-      id: row.id,
-      config: {
-        groupsCount: row.groupsCount,
-        advancementCount: row.advancementCount,
-        eliminationType: row.eliminationType,
-        session: row.session,
-        tieBreakerTrack: row.tieBreakerTrack,
-        stageTracks: Object.fromEntries(
-          stageRows.map(s => [s.stage, s.tracks])
-        ),
-      },
-      participants: playerRows.map(p => ({
-        user: p.user,
-        rating: p.rating,
-        globalRank: p.globalRank,
-        admission: p.admission,
-        groupId: p.groupId,
-      })),
-      groups: groupRows.map(g => ({
-        id: g.id,
-        name: g.name,
-        position: g.position,
-      })),
-      tieBreakers: row.tieBreakerTrack
-        ? db
-            .select()
-            .from(timeEntries)
-            .where(
-              and(
-                eq(timeEntries.session, row.session),
-                eq(timeEntries.track, row.tieBreakerTrack),
-                eq(timeEntries.tieBreaker, true)
-              )
-            )
-            .all()
-        : [],
-      fixtures: fixtureRows
-        .map(({ fixture, match }) => ({
-          id: fixture.id,
-          groupId: fixture.groupId,
-          bracket: fixture.bracket,
-          round: fixture.round,
-          order: fixture.order,
-          slot1: TournamentSource.readSlot(slots.get(`${fixture.id}:1`)),
-          slot2: TournamentSource.readSlot(slots.get(`${fixture.id}:2`)),
-          match,
-        }))
-        .sort((a, b) => a.order - b.order),
-      frozenAt: row.frozenAt ?? row.createdAt,
-      notReadyReason: row.notReadyReason,
-      cancelled:
-        db.select().from(sessions).where(eq(sessions.id, session)).get()
-          ?.status === 'cancelled',
-    }
+      .map(({ fixture, match }) => ({
+        id: fixture.id,
+        groupId: fixture.groupId,
+        bracket: fixture.bracket,
+        round: fixture.round,
+        order: fixture.order,
+        slot1: TournamentSource.readSlot(slots.get(`${fixture.id}:1`)),
+        slot2: TournamentSource.readSlot(slots.get(`${fixture.id}:2`)),
+        match,
+      }))
   }
 
   // Reuse required laps, restore applicable planned laps, and soft-delete unused
@@ -225,34 +289,34 @@ export default class TournamentSource {
     state: TournamentState,
     needs: Map<string, boolean>
   ): void {
-    const track = state.config.tieBreakerTrack
-    if (!track) return
-    const laps = new Map(state.tieBreakers.map(lap => [lap.user, lap]))
-    for (const user of needs.keys()) {
-      const lap = laps.get(user)
-      if (!lap)
-        db.insert(timeEntries)
-          .values({
-            user,
-            track,
-            session: state.config.session,
-            tieBreaker: true,
-            status: 'planned',
-          })
-          .run()
-      else if (lap.status === 'planned' && lap.deletedAt)
+    this.transaction(() => {
+      const track = state.config.tieBreakerTrack
+      if (!track) return
+      const laps = new Map(state.tieBreakers.map(lap => [lap.user, lap]))
+      for (const user of needs.keys()) {
+        if (!laps.has(user))
+          db.insert(timeEntries)
+            .values({
+              user,
+              track,
+              session: state.config.session,
+              tieBreaker: true,
+              status: 'planned',
+            })
+            .run()
+      }
+      for (const lap of state.tieBreakers) {
+        if (
+          lap.status !== 'planned' ||
+          !!lap.deletedAt === !needs.has(lap.user)
+        )
+          continue
         db.update(timeEntries)
-          .set({ deletedAt: null })
+          .set({ deletedAt: needs.has(lap.user) ? null : new Date() })
           .where(eq(timeEntries.id, lap.id))
           .run()
-    }
-    for (const lap of state.tieBreakers) {
-      if (lap.status === 'planned' && !lap.deletedAt && !needs.has(lap.user))
-        db.update(timeEntries)
-          .set({ deletedAt: new Date() })
-          .where(eq(timeEntries.id, lap.id))
-          .run()
-    }
+      }
+    })
   }
 
   private static readSlot(
@@ -287,158 +351,188 @@ export default class TournamentSource {
       .run()
   }
 
+  static loadConfig(row: typeof tournaments.$inferSelect): TournamentConfig {
+    const stages = db
+      .select()
+      .from(tournamentStages)
+      .where(activeTournamentRows(tournamentStages, row.id))
+      .all()
+    return {
+      session: row.session,
+      owner: row.owner,
+      previewVisibility: row.previewVisibility,
+      groupsCount: row.groupsCount,
+      advancementCount: row.advancementCount,
+      eliminationType: row.eliminationType,
+      tieBreakerTrack: row.tieBreakerTrack,
+      stageTracks: Object.fromEntries(
+        stages.map(stage => [stage.stage, stage.tracks])
+      ),
+    }
+  }
+
+  static saveConfig(
+    id: string,
+    config: TournamentConfig,
+    startedState?: Pick<TournamentState, 'frozenAt' | 'notReadyReason'>
+  ): void {
+    this.transaction(() => {
+      const { stageTracks } = config
+      const row: typeof tournaments.$inferInsert = {
+        id,
+        session: config.session,
+        owner: config.owner,
+        previewVisibility: config.previewVisibility,
+        groupsCount: config.groupsCount,
+        advancementCount: config.advancementCount,
+        eliminationType: config.eliminationType,
+        tieBreakerTrack: config.tieBreakerTrack,
+        status: startedState ? 'started' : 'draft',
+        frozenAt: startedState?.frozenAt ?? null,
+        notReadyReason: startedState?.notReadyReason ?? null,
+      }
+      this.upsert(tournaments, row)
+      db.update(tournamentStages)
+        .set({ deletedAt: new Date() })
+        .where(eq(tournamentStages.tournament, id))
+        .run()
+      for (const [stage, tracks] of Object.entries(stageTracks)) {
+        if (!tracks || !isMatchStage(stage)) continue
+        this.upsert(
+          tournamentStages,
+          {
+            id: `${id}:${stage}`,
+            tournament: id,
+            stage,
+            tracks,
+            deletedAt: null,
+          },
+          [tournamentStages.tournament, tournamentStages.stage]
+        )
+      }
+    })
+  }
+
   static saveTournament(state: TournamentState): void {
-    const { session, stageTracks, ...config } = state.config
-    const row = {
-      id: state.id,
-      session,
-      ...config,
-      frozenAt: state.frozenAt,
-      notReadyReason: state.notReadyReason,
-    }
-    db.insert(tournaments)
-      .values(row)
-      .onConflictDoUpdate({ target: tournaments.id, set: row })
-      .run()
-    for (const [stage, tracks] of Object.entries(stageTracks)) {
-      if (!tracks) continue
-      const row = {
-        id: `${state.id}:${stage}`,
-        tournament: state.id,
-        stage: stage as MatchStage,
-        tracks,
-      }
-      db.insert(tournamentStages)
-        .values(row)
-        .onConflictDoUpdate({
-          target: [tournamentStages.tournament, tournamentStages.stage],
-          set: { tracks },
-        })
-        .run()
-    }
-    for (const group of state.groups) {
-      const row = { ...group, tournament: state.id }
-      db.insert(tournamentGroups)
-        .values(row)
-        .onConflictDoUpdate({ target: tournamentGroups.id, set: row })
-        .run()
-    }
-    for (const player of state.participants) {
-      const row = {
-        ...player,
-        id: `${state.id}:${player.user}`,
-        tournament: state.id,
-        deletedAt: null,
-      }
-      db.insert(tournamentPlayers)
-        .values(row)
-        .onConflictDoUpdate({ target: tournamentPlayers.id, set: row })
-        .run()
-    }
-    for (const fixture of state.fixtures) {
-      const { tournament: metadata, ...match } = fixture.match
-      db.insert(matches)
-        .values(match)
-        .onConflictDoUpdate({ target: matches.id, set: match })
-        .run()
-      const { match: ignored, slot1, slot2, ...fields } = fixture
-      const row = { ...fields, tournament: state.id, matchId: match.id }
-      db.insert(tournamentMatches)
-        .values(row)
-        .onConflictDoUpdate({ target: tournamentMatches.id, set: row })
-        .run()
-      const slots: [1 | 2, Slot][] = [
-        [1, slot1],
-        [2, slot2],
-      ]
-      for (const [position, slot] of slots) {
-        let slotHolderId: string
-        if (slot.kind === 'player') slotHolderId = slot.user
-        else if (slot.kind === 'group_rank') slotHolderId = slot.groupId
-        else slotHolderId = slot.matchId
-        const fields = {
-          tournamentMatch: fixture.id,
-          position,
-          kind: slot.kind,
-          slotHolderId,
-          rank: slot.kind === 'group_rank' ? slot.rank : null,
-          overrideUser: slot.override ?? null,
+    this.transaction(() => {
+      this.saveConfig(state.id, state.config, state)
+      for (const group of state.groups)
+        this.upsert(tournamentGroups, { ...group, tournament: state.id })
+      for (const player of state.participants) {
+        this.upsert(tournamentPlayers, {
+          ...player,
+          id: `${state.id}:${player.user}`,
+          tournament: state.id,
           deletedAt: null,
-        }
-        db.insert(tournamentMatchSlots)
-          .values({ id: `${fixture.id}:${position}`, ...fields })
-          .onConflictDoUpdate({
-            target: [
-              tournamentMatchSlots.tournamentMatch,
-              tournamentMatchSlots.position,
-            ],
-            set: fields,
-          })
-          .run()
+        })
       }
-    }
+      for (const fixture of state.fixtures) this.saveFixture(state.id, fixture)
+    })
+  }
+
+  private static saveFixture(
+    tournament: string,
+    fixture: TournamentFixture
+  ): void {
+    const { tournament: metadata, ...match } = fixture.match
+    this.upsert(matches, match)
+    const { match: ignored, slot1, slot2, ...fields } = fixture
+    this.upsert(tournamentMatches, { ...fields, tournament, matchId: match.id })
+    this.saveSlot(fixture.id, 1, slot1)
+    this.saveSlot(fixture.id, 2, slot2)
+  }
+
+  private static saveSlot(
+    tournamentMatch: string,
+    position: 1 | 2,
+    slot: Slot
+  ): void {
+    let slotHolderId: string
+    if (slot.kind === 'player') slotHolderId = slot.user
+    else if (slot.kind === 'group_rank') slotHolderId = slot.groupId
+    else slotHolderId = slot.matchId
+    this.upsert(
+      tournamentMatchSlots,
+      {
+        id: `${tournamentMatch}:${position}`,
+        tournamentMatch,
+        position,
+        kind: slot.kind,
+        slotHolderId,
+        rank: slot.kind === 'group_rank' ? slot.rank : null,
+        overrideUser: slot.override ?? null,
+        deletedAt: null,
+      },
+      [tournamentMatchSlots.tournamentMatch, tournamentMatchSlots.position]
+    )
   }
 
   static removeTournament(
     session: string,
     { deleteMatches } = { deleteMatches: true }
   ): void {
-    const state = TournamentSource.loadTournament(session)
-    if (!state) return
-    const deletedAt = new Date()
-    for (const lap of state.tieBreakers) {
-      if (lap.status === 'planned')
-        db.update(timeEntries)
-          .set({ deletedAt })
-          .where(eq(timeEntries.id, lap.id))
-          .run()
-    }
-    const relatedMatchIds = db
-      .select({ id: tournamentMatches.matchId })
-      .from(tournamentMatches)
-      .where(eq(tournamentMatches.tournament, state.id))
-    db.update(tournamentMatchSlots)
-      .set({ deletedAt })
-      .where(
-        inArray(
-          tournamentMatchSlots.tournamentMatch,
-          db
-            .select({ id: tournamentMatches.id })
-            .from(tournamentMatches)
-            .where(eq(tournamentMatches.tournament, state.id))
-        )
-      )
-      .run()
-    if (deleteMatches)
-      db.update(matches)
+    this.transaction(() => {
+      const state = this.findActiveTournament(session)
+      if (!state) return
+      const deletedAt = new Date()
+      const laps = state.status === 'started' ? this.loadLaps(state) : []
+      for (const lap of laps) {
+        if (lap.status === 'planned')
+          db.update(timeEntries)
+            .set({ deletedAt })
+            .where(eq(timeEntries.id, lap.id))
+            .run()
+      }
+      db.update(tournamentMatchSlots)
         .set({ deletedAt })
-        .where(inArray(matches.id, relatedMatchIds))
-        .run()
-    else
-      db.update(matches)
-        .set({ status: 'completed' })
         .where(
-          and(
-            inArray(matches.id, relatedMatchIds),
-            eq(matches.status, 'cancelled'),
-            isNotNull(matches.winner),
-            isNull(matches.deletedAt)
+          inArray(
+            tournamentMatchSlots.tournamentMatch,
+            db
+              .select({ id: tournamentMatches.id })
+              .from(tournamentMatches)
+              .where(eq(tournamentMatches.tournament, state.id))
           )
         )
         .run()
-    for (const table of [
-      tournamentStages,
-      tournamentGroups,
-      tournamentPlayers,
-      tournamentMatches,
-    ])
-      db.update(table)
+      this.removeMatches(state.id, deleteMatches, deletedAt)
+      for (const table of [
+        tournamentStages,
+        tournamentGroups,
+        tournamentPlayers,
+        tournamentMatches,
+      ])
+        db.update(table)
+          .set({ deletedAt })
+          .where(eq(table.tournament, state.id))
+          .run()
+      db.update(tournaments)
         .set({ deletedAt })
-        .where(eq(table.tournament, state.id))
+        .where(eq(tournaments.id, state.id))
         .run()
-    db.update(tournaments)
-      .set({ deletedAt })
-      .where(eq(tournaments.id, state.id))
+    })
+  }
+
+  private static removeMatches(
+    tournament: string,
+    deleteMatches: boolean,
+    deletedAt: Date
+  ): void {
+    const related = inArray(
+      matches.id,
+      db
+        .select({ id: tournamentMatches.matchId })
+        .from(tournamentMatches)
+        .where(eq(tournamentMatches.tournament, tournament))
+    )
+    const awarded = and(
+      eq(matches.status, 'cancelled'),
+      isNotNull(matches.winner),
+      isNull(matches.deletedAt)
+    )
+    db.update(matches)
+      .set(deleteMatches ? { deletedAt } : { status: 'completed' })
+      .where(and(related, deleteMatches ? undefined : awarded))
       .run()
   }
 }

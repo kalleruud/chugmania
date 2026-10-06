@@ -14,6 +14,7 @@ import type { User } from '@common/models/user'
 import { and, asc, eq, getTableColumns, isNull, sql } from 'drizzle-orm'
 import db, { database } from '../../database/database'
 import { timeEntries } from '../../database/schema'
+import TournamentSource from '../../database/tournament.source'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import MatchManager from './match.manager'
@@ -150,6 +151,7 @@ export default class TimeEntryManager {
       broadcast('all_sessions', await SessionManager.getAllSessions())
     }
     broadcast('all_rankings', RatingManager.onGetRatings())
+    TournamentManager.publish(socket.id)
     broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
 
     return {
@@ -278,10 +280,8 @@ export default class TimeEntryManager {
       broadcast('all_sessions', await SessionManager.getAllSessions())
     broadcast('all_rankings', RatingManager.onGetRatings())
     broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
-    if (tieBreaker) {
-      broadcast('all_matches', await MatchManager.getAllMatches())
-      TournamentManager.publish(actor)
-    }
+    if (tieBreaker) broadcast('all_matches', await MatchManager.getAllMatches())
+    TournamentManager.publish(actor)
   }
 
   static deleteTimeEntriesForUser(userId: User['id']): void {
@@ -305,6 +305,6 @@ export default class TimeEntryManager {
         asc(timeEntries.createdAt)
       )
 
-    return data
+    return TournamentSource.visibleTimeEntries(data)
   }
 }

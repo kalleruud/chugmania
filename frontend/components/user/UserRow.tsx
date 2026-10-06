@@ -52,12 +52,7 @@ export default function UserRow({
         )}
 
         {hideRanking && (
-          <div
-            className={twMerge(
-              'h-4 w-1 flex-none rounded-full bg-muted-foreground',
-              highlight && 'bg-primary'
-            )}
-          />
+          <div className='h-4 w-1 flex-none rounded-full bg-primary' />
         )}
 
         <ItemTitle

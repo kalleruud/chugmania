@@ -1,9 +1,12 @@
 import type { ExportCsvRequest } from '@common/models/importCsv'
-import type { MatchStatus } from '@common/models/match'
+import {
+  MATCH_STAGE_CODES,
+  type MatchStage,
+  type MatchStatus,
+} from '@common/models/match'
 import type { GapType } from '@common/models/timeEntry'
 import { getRandomItem } from '@common/utils/utils'
 import type {
-  MatchStage,
   SessionResponse,
   SessionStatus,
   TrackLevel,
@@ -14,21 +17,7 @@ import type {
 export type Localization = typeof no
 export type Locale = 'no'
 
-const matchStageCodes: Record<MatchStage, string> = {
-  group: 'GS',
-  eight: 'EF',
-  quarter: 'QF',
-  semi: 'SF',
-  bronze: 'BF',
-  final: 'F',
-  loser_eight: 'LEF',
-  loser_quarter: 'LQF',
-  loser_semi: 'LSF',
-  loser_bronze: 'LBF',
-  loser_final: 'LF',
-  grand_final: 'GF',
-  grand_final_reset: 'GFR',
-}
+const matchStageCodes: Record<MatchStage, string> = MATCH_STAGE_CODES
 
 const no = {
   chugmania: 'Chugmania',
@@ -174,6 +163,7 @@ const no = {
       upcoming: 'Kommer',
     },
     rsvp: {
+      signup: 'Meld meg på',
       change: 'Endre svar',
       responses: {
         yes: 'Skal',
@@ -215,6 +205,7 @@ const no = {
     optionalTieBreaker: 'Valgfri',
     adminPanel: 'Adminpanel',
     groups: 'Grupper',
+    roundsPerPlayer: 'Runder per spiller',
     groupNames: [
       'Furries',
       'Degenerates',
@@ -266,6 +257,20 @@ const no = {
     bracketMatches: 'Turneringsmatcher',
     create: 'Opprett turnering',
     preview: 'Forhåndsvisning',
+    start: 'Start turnering',
+    startConfirm: 'Bekreft start og lås turneringen',
+    started: 'Turneringen er startet',
+    saveChanges: 'Lagre endringer',
+    discard: 'Forkast endringer',
+    unsaved: 'Ulagrede endringer. Lagre for å oppdatere forhåndsvisningen.',
+    conflict:
+      'Turneringen er endret. Se gjennom det oppdaterte oppsettet før du prøver igjen.',
+    configConflict:
+      'Oppsettet er endret av en annen administrator. Last inn det lagrede oppsettet før du fortsetter.',
+    reload: 'Last inn lagret oppsett',
+    draftDeleteDescription:
+      'Vil du slette turneringsoppsettet og forhåndsvisningen?',
+
     pending: 'Venter',
     frozen: 'Gruppefordeling låst',
     finalStandings: 'Sluttresultat',
@@ -286,6 +291,7 @@ const no = {
     conditional: 'Hvis nødvendig',
     invalid: 'Ugyldig turneringsoppsett',
     session: `Sessionen er slettet eller avlyst`,
+    awaitingSignups: 'Venter på påmeldinger',
     roster:
       'Deltakerlisten passer ikke turneringsoppsettet. Venter på flere deltakere.',
     tracks: 'Velg minst én bane for hver runde',

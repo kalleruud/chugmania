@@ -33,7 +33,8 @@ export default function TournamentGroupPage() {
   }
   const session = sessions.find(session => session.id === id)
   const tournament = tournaments.find(
-    tournament => tournament.config.session === id
+    tournament =>
+      tournament.config.session === id && tournament.status === 'started'
   )
   const group = tournament?.groups.find(group => group.id === groupId)
   if (!session || !tournament || !group)

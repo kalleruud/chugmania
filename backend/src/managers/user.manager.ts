@@ -15,7 +15,9 @@ import { users } from '../../database/schema'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import RatingManager from './rating.manager'
+import SessionManager from './session.manager'
 import TimeEntryManager from './timeEntry.manager'
+import TournamentManager from './tournament/tournament.manager'
 
 export default class UserManager {
   static readonly table = users
@@ -44,7 +46,7 @@ export default class UserManager {
     const entries = Object.entries({
       ...updates,
       createdAt: updates.createdAt ? new Date(updates.createdAt) : undefined,
-      deletedAt: updates.deletedAt ? new Date(updates.deletedAt) : undefined,
+      deletedAt: updates.deletedAt && new Date(updates.deletedAt),
       updatedAt: undefined,
     } satisfies typeof updates).filter(([, value]) => value !== undefined)
 
@@ -167,6 +169,13 @@ export default class UserManager {
 
     broadcast('all_users', await UserManager.getAllUsers())
     broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
+    if (request.deletedAt !== undefined) {
+      RatingManager.recalculate()
+      broadcast('all_rankings', RatingManager.onGetRatings())
+      broadcast('all_sessions', await SessionManager.getAllSessions())
+    }
+    if (request.deletedAt !== undefined || request.role !== undefined)
+      TournamentManager.publish(socket.id)
 
     return {
       success: true,
@@ -204,6 +213,8 @@ export default class UserManager {
     broadcast('all_users', await UserManager.getAllUsers())
     broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
     broadcast('all_rankings', RatingManager.onGetRatings())
+    broadcast('all_sessions', await SessionManager.getAllSessions())
+    TournamentManager.publish(socket.id)
 
     return {
       success: true,
@@ -219,10 +230,6 @@ export default class UserManager {
     }
 
     const { data: actor } = await tryCatchAsync(AuthManager.checkAuth(socket))
-    if (actor && actor.role !== 'admin' && request.role !== 'user') {
-      throw new Error(loc.no.error.messages.insufficient_permissions)
-    }
-
     const userAlreadyExists = await UserManager.userExists(request.email)
     if (userAlreadyExists) {
       throw new Error(loc.no.error.messages.email_already_exists)
@@ -230,6 +237,8 @@ export default class UserManager {
 
     const isFirstUser = !(await UserManager.adminExists())
     const role = isFirstUser ? 'admin' : (request.role ?? 'user')
+    if (!isFirstUser && role !== 'user' && actor?.role !== 'admin')
+      throw new Error(loc.no.error.messages.insufficient_permissions)
 
     const passwordHash = await AuthManager.hash(request.password)
 

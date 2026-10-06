@@ -12,6 +12,8 @@ import { createHash } from 'node:crypto'
 import type { MatchStage } from '../../../database/schema'
 import { seedingOrder } from './tournament'
 
+type GenerationInput = Pick<TournamentState, 'id' | 'config'>
+
 function groupNames(session: string, count: number): string[] {
   const names = loc.no.tournament.groupNames
     .map(name => ({
@@ -67,7 +69,7 @@ type AddFixture = (
 ) => TournamentFixture
 
 function createFixture(
-  session: string,
+  input: GenerationInput,
   index: number,
   stage: MatchStage,
   bracket: TournamentFixture['bracket'],
@@ -76,8 +78,8 @@ function createFixture(
   slot2: Slot,
   groupId: string | null = null
 ): TournamentFixture {
-  const id = `fixture-${index}`
-  const fixture: TournamentFixture = {
+  const id = `${input.id}:fixture-${index}`
+  return {
     id,
     groupId,
     bracket,
@@ -87,23 +89,20 @@ function createFixture(
     slot2,
     match: {
       id,
-      user1: null,
-      user2: null,
+      user1: slot1.kind === 'player' ? slot1.user : null,
+      user2: slot2.kind === 'player' ? slot2.user : null,
       winner: null,
       duration: null,
       comment: null,
       stage,
       status: 'planned',
-      session,
+      session: input.config.session,
       track: null,
       createdAt: new Date(0),
       updatedAt: null,
       deletedAt: null,
     },
   }
-  if (slot1.kind === 'player') fixture.match.user1 = slot1.user
-  if (slot2.kind === 'player') fixture.match.user2 = slot2.user
-  return fixture
 }
 
 function createGroupFixtures(
@@ -148,11 +147,9 @@ function createUpperBracket(
   for (let size = seeds.length; size >= 2; size /= 2) {
     const next: TournamentFixture[] = []
     for (let i = 0; i < size / 2; i++) {
-      const slot1: Slot = previous.length
-        ? { kind: 'match_winner', matchId: previous[i * 2].id }
-        : seeds[i]
+      const slot1: Slot = previous.length ? winner(previous[i * 2]) : seeds[i]
       const slot2: Slot = previous.length
-        ? { kind: 'match_winner', matchId: previous[i * 2 + 1].id }
+        ? winner(previous[i * 2 + 1])
         : seeds[size - i - 1]
       next.push(add(upperStage(size), 'upper', round, slot1, slot2))
     }
@@ -164,20 +161,20 @@ function createUpperBracket(
   return upperRounds
 }
 
+function winner(fixture: TournamentFixture): Slot {
+  return { kind: 'match_winner', matchId: fixture.id }
+}
+
+function loser(fixture: TournamentFixture): Slot {
+  return { kind: 'match_loser', matchId: fixture.id }
+}
+
 function createDoubleEliminationBracket(
   upperRounds: TournamentFixture[][],
   fixtures: TournamentFixture[],
   add: AddFixture
 ): TournamentFixture[] {
   const entrantCount = upperRounds[0].length * 2
-  const winner = (f: TournamentFixture): Slot => ({
-    kind: 'match_winner',
-    matchId: f.id,
-  })
-  const loser = (f: TournamentFixture): Slot => ({
-    kind: 'match_loser',
-    matchId: f.id,
-  })
   const upperFinal = upperRounds[upperRounds.length - 1][0]
   const first = upperRounds[0]
   const groupFixtures = fixtures.filter(f => f.bracket === 'group')
@@ -251,31 +248,36 @@ function assignStageTracks(
   })
 }
 
-export function generateTournament(
-  config: TournamentConfig,
+function generateTournamentGroups(
+  input: GenerationInput,
   inputs: Participant[]
-): TournamentState {
-  if (
-    !validateConfiguration(
-      inputs.length,
-      config.groupsCount,
-      config.advancementCount,
-      config.eliminationType
-    )
-  )
-    throw new Error(loc.no.tournament.roster)
+): Pick<TournamentState, 'groups' | 'participants'> {
+  const config = input.config
   const groups = groupNames(config.session, config.groupsCount).map(
-    (name, position) => ({ id: `group-${position}`, name, position })
+    (name, position) => ({
+      id: `${input.id}:group-${position}`,
+      name,
+      position,
+    })
   )
   const participants = inputs.toSorted(seedingOrder).map((player, index) => ({
     ...player,
     admission: index,
     groupId: groups[snakeGroup(index, groups.length)].id,
   }))
+  return { groups, participants }
+}
+
+function generateFixtures(
+  input: GenerationInput,
+  groups: TournamentGroup[],
+  participants: Participant[]
+): TournamentFixture[] {
+  const config = input.config
   let fixtures: TournamentFixture[] = []
   const add: AddFixture = (stage, bracket, round, slot1, slot2, groupId) => {
     const fixture = createFixture(
-      config.session,
+      input,
       fixtures.length,
       stage,
       bracket,
@@ -292,8 +294,28 @@ export function generateTournament(
   if (config.eliminationType === 'double')
     fixtures = createDoubleEliminationBracket(upperRounds, fixtures, add)
   assignStageTracks(fixtures, config.stageTracks)
+  return fixtures
+}
+
+export function generateTournament(
+  id: string,
+  config: TournamentConfig,
+  inputs: Participant[]
+): TournamentState {
+  const input = { id, config }
+  const { groups, participants } = generateTournamentGroups(input, inputs)
+  let fixtures: TournamentFixture[] = []
+  if (
+    validateConfiguration(
+      inputs.length,
+      config.groupsCount,
+      config.advancementCount,
+      config.eliminationType
+    )
+  )
+    fixtures = generateFixtures(input, groups, participants)
   return {
-    id: 'preview',
+    id,
     config,
     participants,
     groups,

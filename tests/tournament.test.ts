@@ -1,17 +1,27 @@
-import type { Match } from '@common/models/match'
+import loc from '@common/locale/locales'
+import { isMatchStage, type Match } from '@common/models/match'
 import type {
   TournamentConfig,
   TournamentDetails,
 } from '@common/models/tournament'
 import { getTournamentStages } from '@common/utils/tournament'
 import { beforeAll, describe, expect, test } from 'bun:test'
+import { and, eq, sql } from 'drizzle-orm'
 import assert from 'node:assert/strict'
-import type { MatchStage } from '../backend/database/schema'
+import {
+  matches,
+  tournamentMatches,
+  tournamentMatchSlots,
+  tournamentStages,
+  type MatchStage,
+} from '../backend/database/schema'
+import TournamentSource from '../backend/database/tournament.source'
 import MatchManager from '../backend/src/managers/match.manager'
 import RatingManager from '../backend/src/managers/rating.manager'
 import SessionManager from '../backend/src/managers/session.manager'
 import TimeEntryManager from '../backend/src/managers/timeEntry.manager'
 import TournamentManager from '../backend/src/managers/tournament/tournament.manager'
+import { db } from './setup'
 import {
   assertResponse,
   createRsvps,
@@ -33,8 +43,22 @@ type TestMatch = {
   setPlayers(players: Partial<Pick<Match, 'user1' | 'user2'>>): Promise<void>
 }
 
+test('Match stages accept named rounds and valid extended bracket sizes', () => {
+  for (const stage of ['group', 'grand_final_reset', 'round_32', 'round_64'])
+    expect(isMatchStage(stage)).toBe(true)
+  for (const stage of [null, 'unknown', 'round_16', 'round_48', 'round_032'])
+    expect(isMatchStage(stage)).toBe(false)
+})
+
 async function CreateTournament(options: {
-  config: Omit<TournamentConfig, 'session' | 'stageTracks' | 'tieBreakerTrack'>
+  config: Omit<
+    TournamentConfig,
+    | 'session'
+    | 'stageTracks'
+    | 'tieBreakerTrack'
+    | 'owner'
+    | 'previewVisibility'
+  >
   tracks: number
   users: string[]
 }) {
@@ -50,18 +74,32 @@ async function CreateTournament(options: {
   const config: TournamentConfig = {
     ...options.config,
     session: session.id,
+    owner: players[0].id,
+    previewVisibility: 'visible',
     stageTracks: {},
     tieBreakerTrack: tracks[0].id,
   }
   for (const stage of getTournamentStages(config, players.length))
     config.stageTracks[stage] = tracks.map(track => track.id)
 
-  const preview = await TournamentManager.onPreview(socket, config)
-  assertResponse(preview)
-  const unsaved = await TournamentManager.onGet(socket, { session: session.id })
-  assertResponse(unsaved)
-  assert.equal(unsaved.details, null, 'Preview must not persist a tournament')
-  assertResponse(await TournamentManager.onCreate(socket, config))
+  const draft = await TournamentManager.onCreate(socket, {
+    session: session.id,
+  })
+  assertResponse(draft)
+  assert(draft.details?.configKey)
+  const saved = await TournamentManager.onUpdate(socket, {
+    config,
+    configKey: draft.details.configKey,
+  })
+  assertResponse(saved)
+  assert(saved.details?.previewKey)
+  assert.equal(saved.details.status, 'draft')
+  assertResponse(
+    await TournamentManager.onStart(socket, {
+      session: session.id,
+      previewKey: saved.details.previewKey,
+    })
+  )
   await assert.rejects(
     SessionManager.onCreateSession(socket, {
       type: 'CreateSessionRequest',
@@ -305,7 +343,7 @@ describe('Complete simple tournament', () => {
     // Arrange
     const expected = {
       completed: true,
-      frozen: true,
+      status: 'started',
       cancelled: false,
       notReadyReason: null,
       progress: { decided: 7, total: 7, groupDecided: 4, groupTotal: 4 },
@@ -869,5 +907,329 @@ test.serial(
       user1: 'fallback-a',
       user2: 'fallback-b',
     })
+  }
+)
+
+test.serial(
+  'Groups-only drafts refresh after signups and reject stale starts',
+  async () => {
+    const players = Array.from({ length: 4 }, (_, index) =>
+      createUser(
+        `draft-refactor-${Bun.randomUUIDv7()}`,
+        index === 0 ? 'admin' : 'user'
+      )
+    )
+    const socket = await login(players[0])
+    const session = await createSession(socket, [])
+    const tracks = createTracks(1)
+    const created = await TournamentManager.onCreate(socket, {
+      session: session.id,
+    })
+    assertResponse(created)
+    assert(created.details?.configKey)
+    const config = {
+      ...created.details.config,
+      groupsCount: 2,
+      advancementCount: 2,
+      tieBreakerTrack: tracks[0].id,
+    }
+    for (const stage of getTournamentStages(config, players.length))
+      config.stageTracks[stage] = [tracks[0].id]
+    const draft = await TournamentManager.onUpdate(socket, {
+      config,
+      configKey: created.details.configKey,
+    })
+    assertResponse(draft)
+    assert(draft.details?.previewKey)
+    expect(draft.details.groups).toHaveLength(2)
+    expect(draft.details.matches).toEqual([])
+    expect(draft.details.notReadyReason).toBe(loc.no.tournament.awaitingSignups)
+    expect(draft.details.workloadSummary).toMatchObject({
+      minMatches: 0,
+      maxMatches: 0,
+    })
+    expect(TournamentSource.loadTournament(session.id)).toBeNull()
+    await assert.rejects(
+      TournamentManager.onStart(socket, {
+        session: session.id,
+        previewKey: draft.details.previewKey,
+      })
+    )
+    for (const player of players) {
+      assertResponse(
+        await SessionManager.onRsvpSession(socket, {
+          type: 'RsvpSessionRequest',
+          session: session.id,
+          user: player.id,
+          response: 'yes',
+        })
+      )
+    }
+    const ready = await TournamentManager.onGet(socket, { session: session.id })
+    assertResponse(ready)
+    assert(ready.details?.previewKey)
+    expect(ready.details.groups.map(group => group.id)).toEqual(
+      draft.details.groups.map(group => group.id)
+    )
+    expect(ready.details.matches).toHaveLength(5)
+    expect(ready.details.notReadyReason).toBeNull()
+    expect(ready.details.workloadSummary).toMatchObject({
+      minMatches: 2,
+      maxMatches: 3,
+    })
+    expect(
+      db
+        .select()
+        .from(tournamentMatches)
+        .where(eq(tournamentMatches.tournament, ready.details.id))
+        .all()
+    ).toEqual([])
+    const staleStart = {
+      session: session.id,
+      previewKey: draft.details.previewKey,
+      config: ready.details.config,
+      configKey: ready.details.configKey,
+    }
+    expect(await TournamentManager.onStart(socket, staleStart)).toMatchObject({
+      success: false,
+    })
+    assertResponse(
+      await TournamentManager.onStart(socket, {
+        session: session.id,
+        previewKey: ready.details.previewKey,
+      })
+    )
+    expect(TournamentSource.loadTournament(session.id)?.fixtures).toHaveLength(
+      5
+    )
+  }
+)
+
+test.serial(
+  'Persistence restores stages, retains imported row IDs and preserves results on deletion',
+  async () => {
+    const cup = await CreateTournament({
+      config: {
+        groupsCount: 1,
+        advancementCount: 2,
+        eliminationType: 'single',
+      },
+      tracks: 2,
+      users: Array.from(
+        { length: 4 },
+        () => `persist-refactor-${Bun.randomUUIDv7()}`
+      ),
+    })
+    const state = TournamentSource.loadTournament(cup.session.id)
+    assert(state)
+    const stage = db
+      .select()
+      .from(tournamentStages)
+      .where(
+        and(
+          eq(tournamentStages.tournament, state.id),
+          eq(tournamentStages.stage, 'group')
+        )
+      )
+      .get()
+    const slot = db
+      .select()
+      .from(tournamentMatchSlots)
+      .where(eq(tournamentMatchSlots.tournamentMatch, state.fixtures[0].id))
+      .get()
+    assert(stage && slot)
+    db.update(tournamentStages)
+      .set({ id: `imported-${stage.id}` })
+      .where(eq(tournamentStages.id, stage.id))
+      .run()
+    db.update(tournamentMatchSlots)
+      .set({ id: `imported-${slot.id}` })
+      .where(eq(tournamentMatchSlots.id, slot.id))
+      .run()
+    const { group, ...stageTracks } = state.config.stageTracks
+    assert(group)
+    TournamentSource.transaction(() =>
+      TournamentSource.saveConfig(
+        state.id,
+        { ...state.config, stageTracks },
+        state
+      )
+    )
+    const row = TournamentSource.findActiveTournament(cup.session.id)
+    assert(row)
+    expect(TournamentSource.loadConfig(row).stageTracks.group).toBeUndefined()
+    TournamentSource.transaction(() => TournamentSource.saveTournament(state))
+    expect(TournamentSource.loadTournament(cup.session.id)).toEqual(state)
+    expect(
+      db
+        .select()
+        .from(tournamentStages)
+        .where(eq(tournamentStages.id, `imported-${stage.id}`))
+        .get()
+    ).toMatchObject({ deletedAt: null, tracks: group })
+    expect(
+      db
+        .select()
+        .from(tournamentMatchSlots)
+        .where(eq(tournamentMatchSlots.id, `imported-${slot.id}`))
+        .get()
+    ).toMatchObject({ deletedAt: null, slotHolderId: slot.slotHolderId })
+    const awarded = state.fixtures[0].match
+    awarded.status = 'cancelled'
+    awarded.winner = awarded.user1
+    TournamentSource.transaction(() => TournamentSource.saveTournament(state))
+    assertResponse(
+      await TournamentManager.onDelete(cup.socket, {
+        session: cup.session.id,
+        deleteRelatedResults: false,
+      })
+    )
+    expect(TournamentSource.loadTournament(cup.session.id)).toBeNull()
+    expect(
+      db.select().from(matches).where(eq(matches.id, awarded.id)).get()
+    ).toMatchObject({
+      status: 'completed',
+      winner: awarded.user1,
+      deletedAt: null,
+    })
+    expect(
+      db
+        .select()
+        .from(tournamentMatchSlots)
+        .where(eq(tournamentMatchSlots.id, `imported-${slot.id}`))
+        .get()?.deletedAt
+    ).toBeInstanceOf(Date)
+    const recreated = await TournamentManager.onCreate(cup.socket, {
+      session: cup.session.id,
+    })
+    assertResponse(recreated)
+    assert(recreated.details?.configKey)
+    const configured = await TournamentManager.onUpdate(cup.socket, {
+      config: state.config,
+      configKey: recreated.details.configKey,
+    })
+    assertResponse(configured)
+    assert(configured.details?.previewKey)
+    const restarted = await TournamentManager.onStart(cup.socket, {
+      session: cup.session.id,
+      previewKey: configured.details.previewKey,
+    })
+    assertResponse(restarted)
+    assert(restarted.details)
+    expect(restarted.details.id).not.toBe(state.id)
+    expect(
+      restarted.details.groups.some(group =>
+        state.groups.some(previous => previous.id === group.id)
+      )
+    ).toBe(false)
+    expect(
+      restarted.details.matches.some(match =>
+        state.fixtures.some(previous => previous.id === match.id)
+      )
+    ).toBe(false)
+    expect(
+      db.select().from(matches).where(eq(matches.id, awarded.id)).get()
+    ).toMatchObject({
+      status: 'completed',
+      winner: awarded.user1,
+      deletedAt: null,
+    })
+  }
+)
+
+test.serial(
+  'Tournament source rolls back failed multi-write operations',
+  async () => {
+    const cup = await CreateTournament({
+      config: {
+        groupsCount: 1,
+        advancementCount: 2,
+        eliminationType: 'single',
+      },
+      tracks: 1,
+      users: Array.from({ length: 4 }, () => `atomic-${Bun.randomUUIDv7()}`),
+    })
+    const state = TournamentSource.loadTournament(cup.session.id)
+    assert(state)
+    state.fixtures[0].match.status = 'cancelled'
+    state.fixtures[0].match.winner = state.fixtures[0].match.user1
+    TournamentSource.saveTournament(state)
+    TournamentSource.reconcileLaps(state, new Map([[cup.players[0].id, true]]))
+    const before = TournamentSource.loadTournament(cup.session.id)
+    assert(before)
+
+    db.run(sql`CREATE TEMP TRIGGER reject_tournament_stage
+    BEFORE INSERT ON tournament_stages
+    BEGIN SELECT RAISE(ABORT, 'stage write failed'); END`)
+    try {
+      assert.throws(
+        () =>
+          TournamentSource.saveConfig(
+            before.id,
+            { ...before.config, advancementCount: 1 },
+            before
+          ),
+        /stage write failed/
+      )
+      expect(TournamentSource.loadTournament(cup.session.id)).toEqual(before)
+    } finally {
+      db.run(sql`DROP TRIGGER reject_tournament_stage`)
+    }
+
+    const invalid = structuredClone(before)
+    invalid.config.advancementCount = 1
+    invalid.groups[0].name = 'Must roll back'
+    invalid.participants[0].rating += 100
+    invalid.fixtures[0].match.comment = 'Must roll back'
+    invalid.fixtures[0].slot2.override = 'missing-atomic-user'
+    const rejectSave = () => {
+      assert.throws(
+        () => TournamentSource.saveTournament(invalid),
+        /FOREIGN KEY/
+      )
+      expect(TournamentSource.loadTournament(cup.session.id)).toEqual(before)
+    }
+    rejectSave()
+    TournamentSource.transaction(() => {
+      rejectSave()
+      TournamentSource.renameGroup(
+        before.id,
+        before.groups[0].id,
+        'Outer write'
+      )
+    })
+    before.groups[0].name = 'Outer write'
+    expect(TournamentSource.loadTournament(cup.session.id)).toEqual(before)
+
+    assert.throws(
+      () =>
+        TournamentSource.reconcileLaps(
+          before,
+          new Map([
+            [cup.players[1].id, true],
+            ['missing-atomic-user', true],
+          ])
+        ),
+      /FOREIGN KEY/
+    )
+    expect(TournamentSource.loadTournament(cup.session.id)).toEqual(before)
+
+    db.run(sql`CREATE TEMP TRIGGER reject_tournament_removal
+    BEFORE UPDATE ON tournaments WHEN NEW.deleted_at IS NOT NULL
+    BEGIN SELECT RAISE(ABORT, 'tournament removal failed'); END`)
+    try {
+      for (const deleteMatches of [true, false]) {
+        assert.throws(
+          () =>
+            TournamentSource.removeTournament(cup.session.id, {
+              deleteMatches,
+            }),
+          /tournament removal failed/
+        )
+        expect(TournamentSource.loadTournament(cup.session.id)).toEqual(before)
+      }
+    } finally {
+      db.run(sql`DROP TRIGGER reject_tournament_removal`)
+    }
   }
 )

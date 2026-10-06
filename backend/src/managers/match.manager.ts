@@ -12,6 +12,7 @@ import type { EventReq, EventRes } from '@common/models/socket.io'
 import { and, desc, eq, getTableColumns, isNull, sql } from 'drizzle-orm'
 import db from '../../database/database'
 import { matches, sessions } from '../../database/schema'
+import TournamentSource from '../../database/tournament.source'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import RatingManager from './rating.manager'
@@ -49,7 +50,7 @@ export default class MatchManager {
       .where(isNull(matches.deletedAt))
       .orderBy(desc(sql`COALESCE(${sessions.date}, ${matches.createdAt})`))
 
-    return TournamentManager.enrich(matchRows)
+    return TournamentManager.enrich(TournamentSource.visibleMatches(matchRows))
   }
 
   // Returns matches sorted by creation date, most recent first.
@@ -94,6 +95,7 @@ export default class MatchManager {
     RatingManager.recalculate()
     broadcast('all_matches', await MatchManager.getAllMatches())
     broadcast('all_rankings', RatingManager.onGetRatings())
+    TournamentManager.publish(socket.id)
 
     return { success: true }
   }
@@ -150,6 +152,7 @@ export default class MatchManager {
     RatingManager.recalculate()
     broadcast('all_matches', await MatchManager.getAllMatches())
     broadcast('all_rankings', RatingManager.onGetRatings())
+    TournamentManager.publish(socket.id)
 
     return { success: true }
   }

@@ -15,6 +15,7 @@ export default function TournamentGroupPanel({
   href?: string
 }>) {
   const { users } = useData()
+  const hasResults = group.progress.decided > 0
 
   const players = group.standings.map(s => ({
     ...s,
@@ -45,7 +46,7 @@ export default function TournamentGroupPanel({
         )}
       </header>
 
-      <div className='p-2'>
+      <div className='min-h-16 p-2'>
         {players.map(p =>
           p.user === undefined ? null : (
             <UserRow
@@ -53,7 +54,8 @@ export default function TournamentGroupPanel({
               className='px-3 py-2'
               item={p.user}
               rank={p.rank}
-              highlight={p.rank <= advancementCount}>
+              hideRanking={!hasResults}
+              highlight={hasResults && p.rank <= advancementCount}>
               <p className='flex gap-1 font-kh-interface tabular-nums'>
                 {p.wins}
                 <span className='opacity-33'>|</span>

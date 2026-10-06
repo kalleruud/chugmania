@@ -28,9 +28,11 @@ import type {
 import type {
   DeleteTournamentRequest,
   RenameTournamentGroupRequest,
-  TournamentConfig,
+  StartTournamentRequest,
+  TournamentConflictResponse,
   TournamentDetails,
   TournamentRequest,
+  UpdateTournamentRequest,
 } from './tournament'
 import type { Track } from './track'
 import type {
@@ -66,18 +68,30 @@ export interface ServerToClientEvents {
 }
 
 export interface ClientToServerEvents {
-  preview_tournament: (
-    request: TournamentConfig,
-    callback: (
-      response: { success: true; details: TournamentDetails } | ErrorResponse
-    ) => void
-  ) => void
   create_tournament: (
-    request: TournamentConfig,
+    request: TournamentRequest,
     callback: (
       response:
         | { success: true; details: TournamentDetails | null }
         | ErrorResponse
+    ) => void
+  ) => void
+  update_tournament: (
+    request: UpdateTournamentRequest,
+    callback: (
+      response:
+        | { success: true; details: TournamentDetails | null }
+        | ErrorResponse
+        | TournamentConflictResponse
+    ) => void
+  ) => void
+  start_tournament: (
+    request: StartTournamentRequest,
+    callback: (
+      response:
+        | { success: true; details: TournamentDetails | null }
+        | ErrorResponse
+        | TournamentConflictResponse
     ) => void
   ) => void
   get_tournament: (

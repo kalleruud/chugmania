@@ -2,7 +2,7 @@ import ConfirmationButton from '@/components/ConfirmationButton'
 import SessionCard from '@/components/session/SessionCard'
 import SessionForm from '@/components/session/SessionForm'
 import SessionSignupPanel from '@/components/session/SessionSignupPanel'
-import TournamentPanel from '@/components/tournament/TournamentPanel'
+import TournamentTab from '@/components/tournament/TournamentTab'
 import TrackLeaderboard from '@/components/track/TrackLeaderboard'
 import {
   Breadcrumb,
@@ -28,17 +28,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
+import { useTimeEntryInput } from '@/contexts/TimeEntryInputContext'
 import loc from '@common/locale/locales'
+import { isInactiveFinalReset } from '@common/utils/tournament'
 import { PencilIcon, PlusIcon, Trash2 } from 'lucide-react'
 import { useState } from 'react'
-import { Link, useParams } from 'react-router'
+import { useParams, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
 import { SubscribeButton } from './SessionsPage'
 
 export default function SessionPage() {
   const { id } = useParams()
-  const { socket } = useConnection()
-  const { sessions, tracks, tournaments, isLoadingData } = useData()
+  const [searchParams] = useSearchParams()
+  const { socket, isConnected } = useConnection()
+  const { open, openMatch } = useTimeEntryInput()
+  const { sessions, tracks, timeEntries, matches, tournaments, isLoadingData } =
+    useData()
   const { loggedInUser, isLoggedIn, isLoading } = useAuth()
   const [editDialogOpen, setEditDialogOpen] = useState(false)
 
@@ -79,6 +84,19 @@ export default function SessionPage() {
 
   const isCancelled = session.status === 'cancelled'
   const tournament = tournaments.find(t => t.config.session === session.id)
+  const sessionTracks = tracks.filter(track => {
+    const hasLaps = timeEntries.some(
+      entry => entry.session === session.id && entry.track === track.id
+    )
+    const hasMatches = matches.some(
+      match =>
+        match.session === session.id &&
+        match.track === track.id &&
+        !match.tournament &&
+        !isInactiveFinalReset(match)
+    )
+    return hasLaps || hasMatches
+  })
 
   return (
     <div className='flex flex-col gap-6'>
@@ -100,7 +118,7 @@ export default function SessionPage() {
         </BreadcrumbList>
       </Breadcrumb>
 
-      <SessionCard className='px-2' session={session} />
+      <SessionCard className='px-2' item={session} hideLink />
 
       <div className='flex items-center gap-1'>
         <SubscribeButton className='flex-1' />
@@ -151,7 +169,9 @@ export default function SessionPage() {
 
       <Tabs
         defaultValue={
-          tournament ? loc.no.tournament.title : loc.no.session.session
+          tournament || searchParams.get('tab') === 'tournament'
+            ? loc.no.tournament.title
+            : loc.no.session.session
         }>
         <TabsList className='-mt-2 mb-2 w-full bg-background-secondary'>
           <TabsTrigger value={loc.no.session.session}>
@@ -174,7 +194,31 @@ export default function SessionPage() {
         <TabsContent
           className='flex flex-col gap-4'
           value={loc.no.session.session}>
-          {tracks.map(track => (
+          {sessionTracks.length === 0 && (
+            <Empty className='border border-input'>
+              <div className='flex flex-wrap justify-center gap-2'>
+                <Button
+                  type='button'
+                  size='sm'
+                  variant='outline'
+                  disabled={!isLoggedIn || !isConnected || isCancelled}
+                  onClick={() => open({ session: session.id })}>
+                  <PlusIcon />
+                  {loc.no.timeEntry.input.create.title}
+                </Button>
+                <Button
+                  type='button'
+                  size='sm'
+                  variant='outline'
+                  disabled={!canEdit || !isConnected || isCancelled}
+                  onClick={() => openMatch({ session: session.id })}>
+                  <PlusIcon />
+                  {loc.no.match.new}
+                </Button>
+              </div>
+            </Empty>
+          )}
+          {sessionTracks.map(track => (
             <TrackLeaderboard
               key={track.id}
               track={track}
@@ -186,24 +230,7 @@ export default function SessionPage() {
           ))}
         </TabsContent>
         <TabsContent value={loc.no.tournament.title}>
-          {tournament && <TournamentPanel details={tournament} />}
-          {!tournament && (
-            <Empty className='border border-input text-sm text-muted-foreground'>
-              {canEdit ? (
-                <Link to={`/sessions/${session.id}/tournament/create`}>
-                  <Button
-                    variant='outline'
-                    size='sm'
-                    className='w-fit text-muted-foreground'>
-                    <PlusIcon />
-                    {loc.no.tournament.create}
-                  </Button>
-                </Link>
-              ) : (
-                loc.no.common.noItems
-              )}
-            </Empty>
-          )}
+          <TournamentTab session={session} />
         </TabsContent>
       </Tabs>
     </div>

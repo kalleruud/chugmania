@@ -1,4 +1,5 @@
 import { useConnection } from '@/contexts/ConnectionContext'
+import { useData } from '@/contexts/DataContext'
 import loc from '@common/locale/locales'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -16,10 +17,15 @@ import {
 
 export default function DeleteTournamentDialog({
   session,
+  isDraft = false,
+  disabled = false,
 }: {
   session: string
+  isDraft?: boolean
+  disabled?: boolean
 }) {
-  const { socket } = useConnection()
+  const { socket, isConnected } = useConnection()
+  const { applyTournamentDetails } = useData()
   const [open, setOpen] = useState(false)
   const [pending, setPending] = useState(false)
 
@@ -31,6 +37,7 @@ export default function DeleteTournamentDialog({
         deleteRelatedResults,
       })
       if (!response.success) throw new Error(response.message)
+      applyTournamentDetails(null, session)
       toast.success(loc.no.tournament.deleted)
       setOpen(false)
     } catch (error) {
@@ -47,30 +54,41 @@ export default function DeleteTournamentDialog({
         if (!pending) setOpen(value)
       }}>
       <DialogTrigger asChild>
-        <Button variant='destructive'>{loc.no.common.delete}</Button>
+        <Button
+          type='button'
+          variant='destructive'
+          disabled={disabled || !isConnected}>
+          {loc.no.common.delete}
+        </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{loc.no.tournament.deleteTitle}</DialogTitle>
           <DialogDescription>
-            {loc.no.tournament.deleteDescription}
+            {isDraft
+              ? loc.no.tournament.draftDeleteDescription
+              : loc.no.tournament.deleteDescription}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className='sm:flex-col'>
+          {!isDraft && (
+            <Button
+              type='button'
+              disabled={pending || !isConnected}
+              variant='outline'
+              onClick={() => deleteTournament(false)}>
+              {loc.no.tournament.keepResults}
+            </Button>
+          )}
           <Button
-            disabled={pending}
-            variant='outline'
-            onClick={() => deleteTournament(false)}>
-            {loc.no.tournament.keepResults}
-          </Button>
-          <Button
-            disabled={pending}
+            type='button'
+            disabled={pending || !isConnected}
             variant='destructive'
             onClick={() => deleteTournament(true)}>
-            {loc.no.tournament.deleteResults}
+            {isDraft ? loc.no.common.delete : loc.no.tournament.deleteResults}
           </Button>
           <DialogClose asChild>
-            <Button disabled={pending} variant='ghost'>
+            <Button type='button' disabled={pending} variant='ghost'>
               {loc.no.common.cancel}
             </Button>
           </DialogClose>

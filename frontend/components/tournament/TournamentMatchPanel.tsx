@@ -25,7 +25,7 @@ export default function TournamentMatchPanel({
   const { tournaments } = useData()
   const details = tournaments?.find(t => t.config.session === session.id)
   const { isLoggedIn, loggedInUser } = useAuth()
-  if (!details || details.cancelled) return null
+  if (!details || details.status === 'draft' || details.cancelled) return null
 
   const matches = pendingMatches(details.matches)
   const current = matches.at(0)

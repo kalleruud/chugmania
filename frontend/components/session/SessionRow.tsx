@@ -16,13 +16,17 @@ import { Link } from 'react-router'
 import { twMerge } from 'tailwind-merge'
 import type { BaseRowProps } from '../row/RowProps'
 
+export type SesssionComponentProps = BaseRowProps<SessionWithSignups> & {
+  description?: string
+}
+
 export function SessionRow({
   item: session,
   description,
   className,
   hideLink,
   highlight,
-}: Readonly<BaseRowProps<SessionWithSignups> & { description?: string }>) {
+}: Readonly<SesssionComponentProps>) {
   const { loggedInUser, isLoggedIn } = useAuth()
   const distance = useDistanceToNow({ date: session.date })
 

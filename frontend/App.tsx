@@ -8,7 +8,6 @@ import { ErrorPage } from './app/pages/ErrorPage'
 import Home from './app/pages/HomePage'
 import SessionPage from './app/pages/SessionPage'
 import SessionsPage from './app/pages/SessionsPage'
-import TournamentCreatePage from './app/pages/TournamentCreatePage'
 import TournamentGroupPage from './app/pages/TournamentGroupPage'
 import TrackPage from './app/pages/TrackPage'
 import TracksPage from './app/pages/TracksPage'
@@ -42,10 +41,6 @@ createRoot(root).render(
                       <Route path='users' element={<UsersPage />} />
                       <Route path='users/:id' element={<UserPage />} />
                       <Route path='sessions' element={<SessionsPage />} />
-                      <Route
-                        path='sessions/:id/tournament/create'
-                        element={<TournamentCreatePage />}
-                      />
                       <Route
                         path='sessions/:id/tournament/groups/:groupId'
                         element={<TournamentGroupPage />}

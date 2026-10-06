@@ -1,7 +1,6 @@
 import { Badge } from '@/components/ui/badge'
 import type { SessionStatus } from '@backend/database/schema'
 import loc from '@common/locale/locales'
-import type { SessionWithSignups } from '@common/models/session'
 import {
   formatDateWithYear,
   formatTimeOnly,
@@ -17,13 +16,11 @@ import {
   QuestionMarkCircleIcon,
   XCircleIcon,
 } from '@heroicons/react/24/solid'
-import { type ComponentProps } from 'react'
+import { ChevronRight } from 'lucide-react'
+import { Link } from 'react-router'
 import { twMerge } from 'tailwind-merge'
-
-type SessionCardProps = {
-  session: SessionWithSignups
-  className?: string
-} & ComponentProps<'div'>
+import type { SesssionComponentProps } from './SessionRow'
+import SessionSignupButton from './SessionSignupButton'
 
 function StatusIcon({
   status,
@@ -42,26 +39,42 @@ function StatusIcon({
 }
 
 export default function SessionCard({
-  session,
+  item: session,
   className,
+  hideLink,
+  highlight,
   ...props
-}: Readonly<SessionCardProps>) {
+}: Readonly<SesssionComponentProps>) {
   const isCancelled = session.status === 'cancelled'
 
   return (
     <div
       className={twMerge(
-        'flex flex-col gap-2',
+        'relative',
         isCancelled && 'text-muted-foreground line-through',
+        highlight && 'bg-foreground/3',
         className
       )}
       {...props}>
-      <h1 className='text-3xl tracking-wide'>{session.name}</h1>
+      {!hideLink && (
+        <Link
+          to={`/sessions/${session.id}`}
+          aria-label={session.name}
+          className='absolute inset-0 rounded-sm transition-colors hover:bg-primary-foreground/5 focus-visible:outline-2 focus-visible:outline-primary'
+        />
+      )}
+      <div className='flex w-full items-center justify-between'>
+        <h1 className='min-w-0 text-3xl tracking-wide wrap-break-word'>
+          {session.name}
+        </h1>
+        {!hideLink && <ChevronRight className='size-4' />}
+      </div>
+
       {session.description && (
         <p className='text-muted-foreground'>{session.description}</p>
       )}
 
-      <div className='flex items-start justify-between'>
+      <div className='mt-4 flex items-end justify-between'>
         <div className='flex flex-col gap-1'>
           <div className='flex items-center gap-2'>
             <StatusIcon
@@ -89,7 +102,7 @@ export default function SessionCard({
           )}
         </div>
 
-        <div className='flex flex-col items-end gap-2'>
+        <div className='flex flex-col items-end gap-4'>
           {isPast(session) && (
             <Badge variant='outline'>{loc.no.session.status.past}</Badge>
           )}
@@ -101,6 +114,10 @@ export default function SessionCard({
           {isUpcoming(session) && (
             <Badge variant='outline'>{loc.no.session.status.upcoming}</Badge>
           )}
+
+          <div className='relative'>
+            <SessionSignupButton key={session.id} session={session} />
+          </div>
         </div>
       </div>
     </div>

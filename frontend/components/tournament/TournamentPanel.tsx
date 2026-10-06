@@ -11,6 +11,7 @@ import {
 import { ChevronDown } from 'lucide-react'
 import MatchList from '../match/MatchList'
 import SegmentedProgress from '../SegmentedProgress'
+import { Empty } from '../ui/empty'
 import UserRow from '../user/UserRow'
 import DeleteTournamentDialog from './DeleteTournamentDialog'
 import TournamentGroupPanel from './TournamentGroupPanel'
@@ -18,14 +19,15 @@ import TournamentTieBreakerPanel from './TournamentTieBreakerPanel'
 
 export default function TournamentPanel({
   details,
-  isPreview = false,
 }: {
   details: TournamentDetails
-  isPreview?: boolean
 }) {
+  const isPreview = details.status === 'draft'
   const { users } = useData()
   const { isLoggedIn, loggedInUser } = useAuth()
   const canEdit = isLoggedIn && loggedInUser.role !== 'user'
+  const awaitingSignups =
+    details.notReadyReason === loc.no.tournament.awaitingSignups
   const workload = details.workloadSummary
   const matchesByStage = new Map<Match['stage'], Match[]>()
   const featuredMatch = firstPendingMatch(details.matches)
@@ -40,26 +42,18 @@ export default function TournamentPanel({
 
   return (
     <div className='flex min-w-0 flex-col gap-6'>
-      {canEdit && (
+      {canEdit && !isPreview && (
         <header className='flex flex-col gap-2 rounded-sm border bg-background p-4'>
           <div className='flex items-center justify-between gap-2'>
             <h3>{loc.no.tournament.adminPanel}</h3>
-            {!isPreview && (
-              <DeleteTournamentDialog session={details.config.session} />
-            )}
+            <DeleteTournamentDialog session={details.config.session} />
           </div>
           <p className='text-sm text-muted-foreground'>
-            {details.participants.length}{' '}
-            {loc.no.session.participants.toLowerCase()} ·{' '}
-            {details.groups.length} {loc.no.tournament.groups.toLowerCase()}
+            {workload.participants} {loc.no.session.participants.toLowerCase()}{' '}
+            · {workload.groups} {loc.no.tournament.groups.toLowerCase()}
           </p>
 
-          <p>
-            {workload.tracks} baner · {workload.minMatches}–
-            {workload.maxMatches} matcher per spiller
-          </p>
-
-          {details.notReadyReason && (
+          {details.notReadyReason && !awaitingSignups && (
             <p role='status' className='text-muted-foreground'>
               {details.notReadyReason}
             </p>
@@ -67,6 +61,45 @@ export default function TournamentPanel({
           {details.cancelled && (
             <p role='status'>{loc.no.tournament.session}</p>
           )}
+        </header>
+      )}
+
+      {isPreview && (
+        <header className='flex flex-col gap-2 rounded-sm border bg-background p-4'>
+          <dl className='grid grid-cols-2 gap-4 text-sm sm:grid-cols-4'>
+            <div>
+              <dt className='text-muted-foreground'>
+                {loc.no.session.participants}
+              </dt>
+              <dd className='font-kh-interface text-lg tabular-nums'>
+                {workload.participants}
+              </dd>
+            </div>
+            <div>
+              <dt className='text-muted-foreground'>
+                {loc.no.tournament.groups}
+              </dt>
+              <dd className='font-kh-interface text-lg tabular-nums'>
+                {workload.groups}
+              </dd>
+            </div>
+            <div>
+              <dt className='text-muted-foreground'>Baner</dt>
+              <dd className='font-kh-interface text-lg tabular-nums'>
+                {workload.tracks}
+              </dd>
+            </div>
+            <div>
+              <dt className='text-muted-foreground'>
+                {loc.no.tournament.roundsPerPlayer}
+              </dt>
+              <dd className='font-kh-interface text-lg tabular-nums'>
+                {workload.matches > 0
+                  ? `${workload.minMatches}–${workload.maxMatches}`
+                  : '–'}
+              </dd>
+            </div>
+          </dl>
         </header>
       )}
 
@@ -88,97 +121,111 @@ export default function TournamentPanel({
         </section>
       )}
 
-      <section className='flex flex-col gap-1'>
-        <div className='grid gap-4 sm:grid-cols-2'>
-          {details.groups.map(group => (
-            <TournamentGroupPanel
-              key={group.id}
-              group={group}
-              advancementCount={details.config.advancementCount}
-              href={
-                isPreview
-                  ? undefined
-                  : `/sessions/${details.config.session}/tournament/groups/${group.id}`
-              }
-            />
-          ))}
-        </div>
-        <div className='flex items-center gap-2 rounded p-2'>
-          <div className='size-2 rounded-full bg-primary' />
-          <p className='w-full text-sm text-muted-foreground'>
-            {loc.no.tournament.groupInfo(details.config.advancementCount)}
-          </p>
-        </div>
-      </section>
+      {details.groups.length > 0 && (
+        <section className='flex flex-col gap-1'>
+          <div className='grid gap-4 sm:grid-cols-2'>
+            {details.groups.map(group => (
+              <TournamentGroupPanel
+                key={group.id}
+                group={group}
+                advancementCount={details.config.advancementCount}
+                href={
+                  isPreview
+                    ? undefined
+                    : `/sessions/${details.config.session}/tournament/groups/${group.id}`
+                }
+              />
+            ))}
+          </div>
+          <div className='flex items-center gap-2 rounded p-2'>
+            <div className='size-2 rounded-full bg-primary' />
+            <p className='w-full text-sm text-muted-foreground'>
+              {loc.no.tournament.groupInfo(details.config.advancementCount)}
+            </p>
+          </div>
+        </section>
+      )}
+
+      {awaitingSignups && (
+        <Empty
+          role='status'
+          className='border border-input text-sm text-muted-foreground'>
+          {loc.no.tournament.awaitingSignups}
+        </Empty>
+      )}
 
       {!isPreview && <TournamentTieBreakerPanel details={details} />}
 
-      <details
-        open={!allMatchesPlayed}
-        className='group/matches rounded-sm border bg-background p-2'>
-        <summary className='flex cursor-pointer list-none items-center justify-between gap-2 p-4 [&::-webkit-details-marker]:hidden'>
-          <h3>{loc.no.match.title}</h3>
-          <ChevronDown
-            aria-hidden
-            className='size-4 shrink-0 transition-transform group-open/matches:rotate-180'
-          />
-        </summary>
-        <div className='flex flex-col gap-2'>
-          <SegmentedProgress
-            className='px-2'
-            segments={[
-              {
-                label: loc.no.tournament.groupMatches,
-                value: details.progress.groupDecided,
-                total: details.progress.groupTotal,
-              },
-              {
-                label: loc.no.tournament.bracketMatches,
-                value: details.progress.decided - details.progress.groupDecided,
-                total: details.progress.total - details.progress.groupTotal,
-              },
-            ]}
-          />
-          {Array.from(matchesByStage, ([stage, matches]) => {
-            const activeMatches = matches.filter(
-              match => !isInactiveFinalReset(match)
-            )
-            const played = activeMatches.filter(
-              match => match.status === 'completed' || match.tournament?.awarded
-            ).length
-            const isActive = featuredMatch && matches.includes(featuredMatch)
-            return (
-              <details
-                key={stage ?? 'none'}
-                open={!!firstPendingMatch(matches)}
-                className='group/stage'>
-                <summary className='flex cursor-pointer list-none items-center gap-2 p-2 text-sm text-muted-foreground [&::-webkit-details-marker]:hidden'>
-                  <h4 className='mr-auto flex flex-wrap items-center gap-2'>
-                    {stageName(stage) || loc.no.match.title}
-                  </h4>
-                  {isActive && (
-                    <div className='size-2 animate-pulse rounded-full bg-primary' />
-                  )}
-                  <span className='text-xs tabular-nums'>
-                    {played}/{activeMatches.length}{' '}
-                    {loc.no.match.title.toLowerCase()}
-                  </span>
-                  <ChevronDown
-                    aria-hidden
-                    className='size-4 shrink-0 transition-transform group-open/stage:rotate-180'
+      {details.matches.length > 0 && (
+        <details
+          open={!allMatchesPlayed}
+          className='group/matches rounded-sm border bg-background p-2'>
+          <summary className='flex cursor-pointer list-none items-center justify-between gap-2 p-4 [&::-webkit-details-marker]:hidden'>
+            <h3>{loc.no.match.title}</h3>
+            <ChevronDown
+              aria-hidden
+              className='size-4 shrink-0 transition-transform group-open/matches:rotate-180'
+            />
+          </summary>
+          <div className='flex flex-col gap-2'>
+            <SegmentedProgress
+              className='px-2'
+              segments={[
+                {
+                  label: loc.no.tournament.groupMatches,
+                  value: details.progress.groupDecided,
+                  total: details.progress.groupTotal,
+                },
+                {
+                  label: loc.no.tournament.bracketMatches,
+                  value:
+                    details.progress.decided - details.progress.groupDecided,
+                  total: details.progress.total - details.progress.groupTotal,
+                },
+              ]}
+            />
+            {Array.from(matchesByStage, ([stage, matches]) => {
+              const activeMatches = matches.filter(
+                match => !isInactiveFinalReset(match)
+              )
+              const played = activeMatches.filter(
+                match =>
+                  match.status === 'completed' || match.tournament?.awarded
+              ).length
+              const isActive = featuredMatch && matches.includes(featuredMatch)
+              return (
+                <details
+                  key={stage ?? 'none'}
+                  open={!!firstPendingMatch(matches)}
+                  className='group/stage'>
+                  <summary className='flex cursor-pointer list-none items-center gap-2 p-2 text-sm text-muted-foreground [&::-webkit-details-marker]:hidden'>
+                    <h4 className='mr-auto flex flex-wrap items-center gap-2'>
+                      {stageName(stage) || loc.no.match.title}
+                    </h4>
+                    {isActive && (
+                      <div className='size-2 animate-pulse rounded-full bg-primary' />
+                    )}
+                    <span className='text-xs tabular-nums'>
+                      {played}/{activeMatches.length}{' '}
+                      {loc.no.match.title.toLowerCase()}
+                    </span>
+                    <ChevronDown
+                      aria-hidden
+                      className='size-4 shrink-0 transition-transform group-open/stage:rotate-180'
+                    />
+                  </summary>
+                  <MatchList
+                    matches={matches}
+                    managed
+                    trackSeparators
+                    featuredMatchId={featuredMatch?.id}
                   />
-                </summary>
-                <MatchList
-                  matches={matches}
-                  managed
-                  trackSeparators
-                  featuredMatchId={featuredMatch?.id}
-                />
-              </details>
-            )
-          })}
-        </div>
-      </details>
+                </details>
+              )
+            })}
+          </div>
+        </details>
+      )}
     </div>
   )
 }
