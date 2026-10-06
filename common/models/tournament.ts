@@ -90,7 +90,6 @@ export type TournamentDetails = {
   previewKey: string | null
   id: string
   config: TournamentConfig
-  frozen: boolean
   cancelled: boolean
   notReadyReason: string | null
   participants: Participant[]
@@ -130,7 +129,6 @@ export type StartTournamentRequest = TournamentRequest & { previewKey: string }
 
 export type TournamentConflictResponse = {
   success: false
-  code: 'conflict'
   message: string
   details: TournamentDetails | null
 }

@@ -67,7 +67,7 @@ export default function TournamentTab({
       {details.canConfigure && (
         <TournamentForm key={details.id} details={details} />
       )}
-      <TournamentPanel details={details} isPreview />
+      <TournamentPanel details={details} />
     </div>
   )
 }

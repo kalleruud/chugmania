@@ -184,18 +184,13 @@ export default class TournamentManager {
   ): TournamentConflictResponse {
     return {
       success: false,
-      code: 'conflict',
       message: loc.no.tournament.conflict,
       details: TournamentSecurity.view(this.getDetails(session), userId),
     }
   }
 
-  private static remap(
-    state: TournamentState,
-    tournamentId: string
-  ): TournamentState {
+  private static remap(state: TournamentState): TournamentState {
     const result = structuredClone(state)
-    result.id = tournamentId
     const ids = new Map(
       [...result.groups, ...result.fixtures].map(row => [row.id, randomUUID()])
     )
@@ -396,7 +391,7 @@ export default class TournamentManager {
           return TournamentManager.conflict(request.session, user.id)
         const state = TournamentManager.draftState(request.session)
         if (state.notReadyReason) throw new Error(state.notReadyReason)
-        const frozen = TournamentManager.remap(state, row.id)
+        const frozen = TournamentManager.remap(state)
         frozen.frozenAt = new Date()
         frozen.config.previewVisibility = 'visible'
         TournamentSource.saveTournament(frozen)

@@ -552,7 +552,6 @@ export function tournamentDetails(state: TournamentState): TournamentDetails {
     previewKey: null,
     id: state.id,
     config: state.config,
-    frozen: !!state.frozenAt,
     cancelled: state.cancelled,
     notReadyReason: state.notReadyReason,
     participants: state.participants.toSorted(seedingOrder),

@@ -19,11 +19,10 @@ import TournamentTieBreakerPanel from './TournamentTieBreakerPanel'
 
 export default function TournamentPanel({
   details,
-  isPreview = false,
 }: {
   details: TournamentDetails
-  isPreview?: boolean
 }) {
+  const isPreview = details.status === 'draft'
   const { users } = useData()
   const { isLoggedIn, loggedInUser } = useAuth()
   const canEdit = isLoggedIn && loggedInUser.role !== 'user'

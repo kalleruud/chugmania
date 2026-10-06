@@ -326,7 +326,7 @@ describe('Complete simple tournament', () => {
     // Arrange
     const expected = {
       completed: true,
-      frozen: true,
+      status: 'started',
       cancelled: false,
       notReadyReason: null,
       progress: { decided: 7, total: 7, groupDecided: 4, groupTotal: 4 },

@@ -163,7 +163,6 @@ export default class TournamentSecurity {
         tieBreakerTrack:
           visibility === 'visible' ? details.config.tieBreakerTrack : null,
       },
-      frozen: details.frozen,
       cancelled: details.cancelled,
       notReadyReason:
         showGroups &&
