@@ -1,6 +1,5 @@
 import loc from '@common/locale/locales'
 import type { Match } from '@common/models/match'
-import type { TimeEntry } from '@common/models/timeEntry'
 import type {
   TournamentConfig,
   TournamentDetails,
@@ -9,13 +8,8 @@ import type {
 import type { User } from '@common/models/user'
 import { and, eq, isNull } from 'drizzle-orm'
 import db from '../../../database/database'
-import { tournamentMatches, tournaments, users } from '../../../database/schema'
+import { users } from '../../../database/schema'
 import type { TypedSocket } from '../../server'
-
-const activeDraft = and(
-  eq(tournaments.status, 'draft'),
-  isNull(tournaments.deletedAt)
-)
 
 export default class TournamentSecurity {
   private static viewer(userId: string): User | undefined {
@@ -66,36 +60,6 @@ export default class TournamentSecurity {
       'all_tournaments',
       user ? details.map(detail => this.project(detail, user)) : [],
       actor
-    )
-  }
-
-  static visibleMatches(rows: Match[]): Match[] {
-    const hidden = new Set(
-      db
-        .select({ id: tournamentMatches.matchId })
-        .from(tournamentMatches)
-        .innerJoin(
-          tournaments,
-          eq(tournaments.id, tournamentMatches.tournament)
-        )
-        .where(activeDraft)
-        .all()
-        .map(row => row.id)
-    )
-    return rows.filter(row => !hidden.has(row.id))
-  }
-
-  static visibleTimeEntries(rows: TimeEntry[]): TimeEntry[] {
-    const hidden = new Set(
-      db
-        .select({ session: tournaments.session })
-        .from(tournaments)
-        .where(activeDraft)
-        .all()
-        .map(row => row.session)
-    )
-    return rows.filter(
-      row => !row.tieBreaker || !row.session || !hidden.has(row.session)
     )
   }
 

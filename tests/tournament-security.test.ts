@@ -312,6 +312,13 @@ describe('Tournament preview security', () => {
         )
         await assert.rejects(cup.get(cup.sockets[0]))
         expect(TournamentSecurity.view(cup.draft, cup.owner.id)).toBeNull()
+        await UserManager.onEditUser(socket, {
+          type: 'EditUserRequest',
+          id: cup.owner.id,
+          deletedAt: null,
+        }).then(assertResponse)
+        expect((await cup.get(cup.sockets[0])).canConfigure).toBe(true)
+        expect(cup.last(cup.sockets[0]).canConfigure).toBe(true)
       } finally {
         cup.close()
       }
@@ -419,6 +426,80 @@ describe('Tournament preview security', () => {
         const laps = await TimeEntryManager.getAllTimeEntries()
         expect(laps.some(row => row.id === lap.id)).toBe(false)
         expect(laps.some(row => row.id === independent.id)).toBe(true)
+      } finally {
+        cup.close()
+      }
+    }
+  )
+
+  test.serial(
+    'Recreating a draft preserves retained completed and cancelled results in shared feeds',
+    async () => {
+      const cup = await prepare()
+      try {
+        const full = await cup.get(cup.sockets[0])
+        assert(full.previewKey)
+        assertResponse(
+          await TournamentManager.onStart(cup.sockets[0], {
+            session: cup.session.id,
+            previewKey: full.previewKey,
+          })
+        )
+        const retained = db
+          .insert(timeEntries)
+          .values([
+            {
+              session: cup.session.id,
+              track: cup.tracks[1].id,
+              user: cup.owner.id,
+              tieBreaker: true,
+              status: 'completed',
+              duration: 1000,
+            },
+            {
+              session: cup.session.id,
+              track: cup.tracks[1].id,
+              user: cup.player.id,
+              tieBreaker: true,
+              status: 'cancelled',
+            },
+          ])
+          .returning()
+          .all()
+        const match = full.matches.find(match => match.user1 && match.user2)
+        assert(match)
+        assertResponse(
+          await MatchManager.onEditMatch(cup.sockets[0], {
+            type: 'EditMatchRequest',
+            id: match.id,
+            status: 'completed',
+            winner: match.user1,
+          })
+        )
+        assertResponse(
+          await TournamentManager.onDelete(cup.sockets[0], {
+            session: cup.session.id,
+            deleteRelatedResults: false,
+          })
+        )
+        assertResponse(
+          await TournamentManager.onCreate(cup.sockets[0], {
+            session: cup.session.id,
+          })
+        )
+        await cup.visibility('stats_only')
+        const laps = await TimeEntryManager.getAllTimeEntries()
+        for (const lap of retained)
+          expect(laps.find(row => row.id === lap.id)).toEqual(lap)
+        expect(
+          TimeEntryManager.getAllLatestAfterSession(cup.session.id).map(
+            lap => lap.id
+          )
+        ).toContain(retained[0].id)
+        expect(
+          (await MatchManager.getAllMatches()).find(row => row.id === match.id)
+        ).toMatchObject({ status: 'completed', winner: match.user1 })
+        expect((await cup.get(cup.sockets[3])).tieBreakers).toEqual([])
       } finally {
         cup.close()
       }

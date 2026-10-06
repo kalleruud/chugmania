@@ -84,6 +84,8 @@ export function broadcast<Ev extends ProtectedServerEvent>(
   })
 }
 
+// Tournament visibility depends on the recipient's current role and ownership,
+// so each socket needs its own projection instead of a shared broadcast payload.
 export function broadcastTournaments(
   details: TournamentDetails[],
   actor: string | null = null

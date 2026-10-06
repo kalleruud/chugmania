@@ -12,12 +12,12 @@ import type { EventReq, EventRes } from '@common/models/socket.io'
 import { and, desc, eq, getTableColumns, isNull, sql } from 'drizzle-orm'
 import db from '../../database/database'
 import { matches, sessions } from '../../database/schema'
+import TournamentSource from '../../database/tournament.source'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import RatingManager from './rating.manager'
 import TimeEntryManager from './timeEntry.manager'
 import TournamentManager from './tournament/tournament.manager'
-import TournamentSecurity from './tournament/tournament.security'
 
 export default class MatchManager {
   private static validateMatchState(
@@ -50,9 +50,7 @@ export default class MatchManager {
       .where(isNull(matches.deletedAt))
       .orderBy(desc(sql`COALESCE(${sessions.date}, ${matches.createdAt})`))
 
-    return TournamentManager.enrich(
-      TournamentSecurity.visibleMatches(matchRows)
-    )
+    return TournamentManager.enrich(TournamentSource.visibleMatches(matchRows))
   }
 
   // Returns matches sorted by creation date, most recent first.

@@ -1,5 +1,5 @@
 import loc from '@common/locale/locales'
-import type { Match } from '@common/models/match'
+import { isMatchStage, type Match } from '@common/models/match'
 import type {
   TournamentConfig,
   TournamentDetails,
@@ -42,6 +42,13 @@ type TestMatch = {
   reopen(): Promise<void>
   setPlayers(players: Partial<Pick<Match, 'user1' | 'user2'>>): Promise<void>
 }
+
+test('Match stages accept named rounds and valid extended bracket sizes', () => {
+  for (const stage of ['group', 'grand_final_reset', 'round_32', 'round_64'])
+    expect(isMatchStage(stage)).toBe(true)
+  for (const stage of [null, 'unknown', 'round_16', 'round_48', 'round_032'])
+    expect(isMatchStage(stage)).toBe(false)
+})
 
 async function CreateTournament(options: {
   config: Omit<

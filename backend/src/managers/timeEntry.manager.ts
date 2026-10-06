@@ -14,13 +14,13 @@ import type { User } from '@common/models/user'
 import { and, asc, eq, getTableColumns, isNull, sql } from 'drizzle-orm'
 import db, { database } from '../../database/database'
 import { timeEntries } from '../../database/schema'
+import TournamentSource from '../../database/tournament.source'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import MatchManager from './match.manager'
 import RatingManager from './rating.manager'
 import SessionManager from './session.manager'
 import TournamentManager from './tournament/tournament.manager'
-import TournamentSecurity from './tournament/tournament.security'
 
 type TimeEntryUpdates = Partial<CreateTimeEntry> & {
   status: TimeEntry['status']
@@ -305,6 +305,6 @@ export default class TimeEntryManager {
         asc(timeEntries.createdAt)
       )
 
-    return TournamentSecurity.visibleTimeEntries(data)
+    return TournamentSource.visibleTimeEntries(data)
   }
 }

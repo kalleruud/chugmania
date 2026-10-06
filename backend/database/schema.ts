@@ -10,6 +10,7 @@ import {
   uniqueIndex,
 } from 'drizzle-orm/sqlite-core'
 import { randomUUID } from 'node:crypto'
+import type { MatchStage } from '../../common/models/match'
 import type {
   EliminationType,
   PreviewVisibility,
@@ -32,21 +33,7 @@ export type UserRole = 'admin' | 'moderator' | 'user'
 export type SessionResponse = 'yes' | 'no' | 'maybe'
 export type SessionStatus = 'confirmed' | 'tentative' | 'cancelled'
 export type MatchStatus = 'planned' | 'completed' | 'cancelled'
-export type MatchStage =
-  | `round_${number}`
-  | 'grand_final_reset'
-  | 'group'
-  | 'eight'
-  | 'quarter'
-  | 'semi'
-  | 'bronze'
-  | 'final'
-  | 'grand_final'
-  | 'loser_eight'
-  | 'loser_quarter'
-  | 'loser_semi'
-  | 'loser_bronze'
-  | 'loser_final'
+export type { MatchStage } from '../../common/models/match'
 
 export const users = sqliteTable('users', {
   ...metadata,

@@ -1,6 +1,10 @@
-import type { MatchStage } from '../../backend/database/schema'
 import { isRecord } from '../utils/utils'
-import type { Match, MatchStatus } from './match'
+import {
+  isMatchStage,
+  type Match,
+  type MatchStage,
+  type MatchStatus,
+} from './match'
 import type { TimeEntry } from './timeEntry'
 
 export type EliminationType = 'single' | 'double'
@@ -164,32 +168,6 @@ export function isTournamentRequest(
   value: unknown
 ): value is TournamentRequest {
   return isRecord(value) && typeof value.session === 'string'
-}
-
-export function isMatchStage(value: string): value is MatchStage {
-  const stages: string[] = [
-    'group',
-    'eight',
-    'quarter',
-    'semi',
-    'final',
-    'bronze',
-    'loser_eight',
-    'loser_bronze',
-    'loser_quarter',
-    'loser_semi',
-    'loser_final',
-    'grand_final',
-    'grand_final_reset',
-  ]
-  if (stages.includes(value)) return true
-  if (!/^round_[1-9]\d*$/.test(value)) return false
-  const size = Number(value.slice(6))
-  return (
-    Number.isSafeInteger(size) &&
-    size >= 32 &&
-    Number.isInteger(Math.log2(size))
-  )
 }
 
 export function isTournamentConfig(value: unknown): value is TournamentConfig {

@@ -1,9 +1,12 @@
 import type { ExportCsvRequest } from '@common/models/importCsv'
-import type { MatchStatus } from '@common/models/match'
+import {
+  MATCH_STAGE_CODES,
+  type MatchStage,
+  type MatchStatus,
+} from '@common/models/match'
 import type { GapType } from '@common/models/timeEntry'
 import { getRandomItem } from '@common/utils/utils'
 import type {
-  MatchStage,
   SessionResponse,
   SessionStatus,
   TrackLevel,
@@ -14,21 +17,7 @@ import type {
 export type Localization = typeof no
 export type Locale = 'no'
 
-const matchStageCodes: Record<MatchStage, string> = {
-  group: 'GS',
-  eight: 'EF',
-  quarter: 'QF',
-  semi: 'SF',
-  bronze: 'BF',
-  final: 'F',
-  loser_eight: 'LEF',
-  loser_quarter: 'LQF',
-  loser_semi: 'LSF',
-  loser_bronze: 'LBF',
-  loser_final: 'LF',
-  grand_final: 'GF',
-  grand_final_reset: 'GFR',
-}
+const matchStageCodes: Record<MatchStage, string> = MATCH_STAGE_CODES
 
 const no = {
   chugmania: 'Chugmania',

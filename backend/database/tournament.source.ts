@@ -1,5 +1,6 @@
+import { isMatchStage, type Match } from '@common/models/match'
+import type { TimeEntry } from '@common/models/timeEntry'
 import {
-  isMatchStage,
   type Slot,
   type TournamentConfig,
   type TournamentFixture,
@@ -35,6 +36,11 @@ import {
   users,
 } from './schema'
 
+const activeDraft = and(
+  eq(tournaments.status, 'draft'),
+  isNull(tournaments.deletedAt)
+)
+
 function activeTournamentRows(
   table:
     | typeof tournamentStages
@@ -59,6 +65,40 @@ export default class TournamentSource {
 
   static transaction<T>(work: () => T): T {
     return database.transaction(work)()
+  }
+
+  static visibleMatches(rows: Match[]): Match[] {
+    const hidden = new Set(
+      db
+        .select({ id: tournamentMatches.matchId })
+        .from(tournamentMatches)
+        .innerJoin(
+          tournaments,
+          eq(tournaments.id, tournamentMatches.tournament)
+        )
+        .where(activeDraft)
+        .all()
+        .map(row => row.id)
+    )
+    return rows.filter(row => !hidden.has(row.id))
+  }
+
+  static visibleTimeEntries(rows: TimeEntry[]): TimeEntry[] {
+    const hidden = new Set(
+      db
+        .select({ session: tournaments.session })
+        .from(tournaments)
+        .where(activeDraft)
+        .all()
+        .map(row => row.session)
+    )
+    return rows.filter(
+      row =>
+        row.status !== 'planned' ||
+        !row.tieBreaker ||
+        !row.session ||
+        !hidden.has(row.session)
+    )
   }
 
   static getConfirmedPlayerIds(session: string): string[] {
