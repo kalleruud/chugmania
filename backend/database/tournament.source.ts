@@ -249,29 +249,34 @@ export default class TournamentSource {
     state: TournamentState,
     needs: Map<string, boolean>
   ): void {
-    const track = state.config.tieBreakerTrack
-    if (!track) return
-    const laps = new Map(state.tieBreakers.map(lap => [lap.user, lap]))
-    for (const user of needs.keys()) {
-      if (!laps.has(user))
-        db.insert(timeEntries)
-          .values({
-            user,
-            track,
-            session: state.config.session,
-            tieBreaker: true,
-            status: 'planned',
-          })
+    this.transaction(() => {
+      const track = state.config.tieBreakerTrack
+      if (!track) return
+      const laps = new Map(state.tieBreakers.map(lap => [lap.user, lap]))
+      for (const user of needs.keys()) {
+        if (!laps.has(user))
+          db.insert(timeEntries)
+            .values({
+              user,
+              track,
+              session: state.config.session,
+              tieBreaker: true,
+              status: 'planned',
+            })
+            .run()
+      }
+      for (const lap of state.tieBreakers) {
+        if (
+          lap.status !== 'planned' ||
+          !!lap.deletedAt === !needs.has(lap.user)
+        )
+          continue
+        db.update(timeEntries)
+          .set({ deletedAt: needs.has(lap.user) ? null : new Date() })
+          .where(eq(timeEntries.id, lap.id))
           .run()
-    }
-    for (const lap of state.tieBreakers) {
-      if (lap.status !== 'planned' || !!lap.deletedAt === !needs.has(lap.user))
-        continue
-      db.update(timeEntries)
-        .set({ deletedAt: needs.has(lap.user) ? null : new Date() })
-        .where(eq(timeEntries.id, lap.id))
-        .run()
-    }
+      }
+    })
   }
 
   private static readSlot(
@@ -331,54 +336,58 @@ export default class TournamentSource {
     config: TournamentConfig,
     startedState?: Pick<TournamentState, 'frozenAt' | 'notReadyReason'>
   ): void {
-    const { stageTracks } = config
-    const row: typeof tournaments.$inferInsert = {
-      id,
-      session: config.session,
-      owner: config.owner,
-      previewVisibility: config.previewVisibility,
-      groupsCount: config.groupsCount,
-      advancementCount: config.advancementCount,
-      eliminationType: config.eliminationType,
-      tieBreakerTrack: config.tieBreakerTrack,
-      status: startedState ? 'started' : 'draft',
-      frozenAt: startedState?.frozenAt ?? null,
-      notReadyReason: startedState?.notReadyReason ?? null,
-    }
-    this.upsert(tournaments, row)
-    db.update(tournamentStages)
-      .set({ deletedAt: new Date() })
-      .where(eq(tournamentStages.tournament, id))
-      .run()
-    for (const [stage, tracks] of Object.entries(stageTracks)) {
-      if (!tracks || !isMatchStage(stage)) continue
-      this.upsert(
-        tournamentStages,
-        {
-          id: `${id}:${stage}`,
-          tournament: id,
-          stage,
-          tracks,
-          deletedAt: null,
-        },
-        [tournamentStages.tournament, tournamentStages.stage]
-      )
-    }
+    this.transaction(() => {
+      const { stageTracks } = config
+      const row: typeof tournaments.$inferInsert = {
+        id,
+        session: config.session,
+        owner: config.owner,
+        previewVisibility: config.previewVisibility,
+        groupsCount: config.groupsCount,
+        advancementCount: config.advancementCount,
+        eliminationType: config.eliminationType,
+        tieBreakerTrack: config.tieBreakerTrack,
+        status: startedState ? 'started' : 'draft',
+        frozenAt: startedState?.frozenAt ?? null,
+        notReadyReason: startedState?.notReadyReason ?? null,
+      }
+      this.upsert(tournaments, row)
+      db.update(tournamentStages)
+        .set({ deletedAt: new Date() })
+        .where(eq(tournamentStages.tournament, id))
+        .run()
+      for (const [stage, tracks] of Object.entries(stageTracks)) {
+        if (!tracks || !isMatchStage(stage)) continue
+        this.upsert(
+          tournamentStages,
+          {
+            id: `${id}:${stage}`,
+            tournament: id,
+            stage,
+            tracks,
+            deletedAt: null,
+          },
+          [tournamentStages.tournament, tournamentStages.stage]
+        )
+      }
+    })
   }
 
   static saveTournament(state: TournamentState): void {
-    this.saveConfig(state.id, state.config, state)
-    for (const group of state.groups)
-      this.upsert(tournamentGroups, { ...group, tournament: state.id })
-    for (const player of state.participants) {
-      this.upsert(tournamentPlayers, {
-        ...player,
-        id: `${state.id}:${player.user}`,
-        tournament: state.id,
-        deletedAt: null,
-      })
-    }
-    for (const fixture of state.fixtures) this.saveFixture(state.id, fixture)
+    this.transaction(() => {
+      this.saveConfig(state.id, state.config, state)
+      for (const group of state.groups)
+        this.upsert(tournamentGroups, { ...group, tournament: state.id })
+      for (const player of state.participants) {
+        this.upsert(tournamentPlayers, {
+          ...player,
+          id: `${state.id}:${player.user}`,
+          tournament: state.id,
+          deletedAt: null,
+        })
+      }
+      for (const fixture of state.fixtures) this.saveFixture(state.id, fixture)
+    })
   }
 
   private static saveFixture(
@@ -422,44 +431,46 @@ export default class TournamentSource {
     session: string,
     { deleteMatches } = { deleteMatches: true }
   ): void {
-    const state = this.findActiveTournament(session)
-    if (!state) return
-    const deletedAt = new Date()
-    const laps = state.status === 'started' ? this.loadLaps(state) : []
-    for (const lap of laps) {
-      if (lap.status === 'planned')
-        db.update(timeEntries)
-          .set({ deletedAt })
-          .where(eq(timeEntries.id, lap.id))
-          .run()
-    }
-    db.update(tournamentMatchSlots)
-      .set({ deletedAt })
-      .where(
-        inArray(
-          tournamentMatchSlots.tournamentMatch,
-          db
-            .select({ id: tournamentMatches.id })
-            .from(tournamentMatches)
-            .where(eq(tournamentMatches.tournament, state.id))
-        )
-      )
-      .run()
-    this.removeMatches(state.id, deleteMatches, deletedAt)
-    for (const table of [
-      tournamentStages,
-      tournamentGroups,
-      tournamentPlayers,
-      tournamentMatches,
-    ])
-      db.update(table)
+    this.transaction(() => {
+      const state = this.findActiveTournament(session)
+      if (!state) return
+      const deletedAt = new Date()
+      const laps = state.status === 'started' ? this.loadLaps(state) : []
+      for (const lap of laps) {
+        if (lap.status === 'planned')
+          db.update(timeEntries)
+            .set({ deletedAt })
+            .where(eq(timeEntries.id, lap.id))
+            .run()
+      }
+      db.update(tournamentMatchSlots)
         .set({ deletedAt })
-        .where(eq(table.tournament, state.id))
+        .where(
+          inArray(
+            tournamentMatchSlots.tournamentMatch,
+            db
+              .select({ id: tournamentMatches.id })
+              .from(tournamentMatches)
+              .where(eq(tournamentMatches.tournament, state.id))
+          )
+        )
         .run()
-    db.update(tournaments)
-      .set({ deletedAt })
-      .where(eq(tournaments.id, state.id))
-      .run()
+      this.removeMatches(state.id, deleteMatches, deletedAt)
+      for (const table of [
+        tournamentStages,
+        tournamentGroups,
+        tournamentPlayers,
+        tournamentMatches,
+      ])
+        db.update(table)
+          .set({ deletedAt })
+          .where(eq(table.tournament, state.id))
+          .run()
+      db.update(tournaments)
+        .set({ deletedAt })
+        .where(eq(tournaments.id, state.id))
+        .run()
+    })
   }
 
   private static removeMatches(

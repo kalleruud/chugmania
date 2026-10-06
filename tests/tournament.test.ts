@@ -6,7 +6,7 @@ import type {
 } from '@common/models/tournament'
 import { getTournamentStages } from '@common/utils/tournament'
 import { beforeAll, describe, expect, test } from 'bun:test'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import assert from 'node:assert/strict'
 import {
   matches,
@@ -1127,5 +1127,102 @@ test.serial(
       winner: awarded.user1,
       deletedAt: null,
     })
+  }
+)
+
+test.serial(
+  'Tournament source rolls back failed multi-write operations',
+  async () => {
+    const cup = await CreateTournament({
+      config: {
+        groupsCount: 1,
+        advancementCount: 2,
+        eliminationType: 'single',
+      },
+      tracks: 1,
+      users: Array.from({ length: 4 }, () => `atomic-${Bun.randomUUIDv7()}`),
+    })
+    const state = TournamentSource.loadTournament(cup.session.id)
+    assert(state)
+    state.fixtures[0].match.status = 'cancelled'
+    state.fixtures[0].match.winner = state.fixtures[0].match.user1
+    TournamentSource.saveTournament(state)
+    TournamentSource.reconcileLaps(state, new Map([[cup.players[0].id, true]]))
+    const before = TournamentSource.loadTournament(cup.session.id)
+    assert(before)
+
+    db.run(sql`CREATE TEMP TRIGGER reject_tournament_stage
+    BEFORE INSERT ON tournament_stages
+    BEGIN SELECT RAISE(ABORT, 'stage write failed'); END`)
+    try {
+      assert.throws(
+        () =>
+          TournamentSource.saveConfig(
+            before.id,
+            { ...before.config, advancementCount: 1 },
+            before
+          ),
+        /stage write failed/
+      )
+      expect(TournamentSource.loadTournament(cup.session.id)).toEqual(before)
+    } finally {
+      db.run(sql`DROP TRIGGER reject_tournament_stage`)
+    }
+
+    const invalid = structuredClone(before)
+    invalid.config.advancementCount = 1
+    invalid.groups[0].name = 'Must roll back'
+    invalid.participants[0].rating += 100
+    invalid.fixtures[0].match.comment = 'Must roll back'
+    invalid.fixtures[0].slot2.override = 'missing-atomic-user'
+    const rejectSave = () => {
+      assert.throws(
+        () => TournamentSource.saveTournament(invalid),
+        /FOREIGN KEY/
+      )
+      expect(TournamentSource.loadTournament(cup.session.id)).toEqual(before)
+    }
+    rejectSave()
+    TournamentSource.transaction(() => {
+      rejectSave()
+      TournamentSource.renameGroup(
+        before.id,
+        before.groups[0].id,
+        'Outer write'
+      )
+    })
+    before.groups[0].name = 'Outer write'
+    expect(TournamentSource.loadTournament(cup.session.id)).toEqual(before)
+
+    assert.throws(
+      () =>
+        TournamentSource.reconcileLaps(
+          before,
+          new Map([
+            [cup.players[1].id, true],
+            ['missing-atomic-user', true],
+          ])
+        ),
+      /FOREIGN KEY/
+    )
+    expect(TournamentSource.loadTournament(cup.session.id)).toEqual(before)
+
+    db.run(sql`CREATE TEMP TRIGGER reject_tournament_removal
+    BEFORE UPDATE ON tournaments WHEN NEW.deleted_at IS NOT NULL
+    BEGIN SELECT RAISE(ABORT, 'tournament removal failed'); END`)
+    try {
+      for (const deleteMatches of [true, false]) {
+        assert.throws(
+          () =>
+            TournamentSource.removeTournament(cup.session.id, {
+              deleteMatches,
+            }),
+          /tournament removal failed/
+        )
+        expect(TournamentSource.loadTournament(cup.session.id)).toEqual(before)
+      }
+    } finally {
+      db.run(sql`DROP TRIGGER reject_tournament_removal`)
+    }
   }
 )
