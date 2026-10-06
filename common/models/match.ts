@@ -15,7 +15,7 @@ export const MATCH_STAGE_CODES = {
   loser_final: 'LF',
   grand_final: 'GF',
   grand_final_reset: 'GFR',
-}
+} as const
 
 export type MatchStage = keyof typeof MATCH_STAGE_CODES | `round_${number}`
 
