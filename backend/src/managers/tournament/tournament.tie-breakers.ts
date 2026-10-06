@@ -1,20 +1,24 @@
+import type { Match } from '@common/models/match'
 import type {
   TournamentFixture,
   TournamentState,
 } from '@common/models/tournament'
 import { isInactiveFinalReset } from '@common/utils/tournament'
 
+export function hasResult(match: Match): boolean {
+  return (
+    (match.status === 'completed' || match.status === 'cancelled') &&
+    !!match.user1 &&
+    !!match.user2 &&
+    !!match.winner &&
+    (match.winner === match.user1 || match.winner === match.user2)
+  )
+}
+
 export function stageComplete(fixtures: TournamentFixture[]): boolean {
   return fixtures
     .filter(f => !isInactiveFinalReset(f.match))
-    .every(
-      ({ match }) =>
-        (match.status === 'completed' || match.status === 'cancelled') &&
-        !!match.user1 &&
-        !!match.user2 &&
-        !!match.winner &&
-        (match.winner === match.user1 || match.winner === match.user2)
-    )
+    .every(({ match }) => hasResult(match))
 }
 
 export function rankLapTie(
@@ -33,22 +37,17 @@ export function rankLapTie(
   const players = new Map(
     state.participants.map(player => [player.user, player])
   )
-  const ordered = users.toSorted((a, b) => {
-    const lapA = laps.get(a)
-    const lapB = laps.get(b)
-    const orderA = lapOrder(a)
-    const orderB = lapOrder(b)
-    if (orderA !== orderB) return orderA - orderB
-    const duration = (lapA?.duration ?? 0) - (lapB?.duration ?? 0)
-    if (orderA === 0 && duration) return duration
-    const playerA = players.get(a)
-    const playerB = players.get(b)
-    return (
-      (playerA?.globalRank ?? Infinity) - (playerB?.globalRank ?? Infinity) ||
-      (playerA?.admission ?? 0) - (playerB?.admission ?? 0) ||
+  const ordered = users.toSorted(
+    (a, b) =>
+      lapOrder(a) - lapOrder(b) ||
+      (lapOrder(a) === 0
+        ? (laps.get(a)?.duration ?? 0) - (laps.get(b)?.duration ?? 0)
+        : 0) ||
+      (players.get(a)?.globalRank ?? Infinity) -
+        (players.get(b)?.globalRank ?? Infinity) ||
+      (players.get(a)?.admission ?? 0) - (players.get(b)?.admission ?? 0) ||
       a.localeCompare(b)
-    )
-  })
+  )
   const firstCancelled = ordered.findIndex(
     user => laps.get(user)?.status === 'cancelled'
   )

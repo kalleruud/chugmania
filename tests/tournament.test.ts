@@ -1,3 +1,4 @@
+import loc from '@common/locale/locales'
 import type { Match } from '@common/models/match'
 import type {
   TournamentConfig,
@@ -5,13 +6,22 @@ import type {
 } from '@common/models/tournament'
 import { getTournamentStages } from '@common/utils/tournament'
 import { beforeAll, describe, expect, test } from 'bun:test'
+import { and, eq } from 'drizzle-orm'
 import assert from 'node:assert/strict'
-import type { MatchStage } from '../backend/database/schema'
+import {
+  matches,
+  tournamentMatches,
+  tournamentMatchSlots,
+  tournamentStages,
+  type MatchStage,
+} from '../backend/database/schema'
+import TournamentSource from '../backend/database/tournament.source'
 import MatchManager from '../backend/src/managers/match.manager'
 import RatingManager from '../backend/src/managers/rating.manager'
 import SessionManager from '../backend/src/managers/session.manager'
 import TimeEntryManager from '../backend/src/managers/timeEntry.manager'
 import TournamentManager from '../backend/src/managers/tournament/tournament.manager'
+import { db } from './setup'
 import {
   assertResponse,
   createRsvps,
@@ -889,6 +899,233 @@ test.serial(
     expect(await tournament.getMatch('final')).toMatchObject({
       user1: 'fallback-a',
       user2: 'fallback-b',
+    })
+  }
+)
+
+test.serial(
+  'Groups-only drafts refresh after signups and reject stale starts',
+  async () => {
+    const players = Array.from({ length: 4 }, (_, index) =>
+      createUser(
+        `draft-refactor-${Bun.randomUUIDv7()}`,
+        index === 0 ? 'admin' : 'user'
+      )
+    )
+    const socket = await login(players[0])
+    const session = await createSession(socket, [])
+    const tracks = createTracks(1)
+    const created = await TournamentManager.onCreate(socket, {
+      session: session.id,
+    })
+    assertResponse(created)
+    assert(created.details?.configKey)
+    const config = {
+      ...created.details.config,
+      groupsCount: 2,
+      advancementCount: 2,
+      tieBreakerTrack: tracks[0].id,
+    }
+    for (const stage of getTournamentStages(config, players.length))
+      config.stageTracks[stage] = [tracks[0].id]
+    const draft = await TournamentManager.onUpdate(socket, {
+      config,
+      configKey: created.details.configKey,
+    })
+    assertResponse(draft)
+    assert(draft.details?.previewKey)
+    expect(draft.details.groups).toHaveLength(2)
+    expect(draft.details.matches).toEqual([])
+    expect(draft.details.notReadyReason).toBe(loc.no.tournament.awaitingSignups)
+    expect(draft.details.workloadSummary).toMatchObject({
+      minMatches: 0,
+      maxMatches: 0,
+    })
+    expect(TournamentSource.loadTournament(session.id)).toBeNull()
+    await assert.rejects(
+      TournamentManager.onStart(socket, {
+        session: session.id,
+        previewKey: draft.details.previewKey,
+      })
+    )
+    for (const player of players) {
+      assertResponse(
+        await SessionManager.onRsvpSession(socket, {
+          type: 'RsvpSessionRequest',
+          session: session.id,
+          user: player.id,
+          response: 'yes',
+        })
+      )
+    }
+    const ready = await TournamentManager.onGet(socket, { session: session.id })
+    assertResponse(ready)
+    assert(ready.details?.previewKey)
+    expect(ready.details.groups.map(group => group.id)).toEqual(
+      draft.details.groups.map(group => group.id)
+    )
+    expect(ready.details.matches).toHaveLength(5)
+    expect(ready.details.notReadyReason).toBeNull()
+    expect(ready.details.workloadSummary).toMatchObject({
+      minMatches: 2,
+      maxMatches: 3,
+    })
+    expect(
+      db
+        .select()
+        .from(tournamentMatches)
+        .where(eq(tournamentMatches.tournament, ready.details.id))
+        .all()
+    ).toEqual([])
+    const staleStart = {
+      session: session.id,
+      previewKey: draft.details.previewKey,
+      config: ready.details.config,
+      configKey: ready.details.configKey,
+    }
+    expect(await TournamentManager.onStart(socket, staleStart)).toMatchObject({
+      success: false,
+    })
+    assertResponse(
+      await TournamentManager.onStart(socket, {
+        session: session.id,
+        previewKey: ready.details.previewKey,
+      })
+    )
+    expect(TournamentSource.loadTournament(session.id)?.fixtures).toHaveLength(
+      5
+    )
+  }
+)
+
+test.serial(
+  'Persistence restores stages, retains imported row IDs and preserves results on deletion',
+  async () => {
+    const cup = await CreateTournament({
+      config: {
+        groupsCount: 1,
+        advancementCount: 2,
+        eliminationType: 'single',
+      },
+      tracks: 2,
+      users: Array.from(
+        { length: 4 },
+        () => `persist-refactor-${Bun.randomUUIDv7()}`
+      ),
+    })
+    const state = TournamentSource.loadTournament(cup.session.id)
+    assert(state)
+    const stage = db
+      .select()
+      .from(tournamentStages)
+      .where(
+        and(
+          eq(tournamentStages.tournament, state.id),
+          eq(tournamentStages.stage, 'group')
+        )
+      )
+      .get()
+    const slot = db
+      .select()
+      .from(tournamentMatchSlots)
+      .where(eq(tournamentMatchSlots.tournamentMatch, state.fixtures[0].id))
+      .get()
+    assert(stage && slot)
+    db.update(tournamentStages)
+      .set({ id: `imported-${stage.id}` })
+      .where(eq(tournamentStages.id, stage.id))
+      .run()
+    db.update(tournamentMatchSlots)
+      .set({ id: `imported-${slot.id}` })
+      .where(eq(tournamentMatchSlots.id, slot.id))
+      .run()
+    const { group, ...stageTracks } = state.config.stageTracks
+    assert(group)
+    TournamentSource.transaction(() =>
+      TournamentSource.saveConfig(
+        state.id,
+        { ...state.config, stageTracks },
+        state
+      )
+    )
+    const row = TournamentSource.findActiveTournament(cup.session.id)
+    assert(row)
+    expect(TournamentSource.loadConfig(row).stageTracks.group).toBeUndefined()
+    TournamentSource.transaction(() => TournamentSource.saveTournament(state))
+    expect(TournamentSource.loadTournament(cup.session.id)).toEqual(state)
+    expect(
+      db
+        .select()
+        .from(tournamentStages)
+        .where(eq(tournamentStages.id, `imported-${stage.id}`))
+        .get()
+    ).toMatchObject({ deletedAt: null, tracks: group })
+    expect(
+      db
+        .select()
+        .from(tournamentMatchSlots)
+        .where(eq(tournamentMatchSlots.id, `imported-${slot.id}`))
+        .get()
+    ).toMatchObject({ deletedAt: null, slotHolderId: slot.slotHolderId })
+    const awarded = state.fixtures[0].match
+    awarded.status = 'cancelled'
+    awarded.winner = awarded.user1
+    TournamentSource.transaction(() => TournamentSource.saveTournament(state))
+    assertResponse(
+      await TournamentManager.onDelete(cup.socket, {
+        session: cup.session.id,
+        deleteRelatedResults: false,
+      })
+    )
+    expect(TournamentSource.loadTournament(cup.session.id)).toBeNull()
+    expect(
+      db.select().from(matches).where(eq(matches.id, awarded.id)).get()
+    ).toMatchObject({
+      status: 'completed',
+      winner: awarded.user1,
+      deletedAt: null,
+    })
+    expect(
+      db
+        .select()
+        .from(tournamentMatchSlots)
+        .where(eq(tournamentMatchSlots.id, `imported-${slot.id}`))
+        .get()?.deletedAt
+    ).toBeInstanceOf(Date)
+    const recreated = await TournamentManager.onCreate(cup.socket, {
+      session: cup.session.id,
+    })
+    assertResponse(recreated)
+    assert(recreated.details?.configKey)
+    const configured = await TournamentManager.onUpdate(cup.socket, {
+      config: state.config,
+      configKey: recreated.details.configKey,
+    })
+    assertResponse(configured)
+    assert(configured.details?.previewKey)
+    const restarted = await TournamentManager.onStart(cup.socket, {
+      session: cup.session.id,
+      previewKey: configured.details.previewKey,
+    })
+    assertResponse(restarted)
+    assert(restarted.details)
+    expect(restarted.details.id).not.toBe(state.id)
+    expect(
+      restarted.details.groups.some(group =>
+        state.groups.some(previous => previous.id === group.id)
+      )
+    ).toBe(false)
+    expect(
+      restarted.details.matches.some(match =>
+        state.fixtures.some(previous => previous.id === match.id)
+      )
+    ).toBe(false)
+    expect(
+      db.select().from(matches).where(eq(matches.id, awarded.id)).get()
+    ).toMatchObject({
+      status: 'completed',
+      winner: awarded.user1,
+      deletedAt: null,
     })
   }
 )

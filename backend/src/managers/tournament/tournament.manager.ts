@@ -8,18 +8,16 @@ import {
   isTournamentRequest,
   isUpdateTournamentRequest,
   type Participant,
-  type Slot,
+  type StartTournamentRequest,
   type TournamentConfig,
-  type TournamentConflictResponse,
   type TournamentDetails,
   type TournamentState,
+  type UpdateTournamentRequest,
 } from '@common/models/tournament'
 import { RATING_CONSTANTS } from '@common/utils/constants'
-import {
-  getTournamentStages,
-  validateConfiguration,
-} from '@common/utils/tournament'
+import { getTournamentStages } from '@common/utils/tournament'
 import { createHash, randomUUID } from 'node:crypto'
+import type { SessionStatus } from '../../../database/schema'
 import TournamentSource from '../../../database/tournament.source'
 import type { TypedSocket } from '../../server'
 import { broadcast, broadcastTournaments } from '../../server'
@@ -34,24 +32,31 @@ import {
   tieBreakerNeeds,
   tournamentDetails,
 } from './tournament'
-import {
-  generateTournament,
-  generateTournamentGroups,
-} from './tournament.generator'
+import { generateTournament } from './tournament.generator'
 import TournamentSecurity from './tournament.security'
+
+type DraftInput = {
+  id: string
+  config: TournamentConfig
+  participants: Participant[]
+  available: Set<string>
+  sessionStatus: SessionStatus
+  requiredTracks: string[]
+}
 
 export default class TournamentManager {
   private static previews = new Map<string, TournamentDetails>()
 
   private static participants(config: TournamentConfig): Participant[] {
-    const ratings = RatingManager.onGetRatings()
+    const ratings = new Map(
+      RatingManager.onGetRatings().map(rating => [rating.user, rating])
+    )
     return TournamentSource.getConfirmedPlayerIds(config.session).map(user => {
+      const rating = ratings.get(user)
       return {
         user,
-        globalRank: ratings.find(r => r.user === user)?.ranking ?? null,
-        rating:
-          ratings.find(r => r.user === user)?.totalRating ??
-          RATING_CONSTANTS.NO_DATA_RATING,
+        globalRank: rating?.ranking ?? null,
+        rating: rating?.totalRating ?? RATING_CONSTANTS.NO_DATA_RATING,
         admission: 0,
         groupId: '',
       }
@@ -81,62 +86,71 @@ export default class TournamentManager {
     return createHash('sha256').update(JSON.stringify(value)).digest('hex')
   }
 
-  private static draftState(session: string): TournamentState {
-    const row = TournamentSource.findActiveTournament(session)
-    if (!row || row.status !== 'draft')
-      throw new Error(loc.no.tournament.invalid)
-    const config = TournamentSource.loadConfig(row)
+  private static draftInput(id: string, config: TournamentConfig): DraftInput {
     const participants = this.participants(config)
-    const available = new Set(TournamentSource.getAvailableTrackIds())
-    const cancelled = this.session(session, true).status === 'cancelled'
-    const valid = validateConfiguration(
-      participants.length,
-      config.groupsCount,
-      config.advancementCount,
-      config.eliminationType
-    )
-    let state: TournamentState = {
-      id: row.id,
+    return {
+      id,
       config,
-      ...generateTournamentGroups(config, participants),
-      fixtures: [],
-      tieBreakers: [],
-      frozenAt: null,
-      notReadyReason: loc.no.tournament.awaitingSignups,
-      cancelled,
+      participants,
+      available: new Set(TournamentSource.getAvailableTrackIds()),
+      sessionStatus: this.session(config.session, true).status,
+      requiredTracks: getTournamentStages(config, participants.length).flatMap(
+        stage => config.stageTracks[stage] ?? []
+      ),
     }
-    if (valid) {
-      const effectiveConfig = {
-        ...config,
-        stageTracks: Object.fromEntries(
-          Object.entries(config.stageTracks).map(([stage, tracks]) => [
-            stage,
-            tracks?.filter(id => available.has(id)),
-          ])
-        ),
-      }
-      state = resolveTournament(
-        generateTournament(effectiveConfig, participants)
-      )
-      state.id = row.id
-      state.config = config
-      state.cancelled = cancelled
-      const invalidTracks = getTournamentStages(
-        config,
-        participants.length
-      ).some(stage => config.stageTracks[stage]?.some(id => !available.has(id)))
-      state.notReadyReason =
-        invalidTracks || state.fixtures.some(f => !f.match.track)
-          ? loc.no.tournament.tracks
-          : null
-    }
+  }
+
+  private static draftReadiness(
+    input: DraftInput,
+    state: TournamentState
+  ): string | null {
+    if (input.sessionStatus === 'cancelled') return loc.no.tournament.session
+    if (!state.fixtures.length) return loc.no.tournament.awaitingSignups
     if (
-      valid &&
-      (!config.tieBreakerTrack || !available.has(config.tieBreakerTrack))
+      !input.config.tieBreakerTrack ||
+      !input.available.has(input.config.tieBreakerTrack)
     )
-      state.notReadyReason = loc.no.tournament.tieBreakerTrackRequired
-    if (cancelled) state.notReadyReason = loc.no.tournament.session
-    return state
+      return loc.no.tournament.tieBreakerTrackRequired
+    if (
+      input.requiredTracks.some(id => !input.available.has(id)) ||
+      state.fixtures.some(fixture => !fixture.match.track)
+    )
+      return loc.no.tournament.tracks
+    return null
+  }
+
+  private static draftState(input: DraftInput): TournamentState {
+    const config = {
+      ...input.config,
+      stageTracks: Object.fromEntries(
+        Object.entries(input.config.stageTracks).map(([stage, tracks]) => [
+          stage,
+          tracks?.filter(id => input.available.has(id)),
+        ])
+      ),
+    }
+    const state = resolveTournament(
+      generateTournament(input.id, config, input.participants)
+    )
+    return {
+      ...state,
+      config: input.config,
+      cancelled: input.sessionStatus === 'cancelled',
+      notReadyReason: this.draftReadiness(input, state),
+    }
+  }
+
+  private static previewKey(input: DraftInput, configKey: string): string {
+    return this.hash({
+      configKey,
+      participants: input.participants.toSorted((a, b) =>
+        a.user.localeCompare(b.user)
+      ),
+      sessionStatus: input.sessionStatus,
+      tracks: [...input.requiredTracks, input.config.tieBreakerTrack].map(
+        id => [id, !!id && input.available.has(id)]
+      ),
+    })
   }
 
   static getDetails(session: string): TournamentDetails | null {
@@ -147,79 +161,56 @@ export default class TournamentManager {
       const state = TournamentSource.loadTournament(session)
       return state ? tournamentDetails(state) : null
     }
-    const config = TournamentSource.loadConfig(row)
-    const participants = this.participants(config)
-    const configKey = this.configKey(row.id, config)
-    const available = new Set(TournamentSource.getAvailableTrackIds())
-    const requiredTracks = getTournamentStages(
-      config,
-      participants.length
-    ).flatMap(stage => config.stageTracks[stage] ?? [])
-    const previewKey = this.hash({
-      configKey,
-      participants: participants
-        .map(p => ({
-          user: p.user,
-          rating: p.rating,
-          globalRank: p.globalRank,
-        }))
-        .toSorted((a, b) => a.user.localeCompare(b.user)),
-      sessionStatus: this.session(session, true).status,
-      tracks: [...requiredTracks, config.tieBreakerTrack].map(id => [
-        id,
-        !!id && available.has(id),
-      ]),
-    })
+    const input = this.draftInput(row.id, TournamentSource.loadConfig(row))
+    const configKey = this.configKey(row.id, input.config)
+    const previewKey = this.previewKey(input, configKey)
     const cached = this.previews.get(session)
     if (cached?.previewKey === previewKey) return structuredClone(cached)
-    const state = this.draftState(session)
+    const state = this.draftState(input)
     const details = { ...tournamentDetails(state), configKey, previewKey }
     this.previews.set(session, details)
     return structuredClone(details)
   }
 
-  private static conflict(
+  private static response(
     session: string,
-    userId: string
-  ): TournamentConflictResponse {
-    return {
-      success: false,
-      message: loc.no.tournament.conflict,
-      details: TournamentSecurity.view(this.getDetails(session), userId),
-    }
+    userId: string,
+    message?: string
+  ): EventRes<'update_tournament'> {
+    const details = TournamentSecurity.view(this.getDetails(session), userId)
+    if (message) return { success: false, message, details }
+    return { success: true, details }
   }
 
-  private static remap(state: TournamentState): TournamentState {
-    const result = structuredClone(state)
-    const ids = new Map(
-      [...result.groups, ...result.fixtures].map(row => [row.id, randomUUID()])
-    )
-    const id = (key: string) => {
-      const value = ids.get(key)
-      if (!value) throw new Error(loc.no.tournament.invalid)
-      return value
-    }
-    const slot = (value: Slot): Slot => {
-      if (value.kind === 'player') return value
-      if (value.kind === 'group_rank')
-        return { ...value, groupId: id(value.groupId) }
-      return { ...value, matchId: id(value.matchId) }
-    }
-    result.groups.forEach(g => {
-      g.id = id(g.id)
+  private static changeDraft(
+    userId: string,
+    request: UpdateTournamentRequest | StartTournamentRequest,
+    change: (details: TournamentDetails) => void
+  ): EventRes<'update_tournament'> {
+    const updating = 'config' in request
+    const session = updating ? request.config.session : request.session
+    const key = updating ? 'configKey' : 'previewKey'
+    const expectedKey = updating ? request.configKey : request.previewKey
+    return TournamentSource.transaction(() => {
+      this.session(session)
+      if (!updating) RatingManager.recalculate()
+      const details = this.getDetails(session)
+      if (details)
+        TournamentSecurity.authorize(
+          userId,
+          details.config,
+          details.status,
+          updating ? request.config : undefined
+        )
+      if (
+        !details ||
+        details.status !== 'draft' ||
+        details[key] !== expectedKey
+      )
+        return this.response(session, userId, loc.no.tournament.conflict)
+      change(details)
+      return this.response(session, userId)
     })
-    result.participants.forEach(p => {
-      p.groupId = id(p.groupId)
-    })
-    result.fixtures.forEach(f => {
-      f.id = id(f.id)
-      f.groupId = f.groupId ? id(f.groupId) : null
-      f.slot1 = slot(f.slot1)
-      f.slot2 = slot(f.slot2)
-      f.match.id = f.id
-      f.match.createdAt = new Date()
-    })
-    return result
   }
 
   static editMatch(request: EditMatchRequest): boolean {
@@ -282,10 +273,9 @@ export default class TournamentManager {
   }
 
   static getAllTournaments(): TournamentDetails[] {
-    return TournamentSource.getActiveSessionIds().flatMap(session => {
-      const details = this.getDetails(session)
-      return details ? [details] : []
-    })
+    return TournamentSource.getActiveSessionIds()
+      .map(session => this.getDetails(session))
+      .filter(details => details !== null)
   }
 
   static async onCreate(
@@ -296,29 +286,21 @@ export default class TournamentManager {
     if (!isTournamentRequest(request))
       throw new Error(loc.no.tournament.invalid)
     TournamentManager.session(request.session)
-    const response = TournamentSource.transaction(
-      (): EventRes<'create_tournament'> => {
-        if (TournamentSource.findActiveTournament(request.session))
-          throw new Error(loc.no.tournament.exists)
-        TournamentSource.saveConfig(randomUUID(), {
-          session: request.session,
-          owner: user.id,
-          previewVisibility: 'visible',
-          groupsCount: 1,
-          advancementCount: 2,
-          eliminationType: 'single',
-          stageTracks: {},
-          tieBreakerTrack: null,
-        })
-        return {
-          success: true,
-          details: TournamentSecurity.view(
-            TournamentManager.getDetails(request.session),
-            user.id
-          ),
-        }
-      }
-    )
+    const response = TournamentSource.transaction(() => {
+      if (TournamentSource.findActiveTournament(request.session))
+        throw new Error(loc.no.tournament.exists)
+      TournamentSource.saveConfig(randomUUID(), {
+        session: request.session,
+        owner: user.id,
+        previewVisibility: 'visible',
+        groupsCount: 1,
+        advancementCount: 2,
+        eliminationType: 'single',
+        stageTracks: {},
+        tieBreakerTrack: null,
+      })
+      return TournamentManager.response(request.session, user.id)
+    })
     TournamentManager.publish(socket.id)
     return response
   }
@@ -330,34 +312,11 @@ export default class TournamentManager {
     const user = await AuthManager.checkAuth(socket)
     if (!isUpdateTournamentRequest(request))
       throw new Error(loc.no.tournament.invalid)
-    const response = TournamentSource.transaction(
-      (): EventRes<'update_tournament'> => {
-        TournamentManager.session(request.config.session)
-        const row = TournamentSource.findActiveTournament(
-          request.config.session
-        )
-        const details = TournamentManager.getDetails(request.config.session)
-        if (row)
-          TournamentSecurity.authorize(
-            user.id,
-            TournamentSource.loadConfig(row),
-            row.status,
-            request.config
-          )
-        if (
-          !row ||
-          row.status !== 'draft' ||
-          details?.configKey !== request.configKey
-        )
-          return TournamentManager.conflict(request.config.session, user.id)
-        TournamentSource.saveConfig(row.id, request.config)
-        return {
-          success: true,
-          details: TournamentSecurity.view(
-            TournamentManager.getDetails(request.config.session),
-            user.id
-          ),
-        }
+    const response = TournamentManager.changeDraft(
+      user.id,
+      request,
+      details => {
+        TournamentSource.saveConfig(details.id, request.config)
       }
     )
     if (response.success) TournamentManager.publish(socket.id)
@@ -371,37 +330,19 @@ export default class TournamentManager {
     const user = await AuthManager.checkAuth(socket)
     if (!isStartTournamentRequest(request))
       throw new Error(loc.no.tournament.invalid)
-    const response = TournamentSource.transaction(
-      (): EventRes<'start_tournament'> => {
-        TournamentManager.session(request.session)
-        RatingManager.recalculate()
-        const row = TournamentSource.findActiveTournament(request.session)
-        const details = TournamentManager.getDetails(request.session)
-        if (row)
-          TournamentSecurity.authorize(
-            user.id,
-            TournamentSource.loadConfig(row),
-            row.status
-          )
-        if (
-          !row ||
-          row.status !== 'draft' ||
-          details?.previewKey !== request.previewKey
+    const response = TournamentManager.changeDraft(
+      user.id,
+      { session: request.session, previewKey: request.previewKey },
+      details => {
+        const state = TournamentManager.draftState(
+          TournamentManager.draftInput(details.id, details.config)
         )
-          return TournamentManager.conflict(request.session, user.id)
-        const state = TournamentManager.draftState(request.session)
         if (state.notReadyReason) throw new Error(state.notReadyReason)
-        const frozen = TournamentManager.remap(state)
-        frozen.frozenAt = new Date()
-        frozen.config.previewVisibility = 'visible'
-        TournamentSource.saveTournament(frozen)
-        return {
-          success: true,
-          details: TournamentSecurity.view(
-            TournamentManager.getDetails(request.session),
-            user.id
-          ),
-        }
+        const now = new Date()
+        state.frozenAt = now
+        state.config.previewVisibility = 'visible'
+        for (const fixture of state.fixtures) fixture.match.createdAt = now
+        TournamentSource.saveTournament(state)
       }
     )
     if (response.success) {
@@ -420,13 +361,7 @@ export default class TournamentManager {
     if (!isTournamentRequest(request))
       throw new Error(loc.no.tournament.invalid)
     TournamentManager.session(request.session, true)
-    return {
-      success: true,
-      details: TournamentSecurity.view(
-        TournamentManager.getDetails(request.session),
-        user.id
-      ),
-    }
+    return TournamentManager.response(request.session, user.id)
   }
 
   static async onRenameGroup(

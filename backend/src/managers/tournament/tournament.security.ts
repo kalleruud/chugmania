@@ -12,6 +12,11 @@ import db from '../../../database/database'
 import { tournamentMatches, tournaments, users } from '../../../database/schema'
 import type { TypedSocket } from '../../server'
 
+const activeDraft = and(
+  eq(tournaments.status, 'draft'),
+  isNull(tournaments.deletedAt)
+)
+
 export default class TournamentSecurity {
   private static viewer(userId: string): User | undefined {
     return db
@@ -47,7 +52,8 @@ export default class TournamentSecurity {
     details: TournamentDetails | null,
     userId: string
   ): TournamentDetails | null {
-    return this.project(details, this.viewer(userId))
+    const user = this.viewer(userId)
+    return details && user ? this.project(details, user) : null
   }
 
   static emit(
@@ -58,12 +64,7 @@ export default class TournamentSecurity {
     const user = this.viewer(socket.data.userId)
     socket.emit(
       'all_tournaments',
-      user
-        ? details.flatMap(detail => {
-            const view = this.project(detail, user)
-            return view ? [view] : []
-          })
-        : [],
+      user ? details.map(detail => this.project(detail, user)) : [],
       actor
     )
   }
@@ -77,9 +78,7 @@ export default class TournamentSecurity {
           tournaments,
           eq(tournaments.id, tournamentMatches.tournament)
         )
-        .where(
-          and(eq(tournaments.status, 'draft'), isNull(tournaments.deletedAt))
-        )
+        .where(activeDraft)
         .all()
         .map(row => row.id)
     )
@@ -91,9 +90,7 @@ export default class TournamentSecurity {
       db
         .select({ session: tournaments.session })
         .from(tournaments)
-        .where(
-          and(eq(tournaments.status, 'draft'), isNull(tournaments.deletedAt))
-        )
+        .where(activeDraft)
         .all()
         .map(row => row.session)
     )
@@ -133,10 +130,9 @@ export default class TournamentSecurity {
   }
 
   private static project(
-    details: TournamentDetails | null,
-    user: User | undefined
-  ): TournamentDetails | null {
-    if (!details || !user) return null
+    details: TournamentDetails,
+    user: User
+  ): TournamentDetails {
     const canConfigure = this.canConfigure(user, details.config)
     if (details.status === 'started' || canConfigure)
       return { ...structuredClone(details), canConfigure }
