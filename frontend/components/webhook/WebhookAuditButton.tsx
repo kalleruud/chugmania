@@ -1,5 +1,6 @@
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
+import { isRecord } from '@common/utils/utils'
 import { useState } from 'react'
 import { Button } from '../ui/button'
 import {
@@ -10,6 +11,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '../ui/dialog'
+import WebhookEventDetails from './WebhookEventDetails'
 
 export default function WebhookAuditButton({
   gameId,
@@ -17,7 +19,7 @@ export default function WebhookAuditButton({
 }: Readonly<{ gameId: string | null; participants: (string | null)[] }>) {
   const { socket, isConnected } = useConnection()
   const { isLoggedIn, loggedInUser } = useAuth()
-  const [payloads, setPayloads] = useState<string[]>([])
+  const [payloads, setPayloads] = useState<Record<string, unknown>[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   if (
@@ -34,7 +36,13 @@ export default function WebhookAuditButton({
         gameId,
       })
       if (!response.success) throw new Error(response.message)
-      setPayloads(response.events.map(event => event.rawPayload))
+      setPayloads(
+        response.events.map(event => {
+          const payload: unknown = JSON.parse(event.rawPayload)
+          if (!isRecord(payload)) throw new Error('Ugyldige løpsdata')
+          return payload
+        })
+      )
     } catch (reason) {
       setError(
         reason instanceof Error ? reason.message : 'Kunne ikke hente løpsdata'
@@ -58,8 +66,10 @@ export default function WebhookAuditButton({
         </DialogTrigger>
         <DialogContent className='sm:max-w-3xl'>
           <DialogHeader>
-            <DialogTitle>Originale løpsdata</DialogTitle>
-            <DialogDescription>{gameId}</DialogDescription>
+            <DialogTitle>Løpsdata</DialogTitle>
+            <DialogDescription>
+              Hendelser fra pluginen i rekkefølgen de ble registrert.
+            </DialogDescription>
           </DialogHeader>
           {loading && <p>Henter løpsdata...</p>}
           {error && (
@@ -68,10 +78,11 @@ export default function WebhookAuditButton({
             </p>
           )}
           {!loading && !error && (
-            <div className='max-h-[65dvh] overflow-auto'>
-              <pre className='text-xs wrap-break-word whitespace-pre-wrap'>
-                {payloads.join('\n\n')}
-              </pre>
+            <div className='flex max-h-[65dvh] flex-col gap-3 overflow-auto'>
+              {payloads.length === 0 && <p>Ingen løpsdata er registrert.</p>}
+              {payloads.map((payload, index) => (
+                <WebhookEventDetails key={index} payload={payload} />
+              ))}
             </div>
           )}
         </DialogContent>
