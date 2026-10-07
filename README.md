@@ -42,7 +42,7 @@ Chugmania is a full-stack Trackmania Turbo companion for logging lap times, shar
 
 ### Testing
 
-Formal test suites are still pending. Author backend specs as `*.spec.ts` or frontend tests as `*.test.tsx`, then execute single files manually with `tsx path/to/spec.ts`.
+Run `npm test` for Bun integration tests against a migrated in-memory SQLite database. Use `npm test -- tests/webhooks.test.ts` for the sequential Turbo and Next webhook replay tests, which start a temporary localhost HTTP receiver.
 
 ## Project Layout
 
@@ -59,6 +59,20 @@ Key backend flows live under `backend/src/managers/`, while shared DTOs reside i
 
 Admins can visit `/admin` to upload and download CSV files for all database tables. Supported tables: `users`, `tracks`, `sessions`, `timeEntries`, and `sessionSignups`. Each upload reports created and updated row counts to confirm the data outcome. Ensure the column order matches the exported format. When adding new database tables, update `AdminManager` in `backend/src/managers/admin.manager.ts` to include them in the `TABLE_MAP` and `EXCLUDED_COL_EXPORT` configuration.
 
+## Trackmania webhook drafts
+
+Configure the plugin endpoint as `https://<your-host>/api/webhook` and set its authentication token to the server's `TRACKMANIA_WEBHOOK_TOKEN`. An empty server token disables ingestion. Both Trackmania Turbo and Next use the plugin's schema 1.x contract; all seven event types and their matching event headers are required. Bodies are limited to 256 KB.
+
+Incoming captures are linked to the closest session that has already started today or yesterday in Europe/Oslo. Cancelled and deleted sessions do not qualify. The chosen session stays fixed; new events stop being accepted when it no longer qualifies. Identical retries are acknowledged even if the session has since expired.
+
+Review drafts on the Session page. Users can claim or release their own slot; admins and moderators can assign users, select a track, create a named track from map metadata, or discard a capture. Map auto-matching uses UID only. Publication requires all assigned players, a track, a complete sequence from start through end, and a positive finish result. Missing chug times remain empty, one finisher beats a DNF, and ties stay unpublished. Any end reason can publish a valid result. Drafts contribute no results, rankings, statistics, or signups until published; webhook matches publish as standalone session matches.
+
+The receiver returns `204` for accepted events and identical retries, `400` for invalid JSON/payloads/headers, `401` for missing or invalid credentials, `409` for conflicting event/game metadata, `413` for oversized bodies, and `503` with `NO_ACTIVE_SESSION` when no qualifying session exists. Server persistence failures return `500`; the plugin retries transient failures.
+
+`WEBHOOK_DRAFT_RETENTION_DAYS` defaults to 7 and must be positive. Cleanup runs on startup and hourly, removing unpublished captures, events, and draft rows based on first receipt, including discarded and partial captures. Published captures and events remain available permanently, including after their result is soft-deleted. Published rows' `webhookCapture` values identify their source game; admins, moderators, and assigned participants can retrieve the original events using `get_webhook_events` with `{ gameId }`.
+
+CSV exports include `webhookCaptures` and `webhookEvents`, timestamps, map metadata, and original payload text. Restore users, tracks, and sessions first, then captures, events, and result rows; restore tournament tables afterward in their foreign-key dependency order. Keep IDs and capture/result linkages intact when restoring.
+
 ## Sessions Module
 
 The `/sessions` route shows upcoming and past events. Authorized users may create, edit, or delete sessions with optional locations and descriptions. Attendees can RSVP; ICS feeds are available via `/api/sessions/calendar.ics`, and individual invites can be downloaded per session. Session deletion is soft-delete (retained for audit), cascading to all signups, and only available to admin/moderator roles.
@@ -66,6 +80,8 @@ The `/sessions` route shows upcoming and past events. Authorized users may creat
 ## Configuration
 
 - `SECRET` (required): JWT signing key; use a strong random value.
+- `TRACKMANIA_WEBHOOK_TOKEN` (optional): Shared bearer token for the Trackmania plugin; empty disables ingestion.
+- `WEBHOOK_DRAFT_RETENTION_DAYS` (optional): Positive unpublished-capture retention in days; defaults to 7.
 - `PORT` (optional): Server port. Defaults to `6996`; Codex worktrees generate a random `69xx` port.
 - `ORIGIN` (required in production): Allowed frontend origin for CORS.
 - `TOKEN_EXPIRY_H` (optional): Override default 1-hour auth token expiry.

@@ -3,13 +3,14 @@ import { useMatch } from '@/hooks/useMatch'
 import loc from '@common/locale/locales'
 import type { UserInfo } from '@common/models/user'
 import { isInactiveFinalReset, stageName } from '@common/utils/tournament'
-import { formatTrackName } from '@common/utils/track'
+import { formatTrackLabel } from '@common/utils/track'
 import { CalendarIcon } from '@heroicons/react/24/solid'
 import type { ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { NameCellPart } from '../timeentries/TimeEntryRow'
 import { Badge } from '../ui/badge'
 import { Label } from '../ui/label'
+import WebhookAuditButton from '../webhook/WebhookAuditButton'
 import type { MatchProps } from './MatchProps'
 
 export default function MatchRow({
@@ -94,8 +95,7 @@ export default function MatchRow({
                   'font-kh-interface tabular-nums',
                   isCancelled && 'line-through'
                 )}>
-                <span className='mr-1 text-primary'>#</span>
-                {formatTrackName(track.number)}
+                {formatTrackLabel(track)}
               </span>
             </div>
           )}
@@ -122,6 +122,10 @@ export default function MatchRow({
           )}
         </div>
       </div>
+      <WebhookAuditButton
+        gameId={match.webhookCapture}
+        participants={[match.user1, match.user2]}
+      />
       {children}
 
       {match.tournament?.awarded && <Badge>{loc.no.tournament.awarded}</Badge>}

@@ -2,15 +2,21 @@ import type { SessionWithSignups } from '@common/models/session'
 import type { Track } from '@common/models/track'
 import type { UserInfo } from '@common/models/user'
 import { formatDateWithYear } from '@common/utils/date'
-import { formatTrackName } from '@common/utils/track'
+import { formatTrackLabel } from '@common/utils/track'
 
 export function trackToLookupItem(track: Track) {
-  const trackName = '#' + formatTrackName(track.number)
+  const trackName = formatTrackLabel(track)
   return {
     ...track,
     label: trackName,
-    sublabel: `${track.level} • ${track.type}`,
-    tags: [track.level, track.type, trackName],
+    sublabel: `${track.level} • ${track.type ?? track.environment ?? ''}`,
+    tags: [
+      track.level,
+      track.type ?? '',
+      track.environment ?? '',
+      track.name ?? '',
+      trackName,
+    ],
   }
 }
 
@@ -29,8 +35,13 @@ export function userToLookupItem(user: UserInfo) {
   return {
     ...user,
     label: user.firstName + (user.lastName ? ' ' + user.lastName : ''),
-    sublabel: user.shortName,
-    tags: [user.firstName, user.lastName ?? '', user.shortName, user.email],
+    sublabel: user.shortName ?? undefined,
+    tags: [
+      user.firstName,
+      user.lastName ?? '',
+      user.shortName ?? '',
+      user.email,
+    ],
   }
 }
 

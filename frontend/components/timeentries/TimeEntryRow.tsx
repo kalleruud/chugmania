@@ -19,6 +19,7 @@ import {
 } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type { BaseRowProps } from '../row/RowProps'
+import WebhookAuditButton from '../webhook/WebhookAuditButton'
 
 type TimeEntryRowProps = BaseRowProps<TimeEntry> & {
   required?: boolean
@@ -239,6 +240,10 @@ export default function TimeEntryRow({
           onChangeGapType={onChangeGapType}
         />
       )}
+      <WebhookAuditButton
+        gameId={lapTime.webhookCapture}
+        participants={[lapTime.user]}
+      />
       {show.time && (
         <TimePart duration={lapTime.duration} status={lapTime.status} />
       )}

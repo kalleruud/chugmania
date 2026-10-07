@@ -41,6 +41,13 @@ import type {
   LoginResponse,
   UserInfo,
 } from './user'
+import type {
+  WebhookAssignRequest,
+  WebhookClaimRequest,
+  WebhookDrafts,
+  WebhookGameRequest,
+  WebhookTrackRequest,
+} from './webhook'
 
 export type SuccessResponse = {
   success: true
@@ -54,6 +61,7 @@ export type ErrorResponse = {
 import type { Ranking } from './ranking'
 
 export interface ServerToClientEvents {
+  webhook_drafts_changed: (data: WebhookDrafts, actor?: string | null) => void
   all_tournaments: (
     tournaments: TournamentDetails[],
     actor?: string | null
@@ -68,6 +76,48 @@ export interface ServerToClientEvents {
 }
 
 export interface ClientToServerEvents {
+  get_webhook_drafts: (
+    request: { session: string },
+    callback: (
+      response: (SuccessResponse & WebhookDrafts) | ErrorResponse
+    ) => void
+  ) => void
+  claim_webhook_player: (
+    request: WebhookClaimRequest,
+    callback: (response: SuccessResponse | ErrorResponse) => void
+  ) => void
+  assign_webhook_player: (
+    request: WebhookAssignRequest,
+    callback: (response: SuccessResponse | ErrorResponse) => void
+  ) => void
+  select_webhook_track: (
+    request: WebhookTrackRequest,
+    callback: (response: SuccessResponse | ErrorResponse) => void
+  ) => void
+  create_webhook_track: (
+    request: WebhookGameRequest,
+    callback: (response: SuccessResponse | ErrorResponse) => void
+  ) => void
+  publish_webhook_draft: (
+    request: WebhookGameRequest,
+    callback: (response: SuccessResponse | ErrorResponse) => void
+  ) => void
+  discard_webhook_draft: (
+    request: WebhookGameRequest,
+    callback: (response: SuccessResponse | ErrorResponse) => void
+  ) => void
+  get_webhook_events: (
+    request: WebhookGameRequest,
+    callback: (
+      response:
+        | (SuccessResponse & {
+            gameId: string
+            events: { eventId: string; sequence: number; rawPayload: string }[]
+          })
+        | ErrorResponse
+    ) => void
+  ) => void
+
   create_tournament: (
     request: TournamentRequest,
     callback: (
