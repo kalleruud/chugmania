@@ -41,6 +41,8 @@ const no = {
       error: (err: Error) => `Kunne ikke importere tabellen: ${err.message}`,
     },
     tables: {
+      webhookCaptures: 'Webhook-opptak',
+      webhookEvents: 'Webhook-hendelser',
       tournaments: 'Turneringer',
       tournamentStages: 'Turneringsbaner',
       tournamentGroups: 'Grupper',

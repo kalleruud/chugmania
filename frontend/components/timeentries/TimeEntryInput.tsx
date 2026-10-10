@@ -232,14 +232,17 @@ export default function TimeEntryInput({
   }
 
   // Stable keys for each digit position to avoid using array index as key
-  const DIGIT_KEYS = ['m10', 'm1', 's10', 's1', 'h1', 'h10'] as const
+  const DIGIT_KEYS = ['m10', 'm1', 's10', 's1', 'ms100', 'ms10', 'ms1']
 
   return (
     <form
       className={twMerge('flex flex-col gap-6', className)}
       onSubmit={onSubmit ?? (isCreating ? handleCreate : handleUpdate)}
       {...rest}>
-      <div className='flex items-center justify-center gap-1'>
+      <div
+        role='group'
+        aria-label='Rundetid (mm:ss.mmm)'
+        className='flex items-center justify-center gap-1'>
         {digits.map((d, i) => (
           <span key={DIGIT_KEYS[i]} className='flex items-center gap-1'>
             <input
@@ -255,10 +258,10 @@ export default function TimeEntryInput({
               onFocus={e => e.currentTarget.select()}
               onClick={e => e.currentTarget.select()}
               className={
-                'font-f1-bold h-16 w-12 rounded-md border border-input bg-background text-center text-2xl tabular-nums caret-transparent transition selection:bg-transparent invalid:border-red-500/30 invalid:bg-red-500/30 focus:border-primary focus:ring-ring dark:bg-input/30'
+                'font-f1-bold h-12 w-8 rounded-md border border-input bg-background text-center text-xl tabular-nums caret-transparent transition selection:bg-transparent invalid:border-red-500/30 invalid:bg-red-500/30 focus:border-primary focus:ring-ring sm:h-16 sm:w-12 sm:text-2xl dark:bg-input/30'
               }
               inputMode='numeric'
-              pattern={i === 0 || i === 2 ? '[0-5]' : '[0-9]'}
+              pattern={i === 2 ? '[0-5]' : '[0-9]'}
               maxLength={1}
             />
             {i === 1 && <span className='font-f1 text-2xl'>:</span>}

@@ -1,5 +1,5 @@
 import { isMatchStage, type Match } from '@common/models/match'
-import type { TimeEntry } from '@common/models/timeEntry'
+import { isPublishedTimeEntry, type TimeEntry } from '@common/models/timeEntry'
 import {
   type Slot,
   type TournamentConfig,
@@ -80,7 +80,9 @@ export default class TournamentSource {
         .all()
         .map(row => row.id)
     )
-    return rows.filter(row => !hidden.has(row.id))
+    return rows.filter(
+      row => row.publicationState === 'published' && !hidden.has(row.id)
+    )
   }
 
   static visibleTimeEntries(rows: TimeEntry[]): TimeEntry[] {
@@ -94,10 +96,11 @@ export default class TournamentSource {
     )
     return rows.filter(
       row =>
-        row.status !== 'planned' ||
-        !row.tieBreaker ||
-        !row.session ||
-        !hidden.has(row.session)
+        row.publicationState === 'published' &&
+        (row.status !== 'planned' ||
+          !row.tieBreaker ||
+          !row.session ||
+          !hidden.has(row.session))
     )
   }
 
@@ -232,10 +235,12 @@ export default class TournamentSource {
         and(
           eq(timeEntries.session, row.session),
           eq(timeEntries.track, row.tieBreakerTrack),
-          eq(timeEntries.tieBreaker, true)
+          eq(timeEntries.tieBreaker, true),
+          eq(timeEntries.publicationState, 'published')
         )
       )
       .all()
+      .filter(isPublishedTimeEntry)
   }
 
   private static loadFixtures(tournament: string): TournamentFixture[] {
@@ -266,7 +271,8 @@ export default class TournamentSource {
       .where(
         and(
           activeTournamentRows(tournamentMatches, tournament),
-          isNull(matches.deletedAt)
+          isNull(matches.deletedAt),
+          eq(matches.publicationState, 'published')
         )
       )
       .orderBy(asc(tournamentMatches.order))

@@ -1,6 +1,6 @@
 import { Item, ItemActions, ItemContent, ItemTitle } from '@/components/ui/item'
 import type { Track } from '@common/models/track'
-import { formatTrackName } from '@common/utils/track'
+import { formatTrackLabel } from '@common/utils/track'
 import { ChevronRight } from 'lucide-react'
 import { Link } from 'react-router'
 import { twMerge } from 'tailwind-merge'
@@ -17,15 +17,8 @@ export function TrackRow({
     <>
       <ItemContent>
         <ItemTitle className='font-kh-interface text-2xl tracking-tight tabular-nums'>
-          <p
-            className={twMerge(
-              'text-primary',
-              !track && 'text-muted-foreground'
-            )}>
-            #
-          </p>
           {track ? (
-            formatTrackName(track.number)
+            formatTrackLabel(track)
           ) : (
             <span className='text-muted-foreground/50'>000</span>
           )}
@@ -36,7 +29,10 @@ export function TrackRow({
           <TrackBadge variant='outline' trackLevel={track.level}>
             {track.level}
           </TrackBadge>
-          <TrackBadge variant='outline' trackType={track.type}>
+          <TrackBadge
+            variant='outline'
+            trackType={track.type}
+            environment={track.environment}>
             {track.type}
           </TrackBadge>
         </div>

@@ -43,7 +43,15 @@ export type Match = typeof matches.$inferSelect & {
     awarded: boolean
   }
 }
-export type CreateMatch = typeof matches.$inferInsert
+export type CreateMatch = Omit<
+  typeof matches.$inferInsert,
+  | 'publicationState'
+  | 'webhookCapture'
+  | 'user1DurationMs'
+  | 'user2DurationMs'
+  | 'user1ChugDurationMs'
+  | 'user2ChugDurationMs'
+>
 
 export type MatchStatus = 'planned' | 'completed' | 'cancelled'
 
@@ -54,7 +62,18 @@ export type CreateMatchRequest = {
 export function isCreateMatchRequest(
   data: unknown
 ): data is CreateMatchRequest {
-  if (!isRecord(data)) return false
+  if (
+    !isRecord(data) ||
+    [
+      'publicationState',
+      'webhookCapture',
+      'user1DurationMs',
+      'user2DurationMs',
+      'user1ChugDurationMs',
+      'user2ChugDurationMs',
+    ].some(key => key in data)
+  )
+    return false
   return data.type === 'CreateMatchRequest' && typeof data.track === 'string'
 }
 
@@ -64,7 +83,18 @@ export type EditMatchRequest = Partial<CreateMatch> & {
 }
 
 export function isEditMatchRequest(data: unknown): data is EditMatchRequest {
-  if (!isRecord(data)) return false
+  if (
+    !isRecord(data) ||
+    [
+      'publicationState',
+      'webhookCapture',
+      'user1DurationMs',
+      'user2DurationMs',
+      'user1ChugDurationMs',
+      'user2ChugDurationMs',
+    ].some(key => key in data)
+  )
+    return false
   return data.type === 'EditMatchRequest' && typeof data.id === 'string'
 }
 
@@ -76,6 +106,17 @@ export type DeleteMatchRequest = {
 export function isDeleteMatchRequest(
   data: unknown
 ): data is DeleteMatchRequest {
-  if (!isRecord(data)) return false
+  if (
+    !isRecord(data) ||
+    [
+      'publicationState',
+      'webhookCapture',
+      'user1DurationMs',
+      'user2DurationMs',
+      'user1ChugDurationMs',
+      'user2ChugDurationMs',
+    ].some(key => key in data)
+  )
+    return false
   return data.type === 'DeleteMatchRequest' && typeof data.id === 'string'
 }

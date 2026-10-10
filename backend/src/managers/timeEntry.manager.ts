@@ -9,6 +9,7 @@ import type {
 import {
   isCreateTimeEntryRequest,
   isEditTimeEntryRequest,
+  isPublishedTimeEntry,
 } from '@common/models/timeEntry'
 import type { User } from '@common/models/user'
 import { and, asc, eq, getTableColumns, isNull, sql } from 'drizzle-orm'
@@ -53,6 +54,7 @@ export default class TimeEntryManager {
         and(
           eq(timeEntries.session, sessionId),
           isNull(timeEntries.deletedAt),
+          eq(timeEntries.publicationState, 'published'),
           eq(timeEntries.status, 'completed')
         )
       )
@@ -79,6 +81,7 @@ export default class TimeEntryManager {
         and(
           eq(timeEntries.session, sessionId),
           isNull(timeEntries.deletedAt),
+          eq(timeEntries.publicationState, 'published'),
           eq(timeEntries.status, 'completed')
         )
       )
@@ -100,10 +103,12 @@ export default class TimeEntryManager {
         and(
           eq(timeEntries.session, sessionId),
           isNull(timeEntries.deletedAt),
+          eq(timeEntries.publicationState, 'published'),
           eq(timeEntries.status, 'completed')
         )
       )
       .all()
+      .filter(isPublishedTimeEntry)
   }
 
   static async onPostTimeEntry(
@@ -126,7 +131,13 @@ export default class TimeEntryManager {
     const signupChanged = database.transaction(() => {
       db.insert(timeEntries)
         .values({
-          ...request,
+          id: request.id,
+          user: request.user,
+          track: request.track,
+          session: request.session,
+          duration: request.duration,
+          amount: request.amount,
+          comment: request.comment,
           tieBreaker: false,
           status:
             (request.duration ?? 0) > 0
@@ -194,7 +205,8 @@ export default class TimeEntryManager {
       AuthManager.checkAuth(socket),
       db.query.timeEntries.findFirst({ where: eq(timeEntries.id, request.id) }),
     ])
-    if (!lapTime) throw new Error(loc.no.error.messages.not_in_db(request.id))
+    if (!lapTime || !isPublishedTimeEntry(lapTime))
+      throw new Error(loc.no.error.messages.not_in_db(request.id))
     const updates = TimeEntryManager.normalizeTimeEntryUpdates(request, lapTime)
     TimeEntryManager.validateTimeEntryEdit(user, lapTime, updates)
     return { lapTime, updates }
@@ -204,7 +216,18 @@ export default class TimeEntryManager {
     request: EditTimeEntryRequest,
     lapTime: TimeEntry
   ): TimeEntryUpdates {
-    const { type, id, ...updates } = request
+    const updates = {
+      user: request.user,
+      track: request.track,
+      session: request.session,
+      duration: request.duration,
+      status: request.status,
+      amount: request.amount,
+      comment: request.comment,
+      deletedAt: request.deletedAt,
+      updatedAt: request.updatedAt,
+      createdAt: request.createdAt,
+    }
     const processed = { ...updates }
     if (typeof updates.deletedAt === 'string')
       processed.deletedAt = new Date(updates.deletedAt)
@@ -296,7 +319,12 @@ export default class TimeEntryManager {
     const data = await db
       .select()
       .from(timeEntries)
-      .where(isNull(timeEntries.deletedAt))
+      .where(
+        and(
+          isNull(timeEntries.deletedAt),
+          eq(timeEntries.publicationState, 'published')
+        )
+      )
       .orderBy(
         asc(
           sql`CASE WHEN ${timeEntries.duration} IS NULL OR ${timeEntries.duration} = 0 THEN 1 ELSE 0 END`
@@ -305,6 +333,8 @@ export default class TimeEntryManager {
         asc(timeEntries.createdAt)
       )
 
-    return TournamentSource.visibleTimeEntries(data)
+    return TournamentSource.visibleTimeEntries(
+      data.filter(isPublishedTimeEntry)
+    )
   }
 }
