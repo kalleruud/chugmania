@@ -6,6 +6,7 @@ import {
   type WebhookDrafts,
   type WebhookEvent,
   type WebhookGameRequest,
+  type WebhookMap,
 } from '@common/models/webhook'
 import { isRecord } from '@common/utils/utils'
 import { and, asc, desc, eq, gte, isNull, lt, lte, ne } from 'drizzle-orm'
@@ -57,6 +58,22 @@ function activeUser(id: string | null): boolean {
       .where(and(eq(users.id, id), isNull(users.deletedAt)))
       .get()
   )
+}
+
+function mapMetadata(map: WebhookMap) {
+  return {
+    name: map.name,
+    author: map.author,
+    environment: map.environment,
+    mapType: map.type,
+    authorMedalMs: map.medalTimesMs.author,
+    goldMedalMs: map.medalTimesMs.gold,
+    silverMedalMs: map.medalTimesMs.silver,
+    bronzeMedalMs: map.medalTimesMs.bronze,
+    isLaps: map.isLaps,
+    totalLaps: map.totalLaps ?? null,
+    checkpointsPerLap: map.checkpointsPerLap,
+  }
 }
 
 export default class WebhookManager {
@@ -557,9 +574,16 @@ export default class WebhookManager {
         .where(and(eq(tracks.id, request.track), isNull(tracks.deletedAt)))
         .get()
       if (!track) fail('Track not found')
+      if (draft.map)
+        db.update(tracks)
+          .set(mapMetadata(draft.map))
+          .where(eq(tracks.id, track.id))
+          .run()
       this.setTrack(capture, draft, track.id)
       return capture.session
     })()
+    const { default: TrackManager } = await import('./track.manager')
+    broadcast('all_tracks', await TrackManager.getAllTracks())
     this.notify(session, socket.id)
     return { success: true }
   }
@@ -597,17 +621,7 @@ export default class WebhookManager {
         .insert(tracks)
         .values({
           uid: map.uid,
-          name: map.name,
-          author: map.author,
-          environment: map.environment,
-          mapType: map.type,
-          authorMedalMs: map.medalTimesMs.author,
-          goldMedalMs: map.medalTimesMs.gold,
-          silverMedalMs: map.medalTimesMs.silver,
-          bronzeMedalMs: map.medalTimesMs.bronze,
-          isLaps: map.isLaps,
-          totalLaps: map.totalLaps,
-          checkpointsPerLap: map.checkpointsPerLap,
+          ...mapMetadata(map),
           level: 'custom',
         })
         .returning()

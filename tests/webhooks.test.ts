@@ -705,6 +705,104 @@ describe('Trackmania webhook ingestion and drafts', () => {
   )
 
   test.serial(
+    'Manual track selection copies map metadata, preserves catalogue identity, and broadcasts the fetched track DTO',
+    async () => {
+      const c = await context('manual-map-metadata')
+      const start = c.events[0]
+      assert(start.type === 'start' && start.map)
+      const [legacy] = createTracks()
+      const existingUid = randomUUID()
+      db.update(tracks)
+        .set({ uid: existingUid, name: 'Old map', totalLaps: 99 })
+        .where(eq(tracks.id, legacy.id))
+        .run()
+      await replay(c.events)
+      expect(draft(c.gameId).track).toBeNull()
+      await assert.rejects(
+        WebhookManager.onSelectTrack(c.socket, {
+          gameId: c.gameId,
+          track: legacy.id,
+        })
+      )
+      expect(
+        db.select().from(tracks).where(eq(tracks.id, legacy.id)).get()?.name
+      ).toBe('Old map')
+      broadcast.mockClear()
+      assertResponse(
+        await WebhookManager.onSelectTrack(c.adminSocket, {
+          gameId: c.gameId,
+          track: legacy.id,
+        })
+      )
+      expect(draft(c.gameId).track).toBe(legacy.id)
+      const updated = (await TrackManager.getAllTracks()).find(
+        track => track.id === legacy.id
+      )
+      assert(updated)
+      expect(updated).toMatchObject({
+        id: legacy.id,
+        uid: existingUid,
+        number: legacy.number,
+        level: legacy.level,
+        type: legacy.type,
+        name: start.map.name,
+        author: start.map.author,
+        environment: start.map.environment,
+        mapType: start.map.type,
+        authorMedalMs: start.map.medalTimesMs.author,
+        goldMedalMs: start.map.medalTimesMs.gold,
+        silverMedalMs: start.map.medalTimesMs.silver,
+        bronzeMedalMs: start.map.medalTimesMs.bronze,
+        isLaps: start.map.isLaps,
+        totalLaps: start.map.totalLaps,
+        checkpointsPerLap: start.map.checkpointsPerLap,
+      })
+      expect(updated.updatedAt).not.toBeNull()
+      expect(broadcast).toHaveBeenCalledWith(
+        'all_tracks',
+        await TrackManager.getAllTracks()
+      )
+
+      const next = await context('manual-next-metadata', true)
+      const nextStart = next.events[0]
+      assert(nextStart.type === 'start' && nextStart.map)
+      nextStart.map.medalTimesMs.author = 0
+      await replay(next.events)
+      assertResponse(
+        await WebhookManager.onSelectTrack(next.adminSocket, {
+          gameId: next.gameId,
+          track: legacy.id,
+        })
+      )
+      const nextTrack = db
+        .select()
+        .from(tracks)
+        .where(eq(tracks.id, legacy.id))
+        .get()
+      assert(nextTrack)
+      expect(nextTrack.uid).toBe(existingUid)
+      expect(nextTrack.name).toBe(nextStart.map.name)
+      expect(nextTrack.authorMedalMs).toBe(0)
+      expect(nextTrack.isLaps).toBe(false)
+      expect(nextTrack.totalLaps).toBeNull()
+
+      const nullMap = await context('manual-metadata-null')
+      assert(nullMap.events[0].type === 'start')
+      nullMap.events[0].map = null
+      await replay(nullMap.events)
+      assertResponse(
+        await WebhookManager.onSelectTrack(nullMap.adminSocket, {
+          gameId: nullMap.gameId,
+          track: legacy.id,
+        })
+      )
+      expect(
+        db.select().from(tracks).where(eq(tracks.id, legacy.id)).get()
+      ).toEqual(nextTrack)
+    }
+  )
+
+  test.serial(
     'Every end reason can publish valid finishes and zero chug is retained',
     async () => {
       for (const endReason of [
