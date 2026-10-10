@@ -741,7 +741,7 @@ describe('Trackmania webhook ingestion and drafts', () => {
       assert(updated)
       expect(updated).toMatchObject({
         id: legacy.id,
-        uid: existingUid,
+        uid: start.map.uid,
         number: legacy.number,
         level: legacy.level,
         type: legacy.type,
@@ -763,6 +763,37 @@ describe('Trackmania webhook ingestion and drafts', () => {
         await TrackManager.getAllTracks()
       )
 
+      const repeated = fixture()
+      assert(repeated[0].type === 'start')
+      repeated[0].map = structuredClone(start.map)
+      await replay(repeated)
+      expect(draft(repeated[0].game.gameId).track).toBe(legacy.id)
+      assertResponse(
+        await WebhookManager.onCreateTrack(c.adminSocket, {
+          gameId: repeated[0].game.gameId,
+        })
+      )
+      expect(
+        db.select().from(tracks).where(eq(tracks.uid, start.map.uid)).all()
+      ).toHaveLength(1)
+      const [other] = createTracks()
+      broadcast.mockClear()
+      await assert.rejects(
+        WebhookManager.onSelectTrack(c.adminSocket, {
+          gameId: repeated[0].game.gameId,
+          track: other.id,
+        }),
+        /Map UID belongs to another track/
+      )
+      expect(draft(repeated[0].game.gameId).track).toBe(legacy.id)
+      const untouched = db
+        .select()
+        .from(tracks)
+        .where(eq(tracks.id, other.id))
+        .get()
+      expect(untouched).toEqual(other)
+      expect(broadcast).not.toHaveBeenCalled()
+
       const next = await context('manual-next-metadata', true)
       const nextStart = next.events[0]
       assert(nextStart.type === 'start' && nextStart.map)
@@ -780,7 +811,7 @@ describe('Trackmania webhook ingestion and drafts', () => {
         .where(eq(tracks.id, legacy.id))
         .get()
       assert(nextTrack)
-      expect(nextTrack.uid).toBe(existingUid)
+      expect(nextTrack.uid).toBe(nextStart.map.uid)
       expect(nextTrack.name).toBe(nextStart.map.name)
       expect(nextTrack.authorMedalMs).toBe(0)
       expect(nextTrack.isLaps).toBe(false)

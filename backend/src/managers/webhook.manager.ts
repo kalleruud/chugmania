@@ -62,6 +62,7 @@ function activeUser(id: string | null): boolean {
 
 function mapMetadata(map: WebhookMap) {
   return {
+    uid: map.uid,
     name: map.name,
     author: map.author,
     environment: map.environment,
@@ -574,11 +575,18 @@ export default class WebhookManager {
         .where(and(eq(tracks.id, request.track), isNull(tracks.deletedAt)))
         .get()
       if (!track) fail('Track not found')
-      if (draft.map)
+      if (draft.map) {
+        const existing = db
+          .select({ id: tracks.id })
+          .from(tracks)
+          .where(and(eq(tracks.uid, draft.map.uid), ne(tracks.id, track.id)))
+          .get()
+        if (existing) fail('Map UID belongs to another track')
         db.update(tracks)
           .set(mapMetadata(draft.map))
           .where(eq(tracks.id, track.id))
           .run()
+      }
       this.setTrack(capture, draft, track.id)
       return capture.session
     })()
@@ -620,7 +628,6 @@ export default class WebhookManager {
       track ??= db
         .insert(tracks)
         .values({
-          uid: map.uid,
           ...mapMetadata(map),
           level: 'custom',
         })

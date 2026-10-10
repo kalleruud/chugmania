@@ -33,7 +33,7 @@ export default function TrackCard({
     { label: 'Forfatter', value: track.author },
     { label: 'Miljø', value: track.environment },
     { label: 'Karttype', value: track.mapType },
-    { label: 'Kart-UID', value: track.uid },
+    { label: 'Spillets bane-UID', value: track.uid },
     {
       label: 'Fler-runders bane',
       value: lapMode(track.isLaps),
