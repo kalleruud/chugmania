@@ -240,6 +240,7 @@ describe('Trackmania webhook ingestion and drafts', () => {
     async () => {
       const c = await context('turbo')
       const initialRatings = RatingManager.onGetRatings()
+      const latestTimes = [0, 125, 5000, 14000, 15000, 28000, 28000]
       let previous: string | undefined
       for (const [index, event] of c.events.entries()) {
         if (index === 3) {
@@ -252,6 +253,7 @@ describe('Trackmania webhook ingestion and drafts', () => {
         })
         expect((await post(event, {}, raw)).status).toBe(204)
         const current = draft(c.gameId)
+        expect(current.players[0].latestDurationMs).toBe(latestTimes[index])
         const stored = db
           .select()
           .from(webhookEvents)
@@ -354,8 +356,18 @@ describe('Trackmania webhook ingestion and drafts', () => {
     'Sequential Next winner-only capture publishes with a DNF and optional chug duration',
     async () => {
       const c = await context('next', true)
-      for (const event of c.events) {
+      const latestTimes = [
+        [0, 0],
+        [150, 0],
+        [150, 12000],
+        [41000, 12000],
+        [41000, 12000],
+      ]
+      for (const [index, event] of c.events.entries()) {
         expect((await post(event)).status).toBe(204)
+        expect(draft(c.gameId).players.map(p => p.latestDurationMs)).toEqual(
+          latestTimes[index]
+        )
         expect(
           (await MatchManager.getAllMatches()).some(
             row => row.webhookCapture === capture(c.gameId).id
@@ -469,9 +481,11 @@ describe('Trackmania webhook ingestion and drafts', () => {
         WebhookManager.onPublish(c.adminSocket, { gameId: c.gameId })
       )
       expect((await post(c.events[0])).status).toBe(204)
+      expect(draft(c.gameId).players[0].latestDurationMs).toBe(125)
       const end = c.events.at(-1)
       assert(end)
       expect((await post(end)).status).toBe(204)
+      expect(draft(c.gameId).players[0].latestDurationMs).toBe(125)
       expect(draft(c.gameId).blockers).toContain('Missing webhook events')
       const conflict = { ...c.events[1], durationMs: 500 }
       expect((await post(conflict)).status).toBe(409)
@@ -496,7 +510,9 @@ describe('Trackmania webhook ingestion and drafts', () => {
           })
         ).status
       ).toBe(409)
-      await replay(c.events.slice(2, 6))
+      expect((await post(c.events[5])).status).toBe(204)
+      await replay(c.events.slice(2, 5))
+      expect(draft(c.gameId).players[0].latestDurationMs).toBe(28000)
       assertResponse(
         await WebhookManager.onCreateTrack(c.adminSocket, { gameId: c.gameId })
       )
@@ -510,6 +526,29 @@ describe('Trackmania webhook ingestion and drafts', () => {
       assertResponse(
         await WebhookManager.onPublish(c.socket, { gameId: c.gameId })
       )
+    }
+  )
+
+  test.serial(
+    'Latest time follows player sequence without changing the best finish',
+    async () => {
+      const c = await context('latest')
+      await replay([
+        c.events[0],
+        {
+          ...c.events[4],
+          eventId: randomUUID(),
+          sequence: 6,
+          durationMs: 30001,
+        },
+        c.events[5],
+        { ...c.events[6], sequence: 7 },
+      ])
+      expect(draft(c.gameId).players[0].latestDurationMs).toBe(30001)
+      expect(draft(c.gameId).players[0].finishDurationMs).toBe(28000)
+      await replay(c.events.slice(1, 5))
+      expect(draft(c.gameId).players[0].latestDurationMs).toBe(30001)
+      expect(draft(c.gameId).players[0].finishDurationMs).toBe(28000)
     }
   )
 

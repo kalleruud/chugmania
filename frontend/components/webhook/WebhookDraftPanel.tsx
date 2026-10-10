@@ -25,7 +25,11 @@ export default function WebhookDraftPanel({
         })
         if (!active || current !== version) return
         if (!response.success) throw new Error(response.message)
-        const serialized = JSON.stringify(response.drafts)
+        const serialized = JSON.stringify(
+          response.drafts,
+          (key, value: unknown) =>
+            key === 'latestDurationMs' ? undefined : value
+        )
         if (notify && previous !== undefined && previous !== serialized)
           toast.info('Løpsutkastene er oppdatert')
         previous = serialized

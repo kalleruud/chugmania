@@ -160,6 +160,7 @@ export default class WebhookManager {
         playerIndex: p.playerIndex,
         name: p.name ?? `Player ${p.playerIndex + 1}`,
         user,
+        latestDurationMs: playerEvents.at(-1)?.durationMs ?? start.durationMs,
         finishDurationMs: finishes.length ? Math.min(...finishes) : null,
         chugDurationMs: throttle?.durationMs ?? null,
       }

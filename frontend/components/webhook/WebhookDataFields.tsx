@@ -1,3 +1,4 @@
+import { formatTime } from '@common/utils/time'
 import { isRecord } from '@common/utils/utils'
 
 const labels: Record<string, string> = {
@@ -49,11 +50,7 @@ function displayValue(value: unknown, field: string, milliseconds: boolean) {
   if (value === null || value === undefined) return 'Ikke tilgjengelig'
   if (typeof value === 'boolean') return value ? 'Ja' : 'Nei'
   if (typeof value === 'number') {
-    if (milliseconds || field.endsWith('Ms'))
-      return `${(value / 1000).toLocaleString('nb-NO', {
-        minimumFractionDigits: 3,
-        maximumFractionDigits: 3,
-      })} s`
+    if (milliseconds || field.endsWith('Ms')) return formatTime(value)
     if (field === 'playerIndex') return String(value + 1)
     return value.toLocaleString('nb-NO')
   }

@@ -122,9 +122,7 @@ function TimePart({
       </span>
     )
   const isDNF = !duration
-  const label = duration
-    ? formatTime(duration).replace(/^0/, '')
-    : loc.no.timeEntry.dnf
+  const label = duration ? formatTime(duration) : loc.no.timeEntry.dnf
   return (
     <div
       className={twMerge(
@@ -147,9 +145,7 @@ function GapPart({
   const duration = gapType === 'leader' ? gap.leader : gap.previous
 
   const label =
-    gap.position === 1
-      ? gapType.toUpperCase()
-      : '+' + formatTime(duration ?? 0, true)
+    gap.position === 1 ? gapType.toUpperCase() : '+' + formatTime(duration ?? 0)
 
   return (
     <div

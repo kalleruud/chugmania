@@ -8,13 +8,14 @@ import { useData } from '@/contexts/DataContext'
 import { trackToLookupItem, userToLookupItem } from '@/lib/lookup-utils'
 import type { ErrorResponse, SuccessResponse } from '@common/models/socket.io'
 import type { WebhookDraft } from '@common/models/webhook'
+import { formatTime } from '@common/utils/time'
 import { formatTrackLabel } from '@common/utils/track'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import WebhookAuditButton from './WebhookAuditButton'
 
 function duration(ms: number | null): string {
-  return ms === null ? '—' : `${(ms / 1000).toFixed(3)} s`
+  return ms === null ? '—' : formatTime(ms)
 }
 
 const blockerLabels: Record<string, string> = {
@@ -82,11 +83,13 @@ export default function WebhookDraftCard({
             className='flex flex-wrap items-center gap-3'>
             <span>{player.name}</span>
             <span className='text-sm tabular-nums'>
-              Tid:{' '}
-              {player.finishDurationMs === null && draft.endReason
-                ? 'DNF'
-                : duration(player.finishDurationMs)}{' '}
-              · Chug: {duration(player.chugDurationMs)}
+              Foreløpig tid: {formatTime(player.latestDurationMs)}
+              {player.finishDurationMs === null && draft.endReason && ' · DNF'}
+              {player.finishDurationMs !== null &&
+                player.finishDurationMs !== player.latestDurationMs &&
+                ` · Beste sluttid: ${duration(player.finishDurationMs)}`}
+              {' · Chug: '}
+              {duration(player.chugDurationMs)}
             </span>
             {moderator ? (
               <Combobox

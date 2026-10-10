@@ -75,6 +75,7 @@ export type WebhookDraft = {
     playerIndex: number
     name: string
     user: string | null
+    latestDurationMs: number
     finishDurationMs: number | null
     chugDurationMs: number | null
   }[]
