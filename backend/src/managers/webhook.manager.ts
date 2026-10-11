@@ -260,30 +260,38 @@ export default class WebhookManager {
     }
   }
 
-  static getDrafts(session: string): WebhookDrafts {
+  static getAllDrafts(session?: string): WebhookDraft[] {
     const captures = db
       .select()
       .from(webhookCaptures)
       .where(
         and(
-          eq(webhookCaptures.session, session),
+          session !== undefined
+            ? eq(webhookCaptures.session, session)
+            : undefined,
           isNull(webhookCaptures.deletedAt),
           isNull(webhookCaptures.publishedAt)
         )
       )
       .orderBy(asc(webhookCaptures.createdAt))
       .all()
-    return {
-      session,
-      drafts: captures.flatMap(capture => {
-        const draft = this.draft(capture)
-        return draft ? [draft] : []
-      }),
-    }
+    return captures.flatMap(capture => {
+      const draft = this.draft(capture)
+      return draft ? [draft] : []
+    })
+  }
+
+  static getDrafts(session: string): WebhookDrafts {
+    return { session, drafts: this.getAllDrafts(session) }
+  }
+
+  static publish(actor: string | null = null): void {
+    broadcast('all_webhook_drafts', this.getAllDrafts(), actor)
   }
 
   static notify(session: string, actor: string | null = null): void {
     broadcast('webhook_drafts_changed', this.getDrafts(session), actor)
+    this.publish(actor)
   }
 
   static receive(

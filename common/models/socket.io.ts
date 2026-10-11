@@ -44,6 +44,7 @@ import type {
 import type {
   WebhookAssignRequest,
   WebhookClaimRequest,
+  WebhookDraft,
   WebhookDrafts,
   WebhookGameRequest,
   WebhookTrackRequest,
@@ -61,6 +62,7 @@ export type ErrorResponse = {
 import type { Ranking } from './ranking'
 
 export interface ServerToClientEvents {
+  all_webhook_drafts: (drafts: WebhookDraft[], actor?: string | null) => void
   webhook_drafts_changed: (data: WebhookDrafts, actor?: string | null) => void
   all_tournaments: (
     tournaments: TournamentDetails[],

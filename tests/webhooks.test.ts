@@ -17,6 +17,7 @@ import RatingManager from '../backend/src/managers/rating.manager'
 import SessionManager from '../backend/src/managers/session.manager'
 import TimeEntryManager from '../backend/src/managers/timeEntry.manager'
 import TrackManager from '../backend/src/managers/track.manager'
+import UserManager from '../backend/src/managers/user.manager'
 import WebhookManager from '../backend/src/managers/webhook.manager'
 import {
   isCreateMatchRequest,
@@ -323,6 +324,15 @@ describe('Trackmania webhook ingestion and drafts', () => {
           .at(-1)
         if (previous !== JSON.stringify(current))
           expect(notification?.[1]).toEqual(snapshot)
+        expect(
+          WebhookManager.getAllDrafts().filter(d => d.session === c.session.id)
+        ).toEqual(snapshot.drafts)
+        expect(WebhookManager.getDrafts('').drafts).toEqual([])
+        expect(
+          broadcast.mock.calls
+            .filter(call => call[0] === 'all_webhook_drafts')
+            .at(-1)?.[1]
+        ).toEqual(WebhookManager.getAllDrafts())
         previous = JSON.stringify(current)
         const emissions = broadcast.mock.calls.length
         expect((await post(event, {}, raw)).status).toBe(204)
@@ -340,6 +350,9 @@ describe('Trackmania webhook ingestion and drafts', () => {
       expect(published.chugDurationMs).toBe(125)
       expect(published.publicationState).toBe('published')
       expect(WebhookManager.getDrafts(c.session.id).drafts).toEqual([])
+      expect(
+        WebhookManager.getAllDrafts().some(d => d.gameId === c.gameId)
+      ).toBe(false)
       expect(
         (await SessionManager.getSession(c.session.id))?.signups.map(
           s => s.user.id
@@ -581,6 +594,50 @@ describe('Trackmania webhook ingestion and drafts', () => {
       await replay(c.events.slice(1, 5))
       expect(draft(c.gameId).players[0].latestDurationMs).toBe(30001)
       expect(draft(c.gameId).players[0].finishDurationMs).toBe(28000)
+    }
+  )
+
+  test.serial(
+    'Shared draft collection refreshes readiness after session and participant changes',
+    async () => {
+      const c = await context('shared-state')
+      await prepare(c)
+      const shared = () => {
+        const data = WebhookManager.getAllDrafts()
+        expect(
+          broadcast.mock.calls
+            .filter(call => call[0] === 'all_webhook_drafts')
+            .at(-1)
+        ).toEqual(['all_webhook_drafts', data, c.adminSocket.id])
+        return data.find(d => d.gameId === c.gameId)
+      }
+      assertResponse(
+        await SessionManager.onEditSession(c.adminSocket, {
+          type: 'EditSessionRequest',
+          id: c.session.id,
+          status: 'cancelled',
+        })
+      )
+      expect(shared()?.blockers).toContain('Session is cancelled')
+      assertResponse(
+        await SessionManager.onEditSession(c.adminSocket, {
+          type: 'EditSessionRequest',
+          id: c.session.id,
+          status: 'confirmed',
+        })
+      )
+      expect(shared()?.blockers).toEqual([])
+      assertResponse(
+        await UserManager.onDeleteUser(c.adminSocket, {
+          type: 'DeleteUserRequest',
+          id: c.player.id,
+        })
+      )
+      expect(shared()?.blockers).toContain('Assign every player')
+      assertResponse(
+        await WebhookManager.onDiscard(c.adminSocket, { gameId: c.gameId })
+      )
+      expect(shared()).toBeUndefined()
     }
   )
 

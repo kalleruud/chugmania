@@ -72,6 +72,7 @@ async function emitData(socket: TypedSocket) {
   socket.emit('all_time_entries', timeEntries)
   socket.emit('all_matches', matches)
   socket.emit('all_rankings', RatingManager.onGetRatings())
+  socket.emit('all_webhook_drafts', WebhookManager.getAllDrafts())
   TournamentSecurity.emit(socket, TournamentManager.getAllTournaments())
 }
 
