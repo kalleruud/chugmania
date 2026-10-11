@@ -70,7 +70,7 @@ test('Webhook migration preserves legacy results and their track references', ()
     expect(
       sqlite.query('SELECT name, level, type, game, uid FROM tracks').get()
     ).toEqual({
-      name: '12',
+      name: '012',
       level: 'white',
       type: 'stadium',
       game: 'turbo',
@@ -137,7 +137,7 @@ test('Track migration replaces numbers and map types and preserves game metadata
         type: 'TrackMania\\TM_Race',
         game: 'next',
       },
-      { id: 'numbered', name: '7', type: 'stadium', game: 'turbo' },
+      { id: 'numbered', name: '007', type: 'stadium', game: 'turbo' },
     ])
     expect(
       sqlite
@@ -169,5 +169,25 @@ test('Track migration replaces numbers and map types and preserves game metadata
         "INSERT INTO tracks (id, created_at, level, name, type) VALUES ('invalid', 0, 'custom', 'Name', 'race')"
       )
     ).toThrow()
+  })
+})
+
+test('Track name migration pads previously migrated numeric names without truncating or changing map names', () => {
+  withLegacyDatabase(17, (sqlite, upgrade) => {
+    sqlite.run(
+      "INSERT INTO tracks (id, created_at, name, level, type, game) VALUES ('one', 0, '7', 'white', 'stadium', 'turbo'), ('two', 0, '42', 'green', 'stadium', 'turbo'), ('three', 0, '123', 'blue', 'stadium', 'turbo'), ('four', 0, '1000', 'custom', 'race', 'next'), ('padded', 0, '004', 'white', 'stadium', 'turbo'), ('named', 0, 'Next map 7', 'custom', 'race', 'next')"
+    )
+    upgrade()
+    expect(
+      sqlite.query('SELECT id, name FROM tracks ORDER BY id').all()
+    ).toEqual([
+      { id: 'four', name: '1000' },
+      { id: 'named', name: 'Next map 7' },
+      { id: 'one', name: '007' },
+      { id: 'padded', name: '004' },
+      { id: 'three', name: '123' },
+      { id: 'two', name: '042' },
+    ])
+    expect(sqlite.query('PRAGMA foreign_key_check').all()).toEqual([])
   })
 })
