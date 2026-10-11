@@ -24,6 +24,8 @@ import TournamentManager from './managers/tournament/tournament.manager'
 import TournamentSecurity from './managers/tournament/tournament.security'
 import TrackManager from './managers/track.manager'
 import UserManager from './managers/user.manager'
+import WebhookManager from './managers/webhook.manager'
+import { createWebhookRouter } from './webhook.router'
 
 const isProduction = process.env.NODE_ENV === 'production'
 const PORT = process.env.PORT ? Number.parseInt(process.env.PORT) : 6996
@@ -70,6 +72,7 @@ async function emitData(socket: TypedSocket) {
   socket.emit('all_time_entries', timeEntries)
   socket.emit('all_matches', matches)
   socket.emit('all_rankings', RatingManager.onGetRatings())
+  socket.emit('all_webhook_drafts', WebhookManager.getAllDrafts())
   TournamentSecurity.emit(socket, TournamentManager.getAllTournaments())
 }
 
@@ -94,6 +97,10 @@ export function broadcastTournaments(
     if (socket.data.userId) TournamentSecurity.emit(socket, details, actor)
   })
 }
+
+app.use(createWebhookRouter())
+const webhookCleanup = WebhookManager.startCleanup()
+server.on('close', () => clearInterval(webhookCleanup))
 
 app.get('/api/sessions/calendar.ics', (req, res) =>
   ApiManager.onGetCalendar(ORIGIN, req, res)
@@ -145,6 +152,48 @@ async function Connect(s: TypedSocket) {
 
   setup(s, 'login', AuthManager.onLogin)
   setup(s, 'register', UserManager.onRegister)
+
+  setup(
+    s,
+    'get_webhook_drafts',
+    WebhookManager.onGetDrafts.bind(WebhookManager)
+  )
+  setup(s, 'claim_webhook_player', WebhookManager.onClaim.bind(WebhookManager))
+  setup(
+    s,
+    'assign_webhook_player',
+    WebhookManager.onAssign.bind(WebhookManager)
+  )
+  setup(
+    s,
+    'select_webhook_track',
+    WebhookManager.onSelectTrack.bind(WebhookManager)
+  )
+  setup(
+    s,
+    'edit_webhook_times',
+    WebhookManager.onEditTimes.bind(WebhookManager)
+  )
+  setup(
+    s,
+    'create_webhook_track',
+    WebhookManager.onCreateTrack.bind(WebhookManager)
+  )
+  setup(
+    s,
+    'publish_webhook_draft',
+    WebhookManager.onPublish.bind(WebhookManager)
+  )
+  setup(
+    s,
+    'discard_webhook_draft',
+    WebhookManager.onDiscard.bind(WebhookManager)
+  )
+  setup(
+    s,
+    'get_webhook_events',
+    WebhookManager.onGetEvents.bind(WebhookManager)
+  )
 
   setup(s, 'get_user_data', AuthManager.refreshToken)
   setup(s, 'edit_user', UserManager.onEditUser)

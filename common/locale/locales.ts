@@ -10,7 +10,6 @@ import type {
   SessionResponse,
   SessionStatus,
   TrackLevel,
-  TrackType,
   UserRole,
 } from '../../backend/database/schema'
 
@@ -41,6 +40,8 @@ const no = {
       error: (err: Error) => `Kunne ikke importere tabellen: ${err.message}`,
     },
     tables: {
+      webhookCaptures: 'Webhook-opptak',
+      webhookEvents: 'Webhook-hendelser',
       tournaments: 'Turneringer',
       tournamentStages: 'Turneringsbaner',
       tournamentGroups: 'Grupper',
@@ -478,12 +479,6 @@ const no = {
       red: 'Red',
       black: 'Black',
     } as Record<TrackLevel, string>,
-    type: {
-      drift: 'Drift',
-      valley: 'Valley',
-      lagoon: 'Lagoon',
-      stadium: 'Stadium',
-    } as Record<TrackType, string>,
   },
   users: {
     title: 'Spillere',

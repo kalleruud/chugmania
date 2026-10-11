@@ -6,6 +6,7 @@ import type { TimeEntry } from '@common/models/timeEntry'
 import type { TournamentDetails } from '@common/models/tournament'
 import type { Track } from '@common/models/track'
 import type { UserInfo } from '@common/models/user'
+import type { WebhookDraft } from '@common/models/webhook'
 import {
   createContext,
   useCallback,
@@ -33,6 +34,7 @@ type DataContextType = {
       matches: Match[]
       rankings: Ranking[]
       tournaments: TournamentDetails[]
+      webhookDrafts: WebhookDraft[]
     }
   | {
       isLoadingData: true
@@ -43,6 +45,7 @@ type DataContextType = {
       matches?: never
       rankings?: never
       tournaments?: never
+      webhookDrafts?: never
     }
 )
 
@@ -94,6 +97,8 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
     useState<DataContextType['rankings']>(undefined)
   const [tournaments, setTournaments] =
     useState<DataContextType['tournaments']>(undefined)
+  const [webhookDrafts, setWebhookDrafts] =
+    useState<DataContextType['webhookDrafts']>(undefined)
 
   const applyTournamentDetails = useCallback(
     (details: TournamentDetails | null, session: string) => {
@@ -110,6 +115,28 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
 
   useEffect(() => {
     let previousTournaments: string | undefined
+    let previousDrafts: string | undefined
+    const onDrafts = (data: WebhookDraft[], actor?: string | null) => {
+      const serialized = JSON.stringify(data, (key, value: unknown) =>
+        key === 'latestDurationMs' ? undefined : value
+      )
+      if (
+        previousDrafts !== undefined &&
+        previousDrafts !== serialized &&
+        actor !== socket.id
+      )
+        toast.info('Løpsutkastene er oppdatert')
+      previousDrafts = serialized
+      setWebhookDrafts(data)
+    }
+    const onAuth = (response: { success: boolean }) => {
+      if (!response.success) {
+        previousDrafts = undefined
+        setWebhookDrafts(undefined)
+      }
+    }
+    socket.on('all_webhook_drafts', onDrafts)
+    socket.on('user_data', onAuth)
     socket.on('all_tournaments', (data, actor) => {
       const serialized = JSON.stringify(data)
       if (
@@ -153,6 +180,8 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
       socket.off('all_matches')
       socket.off('all_rankings')
       socket.off('all_tournaments')
+      socket.off('all_webhook_drafts', onDrafts)
+      socket.off('user_data', onAuth)
     }
   }, [])
 
@@ -164,7 +193,8 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
       sessions === undefined ||
       matches === undefined ||
       rankings === undefined ||
-      tournaments === undefined
+      tournaments === undefined ||
+      webhookDrafts === undefined
     ) {
       return { isLoadingData: true, applyTournamentDetails }
     }
@@ -178,6 +208,7 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
       matches,
       rankings,
       tournaments,
+      webhookDrafts,
     }
   }, [
     tracks,
@@ -187,6 +218,7 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
     matches,
     rankings,
     tournaments,
+    webhookDrafts,
     applyTournamentDetails,
   ])
 

@@ -1,0 +1,1 @@
+ALTER TABLE `webhook_captures` ADD `time_corrections` text;

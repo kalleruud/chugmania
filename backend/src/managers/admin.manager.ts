@@ -21,6 +21,8 @@ import {
   tournamentStages,
   tracks,
   users,
+  webhookCaptures,
+  webhookEvents,
 } from '../../database/schema'
 import { broadcast, type TypedSocket } from '../server'
 import CsvParser from '../utils/csv-parser'
@@ -32,9 +34,12 @@ import TimeEntryManager from './timeEntry.manager'
 import TournamentManager from './tournament/tournament.manager'
 import TrackManager from './track.manager'
 import UserManager from './user.manager'
+import WebhookManager from './webhook.manager'
 
 export default class AdminManager {
   private static readonly EXCLUDED_COL_EXPORT = {
+    webhookCaptures: new Set(),
+    webhookEvents: new Set(),
     tournaments: new Set(),
     tournamentStages: new Set(),
     tournamentGroups: new Set(),
@@ -50,6 +55,8 @@ export default class AdminManager {
   } satisfies Record<ExportCsvRequest['table'], Set<string>>
 
   private static readonly TABLE_MAP = {
+    webhookCaptures,
+    webhookEvents,
     tournaments,
     tournamentStages,
     tournamentGroups,
@@ -158,6 +165,7 @@ export default class AdminManager {
     broadcast('all_matches', matches)
     broadcast('all_rankings', RatingManager.onGetRatings())
     TournamentManager.publish(socket.id)
+    for (const session of sessions) WebhookManager.notify(session.id, socket.id)
 
     return {
       success: true,

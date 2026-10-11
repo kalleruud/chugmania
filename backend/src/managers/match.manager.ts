@@ -47,7 +47,12 @@ export default class MatchManager {
       .select({ ...getTableColumns(matches) })
       .from(matches)
       .leftJoin(sessions, eq(matches.session, sessions.id))
-      .where(isNull(matches.deletedAt))
+      .where(
+        and(
+          isNull(matches.deletedAt),
+          eq(matches.publicationState, 'published')
+        )
+      )
       .orderBy(desc(sql`COALESCE(${sessions.date}, ${matches.createdAt})`))
 
     return TournamentManager.enrich(TournamentSource.visibleMatches(matchRows))
@@ -58,7 +63,13 @@ export default class MatchManager {
     return db
       .select({ ...getTableColumns(matches) })
       .from(matches)
-      .where(and(eq(matches.session, sessionId), isNull(matches.deletedAt)))
+      .where(
+        and(
+          eq(matches.session, sessionId),
+          isNull(matches.deletedAt),
+          eq(matches.publicationState, 'published')
+        )
+      )
       .orderBy(desc(matches.createdAt))
       .all()
   }
@@ -114,7 +125,7 @@ export default class MatchManager {
       where: eq(matches.id, request.id),
     })
 
-    if (!preImageMatch) {
+    if (!preImageMatch || preImageMatch.publicationState !== 'published') {
       throw new Error(loc.no.error.messages.not_in_db(request.id))
     }
 
