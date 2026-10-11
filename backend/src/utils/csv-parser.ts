@@ -145,7 +145,7 @@ export default class CsvParser {
       return { key, value: val === 'true' }
     }
 
-    if (key === 'tracks') {
+    if (key === 'tracks' || key === 'timeCorrections') {
       const parsed: unknown = JSON.parse(val)
       return { key, value: parsed }
     }

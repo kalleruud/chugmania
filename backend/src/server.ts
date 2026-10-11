@@ -171,6 +171,11 @@ async function Connect(s: TypedSocket) {
   )
   setup(
     s,
+    'edit_webhook_times',
+    WebhookManager.onEditTimes.bind(WebhookManager)
+  )
+  setup(
+    s,
     'create_webhook_track',
     WebhookManager.onCreateTrack.bind(WebhookManager)
   )

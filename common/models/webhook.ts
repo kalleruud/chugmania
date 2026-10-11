@@ -94,6 +94,12 @@ export type WebhookAssignRequest = WebhookGameRequest & {
   user: string | null
 }
 export type WebhookTrackRequest = WebhookGameRequest & { track: string }
+export type WebhookTimeCorrection = {
+  playerIndex: number
+  finishDurationMs?: number | null
+  chugDurationMs?: number | null
+}
+export type WebhookTimeRequest = WebhookGameRequest & WebhookTimeCorrection
 
 const uuid =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i

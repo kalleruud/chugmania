@@ -1064,6 +1064,247 @@ describe('Trackmania webhook ingestion and drafts', () => {
   )
 
   test.serial(
+    'Saved time corrections survive later events and CSV restore without changing original payloads',
+    async () => {
+      const c = await context('time-corrections')
+      await replay(c.events.slice(0, 3))
+      assertResponse(
+        await WebhookManager.onClaim(c.socket, {
+          gameId: c.gameId,
+          playerIndex: 0,
+        })
+      )
+      assertResponse(
+        await WebhookManager.onEditTimes(c.socket, {
+          gameId: c.gameId,
+          playerIndex: 0,
+          chugDurationMs: 0,
+        })
+      )
+      expect(draft(c.gameId).players[0]).toMatchObject({
+        finishDurationMs: null,
+        chugDurationMs: 0,
+      })
+      expect(draft(c.gameId).blockers).toContain('No valid finish result')
+      assertResponse(
+        await WebhookManager.onEditTimes(c.socket, {
+          gameId: c.gameId,
+          playerIndex: 0,
+          finishDurationMs: 30001,
+          chugDurationMs: 234,
+        })
+      )
+      expect(draft(c.gameId).blockers).toContain('Waiting for end event')
+      await replay(c.events.slice(3))
+      expect(draft(c.gameId).players[0]).toMatchObject({
+        latestDurationMs: 30001,
+        finishDurationMs: 30001,
+        chugDurationMs: 234,
+      })
+      expect(
+        db
+          .select()
+          .from(timeEntries)
+          .where(eq(timeEntries.webhookCapture, c.gameId))
+          .get()
+      ).toMatchObject({
+        publicationState: 'draft',
+        duration: 30001,
+        chugDurationMs: 234,
+      })
+      assertResponse(
+        await WebhookManager.onCreateTrack(c.adminSocket, { gameId: c.gameId })
+      )
+      const exported = await AdminManager.onExportCsv(c.adminSocket, {
+        table: 'webhookCaptures',
+      })
+      assertResponse(exported)
+      db.update(webhookCaptures)
+        .set({ timeCorrections: null })
+        .where(eq(webhookCaptures.gameId, c.gameId))
+        .run()
+      assertResponse(
+        await AdminManager.onImportCsv(c.adminSocket, {
+          table: 'webhookCaptures',
+          content: exported.csv,
+        })
+      )
+      expect(draft(c.gameId).players[0].finishDurationMs).toBe(30001)
+      expect(
+        broadcast.mock.calls
+          .filter(call => call[0] === 'all_webhook_drafts')
+          .at(-1)?.[1]
+      ).toEqual(WebhookManager.getAllDrafts())
+      const audit = await WebhookManager.onGetEvents(c.socket, {
+        gameId: c.gameId,
+      })
+      assertResponse(audit)
+      expect(
+        audit.events.map(event => {
+          const payload: unknown = JSON.parse(event.rawPayload)
+          return payload
+        })
+      ).toEqual(c.events)
+      assertResponse(
+        await WebhookManager.onPublish(c.socket, { gameId: c.gameId })
+      )
+      expect(
+        (await TimeEntryManager.getAllTimeEntries()).find(
+          row => row.webhookCapture === c.gameId
+        )
+      ).toMatchObject({ duration: 30001, chugDurationMs: 234 })
+      await assert.rejects(
+        WebhookManager.onEditTimes(c.socket, {
+          gameId: c.gameId,
+          playerIndex: 0,
+          finishDurationMs: 25000,
+        })
+      )
+      await replay(c.events)
+      expect(
+        (await TimeEntryManager.getAllTimeEntries()).find(
+          row => row.webhookCapture === c.gameId
+        )?.duration
+      ).toBe(30001)
+    }
+  )
+
+  test.serial(
+    'Time corrections enforce slot ownership, duration validation and draft lifecycle',
+    async () => {
+      const c = await context('time-correction-permissions')
+      await replay(c.events)
+      await assert.rejects(
+        WebhookManager.onEditTimes(c.socket, {
+          gameId: c.gameId,
+          playerIndex: 0,
+          finishDurationMs: 27000,
+        })
+      )
+      assertResponse(
+        await WebhookManager.onClaim(c.socket, {
+          gameId: c.gameId,
+          playerIndex: 0,
+        })
+      )
+      await assert.rejects(
+        WebhookManager.onEditTimes(c.opponentSocket, {
+          gameId: c.gameId,
+          playerIndex: 0,
+          finishDurationMs: 27000,
+        })
+      )
+      for (const values of [
+        { finishDurationMs: 0 },
+        { finishDurationMs: -1 },
+        { finishDurationMs: 1.5 },
+        { finishDurationMs: Infinity },
+        { chugDurationMs: -1 },
+        { chugDurationMs: NaN },
+        {},
+      ]) {
+        await assert.rejects(
+          WebhookManager.onEditTimes(c.socket, {
+            gameId: c.gameId,
+            playerIndex: 0,
+            ...values,
+          })
+        )
+      }
+      await assert.rejects(
+        WebhookManager.onEditTimes(c.adminSocket, {
+          gameId: c.gameId,
+          playerIndex: 2,
+          finishDurationMs: 27000,
+        })
+      )
+      expect(capture(c.gameId).timeCorrections).toBeNull()
+      assertResponse(
+        await WebhookManager.onEditTimes(c.socket, {
+          gameId: c.gameId,
+          playerIndex: 0,
+          finishDurationMs: null,
+          chugDurationMs: null,
+        })
+      )
+      expect(draft(c.gameId).players[0]).toMatchObject({
+        latestDurationMs: 0,
+        finishDurationMs: null,
+        chugDurationMs: null,
+      })
+      expect(draft(c.gameId).blockers).toContain('No valid finish result')
+      assertResponse(
+        await WebhookManager.onDiscard(c.adminSocket, { gameId: c.gameId })
+      )
+      await assert.rejects(
+        WebhookManager.onEditTimes(c.socket, {
+          gameId: c.gameId,
+          playerIndex: 0,
+          finishDurationMs: 27000,
+        })
+      )
+    }
+  )
+
+  test.serial(
+    'Corrected match times determine ties and winners without allowing edits to another participant',
+    async () => {
+      const c = await context('match-time-corrections', true)
+      await prepare(c)
+      await assert.rejects(
+        WebhookManager.onEditTimes(c.socket, {
+          gameId: c.gameId,
+          playerIndex: 1,
+          finishDurationMs: 40000,
+        })
+      )
+      assertResponse(
+        await WebhookManager.onEditTimes(c.opponentSocket, {
+          gameId: c.gameId,
+          playerIndex: 1,
+          finishDurationMs: 40000,
+        })
+      )
+      expect(draft(c.gameId).players[1].chugDurationMs).toBeNull()
+      assertResponse(
+        await WebhookManager.onEditTimes(c.socket, {
+          gameId: c.gameId,
+          playerIndex: 0,
+          finishDurationMs: 40000,
+        })
+      )
+      expect(draft(c.gameId).blockers).toContain('Finish times are tied')
+      await assert.rejects(
+        WebhookManager.onPublish(c.socket, { gameId: c.gameId })
+      )
+      assertResponse(
+        await WebhookManager.onEditTimes(c.adminSocket, {
+          gameId: c.gameId,
+          playerIndex: 0,
+          finishDurationMs: 42000,
+          chugDurationMs: 0,
+        })
+      )
+      expect(draft(c.gameId).blockers).toEqual([])
+      assertResponse(
+        await WebhookManager.onPublish(c.opponentSocket, { gameId: c.gameId })
+      )
+      expect(
+        (await MatchManager.getAllMatches()).find(
+          row => row.webhookCapture === c.gameId
+        )
+      ).toMatchObject({
+        winner: c.opponent.id,
+        duration: 40000,
+        user1DurationMs: 42000,
+        user2DurationMs: 40000,
+        user1ChugDurationMs: 0,
+        user2ChugDurationMs: null,
+      })
+    }
+  )
+
+  test.serial(
     'CSV exports and imports webhook metadata and original payload text',
     async () => {
       const c = await context('csv')

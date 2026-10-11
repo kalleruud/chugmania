@@ -49,6 +49,15 @@ function gameRequest(request: unknown): asserts request is WebhookGameRequest {
   if (!isRecord(request) || typeof request.gameId !== 'string')
     fail('Invalid webhook request')
 }
+function validDuration(value: unknown, minimum: number): boolean {
+  return (
+    value === undefined ||
+    value === null ||
+    (typeof value === 'number' &&
+      Number.isSafeInteger(value) &&
+      value >= minimum)
+  )
+}
 function activeUser(id: string | null): boolean {
   return (
     id !== null &&
@@ -166,6 +175,10 @@ export default class WebhookManager {
       const throttle = playerEvents.find(
         event => event.type === 'first_throttle'
       )
+      const correction = capture.timeCorrections?.find(
+        item => item.playerIndex === p.playerIndex
+      )
+      const finishDurationMs = finishes.length ? Math.min(...finishes) : null
       let user: string | null = null
       if (start.game.totalPlayers === 1) user = lap?.user ?? null
       else
@@ -175,9 +188,18 @@ export default class WebhookManager {
         playerIndex: p.playerIndex,
         name: p.name ?? `Player ${p.playerIndex + 1}`,
         user,
-        latestDurationMs: playerEvents.at(-1)?.durationMs ?? start.durationMs,
-        finishDurationMs: finishes.length ? Math.min(...finishes) : null,
-        chugDurationMs: throttle?.durationMs ?? null,
+        latestDurationMs:
+          correction?.finishDurationMs !== undefined
+            ? (correction.finishDurationMs ?? 0)
+            : (playerEvents.at(-1)?.durationMs ?? start.durationMs),
+        finishDurationMs:
+          correction?.finishDurationMs !== undefined
+            ? correction.finishDurationMs
+            : finishDurationMs,
+        chugDurationMs:
+          correction?.chugDurationMs !== undefined
+            ? correction.chugDurationMs
+            : (throttle?.durationMs ?? null),
       }
     })
     const track = lap?.track ?? match?.track ?? null
@@ -458,24 +480,7 @@ export default class WebhookManager {
           .run()
       const draft = this.draft(capture)
       if (!draft) return
-      if (draft.kind === 'lap')
-        db.update(timeEntries)
-          .set({
-            duration: draft.players[0].finishDurationMs,
-            chugDurationMs: draft.players[0].chugDurationMs,
-          })
-          .where(eq(timeEntries.webhookCapture, capture.id))
-          .run()
-      else
-        db.update(matches)
-          .set({
-            user1DurationMs: draft.players[0].finishDurationMs,
-            user2DurationMs: draft.players[1].finishDurationMs,
-            user1ChugDurationMs: draft.players[0].chugDurationMs,
-            user2ChugDurationMs: draft.players[1].chugDurationMs,
-          })
-          .where(eq(matches.webhookCapture, capture.id))
-          .run()
+      this.updateTimes(capture, draft)
     })()
     const saved = this.capture(event.game.gameId)
     const after =
@@ -483,6 +488,27 @@ export default class WebhookManager {
         ? JSON.stringify(this.draft(saved))
         : null
     if (before !== after) this.notify(session.id)
+  }
+
+  private static updateTimes(capture: Capture, draft: WebhookDraft): void {
+    if (draft.kind === 'lap')
+      db.update(timeEntries)
+        .set({
+          duration: draft.players[0].finishDurationMs,
+          chugDurationMs: draft.players[0].chugDurationMs,
+        })
+        .where(eq(timeEntries.webhookCapture, capture.id))
+        .run()
+    else
+      db.update(matches)
+        .set({
+          user1DurationMs: draft.players[0].finishDurationMs,
+          user2DurationMs: draft.players[1].finishDurationMs,
+          user1ChugDurationMs: draft.players[0].chugDurationMs,
+          user2ChugDurationMs: draft.players[1].chugDurationMs,
+        })
+        .where(eq(matches.webhookCapture, capture.id))
+        .run()
   }
 
   private static editable(gameId: string): {
@@ -578,6 +604,62 @@ export default class WebhookManager {
     const session = database.transaction(() => {
       const { capture, draft } = this.editable(request.gameId)
       this.assign(capture, draft, request.playerIndex, request.user)
+      return capture.session
+    })()
+    this.notify(session, socket.id)
+    return { success: true }
+  }
+
+  static async onEditTimes(
+    socket: TypedSocket,
+    request: EventReq<'edit_webhook_times'>
+  ): Promise<EventRes<'edit_webhook_times'>> {
+    const actor = await AuthManager.checkAuth(socket)
+    gameRequest(request)
+    if (
+      !Number.isInteger(request.playerIndex) ||
+      (request.finishDurationMs === undefined &&
+        request.chugDurationMs === undefined)
+    )
+      fail('Invalid time correction')
+    if (
+      !validDuration(request.finishDurationMs, 1) ||
+      !validDuration(request.chugDurationMs, 0)
+    )
+      fail('Invalid duration')
+    const session = database.transaction(() => {
+      const { capture, draft } = this.editable(request.gameId)
+      const player = draft.players.find(
+        p => p.playerIndex === request.playerIndex
+      )
+      if (!player) fail('Invalid player index')
+      if (actor.role === 'user' && player.user !== actor.id)
+        fail('Insufficient permissions')
+      const corrections = capture.timeCorrections ?? []
+      const correction = {
+        ...corrections.find(item => item.playerIndex === request.playerIndex),
+        playerIndex: request.playerIndex,
+        ...(request.finishDurationMs !== undefined
+          ? { finishDurationMs: request.finishDurationMs }
+          : {}),
+        ...(request.chugDurationMs !== undefined
+          ? { chugDurationMs: request.chugDurationMs }
+          : {}),
+      }
+      db.update(webhookCaptures)
+        .set({
+          timeCorrections: [
+            ...corrections.filter(
+              item => item.playerIndex !== request.playerIndex
+            ),
+            correction,
+          ],
+        })
+        .where(eq(webhookCaptures.id, capture.id))
+        .run()
+      const updated = this.draft(this.capture(request.gameId))
+      if (!updated) fail('Capture has no start event')
+      this.updateTimes(capture, updated)
       return capture.session
     })()
     this.notify(session, socket.id)

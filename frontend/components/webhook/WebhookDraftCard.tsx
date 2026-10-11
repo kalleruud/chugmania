@@ -1,21 +1,38 @@
 import Combobox from '@/components/combobox'
 import ConfirmationButton from '@/components/ConfirmationButton'
+import { SessionRow } from '@/components/session/SessionRow'
+import DurationInput from '@/components/timeentries/DurationInput'
+import { TrackRow } from '@/components/track/TrackRow'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import UserRow from '@/components/user/UserRow'
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
-import { trackToLookupItem, userToLookupItem } from '@/lib/lookup-utils'
+import {
+  sessionToLookupItem,
+  trackToLookupItem,
+  userToLookupItem,
+} from '@/lib/lookup-utils'
 import type { ErrorResponse, SuccessResponse } from '@common/models/socket.io'
 import type { WebhookDraft } from '@common/models/webhook'
-import { formatTime } from '@common/utils/time'
-import { formatTrackLabel } from '@common/utils/track'
+import {
+  durationToInputList,
+  formatTime,
+  inputListToMs,
+} from '@common/utils/time'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import WebhookAuditButton from './WebhookAuditButton'
 
-function duration(ms: number | null): string {
-  return ms === null ? '—' : formatTime(ms)
+type TimeEdits = { finish?: string[]; chug?: string[] }
+
+function chugDigits(ms: number | null): string[] {
+  return ms === 0 ? new Array<string>(7).fill('0') : durationToInputList(ms)
+}
+
+function editedDuration(digits: string[]): number | null {
+  return digits.every(digit => digit === '') ? null : inputListToMs(digits)
 }
 
 const blockerLabels: Record<string, string> = {
@@ -35,66 +52,125 @@ export default function WebhookDraftCard({
 }: Readonly<{ draft: WebhookDraft }>) {
   const { socket, isConnected } = useConnection()
   const { isLoggedIn, loggedInUser } = useAuth()
-  const { tracks, users, isLoadingData } = useData()
+  const { tracks, users, sessions, isLoadingData } = useData()
   const [busy, setBusy] = useState(false)
+  const [edits, setEdits] = useState<Record<number, TimeEdits | undefined>>({})
   if (!isLoggedIn || isLoadingData) return null
   const moderator = loggedInUser.role !== 'user'
   const participant = draft.players.some(p => p.user === loggedInUser.id)
   const disabled = busy || !isConnected
   const trackItems = tracks.filter(t => !t.deletedAt).map(trackToLookupItem)
   const userItems = users.filter(u => !u.deletedAt).map(userToLookupItem)
-  const track = tracks.find(t => t.id === draft.track)
+  const session = sessions.find(s => s.id === draft.session)
+  const hasEdits = Object.values(edits).some(edit => edit !== undefined)
   const run = async (operation: Promise<SuccessResponse | ErrorResponse>) => {
     setBusy(true)
     try {
       const response = await operation
       if (!response.success) throw new Error(response.message)
       toast.success('Utkast oppdatert')
+      return true
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : 'Kunne ikke oppdatere utkast'
       )
+      return false
     } finally {
       setBusy(false)
     }
   }
+  const saveTimes = async () => {
+    for (const player of draft.players) {
+      const edit = edits[player.playerIndex]
+      if (!edit) continue
+      const saved = await run(
+        socket.emitWithAck('edit_webhook_times', {
+          gameId: draft.gameId,
+          playerIndex: player.playerIndex,
+          ...(edit.finish
+            ? { finishDurationMs: editedDuration(edit.finish) }
+            : {}),
+          ...(edit.chug ? { chugDurationMs: editedDuration(edit.chug) } : {}),
+        })
+      )
+      if (!saved) return
+      setEdits(previous => ({ ...previous, [player.playerIndex]: undefined }))
+    }
+  }
   return (
-    <article className='flex flex-col gap-3 rounded-sm border border-amber-500/40 bg-amber-500/5 p-4'>
+    <article className='mx-auto flex w-full max-w-md flex-col gap-6'>
       <div className='flex flex-wrap items-center gap-2'>
         <Badge variant='outline'>
           Utkast · {draft.kind === 'lap' ? 'Rundetid' : 'Match'}
         </Badge>
-        <h3 className='font-semibold'>
-          {track ? formatTrackLabel(track) : (draft.map?.name ?? 'Ukjent bane')}
-        </h3>
-        {draft.map && (
-          <span className='text-sm text-muted-foreground'>
-            {draft.map.environment} · {draft.map.author}
-          </span>
-        )}
         {draft.endReason && <Badge variant='outline'>{draft.endReason}</Badge>}
       </div>
       {draft.players.map(player => {
         const assigned = userItems.find(user => user.id === player.user)
         const own = player.user === loggedInUser.id
         return (
-          <div
-            key={player.playerIndex}
-            className='flex flex-wrap items-center gap-3'>
-            <span>{player.name}</span>
-            <span className='text-sm tabular-nums'>
-              Foreløpig tid: {formatTime(player.latestDurationMs)}
-              {player.finishDurationMs === null && draft.endReason && ' · DNF'}
+          <div key={player.playerIndex} className='flex flex-col gap-6'>
+            <div className='flex flex-col gap-2'>
+              <span className='text-sm text-muted-foreground'>
+                {player.name} · Foreløpig rundetid
+                {player.finishDurationMs === null &&
+                  draft.endReason &&
+                  ' · DNF'}
+              </span>
+              <DurationInput
+                label={`Rundetid spiller ${player.playerIndex + 1}`}
+                digits={
+                  edits[player.playerIndex]?.finish ??
+                  durationToInputList(player.latestDurationMs)
+                }
+                disabled={disabled || (!moderator && !own)}
+                onChange={finish =>
+                  setEdits(previous => ({
+                    ...previous,
+                    [player.playerIndex]: {
+                      ...previous[player.playerIndex],
+                      finish,
+                    },
+                  }))
+                }
+              />
               {player.finishDurationMs !== null &&
-                player.finishDurationMs !== player.latestDurationMs &&
-                ` · Beste sluttid: ${duration(player.finishDurationMs)}`}
-              {' · Chug: '}
-              {duration(player.chugDurationMs)}
-            </span>
+                player.finishDurationMs !== player.latestDurationMs && (
+                  <span className='text-sm text-muted-foreground'>
+                    Beste sluttid: {formatTime(player.finishDurationMs)}
+                  </span>
+                )}
+            </div>
+            <div className='flex flex-col gap-2'>
+              <span className='text-sm text-muted-foreground'>
+                Chugtid{player.chugDurationMs === null && ' · Ikke registrert'}
+              </span>
+              <DurationInput
+                label={`Chugtid spiller ${player.playerIndex + 1}`}
+                digits={
+                  edits[player.playerIndex]?.chug ??
+                  chugDigits(player.chugDurationMs)
+                }
+                disabled={disabled || (!moderator && !own)}
+                onChange={chug =>
+                  setEdits(previous => ({
+                    ...previous,
+                    [player.playerIndex]: {
+                      ...previous[player.playerIndex],
+                      chug,
+                    },
+                  }))
+                }
+              />
+            </div>
             {moderator ? (
               <Combobox
                 aria-label={`Spiller ${player.playerIndex + 1}`}
-                className='min-w-48'
+                className='w-full'
+                required
+                limit={4}
+                align='start'
+                CustomRow={props => <UserRow {...props} hideRanking />}
                 placeholder='Tildel spiller'
                 items={userItems}
                 selected={assigned}
@@ -111,9 +187,16 @@ export default function WebhookDraftCard({
               />
             ) : (
               <>
-                <span className='text-sm text-muted-foreground'>
-                  {assigned?.label ?? 'Ikke tildelt'}
-                </span>
+                <Combobox
+                  aria-label={`Spiller ${player.playerIndex + 1}`}
+                  className='w-full'
+                  placeholder='Tildel spiller'
+                  items={userItems}
+                  selected={assigned}
+                  disabled
+                  setSelected={() => {}}
+                  CustomRow={props => <UserRow {...props} hideRanking />}
+                />
                 {(own || (!player.user && !participant)) && (
                   <Button
                     size='sm'
@@ -136,40 +219,60 @@ export default function WebhookDraftCard({
           </div>
         )
       })}
-      {moderator && (
-        <div className='flex flex-wrap items-center gap-2'>
-          <Combobox
-            aria-label='Bane for utkast'
-            className='min-w-64'
-            placeholder='Velg bane'
-            items={trackItems}
-            selected={trackItems.find(t => t.id === draft.track)}
+      <div className='flex flex-col gap-2'>
+        <Combobox
+          aria-label='Bane for utkast'
+          className='w-full'
+          required
+          limit={4}
+          align='start'
+          CustomRow={TrackRow}
+          placeholder={draft.map?.name ?? 'Velg bane'}
+          items={trackItems}
+          selected={trackItems.find(t => t.id === draft.track)}
+          disabled={disabled || !moderator}
+          setSelected={selected => {
+            if (selected)
+              void run(
+                socket.emitWithAck('select_webhook_track', {
+                  gameId: draft.gameId,
+                  track: selected.id,
+                })
+              )
+          }}
+        />
+        <Combobox
+          aria-label='Session for utkast'
+          className='w-full'
+          placeholder='Velg session'
+          items={sessions.map(sessionToLookupItem)}
+          selected={session}
+          disabled
+          setSelected={() => {}}
+          CustomRow={SessionRow}
+        />
+        {moderator && draft.map && (
+          <Button
+            variant='outline'
             disabled={disabled}
-            setSelected={selected => {
-              if (selected)
-                void run(
-                  socket.emitWithAck('select_webhook_track', {
-                    gameId: draft.gameId,
-                    track: selected.id,
-                  })
-                )
-            }}
-          />
-          {draft.map && (
-            <Button
-              variant='outline'
-              disabled={disabled}
-              onClick={() =>
-                void run(
-                  socket.emitWithAck('create_webhook_track', {
-                    gameId: draft.gameId,
-                  })
-                )
-              }>
-              Opprett bane fra opptak
-            </Button>
-          )}
-        </div>
+            onClick={() =>
+              void run(
+                socket.emitWithAck('create_webhook_track', {
+                  gameId: draft.gameId,
+                })
+              )
+            }>
+            Opprett bane fra opptak
+          </Button>
+        )}
+      </div>
+      {hasEdits && (
+        <Button
+          variant='outline'
+          disabled={disabled}
+          onClick={() => void saveTimes()}>
+          Lagre tidsendringer
+        </Button>
       )}
       {draft.blockers.length > 0 && (
         <ul className='list-inside list-disc text-sm text-muted-foreground'>
@@ -178,14 +281,14 @@ export default function WebhookDraftCard({
           ))}
         </ul>
       )}
-      <div className='flex gap-2'>
+      <div className='flex flex-wrap gap-2'>
         <WebhookAuditButton
           gameId={draft.gameId}
           participants={draft.players.map(player => player.user)}
         />
         {(moderator || participant) && (
           <Button
-            disabled={disabled || draft.blockers.length > 0}
+            disabled={disabled || hasEdits || draft.blockers.length > 0}
             onClick={() =>
               void run(
                 socket.emitWithAck('publish_webhook_draft', {

@@ -47,6 +47,7 @@ import type {
   WebhookDraft,
   WebhookDrafts,
   WebhookGameRequest,
+  WebhookTimeRequest,
   WebhookTrackRequest,
 } from './webhook'
 
@@ -90,6 +91,10 @@ export interface ClientToServerEvents {
   ) => void
   assign_webhook_player: (
     request: WebhookAssignRequest,
+    callback: (response: SuccessResponse | ErrorResponse) => void
+  ) => void
+  edit_webhook_times: (
+    request: WebhookTimeRequest,
     callback: (response: SuccessResponse | ErrorResponse) => void
   ) => void
   select_webhook_track: (

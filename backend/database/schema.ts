@@ -18,6 +18,7 @@ import type {
   TournamentStatus,
 } from '../../common/models/tournament'
 import type { Game } from '../../common/models/track'
+import type { WebhookTimeCorrection } from '../../common/models/webhook'
 
 const metadata = {
   id: text().primaryKey().$defaultFn(randomUUID),
@@ -101,6 +102,9 @@ export const webhookCaptures = sqliteTable('webhook_captures', {
   sourceGame: text('source_game').$type<Game>().notNull(),
   pluginName: text('plugin_name').notNull(),
   pluginVersion: text('plugin_version').notNull(),
+  timeCorrections: text('time_corrections', { mode: 'json' }).$type<
+    WebhookTimeCorrection[]
+  >(),
   endedAt: integer('ended_at', { mode: 'timestamp_ms' }),
   publishedAt: integer('published_at', { mode: 'timestamp_ms' }),
 })
