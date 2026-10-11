@@ -1,4 +1,5 @@
 import { isRecord } from '../utils/utils'
+import type { Game } from './track'
 
 export type WebhookEventType =
   | 'start'
@@ -29,7 +30,7 @@ export type WebhookMap = {
 export type WebhookSource = {
   pluginName: string
   pluginVersion: string
-  game: 'turbo' | 'next'
+  game: Game
 }
 type BaseEvent = {
   schemaVersion: string

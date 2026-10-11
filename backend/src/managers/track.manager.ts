@@ -36,7 +36,7 @@ export default class TrackManager {
           )
         )
         .groupBy(tracks.id)
-        .orderBy(asc(tracks.number))
+        .orderBy(asc(tracks.name))
         .offset(offset)
         .limit(limit)
     )
@@ -46,7 +46,7 @@ export default class TrackManager {
   }
 
   static async getAllTracks(): Promise<Track[]> {
-    const data = await db.select().from(tracks).orderBy(asc(tracks.number))
+    const data = await db.select().from(tracks).orderBy(asc(tracks.name))
 
     if (data.length === 0) {
       console.debug(

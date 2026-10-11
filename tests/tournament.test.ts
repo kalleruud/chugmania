@@ -37,7 +37,7 @@ type TestMatch = {
   user2: string | null
   winner: string | null
   status: Match['status']
-  track: number | null
+  track: string | null
   setWinner(name: string): Promise<void>
   reopen(): Promise<void>
   setPlayers(players: Partial<Pick<Match, 'user1' | 'user2'>>): Promise<void>
@@ -129,7 +129,7 @@ async function CreateTournament(options: {
         user2: match.user2,
         winner: match.winner,
         status: match.status,
-        track: tracks.find(track => track.id === match.track)?.number ?? null,
+        track: tracks.find(track => track.id === match.track)?.name ?? null,
         async setWinner(name: string): Promise<void> {
           await MatchManager.onEditMatch(socket, {
             type: 'EditMatchRequest',
@@ -248,7 +248,7 @@ describe('Complete simple tournament', () => {
         'hugo',
       ],
     }
-    const planned = { status: 'planned', winner: null, track: 1 }
+    const planned = { status: 'planned', winner: null, track: '1' }
     const unresolved = { ...planned, user1: null, user2: null }
 
     // Act

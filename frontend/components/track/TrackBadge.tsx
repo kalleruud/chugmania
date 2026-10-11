@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge'
 import { twMerge } from 'tailwind-merge'
-import type { TrackLevel, TrackType } from '../../../backend/database/schema'
+import type { TrackLevel } from '../../../backend/database/schema'
 
 export type TrackBadgeProps = Parameters<typeof Badge>['0'] & {
   environment?: string | null
@@ -11,7 +11,7 @@ export type TrackBadgeProps = Parameters<typeof Badge>['0'] & {
       }
     | {
         trackLevel?: never
-        trackType: TrackType | null
+        trackType: string
       }
   )
 
@@ -24,7 +24,7 @@ const levelClasses: Record<TrackLevel, string> = {
   custom: 'text-amber-300 bg-amber-500/10 border-amber-500/20',
 }
 
-const typeClasses: Record<TrackType, string> = {
+const typeClasses: Record<string, string> = {
   drift: 'text-fuchsia-300 bg-fuchsia-500/10 border-fuchsia-500/20',
   valley: 'text-lime-300 bg-lime-500/10 border-lime-500/20',
   lagoon: 'text-cyan-300 bg-cyan-500/10 border-cyan-500/20',
@@ -38,11 +38,9 @@ export default function TrackBadge({
   className,
   ...rest
 }: Readonly<TrackBadgeProps>) {
-  const colorStyle = trackLevel
-    ? levelClasses[trackLevel]
-    : trackType
-      ? typeClasses[trackType]
-      : 'text-muted-foreground'
+  let colorStyle = 'text-muted-foreground'
+  if (trackLevel) colorStyle = levelClasses[trackLevel]
+  else if (trackType) colorStyle = typeClasses[trackType] ?? colorStyle
 
   return (
     <Badge className={twMerge(colorStyle, className)} {...rest}>

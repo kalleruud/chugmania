@@ -9,7 +9,7 @@ import {
   type WebhookMap,
 } from '@common/models/webhook'
 import { isRecord } from '@common/utils/utils'
-import { and, asc, desc, eq, gte, isNull, lt, lte, ne } from 'drizzle-orm'
+import { and, asc, desc, eq, gt, gte, isNull, lt, lte, ne } from 'drizzle-orm'
 import { DateTime } from 'luxon'
 import db, { database } from '../../database/database'
 import {
@@ -66,7 +66,7 @@ function mapMetadata(map: WebhookMap) {
     name: map.name,
     author: map.author,
     environment: map.environment,
-    mapType: map.type,
+    type: map.type,
     authorMedalMs: map.medalTimesMs.author,
     goldMedalMs: map.medalTimesMs.gold,
     silverMedalMs: map.medalTimesMs.silver,
@@ -111,6 +111,21 @@ export default class WebhookManager {
         if (!isWebhookEvent(value)) fail('Invalid stored webhook event')
         return value
       })
+  }
+
+  static findNextSession(now = new Date()) {
+    return db
+      .select()
+      .from(sessions)
+      .where(
+        and(
+          isNull(sessions.deletedAt),
+          ne(sessions.status, 'cancelled'),
+          gt(sessions.date, now)
+        )
+      )
+      .orderBy(asc(sessions.date), asc(sessions.id))
+      .get()
   }
 
   private static capture(gameId: string): Capture {
@@ -584,7 +599,7 @@ export default class WebhookManager {
           .get()
         if (existing) fail('Map UID belongs to another track')
         db.update(tracks)
-          .set(mapMetadata(draft.map))
+          .set({ ...mapMetadata(draft.map), game: capture.sourceGame })
           .where(eq(tracks.id, track.id))
           .run()
       }
@@ -630,6 +645,7 @@ export default class WebhookManager {
         .insert(tracks)
         .values({
           ...mapMetadata(map),
+          game: capture.sourceGame,
           level: 'custom',
         })
         .returning()

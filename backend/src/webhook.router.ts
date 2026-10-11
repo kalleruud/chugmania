@@ -54,11 +54,15 @@ export function createWebhookRouter() {
           res
             .status(400)
             .json({ code: 'INVALID_JSON', message: 'Invalid JSON body' })
-        else if (error instanceof WebhookError)
+        else if (error instanceof WebhookError) {
+          if (error.code === 'NO_ACTIVE_SESSION') {
+            const next = WebhookManager.findNextSession()
+            if (next) res.setHeader('Retry-After', next.date.toUTCString())
+          }
           res
             .status(error.status)
             .json({ code: error.code, message: error.message })
-        else
+        } else
           res.status(500).json({
             code: 'RECEIVER_ERROR',
             message: 'Could not persist webhook event',

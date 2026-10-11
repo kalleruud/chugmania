@@ -17,6 +17,7 @@ import type {
   Slot,
   TournamentStatus,
 } from '../../common/models/tournament'
+import type { Game } from '../../common/models/track'
 
 const metadata = {
   id: text().primaryKey().$defaultFn(randomUUID),
@@ -49,18 +50,15 @@ export const users = sqliteTable('users', {
 })
 
 export type TrackLevel = 'white' | 'green' | 'blue' | 'red' | 'black' | 'custom'
-export type TrackType = 'drift' | 'valley' | 'lagoon' | 'stadium'
-
 export const tracks = sqliteTable('tracks', {
   ...metadata,
-  number: integer(),
   level: text().$type<TrackLevel>().notNull(),
-  type: text().$type<TrackType>(),
+  type: text().notNull(),
+  game: text().$type<Game>().notNull(),
   uid: text().unique(),
-  name: text(),
+  name: text().notNull(),
   author: text(),
   environment: text(),
-  mapType: text('map_type'),
   authorMedalMs: integer('author_medal_ms'),
   goldMedalMs: integer('gold_medal_ms'),
   silverMedalMs: integer('silver_medal_ms'),
@@ -100,7 +98,7 @@ export const webhookCaptures = sqliteTable('webhook_captures', {
     .notNull()
     .references(() => sessions.id),
   totalPlayers: integer('total_players').notNull(),
-  sourceGame: text('source_game').notNull(),
+  sourceGame: text('source_game').$type<Game>().notNull(),
   pluginName: text('plugin_name').notNull(),
   pluginVersion: text('plugin_version').notNull(),
   endedAt: integer('ended_at', { mode: 'timestamp_ms' }),

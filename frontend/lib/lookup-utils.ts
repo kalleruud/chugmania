@@ -9,12 +9,13 @@ export function trackToLookupItem(track: Track) {
   return {
     ...track,
     label: trackName,
-    sublabel: `${track.level} • ${track.type ?? track.environment ?? ''}`,
+    sublabel: `${track.level} • ${track.type} • ${track.game}`,
     tags: [
       track.level,
-      track.type ?? '',
+      track.type,
+      track.game,
       track.environment ?? '',
-      track.name ?? '',
+      track.name,
       trackName,
     ],
   }

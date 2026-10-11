@@ -27,12 +27,14 @@ export default function TrackCard({
 }: Readonly<TrackCardProps>) {
   const fields: { label: string; value: ReactNode }[] = [
     { label: 'Navn', value: track.name },
-    { label: 'Banenummer', value: track.number },
+    {
+      label: 'Spill',
+      value: track.game === 'next' ? 'Trackmania Next' : 'Trackmania Turbo',
+    },
     { label: 'Nivå', value: track.level },
     { label: 'Banetype', value: track.type },
     { label: 'Forfatter', value: track.author },
     { label: 'Miljø', value: track.environment },
-    { label: 'Karttype', value: track.mapType },
     { label: 'Spillets bane-UID', value: track.uid },
     {
       label: 'Fler-runders bane',

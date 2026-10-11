@@ -217,6 +217,7 @@ describe('Trackmania webhook ingestion and drafts', () => {
       ).toBe(400)
       const response = await post(event)
       expect(response.status).toBe(503)
+      expect(response.headers.get('Retry-After')).toBeNull()
       expect(await response.json()).toEqual({
         code: 'NO_ACTIVE_SESSION',
         message: 'No active receiver session can register this event',
@@ -229,6 +230,27 @@ describe('Trackmania webhook ingestion and drafts', () => {
           .where(eq(webhookCaptures.gameId, event.game.gameId))
           .get()
       ).toBeUndefined()
+      const admin = await login(
+        createUser('webhook-retry-after-admin', 'admin')
+      )
+      const nextStart = new Date(Date.now() + 3600000)
+      const futureSessions = [
+        { date: new Date(Date.now() + 600000), status: 'cancelled' },
+        { date: new Date(Date.now() + 1200000), deletedAt: new Date() },
+        { date: nextStart },
+        { date: new Date(Date.now() + 7200000) },
+      ] satisfies Partial<typeof sessions.$inferInsert>[]
+      for (const changes of futureSessions) {
+        const upcoming = await createSession(admin, [])
+        db.update(sessions)
+          .set(changes)
+          .where(eq(sessions.id, upcoming.id))
+          .run()
+      }
+      const retry = await post(event)
+      expect(retry.status).toBe(503)
+      expect(retry.headers.get('Retry-After')).toBe(nextStart.toUTCString())
+      expect(count()).toBe(before)
       const c = await context('retry')
       expect((await post(event)).status).toBe(204)
       expect(capture(event.game.gameId).session).toBe(c.session.id)
@@ -378,6 +400,16 @@ describe('Trackmania webhook ingestion and drafts', () => {
       assertResponse(
         await WebhookManager.onCreateTrack(c.adminSocket, { gameId: c.gameId })
       )
+      const nextTrackId = draft(c.gameId).track
+      const nextStart = c.events[0]
+      assert(nextTrackId && nextStart.type === 'start' && nextStart.map)
+      const nextTrack = db
+        .select()
+        .from(tracks)
+        .where(eq(tracks.id, nextTrackId))
+        .get()
+      expect(nextTrack?.game).toBe('next')
+      expect(nextTrack?.type).toBe(nextStart.map.type)
       assertResponse(
         await WebhookManager.onClaim(c.socket, {
           gameId: c.gameId,
@@ -700,8 +732,9 @@ describe('Trackmania webhook ingestion and drafts', () => {
       assert(id)
       const named = db.select().from(tracks).where(eq(tracks.id, id)).get()
       assert(named)
-      expect(named.number).toBeNull()
-      expect(named.type).toBeNull()
+      expect(named.name).toBe(start.map.name)
+      expect(named.type).toBe(start.map.type)
+      expect(named.game).toBe('turbo')
       expect(named.level).toBe('custom')
       expect(named.uid).toBe(start.map.uid)
       expect(named.goldMedalMs).toBe(start.map.medalTimesMs.gold)
@@ -781,13 +814,12 @@ describe('Trackmania webhook ingestion and drafts', () => {
       expect(updated).toMatchObject({
         id: legacy.id,
         uid: start.map.uid,
-        number: legacy.number,
         level: legacy.level,
-        type: legacy.type,
+        type: start.map.type,
+        game: start.source.game,
         name: start.map.name,
         author: start.map.author,
         environment: start.map.environment,
-        mapType: start.map.type,
         authorMedalMs: start.map.medalTimesMs.author,
         goldMedalMs: start.map.medalTimesMs.gold,
         silverMedalMs: start.map.medalTimesMs.silver,
@@ -851,6 +883,8 @@ describe('Trackmania webhook ingestion and drafts', () => {
         .get()
       assert(nextTrack)
       expect(nextTrack.uid).toBe(nextStart.map.uid)
+      expect(nextTrack.game).toBe('next')
+      expect(nextTrack.type).toBe(nextStart.map.type)
       expect(nextTrack.name).toBe(nextStart.map.name)
       expect(nextTrack.authorMedalMs).toBe(0)
       expect(nextTrack.isLaps).toBe(false)
@@ -1025,6 +1059,13 @@ describe('Trackmania webhook ingestion and drafts', () => {
       expect(
         db.select().from(tracks).where(eq(tracks.id, trackId)).get()?.isLaps
       ).toBe(true)
+      expect(
+        db.select().from(tracks).where(eq(tracks.id, trackId)).get()
+      ).toMatchObject({
+        name: 'Example Map',
+        type: 'TrackMania\\TM_Race',
+        game: 'turbo',
+      })
       const exportedCaptures = await AdminManager.onExportCsv(c.adminSocket, {
         table: 'webhookCaptures',
       })
