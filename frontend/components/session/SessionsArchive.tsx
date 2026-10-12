@@ -9,9 +9,11 @@ export default function SessionsArchive({
   const sessionsByYear = new Map<number, SessionWithSignups[]>()
 
   for (const session of sessions.toSorted(
-    (a, b) => b.date.getTime() - a.date.getTime()
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   )) {
-    const year = DateTime.fromJSDate(session.date, { zone: 'Europe/Oslo' }).year
+    const year = DateTime.fromJSDate(new Date(session.date), {
+      zone: 'Europe/Oslo',
+    }).year
     const yearSessions = sessionsByYear.get(year) ?? []
     yearSessions.push(session)
     sessionsByYear.set(year, yearSessions)
