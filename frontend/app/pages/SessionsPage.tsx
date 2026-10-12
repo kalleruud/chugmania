@@ -1,3 +1,4 @@
+import SessionsArchive from '@/components/session/SessionsArchive'
 import SessionsList from '@/components/session/SessionsList'
 import {
   Breadcrumb,
@@ -78,7 +79,8 @@ export function SessionsContent({
         header={loc.no.session.status.upcoming}
         sessions={upcomingSessions}
       />
-      {showPreviousSessions && (
+      {!showLink && <SessionsArchive sessions={pastSessions} />}
+      {showLink && showPreviousSessions && (
         <SessionsList
           className='opacity-75'
           header={loc.no.session.past}
@@ -86,14 +88,16 @@ export function SessionsContent({
           hideCreate
         />
       )}
-      <div>
-        <Button
-          variant='ghost'
-          onClick={() => setShowPreviousSessions(!showPreviousSessions)}>
-          {showPreviousSessions ? <ChevronUp /> : <ChevronDown />}
-          {loc.no.session.past}
-        </Button>
-      </div>
+      {showLink && (
+        <div>
+          <Button
+            variant='ghost'
+            onClick={() => setShowPreviousSessions(!showPreviousSessions)}>
+            {showPreviousSessions ? <ChevronUp /> : <ChevronDown />}
+            {loc.no.session.past}
+          </Button>
+        </div>
+      )}
     </div>
   )
 }
