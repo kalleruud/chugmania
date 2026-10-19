@@ -18,7 +18,7 @@ import type {
   TournamentStatus,
 } from '../../common/models/tournament'
 import type { Game } from '../../common/models/track'
-import type { WebhookTimeCorrection } from '../../common/models/webhook'
+import type { WebhookTimeCorrection } from '../src/models/webhook'
 
 const metadata = {
   id: text().primaryKey().$defaultFn(randomUUID),

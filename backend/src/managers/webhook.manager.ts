@@ -1,13 +1,9 @@
+import type {
+  ResultDraftRequest,
+  ResultDrafts,
+} from '@common/models/resultDraft'
 import type { EventReq, EventRes } from '@common/models/socket.io'
 import type { UserInfo } from '@common/models/user'
-import {
-  isWebhookEvent,
-  type WebhookDraft,
-  type WebhookDrafts,
-  type WebhookEvent,
-  type WebhookGameRequest,
-  type WebhookMap,
-} from '@common/models/webhook'
 import { isRecord } from '@common/utils/utils'
 import { and, asc, desc, eq, gt, gte, isNull, lt, lte, ne } from 'drizzle-orm'
 import { DateTime } from 'luxon'
@@ -21,6 +17,12 @@ import {
   webhookCaptures,
   webhookEvents,
 } from '../../database/schema'
+import {
+  isWebhookEvent,
+  type WebhookDraft,
+  type WebhookEvent,
+  type WebhookMap,
+} from '../models/webhook'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import MatchManager from './match.manager'
@@ -45,9 +47,15 @@ export class WebhookError extends Error {
 function fail(message: string): never {
   throw new Error(message)
 }
-function gameRequest(request: unknown): asserts request is WebhookGameRequest {
-  if (!isRecord(request) || typeof request.gameId !== 'string')
-    fail('Invalid webhook request')
+function resultRequest(
+  request: unknown
+): asserts request is ResultDraftRequest {
+  if (
+    !isRecord(request) ||
+    typeof request.id !== 'string' ||
+    (request.kind !== 'lap' && request.kind !== 'match')
+  )
+    fail('Invalid result draft request')
 }
 function validDuration(value: unknown, minimum: number): boolean {
   return (
@@ -108,7 +116,7 @@ export default class WebhookManager {
       .get()
   }
 
-  static events(capture: string): WebhookEvent[] {
+  private static events(capture: string): WebhookEvent[] {
     return db
       .select()
       .from(webhookEvents)
@@ -282,37 +290,87 @@ export default class WebhookManager {
     }
   }
 
-  static getAllDrafts(session?: string): WebhookDraft[] {
-    const captures = db
-      .select()
-      .from(webhookCaptures)
-      .where(
-        and(
-          session !== undefined
-            ? eq(webhookCaptures.session, session)
-            : undefined,
-          isNull(webhookCaptures.deletedAt),
-          isNull(webhookCaptures.publishedAt)
+  static getAllDrafts(session?: string): ResultDrafts {
+    const captureFilter = and(
+      session !== undefined ? eq(webhookCaptures.session, session) : undefined,
+      isNull(webhookCaptures.deletedAt),
+      isNull(webhookCaptures.publishedAt)
+    )
+    return {
+      timeEntries: db
+        .select({
+          id: timeEntries.id,
+          createdAt: timeEntries.createdAt,
+          updatedAt: timeEntries.updatedAt,
+          deletedAt: timeEntries.deletedAt,
+          publicationState: timeEntries.publicationState,
+          user: timeEntries.user,
+          track: timeEntries.track,
+          session: timeEntries.session,
+          duration: timeEntries.duration,
+          chugDurationMs: timeEntries.chugDurationMs,
+          status: timeEntries.status,
+          tieBreaker: timeEntries.tieBreaker,
+          amount: timeEntries.amount,
+          comment: timeEntries.comment,
+        })
+        .from(timeEntries)
+        .innerJoin(
+          webhookCaptures,
+          eq(timeEntries.webhookCapture, webhookCaptures.id)
         )
-      )
-      .orderBy(asc(webhookCaptures.createdAt))
-      .all()
-    return captures.flatMap(capture => {
-      const draft = this.draft(capture)
-      return draft ? [draft] : []
-    })
-  }
-
-  static getDrafts(session: string): WebhookDrafts {
-    return { session, drafts: this.getAllDrafts(session) }
+        .where(
+          and(
+            captureFilter,
+            eq(timeEntries.publicationState, 'draft'),
+            isNull(timeEntries.deletedAt)
+          )
+        )
+        .orderBy(asc(timeEntries.createdAt))
+        .all(),
+      matches: db
+        .select({
+          id: matches.id,
+          createdAt: matches.createdAt,
+          updatedAt: matches.updatedAt,
+          deletedAt: matches.deletedAt,
+          publicationState: matches.publicationState,
+          user1: matches.user1,
+          user2: matches.user2,
+          track: matches.track,
+          session: matches.session,
+          duration: matches.duration,
+          user1DurationMs: matches.user1DurationMs,
+          user2DurationMs: matches.user2DurationMs,
+          user1ChugDurationMs: matches.user1ChugDurationMs,
+          user2ChugDurationMs: matches.user2ChugDurationMs,
+          winner: matches.winner,
+          stage: matches.stage,
+          comment: matches.comment,
+          status: matches.status,
+        })
+        .from(matches)
+        .innerJoin(
+          webhookCaptures,
+          eq(matches.webhookCapture, webhookCaptures.id)
+        )
+        .where(
+          and(
+            captureFilter,
+            eq(matches.publicationState, 'draft'),
+            isNull(matches.deletedAt)
+          )
+        )
+        .orderBy(asc(matches.createdAt))
+        .all(),
+    }
   }
 
   static publish(actor: string | null = null): void {
-    broadcast('all_webhook_drafts', this.getAllDrafts(), actor)
+    broadcast('all_result_drafts', this.getAllDrafts(), actor)
   }
 
-  static notify(session: string, actor: string | null = null): void {
-    broadcast('webhook_drafts_changed', this.getDrafts(session), actor)
+  static notify(_session: string, actor: string | null = null): void {
     this.publish(actor)
   }
 
@@ -511,11 +569,28 @@ export default class WebhookManager {
         .run()
   }
 
-  private static editable(gameId: string): {
+  private static captureForResult(request: ResultDraftRequest): Capture {
+    const table = request.kind === 'lap' ? timeEntries : matches
+    const row = db
+      .select({ capture: table.webhookCapture })
+      .from(table)
+      .where(eq(table.id, request.id))
+      .get()
+    if (!row?.capture) fail('Result draft not found')
+    const capture = db
+      .select()
+      .from(webhookCaptures)
+      .where(eq(webhookCaptures.id, row.capture))
+      .get()
+    if (!capture) fail('Result draft not found')
+    return capture
+  }
+
+  private static editable(request: ResultDraftRequest): {
     capture: Capture
     draft: WebhookDraft
   } {
-    const capture = this.capture(gameId)
+    const capture = this.captureForResult(request)
     if (capture.deletedAt || capture.publishedAt)
       fail('Capture is no longer a draft')
     const draft = this.draft(capture)
@@ -525,12 +600,12 @@ export default class WebhookManager {
 
   static async onGetDrafts(
     socket: TypedSocket,
-    request: EventReq<'get_webhook_drafts'>
-  ): Promise<EventRes<'get_webhook_drafts'>> {
+    request: EventReq<'get_result_drafts'>
+  ): Promise<EventRes<'get_result_drafts'>> {
     await AuthManager.checkAuth(socket)
     if (!isRecord(request) || typeof request.session !== 'string')
       fail('Invalid session request')
-    return { success: true, ...this.getDrafts(request.session) }
+    return { success: true, ...this.getAllDrafts(request.session) }
   }
 
   private static assign(
@@ -561,17 +636,17 @@ export default class WebhookManager {
 
   static async onClaim(
     socket: TypedSocket,
-    request: EventReq<'claim_webhook_player'>
-  ): Promise<EventRes<'claim_webhook_player'>> {
+    request: EventReq<'claim_result_draft'>
+  ): Promise<EventRes<'claim_result_draft'>> {
     const actor = await AuthManager.checkAuth(socket)
-    gameRequest(request)
+    resultRequest(request)
     if (
       !Number.isInteger(request.playerIndex) ||
       (request.release !== undefined && typeof request.release !== 'boolean')
     )
       fail('Invalid claim request')
     const session = database.transaction(() => {
-      const { capture, draft } = this.editable(request.gameId)
+      const { capture, draft } = this.editable(request)
       const slot = draft.players.find(
         p => p.playerIndex === request.playerIndex
       )
@@ -595,14 +670,14 @@ export default class WebhookManager {
 
   static async onAssign(
     socket: TypedSocket,
-    request: EventReq<'assign_webhook_player'>
-  ): Promise<EventRes<'assign_webhook_player'>> {
+    request: EventReq<'assign_result_draft'>
+  ): Promise<EventRes<'assign_result_draft'>> {
     await AuthManager.checkAuth(socket, ['admin', 'moderator'])
-    gameRequest(request)
+    resultRequest(request)
     if (request.user !== null && typeof request.user !== 'string')
       fail('Invalid user')
     const session = database.transaction(() => {
-      const { capture, draft } = this.editable(request.gameId)
+      const { capture, draft } = this.editable(request)
       this.assign(capture, draft, request.playerIndex, request.user)
       return capture.session
     })()
@@ -612,10 +687,10 @@ export default class WebhookManager {
 
   static async onEditTimes(
     socket: TypedSocket,
-    request: EventReq<'edit_webhook_times'>
-  ): Promise<EventRes<'edit_webhook_times'>> {
+    request: EventReq<'edit_result_draft_times'>
+  ): Promise<EventRes<'edit_result_draft_times'>> {
     const actor = await AuthManager.checkAuth(socket)
-    gameRequest(request)
+    resultRequest(request)
     if (
       !Number.isInteger(request.playerIndex) ||
       (request.finishDurationMs === undefined &&
@@ -628,7 +703,7 @@ export default class WebhookManager {
     )
       fail('Invalid duration')
     const session = database.transaction(() => {
-      const { capture, draft } = this.editable(request.gameId)
+      const { capture, draft } = this.editable(request)
       const player = draft.players.find(
         p => p.playerIndex === request.playerIndex
       )
@@ -657,7 +732,7 @@ export default class WebhookManager {
         })
         .where(eq(webhookCaptures.id, capture.id))
         .run()
-      const updated = this.draft(this.capture(request.gameId))
+      const updated = this.draft(this.captureForResult(request))
       if (!updated) fail('Capture has no start event')
       this.updateTimes(capture, updated)
       return capture.session
@@ -668,13 +743,13 @@ export default class WebhookManager {
 
   static async onSelectTrack(
     socket: TypedSocket,
-    request: EventReq<'select_webhook_track'>
-  ): Promise<EventRes<'select_webhook_track'>> {
+    request: EventReq<'select_result_draft_track'>
+  ): Promise<EventRes<'select_result_draft_track'>> {
     await AuthManager.checkAuth(socket, ['admin', 'moderator'])
-    gameRequest(request)
+    resultRequest(request)
     if (typeof request.track !== 'string') fail('Invalid track')
     const session = database.transaction(() => {
-      const { capture, draft } = this.editable(request.gameId)
+      const { capture, draft } = this.editable(request)
       const track = db
         .select()
         .from(tracks)
@@ -721,12 +796,12 @@ export default class WebhookManager {
 
   static async onCreateTrack(
     socket: TypedSocket,
-    request: EventReq<'create_webhook_track'>
-  ): Promise<EventRes<'create_webhook_track'>> {
+    request: EventReq<'create_result_draft_track'>
+  ): Promise<EventRes<'create_result_draft_track'>> {
     await AuthManager.checkAuth(socket, ['admin', 'moderator'])
-    gameRequest(request)
+    resultRequest(request)
     const session = database.transaction(() => {
-      const { capture, draft } = this.editable(request.gameId)
+      const { capture, draft } = this.editable(request)
       const map = draft.map
       if (!map) fail('Capture has no map; select a track manually')
       let track = db.select().from(tracks).where(eq(tracks.uid, map.uid)).get()
@@ -755,12 +830,12 @@ export default class WebhookManager {
 
   static async onPublish(
     socket: TypedSocket,
-    request: EventReq<'publish_webhook_draft'>
-  ): Promise<EventRes<'publish_webhook_draft'>> {
+    request: EventReq<'publish_result_draft'>
+  ): Promise<EventRes<'publish_result_draft'>> {
     const actor = await AuthManager.checkAuth(socket)
-    gameRequest(request)
+    resultRequest(request)
     const result = database.transaction(() => {
-      const capture = this.capture(request.gameId)
+      const capture = this.captureForResult(request)
       const draft = this.draft(capture)
       if (!draft || !this.canPublish(actor, draft))
         fail('Insufficient permissions')
@@ -821,12 +896,12 @@ export default class WebhookManager {
 
   static async onDiscard(
     socket: TypedSocket,
-    request: EventReq<'discard_webhook_draft'>
-  ): Promise<EventRes<'discard_webhook_draft'>> {
+    request: EventReq<'discard_result_draft'>
+  ): Promise<EventRes<'discard_result_draft'>> {
     await AuthManager.checkAuth(socket, ['admin', 'moderator'])
-    gameRequest(request)
+    resultRequest(request)
     const session = database.transaction(() => {
-      const capture = this.capture(request.gameId)
+      const capture = this.captureForResult(request)
       if (capture.publishedAt) fail('Published captures cannot be discarded')
       const deletedAt = new Date()
       db.update(webhookCaptures)
@@ -845,45 +920,6 @@ export default class WebhookManager {
     })()
     this.notify(session, socket.id)
     return { success: true }
-  }
-
-  static async onGetEvents(
-    socket: TypedSocket,
-    request: EventReq<'get_webhook_events'>
-  ): Promise<EventRes<'get_webhook_events'>> {
-    const actor = await AuthManager.checkAuth(socket)
-    gameRequest(request)
-    const capture = this.capture(request.gameId)
-    if (actor.role === 'user') {
-      const lap = db
-        .select()
-        .from(timeEntries)
-        .where(eq(timeEntries.webhookCapture, capture.id))
-        .get()
-      const match = db
-        .select()
-        .from(matches)
-        .where(eq(matches.webhookCapture, capture.id))
-        .get()
-      if (
-        lap?.user !== actor.id &&
-        match?.user1 !== actor.id &&
-        match?.user2 !== actor.id
-      )
-        fail('Insufficient permissions')
-    }
-    const events = db
-      .select()
-      .from(webhookEvents)
-      .where(eq(webhookEvents.capture, capture.id))
-      .orderBy(asc(webhookEvents.sequence))
-      .all()
-      .map(row => ({
-        eventId: row.eventId,
-        sequence: row.sequence,
-        rawPayload: row.rawPayload,
-      }))
-    return { success: true, gameId: capture.gameId, events }
   }
 
   static prune(now = new Date()): void {

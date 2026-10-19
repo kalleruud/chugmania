@@ -1,4 +1,3 @@
-import type { Track } from '../models/track'
-export function formatTrackLabel(track: Pick<Track, 'name'>): string {
-  return track.name
+export function formatTrackName(num: number): string {
+  return String(num).padStart(2, '0')
 }

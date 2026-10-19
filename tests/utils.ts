@@ -52,8 +52,7 @@ export function createTracks(count = 1): Track[] {
         { length: count },
         (_, i) =>
           ({
-            name: String(i + 1),
-            game: 'turbo',
+            number: i + 1,
             level: 'white',
             type: 'stadium',
           }) satisfies typeof tracks.$inferInsert

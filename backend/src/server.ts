@@ -72,7 +72,7 @@ async function emitData(socket: TypedSocket) {
   socket.emit('all_time_entries', timeEntries)
   socket.emit('all_matches', matches)
   socket.emit('all_rankings', RatingManager.onGetRatings())
-  socket.emit('all_webhook_drafts', WebhookManager.getAllDrafts())
+  socket.emit('all_result_drafts', WebhookManager.getAllDrafts())
   TournamentSecurity.emit(socket, TournamentManager.getAllTournaments())
 }
 
@@ -153,46 +153,34 @@ async function Connect(s: TypedSocket) {
   setup(s, 'login', AuthManager.onLogin)
   setup(s, 'register', UserManager.onRegister)
 
+  setup(s, 'get_result_drafts', WebhookManager.onGetDrafts.bind(WebhookManager))
+  setup(s, 'claim_result_draft', WebhookManager.onClaim.bind(WebhookManager))
+  setup(s, 'assign_result_draft', WebhookManager.onAssign.bind(WebhookManager))
   setup(
     s,
-    'get_webhook_drafts',
-    WebhookManager.onGetDrafts.bind(WebhookManager)
-  )
-  setup(s, 'claim_webhook_player', WebhookManager.onClaim.bind(WebhookManager))
-  setup(
-    s,
-    'assign_webhook_player',
-    WebhookManager.onAssign.bind(WebhookManager)
-  )
-  setup(
-    s,
-    'select_webhook_track',
+    'select_result_draft_track',
     WebhookManager.onSelectTrack.bind(WebhookManager)
   )
   setup(
     s,
-    'edit_webhook_times',
+    'edit_result_draft_times',
     WebhookManager.onEditTimes.bind(WebhookManager)
   )
+
   setup(
     s,
-    'create_webhook_track',
+    'create_result_draft_track',
     WebhookManager.onCreateTrack.bind(WebhookManager)
   )
   setup(
     s,
-    'publish_webhook_draft',
+    'publish_result_draft',
     WebhookManager.onPublish.bind(WebhookManager)
   )
   setup(
     s,
-    'discard_webhook_draft',
+    'discard_result_draft',
     WebhookManager.onDiscard.bind(WebhookManager)
-  )
-  setup(
-    s,
-    'get_webhook_events',
-    WebhookManager.onGetEvents.bind(WebhookManager)
   )
 
   setup(s, 'get_user_data', AuthManager.refreshToken)

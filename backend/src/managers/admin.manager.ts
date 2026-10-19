@@ -21,8 +21,6 @@ import {
   tournamentStages,
   tracks,
   users,
-  webhookCaptures,
-  webhookEvents,
 } from '../../database/schema'
 import { broadcast, type TypedSocket } from '../server'
 import CsvParser from '../utils/csv-parser'
@@ -38,8 +36,6 @@ import WebhookManager from './webhook.manager'
 
 export default class AdminManager {
   private static readonly EXCLUDED_COL_EXPORT = {
-    webhookCaptures: new Set(),
-    webhookEvents: new Set(),
     tournaments: new Set(),
     tournamentStages: new Set(),
     tournamentGroups: new Set(),
@@ -47,16 +43,14 @@ export default class AdminManager {
     tournamentMatches: new Set(),
     tournamentMatchSlots: new Set(),
     users: new Set(['passwordHash']),
-    tracks: new Set(),
+    tracks: new Set(['uid']),
     sessions: new Set(),
-    timeEntries: new Set(),
+    timeEntries: new Set(['webhookCapture']),
     sessionSignups: new Set(),
-    matches: new Set(),
+    matches: new Set(['webhookCapture']),
   } satisfies Record<ExportCsvRequest['table'], Set<string>>
 
   private static readonly TABLE_MAP = {
-    webhookCaptures,
-    webhookEvents,
     tournaments,
     tournamentStages,
     tournamentGroups,
@@ -140,6 +134,10 @@ export default class AdminManager {
       request.table
     )
     const data = await CsvParser.toObjects(request.content)
+    if (data.some(row => 'webhookCapture' in row || 'rawPayload' in row))
+      throw new Error(
+        'Webhook storage fields cannot be imported through the client API'
+      )
     const results = await AdminManager.importRows(request.table, data)
 
     console.info(

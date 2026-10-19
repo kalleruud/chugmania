@@ -1,5 +1,4 @@
 import Combobox from '@/components/combobox'
-import DurationInput from '@/components/timeentries/DurationInput'
 import {
   getId,
   sessionToLookupItem,
@@ -21,7 +20,15 @@ import {
   formatTime,
   inputListToMs,
 } from '@common/utils/time'
-import { useMemo, useState, type ComponentProps, type SubmitEvent } from 'react'
+import {
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentProps,
+  type KeyboardEvent,
+  type SubmitEvent,
+} from 'react'
 import { useLocation } from 'react-router'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
@@ -81,6 +88,8 @@ export default function TimeEntryInput({
       null)
     : (sessions?.find(u => u.id === inputTimeEntry.session) ?? null)
 
+  const inputs = useRef<HTMLInputElement[]>([])
+
   const [digits, setDigits] = useState<string[]>(
     durationToInputList(inputTimeEntry.duration)
   )
@@ -126,12 +135,51 @@ export default function TimeEntryInput({
     effectiveStatus,
   ])
 
+  const DIGIT = /^\d$/
+
+  const setDigitAt = useCallback((i: number, val: string) => {
+    setDigits(prev => {
+      const next = prev.slice()
+      next[i] = val
+      return next
+    })
+  }, [])
+
   if (isLoadingData) {
     return (
       <div className='flex h-32 w-full items-center-safe justify-center-safe'>
         <Spinner className='size-6' />
       </div>
     )
+  }
+
+  function setFocus(i: number) {
+    inputs.current[i]?.focus()
+  }
+
+  function handleKeyDown(index: number, e: KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Tab') return
+
+    e.preventDefault()
+    switch (e.key) {
+      case 'ArrowLeft':
+        setFocus(index - 1)
+        break
+      case ' ':
+      case 'ArrowRight':
+        setFocus(index + 1)
+        break
+      case 'Backspace':
+      case 'Delete':
+        setDigitAt(index, '')
+        setFocus(index - 1)
+        break
+      default:
+        if (DIGIT.test(e.key)) {
+          setDigitAt(index, e.key)
+          setFocus(index + 1)
+        }
+    }
   }
 
   function handleUpdate(e: SubmitEvent<HTMLFormElement>) {
@@ -183,17 +231,41 @@ export default function TimeEntryInput({
     )
   }
 
+  // Stable keys for each digit position to avoid using array index as key
+  const DIGIT_KEYS = ['m10', 'm1', 's10', 's1', 'h1', 'h10'] as const
+
   return (
     <form
       className={twMerge('flex flex-col gap-6', className)}
       onSubmit={onSubmit ?? (isCreating ? handleCreate : handleUpdate)}
       {...rest}>
-      <DurationInput
-        label='Rundetid'
-        digits={digits}
-        onChange={setDigits}
-        disabled={disabled}
-      />
+      <div className='flex items-center justify-center gap-1'>
+        {digits.map((d, i) => (
+          <span key={DIGIT_KEYS[i]} className='flex items-center gap-1'>
+            <input
+              ref={el => {
+                if (el) inputs.current[i] = el
+              }}
+              disabled={disabled}
+              aria-label={`Siffer ${i + 1}`}
+              value={d}
+              onChange={e => setDigitAt(i, e.target.value)}
+              placeholder='0'
+              onKeyDown={e => handleKeyDown(i, e)}
+              onFocus={e => e.currentTarget.select()}
+              onClick={e => e.currentTarget.select()}
+              className={
+                'font-f1-bold h-16 w-12 rounded-md border border-input bg-background text-center text-2xl tabular-nums caret-transparent transition selection:bg-transparent invalid:border-red-500/30 invalid:bg-red-500/30 focus:border-primary focus:ring-ring dark:bg-input/30'
+              }
+              inputMode='numeric'
+              pattern={i === 0 || i === 2 ? '[0-5]' : '[0-9]'}
+              maxLength={1}
+            />
+            {i === 1 && <span className='font-f1 text-2xl'>:</span>}
+            {i === 3 && <span className='font-f1 text-2xl'>.</span>}
+          </span>
+        ))}
+      </div>
 
       <div className='flex flex-col gap-2'>
         <Combobox

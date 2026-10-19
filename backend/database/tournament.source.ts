@@ -241,6 +241,7 @@ export default class TournamentSource {
       )
       .all()
       .filter(isPublishedTimeEntry)
+      .map(row => ({ ...row, webhookCapture: null }))
   }
 
   private static loadFixtures(tournament: string): TournamentFixture[] {
@@ -285,7 +286,7 @@ export default class TournamentSource {
         order: fixture.order,
         slot1: TournamentSource.readSlot(slots.get(`${fixture.id}:1`)),
         slot2: TournamentSource.readSlot(slots.get(`${fixture.id}:2`)),
-        match,
+        match: { ...match, webhookCapture: null },
       }))
   }
 

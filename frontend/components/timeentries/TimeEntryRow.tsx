@@ -19,7 +19,6 @@ import {
 } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type { BaseRowProps } from '../row/RowProps'
-import WebhookAuditButton from '../webhook/WebhookAuditButton'
 
 type TimeEntryRowProps = BaseRowProps<TimeEntry> & {
   required?: boolean
@@ -122,7 +121,9 @@ function TimePart({
       </span>
     )
   const isDNF = !duration
-  const label = duration ? formatTime(duration) : loc.no.timeEntry.dnf
+  const label = duration
+    ? formatTime(duration).replace(/^0/, '')
+    : loc.no.timeEntry.dnf
   return (
     <div
       className={twMerge(
@@ -145,7 +146,9 @@ function GapPart({
   const duration = gapType === 'leader' ? gap.leader : gap.previous
 
   const label =
-    gap.position === 1 ? gapType.toUpperCase() : '+' + formatTime(duration ?? 0)
+    gap.position === 1
+      ? gapType.toUpperCase()
+      : '+' + formatTime(duration ?? 0, true)
 
   return (
     <div
@@ -236,10 +239,6 @@ export default function TimeEntryRow({
           onChangeGapType={onChangeGapType}
         />
       )}
-      <WebhookAuditButton
-        gameId={lapTime.webhookCapture}
-        participants={[lapTime.user]}
-      />
       {show.time && (
         <TimePart duration={lapTime.duration} status={lapTime.status} />
       )}

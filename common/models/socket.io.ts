@@ -12,6 +12,14 @@ import type {
   Match,
 } from './match'
 import type {
+  ResultDraftAssignRequest,
+  ResultDraftClaimRequest,
+  ResultDraftRequest,
+  ResultDrafts,
+  ResultDraftTimeRequest,
+  ResultDraftTrackRequest,
+} from './resultDraft'
+import type {
   CreateSessionRequest,
   DeleteSessionRequest,
   EditSessionRequest,
@@ -41,15 +49,6 @@ import type {
   LoginResponse,
   UserInfo,
 } from './user'
-import type {
-  WebhookAssignRequest,
-  WebhookClaimRequest,
-  WebhookDraft,
-  WebhookDrafts,
-  WebhookGameRequest,
-  WebhookTimeRequest,
-  WebhookTrackRequest,
-} from './webhook'
 
 export type SuccessResponse = {
   success: true
@@ -63,8 +62,7 @@ export type ErrorResponse = {
 import type { Ranking } from './ranking'
 
 export interface ServerToClientEvents {
-  all_webhook_drafts: (drafts: WebhookDraft[], actor?: string | null) => void
-  webhook_drafts_changed: (data: WebhookDrafts, actor?: string | null) => void
+  all_result_drafts: (drafts: ResultDrafts, actor?: string | null) => void
   all_tournaments: (
     tournaments: TournamentDetails[],
     actor?: string | null
@@ -79,50 +77,39 @@ export interface ServerToClientEvents {
 }
 
 export interface ClientToServerEvents {
-  get_webhook_drafts: (
+  get_result_drafts: (
     request: { session: string },
     callback: (
-      response: (SuccessResponse & WebhookDrafts) | ErrorResponse
+      response: (SuccessResponse & ResultDrafts) | ErrorResponse
     ) => void
   ) => void
-  claim_webhook_player: (
-    request: WebhookClaimRequest,
+  claim_result_draft: (
+    request: ResultDraftClaimRequest,
     callback: (response: SuccessResponse | ErrorResponse) => void
   ) => void
-  assign_webhook_player: (
-    request: WebhookAssignRequest,
+  assign_result_draft: (
+    request: ResultDraftAssignRequest,
     callback: (response: SuccessResponse | ErrorResponse) => void
   ) => void
-  edit_webhook_times: (
-    request: WebhookTimeRequest,
+  edit_result_draft_times: (
+    request: ResultDraftTimeRequest,
     callback: (response: SuccessResponse | ErrorResponse) => void
   ) => void
-  select_webhook_track: (
-    request: WebhookTrackRequest,
+  select_result_draft_track: (
+    request: ResultDraftTrackRequest,
     callback: (response: SuccessResponse | ErrorResponse) => void
   ) => void
-  create_webhook_track: (
-    request: WebhookGameRequest,
+  create_result_draft_track: (
+    request: ResultDraftRequest,
     callback: (response: SuccessResponse | ErrorResponse) => void
   ) => void
-  publish_webhook_draft: (
-    request: WebhookGameRequest,
+  publish_result_draft: (
+    request: ResultDraftRequest,
     callback: (response: SuccessResponse | ErrorResponse) => void
   ) => void
-  discard_webhook_draft: (
-    request: WebhookGameRequest,
+  discard_result_draft: (
+    request: ResultDraftRequest,
     callback: (response: SuccessResponse | ErrorResponse) => void
-  ) => void
-  get_webhook_events: (
-    request: WebhookGameRequest,
-    callback: (
-      response:
-        | (SuccessResponse & {
-            gameId: string
-            events: { eventId: string; sequence: number; rawPayload: string }[]
-          })
-        | ErrorResponse
-    ) => void
   ) => void
 
   create_tournament: (

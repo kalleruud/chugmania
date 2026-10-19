@@ -55,7 +55,11 @@ export default class MatchManager {
       )
       .orderBy(desc(sql`COALESCE(${sessions.date}, ${matches.createdAt})`))
 
-    return TournamentManager.enrich(TournamentSource.visibleMatches(matchRows))
+    return TournamentManager.enrich(
+      TournamentSource.visibleMatches(
+        matchRows.map(row => ({ ...row, webhookCapture: null }))
+      )
+    )
   }
 
   // Returns matches sorted by creation date, most recent first.
@@ -72,6 +76,7 @@ export default class MatchManager {
       )
       .orderBy(desc(matches.createdAt))
       .all()
+      .map(row => ({ ...row, webhookCapture: null }))
   }
 
   static async onCreateMatch(

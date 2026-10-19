@@ -25,7 +25,6 @@ import {
 import { Empty } from '@/components/ui/empty'
 import { Spinner } from '@/components/ui/spinner'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import WebhookDraftPanel from '@/components/webhook/WebhookDraftPanel'
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
@@ -195,7 +194,6 @@ export default function SessionPage() {
         <TabsContent
           className='flex flex-col gap-4'
           value={loc.no.session.session}>
-          <WebhookDraftPanel key={session.id} session={session.id} />
           {sessionTracks.length === 0 && (
             <Empty className='border border-input'>
               <div className='flex flex-wrap justify-center gap-2'>

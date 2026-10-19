@@ -1,4 +1,3 @@
-import { isPublishedTimeEntry } from '@common/models/timeEntry'
 import type {
   PreviewVisibility,
   TournamentDetails,
@@ -490,7 +489,7 @@ describe('Tournament preview security', () => {
         )
         await cup.visibility('stats_only')
         const laps = await TimeEntryManager.getAllTimeEntries()
-        for (const lap of retained.filter(isPublishedTimeEntry))
+        for (const lap of retained)
           expect(laps.find(row => row.id === lap.id)).toEqual(lap)
         expect(
           TimeEntryManager.getAllLatestAfterSession(cup.session.id).map(

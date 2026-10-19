@@ -1,8 +1,8 @@
-import { isWebhookEvent } from '@common/models/webhook'
 import { isRecord } from '@common/utils/utils'
 import express, { type ErrorRequestHandler } from 'express'
 import { timingSafeEqual } from 'node:crypto'
 import WebhookManager, { WebhookError } from './managers/webhook.manager'
+import { isWebhookEvent } from './models/webhook'
 
 export function createWebhookRouter() {
   const router = express.Router()

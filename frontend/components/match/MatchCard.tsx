@@ -10,7 +10,6 @@ import { twMerge } from 'tailwind-merge'
 import { NameCellPart } from '../timeentries/TimeEntryRow'
 import { TrackRow } from '../track/TrackRow'
 import { Badge } from '../ui/badge'
-import WebhookAuditButton from '../webhook/WebhookAuditButton'
 import type { MatchProps } from './MatchProps'
 
 export default function MatchCard({
@@ -114,10 +113,6 @@ export default function MatchCard({
           )}
         </dl>
       </div>
-      <WebhookAuditButton
-        gameId={match.webhookCapture}
-        participants={[match.user1, match.user2]}
-      />
       {children}
       {match.tournament?.awarded && <Badge>{loc.no.tournament.awarded}</Badge>}
       {isInactiveFinalReset(match) && match.status === 'planned' && (

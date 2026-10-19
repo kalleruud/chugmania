@@ -4,7 +4,6 @@ import { migrate } from 'drizzle-orm/better-sqlite3/migrator'
 import { mkdirSync } from 'node:fs'
 import path, { dirname } from 'node:path'
 import * as schema from '../database/schema'
-import { migrateDatabase } from './migrations'
 
 const db_url = process.env.DATABASE_PATH ?? 'data/db.sqlite'
 mkdirSync(dirname(db_url), { recursive: true })
@@ -13,11 +12,14 @@ database.pragma('journal_mode = WAL')
 
 const db = drizzle(database, { schema })
 
-migrateDatabase(database, () =>
+database.pragma('foreign_keys = OFF')
+try {
   migrate(db, {
     migrationsFolder: path.join(process.cwd(), 'drizzle'),
   })
-)
+} finally {
+  database.pragma('foreign_keys = ON')
+}
 
 export { database }
 export default db

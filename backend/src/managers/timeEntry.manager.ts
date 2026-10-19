@@ -109,6 +109,7 @@ export default class TimeEntryManager {
       )
       .all()
       .filter(isPublishedTimeEntry)
+      .map(row => ({ ...row, webhookCapture: null }))
   }
 
   static async onPostTimeEntry(
@@ -334,7 +335,9 @@ export default class TimeEntryManager {
       )
 
     return TournamentSource.visibleTimeEntries(
-      data.filter(isPublishedTimeEntry)
+      data
+        .filter(isPublishedTimeEntry)
+        .map(row => ({ ...row, webhookCapture: null }))
     )
   }
 }

@@ -1,5 +1,5 @@
-import { isRecord } from '../utils/utils'
-import type { Game } from './track'
+import type { Game } from '@common/models/track'
+import { isRecord } from '@common/utils/utils'
 
 export type WebhookEventType =
   | 'start'
@@ -83,23 +83,11 @@ export type WebhookDraft = {
   endReason: string | null
   blockers: string[]
 }
-export type WebhookDrafts = { session: string; drafts: WebhookDraft[] }
-export type WebhookGameRequest = { gameId: string }
-export type WebhookClaimRequest = WebhookGameRequest & {
-  playerIndex: number
-  release?: boolean
-}
-export type WebhookAssignRequest = WebhookGameRequest & {
-  playerIndex: number
-  user: string | null
-}
-export type WebhookTrackRequest = WebhookGameRequest & { track: string }
 export type WebhookTimeCorrection = {
   playerIndex: number
   finishDurationMs?: number | null
   chugDurationMs?: number | null
 }
-export type WebhookTimeRequest = WebhookGameRequest & WebhookTimeCorrection
 
 const uuid =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
