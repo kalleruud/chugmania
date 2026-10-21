@@ -12,14 +12,9 @@ database.pragma('journal_mode = WAL')
 
 const db = drizzle(database, { schema })
 
-database.pragma('foreign_keys = OFF')
-try {
-  migrate(db, {
-    migrationsFolder: path.join(process.cwd(), 'drizzle'),
-  })
-} finally {
-  database.pragma('foreign_keys = ON')
-}
+migrate(db, {
+  migrationsFolder: path.join(process.cwd(), 'drizzle'),
+})
 
 export { database }
 export default db

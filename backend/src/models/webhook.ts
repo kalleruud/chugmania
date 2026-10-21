@@ -1,76 +1,12 @@
-import type { Game } from '@common/models/track'
 import { isRecord } from '@common/utils/utils'
 
-export type WebhookEventType =
-  | 'start'
-  | 'first_throttle'
-  | 'checkpoint'
-  | 'lap'
-  | 'respawn'
-  | 'finish'
-  | 'end'
-export type WebhookPlayer = {
-  playerIndex: number
-  name?: string
-  login?: string
-  localId?: string
-  accountId?: string
-}
-export type WebhookMap = {
-  uid: string
-  name: string
-  author: string
-  environment: string
-  type: string
-  medalTimesMs: { author: number; gold: number; silver: number; bronze: number }
-  isLaps: boolean
-  totalLaps?: number
-  checkpointsPerLap: number
-}
-export type WebhookSource = {
-  pluginName: string
-  pluginVersion: string
-  game: Game
-}
-type BaseEvent = {
-  schemaVersion: string
-  eventId: string
-  sequence: number
-  occurredAt: string
-  durationMs: number
-  game: { gameId: string; totalPlayers: number }
-  source: WebhookSource
-}
-export type WebhookEvent = BaseEvent &
-  (
-    | {
-        type: 'start'
-        players: WebhookPlayer[]
-        map: WebhookMap | null
-        mode: { name: string; type?: string } | null
-      }
-    | { type: 'first_throttle'; player: WebhookPlayer }
-    | {
-        type: 'checkpoint' | 'lap' | 'respawn' | 'finish'
-        player: WebhookPlayer
-        checkpoint: {
-          checkpointIndex: number
-          checkpointLapIndex: number
-          lapNumber: number
-          theoreticalDurationMs?: number
-          lostMs?: number
-        }
-      }
-    | {
-        type: 'end'
-        endReason: 'completed' | 'restarted' | 'aborted' | 'unknown'
-      }
-  )
+import type { EndEvent, Event, Map, Player } from './webhook.generated'
+
 export type WebhookDraft = {
   gameId: string
   session: string
   kind: 'lap' | 'match'
-  map: WebhookMap | null
+  map: Map | null
   track: string | null
   players: {
     playerIndex: number
@@ -80,7 +16,7 @@ export type WebhookDraft = {
     finishDurationMs: number | null
     chugDurationMs: number | null
   }[]
-  endReason: string | null
+  endReason: EndEvent['endReason'] | null
   blockers: string[]
 }
 export type WebhookTimeCorrection = {
@@ -134,10 +70,10 @@ function integer(value: unknown, min = 0): value is number {
     typeof value === 'number' && Number.isSafeInteger(value) && value >= min
   )
 }
-function player(value: unknown): value is WebhookPlayer {
+function player(value: unknown): value is Player {
   return (
     isRecord(value) &&
-    integer(value.playerIndex) &&
+    integer(value.playerIndex) && 
     ['name', 'login', 'localId', 'accountId'].every(
       key => value[key] === undefined || nonempty(value[key])
     ) &&
@@ -145,7 +81,7 @@ function player(value: unknown): value is WebhookPlayer {
       (typeof value.localId === 'string' && /^\d+$/.test(value.localId)))
   )
 }
-function map(value: unknown): value is WebhookMap {
+function map(value: unknown): value is Map {
   if (!isRecord(value) || !isRecord(value.medalTimesMs)) return false
   const medals = value.medalTimesMs
   return (
@@ -159,7 +95,7 @@ function map(value: unknown): value is WebhookMap {
       (value.isLaps && integer(value.totalLaps, 1)))
   )
 }
-export function isWebhookEvent(value: unknown): value is WebhookEvent {
+export function isWebhookEvent(value: unknown): value is Event {
   if (!isRecord(value) || !isRecord(value.game) || !isRecord(value.source))
     return false
   if (

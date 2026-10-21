@@ -17,12 +17,8 @@ import {
   webhookCaptures,
   webhookEvents,
 } from '../../database/schema'
-import {
-  isWebhookEvent,
-  type WebhookDraft,
-  type WebhookEvent,
-  type WebhookMap,
-} from '../models/webhook'
+import { isWebhookEvent, type WebhookDraft } from '../models/webhook'
+import type { Event, Map, StartEvent } from '../models/webhook.generated'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import MatchManager from './match.manager'
@@ -32,7 +28,6 @@ import TimeEntryManager from './timeEntry.manager'
 import TournamentManager from './tournament/tournament.manager'
 
 type Capture = typeof webhookCaptures.$inferSelect
-type Start = Extract<WebhookEvent, { type: 'start' }>
 
 export class WebhookError extends Error {
   status: number
@@ -77,7 +72,7 @@ function activeUser(id: string | null): boolean {
   )
 }
 
-function mapMetadata(map: WebhookMap) {
+function mapMetadata(map: Map) {
   return {
     uid: map.uid,
     name: map.name,
@@ -116,7 +111,7 @@ export default class WebhookManager {
       .get()
   }
 
-  private static events(capture: string): WebhookEvent[] {
+  private static events(capture: string): Event[] {
     return db
       .select()
       .from(webhookEvents)
@@ -157,7 +152,9 @@ export default class WebhookManager {
 
   private static draft(capture: Capture): WebhookDraft | null {
     const events = this.events(capture.id)
-    const start = events.find((event): event is Start => event.type === 'start')
+    const start = events.find(
+      (event): event is StartEvent => event.type === 'start'
+    )
     if (!start) return null
     const end = events.find(event => event.type === 'end')
     const lap = db
@@ -173,7 +170,8 @@ export default class WebhookManager {
     const players = start.players.map(p => {
       const playerEvents = events.filter(
         event =>
-          'player' in event &&
+          event.type !== 'start' &&
+          event.type !== 'end' &&
           event.player.playerIndex === p.playerIndex &&
           (!end || event.sequence < end.sequence)
       )
@@ -374,11 +372,7 @@ export default class WebhookManager {
     this.publish(actor)
   }
 
-  static receive(
-    event: WebhookEvent,
-    rawPayload: string,
-    now = new Date()
-  ): void {
+  static receive(event: Event, rawPayload: string, now = new Date()): void {
     const existingEvent = db
       .select()
       .from(webhookEvents)
@@ -454,10 +448,10 @@ export default class WebhookManager {
           'Sequence already belongs to another event'
         )
       const all = [...this.events(capture.id), event]
-      const start = all.find((e): e is Start => e.type === 'start')
+      const start = all.find((e): e is StartEvent => e.type === 'start')
       if (start) {
         for (const e of all) {
-          if (!('player' in e)) continue
+          if (e.type === 'start' || e.type === 'end') continue
           const expected = start.players.at(e.player.playerIndex)
           if (
             !expected ||
