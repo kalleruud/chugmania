@@ -1,5 +1,4 @@
 import { type Track } from '@common/models/track'
-import { formatTrackName } from '@common/utils/track'
 import { type ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
 import TrackBadge from './TrackBadge'
@@ -18,7 +17,7 @@ export default function TrackCard({
     <div key={track.id} className={twMerge('flex p-4', className)} {...props}>
       <div className='flex gap-2 font-kh-interface text-6xl font-black tracking-tighter tabular-nums'>
         <p className='text-primary'>#</p>
-        {formatTrackName(track.number)}
+        {track.name}
       </div>
 
       <div className='flex flex-1 items-end justify-end gap-1'>

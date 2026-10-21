@@ -66,6 +66,12 @@ export default class TournamentSecurity {
   private static hiddenTrack(match: Match): Match {
     return {
       id: match.id,
+      publicationState: 'published',
+      webhookCapture: null,
+      user1DurationMs: null,
+      user2DurationMs: null,
+      user1ChugDurationMs: null,
+      user2ChugDurationMs: null,
       createdAt: match.createdAt,
       updatedAt: match.updatedAt,
       deletedAt: match.deletedAt,

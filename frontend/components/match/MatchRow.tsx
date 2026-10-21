@@ -3,7 +3,6 @@ import { useMatch } from '@/hooks/useMatch'
 import loc from '@common/locale/locales'
 import type { UserInfo } from '@common/models/user'
 import { isInactiveFinalReset, stageName } from '@common/utils/tournament'
-import { formatTrackName } from '@common/utils/track'
 import { CalendarIcon } from '@heroicons/react/24/solid'
 import type { ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -95,7 +94,7 @@ export default function MatchRow({
                   isCancelled && 'line-through'
                 )}>
                 <span className='mr-1 text-primary'>#</span>
-                {formatTrackName(track.number)}
+                {track.name}
               </span>
             </div>
           )}

@@ -8,6 +8,9 @@ export default class CsvParser {
     'deletedAt',
     'date',
     'frozenAt',
+    'endedAt',
+    'publishedAt',
+    'occurredAt',
   ])
 
   static async toObjects(csv: string) {
@@ -133,11 +136,16 @@ export default class CsvParser {
     const val = value?.trim()
     if (!val) return null
 
-    if (key === 'tieBreaker' && (val === 'true' || val === 'false')) {
+    if (key === 'rawPayload') return { key, value: value ?? '' }
+
+    if (
+      (key === 'tieBreaker' || key === 'isLaps') &&
+      (val === 'true' || val === 'false')
+    ) {
       return { key, value: val === 'true' }
     }
 
-    if (key === 'tracks') {
+    if (key === 'tracks' || key === 'timeCorrections') {
       const parsed: unknown = JSON.parse(val)
       return { key, value: parsed }
     }

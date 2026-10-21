@@ -42,7 +42,7 @@ Chugmania is a full-stack Trackmania Turbo companion for logging lap times, shar
 
 ### Testing
 
-Formal test suites are still pending. Author backend specs as `*.spec.ts` or frontend tests as `*.test.tsx`, then execute single files manually with `tsx path/to/spec.ts`.
+Run `npm test` for Bun integration tests against a migrated in-memory SQLite database. The original tests are retained unchanged and still expect the legacy numbered-track model; they need updating before they can pass against the current name/game track schema.
 
 ## Project Layout
 
@@ -59,26 +59,18 @@ Key backend flows live under `backend/src/managers/`, while shared DTOs reside i
 
 Admins can visit `/admin` to upload and download CSV files for all database tables. Supported tables: `users`, `tracks`, `sessions`, `timeEntries`, and `sessionSignups`. Each upload reports created and updated row counts to confirm the data outcome. Ensure the column order matches the exported format. When adding new database tables, update `AdminManager` in `backend/src/managers/admin.manager.ts` to include them in the `TABLE_MAP` and `EXCLUDED_COL_EXPORT` configuration.
 
-## Sessions Module
+## Trackmania webhook drafts
 
-The `/sessions` route shows upcoming and past events. Authorized users may create, edit, or delete sessions with optional locations and descriptions. Attendees can RSVP; ICS feeds are available via `/api/sessions/calendar.ics`, and individual invites can be downloaded per session. Session deletion is soft-delete (retained for audit), cascading to all signups, and only available to admin/moderator roles.
+Configure the plugin endpoint as `https://<your-host>/api/webhook` and set its authentication token to the server's `TRACKMANIA_WEBHOOK_TOKEN`. An empty server token disables ingestion. Both Trackmania Turbo and Next use the plugin's schema 1.x contract; all seven event types and their matching event headers are required. Bodies are limited to 256 KB.
 
-## Configuration
+Incoming captures are linked to the closest session that has already started today or yesterday in Europe/Oslo. Cancelled and deleted sessions do not qualify. The chosen session stays fixed; new events stop being accepted when it no longer qualifies. Identical retries are acknowledged even if the session has since expired.
 
-- `SECRET` (required): JWT signing key; use a strong random value.
-- `PORT` (optional): Server port. Defaults to `6996`; Codex worktrees generate a random `69xx` port.
-- `ORIGIN` (required in production): Allowed frontend origin for CORS.
-- `TOKEN_EXPIRY_H` (optional): Override default 1-hour auth token expiry.
-- `VITE_ALLOW_SIGNUPS` (optional): Set to `true` to show the public `Registrer` button on the login page. Keep it `false` unless you intentionally want open registration.
-- `.env.example` also exposes `SECRET` for local defaults—never commit secrets.
+The receiver stores captures and original events privately on the backend. The client API exposes only derived lap-time and match drafts through authenticated `get_result_drafts` (`{ session }`) and `all_result_drafts`. Both use the same `{ timeEntries, matches }` projection. These contain result fields, database IDs, assignments, track/session references, and derived finish/chug durations. They exclude capture/game IDs, raw events, captured player identities, plugin metadata, map snapshots, and webhook sequence details. There is no webhook UI or raw-event retrieval API.
 
-## Docker
+Draft actions use `{ kind: 'lap' | 'match', id }` with a result row ID: `claim_result_draft`, `assign_result_draft`, `edit_result_draft_times`, `select_result_draft_track`, `create_result_draft_track`, `publish_result_draft`, and `discard_result_draft`. Participant claims and corrections remain restricted to their own slot; moderator assignments, track selection, and discard require an admin or moderator. Publication still validates a complete capture, assigned active users, track, and positive finish result. Missing chug durations stay null; zero is valid. One finisher beats a DNF, ties stay unpublished, and matches publish as standalone session results. Drafts remain excluded from published results, ratings, statistics, signups, and tournament progression.
 
-- Build: `docker build -t chugmania .`
-- Run: `docker run -p 6996:6996 -v ./data:/app/data --env-file .env chugmania`
-- The entrypoint executes `npm start`, so migrations apply automatically before serving.
-- Mount `/app/data` as a volume to persist the SQLite database across restarts.
+Tracks retain their required name, string type, Next/Turbo game, and map metadata. Legacy numbers migrate to names padded to three digits. The restored UI uses the current name/type fields without webhook-specific screens or metadata cards. Manual draft track selection and creation copy map metadata into the normal track model for future matching, without exposing the original event.
 
-## Contributing
+`WEBHOOK_DRAFT_RETENTION_DAYS` defaults to 7 and must be positive. Cleanup runs on startup and hourly, removing unpublished captures, events, and draft rows based on first receipt, including discarded and partial captures. Published captures and events remain available permanently, including after their result is soft-deleted. Capture links remain private to backend storage and are masked on ordinary result responses.
 
-Follow the coding conventions from `AGENTS.md`: Prettier formatting (2 spaces, single quotes, no semicolons), organize imports, explicit TypeScript types, and the shared `Result<T>` error-handling pattern. Reuse existing components and respect the Formula 1-inspired Tailwind design system to keep UI consistent.
+CSV requests cannot import or export webhook captures or events, and result exports omit capture links. Back up and restore the SQLite database directly to preserve private webhook history.

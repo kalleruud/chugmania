@@ -1,6 +1,5 @@
 import { Item, ItemActions, ItemContent, ItemTitle } from '@/components/ui/item'
 import type { Track } from '@common/models/track'
-import { formatTrackName } from '@common/utils/track'
 import { ChevronRight } from 'lucide-react'
 import { Link } from 'react-router'
 import { twMerge } from 'tailwind-merge'
@@ -25,7 +24,7 @@ export function TrackRow({
             #
           </p>
           {track ? (
-            formatTrackName(track.number)
+            track.name
           ) : (
             <span className='text-muted-foreground/50'>000</span>
           )}
