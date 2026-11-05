@@ -8,8 +8,14 @@ function isTimeEntryStatus(value: unknown): boolean {
   return value === 'planned' || value === 'completed' || value === 'cancelled'
 }
 
-export type TimeEntry = typeof timeEntries.$inferSelect
-export type CreateTimeEntry = typeof timeEntries.$inferInsert
+export type TimeEntry = typeof timeEntries.$inferSelect & {
+  user: string
+  track: string
+}
+export type CreateTimeEntry = Omit<
+  typeof timeEntries.$inferInsert,
+  'publicationState' | 'webhookCapture' | 'chugDurationMs' | 'user' | 'track'
+> & { user: string; track: string }
 
 export type CreateTimeEntryRequest = {
   type: 'CreateTimeEntryRequest'
@@ -18,7 +24,13 @@ export type CreateTimeEntryRequest = {
 export function isCreateTimeEntryRequest(
   data: unknown
 ): data is CreateTimeEntryRequest {
-  if (!isRecord(data)) return false
+  if (
+    !isRecord(data) ||
+    ['publicationState', 'webhookCapture', 'chugDurationMs'].some(
+      key => key in data
+    )
+  )
+    return false
   return (
     data.type === 'CreateTimeEntryRequest' &&
     typeof data.user === 'string' &&
@@ -38,7 +50,13 @@ export type EditTimeEntryRequest = Partial<
 export function isEditTimeEntryRequest(
   data: unknown
 ): data is EditTimeEntryRequest {
-  if (!isRecord(data)) return false
+  if (
+    !isRecord(data) ||
+    ['publicationState', 'webhookCapture', 'chugDurationMs'].some(
+      key => key in data
+    )
+  )
+    return false
   return (
     data.type === 'EditTimeEntryRequest' &&
     typeof data.id === 'string' &&
@@ -81,3 +99,13 @@ export type AbsoluteTimeEntriesResponse = SuccessResponse & {
 }
 
 export type GapType = 'leader' | 'interval'
+
+export function isPublishedTimeEntry(
+  row: typeof timeEntries.$inferSelect
+): row is TimeEntry {
+  return (
+    row.publicationState === 'published' &&
+    row.user !== null &&
+    row.track !== null
+  )
+}

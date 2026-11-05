@@ -12,6 +12,14 @@ import type {
   Match,
 } from './match'
 import type {
+  ResultDraftAssignRequest,
+  ResultDraftClaimRequest,
+  ResultDraftRequest,
+  ResultDrafts,
+  ResultDraftTimeRequest,
+  ResultDraftTrackRequest,
+} from './resultDraft'
+import type {
   CreateSessionRequest,
   DeleteSessionRequest,
   EditSessionRequest,
@@ -54,6 +62,7 @@ export type ErrorResponse = {
 import type { Ranking } from './ranking'
 
 export interface ServerToClientEvents {
+  all_result_drafts: (drafts: ResultDrafts, actor?: string | null) => void
   all_tournaments: (
     tournaments: TournamentDetails[],
     actor?: string | null
@@ -68,6 +77,41 @@ export interface ServerToClientEvents {
 }
 
 export interface ClientToServerEvents {
+  get_result_drafts: (
+    request: { session: string },
+    callback: (
+      response: (SuccessResponse & ResultDrafts) | ErrorResponse
+    ) => void
+  ) => void
+  claim_result_draft: (
+    request: ResultDraftClaimRequest,
+    callback: (response: SuccessResponse | ErrorResponse) => void
+  ) => void
+  assign_result_draft: (
+    request: ResultDraftAssignRequest,
+    callback: (response: SuccessResponse | ErrorResponse) => void
+  ) => void
+  edit_result_draft_times: (
+    request: ResultDraftTimeRequest,
+    callback: (response: SuccessResponse | ErrorResponse) => void
+  ) => void
+  select_result_draft_track: (
+    request: ResultDraftTrackRequest,
+    callback: (response: SuccessResponse | ErrorResponse) => void
+  ) => void
+  create_result_draft_track: (
+    request: ResultDraftRequest,
+    callback: (response: SuccessResponse | ErrorResponse) => void
+  ) => void
+  publish_result_draft: (
+    request: ResultDraftRequest,
+    callback: (response: SuccessResponse | ErrorResponse) => void
+  ) => void
+  discard_result_draft: (
+    request: ResultDraftRequest,
+    callback: (response: SuccessResponse | ErrorResponse) => void
+  ) => void
+
   create_tournament: (
     request: TournamentRequest,
     callback: (

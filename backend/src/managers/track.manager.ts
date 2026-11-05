@@ -1,7 +1,7 @@
 import loc from '@common/locale/locales'
 import type { Track } from '@common/models/track'
 import { tryCatchAsync } from '@common/utils/try-catch'
-import { asc, eq } from 'drizzle-orm'
+import { and, asc, eq } from 'drizzle-orm'
 import db from '../../database/database'
 import { timeEntries, tracks } from '../../database/schema'
 
@@ -28,9 +28,15 @@ export default class TrackManager {
       db
         .select({ id: tracks.id })
         .from(tracks)
-        .innerJoin(timeEntries, eq(tracks.id, timeEntries.track))
+        .innerJoin(
+          timeEntries,
+          and(
+            eq(tracks.id, timeEntries.track),
+            eq(timeEntries.publicationState, 'published')
+          )
+        )
         .groupBy(tracks.id)
-        .orderBy(asc(tracks.number))
+        .orderBy(asc(tracks.name))
         .offset(offset)
         .limit(limit)
     )
@@ -40,7 +46,7 @@ export default class TrackManager {
   }
 
   static async getAllTracks(): Promise<Track[]> {
-    const data = await db.select().from(tracks).orderBy(asc(tracks.number))
+    const data = await db.select().from(tracks).orderBy(asc(tracks.name))
 
     if (data.length === 0) {
       console.debug(

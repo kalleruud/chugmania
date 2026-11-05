@@ -1,6 +1,5 @@
 import { Item, ItemActions, ItemContent, ItemTitle } from '@/components/ui/item'
 import type { Track } from '@common/models/track'
-import { formatTrackName } from '@common/utils/track'
 import { ChevronRight } from 'lucide-react'
 import { Link } from 'react-router'
 import { twMerge } from 'tailwind-merge'
@@ -15,32 +14,30 @@ export function TrackRow({
 }: Readonly<BaseRowProps<Track | null | undefined>>) {
   const content = (
     <>
-      <ItemContent>
-        <ItemTitle className='font-kh-interface text-2xl tracking-tight tabular-nums'>
-          <p
+      <ItemContent className='min-w-0 gap-2 sm:flex-row sm:items-center sm:justify-between'>
+        <ItemTitle className='max-w-full items-start font-kh-interface text-2xl tracking-tight tabular-nums'>
+          <span
             className={twMerge(
-              'text-primary',
+              'shrink-0 text-primary',
               !track && 'text-muted-foreground'
             )}>
             #
-          </p>
+          </span>
           {track ? (
-            formatTrackName(track.number)
+            <span className='min-w-0 [overflow-wrap:anywhere]'>
+              {track.name}
+            </span>
           ) : (
             <span className='text-muted-foreground/50'>000</span>
           )}
         </ItemTitle>
+        {track && (
+          <div className='flex max-w-full min-w-0 flex-wrap gap-1.5 sm:max-w-1/2 sm:justify-end'>
+            <TrackBadge variant='outline' trackLevel={track.level} />
+            <TrackBadge variant='outline' trackType={track.type} />
+          </div>
+        )}
       </ItemContent>
-      {track && (
-        <div className='flex gap-2'>
-          <TrackBadge variant='outline' trackLevel={track.level}>
-            {track.level}
-          </TrackBadge>
-          <TrackBadge variant='outline' trackType={track.type}>
-            {track.type}
-          </TrackBadge>
-        </div>
-      )}
       {!hideLink && track && (
         <ItemActions>
           <ChevronRight className='size-4' />
