@@ -129,7 +129,8 @@ async function CreateTournament(options: {
         user2: match.user2,
         winner: match.winner,
         status: match.status,
-        track: tracks.find(track => track.id === match.track)?.number ?? null,
+        track:
+          Number(tracks.find(track => track.id === match.track)?.name) || null,
         async setWinner(name: string): Promise<void> {
           await MatchManager.onEditMatch(socket, {
             type: 'EditMatchRequest',

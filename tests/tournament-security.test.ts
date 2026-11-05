@@ -490,7 +490,10 @@ describe('Tournament preview security', () => {
         await cup.visibility('stats_only')
         const laps = await TimeEntryManager.getAllTimeEntries()
         for (const lap of retained)
-          expect(laps.find(row => row.id === lap.id)).toEqual(lap)
+          assert.deepEqual(
+            laps.find(row => row.id === lap.id),
+            lap
+          )
         expect(
           TimeEntryManager.getAllLatestAfterSession(cup.session.id).map(
             lap => lap.id

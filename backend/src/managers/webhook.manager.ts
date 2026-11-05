@@ -192,12 +192,7 @@ export default class WebhookManager {
           p.playerIndex === 0 ? (match?.user1 ?? null) : (match?.user2 ?? null)
       return {
         playerIndex: p.playerIndex,
-        name: p.name ?? `Player ${p.playerIndex + 1}`,
         user,
-        latestDurationMs:
-          correction?.finishDurationMs !== undefined
-            ? (correction.finishDurationMs ?? 0)
-            : (playerEvents.at(-1)?.durationMs ?? start.durationMs),
         finishDurationMs:
           correction?.finishDurationMs !== undefined
             ? correction.finishDurationMs
@@ -243,47 +238,17 @@ export default class WebhookManager {
       players[0].finishDurationMs === players[1].finishDurationMs
     )
       blockers.push('Finish times are tied')
-    if (
-      !db
-        .select({ id: sessions.id })
-        .from(sessions)
-        .where(
-          and(eq(sessions.id, capture.session), isNull(sessions.deletedAt))
-        )
-        .get()
-    )
-      blockers.push('Session was deleted')
     const session = db
       .select()
       .from(sessions)
       .where(eq(sessions.id, capture.session))
       .get()
+    if (!session || session.deletedAt) blockers.push('Session was deleted')
     if (session?.status === 'cancelled') blockers.push('Session is cancelled')
     return {
-      gameId: capture.gameId,
-      session: capture.session,
       kind: players.length === 1 ? 'lap' : 'match',
-      map: start.map
-        ? {
-            uid: start.map.uid,
-            name: start.map.name,
-            author: start.map.author,
-            environment: start.map.environment,
-            type: start.map.type,
-            medalTimesMs: {
-              author: start.map.medalTimesMs.author,
-              gold: start.map.medalTimesMs.gold,
-              silver: start.map.medalTimesMs.silver,
-              bronze: start.map.medalTimesMs.bronze,
-            },
-            isLaps: start.map.isLaps,
-            totalLaps: start.map.totalLaps,
-            checkpointsPerLap: start.map.checkpointsPerLap,
-          }
-        : null,
-      track,
+      map: start.map,
       players,
-      endReason: end?.type === 'end' ? end.endReason : null,
       blockers,
     }
   }
@@ -366,10 +331,6 @@ export default class WebhookManager {
 
   static publish(actor: string | null = null): void {
     broadcast('all_result_drafts', this.getAllDrafts(), actor)
-  }
-
-  static notify(_session: string, actor: string | null = null): void {
-    this.publish(actor)
   }
 
   static receive(event: Event, rawPayload: string, now = new Date()): void {
@@ -539,7 +500,7 @@ export default class WebhookManager {
       !saved.deletedAt && !saved.publishedAt
         ? JSON.stringify(this.draft(saved))
         : null
-    if (before !== after) this.notify(session.id)
+    if (before !== after) this.publish()
   }
 
   private static updateTimes(capture: Capture, draft: WebhookDraft): void {
@@ -639,7 +600,7 @@ export default class WebhookManager {
       (request.release !== undefined && typeof request.release !== 'boolean')
     )
       fail('Invalid claim request')
-    const session = database.transaction(() => {
+    database.transaction(() => {
       const { capture, draft } = this.editable(request)
       const slot = draft.players.find(
         p => p.playerIndex === request.playerIndex
@@ -656,9 +617,8 @@ export default class WebhookManager {
         request.playerIndex,
         request.release ? null : actor.id
       )
-      return capture.session
     })()
-    this.notify(session, socket.id)
+    this.publish(socket.id)
     return { success: true }
   }
 
@@ -670,12 +630,11 @@ export default class WebhookManager {
     resultRequest(request)
     if (request.user !== null && typeof request.user !== 'string')
       fail('Invalid user')
-    const session = database.transaction(() => {
+    database.transaction(() => {
       const { capture, draft } = this.editable(request)
       this.assign(capture, draft, request.playerIndex, request.user)
-      return capture.session
     })()
-    this.notify(session, socket.id)
+    this.publish(socket.id)
     return { success: true }
   }
 
@@ -696,7 +655,7 @@ export default class WebhookManager {
       !validDuration(request.chugDurationMs, 0)
     )
       fail('Invalid duration')
-    const session = database.transaction(() => {
+    database.transaction(() => {
       const { capture, draft } = this.editable(request)
       const player = draft.players.find(
         p => p.playerIndex === request.playerIndex
@@ -729,9 +688,8 @@ export default class WebhookManager {
       const updated = this.draft(this.captureForResult(request))
       if (!updated) fail('Capture has no start event')
       this.updateTimes(capture, updated)
-      return capture.session
     })()
-    this.notify(session, socket.id)
+    this.publish(socket.id)
     return { success: true }
   }
 
@@ -742,7 +700,7 @@ export default class WebhookManager {
     await AuthManager.checkAuth(socket, ['admin', 'moderator'])
     resultRequest(request)
     if (typeof request.track !== 'string') fail('Invalid track')
-    const session = database.transaction(() => {
+    database.transaction(() => {
       const { capture, draft } = this.editable(request)
       const track = db
         .select()
@@ -763,11 +721,10 @@ export default class WebhookManager {
           .run()
       }
       this.setTrack(capture, draft, track.id)
-      return capture.session
     })()
     const { default: TrackManager } = await import('./track.manager')
     broadcast('all_tracks', await TrackManager.getAllTracks())
-    this.notify(session, socket.id)
+    this.publish(socket.id)
     return { success: true }
   }
 
@@ -794,7 +751,7 @@ export default class WebhookManager {
   ): Promise<EventRes<'create_result_draft_track'>> {
     await AuthManager.checkAuth(socket, ['admin', 'moderator'])
     resultRequest(request)
-    const session = database.transaction(() => {
+    database.transaction(() => {
       const { capture, draft } = this.editable(request)
       const map = draft.map
       if (!map) fail('Capture has no map; select a track manually')
@@ -810,11 +767,10 @@ export default class WebhookManager {
         .returning()
         .get()
       this.setTrack(capture, draft, track.id)
-      return capture.session
     })()
     const { default: TrackManager } = await import('./track.manager')
     broadcast('all_tracks', await TrackManager.getAllTracks())
-    this.notify(session, socket.id)
+    this.publish(socket.id)
     return { success: true }
   }
 
@@ -828,13 +784,12 @@ export default class WebhookManager {
   ): Promise<EventRes<'publish_result_draft'>> {
     const actor = await AuthManager.checkAuth(socket)
     resultRequest(request)
-    const result = database.transaction(() => {
+    const changed = database.transaction(() => {
       const capture = this.captureForResult(request)
       const draft = this.draft(capture)
       if (!draft || !this.canPublish(actor, draft))
         fail('Insufficient permissions')
-      if (capture.publishedAt)
-        return { changed: false, session: capture.session }
+      if (capture.publishedAt) return false
       if (capture.deletedAt) fail('Capture was discarded')
       if (draft.blockers.length) fail(draft.blockers.join('; '))
       const participants = draft.players.map(p => p.user)
@@ -874,16 +829,16 @@ export default class WebhookManager {
       for (const user of participants) {
         if (user) SessionManager.ensureSessionSignup(capture.session, user)
       }
-      return { changed: true, session: capture.session }
+      return true
     })()
-    if (result.changed) {
+    if (changed) {
       RatingManager.recalculate()
       broadcast('all_sessions', await SessionManager.getAllSessions())
       broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
       broadcast('all_matches', await MatchManager.getAllMatches())
       broadcast('all_rankings', RatingManager.onGetRatings())
       TournamentManager.publish(socket.id)
-      this.notify(result.session, socket.id)
+      this.publish(socket.id)
     }
     return { success: true }
   }
@@ -894,7 +849,7 @@ export default class WebhookManager {
   ): Promise<EventRes<'discard_result_draft'>> {
     await AuthManager.checkAuth(socket, ['admin', 'moderator'])
     resultRequest(request)
-    const session = database.transaction(() => {
+    database.transaction(() => {
       const capture = this.captureForResult(request)
       if (capture.publishedAt) fail('Published captures cannot be discarded')
       const deletedAt = new Date()
@@ -910,9 +865,8 @@ export default class WebhookManager {
         .set({ deletedAt })
         .where(eq(matches.webhookCapture, capture.id))
         .run()
-      return capture.session
     })()
-    this.notify(session, socket.id)
+    this.publish(socket.id)
     return { success: true }
   }
 
@@ -921,8 +875,7 @@ export default class WebhookManager {
     if (!Number.isFinite(days) || days <= 0)
       fail('WEBHOOK_DRAFT_RETENTION_DAYS must be positive')
     const cutoff = new Date(now.getTime() - days * 86_400_000)
-    const affected = new Set<string>()
-    database.transaction(() => {
+    const changed = database.transaction(() => {
       const stale = db
         .select()
         .from(webhookCaptures)
@@ -934,7 +887,6 @@ export default class WebhookManager {
         )
         .all()
       for (const capture of stale) {
-        affected.add(capture.session)
         db.delete(timeEntries)
           .where(eq(timeEntries.webhookCapture, capture.id))
           .run()
@@ -946,8 +898,9 @@ export default class WebhookManager {
           .where(eq(webhookCaptures.id, capture.id))
           .run()
       }
+      return stale.length > 0
     })()
-    for (const session of affected) this.notify(session)
+    if (changed) this.publish()
   }
 
   static startCleanup(): NodeJS.Timeout {

@@ -163,7 +163,7 @@ export default class AdminManager {
     broadcast('all_matches', matches)
     broadcast('all_rankings', RatingManager.onGetRatings())
     TournamentManager.publish(socket.id)
-    for (const session of sessions) WebhookManager.notify(session.id, socket.id)
+    WebhookManager.publish(socket.id)
 
     return {
       success: true,

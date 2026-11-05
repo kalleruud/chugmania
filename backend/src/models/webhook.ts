@@ -1,22 +1,16 @@
 import { isRecord } from '@common/utils/utils'
 
-import type { EndEvent, Event, Map, Player } from './webhook.generated'
+import type { Event, Map, Player } from './webhook.generated'
 
 export type WebhookDraft = {
-  gameId: string
-  session: string
   kind: 'lap' | 'match'
   map: Map | null
-  track: string | null
   players: {
     playerIndex: number
-    name: string
     user: string | null
-    latestDurationMs: number
     finishDurationMs: number | null
     chugDurationMs: number | null
   }[]
-  endReason: EndEvent['endReason'] | null
   blockers: string[]
 }
 export type WebhookTimeCorrection = {
@@ -73,7 +67,7 @@ function integer(value: unknown, min = 0): value is number {
 function player(value: unknown): value is Player {
   return (
     isRecord(value) &&
-    integer(value.playerIndex) && 
+    integer(value.playerIndex) &&
     ['name', 'login', 'localId', 'accountId'].every(
       key => value[key] === undefined || nonempty(value[key])
     ) &&
