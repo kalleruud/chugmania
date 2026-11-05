@@ -19,7 +19,7 @@ const levelClasses: Record<TrackLevel, string> = {
   green: 'text-green-300 bg-green-500/10 border-green-500/20',
   blue: 'text-sky-300 bg-sky-500/10 border-sky-500/20',
   red: 'text-red-300 bg-red-500/10 border-red-500/20',
-  black: 'text-white-300 bg-black/40 border-white/40',
+  black: 'text-white bg-black/40 border-white/40',
   custom: 'text-amber-300 bg-amber-500/10 border-amber-500/20',
 }
 
@@ -38,12 +38,15 @@ export default function TrackBadge({
 }: Readonly<TrackBadgeProps>) {
   const colorStyle = trackLevel
     ? levelClasses[trackLevel]
-    : typeClasses[trackType]
+    : (typeClasses[trackType] ??
+      'text-muted-foreground bg-muted/50 border-border')
 
   return (
-    <Badge className={twMerge(colorStyle, className)} {...rest}>
-      {trackLevel}
-      {trackType}
+    <Badge
+      className={twMerge('max-w-full', colorStyle, className)}
+      title={trackLevel ?? trackType}
+      {...rest}>
+      <span className='truncate'>{trackLevel ?? trackType}</span>
     </Badge>
   )
 }

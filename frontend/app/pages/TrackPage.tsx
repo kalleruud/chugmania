@@ -47,8 +47,10 @@ export default function TrackPage() {
             <BreadcrumbLink to='/tracks'>{loc.no.tracks.title}</BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>{'#' + track.name}</BreadcrumbPage>
+          <BreadcrumbItem className='max-w-full min-w-0'>
+            <BreadcrumbPage className='[overflow-wrap:anywhere]'>
+              {'#' + track.name}
+            </BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>

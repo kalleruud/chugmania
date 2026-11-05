@@ -83,14 +83,15 @@ export default function MatchRow({
 
         <div
           className={twMerge(
-            'flex items-center justify-center gap-2 sm:justify-start',
+            'flex min-w-0 flex-wrap items-center justify-center gap-x-3 gap-y-1 sm:justify-start',
             (!track || hideTrack) && !session && !match.stage && 'hidden'
           )}>
           {track && !hideTrack && (
-            <div className='flex items-center gap-2'>
+            <div className='max-w-full min-w-0'>
               <span
+                title={track.name}
                 className={twMerge(
-                  'font-kh-interface tabular-nums',
+                  'block truncate font-kh-interface tabular-nums',
                   isCancelled && 'line-through'
                 )}>
                 <span className='mr-1 text-primary'>#</span>
@@ -100,10 +101,13 @@ export default function MatchRow({
           )}
 
           {session && (
-            <div className='flex items-center gap-1 text-muted-foreground'>
-              <CalendarIcon className='size-3' />
+            <div className='flex max-w-full min-w-0 items-center gap-1 text-muted-foreground'>
+              <CalendarIcon className='size-3 shrink-0' />
               <Label
-                className={twMerge('text-xs', isCancelled && 'line-through')}>
+                className={twMerge(
+                  'min-w-0 truncate text-xs',
+                  isCancelled && 'line-through'
+                )}>
                 {session.name}
               </Label>
             </div>
