@@ -1,5 +1,6 @@
 import { expect, test } from 'bun:test'
 import { randomUUID } from 'node:crypto'
+import SessionManager from '../backend/src/managers/session.manager'
 import WebhookManager from '../backend/src/managers/webhook.manager'
 import type { Event, Source } from '../backend/src/models/webhook.generated'
 import type { ResultDraftRequest } from '../common/models/resultDraft'
@@ -17,7 +18,14 @@ test('corrected lap drafts expose only result fields and publish idempotently', 
   const session = await createSession(socket, [])
   const [track] = createTracks()
   const game = { gameId: randomUUID(), totalPlayers: 1 }
-  const now = new Date(0)
+  const now = new Date()
+  assertResponse(
+    await SessionManager.onEditSession(socket, {
+      type: 'EditSessionRequest',
+      id: session.id,
+      date: now,
+    })
+  )
   const source: Source = {
     pluginName: 'TM Webhooks',
     pluginVersion: '1.0.0',
