@@ -59,21 +59,19 @@ export type CreateMatchRequest = {
   type: 'CreateMatchRequest'
 } & CreateMatch
 
+const webhookFields = [
+  'publicationState',
+  'webhookCapture',
+  'user1DurationMs',
+  'user2DurationMs',
+  'user1ChugDurationMs',
+  'user2ChugDurationMs',
+]
+
 export function isCreateMatchRequest(
   data: unknown
 ): data is CreateMatchRequest {
-  if (
-    !isRecord(data) ||
-    [
-      'publicationState',
-      'webhookCapture',
-      'user1DurationMs',
-      'user2DurationMs',
-      'user1ChugDurationMs',
-      'user2ChugDurationMs',
-    ].some(key => key in data)
-  )
-    return false
+  if (!isRecord(data) || webhookFields.some(key => key in data)) return false
   return data.type === 'CreateMatchRequest' && typeof data.track === 'string'
 }
 
@@ -83,18 +81,7 @@ export type EditMatchRequest = Partial<CreateMatch> & {
 }
 
 export function isEditMatchRequest(data: unknown): data is EditMatchRequest {
-  if (
-    !isRecord(data) ||
-    [
-      'publicationState',
-      'webhookCapture',
-      'user1DurationMs',
-      'user2DurationMs',
-      'user1ChugDurationMs',
-      'user2ChugDurationMs',
-    ].some(key => key in data)
-  )
-    return false
+  if (!isRecord(data) || webhookFields.some(key => key in data)) return false
   return data.type === 'EditMatchRequest' && typeof data.id === 'string'
 }
 
@@ -106,17 +93,6 @@ export type DeleteMatchRequest = {
 export function isDeleteMatchRequest(
   data: unknown
 ): data is DeleteMatchRequest {
-  if (
-    !isRecord(data) ||
-    [
-      'publicationState',
-      'webhookCapture',
-      'user1DurationMs',
-      'user2DurationMs',
-      'user1ChugDurationMs',
-      'user2ChugDurationMs',
-    ].some(key => key in data)
-  )
-    return false
+  if (!isRecord(data) || webhookFields.some(key => key in data)) return false
   return data.type === 'DeleteMatchRequest' && typeof data.id === 'string'
 }

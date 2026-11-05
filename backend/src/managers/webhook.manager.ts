@@ -733,16 +733,11 @@ export default class WebhookManager {
     draft: WebhookDraft,
     track: string
   ): void {
-    if (draft.kind === 'lap')
-      db.update(timeEntries)
-        .set({ track })
-        .where(eq(timeEntries.webhookCapture, capture.id))
-        .run()
-    else
-      db.update(matches)
-        .set({ track })
-        .where(eq(matches.webhookCapture, capture.id))
-        .run()
+    const table = draft.kind === 'lap' ? timeEntries : matches
+    db.update(table)
+      .set({ track })
+      .where(eq(table.webhookCapture, capture.id))
+      .run()
   }
 
   static async onCreateTrack(
