@@ -41,7 +41,7 @@
 - Use Tailwind CSS utilities; follow Formula 1 inspired dark-mode design system
 - Use `date-fns` for Calendar component internals, but prefer `luxon` for general date formatting/manipulation in the app
 - After schema changes, run `npm run db:gen` to generate Drizzle migrations
-- When adding new database tables, include them in the CSV import/export functionality by updating `AdminManager` in `backend/src/managers/admin.manager.ts` (add table to `TABLE_MAP` and `EXCLUDED_COL_EXPORT`)
+- When adding new database tables, include them in the CSV import/export functionality by updating `AdminManager` in `backend/src/managers/admin.manager.ts` (add table to `TABLE_MAP` and `EXCLUDED_COL_EXPORT`). Exception: `webhookCaptures` and `webhookEvents` are backend-private and must remain excluded from client CSV import/export, along with result capture links; preserve this history through SQLite database backups
 
 ## Reactive Contract
 

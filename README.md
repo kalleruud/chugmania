@@ -57,7 +57,7 @@ Key backend flows live under `backend/src/managers/`, while shared DTOs reside i
 
 ## CSV Import/Export
 
-Admins can visit `/admin` to upload and download CSV files for all database tables. Supported tables: `users`, `tracks`, `sessions`, `timeEntries`, and `sessionSignups`. Each upload reports created and updated row counts to confirm the data outcome. Ensure the column order matches the exported format. When adding new database tables, update `AdminManager` in `backend/src/managers/admin.manager.ts` to include them in the `TABLE_MAP` and `EXCLUDED_COL_EXPORT` configuration.
+Admins can visit `/admin` to upload and download CSV files for public application tables. Supported tables: `users`, `tracks`, `sessions`, `timeEntries`, and `sessionSignups`. Each upload reports created and updated row counts to confirm the data outcome. Ensure the column order matches the exported format. When adding new database tables, update `AdminManager` in `backend/src/managers/admin.manager.ts` to include them in the `TABLE_MAP` and `EXCLUDED_COL_EXPORT` configuration. Backend-private webhook captures, events, and result capture links are excluded; preserve them through SQLite database backups.
 
 ## Trackmania webhook drafts
 
