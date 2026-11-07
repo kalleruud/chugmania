@@ -3,10 +3,16 @@ import { eq } from 'drizzle-orm'
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import db from '../backend/database/database'
-import { tracks } from '../backend/database/schema'
+import {
+  timeEntries,
+  tracks,
+  webhookCaptures,
+} from '../backend/database/schema'
 import AdminManager from '../backend/src/managers/admin.manager'
 import MatchManager from '../backend/src/managers/match.manager'
 import SessionManager from '../backend/src/managers/session.manager'
+import TimeEntryManager from '../backend/src/managers/timeEntry.manager'
+import UserManager from '../backend/src/managers/user.manager'
 import WebhookManager from '../backend/src/managers/webhook.manager'
 import type { Event, Source } from '../backend/src/models/webhook.generated'
 import { broadcast } from '../backend/src/server'
@@ -93,6 +99,12 @@ test('corrected lap drafts expose only result fields and publish idempotently', 
   assertResponse(await WebhookManager.onPublish(socket, request))
   expect(WebhookManager.getAllDrafts(session.id).timeEntries).toEqual([])
   assertResponse(await WebhookManager.onPublish(socket, request))
+  TimeEntryManager.deleteTimeEntriesForUser(user.id)
+  assertResponse(await WebhookManager.onPublish(socket, request))
+  expect(
+    db.select().from(timeEntries).where(eq(timeEntries.id, draft.id)).get()
+      ?.deletedAt
+  ).not.toBeNull()
 })
 
 test('match drafts enforce participant permissions and publish only complete results', async () => {
@@ -293,4 +305,126 @@ test('match drafts enforce participant permissions and publish only complete res
   expect(
     (await MatchManager.getAllMatches()).filter(row => row.id === draft.id)
   ).toHaveLength(1)
+})
+
+test('deleting a lap claimant prevents draft edits and publication but permits discard', async () => {
+  const admin = await login(createUser('deleted-draft-admin', 'admin'))
+  const participant = createUser('deleted-draft-participant')
+  const claimant = await login(participant)
+  const replacement = createUser('deleted-draft-replacement')
+  const session = await createSession(admin, [])
+  const now = new Date('2030-01-16T12:00:00.000Z')
+  assertResponse(
+    await SessionManager.onEditSession(admin, {
+      type: 'EditSessionRequest',
+      id: session.id,
+      date: now,
+    })
+  )
+  const [track] = createTracks()
+  const source: Source = {
+    pluginName: 'TM Webhooks',
+    pluginVersion: '1.0.0',
+    game: 'turbo',
+  }
+  const base = {
+    schemaVersion: '1.0.0',
+    occurredAt: now.toISOString(),
+    game: { gameId: randomUUID(), totalPlayers: 1 },
+    source,
+  }
+  const events: Event[] = [
+    {
+      ...base,
+      eventId: randomUUID(),
+      type: 'start',
+      sequence: 0,
+      durationMs: 0,
+      players: [{ playerIndex: 0 }],
+      map: null,
+      mode: null,
+    },
+    {
+      ...base,
+      eventId: randomUUID(),
+      type: 'end',
+      sequence: 1,
+      durationMs: 12000,
+      endReason: 'completed',
+    },
+  ]
+  for (const event of events)
+    WebhookManager.receive(event, JSON.stringify(event), now)
+  const draft = WebhookManager.getAllDrafts(session.id).timeEntries[0]
+  assert(draft)
+  const request: ResultDraftRequest = { kind: 'lap', id: draft.id }
+  assertResponse(
+    await WebhookManager.onClaim(claimant, { ...request, playerIndex: 0 })
+  )
+  assertResponse(
+    await WebhookManager.onSelectTrack(admin, { ...request, track: track.id })
+  )
+  assertResponse(
+    await WebhookManager.onEditTimes(claimant, {
+      ...request,
+      playerIndex: 0,
+      finishDurationMs: 12000,
+    })
+  )
+  assertResponse(
+    await UserManager.onDeleteUser(admin, {
+      type: 'DeleteUserRequest',
+      id: participant.id,
+    })
+  )
+  const deleted = db
+    .select()
+    .from(timeEntries)
+    .where(eq(timeEntries.id, draft.id))
+    .get()
+  assert(deleted?.deletedAt)
+  assert(deleted.webhookCapture)
+  await assert.rejects(
+    WebhookManager.onAssign(admin, {
+      ...request,
+      playerIndex: 0,
+      user: replacement.id,
+    }),
+    /Result draft was deleted/
+  )
+  await assert.rejects(
+    WebhookManager.onEditTimes(admin, {
+      ...request,
+      playerIndex: 0,
+      finishDurationMs: 10000,
+    }),
+    /Result draft was deleted/
+  )
+  await assert.rejects(
+    WebhookManager.onPublish(admin, request),
+    /Result draft was deleted/
+  )
+  expect(
+    db.select().from(timeEntries).where(eq(timeEntries.id, draft.id)).get()
+  ).toMatchObject({
+    user: participant.id,
+    publicationState: 'draft',
+    duration: 12000,
+    deletedAt: deleted.deletedAt,
+  })
+  expect(
+    db
+      .select()
+      .from(webhookCaptures)
+      .where(eq(webhookCaptures.id, deleted.webhookCapture))
+      .get()?.publishedAt
+  ).toBeNull()
+  assertResponse(await WebhookManager.onDiscard(admin, request))
+  expect(
+    db
+      .select()
+      .from(webhookCaptures)
+      .where(eq(webhookCaptures.id, deleted.webhookCapture))
+      .get()?.deletedAt
+  ).not.toBeNull()
 })

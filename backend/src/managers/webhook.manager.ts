@@ -525,10 +525,13 @@ export default class WebhookManager {
         .run()
   }
 
-  private static captureForResult(request: ResultDraftRequest): Capture {
+  private static captureForResult(
+    request: ResultDraftRequest,
+    allowDeleted = false
+  ): Capture {
     const table = request.kind === 'lap' ? timeEntries : matches
     const row = db
-      .select({ capture: table.webhookCapture })
+      .select({ capture: table.webhookCapture, deletedAt: table.deletedAt })
       .from(table)
       .where(eq(table.id, request.id))
       .get()
@@ -539,6 +542,8 @@ export default class WebhookManager {
       .where(eq(webhookCaptures.id, row.capture))
       .get()
     if (!capture) fail('Result draft not found')
+    if (row.deletedAt && !capture.publishedAt && !allowDeleted)
+      fail('Result draft was deleted')
     return capture
   }
 
@@ -846,7 +851,7 @@ export default class WebhookManager {
     await AuthManager.checkAuth(socket, ['admin', 'moderator'])
     resultRequest(request)
     database.transaction(() => {
-      const capture = this.captureForResult(request)
+      const capture = this.captureForResult(request, true)
       if (capture.publishedAt) fail('Published captures cannot be discarded')
       const deletedAt = new Date()
       db.update(webhookCaptures)
