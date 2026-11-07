@@ -54,7 +54,9 @@ function isPendingMatch(match: Match) {
   )
 }
 
-export function isInactiveFinalReset(match: Match): boolean {
+export function isInactiveFinalReset(
+  match: Pick<Match, 'stage' | 'user1' | 'user2'>
+): boolean {
   return match.stage === 'grand_final_reset' && (!match.user1 || !match.user2)
 }
 

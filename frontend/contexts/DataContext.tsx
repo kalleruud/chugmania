@@ -1,6 +1,7 @@
 import loc from '@common/locale/locales'
 import type { Match } from '@common/models/match'
 import type { Ranking } from '@common/models/ranking'
+import type { ResultDrafts } from '@common/models/resultDraft'
 import type { SessionWithSignups } from '@common/models/session'
 import type { TimeEntry } from '@common/models/timeEntry'
 import type { TournamentDetails } from '@common/models/tournament'
@@ -19,6 +20,7 @@ import { toast } from 'sonner'
 import { useConnection } from './ConnectionContext'
 
 type DataContextType = {
+  resultDrafts: ResultDrafts
   applyTournamentDetails: (
     details: TournamentDetails | null,
     session: string
@@ -82,6 +84,10 @@ function parseTournament(details: TournamentDetails): TournamentDetails {
 
 export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
   const { socket } = useConnection()
+  const [resultDrafts, setResultDrafts] = useState<ResultDrafts>({
+    timeEntries: [],
+    matches: [],
+  })
 
   const [tracks, setTracks] = useState<DataContextType['tracks']>(undefined)
   const [timeEntries, setTimeEntries] =
@@ -109,6 +115,27 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
   )
 
   useEffect(() => {
+    let previousDrafts: string | undefined
+    const applyDrafts = (data: ResultDrafts, actor: string | null = null) => {
+      const serialized = JSON.stringify(data)
+      if (
+        previousDrafts !== undefined &&
+        previousDrafts !== serialized &&
+        actor !== socket.id
+      )
+        toast.info(loc.no.session.resultsChanged)
+      previousDrafts = serialized
+      setResultDrafts({
+        timeEntries: parseDatesArray(data.timeEntries),
+        matches: parseDatesArray(data.matches),
+      })
+    }
+    const clearDrafts = () => {
+      previousDrafts = undefined
+      setResultDrafts({ timeEntries: [], matches: [] })
+    }
+    socket.on('all_result_drafts', applyDrafts)
+    socket.on('disconnect', clearDrafts)
     let previousTournaments: string | undefined
     socket.on('all_tournaments', (data, actor) => {
       const serialized = JSON.stringify(data)
@@ -146,6 +173,8 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
     })
 
     return () => {
+      socket.off('all_result_drafts', applyDrafts)
+      socket.off('disconnect', clearDrafts)
       socket.off('all_sessions')
       socket.off('all_time_entries')
       socket.off('all_tracks')
@@ -166,10 +195,11 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
       rankings === undefined ||
       tournaments === undefined
     ) {
-      return { isLoadingData: true, applyTournamentDetails }
+      return { isLoadingData: true, applyTournamentDetails, resultDrafts }
     }
     return {
       isLoadingData: false,
+      resultDrafts,
       applyTournamentDetails,
       timeEntries,
       sessions,
@@ -188,6 +218,7 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
     rankings,
     tournaments,
     applyTournamentDetails,
+    resultDrafts,
   ])
 
   return <DataContext.Provider value={context}>{children}</DataContext.Provider>

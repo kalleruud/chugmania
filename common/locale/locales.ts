@@ -10,7 +10,6 @@ import type {
   SessionResponse,
   SessionStatus,
   TrackLevel,
-  TrackType,
   UserRole,
 } from '../../backend/database/schema'
 
@@ -118,6 +117,7 @@ const no = {
     } as Record<UserRole, string>,
   },
   session: {
+    resultsChanged: 'Oppføringene i sessionen er oppdatert',
     title: 'Sessions',
     description: 'Oversikt over kommende og tidligere sessions.',
     session: 'Session',
@@ -312,7 +312,7 @@ const no = {
     next: 'Neste',
     upNext: 'Neste match',
     duration: 'Tid',
-    unknownUser: 'Ukjent',
+    unknownUser: '---',
     stage: {
       group: 'Gruppespill',
       eight: 'Åttendelsfinale',
@@ -483,7 +483,7 @@ const no = {
       valley: 'Valley',
       lagoon: 'Lagoon',
       stadium: 'Stadium',
-    } as Record<TrackType, string>,
+    } as Record<string, string>,
   },
   users: {
     title: 'Spillere',

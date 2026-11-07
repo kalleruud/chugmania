@@ -1,6 +1,7 @@
 import { useData } from '@/contexts/DataContext'
 import loc from '@common/locale/locales'
 import type { MatchStatus } from '@common/models/match'
+import type { TimeEntryDraft } from '@common/models/resultDraft'
 import type {
   GapType,
   LeaderboardEntryGap,
@@ -20,7 +21,7 @@ import {
 import { twMerge } from 'tailwind-merge'
 import type { BaseRowProps } from '../row/RowProps'
 
-type TimeEntryRowProps = BaseRowProps<TimeEntry> & {
+type TimeEntryRowProps = BaseRowProps<TimeEntryDraft> & {
   required?: boolean
   position?: number | null
   gap?: LeaderboardEntryGap
@@ -114,16 +115,13 @@ function TimePart({
   duration,
   status,
 }: Readonly<{ duration?: number | null; status: TimeEntry['status'] }>) {
-  if (status !== 'completed')
-    return (
-      <span className='text-muted-foreground'>
-        {loc.no.common.status[status]}
-      </span>
-    )
-  const isDNF = !duration
-  const label = duration
-    ? formatTime(duration).replace(/^0/, '')
-    : loc.no.timeEntry.dnf
+  const isMissing = duration === null || duration === undefined
+  if (isMissing && status !== 'completed')
+    return <MinusIcon className='size-4 text-muted-foreground' />
+  const isDNF = isMissing
+  const label = isMissing
+    ? loc.no.timeEntry.dnf
+    : formatTime(duration).replace(/^0/, '')
   return (
     <div
       className={twMerge(
@@ -175,7 +173,7 @@ export default function TimeEntryRow({
   const { users } = useData()
   const userInfo = users ? users.find(u => u.id === lapTime.user) : null
 
-  const isDNF = lapTime.status === 'completed' && !lapTime.duration
+  const isDNF = lapTime.status === 'completed' && lapTime.duration === null
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -201,7 +199,9 @@ export default function TimeEntryRow({
     <div
       ref={containerRef}
       className={twMerge(
-        'flex cursor-pointer items-center gap-4 rounded-md hover:bg-foreground/5',
+        'flex items-center gap-4 rounded-md',
+        lapTime.publicationState === 'published' &&
+          'cursor-pointer hover:bg-foreground/5',
         highlight && 'bg-foreground/3',
         (isDNF || lapTime.status === 'cancelled') && 'opacity-50',
         className

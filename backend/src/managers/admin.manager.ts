@@ -32,6 +32,7 @@ import TimeEntryManager from './timeEntry.manager'
 import TournamentManager from './tournament/tournament.manager'
 import TrackManager from './track.manager'
 import UserManager from './user.manager'
+import WebhookManager from './webhook.manager'
 
 export default class AdminManager {
   private static readonly EXCLUDED_COL_EXPORT = {
@@ -42,11 +43,11 @@ export default class AdminManager {
     tournamentMatches: new Set(),
     tournamentMatchSlots: new Set(),
     users: new Set(['passwordHash']),
-    tracks: new Set(),
+    tracks: new Set(['uid']),
     sessions: new Set(),
-    timeEntries: new Set(),
+    timeEntries: new Set(['webhookCapture']),
     sessionSignups: new Set(),
-    matches: new Set(),
+    matches: new Set(['webhookCapture']),
   } satisfies Record<ExportCsvRequest['table'], Set<string>>
 
   private static readonly TABLE_MAP = {
@@ -133,6 +134,30 @@ export default class AdminManager {
       request.table
     )
     const data = await CsvParser.toObjects(request.content)
+    if (data.some(row => 'webhookCapture' in row || 'rawPayload' in row))
+      throw new Error(
+        'Webhook storage fields cannot be imported through the client API'
+      )
+    if (request.table === 'timeEntries' || request.table === 'matches') {
+      const table = AdminManager.TABLE_MAP[request.table]
+      const draftIds = new Set(
+        db
+          .select({ id: table.id })
+          .from(table)
+          .where(eq(table.publicationState, 'draft'))
+          .all()
+          .map(row => row.id)
+      )
+      if (
+        data.some(
+          row =>
+            draftIds.has(String(row.id)) ||
+            (row.publicationState !== undefined &&
+              row.publicationState !== 'published')
+        )
+      )
+        throw new Error('Result drafts cannot be imported through CSV')
+    }
     const results = await AdminManager.importRows(request.table, data)
 
     console.info(
@@ -158,6 +183,7 @@ export default class AdminManager {
     broadcast('all_matches', matches)
     broadcast('all_rankings', RatingManager.onGetRatings())
     TournamentManager.publish(socket.id)
+    WebhookManager.publish(socket.id)
 
     return {
       success: true,
@@ -200,7 +226,17 @@ export default class AdminManager {
 
     // Use type-safe table lookup
     const table = AdminManager.TABLE_MAP[request.table]
-    const records = await db.select().from(table)
+    const records = await db
+      .select()
+      .from(table)
+      .where(
+        request.table === 'timeEntries' || request.table === 'matches'
+          ? eq(
+              AdminManager.TABLE_MAP[request.table].publicationState,
+              'published'
+            )
+          : undefined
+      )
 
     // Filter out sensitive columns
     const filtered = AdminManager.filterColumnsForExport(request.table, records)

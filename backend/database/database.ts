@@ -12,9 +12,16 @@ database.pragma('journal_mode = WAL')
 
 const db = drizzle(database, { schema })
 
-migrate(db, {
-  migrationsFolder: path.join(process.cwd(), 'drizzle'),
-})
+database.pragma('foreign_keys = OFF')
+try {
+  migrate(db, {
+    migrationsFolder: path.join(process.cwd(), 'drizzle'),
+  })
+} finally {
+  database.pragma('foreign_keys = ON')
+}
+if (database.prepare('PRAGMA foreign_key_check').get() !== undefined)
+  throw new Error('Database migration left invalid foreign-key references')
 
 export { database }
 export default db
