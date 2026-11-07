@@ -26,6 +26,7 @@ import RatingManager from './rating.manager'
 import SessionManager from './session.manager'
 import TimeEntryManager from './timeEntry.manager'
 import TournamentManager from './tournament/tournament.manager'
+import TrackManager from './track.manager'
 
 type Capture = typeof webhookCaptures.$inferSelect
 
@@ -708,6 +709,8 @@ export default class WebhookManager {
         .where(and(eq(tracks.id, request.track), isNull(tracks.deletedAt)))
         .get()
       if (!track) fail('Track not found')
+      if (draft.map && track.uid && track.uid !== draft.map.uid)
+        fail('Track belongs to another map')
       if (draft.map) {
         const existing = db
           .select({ id: tracks.id })
@@ -722,7 +725,6 @@ export default class WebhookManager {
       }
       this.setTrack(capture, draft, track.id)
     })()
-    const { default: TrackManager } = await import('./track.manager')
     broadcast('all_tracks', await TrackManager.getAllTracks())
     this.publish(socket.id)
     return { success: true }
@@ -763,7 +765,6 @@ export default class WebhookManager {
         .get()
       this.setTrack(capture, draft, track.id)
     })()
-    const { default: TrackManager } = await import('./track.manager')
     broadcast('all_tracks', await TrackManager.getAllTracks())
     this.publish(socket.id)
     return { success: true }

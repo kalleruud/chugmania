@@ -138,6 +138,26 @@ export default class AdminManager {
       throw new Error(
         'Webhook storage fields cannot be imported through the client API'
       )
+    if (request.table === 'timeEntries' || request.table === 'matches') {
+      const table = AdminManager.TABLE_MAP[request.table]
+      const draftIds = new Set(
+        db
+          .select({ id: table.id })
+          .from(table)
+          .where(eq(table.publicationState, 'draft'))
+          .all()
+          .map(row => row.id)
+      )
+      if (
+        data.some(
+          row =>
+            draftIds.has(String(row.id)) ||
+            (row.publicationState !== undefined &&
+              row.publicationState !== 'published')
+        )
+      )
+        throw new Error('Result drafts cannot be imported through CSV')
+    }
     const results = await AdminManager.importRows(request.table, data)
 
     console.info(
@@ -206,7 +226,17 @@ export default class AdminManager {
 
     // Use type-safe table lookup
     const table = AdminManager.TABLE_MAP[request.table]
-    const records = await db.select().from(table)
+    const records = await db
+      .select()
+      .from(table)
+      .where(
+        request.table === 'timeEntries' || request.table === 'matches'
+          ? eq(
+              AdminManager.TABLE_MAP[request.table].publicationState,
+              'published'
+            )
+          : undefined
+      )
 
     // Filter out sensitive columns
     const filtered = AdminManager.filterColumnsForExport(request.table, records)
