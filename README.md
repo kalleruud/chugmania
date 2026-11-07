@@ -85,7 +85,7 @@ Follow the coding conventions from `AGENTS.md`: Prettier formatting (2 spaces, s
 
 ## Trackmania webhook drafts
 
-Configure the plugin endpoint as `https://<your-host>/api/webhook` and set its authentication token to the server's `TRACKMANIA_WEBHOOK_TOKEN`. An empty server token disables ingestion. Both Trackmania Turbo and Next use the plugin's schema 1.x contract; all seven event types and their matching event headers are required. Bodies are limited to 256 KB.
+Configure the plugin endpoint as `https://<your-host>/api/webhook` and set its authentication token to the server's `WEBHOOK_TOKEN`. An empty server token disables ingestion. Both Trackmania Turbo and Next use the plugin's schema 1.x contract; all seven event types and their matching event headers are required. Bodies are limited to 256 KB.
 
 Incoming captures are linked to the closest session that has already started today or yesterday in Europe/Oslo. Cancelled and deleted sessions do not qualify. The chosen session stays fixed; new events stop being accepted when it no longer qualifies. Identical retries are acknowledged even if the session has since expired.
 

@@ -334,7 +334,7 @@ export default class WebhookManager {
     broadcast('all_result_drafts', this.getAllDrafts(), actor)
   }
 
-  static receive(event: Event, rawPayload: string, now = new Date()): void {
+  static receive(event: Event, rawPayload: string, now = new Date()): string {
     const existingEvent = db
       .select()
       .from(webhookEvents)
@@ -350,7 +350,7 @@ export default class WebhookManager {
           'EVENT_CONFLICT',
           'Event ID already has a different payload'
         )
-      return
+      return 'Duplicate ignored'
     }
     const existing = db
       .select()
@@ -502,6 +502,13 @@ export default class WebhookManager {
         ? JSON.stringify(this.draft(saved))
         : null
     if (before !== after) this.publish()
+    if (saved.deletedAt) return 'Stored; capture discarded'
+    if (saved.publishedAt) return 'Stored; capture already published'
+    if (after === 'null') return 'Stored; waiting for start'
+    if (before === after) return 'Stored; draft unchanged'
+    return before === null || before === 'null'
+      ? 'Draft created'
+      : 'Draft updated'
   }
 
   private static updateTimes(capture: Capture, draft: WebhookDraft): void {

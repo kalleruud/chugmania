@@ -9,7 +9,14 @@ export function createWebhookRouter() {
   router.post(
     '/api/webhook',
     (req, res, next) => {
-      const token = process.env.TRACKMANIA_WEBHOOK_TOKEN
+      res.once('finish', () => {
+        const outcome: unknown = res.locals.webhookOutcome ?? 'Rejected'
+        console.info(
+          new Date().toISOString(),
+          `Webhook ${req.get('event_type') ?? 'unknown'} (${req.get('event-id') ?? 'no ID'}): ${String(outcome)} [HTTP ${res.statusCode}]`
+        )
+      })
+      const token = process.env.WEBHOOK_TOKEN
       const expected = Buffer.from(`Bearer ${token ?? ''}`)
       const provided = Buffer.from(req.get('Authorization') ?? '')
       if (
@@ -47,9 +54,11 @@ export function createWebhookRouter() {
             'HEADER_MISMATCH',
             'Event headers must match the payload'
           )
-        WebhookManager.receive(event, req.body)
+        res.locals.webhookOutcome = WebhookManager.receive(event, req.body)
         res.status(204).end()
       } catch (error) {
+        res.locals.webhookOutcome =
+          error instanceof WebhookError ? error.message : 'Rejected'
         if (error instanceof SyntaxError)
           res
             .status(400)
