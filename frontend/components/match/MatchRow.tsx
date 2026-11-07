@@ -34,7 +34,8 @@ export default function MatchRow({
   return (
     <div
       className={twMerge(
-        'group relative flex cursor-pointer items-center justify-between rounded-sm p-2 transition-colors',
+        'group relative flex items-center justify-between rounded-sm p-2 transition-colors',
+        match.publicationState === 'published' && 'cursor-pointer',
         isCancelled && 'text-muted-foreground opacity-33',
         className,
         highlight && 'border border-primary/20 bg-primary/5 hover:bg-primary/10'

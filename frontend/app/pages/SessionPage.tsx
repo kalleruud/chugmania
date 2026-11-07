@@ -42,8 +42,15 @@ export default function SessionPage() {
   const [searchParams] = useSearchParams()
   const { socket, isConnected } = useConnection()
   const { open, openMatch } = useTimeEntryInput()
-  const { sessions, tracks, timeEntries, matches, tournaments, isLoadingData } =
-    useData()
+  const {
+    sessions,
+    tracks,
+    timeEntries,
+    matches,
+    resultDrafts,
+    tournaments,
+    isLoadingData,
+  } = useData()
   const { loggedInUser, isLoggedIn, isLoading } = useAuth()
   const [editDialogOpen, setEditDialogOpen] = useState(false)
 
@@ -84,8 +91,16 @@ export default function SessionPage() {
 
   const isCancelled = session.status === 'cancelled'
   const tournament = tournaments.find(t => t.config.session === session.id)
+  const incoming = {
+    timeEntries: resultDrafts.timeEntries.filter(
+      entry => isLoggedIn && entry.session === session.id
+    ),
+    matches: resultDrafts.matches.filter(
+      match => isLoggedIn && match.session === session.id
+    ),
+  }
   const sessionTracks = tracks.filter(track => {
-    const hasLaps = timeEntries.some(
+    const hasLaps = [...timeEntries, ...incoming.timeEntries].some(
       entry => entry.session === session.id && entry.track === track.id
     )
     const hasMatches = matches.some(
@@ -95,8 +110,16 @@ export default function SessionPage() {
         !match.tournament &&
         !isInactiveFinalReset(match)
     )
-    return hasLaps || hasMatches
+    return (
+      hasLaps ||
+      hasMatches ||
+      incoming.matches.some(match => match.track === track.id)
+    )
   })
+
+  const hasMissingTrack =
+    incoming.timeEntries.some(entry => entry.track === null) ||
+    incoming.matches.some(match => match.track === null)
 
   return (
     <div className='flex flex-col gap-6'>
@@ -120,7 +143,7 @@ export default function SessionPage() {
 
       <SessionCard className='px-2' item={session} hideLink />
 
-      <div className='flex items-center gap-1'>
+      <div className='flex flex-wrap items-center gap-1'>
         <SubscribeButton className='flex-1' />
         {canEdit && (
           <>
@@ -194,7 +217,7 @@ export default function SessionPage() {
         <TabsContent
           className='flex flex-col gap-4'
           value={loc.no.session.session}>
-          {sessionTracks.length === 0 && (
+          {sessionTracks.length === 0 && !hasMissingTrack && (
             <Empty className='border border-input'>
               <div className='flex flex-wrap justify-center gap-2'>
                 <Button
@@ -222,12 +245,22 @@ export default function SessionPage() {
             <TrackLeaderboard
               key={track.id}
               track={track}
+              resultDrafts={incoming}
               session={session.id}
-              highlight={e => isLoggedIn && loggedInUser.id === e.id}
+              highlight={e => isLoggedIn && loggedInUser.id === e.user}
               filter='all'
               excludeTournamentMatches
             />
           ))}
+          {hasMissingTrack && (
+            <TrackLeaderboard
+              track={null}
+              session={session.id}
+              resultDrafts={incoming}
+              filter='all'
+              excludeTournamentMatches
+            />
+          )}
         </TabsContent>
         <TabsContent value={loc.no.tournament.title}>
           <TournamentTab session={session} />

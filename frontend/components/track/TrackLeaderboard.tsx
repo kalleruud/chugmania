@@ -1,7 +1,9 @@
 import MatchList from '@/components/match/MatchList'
+import type { DisplayMatch } from '@/components/match/MatchProps'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useData } from '@/contexts/DataContext'
 import loc from '@common/locale/locales'
+import type { ResultDrafts, TimeEntryDraft } from '@common/models/resultDraft'
 import type { Track } from '@common/models/track'
 import { isInactiveFinalReset } from '@common/utils/tournament'
 import type { ComponentProps } from 'react'
@@ -14,7 +16,8 @@ import { Spinner } from '../ui/spinner'
 import { TrackRow } from './TrackRow'
 
 type TrackLeaderboardProps = {
-  track: Track
+  track: Track | null
+  resultDrafts?: ResultDrafts
   excludeTournamentMatches?: boolean
   hideTrack?: boolean
 } & Omit<TimeEntryListProps, 'track' | 'entries'>
@@ -22,6 +25,7 @@ type TrackLeaderboardProps = {
 export default function TrackLeaderboard({
   className,
   track,
+  resultDrafts,
   user,
   session,
   hideTrack,
@@ -37,17 +41,29 @@ export default function TrackLeaderboard({
       </div>
     )
 
-  const entries = timeEntries
+  const allEntries: TimeEntryDraft[] = [
+    ...(resultDrafts?.timeEntries ?? []),
+    ...timeEntries,
+  ]
+  const entries = [
+    ...new Map(allEntries.map(entry => [entry.id, entry])).values(),
+  ]
     .filter(te => !session || session === te.session)
     .filter(te => !user || user === te.user)
-    .filter(te => track.id === te.track)
+    .filter(te => (track?.id ?? null) === te.track)
 
-  const filteredMatches = matches
+  const allMatches: DisplayMatch[] = [
+    ...(resultDrafts?.matches ?? []),
+    ...matches,
+  ]
+  const filteredMatches = [
+    ...new Map(allMatches.map(match => [match.id, match])).values(),
+  ]
     .filter(m => !excludeTournamentMatches || !m.tournament)
     .filter(m => !isInactiveFinalReset(m))
     .filter(m => !session || session === m.session)
     .filter(m => !user || user === m.user1 || user === m.user2)
-    .filter(m => track.id === m.track)
+    .filter(m => (track?.id ?? null) === m.track)
 
   if (entries.length === 0 && filteredMatches.length === 0) return undefined
 
@@ -65,7 +81,7 @@ export default function TrackLeaderboard({
         </TabsList>
         <TabsContent value='laptimes'>
           <TimeEntryList
-            track={track.id}
+            track={track?.id}
             user={user}
             session={session}
             entries={entries}
@@ -74,7 +90,7 @@ export default function TrackLeaderboard({
         </TabsContent>
         <TabsContent value='matches'>
           <MatchList
-            track={track.id}
+            track={track?.id}
             user={user}
             session={session}
             matches={filteredMatches}

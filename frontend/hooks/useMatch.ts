@@ -1,13 +1,15 @@
+import type { DisplayMatch } from '@/components/match/MatchProps'
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import loc from '@common/locale/locales'
-import type { EditMatchRequest, Match } from '@common/models/match'
+import type { EditMatchRequest } from '@common/models/match'
 import { toast } from 'sonner'
 
-export function useMatch(match: Match) {
+export function useMatch(match: DisplayMatch) {
   const { socket } = useConnection()
   const { isLoggedIn, loggedInUser } = useAuth()
   const canSetResult =
+    match.publicationState === 'published' &&
     isLoggedIn &&
     loggedInUser.role !== 'user' &&
     !match.tournament?.readOnly &&
