@@ -1,6 +1,7 @@
 import { useConnection } from '@/contexts/ConnectionContext'
 import type { ResultDraftRequest } from '@common/models/resultDraft'
 import type { Track } from '@common/models/track'
+import { PlusIcon } from '@heroicons/react/24/solid'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '../ui/button'
@@ -38,7 +39,8 @@ export default function CreateDraftTrackButton({
       variant='outline'
       disabled={disabled || pending}
       onClick={createTrack}>
-      Opprett bane fra webhook
+      <PlusIcon />
+      Opprett bane
     </Button>
   )
 }
