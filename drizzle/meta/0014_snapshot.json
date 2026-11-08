@@ -1265,14 +1265,14 @@
           "name": "level",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false
         },
-        "type": {
-          "name": "type",
+        "map_type": {
+          "name": "map_type",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false
         },
         "game": {

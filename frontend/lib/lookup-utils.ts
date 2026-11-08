@@ -5,11 +5,14 @@ import { formatDateWithYear } from '@common/utils/date'
 
 export function trackToLookupItem(track: Track) {
   const trackName = '#' + track.name
+  const details = [track.level, track.environment, track.mapType].filter(
+    (value): value is string => value !== null
+  )
   return {
     ...track,
     label: trackName,
-    sublabel: `${track.level} • ${track.type}`,
-    tags: [track.level, track.type, trackName],
+    sublabel: details.join(' • '),
+    tags: [...details, trackName],
   }
 }
 

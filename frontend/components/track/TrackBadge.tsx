@@ -6,11 +6,11 @@ export type TrackBadgeProps = Parameters<typeof Badge>['0'] &
   (
     | {
         trackLevel: TrackLevel
-        trackType?: never
+        environment?: never
       }
     | {
         trackLevel?: never
-        trackType: string
+        environment: string
       }
   )
 
@@ -23,30 +23,30 @@ const levelClasses: Record<TrackLevel, string> = {
   custom: 'text-amber-300 bg-amber-500/10 border-amber-500/20',
 }
 
-const typeClasses: Record<string, string> = {
-  drift: 'text-fuchsia-300 bg-fuchsia-500/10 border-fuchsia-500/20',
-  valley: 'text-lime-300 bg-lime-500/10 border-lime-500/20',
-  lagoon: 'text-cyan-300 bg-cyan-500/10 border-cyan-500/20',
-  stadium: 'text-orange-300 bg-orange-500/10 border-orange-500/20',
+const environmentClasses: Record<string, string> = {
+  Canyon: 'text-fuchsia-300 bg-fuchsia-500/10 border-fuchsia-500/20',
+  Valley: 'text-lime-300 bg-lime-500/10 border-lime-500/20',
+  Lagoon: 'text-cyan-300 bg-cyan-500/10 border-cyan-500/20',
+  Stadium: 'text-orange-300 bg-orange-500/10 border-orange-500/20',
 }
 
 export default function TrackBadge({
   trackLevel,
-  trackType,
+  environment,
   className,
   ...rest
 }: Readonly<TrackBadgeProps>) {
   const colorStyle = trackLevel
     ? levelClasses[trackLevel]
-    : (typeClasses[trackType] ??
+    : (environmentClasses[environment] ??
       'text-muted-foreground bg-muted/50 border-border')
 
   return (
     <Badge
       className={twMerge('max-w-full', colorStyle, className)}
-      title={trackLevel ?? trackType}
+      title={trackLevel ?? environment}
       {...rest}>
-      <span className='truncate'>{trackLevel ?? trackType}</span>
+      <span className='truncate'>{trackLevel ?? environment}</span>
     </Badge>
   )
 }

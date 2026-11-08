@@ -8,6 +8,7 @@ export default class CsvParser {
     'author',
     'environment',
     'type',
+    'mapType',
     'game',
     'level',
   ])

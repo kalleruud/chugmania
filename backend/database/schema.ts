@@ -52,8 +52,8 @@ export const users = sqliteTable('users', {
 export type TrackLevel = 'white' | 'green' | 'blue' | 'red' | 'black' | 'custom'
 export const tracks = sqliteTable('tracks', {
   ...metadata,
-  level: text().$type<TrackLevel>().notNull(),
-  type: text().notNull(),
+  level: text().$type<TrackLevel>(),
+  mapType: text('map_type'),
   game: text().$type<Game>().notNull(),
   uid: text().unique(),
   name: text().notNull(),

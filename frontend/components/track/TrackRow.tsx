@@ -33,8 +33,12 @@ export function TrackRow({
         </ItemTitle>
         {track && (
           <div className='flex max-w-full min-w-0 flex-wrap gap-1.5 sm:max-w-1/2 sm:justify-end'>
-            <TrackBadge variant='outline' trackLevel={track.level} />
-            <TrackBadge variant='outline' trackType={track.type} />
+            {track.level && (
+              <TrackBadge variant='outline' trackLevel={track.level} />
+            )}
+            {track.environment && (
+              <TrackBadge variant='outline' environment={track.environment} />
+            )}
           </div>
         )}
       </ItemContent>

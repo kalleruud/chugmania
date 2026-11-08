@@ -9,7 +9,7 @@ test('track CSV round trips preserve numeric text and numeric medal times', asyn
     await AdminManager.onImportCsv(socket, {
       table: 'tracks',
       content:
-        'id,name,uid,author,environment,type,game,level,goldMedalMs\ncsv-numeric-track,001,00042,007,002,003,turbo,custom,12000',
+        'id,name,uid,author,environment,mapType,game,level,goldMedalMs\ncsv-numeric-track,001,00042,007,002,003,turbo,custom,12000',
     })
   )
   const exported = await AdminManager.onExportCsv(socket, { table: 'tracks' })
@@ -29,7 +29,30 @@ test('track CSV round trips preserve numeric text and numeric medal times', asyn
     uid: '00042',
     author: '007',
     environment: '002',
-    type: '003',
+    mapType: '003',
     goldMedalMs: 12000,
+  })
+})
+
+test('track CSV imports allow unknown levels and preserve raw map metadata', async () => {
+  const socket = await login(createUser('csv-map-metadata-admin', 'admin'))
+  assertResponse(
+    await AdminManager.onImportCsv(socket, {
+      table: 'tracks',
+      content:
+        'id,name,game,environment,mapType\ncsv-next-map,Next map,next,Stadium,TrackMania\\TM_Race\ncsv-unknown-map,Unknown map,next,,',
+    })
+  )
+  const tracks = await TrackManager.getAllTracks()
+  expect(tracks.find(track => track.id === 'csv-next-map')).toMatchObject({
+    level: null,
+    environment: 'Stadium',
+    mapType: 'TrackMania\\TM_Race',
+    game: 'next',
+  })
+  expect(tracks.find(track => track.id === 'csv-unknown-map')).toMatchObject({
+    level: null,
+    environment: null,
+    mapType: null,
   })
 })

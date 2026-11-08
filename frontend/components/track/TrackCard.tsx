@@ -30,8 +30,12 @@ export default function TrackCard({
       </div>
 
       <div className='flex min-w-0 flex-wrap gap-1.5 md:max-w-1/3 md:justify-end'>
-        <TrackBadge variant='outline' trackLevel={track.level} />
-        <TrackBadge variant='outline' trackType={track.type} />
+        {track.level && (
+          <TrackBadge variant='outline' trackLevel={track.level} />
+        )}
+        {track.environment && (
+          <TrackBadge variant='outline' environment={track.environment} />
+        )}
       </div>
     </div>
   )
