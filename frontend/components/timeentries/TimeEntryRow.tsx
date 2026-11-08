@@ -10,7 +10,7 @@ import type {
 import { formatTime } from '@common/utils/time'
 import * as HeroIcons from '@heroicons/react/24/solid'
 import { MinusIcon } from '@heroicons/react/24/solid'
-import { ClipboardClock } from 'lucide-react'
+import { ClipboardClock, FilePenLine } from 'lucide-react'
 import {
   useEffect,
   useMemo,
@@ -56,7 +56,18 @@ function PositionBadgePart({
       {position && !isPending && (
         <span className='text-primary'>{position}</span>
       )}
-      {isPending && <ClipboardClock className='size-5 text-muted-foreground' />}
+      {draft && (
+        <FilePenLine
+          aria-label='Utkast'
+          className='size-5 text-muted-foreground'
+        />
+      )}
+      {!draft && status === 'planned' && (
+        <ClipboardClock
+          aria-label='Planlagt'
+          className='size-5 text-muted-foreground'
+        />
+      )}
       {!position && !isPending && (
         <MinusIcon className='text-muted-foreground' />
       )}

@@ -4,6 +4,7 @@ import loc from '@common/locale/locales'
 import type { UserInfo } from '@common/models/user'
 import { isInactiveFinalReset, stageName } from '@common/utils/tournament'
 import { CalendarIcon } from '@heroicons/react/24/solid'
+import { ClipboardClock, FilePenLine } from 'lucide-react'
 import type { ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { NameCellPart } from '../timeentries/TimeEntryRow'
@@ -64,6 +65,15 @@ export default function MatchRow({
               'mb-1 font-kh-interface text-sm font-black text-muted-foreground/50',
               isCancelled && 'line-through'
             )}>
+            {match.publicationState === 'draft' && (
+              <FilePenLine aria-label='Utkast' className='mx-auto size-4' />
+            )}
+            {match.publicationState !== 'draft' && isPlanned && (
+              <ClipboardClock
+                aria-label='Planlagt'
+                className='mx-auto size-4'
+              />
+            )}
             {loc.no.match.vs}
           </span>
 

@@ -36,6 +36,7 @@ import { useConnection } from '../../contexts/ConnectionContext'
 import { useData } from '../../contexts/DataContext'
 import { TextField } from '../FormFields'
 import { SessionRow } from '../session/SessionRow'
+import CreateDraftTrackButton from '../track/CreateDraftTrackButton'
 import { TrackRow } from '../track/TrackRow'
 import { Button } from '../ui/button'
 import { Label } from '../ui/label'
@@ -299,7 +300,10 @@ export default function TimeEntryInput({
           disabled={disabled}
         />
         {showChug ? (
-          <div className='flex items-center gap-1'>
+          <fieldset className='flex items-center gap-1'>
+            <legend className='mb-1 text-sm text-muted-foreground'>
+              {loc.no.timeEntry.input.chug}
+            </legend>
             <DurationInput
               small
               label={loc.no.timeEntry.input.chug}
@@ -319,7 +323,7 @@ export default function TimeEntryInput({
               }}>
               <XMarkIcon />
             </Button>
-          </div>
+          </fieldset>
         ) : (
           <Button
             type='button'
@@ -364,6 +368,16 @@ export default function TimeEntryInput({
           items={tracks.map(trackToLookupItem)}
           CustomRow={TrackRow}
         />
+
+        {inputTimeEntry.publicationState === 'draft' &&
+          inputTimeEntry.id &&
+          inputTimeEntry.hasMapMetadata && (
+            <CreateDraftTrackButton
+              request={{ kind: 'lap', id: inputTimeEntry.id }}
+              onCreated={setSelectedTrack}
+              disabled={disabled}
+            />
+          )}
 
         <Combobox
           className='w-full'

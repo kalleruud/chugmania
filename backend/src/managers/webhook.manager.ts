@@ -276,8 +276,7 @@ export default class WebhookManager {
     )
       blockers.push('Missing webhook events')
     if (!track) blockers.push('Select a track')
-    else if (start.map && track.uid && track.uid !== start.map.uid)
-      blockers.push('Track belongs to another map')
+
     if (players.some(p => !activeUser(p.user)))
       blockers.push('Assign every player')
     if (
@@ -320,6 +319,7 @@ export default class WebhookManager {
     return {
       timeEntries: db
         .select({
+          captureId: webhookCaptures.id,
           id: timeEntries.id,
           createdAt: timeEntries.createdAt,
           updatedAt: timeEntries.updatedAt,
@@ -348,9 +348,16 @@ export default class WebhookManager {
           )
         )
         .orderBy(asc(timeEntries.createdAt))
-        .all(),
+        .all()
+        .map(({ captureId, ...row }) => ({
+          ...row,
+          hasMapMetadata: !!this.events(captureId).find(
+            event => event.type === 'start'
+          )?.map,
+        })),
       matches: db
         .select({
+          captureId: webhookCaptures.id,
           id: matches.id,
           createdAt: matches.createdAt,
           updatedAt: matches.updatedAt,
@@ -383,7 +390,13 @@ export default class WebhookManager {
           )
         )
         .orderBy(asc(matches.createdAt))
-        .all(),
+        .all()
+        .map(({ captureId, ...row }) => ({
+          ...row,
+          hasMapMetadata: !!this.events(captureId).find(
+            event => event.type === 'start'
+          )?.map,
+        })),
     }
   }
 
@@ -586,6 +599,43 @@ export default class WebhookManager {
     return actor.role !== 'user' || draft.players.some(p => p.user === actor.id)
   }
 
+  static async onCreateTrack(
+    socket: TypedSocket,
+    request: EventReq<'create_draft_track'>
+  ): Promise<EventRes<'create_draft_track'>> {
+    const actor = await AuthManager.checkAuth(socket)
+    resultRequest(request)
+    const track = database.transaction(() => {
+      const capture = this.captureForResult(request)
+      const draft = this.draft(capture)
+      if (!draft || !this.canPublish(actor, draft))
+        fail('Insufficient permissions')
+      if (capture.publishedAt || !draft.map) fail('Missing webhook metadata')
+      const existing = db
+        .select()
+        .from(tracks)
+        .where(eq(tracks.uid, draft.map.uid))
+        .get()
+      if (existing) {
+        if (existing.deletedAt) fail('Track has been deleted')
+        return existing
+      }
+      return db
+        .insert(tracks)
+        .values({
+          ...mapMetadata(draft.map),
+          name: draft.map.name,
+          type: draft.map.type,
+          level: 'custom',
+          game: capture.sourceGame,
+        })
+        .returning()
+        .get()
+    })()
+    broadcast('all_tracks', await TrackManager.getAllTracks())
+    return { success: true, track }
+  }
+
   static async onPublish(
     socket: TypedSocket,
     request: EventReq<'publish_result_draft'>
@@ -600,15 +650,6 @@ export default class WebhookManager {
       if (capture.publishedAt) return false
       if (draft.blockers.length || !draft.track) fail(draft.blockers.join('; '))
       const participants = draft.players.map(p => p.user)
-      if (
-        draft.map &&
-        !draft.track.uid &&
-        !db.select().from(tracks).where(eq(tracks.uid, draft.map.uid)).get()
-      )
-        db.update(tracks)
-          .set({ ...mapMetadata(draft.map), game: capture.sourceGame })
-          .where(eq(tracks.id, draft.track.id))
-          .run()
       if (draft.kind === 'lap')
         db.update(timeEntries)
           .set({ publicationState: 'published', status: 'completed' })

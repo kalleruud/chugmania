@@ -20,6 +20,7 @@ import type {
   Match,
   MatchStatus,
 } from '@common/models/match'
+import type { MatchDraft } from '@common/models/resultDraft'
 import type { SessionWithSignups } from '@common/models/session'
 import type { Track } from '@common/models/track'
 import type { UserInfo } from '@common/models/user'
@@ -28,6 +29,7 @@ import { useMemo, useState, type ComponentProps, type SubmitEvent } from 'react'
 import { useLocation } from 'react-router'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
+import CreateDraftTrackButton from '../track/CreateDraftTrackButton'
 import { Label } from '../ui/label'
 import {
   Select,
@@ -40,7 +42,7 @@ import {
 } from '../ui/select'
 
 type MatchInputProps = {
-  inputMatch: Partial<Match>
+  inputMatch: Partial<Match & MatchDraft>
   onSubmitResponse?: (success: boolean) => void
   onSubmit?: (e: SubmitEvent<HTMLFormElement>) => void
   disabled?: boolean
@@ -229,6 +231,15 @@ export default function MatchInput({
             placeholder={loc.no.match.placeholder.selectTrack}
           />
         )}
+        {inputMatch.publicationState === 'draft' &&
+          inputMatch.id &&
+          inputMatch.hasMapMetadata && (
+            <CreateDraftTrackButton
+              request={{ kind: 'match', id: inputMatch.id }}
+              onCreated={setTrack}
+              disabled={disabled}
+            />
+          )}
         {sessions && (
           <Combobox
             className='w-full'

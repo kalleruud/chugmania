@@ -196,7 +196,7 @@ test('match drafts publish only complete results from moderator edits', async ()
   assertResponse(await edit(admin, otherTrack.id))
   await assert.rejects(
     WebhookManager.onPublish(claimant, request),
-    /Waiting for end event; Track belongs to another map/
+    /Waiting for end event/
   )
   assertResponse(await edit(admin, track.id))
   game.end(3)
@@ -217,9 +217,9 @@ test('match drafts publish only complete results from moderator edits', async ()
     publicationState: 'published',
     webhookCapture: null,
   })
-  expect(
-    db.select().from(tracks).where(eq(tracks.id, track.id)).get()
-  ).toMatchObject({ uid: 'match-draft-map', name: track.name, game: 'next' })
+  expect(db.select().from(tracks).where(eq(tracks.id, track.id)).get()).toEqual(
+    track
+  )
   expect(WebhookManager.getAllDrafts(session).matches).toEqual([])
 })
 
@@ -262,4 +262,62 @@ test('regular users claim unclaimed lap drafts and deleted drafts cannot publish
     /Result draft was deleted/
   )
   expect(WebhookManager.getAllDrafts(session).timeEntries).toEqual([])
+})
+
+test('webhook tracks are created explicitly and later captures match their uid', async () => {
+  const admin = await login(createUser('metadata-track-admin', 'admin'))
+  const outsider = await login(createUser('metadata-track-outsider'))
+  const now = new Date('2031-01-15T12:00:00.000Z')
+  const session = await startedSession(admin, now)
+  const map: Map = {
+    uid: 'explicit-track-map',
+    name: 'Webhook track',
+    author: 'Mapper',
+    environment: 'Stadium',
+    type: 'Race',
+    isLaps: false,
+    checkpointsPerLap: 2,
+    medalTimesMs: { author: 10000, gold: 12000, silver: 14000, bronze: 16000 },
+  }
+  const first = capture(now, 1, 'next')
+  first.start(map)
+  const draft = WebhookManager.getAllDrafts(session).timeEntries[0]
+  assert(draft)
+  expect(draft.hasMapMetadata).toBe(true)
+  const request: ResultDraftRequest = { kind: 'lap', id: draft.id }
+  await assert.rejects(
+    WebhookManager.onCreateTrack(outsider, request),
+    /Insufficient permissions/
+  )
+  const response = await WebhookManager.onCreateTrack(admin, request)
+  assertResponse(response)
+  expect(response.track).toMatchObject({
+    uid: map.uid,
+    name: map.name,
+    author: map.author,
+    game: 'next',
+    type: map.type,
+    level: 'custom',
+    goldMedalMs: 12000,
+  })
+  const repeated = await WebhookManager.onCreateTrack(admin, request)
+  assertResponse(repeated)
+  expect(repeated.track.id).toBe(response.track.id)
+  const second = capture(now, 1, 'next')
+  second.start(map)
+  expect(
+    WebhookManager.getAllDrafts(session).timeEntries.some(
+      row => row.id !== draft.id && row.track === response.track.id
+    )
+  ).toBe(true)
+  const third = capture(now, 1, 'next')
+  third.start()
+  const missing = WebhookManager.getAllDrafts(session).timeEntries.find(
+    row => !row.hasMapMetadata
+  )
+  assert(missing)
+  await assert.rejects(
+    WebhookManager.onCreateTrack(admin, { kind: 'lap', id: missing.id }),
+    /Missing webhook metadata/
+  )
 })

@@ -70,6 +70,13 @@ export interface ServerToClientEvents {
 }
 
 export interface ClientToServerEvents {
+  create_draft_track: (
+    request: ResultDraftRequest,
+    callback: (
+      response: { success: true; track: Track } | ErrorResponse
+    ) => void
+  ) => void
+
   publish_result_draft: (
     request: ResultDraftRequest,
     callback: (response: SuccessResponse | ErrorResponse) => void
