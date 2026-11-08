@@ -2,6 +2,15 @@ import AuthManager from '../managers/auth.manager'
 
 export default class CsvParser {
   private static readonly JAN_01_2000 = 946681200000
+  private static readonly TEXT_KEYS = new Set([
+    'name',
+    'uid',
+    'author',
+    'environment',
+    'type',
+    'game',
+    'level',
+  ])
   private static readonly DATE_KEYS = new Set([
     'createdAt',
     'updatedAt',
@@ -133,7 +142,12 @@ export default class CsvParser {
     const val = value?.trim()
     if (!val) return null
 
-    if (key === 'tieBreaker' && (val === 'true' || val === 'false')) {
+    if (CsvParser.TEXT_KEYS.has(key)) return { key, value: val }
+
+    if (
+      (key === 'tieBreaker' || key === 'isLaps') &&
+      (val === 'true' || val === 'false')
+    ) {
       return { key, value: val === 'true' }
     }
 

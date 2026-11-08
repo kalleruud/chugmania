@@ -17,6 +17,7 @@ import type {
   Slot,
   TournamentStatus,
 } from '../../common/models/tournament'
+import type { Game } from '../../common/models/track'
 
 const metadata = {
   id: text().primaryKey().$defaultFn(randomUUID),
@@ -49,13 +50,22 @@ export const users = sqliteTable('users', {
 })
 
 export type TrackLevel = 'white' | 'green' | 'blue' | 'red' | 'black' | 'custom'
-export type TrackType = 'drift' | 'valley' | 'lagoon' | 'stadium'
-
 export const tracks = sqliteTable('tracks', {
   ...metadata,
-  number: integer().notNull(),
   level: text().$type<TrackLevel>().notNull(),
-  type: text().$type<TrackType>().notNull(),
+  type: text().notNull(),
+  game: text().$type<Game>().notNull(),
+  uid: text().unique(),
+  name: text().notNull(),
+  author: text(),
+  environment: text(),
+  authorMedalMs: integer('author_medal_ms'),
+  goldMedalMs: integer('gold_medal_ms'),
+  silverMedalMs: integer('silver_medal_ms'),
+  bronzeMedalMs: integer('bronze_medal_ms'),
+  isLaps: integer('is_laps', { mode: 'boolean' }),
+  totalLaps: integer('total_laps'),
+  checkpointsPerLap: integer('checkpoints_per_lap'),
 })
 
 export const sessions = sqliteTable('sessions', {

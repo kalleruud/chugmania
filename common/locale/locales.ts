@@ -10,7 +10,6 @@ import type {
   SessionResponse,
   SessionStatus,
   TrackLevel,
-  TrackType,
   UserRole,
 } from '../../backend/database/schema'
 
@@ -483,7 +482,7 @@ const no = {
       valley: 'Valley',
       lagoon: 'Lagoon',
       stadium: 'Stadium',
-    } as Record<TrackType, string>,
+    } as Record<string, string>,
   },
   users: {
     title: 'Spillere',
