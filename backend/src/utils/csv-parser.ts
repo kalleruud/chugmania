@@ -7,10 +7,7 @@ export default class CsvParser {
     'uid',
     'author',
     'environment',
-    'type',
     'mapType',
-    'game',
-    'level',
   ])
   private static readonly DATE_KEYS = new Set([
     'createdAt',
