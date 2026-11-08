@@ -46,7 +46,7 @@ export default function TrackBadge({
       className={twMerge('max-w-full', colorStyle, className)}
       title={trackLevel ?? environment}
       {...rest}>
-      <span className='truncate'>{trackLevel ?? environment}</span>
+      <span className='truncate lowercase'>{trackLevel ?? environment}</span>
     </Badge>
   )
 }
