@@ -20,6 +20,7 @@ import SessionScheduler from './session.scheduler'
 import TimeEntryManager from './timeEntry.manager'
 import TournamentManager from './tournament/tournament.manager'
 import UserManager from './user.manager'
+import WebhookManager from './webhook.manager'
 
 export default class SessionManager {
   public static ensureSessionSignup(
@@ -216,6 +217,7 @@ export default class SessionManager {
       broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
     }
     broadcast('all_sessions', await SessionManager.getAllSessions())
+    WebhookManager.publish(socket.id)
     broadcast('all_rankings', RatingManager.onGetRatings())
     TournamentManager.publish(socket.id)
     await SessionScheduler.start()

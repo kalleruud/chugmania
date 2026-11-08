@@ -11,6 +11,7 @@ import {
   trackToLookupItem,
   userToLookupItem,
 } from '@/lib/lookup-utils'
+import { isPublishSubmit } from '@/lib/utils'
 import type { MatchStage } from '@backend/database/schema'
 import loc from '@common/locale/locales'
 import type {
@@ -125,20 +126,27 @@ export default function MatchInput({
 
   function handleUpdate(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
-    if (!inputMatch.id) return
+    const id = inputMatch.id
+    if (!id) return
+    const publish = isPublishSubmit(e)
 
     toast.promise(
       socket
         .emitWithAck('edit_match', {
           type: 'EditMatchRequest',
-          id: inputMatch.id,
+          id,
           ...request,
         })
+        .then(r =>
+          r.success && publish
+            ? socket.emitWithAck('publish_result_draft', { kind: 'match', id })
+            : r
+        )
         .then(r => {
           onSubmitResponse?.(r.success)
           if (!r.success) throw new Error(r.message)
         }),
-      loc.no.match.toast.update
+      publish ? loc.no.resultDraft.publishRequest : loc.no.match.toast.update
     )
   }
 

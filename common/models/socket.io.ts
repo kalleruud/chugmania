@@ -11,6 +11,7 @@ import type {
   EditMatchRequest,
   Match,
 } from './match'
+import type { ResultDraftRequest, ResultDrafts } from './resultDraft'
 import type {
   CreateSessionRequest,
   DeleteSessionRequest,
@@ -54,6 +55,7 @@ export type ErrorResponse = {
 import type { Ranking } from './ranking'
 
 export interface ServerToClientEvents {
+  all_result_drafts: (drafts: ResultDrafts, actor?: string | null) => void
   all_tournaments: (
     tournaments: TournamentDetails[],
     actor?: string | null
@@ -68,6 +70,11 @@ export interface ServerToClientEvents {
 }
 
 export interface ClientToServerEvents {
+  publish_result_draft: (
+    request: ResultDraftRequest,
+    callback: (response: SuccessResponse | ErrorResponse) => void
+  ) => void
+
   create_tournament: (
     request: TournamentRequest,
     callback: (

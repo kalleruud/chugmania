@@ -117,6 +117,7 @@ const no = {
     } as Record<UserRole, string>,
   },
   session: {
+    resultsChanged: 'Oppføringene i sessionen er oppdatert',
     title: 'Sessions',
     description: 'Oversikt over kommende og tidligere sessions.',
     session: 'Session',
@@ -311,7 +312,7 @@ const no = {
     next: 'Neste',
     upNext: 'Neste match',
     duration: 'Tid',
-    unknownUser: 'Ukjent',
+    unknownUser: '---',
     stage: {
       group: 'Gruppespill',
       eight: 'Åttendelsfinale',
@@ -414,6 +415,14 @@ const no = {
       update_failed: 'Oppdatering feilet, prøv igjen.',
     },
   },
+  resultDraft: {
+    publish: 'Publiser',
+    publishRequest: {
+      loading: 'Publiserer resultatet',
+      success: 'Resultatet ble publisert',
+      error: (err: Error) => `Publisering feilet: ${err.message}`,
+    },
+  },
   timeEntry: {
     title: 'Rundetider',
     receivedUpdate: 'Rundetidene ble oppdatert',
@@ -437,6 +446,8 @@ const no = {
       noUser: 'Du må velge en bruker, idiot!',
       noTrack: 'Du må velge en bane, din bøtte!',
       noChanges: 'Du har ikke gjort noen endringer...',
+      chug: 'Chugtid',
+      removeChug: 'Fjern chugtid',
       fieldName: {
         comment: 'Kommentar',
       },

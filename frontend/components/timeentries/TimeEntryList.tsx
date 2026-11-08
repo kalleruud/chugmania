@@ -1,11 +1,8 @@
 import { useAuth } from '@/contexts/AuthContext'
 import { useTimeEntryInput } from '@/contexts/TimeEntryInputContext'
 import loc from '@common/locale/locales'
-import type {
-  GapType,
-  LeaderboardEntryGap,
-  TimeEntry,
-} from '@common/models/timeEntry'
+import type { TimeEntryDraft } from '@common/models/resultDraft'
+import type { GapType, LeaderboardEntryGap } from '@common/models/timeEntry'
 import { PlusIcon } from '@heroicons/react/24/solid'
 import { Asterisk } from 'lucide-react'
 import { useState } from 'react'
@@ -16,7 +13,7 @@ import TimeEntryRow, { Marker } from './TimeEntryRow'
 
 type FilterType = 'all' | 'best' | 'latest'
 
-function sortEntries<T extends TimeEntry>(entries: T[]): T[] {
+function sortEntries<T extends TimeEntryDraft>(entries: T[]): T[] {
   return entries.toSorted((a, b) => {
     if ((a.status === 'completed') !== (b.status === 'completed'))
       return a.status === 'completed' ? -1 : 1
@@ -40,35 +37,38 @@ function sortEntries<T extends TimeEntry>(entries: T[]): T[] {
   })
 }
 
-function isBetterEntry<T extends TimeEntry>(current: T, existing: T): boolean {
+function isBetterEntry<T extends TimeEntryDraft>(
+  current: T,
+  existing: T
+): boolean {
   if (!current.duration) return false
   if (!existing.duration) return true
   return current.duration < existing.duration
 }
 
-function getBestByUser<T extends TimeEntry>(entries: T[]): T[] {
+function getBestByUser<T extends TimeEntryDraft>(entries: T[]): T[] {
   const bestByUser = new Map<string, T>()
   for (const entry of entries) {
-    const existing = bestByUser.get(entry.user)
+    const existing = bestByUser.get(entry.user ?? entry.id)
     if (!existing || isBetterEntry(entry, existing)) {
-      bestByUser.set(entry.user, entry)
+      bestByUser.set(entry.user ?? entry.id, entry)
     }
   }
   return Array.from(bestByUser.values())
 }
 
-function getLatestByUser<T extends TimeEntry>(entries: T[]): T[] {
+function getLatestByUser<T extends TimeEntryDraft>(entries: T[]): T[] {
   const latestByUser = new Map<string, T>()
   for (const entry of entries) {
-    const existing = latestByUser.get(entry.user)
+    const existing = latestByUser.get(entry.user ?? entry.id)
     if (!existing || entry.createdAt > existing.createdAt) {
-      latestByUser.set(entry.user, entry)
+      latestByUser.set(entry.user ?? entry.id, entry)
     }
   }
   return Array.from(latestByUser.values())
 }
 
-function filterEntries<T extends TimeEntry>(
+function filterEntries<T extends TimeEntryDraft>(
   entries: T[],
   filterType: FilterType
 ): T[] {
@@ -85,9 +85,9 @@ function filterEntries<T extends TimeEntry>(
 
 function getGap(
   i: number,
-  entry: TimeEntry,
-  compareEntry: TimeEntry | undefined,
-  leader?: TimeEntry
+  entry: TimeEntryDraft,
+  compareEntry: TimeEntryDraft | undefined,
+  leader?: TimeEntryDraft
 ): LeaderboardEntryGap | undefined {
   if (entry.status !== 'completed' || !entry.duration) return undefined
 
@@ -110,11 +110,11 @@ function getGap(
 }
 
 export type TimeEntryListProps = {
-  highlight?: (e: TimeEntry) => boolean
+  highlight?: (e: TimeEntryDraft) => boolean
   track?: string
   user?: string
   session?: string
-  entries: (TimeEntry & { required?: boolean })[]
+  entries: (TimeEntryDraft & { required?: boolean })[]
   filter?: FilterType
 }
 

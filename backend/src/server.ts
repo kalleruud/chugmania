@@ -24,6 +24,8 @@ import TournamentManager from './managers/tournament/tournament.manager'
 import TournamentSecurity from './managers/tournament/tournament.security'
 import TrackManager from './managers/track.manager'
 import UserManager from './managers/user.manager'
+import WebhookManager from './managers/webhook.manager'
+import { createWebhookRouter } from './webhook.router'
 
 const isProduction = process.env.NODE_ENV === 'production'
 const PORT = process.env.PORT ? Number.parseInt(process.env.PORT) : 6996
@@ -70,6 +72,7 @@ async function emitData(socket: TypedSocket) {
   socket.emit('all_time_entries', timeEntries)
   socket.emit('all_matches', matches)
   socket.emit('all_rankings', RatingManager.onGetRatings())
+  socket.emit('all_result_drafts', WebhookManager.getAllDrafts())
   TournamentSecurity.emit(socket, TournamentManager.getAllTournaments())
 }
 
@@ -94,6 +97,8 @@ export function broadcastTournaments(
     if (socket.data.userId) TournamentSecurity.emit(socket, details, actor)
   })
 }
+
+app.use(createWebhookRouter())
 
 app.get('/api/sessions/calendar.ics', (req, res) =>
   ApiManager.onGetCalendar(ORIGIN, req, res)
@@ -145,6 +150,12 @@ async function Connect(s: TypedSocket) {
 
   setup(s, 'login', AuthManager.onLogin)
   setup(s, 'register', UserManager.onRegister)
+
+  setup(
+    s,
+    'publish_result_draft',
+    WebhookManager.onPublish.bind(WebhookManager)
+  )
 
   setup(s, 'get_user_data', AuthManager.refreshToken)
   setup(s, 'edit_user', UserManager.onEditUser)

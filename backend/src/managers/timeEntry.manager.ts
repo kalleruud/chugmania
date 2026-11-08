@@ -9,6 +9,7 @@ import type {
 import {
   isCreateTimeEntryRequest,
   isEditTimeEntryRequest,
+  isPublishedTimeEntry,
 } from '@common/models/timeEntry'
 import type { User } from '@common/models/user'
 import { and, asc, eq, getTableColumns, isNull, sql } from 'drizzle-orm'
@@ -21,8 +22,12 @@ import MatchManager from './match.manager'
 import RatingManager from './rating.manager'
 import SessionManager from './session.manager'
 import TournamentManager from './tournament/tournament.manager'
+import WebhookManager from './webhook.manager'
 
-type TimeEntryUpdates = Partial<CreateTimeEntry> & {
+type TimeEntryRow = typeof timeEntries.$inferSelect
+type TimeEntryUpdates = Partial<Omit<CreateTimeEntry, 'user' | 'track'>> & {
+  user?: string | null
+  track?: string | null
   status: TimeEntry['status']
 }
 
@@ -53,6 +58,7 @@ export default class TimeEntryManager {
         and(
           eq(timeEntries.session, sessionId),
           isNull(timeEntries.deletedAt),
+          eq(timeEntries.publicationState, 'published'),
           eq(timeEntries.status, 'completed')
         )
       )
@@ -79,6 +85,7 @@ export default class TimeEntryManager {
         and(
           eq(timeEntries.session, sessionId),
           isNull(timeEntries.deletedAt),
+          eq(timeEntries.publicationState, 'published'),
           eq(timeEntries.status, 'completed')
         )
       )
@@ -100,10 +107,13 @@ export default class TimeEntryManager {
         and(
           eq(timeEntries.session, sessionId),
           isNull(timeEntries.deletedAt),
+          eq(timeEntries.publicationState, 'published'),
           eq(timeEntries.status, 'completed')
         )
       )
       .all()
+      .filter(isPublishedTimeEntry)
+      .map(row => ({ ...row, webhookCapture: null }))
   }
 
   static async onPostTimeEntry(
@@ -126,7 +136,14 @@ export default class TimeEntryManager {
     const signupChanged = database.transaction(() => {
       db.insert(timeEntries)
         .values({
-          ...request,
+          id: request.id,
+          user: request.user,
+          track: request.track,
+          session: request.session,
+          duration: request.duration,
+          chugDurationMs: request.chugDurationMs,
+          amount: request.amount,
+          comment: request.comment,
           tieBreaker: false,
           status:
             (request.duration ?? 0) > 0
@@ -179,13 +196,14 @@ export default class TimeEntryManager {
       lapTime.tieBreaker,
       socket.id
     )
+    if (lapTime.publicationState === 'draft') WebhookManager.publish(socket.id)
     return { success: true }
   }
 
   private static async prepareTimeEntryEdit(
     socket: TypedSocket,
     request: EventReq<'edit_time_entry'>
-  ): Promise<{ lapTime: TimeEntry; updates: TimeEntryUpdates }> {
+  ): Promise<{ lapTime: TimeEntryRow; updates: TimeEntryUpdates }> {
     if (!isEditTimeEntryRequest(request))
       throw new Error(
         loc.no.error.messages.invalid_request('EditTimeEntryRequest')
@@ -202,9 +220,21 @@ export default class TimeEntryManager {
 
   private static normalizeTimeEntryUpdates(
     request: EditTimeEntryRequest,
-    lapTime: TimeEntry
+    lapTime: TimeEntryRow
   ): TimeEntryUpdates {
-    const { type, id, ...updates } = request
+    const updates = {
+      user: request.user,
+      track: request.track,
+      session: request.session,
+      duration: request.duration,
+      chugDurationMs: request.chugDurationMs,
+      status: request.status,
+      amount: request.amount,
+      comment: request.comment,
+      deletedAt: request.deletedAt,
+      updatedAt: request.updatedAt,
+      createdAt: request.createdAt,
+    }
     const processed = { ...updates }
     if (typeof updates.deletedAt === 'string')
       processed.deletedAt = new Date(updates.deletedAt)
@@ -222,11 +252,13 @@ export default class TimeEntryManager {
 
   private static validateTimeEntryEdit(
     user: Pick<User, 'id' | 'role'>,
-    lapTime: TimeEntry,
+    lapTime: TimeEntryRow,
     updates: TimeEntryUpdates
   ): void {
     const isModerator = user.role !== 'user'
-    if (!isModerator && lapTime.user !== user.id)
+    const isUnclaimedDraft =
+      lapTime.publicationState === 'draft' && lapTime.user === null
+    if (!isModerator && lapTime.user !== user.id && !isUnclaimedDraft)
       throw new Error(loc.no.error.messages.insufficient_permissions)
     if (!lapTime.tieBreaker) return
     const duration =
@@ -247,7 +279,7 @@ export default class TimeEntryManager {
   }
 
   private static saveTimeEntryEdit(
-    lapTime: TimeEntry,
+    lapTime: TimeEntryRow,
     updates: TimeEntryUpdates
   ): boolean {
     return database.transaction(() => {
@@ -263,8 +295,11 @@ export default class TimeEntryManager {
       if (before) TournamentManager.reconcile(before.config.session, before)
       const sessionId =
         updates.session === undefined ? lapTime.session : updates.session
-      const userId = updates.user ?? lapTime.user
-      return sessionId && !updates.deletedAt
+      const userId = updates.user === undefined ? lapTime.user : updates.user
+      return sessionId &&
+        userId &&
+        lapTime.publicationState === 'published' &&
+        !updates.deletedAt
         ? SessionManager.ensureSessionSignup(sessionId, userId)
         : false
     })()
@@ -296,7 +331,12 @@ export default class TimeEntryManager {
     const data = await db
       .select()
       .from(timeEntries)
-      .where(isNull(timeEntries.deletedAt))
+      .where(
+        and(
+          isNull(timeEntries.deletedAt),
+          eq(timeEntries.publicationState, 'published')
+        )
+      )
       .orderBy(
         asc(
           sql`CASE WHEN ${timeEntries.duration} IS NULL OR ${timeEntries.duration} = 0 THEN 1 ELSE 0 END`
@@ -305,6 +345,10 @@ export default class TimeEntryManager {
         asc(timeEntries.createdAt)
       )
 
-    return TournamentSource.visibleTimeEntries(data)
+    return TournamentSource.visibleTimeEntries(
+      data
+        .filter(isPublishedTimeEntry)
+        .map(row => ({ ...row, webhookCapture: null }))
+    )
   }
 }

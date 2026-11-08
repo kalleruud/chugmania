@@ -15,7 +15,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import loc from '@common/locale/locales'
 import type { Match } from '@common/models/match'
-import type { TimeEntry } from '@common/models/timeEntry'
+import type { TimeEntryDraft } from '@common/models/resultDraft'
 import { Trash2 } from 'lucide-react'
 import {
   createContext,
@@ -29,7 +29,7 @@ import { useData } from './DataContext'
 
 type TimeEntryInputContextType = {
   state: 'open' | 'closed'
-  open: (editingTimeEntry?: Partial<TimeEntry>) => void
+  open: (editingTimeEntry?: Partial<TimeEntryDraft>) => void
   openMatch: (editingMatch?: Partial<Match>) => void
   close: () => void
 }
@@ -42,16 +42,16 @@ export default function TimeEntryInputProvider({
   children,
 }: Readonly<{ children: ReactNode }>) {
   const [mode, setMode] = useState<'closed' | 'timeEntry' | 'match'>('closed')
-  const [editingTimeEntry, setEditingTimeEntry] = useState<Partial<TimeEntry>>(
-    {}
-  )
+  const [editingTimeEntry, setEditingTimeEntry] = useState<
+    Partial<TimeEntryDraft>
+  >({})
   const [editingMatch, setEditingMatch] = useState<Partial<Match>>({})
   const { loggedInUser, isLoggedIn } = useAuth()
   const { socket } = useConnection()
-  const { matches, timeEntries, tournaments } = useData()
-  const currentTimeEntry = timeEntries?.find(
-    entry => entry.id === editingTimeEntry.id
-  )
+  const { matches, timeEntries, tournaments, resultDrafts } = useData()
+  const currentTimeEntry: Partial<TimeEntryDraft> | undefined =
+    timeEntries?.find(entry => entry.id === editingTimeEntry.id) ??
+    resultDrafts.timeEntries.find(entry => entry.id === editingTimeEntry.id)
   const timeEntryTournament = tournaments?.find(
     t => t.config.session === currentTimeEntry?.session
   )
@@ -61,7 +61,9 @@ export default function TimeEntryInputProvider({
       (currentTimeEntry.status === 'cancelled' &&
         loggedInUser?.role === 'user') ||
       (currentTimeEntry.tieBreaker && !!timeEntryTournament?.cancelled))
-  const currentMatch = matches?.find(m => m.id === editingMatch.id)
+  const currentMatch: Partial<Match> | undefined =
+    matches?.find(m => m.id === editingMatch.id) ??
+    resultDrafts.matches.find(m => m.id === editingMatch.id)
   const matchReadOnly =
     !!editingMatch.id && (!currentMatch || !!currentMatch.tournament?.readOnly)
 
@@ -104,7 +106,7 @@ export default function TimeEntryInputProvider({
 
   const isEditingSelf =
     isLoggedIn && isEditing && mode === 'timeEntry'
-      ? loggedInUser.id === editingTimeEntry.user
+      ? loggedInUser.id === (editingTimeEntry.user ?? loggedInUser.id)
       : false
 
   const canEdit =
@@ -227,6 +229,14 @@ export default function TimeEntryInputProvider({
                   <Trash2 />
                   {loc.no.common.delete}
                 </ConfirmationButton>
+              )}
+
+            {canEdit &&
+              (mode === 'match' ? currentMatch : currentTimeEntry)
+                ?.publicationState === 'draft' && (
+                <Button form='inputForm' value='publish' variant='outline'>
+                  {loc.no.resultDraft.publish}
+                </Button>
               )}
 
             {isEditing ? (

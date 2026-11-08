@@ -18,6 +18,7 @@ import AuthManager from './auth.manager'
 import RatingManager from './rating.manager'
 import TimeEntryManager from './timeEntry.manager'
 import TournamentManager from './tournament/tournament.manager'
+import WebhookManager from './webhook.manager'
 
 export default class MatchManager {
   private static validateMatchState(
@@ -47,10 +48,19 @@ export default class MatchManager {
       .select({ ...getTableColumns(matches) })
       .from(matches)
       .leftJoin(sessions, eq(matches.session, sessions.id))
-      .where(isNull(matches.deletedAt))
+      .where(
+        and(
+          isNull(matches.deletedAt),
+          eq(matches.publicationState, 'published')
+        )
+      )
       .orderBy(desc(sql`COALESCE(${sessions.date}, ${matches.createdAt})`))
 
-    return TournamentManager.enrich(TournamentSource.visibleMatches(matchRows))
+    return TournamentManager.enrich(
+      TournamentSource.visibleMatches(
+        matchRows.map(row => ({ ...row, webhookCapture: null }))
+      )
+    )
   }
 
   // Returns matches sorted by creation date, most recent first.
@@ -58,9 +68,16 @@ export default class MatchManager {
     return db
       .select({ ...getTableColumns(matches) })
       .from(matches)
-      .where(and(eq(matches.session, sessionId), isNull(matches.deletedAt)))
+      .where(
+        and(
+          eq(matches.session, sessionId),
+          isNull(matches.deletedAt),
+          eq(matches.publicationState, 'published')
+        )
+      )
       .orderBy(desc(matches.createdAt))
       .all()
+      .map(row => ({ ...row, webhookCapture: null }))
   }
 
   static async onCreateMatch(
@@ -153,6 +170,8 @@ export default class MatchManager {
     broadcast('all_matches', await MatchManager.getAllMatches())
     broadcast('all_rankings', RatingManager.onGetRatings())
     TournamentManager.publish(socket.id)
+    if (preImageMatch.publicationState === 'draft')
+      WebhookManager.publish(socket.id)
 
     return { success: true }
   }

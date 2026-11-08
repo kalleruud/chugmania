@@ -1,6 +1,7 @@
 import { useData } from '@/contexts/DataContext'
 import loc from '@common/locale/locales'
 import type { MatchStatus } from '@common/models/match'
+import type { TimeEntryDraft } from '@common/models/resultDraft'
 import type {
   GapType,
   LeaderboardEntryGap,
@@ -20,7 +21,7 @@ import {
 import { twMerge } from 'tailwind-merge'
 import type { BaseRowProps } from '../row/RowProps'
 
-type TimeEntryRowProps = BaseRowProps<TimeEntry> & {
+type TimeEntryRowProps = BaseRowProps<TimeEntryDraft> & {
   required?: boolean
   position?: number | null
   gap?: LeaderboardEntryGap
@@ -39,18 +40,24 @@ const breakpoints = {
 function PositionBadgePart({
   position,
   status,
-}: Readonly<{ position: TimeEntryRowProps['position']; status: MatchStatus }>) {
+  draft,
+}: Readonly<{
+  position: TimeEntryRowProps['position']
+  status: MatchStatus
+  draft: boolean
+}>) {
+  const isPending = draft || status === 'planned'
   return (
     <div
       className={twMerge(
         'flex w-6 flex-none items-center justify-center rounded-sm font-kh-interface uppercase'
       )}
       aria-label={position ? `#${position}` : loc.no.timeEntry.dnf}>
-      {position && <span className='text-primary'>{position}</span>}
-      {status === 'planned' && (
-        <ClipboardClock className='size-5 text-muted-foreground' />
+      {position && !isPending && (
+        <span className='text-primary'>{position}</span>
       )}
-      {!position && status !== 'planned' && (
+      {isPending && <ClipboardClock className='size-5 text-muted-foreground' />}
+      {!position && !isPending && (
         <MinusIcon className='text-muted-foreground' />
       )}
     </div>
@@ -114,16 +121,13 @@ function TimePart({
   duration,
   status,
 }: Readonly<{ duration?: number | null; status: TimeEntry['status'] }>) {
-  if (status !== 'completed')
-    return (
-      <span className='text-muted-foreground'>
-        {loc.no.common.status[status]}
-      </span>
-    )
-  const isDNF = !duration
-  const label = duration
-    ? formatTime(duration).replace(/^0/, '')
-    : loc.no.timeEntry.dnf
+  const isMissing = duration === null || duration === undefined
+  if (isMissing && status !== 'completed')
+    return <MinusIcon className='size-4 text-muted-foreground' />
+  const isDNF = isMissing
+  const label = isMissing
+    ? loc.no.timeEntry.dnf
+    : formatTime(duration).replace(/^0/, '')
   return (
     <div
       className={twMerge(
@@ -175,7 +179,7 @@ export default function TimeEntryRow({
   const { users } = useData()
   const userInfo = users ? users.find(u => u.id === lapTime.user) : null
 
-  const isDNF = lapTime.status === 'completed' && !lapTime.duration
+  const isDNF = lapTime.status === 'completed' && lapTime.duration === null
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -209,7 +213,11 @@ export default function TimeEntryRow({
       title={lapTime.comment ?? undefined}
       {...rest}>
       {show.pos && (
-        <PositionBadgePart position={gap?.position} status={lapTime.status} />
+        <PositionBadgePart
+          position={gap?.position}
+          status={lapTime.status}
+          draft={lapTime.publicationState === 'draft'}
+        />
       )}
 
       <NameCellPart

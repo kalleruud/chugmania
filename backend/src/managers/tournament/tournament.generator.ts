@@ -88,6 +88,12 @@ function createFixture(
     slot1,
     slot2,
     match: {
+      publicationState: 'published',
+      webhookCapture: null,
+      user1DurationMs: null,
+      user2DurationMs: null,
+      user1ChugDurationMs: null,
+      user2ChugDurationMs: null,
       id,
       user1: slot1.kind === 'player' ? slot1.user : null,
       user2: slot2.kind === 'player' ? slot2.user : null,
