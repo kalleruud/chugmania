@@ -1,7 +1,6 @@
 import { useData } from '@/contexts/DataContext'
 import loc from '@common/locale/locales'
-import type { MatchStatus } from '@common/models/match'
-import type { TimeEntryDraft } from '@common/models/resultDraft'
+import type { EntryStatus } from '@common/models/entry'
 import type {
   GapType,
   LeaderboardEntryGap,
@@ -10,7 +9,7 @@ import type {
 import { formatTime } from '@common/utils/time'
 import * as HeroIcons from '@heroicons/react/24/solid'
 import { MinusIcon } from '@heroicons/react/24/solid'
-import { ClipboardClock, FilePenLine } from 'lucide-react'
+import { ClipboardClock, FilePenLine, Timer } from 'lucide-react'
 import {
   useEffect,
   useMemo,
@@ -21,7 +20,7 @@ import {
 import { twMerge } from 'tailwind-merge'
 import type { BaseRowProps } from '../row/RowProps'
 
-type TimeEntryRowProps = BaseRowProps<TimeEntryDraft> & {
+type TimeEntryRowProps = BaseRowProps<TimeEntry> & {
   required?: boolean
   position?: number | null
   gap?: LeaderboardEntryGap
@@ -40,29 +39,34 @@ const breakpoints = {
 function PositionBadgePart({
   position,
   status,
-  draft,
 }: Readonly<{
   position: TimeEntryRowProps['position']
-  status: MatchStatus
-  draft: boolean
+  status: EntryStatus
 }>) {
-  const isPending = draft || status === 'planned'
+  const isPending =
+    status === 'draft' || status === 'in_progress' || status === 'planned'
   return (
     <div
       className={twMerge(
         'flex w-6 flex-none items-center justify-center rounded-sm font-kh-interface uppercase'
       )}
-      aria-label={position ? `#${position}` : loc.no.timeEntry.dnf}>
+      aria-label={position ? `#${position}` : loc.no.common.status[status]}>
       {position && !isPending && (
         <span className='text-primary'>{position}</span>
       )}
-      {draft && (
+      {status === 'draft' && (
         <FilePenLine
           aria-label='Utkast'
           className='size-5 text-muted-foreground'
         />
       )}
-      {!draft && status === 'planned' && (
+      {status === 'in_progress' && (
+        <Timer
+          aria-label={loc.no.common.status.in_progress}
+          className='size-5 text-muted-foreground'
+        />
+      )}
+      {status === 'planned' && (
         <ClipboardClock
           aria-label='Planlagt'
           className='size-5 text-muted-foreground'
@@ -224,11 +228,7 @@ export default function TimeEntryRow({
       title={lapTime.comment ?? undefined}
       {...rest}>
       {show.pos && (
-        <PositionBadgePart
-          position={gap?.position}
-          status={lapTime.status}
-          draft={lapTime.publicationState === 'draft'}
-        />
+        <PositionBadgePart position={gap?.position} status={lapTime.status} />
       )}
 
       <NameCellPart

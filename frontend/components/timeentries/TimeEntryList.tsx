@@ -1,8 +1,11 @@
 import { useAuth } from '@/contexts/AuthContext'
 import { useTimeEntryInput } from '@/contexts/TimeEntryInputContext'
 import loc from '@common/locale/locales'
-import type { TimeEntryDraft } from '@common/models/resultDraft'
-import type { GapType, LeaderboardEntryGap } from '@common/models/timeEntry'
+import type {
+  GapType,
+  LeaderboardEntryGap,
+  TimeEntry,
+} from '@common/models/timeEntry'
 import { PlusIcon } from '@heroicons/react/24/solid'
 import { Asterisk } from 'lucide-react'
 import { useState } from 'react'
@@ -13,7 +16,7 @@ import TimeEntryRow, { Marker } from './TimeEntryRow'
 
 type FilterType = 'all' | 'best' | 'latest'
 
-function sortEntries<T extends TimeEntryDraft>(entries: T[]): T[] {
+function sortEntries<T extends TimeEntry>(entries: T[]): T[] {
   return entries.toSorted((a, b) => {
     if ((a.status === 'completed') !== (b.status === 'completed'))
       return a.status === 'completed' ? -1 : 1
@@ -37,16 +40,13 @@ function sortEntries<T extends TimeEntryDraft>(entries: T[]): T[] {
   })
 }
 
-function isBetterEntry<T extends TimeEntryDraft>(
-  current: T,
-  existing: T
-): boolean {
+function isBetterEntry<T extends TimeEntry>(current: T, existing: T): boolean {
   if (!current.duration) return false
   if (!existing.duration) return true
   return current.duration < existing.duration
 }
 
-function getBestByUser<T extends TimeEntryDraft>(entries: T[]): T[] {
+function getBestByUser<T extends TimeEntry>(entries: T[]): T[] {
   const bestByUser = new Map<string, T>()
   for (const entry of entries) {
     const existing = bestByUser.get(entry.user ?? entry.id)
@@ -57,7 +57,7 @@ function getBestByUser<T extends TimeEntryDraft>(entries: T[]): T[] {
   return Array.from(bestByUser.values())
 }
 
-function getLatestByUser<T extends TimeEntryDraft>(entries: T[]): T[] {
+function getLatestByUser<T extends TimeEntry>(entries: T[]): T[] {
   const latestByUser = new Map<string, T>()
   for (const entry of entries) {
     const existing = latestByUser.get(entry.user ?? entry.id)
@@ -68,16 +68,22 @@ function getLatestByUser<T extends TimeEntryDraft>(entries: T[]): T[] {
   return Array.from(latestByUser.values())
 }
 
-function filterEntries<T extends TimeEntryDraft>(
+function filterEntries<T extends TimeEntry>(
   entries: T[],
   filterType: FilterType
 ): T[] {
   let filtered = entries
 
   if (filterType === 'best') {
-    filtered = getBestByUser(entries)
+    filtered = [
+      ...getBestByUser(entries.filter(entry => entry.status === 'completed')),
+      ...entries.filter(entry => entry.status !== 'completed'),
+    ]
   } else if (filterType === 'latest') {
-    filtered = getLatestByUser(entries)
+    filtered = [
+      ...getLatestByUser(entries.filter(entry => entry.status === 'completed')),
+      ...entries.filter(entry => entry.status !== 'completed'),
+    ]
   }
 
   return sortEntries(filtered)
@@ -85,9 +91,9 @@ function filterEntries<T extends TimeEntryDraft>(
 
 function getGap(
   i: number,
-  entry: TimeEntryDraft,
-  compareEntry: TimeEntryDraft | undefined,
-  leader?: TimeEntryDraft
+  entry: TimeEntry,
+  compareEntry: TimeEntry | undefined,
+  leader?: TimeEntry
 ): LeaderboardEntryGap | undefined {
   if (entry.status !== 'completed' || !entry.duration) return undefined
 
@@ -110,11 +116,11 @@ function getGap(
 }
 
 export type TimeEntryListProps = {
-  highlight?: (e: TimeEntryDraft) => boolean
+  highlight?: (e: TimeEntry) => boolean
   track?: string
   user?: string
   session?: string
-  entries: (TimeEntryDraft & { required?: boolean })[]
+  entries: (TimeEntry & { required?: boolean })[]
   filter?: FilterType
 }
 

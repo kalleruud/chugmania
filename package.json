@@ -16,7 +16,7 @@
     "db:gen": "drizzle-kit generate",
     "db:push": "drizzle-kit push --force",
     "db:studio": "drizzle-kit studio",
-    "webhook:gen": "npx --yes --package=openapi-typescript@7.13.0 --package=typescript@5.9.3 openapi-typescript https://raw.githubusercontent.com/kalleruud/tm-webhooks-plugin/ae49b8fec14603b8287929af9f908ee350f3b30d/openapi.yaml --root-types --root-types-no-schema-prefix --output backend/src/models/webhook.generated.ts && node scripts/trim-webhook-types.js && eslint backend/src/models/webhook.generated.ts --fix && prettier --write backend/src/models/webhook.generated.ts"
+    "webhook:gen": "npx --yes --package=openapi-typescript@7.13.0 --package=typescript@5.9.3 openapi-typescript https://raw.githubusercontent.com/kalleruud/tm-webhooks-plugin/ae49b8fec14603b8287929af9f908ee350f3b30d/openapi.yaml --root-types --root-types-no-schema-prefix --output backend/src/models/webhook.generated.ts && node scripts/remove-unused-openapi-declarations.js && eslint backend/src/models/webhook.generated.ts --fix && prettier --write backend/src/models/webhook.generated.ts"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
@@ -95,7 +95,6 @@
   "allowScripts": {
     "esbuild": true,
     "better-sqlite3": true,
-    "fsevents": true,
-    "unrs-resolver@1.12.2": true
+    "fsevents": true
   }
 }

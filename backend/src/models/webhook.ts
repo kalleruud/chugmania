@@ -1,20 +1,6 @@
-import type { Track } from '@common/models/track'
 import { isRecord } from '@common/utils/utils'
 
 import type { Event, Map, Player } from './webhook.generated'
-
-export type WebhookDraft = {
-  kind: 'lap' | 'match'
-  map: Map | null
-  track: Track | null
-  players: {
-    playerIndex: number
-    user: string | null
-    finishDurationMs: number | null
-    chugDurationMs: number | null
-  }[]
-  blockers: string[]
-}
 
 const uuid =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i

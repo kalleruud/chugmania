@@ -1,21 +1,12 @@
 import type { timeEntries } from '../../backend/database/schema'
 import { isRecord } from '../utils/utils'
+import { isEntryStatus } from './entry'
 import type { SuccessResponse } from './socket.io'
 import type { Track } from './track'
 import type { User } from './user'
 
-function isTimeEntryStatus(value: unknown): boolean {
-  return value === 'planned' || value === 'completed' || value === 'cancelled'
-}
-
-export type TimeEntry = typeof timeEntries.$inferSelect & {
-  user: string
-  track: string
-}
-export type CreateTimeEntry = Omit<
-  typeof timeEntries.$inferInsert,
-  'publicationState' | 'webhookCapture' | 'user' | 'track'
-> & { user: string; track: string }
+export type TimeEntry = typeof timeEntries.$inferSelect
+export type CreateTimeEntry = typeof timeEntries.$inferInsert
 
 export type CreateTimeEntryRequest = {
   type: 'CreateTimeEntryRequest'
@@ -24,25 +15,21 @@ export type CreateTimeEntryRequest = {
 export function isCreateTimeEntryRequest(
   data: unknown
 ): data is CreateTimeEntryRequest {
-  if (
-    !isRecord(data) ||
-    ['publicationState', 'webhookCapture'].some(key => key in data)
-  )
-    return false
+  if (!isRecord(data)) return false
   return (
     data.type === 'CreateTimeEntryRequest' &&
-    typeof data.user === 'string' &&
-    typeof data.track === 'string' &&
+    (data.user === undefined ||
+      data.user === null ||
+      typeof data.user === 'string') &&
+    (data.track === undefined ||
+      data.track === null ||
+      typeof data.track === 'string') &&
     (data.tieBreaker === undefined || data.tieBreaker === false) &&
-    (data.status === undefined || isTimeEntryStatus(data.status))
+    (data.status === undefined || isEntryStatus(data.status))
   )
 }
 
-export type EditTimeEntryRequest = Partial<
-  Omit<CreateTimeEntry, 'tieBreaker' | 'user' | 'track'>
-> & {
-  user?: string | null
-  track?: string | null
+export type EditTimeEntryRequest = Partial<CreateTimeEntry> & {
   type: 'EditTimeEntryRequest'
   id: TimeEntry['id']
 }
@@ -50,16 +37,12 @@ export type EditTimeEntryRequest = Partial<
 export function isEditTimeEntryRequest(
   data: unknown
 ): data is EditTimeEntryRequest {
-  if (
-    !isRecord(data) ||
-    ['publicationState', 'webhookCapture'].some(key => key in data)
-  )
-    return false
+  if (!isRecord(data)) return false
   return (
     data.type === 'EditTimeEntryRequest' &&
     typeof data.id === 'string' &&
     data.tieBreaker === undefined &&
-    (data.status === undefined || isTimeEntryStatus(data.status))
+    (data.status === undefined || isEntryStatus(data.status))
   )
 }
 
@@ -97,13 +80,3 @@ export type AbsoluteTimeEntriesResponse = SuccessResponse & {
 }
 
 export type GapType = 'leader' | 'interval'
-
-export function isPublishedTimeEntry(
-  row: typeof timeEntries.$inferSelect
-): row is TimeEntry {
-  return (
-    row.publicationState === 'published' &&
-    row.user !== null &&
-    row.track !== null
-  )
-}

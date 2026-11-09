@@ -9,7 +9,6 @@ import type {
 import {
   isCreateTimeEntryRequest,
   isEditTimeEntryRequest,
-  isPublishedTimeEntry,
 } from '@common/models/timeEntry'
 import type { User } from '@common/models/user'
 import { and, asc, eq, getTableColumns, isNull, sql } from 'drizzle-orm'
@@ -22,7 +21,6 @@ import MatchManager from './match.manager'
 import RatingManager from './rating.manager'
 import SessionManager from './session.manager'
 import TournamentManager from './tournament/tournament.manager'
-import WebhookManager from './webhook.manager'
 
 type TimeEntryRow = typeof timeEntries.$inferSelect
 type TimeEntryUpdates = Partial<Omit<CreateTimeEntry, 'user' | 'track'>> & {
@@ -58,7 +56,6 @@ export default class TimeEntryManager {
         and(
           eq(timeEntries.session, sessionId),
           isNull(timeEntries.deletedAt),
-          eq(timeEntries.publicationState, 'published'),
           eq(timeEntries.status, 'completed')
         )
       )
@@ -85,7 +82,6 @@ export default class TimeEntryManager {
         and(
           eq(timeEntries.session, sessionId),
           isNull(timeEntries.deletedAt),
-          eq(timeEntries.publicationState, 'published'),
           eq(timeEntries.status, 'completed')
         )
       )
@@ -107,13 +103,10 @@ export default class TimeEntryManager {
         and(
           eq(timeEntries.session, sessionId),
           isNull(timeEntries.deletedAt),
-          eq(timeEntries.publicationState, 'published'),
           eq(timeEntries.status, 'completed')
         )
       )
       .all()
-      .filter(isPublishedTimeEntry)
-      .map(row => ({ ...row, webhookCapture: null }))
   }
 
   static async onPostTimeEntry(
@@ -137,6 +130,7 @@ export default class TimeEntryManager {
       db.insert(timeEntries)
         .values({
           id: request.id,
+          webhookCapture: isModerator ? request.webhookCapture : undefined,
           user: request.user,
           track: request.track,
           session: request.session,
@@ -151,7 +145,7 @@ export default class TimeEntryManager {
               : (request.status ?? 'completed'),
         })
         .run()
-      return request.session
+      return request.session && request.user
         ? SessionManager.ensureSessionSignup(request.session, request.user)
         : false
     })()
@@ -196,7 +190,6 @@ export default class TimeEntryManager {
       lapTime.tieBreaker,
       socket.id
     )
-    if (lapTime.publicationState === 'draft') WebhookManager.publish(socket.id)
     return { success: true }
   }
 
@@ -212,7 +205,8 @@ export default class TimeEntryManager {
       AuthManager.checkAuth(socket),
       db.query.timeEntries.findFirst({ where: eq(timeEntries.id, request.id) }),
     ])
-    if (!lapTime) throw new Error(loc.no.error.messages.not_in_db(request.id))
+    if (!lapTime || lapTime.deletedAt)
+      throw new Error(loc.no.error.messages.not_in_db(request.id))
     const updates = TimeEntryManager.normalizeTimeEntryUpdates(request, lapTime)
     TimeEntryManager.validateTimeEntryEdit(user, lapTime, updates)
     return { lapTime, updates }
@@ -245,7 +239,7 @@ export default class TimeEntryManager {
     const duration =
       processed.duration === undefined ? lapTime.duration : processed.duration
     const status =
-      lapTime.publicationState !== 'draft' && (duration ?? 0) > 0
+      !lapTime.webhookCapture && (duration ?? 0) > 0
         ? 'completed'
         : (processed.status ?? lapTime.status)
     if (lapTime.tieBreaker && status === 'cancelled') processed.duration = null
@@ -258,9 +252,10 @@ export default class TimeEntryManager {
     updates: TimeEntryUpdates
   ): void {
     const isModerator = user.role !== 'user'
-    const isUnclaimedDraft =
-      lapTime.publicationState === 'draft' && lapTime.user === null
+    const isUnclaimedDraft = lapTime.user === null
     if (!isModerator && lapTime.user !== user.id && !isUnclaimedDraft)
+      throw new Error(loc.no.error.messages.insufficient_permissions)
+    if (!isModerator && updates.user && updates.user !== user.id)
       throw new Error(loc.no.error.messages.insufficient_permissions)
     if (!lapTime.tieBreaker) return
     const duration =
@@ -298,10 +293,7 @@ export default class TimeEntryManager {
       const sessionId =
         updates.session === undefined ? lapTime.session : updates.session
       const userId = updates.user === undefined ? lapTime.user : updates.user
-      return sessionId &&
-        userId &&
-        lapTime.publicationState === 'published' &&
-        !updates.deletedAt
+      return sessionId && userId && !updates.deletedAt
         ? SessionManager.ensureSessionSignup(sessionId, userId)
         : false
     })()
@@ -333,12 +325,7 @@ export default class TimeEntryManager {
     const data = await db
       .select()
       .from(timeEntries)
-      .where(
-        and(
-          isNull(timeEntries.deletedAt),
-          eq(timeEntries.publicationState, 'published')
-        )
-      )
+      .where(and(isNull(timeEntries.deletedAt)))
       .orderBy(
         asc(
           sql`CASE WHEN ${timeEntries.duration} IS NULL OR ${timeEntries.duration} = 0 THEN 1 ELSE 0 END`
@@ -347,10 +334,6 @@ export default class TimeEntryManager {
         asc(timeEntries.createdAt)
       )
 
-    return TournamentSource.visibleTimeEntries(
-      data
-        .filter(isPublishedTimeEntry)
-        .map(row => ({ ...row, webhookCapture: null }))
-    )
+    return TournamentSource.visibleTimeEntries(data)
   }
 }

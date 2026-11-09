@@ -1,5 +1,6 @@
 import type { matches } from '../../backend/database/schema'
 import { isRecord } from '../utils/utils'
+import { isEntryStatus } from './entry'
 
 export const MATCH_STAGE_CODES = {
   group: 'GS',
@@ -43,36 +44,23 @@ export type Match = typeof matches.$inferSelect & {
     awarded: boolean
   }
 }
-export type CreateMatch = Omit<
-  typeof matches.$inferInsert,
-  | 'publicationState'
-  | 'webhookCapture'
-  | 'user1DurationMs'
-  | 'user2DurationMs'
-  | 'user1ChugDurationMs'
-  | 'user2ChugDurationMs'
->
-
-export type MatchStatus = 'planned' | 'completed' | 'cancelled'
+export type CreateMatch = typeof matches.$inferInsert
 
 export type CreateMatchRequest = {
   type: 'CreateMatchRequest'
 } & CreateMatch
 
-const webhookFields = [
-  'publicationState',
-  'webhookCapture',
-  'user1DurationMs',
-  'user2DurationMs',
-  'user1ChugDurationMs',
-  'user2ChugDurationMs',
-]
-
 export function isCreateMatchRequest(
   data: unknown
 ): data is CreateMatchRequest {
-  if (!isRecord(data) || webhookFields.some(key => key in data)) return false
-  return data.type === 'CreateMatchRequest' && typeof data.track === 'string'
+  if (!isRecord(data)) return false
+  return (
+    data.type === 'CreateMatchRequest' &&
+    (data.status === undefined || isEntryStatus(data.status)) &&
+    (data.track === undefined ||
+      data.track === null ||
+      typeof data.track === 'string')
+  )
 }
 
 export type EditMatchRequest = Partial<CreateMatch> & {
@@ -81,8 +69,12 @@ export type EditMatchRequest = Partial<CreateMatch> & {
 }
 
 export function isEditMatchRequest(data: unknown): data is EditMatchRequest {
-  if (!isRecord(data) || webhookFields.some(key => key in data)) return false
-  return data.type === 'EditMatchRequest' && typeof data.id === 'string'
+  if (!isRecord(data)) return false
+  return (
+    data.type === 'EditMatchRequest' &&
+    typeof data.id === 'string' &&
+    (data.status === undefined || isEntryStatus(data.status))
+  )
 }
 
 export type DeleteMatchRequest = {
@@ -93,6 +85,6 @@ export type DeleteMatchRequest = {
 export function isDeleteMatchRequest(
   data: unknown
 ): data is DeleteMatchRequest {
-  if (!isRecord(data) || webhookFields.some(key => key in data)) return false
+  if (!isRecord(data)) return false
   return data.type === 'DeleteMatchRequest' && typeof data.id === 'string'
 }

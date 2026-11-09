@@ -6,7 +6,7 @@ import {
   userToLookupItem,
 } from '@/lib/lookup-utils'
 import loc from '@common/locale/locales'
-import type { TimeEntryDraft } from '@common/models/resultDraft'
+import { isEntryStatus } from '@common/models/entry'
 import type { SessionWithSignups } from '@common/models/session'
 import type { TimeEntry } from '@common/models/timeEntry'
 import type { Track } from '@common/models/track'
@@ -139,7 +139,7 @@ function DurationInput({
 }
 
 type LapTimeInputProps = {
-  inputTimeEntry: Partial<TimeEntryDraft>
+  inputTimeEntry: Partial<TimeEntry>
   onSubmitResponse?: (success: boolean) => void
   disabled?: boolean
 } & ComponentProps<'form'>
@@ -196,21 +196,19 @@ export default function TimeEntryInput({
   const [status, setStatus] = useState<TimeEntry['status']>(
     inputTimeEntry.status ?? 'completed'
   )
-  const hasDuration = inputListToMs(digits) > 0
-  const isDraft = inputTimeEntry.publicationState === 'draft'
-  const effectiveStatus = !isDraft && hasDuration ? 'completed' : status
+  const isDraft =
+    inputTimeEntry.status === 'draft' || inputTimeEntry.status === 'in_progress'
   const isModerator = !!loggedInUser && loggedInUser.role !== 'user'
 
   function handleSetStatus(value: string) {
-    if (value === 'planned' || value === 'completed' || value === 'cancelled')
-      setStatus(value)
+    if (isEntryStatus(value)) setStatus(value)
   }
 
   const durationInput = inputListToMs(digits)
   const request = {
     duration: durationInput === 0 ? null : durationInput,
     chugDurationMs: showChug ? inputListToMs(chugDigits) : null,
-    status: effectiveStatus,
+    status,
     user: selectedUser?.id ?? null,
     track: selectedTrack?.id ?? null,
     session: selectedSession?.id ?? null,
@@ -235,7 +233,6 @@ export default function TimeEntryInput({
       !request.duration
     )
       return toast.error(loc.no.timeEntry.input.validationError)
-    const publish = isDraft && request.status === 'completed'
 
     toast.promise(
       socket
@@ -244,18 +241,11 @@ export default function TimeEntryInput({
           id,
           ...request,
         })
-        .then(r =>
-          r.success && publish
-            ? socket.emitWithAck('publish_result_draft', { kind: 'lap', id })
-            : r
-        )
         .then(r => {
           onSubmitResponse?.(r.success)
           if (!r.success) throw new Error(r.message)
         }),
-      publish
-        ? loc.no.resultDraft.publishRequest
-        : loc.no.timeEntry.input.editRequest
+      loc.no.timeEntry.input.editRequest
     )
   }
 
@@ -361,7 +351,11 @@ export default function TimeEntryInput({
         <Combobox
           className='w-full'
           required={true}
-          disabled={disabled || inputTimeEntry.tieBreaker || isDraft}
+          disabled={
+            disabled ||
+            inputTimeEntry.tieBreaker ||
+            !!inputTimeEntry.webhookCapture
+          }
           placeholder={loc.no.timeEntry.input.placeholder.track}
           selected={selectedTrack}
           setSelected={value => setSelectedTrack(value ?? null)}
@@ -392,9 +386,9 @@ export default function TimeEntryInput({
               {loc.no.match.form.status}
             </Label>
             <Select
-              value={effectiveStatus}
+              value={status}
               onValueChange={handleSetStatus}
-              disabled={disabled || (!isDraft && hasDuration)}>
+              disabled={disabled}>
               <SelectTrigger id='time-entry-status'>
                 <SelectValue />
               </SelectTrigger>

@@ -13,13 +13,12 @@ import {
 } from '@/lib/lookup-utils'
 import type { MatchStage } from '@backend/database/schema'
 import loc from '@common/locale/locales'
+import type { EntryStatus } from '@common/models/entry'
 import type {
   CreateMatchRequest,
   EditMatchRequest,
   Match,
-  MatchStatus,
 } from '@common/models/match'
-import type { MatchDraft } from '@common/models/resultDraft'
 import type { SessionWithSignups } from '@common/models/session'
 import type { Track } from '@common/models/track'
 import type { UserInfo } from '@common/models/user'
@@ -40,7 +39,7 @@ import {
 } from '../ui/select'
 
 type MatchInputProps = {
-  inputMatch: Partial<Match & MatchDraft>
+  inputMatch: Partial<Match>
   onSubmitResponse?: (success: boolean) => void
   onSubmit?: (e: SubmitEvent<HTMLFormElement>) => void
   disabled?: boolean
@@ -78,7 +77,7 @@ export default function MatchInput({
       null)
     : (sessions?.find(u => u.id === inputMatch.session) ?? null)
   const initialWinner: string | null = inputMatch.winner ?? null
-  const initialStatus: MatchStatus = inputMatch.status ?? 'planned'
+  const initialStatus: EntryStatus = inputMatch.status ?? 'planned'
   const initialStage: MatchStage | null = inputMatch.stage ?? null
 
   const [user1, setUser1] = useState(initialUser1)
@@ -128,8 +127,6 @@ export default function MatchInput({
     e.preventDefault()
     const id = inputMatch.id
     if (!id) return
-    const publish =
-      inputMatch.publicationState === 'draft' && status === 'completed'
 
     toast.promise(
       socket
@@ -138,16 +135,11 @@ export default function MatchInput({
           id,
           ...request,
         })
-        .then(r =>
-          r.success && publish
-            ? socket.emitWithAck('publish_result_draft', { kind: 'match', id })
-            : r
-        )
         .then(r => {
           onSubmitResponse?.(r.success)
           if (!r.success) throw new Error(r.message)
         }),
-      publish ? loc.no.resultDraft.publishRequest : loc.no.match.toast.update
+      loc.no.match.toast.update
     )
   }
 
@@ -161,7 +153,7 @@ export default function MatchInput({
     if (status !== 'cancelled' || !tournament) setStatus('completed')
   }
 
-  function handleSetStatus(status: MatchStatus) {
+  function handleSetStatus(status: EntryStatus) {
     setStatus(status)
     if (status === 'planned' || (status === 'cancelled' && !tournament)) {
       setWinner('none')
@@ -222,7 +214,7 @@ export default function MatchInput({
           <Combobox
             className='w-full'
             required={isCreating}
-            disabled={disabled || inputMatch.publicationState === 'draft'}
+            disabled={disabled || !!inputMatch.webhookCapture}
             selected={track}
             setSelected={value => setTrack(value ?? null)}
             items={tracks.map(trackToLookupItem)}

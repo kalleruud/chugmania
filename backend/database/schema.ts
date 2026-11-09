@@ -1,3 +1,4 @@
+import type { EntryStatus } from '@common/models/entry'
 import { sql } from 'drizzle-orm'
 import {
   blob,
@@ -33,7 +34,7 @@ const metadata = {
 export type UserRole = 'admin' | 'moderator' | 'user'
 export type SessionResponse = 'yes' | 'no' | 'maybe'
 export type SessionStatus = 'confirmed' | 'tentative' | 'cancelled'
-export type MatchStatus = 'planned' | 'completed' | 'cancelled'
+
 export type { MatchStage } from '../../common/models/match'
 
 export const users = sqliteTable('users', {
@@ -130,16 +131,12 @@ export const timeEntries = sqliteTable(
     user: text().references(() => users.id),
     track: text().references(() => tracks.id),
     session: text().references(() => sessions.id),
-    publicationState: text('publication_state')
-      .$type<'draft' | 'published'>()
-      .notNull()
-      .default('published'),
     webhookCapture: text('webhook_capture')
       .unique()
       .references(() => webhookCaptures.id),
     chugDurationMs: integer('chug_duration_ms'),
     duration: integer('duration_ms'),
-    status: text().$type<MatchStatus>().notNull().default('completed'),
+    status: text().$type<EntryStatus>().notNull().default('completed'),
     tieBreaker: integer('tie_breaker', { mode: 'boolean' })
       .notNull()
       .default(false),
@@ -151,26 +148,14 @@ export const timeEntries = sqliteTable(
       .on(table.session, table.track, table.user)
       .where(sql`${table.tieBreaker} = 1`),
     check(
-      'time_entry_published_assignment',
-      sql`${table.publicationState} = 'draft' OR (${table.user} IS NOT NULL AND ${table.track} IS NOT NULL)`
-    ),
-    check(
-      'time_entry_publication',
-      sql`${table.publicationState} IN ('draft', 'published')`
-    ),
-    check(
       'time_entry_status',
-      sql`${table.status} IN ('planned', 'completed', 'cancelled')`
+      sql`${table.status} IN ('planned', 'in_progress', 'draft', 'completed', 'cancelled')`
     ),
   ]
 )
 
 export const matches = sqliteTable('matches', {
   ...metadata,
-  publicationState: text('publication_state')
-    .$type<'draft' | 'published'>()
-    .notNull()
-    .default('published'),
   webhookCapture: text('webhook_capture')
     .unique()
     .references(() => webhookCaptures.id),
@@ -187,7 +172,7 @@ export const matches = sqliteTable('matches', {
   stage: text().$type<MatchStage>(),
   comment: text(),
   status: text()
-    .$type<MatchStatus>()
+    .$type<EntryStatus>()
     .notNull()
     .$default(() => 'planned'),
 })

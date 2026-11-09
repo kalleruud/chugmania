@@ -1,10 +1,3 @@
-import type {
-  ResultDraftRequest,
-  ResultDrafts,
-} from '@common/models/resultDraft'
-import type { EventReq, EventRes } from '@common/models/socket.io'
-import type { UserInfo } from '@common/models/user'
-import { isRecord } from '@common/utils/utils'
 import { and, asc, desc, eq, gt, gte, isNull, lte, ne } from 'drizzle-orm'
 import { DateTime } from 'luxon'
 import db, { database } from '../../database/database'
@@ -13,19 +6,14 @@ import {
   sessions,
   timeEntries,
   tracks,
-  users,
   webhookCaptures,
   webhookEvents,
 } from '../../database/schema'
-import { isWebhookEvent, type WebhookDraft } from '../models/webhook'
+import { isWebhookEvent } from '../models/webhook'
 import type { Event, Map, StartEvent } from '../models/webhook.generated'
-import { broadcast, type TypedSocket } from '../server'
-import AuthManager from './auth.manager'
+import { broadcast } from '../server'
 import MatchManager from './match.manager'
-import RatingManager from './rating.manager'
-import SessionManager from './session.manager'
 import TimeEntryManager from './timeEntry.manager'
-import TournamentManager from './tournament/tournament.manager'
 import TrackManager from './track.manager'
 
 type PlayerTimes = {
@@ -48,27 +36,6 @@ export class WebhookError extends Error {
 function fail(message: string): never {
   throw new Error(message)
 }
-function resultRequest(
-  request: unknown
-): asserts request is ResultDraftRequest {
-  if (
-    !isRecord(request) ||
-    typeof request.id !== 'string' ||
-    (request.kind !== 'lap' && request.kind !== 'match')
-  )
-    fail('Invalid result draft request')
-}
-function activeUser(id: string | null): boolean {
-  return (
-    id !== null &&
-    !!db
-      .select({ id: users.id })
-      .from(users)
-      .where(and(eq(users.id, id), isNull(users.deletedAt)))
-      .get()
-  )
-}
-
 function mapMetadata(map: Map) {
   return {
     uid: map.uid,
@@ -133,16 +100,6 @@ export default class WebhookManager {
       )
       .orderBy(asc(sessions.date), asc(sessions.id))
       .get()
-  }
-
-  private static capture(gameId: string): Capture {
-    const capture = db
-      .select()
-      .from(webhookCaptures)
-      .where(eq(webhookCaptures.gameId, gameId))
-      .get()
-    if (!capture) fail('Webhook capture not found')
-    return capture
   }
 
   private static derivedTimes(events: Event[]): PlayerTimes[] | null {
@@ -212,6 +169,12 @@ export default class WebhookManager {
     before: PlayerTimes[] | null,
     after: PlayerTimes[]
   ): void {
+    const events = this.events(capture.id)
+    const status = events.some(
+      event => event.type === 'finish' || event.type === 'end'
+    )
+      ? 'draft'
+      : 'in_progress'
     const times = this.rowTimes(capture).map((current, i) => {
       const keep = (key: keyof PlayerTimes) =>
         current[key] !== (before?.[i]?.[key] ?? null)
@@ -224,9 +187,27 @@ export default class WebhookManager {
           : after[i].chugDurationMs,
       }
     })
+    const { lap, match } = this.rows(capture)
+    if (
+      lap &&
+      lap.status === status &&
+      lap.duration === times[0].finishDurationMs &&
+      lap.chugDurationMs === times[0].chugDurationMs
+    )
+      return
+    if (
+      match &&
+      match.status === status &&
+      match.user1DurationMs === times[0].finishDurationMs &&
+      match.user2DurationMs === times[1].finishDurationMs &&
+      match.user1ChugDurationMs === times[0].chugDurationMs &&
+      match.user2ChugDurationMs === times[1].chugDurationMs
+    )
+      return
     if (capture.totalPlayers === 1)
       db.update(timeEntries)
         .set({
+          status,
           duration: times[0].finishDurationMs,
           chugDurationMs: times[0].chugDurationMs,
         })
@@ -235,6 +216,7 @@ export default class WebhookManager {
     else
       db.update(matches)
         .set({
+          status,
           user1DurationMs: times[0].finishDurationMs,
           user2DurationMs: times[1].finishDurationMs,
           user1ChugDurationMs: times[0].chugDurationMs,
@@ -244,150 +226,14 @@ export default class WebhookManager {
         .run()
   }
 
-  private static draft(capture: Capture): WebhookDraft | null {
-    const events = this.events(capture.id)
-    const start = events.find(
-      (event): event is StartEvent => event.type === 'start'
-    )
-    if (!start) return null
-    const end = events.find(event => event.type === 'end')
-    const { lap, match } = this.rows(capture)
-    const times = this.rowTimes(capture)
-    const players = start.players.map((p, i) => {
-      let user: string | null = null
-      if (capture.totalPlayers === 1) user = lap?.user ?? null
-      else user = i === 0 ? (match?.user1 ?? null) : (match?.user2 ?? null)
-      return { playerIndex: p.playerIndex, user, ...times[i] }
+  private static publishEntries(): void {
+    void Promise.all([
+      TimeEntryManager.getAllTimeEntries(),
+      MatchManager.getAllMatches(),
+    ]).then(([entries, matchRows]) => {
+      broadcast('all_time_entries', entries)
+      broadcast('all_matches', matchRows)
     })
-    const trackId = lap?.track ?? match?.track ?? null
-    const track = trackId
-      ? db
-          .select()
-          .from(tracks)
-          .where(and(eq(tracks.id, trackId), isNull(tracks.deletedAt)))
-          .get()
-      : undefined
-    const blockers: string[] = []
-    if (!end) blockers.push('Waiting for end event')
-    if (
-      end &&
-      events.filter(event => event.sequence <= end.sequence).length !==
-        end.sequence + 1
-    )
-      blockers.push('Missing webhook events')
-    if (!track) blockers.push('Select a track')
-
-    if (players.some(p => !activeUser(p.user)))
-      blockers.push('Assign every player')
-    if (
-      players.length === 2 &&
-      players[0].user &&
-      players[0].user === players[1].user
-    )
-      blockers.push('Players must be different users')
-    const finishers = players.filter(p => (p.finishDurationMs ?? 0) > 0)
-    if (!finishers.length || players.some(p => p.finishDurationMs === 0))
-      blockers.push('No valid finish result')
-    if (
-      players.length === 2 &&
-      players[0].finishDurationMs !== null &&
-      players[0].finishDurationMs === players[1].finishDurationMs
-    )
-      blockers.push('Finish times are tied')
-    const session = db
-      .select()
-      .from(sessions)
-      .where(eq(sessions.id, capture.session))
-      .get()
-    if (!session || session.deletedAt) blockers.push('Session was deleted')
-    if (session?.status === 'cancelled') blockers.push('Session is cancelled')
-    return {
-      kind: players.length === 1 ? 'lap' : 'match',
-      map: start.map,
-      track: track ?? null,
-      players,
-      blockers,
-    }
-  }
-
-  static getAllDrafts(session?: string): ResultDrafts {
-    const captureFilter = and(
-      session !== undefined ? eq(webhookCaptures.session, session) : undefined,
-      isNull(webhookCaptures.deletedAt),
-      isNull(webhookCaptures.publishedAt)
-    )
-    return {
-      timeEntries: db
-        .select({
-          id: timeEntries.id,
-          createdAt: timeEntries.createdAt,
-          updatedAt: timeEntries.updatedAt,
-          deletedAt: timeEntries.deletedAt,
-          publicationState: timeEntries.publicationState,
-          user: timeEntries.user,
-          track: timeEntries.track,
-          session: timeEntries.session,
-          duration: timeEntries.duration,
-          chugDurationMs: timeEntries.chugDurationMs,
-          status: timeEntries.status,
-          tieBreaker: timeEntries.tieBreaker,
-          amount: timeEntries.amount,
-          comment: timeEntries.comment,
-        })
-        .from(timeEntries)
-        .innerJoin(
-          webhookCaptures,
-          eq(timeEntries.webhookCapture, webhookCaptures.id)
-        )
-        .where(
-          and(
-            captureFilter,
-            eq(timeEntries.publicationState, 'draft'),
-            isNull(timeEntries.deletedAt)
-          )
-        )
-        .orderBy(asc(timeEntries.createdAt))
-        .all(),
-      matches: db
-        .select({
-          id: matches.id,
-          createdAt: matches.createdAt,
-          updatedAt: matches.updatedAt,
-          deletedAt: matches.deletedAt,
-          publicationState: matches.publicationState,
-          user1: matches.user1,
-          user2: matches.user2,
-          track: matches.track,
-          session: matches.session,
-          duration: matches.duration,
-          user1DurationMs: matches.user1DurationMs,
-          user2DurationMs: matches.user2DurationMs,
-          user1ChugDurationMs: matches.user1ChugDurationMs,
-          user2ChugDurationMs: matches.user2ChugDurationMs,
-          winner: matches.winner,
-          stage: matches.stage,
-          comment: matches.comment,
-          status: matches.status,
-        })
-        .from(matches)
-        .innerJoin(
-          webhookCaptures,
-          eq(matches.webhookCapture, webhookCaptures.id)
-        )
-        .where(
-          and(
-            captureFilter,
-            eq(matches.publicationState, 'draft'),
-            isNull(matches.deletedAt)
-          )
-        )
-        .orderBy(asc(matches.createdAt))
-        .all(),
-    }
-  }
-
-  static publish(actor: string | null = null): void {
-    broadcast('all_result_drafts', this.getAllDrafts(), actor)
   }
 
   static receive(event: Event, rawPayload: string, now = new Date()): string {
@@ -420,12 +266,8 @@ export default class WebhookManager {
         'NO_ACTIVE_SESSION',
         'No active receiver session can register this event'
       )
-    const before =
-      existing && !existing.publishedAt
-        ? JSON.stringify(this.draft(existing))
-        : null
-    let createdTrack = false
-    database.transaction(() => {
+    const createdTrack = database.transaction(() => {
+      let trackCreated = false
       const capture =
         existing ??
         db
@@ -506,7 +348,15 @@ export default class WebhookManager {
           .set({ endedAt: new Date(event.occurredAt) })
           .where(eq(webhookCaptures.id, capture.id))
           .run()
-      if (capture.publishedAt || !start) return
+      const existingRows = this.rows(capture)
+      const result = existingRows.lap ?? existingRows.match
+      if (
+        !start ||
+        result?.deletedAt ||
+        result?.status === 'completed' ||
+        result?.status === 'cancelled'
+      )
+        return false
       let matchedTrack = start.map
         ? db
             .select()
@@ -526,7 +376,7 @@ export default class WebhookManager {
           })
           .returning()
           .get()
-        createdTrack = true
+        trackCreated = true
       }
       if (
         capture.totalPlayers === 1 &&
@@ -539,10 +389,9 @@ export default class WebhookManager {
         db.insert(timeEntries)
           .values({
             webhookCapture: capture.id,
-            publicationState: 'draft',
             session: capture.session,
             track: matchedTrack?.id,
-            status: 'planned',
+            status: 'in_progress',
             createdAt: now,
           })
           .run()
@@ -557,104 +406,19 @@ export default class WebhookManager {
         db.insert(matches)
           .values({
             webhookCapture: capture.id,
-            publicationState: 'draft',
             session: capture.session,
             track: matchedTrack?.id,
-            status: 'planned',
+            status: 'in_progress',
             createdAt: now,
           })
           .run()
       const afterTimes = this.derivedTimes(this.events(capture.id))
       if (afterTimes) this.syncTimes(capture, beforeTimes, afterTimes)
+      return trackCreated
     })()
-    const saved = this.capture(event.game.gameId)
-    const after = saved.publishedAt ? null : JSON.stringify(this.draft(saved))
     if (createdTrack)
       void TrackManager.getAllTracks().then(all => broadcast('all_tracks', all))
-    if (before !== after) this.publish()
-    if (saved.publishedAt) return 'Stored; capture already published'
-    if (after === 'null') return 'Stored; waiting for start'
-    if (before === after) return 'Stored; draft unchanged'
-    return before === null || before === 'null'
-      ? 'Draft created'
-      : 'Draft updated'
-  }
-
-  private static captureForResult(request: ResultDraftRequest): Capture {
-    const table = request.kind === 'lap' ? timeEntries : matches
-    const row = db
-      .select({ capture: table.webhookCapture, deletedAt: table.deletedAt })
-      .from(table)
-      .where(eq(table.id, request.id))
-      .get()
-    if (!row?.capture) fail('Result draft not found')
-    const capture = db
-      .select()
-      .from(webhookCaptures)
-      .where(eq(webhookCaptures.id, row.capture))
-      .get()
-    if (!capture) fail('Result draft not found')
-    if (row.deletedAt && !capture.publishedAt) fail('Result draft was deleted')
-    return capture
-  }
-
-  private static canPublish(actor: UserInfo, draft: WebhookDraft): boolean {
-    return actor.role !== 'user' || draft.players.some(p => p.user === actor.id)
-  }
-
-  static async onPublish(
-    socket: TypedSocket,
-    request: EventReq<'publish_result_draft'>
-  ): Promise<EventRes<'publish_result_draft'>> {
-    const actor = await AuthManager.checkAuth(socket)
-    resultRequest(request)
-    const changed = database.transaction(() => {
-      const capture = this.captureForResult(request)
-      const draft = this.draft(capture)
-      if (!draft || !this.canPublish(actor, draft))
-        fail('Insufficient permissions')
-      if (capture.publishedAt) return false
-      if (draft.blockers.length || !draft.track) fail(draft.blockers.join('; '))
-      const participants = draft.players.map(p => p.user)
-      if (draft.kind === 'lap')
-        db.update(timeEntries)
-          .set({ publicationState: 'published', status: 'completed' })
-          .where(eq(timeEntries.webhookCapture, capture.id))
-          .run()
-      else {
-        const winner = draft.players.toSorted(
-          (a, b) =>
-            (a.finishDurationMs ?? Infinity) - (b.finishDurationMs ?? Infinity)
-        )[0]
-        db.update(matches)
-          .set({
-            publicationState: 'published',
-            status: 'completed',
-            winner: winner.user,
-            duration: winner.finishDurationMs,
-          })
-          .where(eq(matches.webhookCapture, capture.id))
-          .run()
-      }
-      db.update(webhookCaptures)
-        .set({ publishedAt: new Date() })
-        .where(eq(webhookCaptures.id, capture.id))
-        .run()
-      for (const user of participants) {
-        if (user) SessionManager.ensureSessionSignup(capture.session, user)
-      }
-      return true
-    })()
-    if (changed) {
-      RatingManager.recalculate()
-      broadcast('all_sessions', await SessionManager.getAllSessions())
-      broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
-      broadcast('all_matches', await MatchManager.getAllMatches())
-      broadcast('all_rankings', RatingManager.onGetRatings())
-      broadcast('all_tracks', await TrackManager.getAllTracks())
-      TournamentManager.publish(socket.id)
-      this.publish(socket.id)
-    }
-    return { success: true }
+    this.publishEntries()
+    return 'Stored'
   }
 }

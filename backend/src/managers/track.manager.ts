@@ -32,7 +32,7 @@ export default class TrackManager {
           timeEntries,
           and(
             eq(tracks.id, timeEntries.track),
-            eq(timeEntries.publicationState, 'published')
+            eq(timeEntries.status, 'completed')
           )
         )
         .groupBy(tracks.id)

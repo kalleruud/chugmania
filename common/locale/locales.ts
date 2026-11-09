@@ -1,9 +1,6 @@
+import type { EntryStatus } from '@common/models/entry'
 import type { ExportCsvRequest } from '@common/models/importCsv'
-import {
-  MATCH_STAGE_CODES,
-  type MatchStage,
-  type MatchStatus,
-} from '@common/models/match'
+import { MATCH_STAGE_CODES, type MatchStage } from '@common/models/match'
 import type { GapType } from '@common/models/timeEntry'
 import { getRandomItem } from '@common/utils/utils'
 import type {
@@ -40,6 +37,8 @@ const no = {
       error: (err: Error) => `Kunne ikke importere tabellen: ${err.message}`,
     },
     tables: {
+      webhookCaptures: 'Webhook-opptak',
+      webhookEvents: 'Webhook-hendelser',
       tournaments: 'Turneringer',
       tournamentStages: 'Turneringsbaner',
       tournamentGroups: 'Grupper',
@@ -415,14 +414,6 @@ const no = {
       update_failed: 'Oppdatering feilet, prøv igjen.',
     },
   },
-  resultDraft: {
-    publish: 'Publiser',
-    publishRequest: {
-      loading: 'Publiserer resultatet',
-      success: 'Resultatet ble publisert',
-      error: (err: Error) => `Publisering feilet: ${err.message}`,
-    },
-  },
   timeEntry: {
     title: 'Rundetider',
     receivedUpdate: 'Rundetidene ble oppdatert',
@@ -503,10 +494,12 @@ const no = {
   common: {
     cancelEntity: 'Avlys',
     status: {
+      in_progress: 'Pågår',
+      draft: 'Utkast',
       planned: 'Planlagt',
       completed: 'Ferdig',
       cancelled: 'Avlyst',
-    } as Record<MatchStatus, string>,
+    } as Record<EntryStatus, string>,
     confirm: 'Sikker?',
     now: 'Nå',
     new: 'Ny',

@@ -3,7 +3,7 @@ import type { DisplayMatch } from '@/components/match/MatchProps'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useData } from '@/contexts/DataContext'
 import loc from '@common/locale/locales'
-import type { ResultDrafts, TimeEntryDraft } from '@common/models/resultDraft'
+import type { TimeEntry } from '@common/models/timeEntry'
 import type { Track } from '@common/models/track'
 import { isInactiveFinalReset } from '@common/utils/tournament'
 import type { ComponentProps } from 'react'
@@ -17,7 +17,6 @@ import { TrackRow } from './TrackRow'
 
 type TrackLeaderboardProps = {
   track: Track | null
-  resultDrafts?: ResultDrafts
   excludeTournamentMatches?: boolean
   hideTrack?: boolean
 } & Omit<TimeEntryListProps, 'track' | 'entries'>
@@ -25,7 +24,6 @@ type TrackLeaderboardProps = {
 export default function TrackLeaderboard({
   className,
   track,
-  resultDrafts,
   user,
   session,
   hideTrack,
@@ -41,10 +39,7 @@ export default function TrackLeaderboard({
       </div>
     )
 
-  const allEntries: TimeEntryDraft[] = [
-    ...(resultDrafts?.timeEntries ?? []),
-    ...timeEntries,
-  ]
+  const allEntries: TimeEntry[] = [...timeEntries]
   const entries = [
     ...new Map(allEntries.map(entry => [entry.id, entry])).values(),
   ]
@@ -52,10 +47,7 @@ export default function TrackLeaderboard({
     .filter(te => !user || user === te.user)
     .filter(te => (track?.id ?? null) === te.track)
 
-  const allMatches: DisplayMatch[] = [
-    ...(resultDrafts?.matches ?? []),
-    ...matches,
-  ]
+  const allMatches: DisplayMatch[] = [...matches]
   const filteredMatches = [
     ...new Map(allMatches.map(match => [match.id, match])).values(),
   ]

@@ -18,7 +18,6 @@ import RatingManager from './rating.manager'
 import SessionManager from './session.manager'
 import TimeEntryManager from './timeEntry.manager'
 import TournamentManager from './tournament/tournament.manager'
-import WebhookManager from './webhook.manager'
 
 export default class UserManager {
   static readonly table = users
@@ -174,7 +173,6 @@ export default class UserManager {
       RatingManager.recalculate()
       broadcast('all_rankings', RatingManager.onGetRatings())
       broadcast('all_sessions', await SessionManager.getAllSessions())
-      WebhookManager.publish(socket.id)
     }
     if (request.deletedAt !== undefined || request.role !== undefined)
       TournamentManager.publish(socket.id)
@@ -216,7 +214,6 @@ export default class UserManager {
     broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
     broadcast('all_rankings', RatingManager.onGetRatings())
     broadcast('all_sessions', await SessionManager.getAllSessions())
-    WebhookManager.publish(socket.id)
     TournamentManager.publish(socket.id)
 
     return {

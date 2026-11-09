@@ -18,7 +18,6 @@ import AuthManager from './auth.manager'
 import RatingManager from './rating.manager'
 import TimeEntryManager from './timeEntry.manager'
 import TournamentManager from './tournament/tournament.manager'
-import WebhookManager from './webhook.manager'
 
 export default class MatchManager {
   private static validateMatchState(
@@ -48,19 +47,10 @@ export default class MatchManager {
       .select({ ...getTableColumns(matches) })
       .from(matches)
       .leftJoin(sessions, eq(matches.session, sessions.id))
-      .where(
-        and(
-          isNull(matches.deletedAt),
-          eq(matches.publicationState, 'published')
-        )
-      )
+      .where(and(isNull(matches.deletedAt)))
       .orderBy(desc(sql`COALESCE(${sessions.date}, ${matches.createdAt})`))
 
-    return TournamentManager.enrich(
-      TournamentSource.visibleMatches(
-        matchRows.map(row => ({ ...row, webhookCapture: null }))
-      )
-    )
+    return TournamentManager.enrich(TournamentSource.visibleMatches(matchRows))
   }
 
   // Returns matches sorted by creation date, most recent first.
@@ -68,16 +58,9 @@ export default class MatchManager {
     return db
       .select({ ...getTableColumns(matches) })
       .from(matches)
-      .where(
-        and(
-          eq(matches.session, sessionId),
-          isNull(matches.deletedAt),
-          eq(matches.publicationState, 'published')
-        )
-      )
+      .where(and(eq(matches.session, sessionId), isNull(matches.deletedAt)))
       .orderBy(desc(matches.createdAt))
       .all()
-      .map(row => ({ ...row, webhookCapture: null }))
   }
 
   static async onCreateMatch(
@@ -104,6 +87,11 @@ export default class MatchManager {
       status: request.status,
       stage: request.stage,
       comment: request.comment,
+      webhookCapture: request.webhookCapture,
+      user1DurationMs: request.user1DurationMs,
+      user2DurationMs: request.user2DurationMs,
+      user1ChugDurationMs: request.user1ChugDurationMs,
+      user2ChugDurationMs: request.user2ChugDurationMs,
     }
     db.insert(matches).values(matchData).run()
 
@@ -131,7 +119,7 @@ export default class MatchManager {
       where: eq(matches.id, request.id),
     })
 
-    if (!preImageMatch) {
+    if (!preImageMatch || preImageMatch.deletedAt) {
       throw new Error(loc.no.error.messages.not_in_db(request.id))
     }
 
@@ -142,6 +130,30 @@ export default class MatchManager {
       broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
       TournamentManager.publish(socket.id)
       return { success: true }
+    }
+    if (
+      request.status === 'completed' &&
+      preImageMatch.webhookCapture &&
+      !request.winner
+    ) {
+      const first =
+        request.user1DurationMs === undefined
+          ? preImageMatch.user1DurationMs
+          : request.user1DurationMs
+      const second =
+        request.user2DurationMs === undefined
+          ? preImageMatch.user2DurationMs
+          : request.user2DurationMs
+      const user1 =
+        request.user1 === undefined ? preImageMatch.user1 : request.user1
+      const user2 =
+        request.user2 === undefined ? preImageMatch.user2 : request.user2
+      request = { ...request, winner: null, duration: null }
+      if (first !== null && (second === null || first < second)) {
+        request = { ...request, winner: user1, duration: first }
+      } else if (second !== null && (first === null || second < first)) {
+        request = { ...request, winner: user2, duration: second }
+      }
     }
     MatchManager.validateMatchState(request, preImageMatch)
 
@@ -157,6 +169,11 @@ export default class MatchManager {
         status: request.status,
         stage: request.stage,
         comment: request.comment,
+        webhookCapture: request.webhookCapture,
+        user1DurationMs: request.user1DurationMs,
+        user2DurationMs: request.user2DurationMs,
+        user1ChugDurationMs: request.user1ChugDurationMs,
+        user2ChugDurationMs: request.user2ChugDurationMs,
         deletedAt: request.deletedAt
           ? new Date(request.deletedAt)
           : request.deletedAt,
@@ -170,8 +187,6 @@ export default class MatchManager {
     broadcast('all_matches', await MatchManager.getAllMatches())
     broadcast('all_rankings', RatingManager.onGetRatings())
     TournamentManager.publish(socket.id)
-    if (preImageMatch.publicationState === 'draft')
-      WebhookManager.publish(socket.id)
 
     return { success: true }
   }

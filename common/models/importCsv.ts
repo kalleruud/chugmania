@@ -2,12 +2,11 @@ import type * as schema from '../../backend/database/schema'
 import { isRecord } from '../utils/utils'
 import type { SuccessResponse } from './socket.io'
 
-export type CsvTable = Exclude<
-  keyof typeof schema,
-  'webhookCaptures' | 'webhookEvents'
->
+export type CsvTable = keyof typeof schema
 
 const csvTables: CsvTable[] = [
+  'webhookCaptures',
+  'webhookEvents',
   'users',
   'tracks',
   'sessions',
