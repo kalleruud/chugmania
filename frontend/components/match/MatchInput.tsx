@@ -11,7 +11,6 @@ import {
   trackToLookupItem,
   userToLookupItem,
 } from '@/lib/lookup-utils'
-import { isPublishSubmit } from '@/lib/utils'
 import type { MatchStage } from '@backend/database/schema'
 import loc from '@common/locale/locales'
 import type {
@@ -29,7 +28,6 @@ import { useMemo, useState, type ComponentProps, type SubmitEvent } from 'react'
 import { useLocation } from 'react-router'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
-import CreateDraftTrackButton from '../track/CreateDraftTrackButton'
 import { Label } from '../ui/label'
 import {
   Select,
@@ -130,7 +128,8 @@ export default function MatchInput({
     e.preventDefault()
     const id = inputMatch.id
     if (!id) return
-    const publish = isPublishSubmit(e)
+    const publish =
+      inputMatch.publicationState === 'draft' && status === 'completed'
 
     toast.promise(
       socket
@@ -223,7 +222,7 @@ export default function MatchInput({
           <Combobox
             className='w-full'
             required={isCreating}
-            disabled={disabled}
+            disabled={disabled || inputMatch.publicationState === 'draft'}
             selected={track}
             setSelected={value => setTrack(value ?? null)}
             items={tracks.map(trackToLookupItem)}
@@ -231,15 +230,6 @@ export default function MatchInput({
             placeholder={loc.no.match.placeholder.selectTrack}
           />
         )}
-        {inputMatch.publicationState === 'draft' &&
-          inputMatch.id &&
-          inputMatch.hasMapMetadata && (
-            <CreateDraftTrackButton
-              request={{ kind: 'match', id: inputMatch.id }}
-              onCreated={setTrack}
-              disabled={disabled}
-            />
-          )}
         {sessions && (
           <Combobox
             className='w-full'

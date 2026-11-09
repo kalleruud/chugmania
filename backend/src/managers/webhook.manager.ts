@@ -319,7 +319,6 @@ export default class WebhookManager {
     return {
       timeEntries: db
         .select({
-          captureId: webhookCaptures.id,
           id: timeEntries.id,
           createdAt: timeEntries.createdAt,
           updatedAt: timeEntries.updatedAt,
@@ -348,16 +347,9 @@ export default class WebhookManager {
           )
         )
         .orderBy(asc(timeEntries.createdAt))
-        .all()
-        .map(({ captureId, ...row }) => ({
-          ...row,
-          hasMapMetadata: !!this.events(captureId).find(
-            event => event.type === 'start'
-          )?.map,
-        })),
+        .all(),
       matches: db
         .select({
-          captureId: webhookCaptures.id,
           id: matches.id,
           createdAt: matches.createdAt,
           updatedAt: matches.updatedAt,
@@ -390,13 +382,7 @@ export default class WebhookManager {
           )
         )
         .orderBy(asc(matches.createdAt))
-        .all()
-        .map(({ captureId, ...row }) => ({
-          ...row,
-          hasMapMetadata: !!this.events(captureId).find(
-            event => event.type === 'start'
-          )?.map,
-        })),
+        .all(),
     }
   }
 
@@ -438,6 +424,7 @@ export default class WebhookManager {
       existing && !existing.publishedAt
         ? JSON.stringify(this.draft(existing))
         : null
+    let createdTrack = false
     database.transaction(() => {
       const capture =
         existing ??
@@ -520,13 +507,27 @@ export default class WebhookManager {
           .where(eq(webhookCaptures.id, capture.id))
           .run()
       if (capture.publishedAt || !start) return
-      const matchedTrack = start.map
+      let matchedTrack = start.map
         ? db
             .select()
             .from(tracks)
             .where(and(eq(tracks.uid, start.map.uid), isNull(tracks.deletedAt)))
             .get()
         : undefined
+      if (start.map && !matchedTrack) {
+        matchedTrack = db
+          .insert(tracks)
+          .values({
+            ...mapMetadata(start.map),
+            name: start.map.name,
+            mapType: start.map.type,
+            level: 'custom',
+            game: capture.sourceGame,
+          })
+          .returning()
+          .get()
+        createdTrack = true
+      }
       if (
         capture.totalPlayers === 1 &&
         !db
@@ -568,6 +569,8 @@ export default class WebhookManager {
     })()
     const saved = this.capture(event.game.gameId)
     const after = saved.publishedAt ? null : JSON.stringify(this.draft(saved))
+    if (createdTrack)
+      void TrackManager.getAllTracks().then(all => broadcast('all_tracks', all))
     if (before !== after) this.publish()
     if (saved.publishedAt) return 'Stored; capture already published'
     if (after === 'null') return 'Stored; waiting for start'
@@ -597,43 +600,6 @@ export default class WebhookManager {
 
   private static canPublish(actor: UserInfo, draft: WebhookDraft): boolean {
     return actor.role !== 'user' || draft.players.some(p => p.user === actor.id)
-  }
-
-  static async onCreateTrack(
-    socket: TypedSocket,
-    request: EventReq<'create_draft_track'>
-  ): Promise<EventRes<'create_draft_track'>> {
-    const actor = await AuthManager.checkAuth(socket)
-    resultRequest(request)
-    const track = database.transaction(() => {
-      const capture = this.captureForResult(request)
-      const draft = this.draft(capture)
-      if (!draft || !this.canPublish(actor, draft))
-        fail('Insufficient permissions')
-      if (capture.publishedAt || !draft.map) fail('Missing webhook metadata')
-      const existing = db
-        .select()
-        .from(tracks)
-        .where(eq(tracks.uid, draft.map.uid))
-        .get()
-      if (existing) {
-        if (existing.deletedAt) fail('Track has been deleted')
-        return existing
-      }
-      return db
-        .insert(tracks)
-        .values({
-          ...mapMetadata(draft.map),
-          name: draft.map.name,
-          mapType: draft.map.type,
-          level: 'custom',
-          game: capture.sourceGame,
-        })
-        .returning()
-        .get()
-    })()
-    broadcast('all_tracks', await TrackManager.getAllTracks())
-    return { success: true, track }
   }
 
   static async onPublish(

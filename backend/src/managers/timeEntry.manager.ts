@@ -245,7 +245,9 @@ export default class TimeEntryManager {
     const duration =
       processed.duration === undefined ? lapTime.duration : processed.duration
     const status =
-      (duration ?? 0) > 0 ? 'completed' : (processed.status ?? lapTime.status)
+      lapTime.publicationState !== 'draft' && (duration ?? 0) > 0
+        ? 'completed'
+        : (processed.status ?? lapTime.status)
     if (lapTime.tieBreaker && status === 'cancelled') processed.duration = null
     return { ...processed, status }
   }

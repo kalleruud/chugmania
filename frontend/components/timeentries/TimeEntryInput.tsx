@@ -5,7 +5,6 @@ import {
   trackToLookupItem,
   userToLookupItem,
 } from '@/lib/lookup-utils'
-import { isPublishSubmit } from '@/lib/utils'
 import loc from '@common/locale/locales'
 import type { TimeEntryDraft } from '@common/models/resultDraft'
 import type { SessionWithSignups } from '@common/models/session'
@@ -36,7 +35,6 @@ import { useConnection } from '../../contexts/ConnectionContext'
 import { useData } from '../../contexts/DataContext'
 import { TextField } from '../FormFields'
 import { SessionRow } from '../session/SessionRow'
-import CreateDraftTrackButton from '../track/CreateDraftTrackButton'
 import { TrackRow } from '../track/TrackRow'
 import { Button } from '../ui/button'
 import { Label } from '../ui/label'
@@ -51,7 +49,7 @@ import { Spinner } from '../ui/spinner'
 import UserRow from '../user/UserRow'
 
 // Stable keys for each digit position to avoid using array index as key
-const DIGIT_KEYS = ['m10', 'm1', 's10', 's1', 'h1', 'h10'] as const
+const DIGIT_KEYS = ['m10', 'm1', 's10', 's1', 'ms100', 'ms10', 'ms1'] as const
 const DIGIT = /^\d$/
 
 function DurationInput({
@@ -125,7 +123,7 @@ function DurationInput({
             onFocus={e => e.currentTarget.select()}
             onClick={e => e.currentTarget.select()}
             className={twMerge(
-              'font-f1-bold h-16 w-12 rounded-md border border-input bg-background text-center text-2xl tabular-nums caret-transparent transition selection:bg-transparent invalid:border-red-500/30 invalid:bg-red-500/30 focus:border-primary focus:ring-ring dark:bg-input/30',
+              'font-f1-bold h-16 w-8 rounded-md border border-input bg-background text-center text-2xl tabular-nums caret-transparent transition selection:bg-transparent invalid:border-red-500/30 invalid:bg-red-500/30 focus:border-primary focus:ring-ring sm:w-12 dark:bg-input/30',
               small && 'h-10 w-8 text-lg'
             )}
             inputMode='numeric'
@@ -199,7 +197,8 @@ export default function TimeEntryInput({
     inputTimeEntry.status ?? 'completed'
   )
   const hasDuration = inputListToMs(digits) > 0
-  const effectiveStatus = hasDuration ? 'completed' : status
+  const isDraft = inputTimeEntry.publicationState === 'draft'
+  const effectiveStatus = !isDraft && hasDuration ? 'completed' : status
   const isModerator = !!loggedInUser && loggedInUser.role !== 'user'
 
   function handleSetStatus(value: string) {
@@ -236,7 +235,7 @@ export default function TimeEntryInput({
       !request.duration
     )
       return toast.error(loc.no.timeEntry.input.validationError)
-    const publish = isPublishSubmit(e)
+    const publish = isDraft && request.status === 'completed'
 
     toast.promise(
       socket
@@ -359,7 +358,7 @@ export default function TimeEntryInput({
         <Combobox
           className='w-full'
           required={true}
-          disabled={disabled || inputTimeEntry.tieBreaker}
+          disabled={disabled || inputTimeEntry.tieBreaker || isDraft}
           placeholder={loc.no.timeEntry.input.placeholder.track}
           selected={selectedTrack}
           setSelected={value => setSelectedTrack(value ?? null)}
@@ -368,16 +367,6 @@ export default function TimeEntryInput({
           items={tracks.map(trackToLookupItem)}
           CustomRow={TrackRow}
         />
-
-        {inputTimeEntry.publicationState === 'draft' &&
-          inputTimeEntry.id &&
-          inputTimeEntry.hasMapMetadata && (
-            <CreateDraftTrackButton
-              request={{ kind: 'lap', id: inputTimeEntry.id }}
-              onCreated={setSelectedTrack}
-              disabled={disabled}
-            />
-          )}
 
         <Combobox
           className='w-full'
@@ -394,7 +383,7 @@ export default function TimeEntryInput({
           CustomRow={SessionRow}
         />
 
-        {isModerator && (
+        {(isModerator || isDraft) && (
           <div className='flex flex-col gap-1'>
             <Label htmlFor='time-entry-status'>
               {loc.no.match.form.status}
@@ -402,7 +391,7 @@ export default function TimeEntryInput({
             <Select
               value={effectiveStatus}
               onValueChange={handleSetStatus}
-              disabled={disabled || hasDuration}>
+              disabled={disabled || (!isDraft && hasDuration)}>
               <SelectTrigger id='time-entry-status'>
                 <SelectValue />
               </SelectTrigger>

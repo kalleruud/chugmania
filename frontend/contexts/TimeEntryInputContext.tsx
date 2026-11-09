@@ -231,14 +231,6 @@ export default function TimeEntryInputProvider({
                 </ConfirmationButton>
               )}
 
-            {canEdit &&
-              (mode === 'match' ? currentMatch : currentTimeEntry)
-                ?.publicationState === 'draft' && (
-                <Button form='inputForm' value='publish' variant='outline'>
-                  {loc.no.resultDraft.publish}
-                </Button>
-              )}
-
             {isEditing ? (
               <ConfirmationButton form='inputForm' disabled={!canEdit}>
                 {mode === 'match' ? loc.no.match.edit : localeStrings.update}

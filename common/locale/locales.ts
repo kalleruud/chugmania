@@ -446,7 +446,7 @@ const no = {
       noUser: 'Du må velge en bruker, idiot!',
       noTrack: 'Du må velge en bane, din bøtte!',
       noChanges: 'Du har ikke gjort noen endringer...',
-      chug: 'Chugtid',
+      chug: 'Chuggetid',
       removeChug: 'Fjern chugtid',
       fieldName: {
         comment: 'Kommentar',

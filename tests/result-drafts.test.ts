@@ -264,9 +264,8 @@ test('regular users claim unclaimed lap drafts and deleted drafts cannot publish
   expect(WebhookManager.getAllDrafts(session).timeEntries).toEqual([])
 })
 
-test('webhook tracks are created explicitly and later captures match their uid', async () => {
+test('webhooks create missing tracks and later captures reuse their uid', async () => {
   const admin = await login(createUser('metadata-track-admin', 'admin'))
-  const outsider = await login(createUser('metadata-track-outsider'))
   const now = new Date('2031-01-15T12:00:00.000Z')
   const session = await startedSession(admin, now)
   const map: Map = {
@@ -283,15 +282,10 @@ test('webhook tracks are created explicitly and later captures match their uid',
   first.start(map)
   const draft = WebhookManager.getAllDrafts(session).timeEntries[0]
   assert(draft)
-  expect(draft.hasMapMetadata).toBe(true)
-  const request: ResultDraftRequest = { kind: 'lap', id: draft.id }
-  await assert.rejects(
-    WebhookManager.onCreateTrack(outsider, request),
-    /Insufficient permissions/
-  )
-  const response = await WebhookManager.onCreateTrack(admin, request)
-  assertResponse(response)
-  expect(response.track).toMatchObject({
+  const track = db.select().from(tracks).where(eq(tracks.uid, map.uid)).get()
+  assert(track)
+  expect(draft.track).toBe(track.id)
+  expect(track).toMatchObject({
     uid: map.uid,
     name: map.name,
     author: map.author,
@@ -300,24 +294,21 @@ test('webhook tracks are created explicitly and later captures match their uid',
     level: 'custom',
     goldMedalMs: 12000,
   })
-  const repeated = await WebhookManager.onCreateTrack(admin, request)
-  assertResponse(repeated)
-  expect(repeated.track.id).toBe(response.track.id)
   const second = capture(now, 1, 'next')
   second.start(map)
   expect(
     WebhookManager.getAllDrafts(session).timeEntries.some(
-      row => row.id !== draft.id && row.track === response.track.id
+      row => row.id !== draft.id && row.track === track.id
     )
   ).toBe(true)
   const third = capture(now, 1, 'next')
   third.start()
-  const missing = WebhookManager.getAllDrafts(session).timeEntries.find(
-    row => !row.hasMapMetadata
-  )
-  assert(missing)
-  await assert.rejects(
-    WebhookManager.onCreateTrack(admin, { kind: 'lap', id: missing.id }),
-    /Missing webhook metadata/
-  )
+  expect(
+    WebhookManager.getAllDrafts(session).timeEntries.filter(
+      row => row.track === null
+    )
+  ).toHaveLength(1)
+  expect(
+    db.select().from(tracks).where(eq(tracks.uid, map.uid)).all()
+  ).toHaveLength(1)
 })
