@@ -296,7 +296,7 @@ test('webhook tracks are created explicitly and later captures match their uid',
     name: map.name,
     author: map.author,
     game: 'next',
-    type: map.type,
+    mapType: map.type,
     level: 'custom',
     goldMedalMs: 12000,
   })

@@ -625,7 +625,7 @@ export default class WebhookManager {
         .values({
           ...mapMetadata(draft.map),
           name: draft.map.name,
-          type: draft.map.type,
+          mapType: draft.map.type,
           level: 'custom',
           game: capture.sourceGame,
         })
