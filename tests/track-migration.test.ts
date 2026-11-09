@@ -39,7 +39,7 @@ test('track metadata migration preserves references and separates environments f
         name: '001',
         level: 'white',
         environment: 'Canyon',
-        map_type: null,
+        map_type: 'Trackmania\\Race',
         game: 'turbo',
       },
       {
@@ -69,6 +69,17 @@ test('track metadata migration preserves references and separates environments f
     })
     expect(database.query('SELECT track FROM matches').get()).toEqual({
       track: 'valley',
+    })
+    expect(
+      database
+        .query(
+          "SELECT uid, author, gold_medal_ms FROM tracks WHERE id = 'canyon'"
+        )
+        .get()
+    ).toEqual({
+      uid: 'rdClvxHy8JgOjrNrEbK4X5Jj7V',
+      author: 'Nadeo',
+      gold_medal_ms: 35126,
     })
     expect(database.query('PRAGMA foreign_key_check').all()).toEqual([])
     database.run(
