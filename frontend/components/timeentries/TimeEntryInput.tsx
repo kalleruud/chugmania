@@ -123,8 +123,8 @@ function DurationInput({
             onFocus={e => e.currentTarget.select()}
             onClick={e => e.currentTarget.select()}
             className={twMerge(
-              'font-f1-bold h-16 w-8 rounded-md border border-input bg-background text-center text-2xl tabular-nums caret-transparent transition selection:bg-transparent invalid:border-red-500/30 invalid:bg-red-500/30 focus:border-primary focus:ring-ring sm:w-12 dark:bg-input/30',
-              small && 'h-10 w-8 text-lg'
+              'font-f1-bold rounded-md border border-input bg-background text-center text-2xl tabular-nums caret-transparent transition selection:bg-transparent invalid:border-red-500/30 invalid:bg-red-500/30 focus:border-primary focus:ring-ring dark:bg-input/30',
+              small ? 'h-10 w-7 text-lg sm:w-8' : 'h-16 w-8 sm:w-10'
             )}
             inputMode='numeric'
             pattern={i === 0 || i === 2 ? '[0-5]' : '[0-9]'}
@@ -299,29 +299,32 @@ export default function TimeEntryInput({
           disabled={disabled}
         />
         {showChug ? (
-          <fieldset className='flex items-center gap-1'>
-            <legend className='mb-1 text-sm text-muted-foreground'>
+          <fieldset className='min-w-0'>
+            <legend className='mb-1 w-full text-center text-sm text-muted-foreground'>
               {loc.no.timeEntry.input.chug}
             </legend>
-            <DurationInput
-              small
-              label={loc.no.timeEntry.input.chug}
-              digits={chugDigits}
-              setDigits={setChugDigits}
-              disabled={disabled}
-            />
-            <Button
-              type='button'
-              variant='ghost'
-              size='icon'
-              aria-label={loc.no.timeEntry.input.removeChug}
-              disabled={disabled}
-              onClick={() => {
-                setShowChug(false)
-                setChugDigits(durationToInputList(null))
-              }}>
-              <XMarkIcon />
-            </Button>
+            <div className='relative'>
+              <DurationInput
+                small
+                label={loc.no.timeEntry.input.chug}
+                digits={chugDigits}
+                setDigits={setChugDigits}
+                disabled={disabled}
+              />
+              <Button
+                type='button'
+                variant='ghost'
+                size='icon'
+                className='absolute top-1/2 left-full ml-1 -translate-y-1/2'
+                aria-label={loc.no.timeEntry.input.removeChug}
+                disabled={disabled}
+                onClick={() => {
+                  setShowChug(false)
+                  setChugDigits(durationToInputList(null))
+                }}>
+                <XMarkIcon />
+              </Button>
+            </div>
           </fieldset>
         ) : (
           <Button
