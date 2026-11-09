@@ -39,7 +39,7 @@ test('track metadata migration preserves references and separates environments f
         name: '001',
         level: 'white',
         environment: 'Canyon',
-        map_type: 'Trackmania\\Race',
+        map_type: null,
         game: 'turbo',
       },
       {
@@ -70,6 +70,7 @@ test('track metadata migration preserves references and separates environments f
     expect(database.query('SELECT track FROM matches').get()).toEqual({
       track: 'valley',
     })
+    database.run(readFileSync('drizzle/0015_turbo_map_metadata.sql', 'utf8'))
     expect(
       database
         .query(
