@@ -6,6 +6,7 @@ import express, {
   type Response,
 } from 'express'
 import { timingSafeEqual } from 'node:crypto'
+import SessionSource from '../../database/sources/session.source'
 import WebhookManager, { WebhookError } from '../managers/webhook.manager'
 import { isWebhookEvent } from '../models/webhook'
 import type { Event } from '../models/webhook.generated'
@@ -98,7 +99,7 @@ function respondToWebhookError(error: unknown, res: Response): void {
   }
   if (error instanceof WebhookError) {
     if (error.code === 'NO_ACTIVE_SESSION') {
-      const nextSession = WebhookManager.findNextSession()
+      const nextSession = SessionSource.findNext(new Date())
       if (nextSession)
         res.setHeader('Retry-After', nextSession.date.toUTCString())
     }

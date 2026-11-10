@@ -64,10 +64,6 @@ export default class WebhookManager {
     })
   }
 
-  static findNextSession(now = new Date()) {
-    return SessionSource.findNext(now)
-  }
-
   private static derivedTimes(events: Event[]): PlayerTimes[] | null {
     const start = events.find(
       (event): event is StartEvent => event.type === 'start'
