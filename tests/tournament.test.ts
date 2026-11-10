@@ -15,9 +15,7 @@ import {
   tournamentStages,
   type MatchStage,
 } from '../backend/database/schema'
-import TimeEntrySource from '../backend/database/sources/timeEntry.source'
 import TournamentSource from '../backend/database/sources/tournament.source'
-import TournamentGroupSource from '../backend/database/sources/tournamentGroup.source'
 import MatchManager from '../backend/src/managers/match.manager'
 import RatingManager from '../backend/src/managers/rating.manager'
 import SessionManager from '../backend/src/managers/session.manager'
@@ -1157,10 +1155,7 @@ test.serial(
     state.fixtures[0].match.status = 'cancelled'
     state.fixtures[0].match.winner = state.fixtures[0].match.user1
     TournamentSource.saveTournament(state)
-    TimeEntrySource.reconcileTieBreakers(
-      state,
-      new Map([[cup.players[0].id, true]])
-    )
+    TournamentSource.reconcileLaps(state, new Map([[cup.players[0].id, true]]))
     const before = TournamentSource.loadTournament(cup.session.id)
     assert(before)
 
@@ -1198,7 +1193,7 @@ test.serial(
     rejectSave()
     TournamentSource.transaction(() => {
       rejectSave()
-      TournamentGroupSource.rename(
+      TournamentSource.renameGroup(
         before.id,
         before.groups[0].id,
         'Outer write'
@@ -1209,7 +1204,7 @@ test.serial(
 
     assert.throws(
       () =>
-        TimeEntrySource.reconcileTieBreakers(
+        TournamentSource.reconcileLaps(
           before,
           new Map([
             [cup.players[1].id, true],

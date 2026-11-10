@@ -57,13 +57,4 @@ export default class TrackSource {
   static create(track: typeof tracks.$inferInsert) {
     return db.insert(tracks).values(track).returning().get()
   }
-
-  static getActiveIds(): string[] {
-    return db
-      .select({ id: tracks.id })
-      .from(tracks)
-      .where(isNull(tracks.deletedAt))
-      .all()
-      .map(row => row.id)
-  }
 }

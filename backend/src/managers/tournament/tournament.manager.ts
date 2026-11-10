@@ -18,11 +18,7 @@ import { RATING_CONSTANTS } from '@common/utils/constants'
 import { getTournamentStages } from '@common/utils/tournament'
 import { createHash, randomUUID } from 'node:crypto'
 import type { SessionStatus } from '../../../database/schema'
-import SessionSource from '../../../database/sources/session.source'
-import TimeEntrySource from '../../../database/sources/timeEntry.source'
 import TournamentSource from '../../../database/sources/tournament.source'
-import TournamentGroupSource from '../../../database/sources/tournamentGroup.source'
-import TrackSource from '../../../database/sources/track.source'
 import type { TypedSocket } from '../../server'
 import { broadcast, broadcastTournaments } from '../../server'
 import AuthManager from '../auth.manager'
@@ -68,7 +64,7 @@ export default class TournamentManager {
   }
 
   private static session(session: string, allowCancelled = false) {
-    const row = SessionSource.getActiveById(session)
+    const row = TournamentSource.findSession(session)
     if (!row || (!allowCancelled && row.status === 'cancelled'))
       throw new Error(loc.no.tournament.session)
     return row
@@ -96,7 +92,7 @@ export default class TournamentManager {
       id,
       config,
       participants,
-      available: new Set(TrackSource.getActiveIds()),
+      available: new Set(TournamentSource.getAvailableTrackIds()),
       sessionStatus: this.session(config.session, true).status,
       requiredTracks: getTournamentStages(config, participants.length).flatMap(
         stage => config.stageTracks[stage] ?? []
@@ -227,7 +223,8 @@ export default class TournamentManager {
       const updated = editTournamentMatch(state, request)
       if (
         request.track !== undefined &&
-        (!request.track || !TrackSource.getActiveIds().includes(request.track))
+        (!request.track ||
+          !TournamentSource.getAvailableTrackIds().includes(request.track))
       )
         throw new Error(loc.no.tournament.tracks)
       TournamentSource.saveTournament(updated)
@@ -251,10 +248,7 @@ export default class TournamentManager {
       const state = TournamentManager.getState(session)
       if (!state || state.cancelled || !state.config.tieBreakerTrack) return
       const automatic = resolveTournament(state)
-      TimeEntrySource.reconcileTieBreakers(
-        automatic,
-        tieBreakerNeeds(automatic)
-      )
+      TournamentSource.reconcileLaps(automatic, tieBreakerNeeds(automatic))
       const refreshed = TournamentManager.getState(session)
       if (!refreshed) return
       const resolved = resolveTournament(refreshed)
@@ -383,7 +377,7 @@ export default class TournamentManager {
       if (state) TournamentSecurity.authorize(user.id, state.config, 'started')
       if (!state?.groups.some(group => group.id === request.groupId))
         throw new Error(loc.no.tournament.invalidGroup)
-      TournamentGroupSource.rename(
+      TournamentSource.renameGroup(
         state.id,
         request.groupId,
         request.name.trim()

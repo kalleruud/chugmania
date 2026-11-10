@@ -23,6 +23,7 @@ import type {
 import db, { database } from '../database'
 import {
   matches,
+  sessions,
   sessionSignups,
   timeEntries,
   tournamentGroups,
@@ -31,13 +32,9 @@ import {
   tournamentPlayers,
   tournaments,
   tournamentStages,
+  tracks,
   users,
 } from '../schema'
-import SessionSource from './session.source'
-import TimeEntrySource from './timeEntry.source'
-import TournamentGroupSource from './tournamentGroup.source'
-import TournamentPlayerSource from './tournamentPlayer.source'
-import TournamentStageSource from './tournamentStage.source'
 
 const activeDraft = and(
   eq(tournaments.status, 'draft'),
@@ -121,6 +118,25 @@ export default class TournamentSource {
       .map(row => row.user)
   }
 
+  static findSession(
+    session: string
+  ): typeof sessions.$inferSelect | undefined {
+    return db
+      .select()
+      .from(sessions)
+      .where(and(eq(sessions.id, session), isNull(sessions.deletedAt)))
+      .get()
+  }
+
+  static getAvailableTrackIds(): string[] {
+    return db
+      .select({ id: tracks.id })
+      .from(tracks)
+      .where(isNull(tracks.deletedAt))
+      .all()
+      .map(row => row.id)
+  }
+
   static findMatchTournament(
     matchId: string
   ): typeof tournaments.$inferSelect | undefined {
@@ -164,16 +180,62 @@ export default class TournamentSource {
     return {
       id: row.id,
       config: this.loadConfig(row),
-      participants: TournamentPlayerSource.getByTournament(row.id),
-      groups: TournamentGroupSource.getByTournament(row.id),
-      tieBreakers: row.tieBreakerTrack
-        ? TimeEntrySource.getTieBreakers(row.session, row.tieBreakerTrack)
-        : [],
+      participants: this.loadPlayers(row.id),
+      groups: this.loadGroups(row.id),
+      tieBreakers: this.loadLaps(row),
       fixtures: this.loadFixtures(row.id),
       frozenAt: row.frozenAt ?? row.createdAt,
       notReadyReason: row.notReadyReason,
-      cancelled: SessionSource.findById(session)?.status === 'cancelled',
+      cancelled:
+        db.select().from(sessions).where(eq(sessions.id, session)).get()
+          ?.status === 'cancelled',
     }
+  }
+
+  private static loadGroups(tournament: string): TournamentState['groups'] {
+    return db
+      .select({
+        id: tournamentGroups.id,
+        name: tournamentGroups.name,
+        position: tournamentGroups.position,
+      })
+      .from(tournamentGroups)
+      .where(activeTournamentRows(tournamentGroups, tournament))
+      .orderBy(asc(tournamentGroups.position))
+      .all()
+  }
+
+  private static loadPlayers(
+    tournament: string
+  ): TournamentState['participants'] {
+    return db
+      .select({
+        user: tournamentPlayers.user,
+        rating: tournamentPlayers.rating,
+        globalRank: tournamentPlayers.globalRank,
+        admission: tournamentPlayers.admission,
+        groupId: tournamentPlayers.groupId,
+      })
+      .from(tournamentPlayers)
+      .where(activeTournamentRows(tournamentPlayers, tournament))
+      .all()
+  }
+
+  private static loadLaps(
+    row: typeof tournaments.$inferSelect
+  ): TournamentState['tieBreakers'] {
+    if (!row.tieBreakerTrack) return []
+    return db
+      .select()
+      .from(timeEntries)
+      .where(
+        and(
+          eq(timeEntries.session, row.session),
+          eq(timeEntries.track, row.tieBreakerTrack),
+          eq(timeEntries.tieBreaker, true)
+        )
+      )
+      .all()
   }
 
   private static loadFixtures(tournament: string): TournamentFixture[] {
@@ -221,6 +283,43 @@ export default class TournamentSource {
       }))
   }
 
+  // Reuse required laps, restore applicable planned laps, and soft-delete unused
+  // planned laps while retaining completed and cancelled results.
+  static reconcileLaps(
+    state: TournamentState,
+    needs: Map<string, boolean>
+  ): void {
+    this.transaction(() => {
+      const track = state.config.tieBreakerTrack
+      if (!track) return
+      const laps = new Map(state.tieBreakers.map(lap => [lap.user, lap]))
+      for (const user of needs.keys()) {
+        if (!laps.has(user))
+          db.insert(timeEntries)
+            .values({
+              user,
+              track,
+              session: state.config.session,
+              tieBreaker: true,
+              status: 'planned',
+            })
+            .run()
+      }
+      for (const lap of state.tieBreakers) {
+        if (
+          !lap.user ||
+          lap.status !== 'planned' ||
+          !!lap.deletedAt === !needs.has(lap.user)
+        )
+          continue
+        db.update(timeEntries)
+          .set({ deletedAt: needs.has(lap.user) ? null : new Date() })
+          .where(eq(timeEntries.id, lap.id))
+          .run()
+      }
+    })
+  }
+
   private static readSlot(
     row: typeof tournamentMatchSlots.$inferSelect | undefined
   ): Slot {
@@ -240,8 +339,25 @@ export default class TournamentSource {
     return { kind: row.kind, matchId: row.slotHolderId, ...override }
   }
 
+  static renameGroup(tournament: string, groupId: string, name: string): void {
+    db.update(tournamentGroups)
+      .set({ name, updatedAt: new Date() })
+      .where(
+        and(
+          eq(tournamentGroups.tournament, tournament),
+          eq(tournamentGroups.id, groupId),
+          isNull(tournamentGroups.deletedAt)
+        )
+      )
+      .run()
+  }
+
   static loadConfig(row: typeof tournaments.$inferSelect): TournamentConfig {
-    const stages = TournamentStageSource.getByTournament(row.id)
+    const stages = db
+      .select()
+      .from(tournamentStages)
+      .where(activeTournamentRows(tournamentStages, row.id))
+      .all()
     return {
       session: row.session,
       owner: row.owner,
@@ -360,10 +476,7 @@ export default class TournamentSource {
       const state = this.findActiveTournament(session)
       if (!state) return
       const deletedAt = new Date()
-      const laps =
-        state.status === 'started' && state.tieBreakerTrack
-          ? TimeEntrySource.getTieBreakers(state.session, state.tieBreakerTrack)
-          : []
+      const laps = state.status === 'started' ? this.loadLaps(state) : []
       for (const lap of laps) {
         if (lap.status === 'planned')
           db.update(timeEntries)

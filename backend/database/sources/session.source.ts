@@ -1,19 +1,8 @@
-import type { Session } from '@common/models/session'
 import { and, asc, desc, eq, gt, gte, isNull, lte, ne } from 'drizzle-orm'
 import db from '../database'
 import { sessions } from '../schema'
 
 export default class SessionSource {
-  static findById(id: string): Session | undefined {
-    return db.select().from(sessions).where(eq(sessions.id, id)).get()
-  }
-  static getActiveById(id: string): Session | undefined {
-    return db
-      .select()
-      .from(sessions)
-      .where(and(eq(sessions.id, id), isNull(sessions.deletedAt)))
-      .get()
-  }
   static findStartedWithin(now: Date, earliest: Date, id?: string) {
     return db
       .select()
