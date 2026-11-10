@@ -98,6 +98,12 @@ export default function SessionPage() {
     return hasLaps || hasMatches
   })
 
+  const hasMissingTrack =
+    timeEntries.some(
+      entry => entry.session === session.id && entry.track === null
+    ) ||
+    matches.some(match => match.session === session.id && match.track === null)
+
   return (
     <div className='flex flex-col gap-6'>
       <Breadcrumb>
@@ -194,7 +200,7 @@ export default function SessionPage() {
         <TabsContent
           className='flex flex-col gap-4'
           value={loc.no.session.session}>
-          {sessionTracks.length === 0 && (
+          {sessionTracks.length === 0 && !hasMissingTrack && (
             <Empty className='border border-input'>
               <div className='flex flex-wrap justify-center gap-2'>
                 <Button
@@ -228,6 +234,14 @@ export default function SessionPage() {
               excludeTournamentMatches
             />
           ))}
+          {hasMissingTrack && (
+            <TrackLeaderboard
+              track={null}
+              session={session.id}
+              filter='all'
+              excludeTournamentMatches
+            />
+          )}
         </TabsContent>
         <TabsContent value={loc.no.tournament.title}>
           <TournamentTab session={session} />

@@ -1,5 +1,5 @@
 import { isMatchStage, type Match } from '@common/models/match'
-import type { TimeEntry } from '@common/models/timeEntry'
+import { type TimeEntry } from '@common/models/timeEntry'
 import {
   type Slot,
   type TournamentConfig,
@@ -20,7 +20,7 @@ import type {
   SQLiteTable,
   SQLiteUpdateSetSource,
 } from 'drizzle-orm/sqlite-core'
-import db, { database } from './database'
+import db, { database } from '../database'
 import {
   matches,
   sessions,
@@ -34,7 +34,7 @@ import {
   tournamentStages,
   tracks,
   users,
-} from './schema'
+} from '../schema'
 
 const activeDraft = and(
   eq(tournaments.status, 'draft'),
@@ -307,6 +307,7 @@ export default class TournamentSource {
       }
       for (const lap of state.tieBreakers) {
         if (
+          !lap.user ||
           lap.status !== 'planned' ||
           !!lap.deletedAt === !needs.has(lap.user)
         )

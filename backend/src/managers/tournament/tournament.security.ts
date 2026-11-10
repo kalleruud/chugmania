@@ -6,20 +6,10 @@ import type {
   TournamentStatus,
 } from '@common/models/tournament'
 import type { User } from '@common/models/user'
-import { and, eq, isNull } from 'drizzle-orm'
-import db from '../../../database/database'
-import { users } from '../../../database/schema'
+import UserSource from '../../../database/sources/user.source'
 import type { TypedSocket } from '../../server'
 
 export default class TournamentSecurity {
-  private static viewer(userId: string): User | undefined {
-    return db
-      .select()
-      .from(users)
-      .where(and(eq(users.id, userId), isNull(users.deletedAt)))
-      .get()
-  }
-
   private static canConfigure(
     user: User | undefined,
     config: TournamentConfig
@@ -33,7 +23,7 @@ export default class TournamentSecurity {
     status: TournamentStatus,
     updatedConfig?: TournamentConfig
   ): void {
-    const user = this.viewer(userId)
+    const user = UserSource.getActiveById(userId)
     const allowed =
       status === 'draft'
         ? this.canConfigure(user, config)
@@ -46,7 +36,7 @@ export default class TournamentSecurity {
     details: TournamentDetails | null,
     userId: string
   ): TournamentDetails | null {
-    const user = this.viewer(userId)
+    const user = UserSource.getActiveById(userId)
     return details && user ? this.project(details, user) : null
   }
 
@@ -55,7 +45,7 @@ export default class TournamentSecurity {
     details: TournamentDetails[],
     actor: string | null = null
   ): void {
-    const user = this.viewer(socket.data.userId)
+    const user = UserSource.getActiveById(socket.data.userId)
     socket.emit(
       'all_tournaments',
       user ? details.map(detail => this.project(detail, user)) : [],
@@ -66,6 +56,12 @@ export default class TournamentSecurity {
   private static hiddenTrack(match: Match): Match {
     return {
       id: match.id,
+
+      webhookCapture: null,
+      user1DurationMs: null,
+      user2DurationMs: null,
+      user1ChugDurationMs: null,
+      user2ChugDurationMs: null,
       createdAt: match.createdAt,
       updatedAt: match.updatedAt,
       deletedAt: match.deletedAt,

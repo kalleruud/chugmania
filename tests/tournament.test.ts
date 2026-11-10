@@ -15,7 +15,7 @@ import {
   tournamentStages,
   type MatchStage,
 } from '../backend/database/schema'
-import TournamentSource from '../backend/database/tournament.source'
+import TournamentSource from '../backend/database/sources/tournament.source'
 import MatchManager from '../backend/src/managers/match.manager'
 import RatingManager from '../backend/src/managers/rating.manager'
 import SessionManager from '../backend/src/managers/session.manager'

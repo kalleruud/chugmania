@@ -1,3 +1,4 @@
+import type { EntryStatus } from '@common/models/entry'
 import { sql } from 'drizzle-orm'
 import {
   blob,
@@ -33,7 +34,7 @@ const metadata = {
 export type UserRole = 'admin' | 'moderator' | 'user'
 export type SessionResponse = 'yes' | 'no' | 'maybe'
 export type SessionStatus = 'confirmed' | 'tentative' | 'cancelled'
-export type MatchStatus = 'planned' | 'completed' | 'cancelled'
+
 export type { MatchStage } from '../../common/models/match'
 
 export const users = sqliteTable('users', {
@@ -91,19 +92,51 @@ export const sessionSignups = sqliteTable('session_signups', {
   response: text().$type<SessionResponse>().notNull(),
 })
 
+export const webhookCaptures = sqliteTable('webhook_captures', {
+  ...metadata,
+  gameId: text('game_id').notNull().unique(),
+  session: text()
+    .notNull()
+    .references(() => sessions.id),
+  totalPlayers: integer('total_players').notNull(),
+  sourceGame: text('source_game').$type<Game>().notNull(),
+  pluginName: text('plugin_name').notNull(),
+  pluginVersion: text('plugin_version').notNull(),
+  endedAt: integer('ended_at', { mode: 'timestamp_ms' }),
+  publishedAt: integer('published_at', { mode: 'timestamp_ms' }),
+})
+
+export const webhookEvents = sqliteTable(
+  'webhook_events',
+  {
+    ...metadata,
+    eventId: text('event_id').notNull().unique(),
+    capture: text()
+      .notNull()
+      .references(() => webhookCaptures.id, { onDelete: 'cascade' }),
+    sequence: integer().notNull(),
+    type: text().notNull(),
+    occurredAt: integer('occurred_at', { mode: 'timestamp_ms' }).notNull(),
+    rawPayload: text('raw_payload').notNull(),
+  },
+  table => [
+    uniqueIndex('webhook_capture_sequence').on(table.capture, table.sequence),
+  ]
+)
+
 export const timeEntries = sqliteTable(
   'time_entries',
   {
     ...metadata,
-    user: text()
-      .notNull()
-      .references(() => users.id),
-    track: text()
-      .notNull()
-      .references(() => tracks.id),
+    user: text().references(() => users.id),
+    track: text().references(() => tracks.id),
     session: text().references(() => sessions.id),
+    webhookCapture: text('webhook_capture')
+      .unique()
+      .references(() => webhookCaptures.id),
+    chugDurationMs: integer('chug_duration_ms'),
     duration: integer('duration_ms'),
-    status: text().$type<MatchStatus>().notNull().default('completed'),
+    status: text().$type<EntryStatus>().notNull().default('completed'),
     tieBreaker: integer('tie_breaker', { mode: 'boolean' })
       .notNull()
       .default(false),
@@ -116,13 +149,20 @@ export const timeEntries = sqliteTable(
       .where(sql`${table.tieBreaker} = 1`),
     check(
       'time_entry_status',
-      sql`${table.status} IN ('planned', 'completed', 'cancelled')`
+      sql`${table.status} IN ('planned', 'in_progress', 'draft', 'completed', 'cancelled')`
     ),
   ]
 )
 
 export const matches = sqliteTable('matches', {
   ...metadata,
+  webhookCapture: text('webhook_capture')
+    .unique()
+    .references(() => webhookCaptures.id),
+  user1DurationMs: integer('user1_duration_ms'),
+  user2DurationMs: integer('user2_duration_ms'),
+  user1ChugDurationMs: integer('user1_chug_duration_ms'),
+  user2ChugDurationMs: integer('user2_chug_duration_ms'),
   user1: text().references(() => users.id),
   user2: text().references(() => users.id),
   track: text().references(() => tracks.id),
@@ -132,7 +172,7 @@ export const matches = sqliteTable('matches', {
   stage: text().$type<MatchStage>(),
   comment: text(),
   status: text()
-    .$type<MatchStatus>()
+    .$type<EntryStatus>()
     .notNull()
     .$default(() => 'planned'),
 })

@@ -13,11 +13,11 @@ import {
 } from '@/lib/lookup-utils'
 import type { MatchStage } from '@backend/database/schema'
 import loc from '@common/locale/locales'
+import type { EntryStatus } from '@common/models/entry'
 import type {
   CreateMatchRequest,
   EditMatchRequest,
   Match,
-  MatchStatus,
 } from '@common/models/match'
 import type { SessionWithSignups } from '@common/models/session'
 import type { Track } from '@common/models/track'
@@ -77,7 +77,7 @@ export default function MatchInput({
       null)
     : (sessions?.find(u => u.id === inputMatch.session) ?? null)
   const initialWinner: string | null = inputMatch.winner ?? null
-  const initialStatus: MatchStatus = inputMatch.status ?? 'planned'
+  const initialStatus: EntryStatus = inputMatch.status ?? 'planned'
   const initialStage: MatchStage | null = inputMatch.stage ?? null
 
   const [user1, setUser1] = useState(initialUser1)
@@ -125,13 +125,14 @@ export default function MatchInput({
 
   function handleUpdate(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
-    if (!inputMatch.id) return
+    const id = inputMatch.id
+    if (!id) return
 
     toast.promise(
       socket
         .emitWithAck('edit_match', {
           type: 'EditMatchRequest',
-          id: inputMatch.id,
+          id,
           ...request,
         })
         .then(r => {
@@ -152,7 +153,7 @@ export default function MatchInput({
     if (status !== 'cancelled' || !tournament) setStatus('completed')
   }
 
-  function handleSetStatus(status: MatchStatus) {
+  function handleSetStatus(status: EntryStatus) {
     setStatus(status)
     if (status === 'planned' || (status === 'cancelled' && !tournament)) {
       setWinner('none')
@@ -213,7 +214,7 @@ export default function MatchInput({
           <Combobox
             className='w-full'
             required={isCreating}
-            disabled={disabled}
+            disabled={disabled || !!inputMatch.webhookCapture}
             selected={track}
             setSelected={value => setTrack(value ?? null)}
             items={tracks.map(trackToLookupItem)}

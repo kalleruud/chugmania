@@ -2,8 +2,10 @@ import type * as schema from '../../backend/database/schema'
 import { isRecord } from '../utils/utils'
 import type { SuccessResponse } from './socket.io'
 
+export type CsvTable = keyof typeof schema
+
 export type ImportCsvRequest = {
-  table: keyof typeof schema
+  table: CsvTable
   content: string
 }
 
@@ -13,7 +15,7 @@ export function isImportCsvRequest(data: unknown): data is ImportCsvRequest {
 }
 
 export type ExportCsvRequest = {
-  table: keyof typeof schema
+  table: CsvTable
 }
 
 export function isExportCsvRequest(data: unknown): data is ExportCsvRequest {

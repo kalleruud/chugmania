@@ -15,7 +15,8 @@
     "build:backend": "tsup backend/src/server.ts --format esm --target node20 --out-dir dist/server --clean",
     "db:gen": "drizzle-kit generate",
     "db:push": "drizzle-kit push --force",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "webhook:gen": "npx --yes --package=openapi-typescript@7.13.0 --package=typescript@5.9.3 openapi-typescript https://raw.githubusercontent.com/kalleruud/tm-webhooks-plugin/ae49b8fec14603b8287929af9f908ee350f3b30d/openapi.yaml --root-types --root-types-no-schema-prefix --output backend/src/models/webhook.generated.ts && eslint backend/src/models/webhook.generated.ts --fix && prettier --write backend/src/models/webhook.generated.ts"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

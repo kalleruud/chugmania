@@ -1,9 +1,6 @@
+import type { EntryStatus } from '@common/models/entry'
 import type { ExportCsvRequest } from '@common/models/importCsv'
-import {
-  MATCH_STAGE_CODES,
-  type MatchStage,
-  type MatchStatus,
-} from '@common/models/match'
+import { MATCH_STAGE_CODES, type MatchStage } from '@common/models/match'
 import type { GapType } from '@common/models/timeEntry'
 import { getRandomItem } from '@common/utils/utils'
 import type {
@@ -40,6 +37,8 @@ const no = {
       error: (err: Error) => `Kunne ikke importere tabellen: ${err.message}`,
     },
     tables: {
+      webhookCaptures: 'Webhook-opptak',
+      webhookEvents: 'Webhook-hendelser',
       tournaments: 'Turneringer',
       tournamentStages: 'Turneringsbaner',
       tournamentGroups: 'Grupper',
@@ -274,7 +273,6 @@ const no = {
     frozen: 'Gruppefordeling låst',
     finalStandings: 'Sluttresultat',
     provisional: 'Foreløpig resultat',
-    changed: 'Turneringen er oppdatert',
     saved: 'Turneringen er lagret',
     deleted: 'Turneringen er slettet',
     deleteTitle: 'Slett turnering',
@@ -311,7 +309,7 @@ const no = {
     next: 'Neste',
     upNext: 'Neste match',
     duration: 'Tid',
-    unknownUser: 'Ukjent',
+    unknownUser: '---',
     stage: {
       group: 'Gruppespill',
       eight: 'Åttendelsfinale',
@@ -437,6 +435,7 @@ const no = {
       noUser: 'Du må velge en bruker, idiot!',
       noTrack: 'Du må velge en bane, din bøtte!',
       noChanges: 'Du har ikke gjort noen endringer...',
+      chug: 'Chuggetid',
       fieldName: {
         comment: 'Kommentar',
       },
@@ -492,15 +491,18 @@ const no = {
   common: {
     cancelEntity: 'Avlys',
     status: {
+      in_progress: 'Pågår',
+      draft: 'Utkast',
       planned: 'Planlagt',
       completed: 'Ferdig',
       cancelled: 'Avlyst',
-    } as Record<MatchStatus, string>,
+    } as Record<EntryStatus, string>,
     confirm: 'Sikker?',
     now: 'Nå',
     new: 'Ny',
     edit: 'Rediger',
     delete: 'Slett',
+    remove: 'Fjern',
     save: 'Lagre',
     showAll: 'Vis alle',
     show: 'Vis',

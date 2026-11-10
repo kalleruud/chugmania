@@ -102,6 +102,7 @@ export class TrackRatingCalculator extends RatingCalculator {
   public processTimeEntries(timeEntries: TimeEntry[]) {
     const entriesByTrack = new Map<Track['id'], TimeEntry[]>()
     for (const entry of timeEntries) {
+      if (entry.status !== 'completed' || !entry.user || !entry.track) continue
       entriesByTrack.set(entry.track, [
         ...(entriesByTrack.get(entry.track) ?? []),
         entry,
@@ -128,6 +129,7 @@ export class TrackRatingCalculator extends RatingCalculator {
     let lastDuration: number | undefined = undefined
 
     for (const entry of sortedEntries) {
+      if (!entry.user) continue
       const player = this.getPlayer(entry.user)
       const duration = entry.duration ?? Number.MAX_SAFE_INTEGER
 

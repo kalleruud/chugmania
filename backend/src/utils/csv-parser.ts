@@ -15,6 +15,9 @@ export default class CsvParser {
     'deletedAt',
     'date',
     'frozenAt',
+    'occurredAt',
+    'endedAt',
+    'publishedAt',
   ])
 
   static async toObjects(csv: string) {

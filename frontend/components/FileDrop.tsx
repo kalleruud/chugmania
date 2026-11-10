@@ -10,7 +10,7 @@ import { Spinner } from './ui/spinner'
 type FileDropProps = {
   accept?: string
   isLoading?: boolean
-  onSelect: (file: FileList | undefined) => void
+  onSelect: (files: File[]) => void
 } & Omit<ComponentProps<'button'>, 'onSelect'>
 
 export default function FileDrop({
@@ -24,11 +24,7 @@ export default function FileDrop({
   const [isDragging, setIsDragging] = useState<boolean>(false)
 
   const handleFiles = (fileList: FileList | null) => {
-    if (!fileList || fileList.length === 0) {
-      onSelect(undefined)
-      return
-    }
-    onSelect(fileList)
+    onSelect(Array.from(fileList ?? []))
   }
 
   const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {

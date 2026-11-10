@@ -12,6 +12,7 @@ import express from 'express'
 import { createServer } from 'node:http'
 import path from 'node:path'
 import { Server, Socket } from 'socket.io'
+import { createWebhookRouter } from './endpoints/webhook'
 import AdminManager from './managers/admin.manager'
 import ApiManager from './managers/api.manager'
 import AuthManager from './managers/auth.manager'
@@ -94,6 +95,8 @@ export function broadcastTournaments(
     if (socket.data.userId) TournamentSecurity.emit(socket, details, actor)
   })
 }
+
+app.use(createWebhookRouter())
 
 app.get('/api/sessions/calendar.ics', (req, res) =>
   ApiManager.onGetCalendar(ORIGIN, req, res)

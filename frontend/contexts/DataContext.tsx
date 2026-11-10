@@ -1,4 +1,3 @@
-import loc from '@common/locale/locales'
 import type { Match } from '@common/models/match'
 import type { Ranking } from '@common/models/ranking'
 import type { SessionWithSignups } from '@common/models/session'
@@ -15,7 +14,6 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { toast } from 'sonner'
 import { useConnection } from './ConnectionContext'
 
 type DataContextType = {
@@ -82,7 +80,6 @@ function parseTournament(details: TournamentDetails): TournamentDetails {
 
 export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
   const { socket } = useConnection()
-
   const [tracks, setTracks] = useState<DataContextType['tracks']>(undefined)
   const [timeEntries, setTimeEntries] =
     useState<DataContextType['timeEntries']>(undefined)
@@ -109,16 +106,7 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
   )
 
   useEffect(() => {
-    let previousTournaments: string | undefined
-    socket.on('all_tournaments', (data, actor) => {
-      const serialized = JSON.stringify(data)
-      if (
-        previousTournaments !== undefined &&
-        previousTournaments !== serialized &&
-        actor !== socket.id
-      )
-        toast.info(loc.no.tournament.changed)
-      previousTournaments = serialized
+    socket.on('all_tournaments', data => {
       setTournaments(data.map(parseTournament))
     })
     socket.on('all_sessions', data => {

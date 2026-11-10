@@ -49,9 +49,9 @@ function isBetterEntry<T extends TimeEntry>(current: T, existing: T): boolean {
 function getBestByUser<T extends TimeEntry>(entries: T[]): T[] {
   const bestByUser = new Map<string, T>()
   for (const entry of entries) {
-    const existing = bestByUser.get(entry.user)
+    const existing = bestByUser.get(entry.user ?? entry.id)
     if (!existing || isBetterEntry(entry, existing)) {
-      bestByUser.set(entry.user, entry)
+      bestByUser.set(entry.user ?? entry.id, entry)
     }
   }
   return Array.from(bestByUser.values())
@@ -60,9 +60,9 @@ function getBestByUser<T extends TimeEntry>(entries: T[]): T[] {
 function getLatestByUser<T extends TimeEntry>(entries: T[]): T[] {
   const latestByUser = new Map<string, T>()
   for (const entry of entries) {
-    const existing = latestByUser.get(entry.user)
+    const existing = latestByUser.get(entry.user ?? entry.id)
     if (!existing || entry.createdAt > existing.createdAt) {
-      latestByUser.set(entry.user, entry)
+      latestByUser.set(entry.user ?? entry.id, entry)
     }
   }
   return Array.from(latestByUser.values())
@@ -75,9 +75,15 @@ function filterEntries<T extends TimeEntry>(
   let filtered = entries
 
   if (filterType === 'best') {
-    filtered = getBestByUser(entries)
+    filtered = [
+      ...getBestByUser(entries.filter(entry => entry.status === 'completed')),
+      ...entries.filter(entry => entry.status !== 'completed'),
+    ]
   } else if (filterType === 'latest') {
-    filtered = getLatestByUser(entries)
+    filtered = [
+      ...getLatestByUser(entries.filter(entry => entry.status === 'completed')),
+      ...entries.filter(entry => entry.status !== 'completed'),
+    ]
   }
 
   return sortEntries(filtered)

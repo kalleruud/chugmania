@@ -1,10 +1,6 @@
+import type { EntryStatus } from '@common/models/entry'
 import { isRecord } from '../utils/utils'
-import {
-  isMatchStage,
-  type Match,
-  type MatchStage,
-  type MatchStatus,
-} from './match'
+import { isMatchStage, type Match, type MatchStage } from './match'
 import type { TimeEntry } from './timeEntry'
 
 export type EliminationType = 'single' | 'double'
@@ -162,7 +158,7 @@ export type DeleteTournamentRequest = TournamentRequest & {
   deleteRelatedResults: boolean
 }
 
-export type MatchResult = { status: MatchStatus; winner: string | null }
+export type MatchResult = { status: EntryStatus; winner: string | null }
 
 export function isTournamentRequest(
   value: unknown

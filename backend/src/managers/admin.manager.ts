@@ -5,23 +5,7 @@ import {
   type ExportCsvRequest,
 } from '@common/models/importCsv'
 import type { EventReq, EventRes } from '@common/models/socket.io'
-import { eq } from 'drizzle-orm'
-import type { SQLiteTable } from 'drizzle-orm/sqlite-core'
-import db, { database } from '../../database/database'
-import {
-  matches,
-  sessions,
-  sessionSignups,
-  timeEntries,
-  tournamentGroups,
-  tournamentMatches,
-  tournamentMatchSlots,
-  tournamentPlayers,
-  tournaments,
-  tournamentStages,
-  tracks,
-  users,
-} from '../../database/schema'
+import AdminSource from '../../database/sources/admin.source'
 import { broadcast, type TypedSocket } from '../server'
 import CsvParser from '../utils/csv-parser'
 import AuthManager from './auth.manager'
@@ -34,87 +18,19 @@ import TrackManager from './track.manager'
 import UserManager from './user.manager'
 
 export default class AdminManager {
-  private static readonly EXCLUDED_COL_EXPORT = {
-    tournaments: new Set(),
-    tournamentStages: new Set(),
-    tournamentGroups: new Set(),
-    tournamentPlayers: new Set(),
-    tournamentMatches: new Set(),
-    tournamentMatchSlots: new Set(),
-    users: new Set(['passwordHash']),
-    tracks: new Set(),
-    sessions: new Set(),
-    timeEntries: new Set(),
-    sessionSignups: new Set(),
-    matches: new Set(),
-  } satisfies Record<ExportCsvRequest['table'], Set<string>>
-
-  private static readonly TABLE_MAP = {
-    tournaments,
-    tournamentStages,
-    tournamentGroups,
-    tournamentPlayers,
-    tournamentMatches,
-    tournamentMatchSlots,
-    users: users,
-    tracks: tracks,
-    sessions: sessions,
-    timeEntries: timeEntries,
-    sessionSignups: sessionSignups,
-    matches: matches,
-  } satisfies Record<ExportCsvRequest['table'], SQLiteTable>
-
-  private static async importRows(
+  private static importRows(
     tableName: ExportCsvRequest['table'],
     data: Record<string, unknown>[]
-  ): Promise<{ created: number; updated: number }> {
-    const table = AdminManager.TABLE_MAP[tableName]
-
-    // Fetch all existing IDs in a single query instead of per-row
-    const existingRecords = await db.select({ id: table.id }).from(table)
-    const existingIds = new Set(existingRecords.map(r => r.id))
-
-    const toCreate: Record<string, unknown>[] = []
-    const toUpdate: Record<string, unknown>[] = []
-    for (const item of data) {
-      const id = item.id
-      if (typeof id === 'string' && existingIds.has(id)) {
-        toUpdate.push(item)
-      } else {
-        toCreate.push({
-          ...item,
-          // Avoid setting createdAt to NULL when creating, this will crash db.
-          createdAt: item.createdAt === null ? undefined : item.createdAt,
-        })
-      }
-    }
-
+  ) {
     const before = TournamentManager.getAllTournaments().flatMap(tournament => {
       const state = TournamentManager.getState(tournament.config.session)
       return state ? [state] : []
     })
-    let created = 0
-    let updated = 0
-    // Manual transaction management for better-sqlite3
-    database.transaction(() => {
-      if (toCreate.length > 0) {
-        const res = db.insert(table).values(toCreate).run()
-        created = res.changes
-      }
-
-      for (const update of toUpdate) {
-        const id = update.id
-        if (typeof id !== 'string') continue
-
-        const res = db.update(table).set(update).where(eq(table.id, id)).run()
-        updated += res.changes
-      }
+    return AdminSource.importRows(tableName, data, () => {
       for (const state of before)
         TournamentManager.reconcile(state.config.session, state)
       TournamentManager.reconcileAll()
-    })()
-
-    return { created, updated }
+    })
   }
 
   static async onImportCsv(
@@ -133,7 +49,7 @@ export default class AdminManager {
       request.table
     )
     const data = await CsvParser.toObjects(request.content)
-    const results = await AdminManager.importRows(request.table, data)
+    const results = AdminManager.importRows(request.table, data)
 
     console.info(
       new Date().toISOString(),
@@ -169,7 +85,8 @@ export default class AdminManager {
     tableName: ExportCsvRequest['table'],
     records: object[]
   ): Record<string, unknown>[] {
-    const excludeColumns = AdminManager.EXCLUDED_COL_EXPORT[tableName]
+    const excludeColumns =
+      tableName === 'users' ? new Set(['passwordHash']) : new Set<string>()
 
     return records.map(record => {
       const filtered: Record<string, unknown> = {}
@@ -198,9 +115,7 @@ export default class AdminManager {
       request.table
     )
 
-    // Use type-safe table lookup
-    const table = AdminManager.TABLE_MAP[request.table]
-    const records = await db.select().from(table)
+    const records = AdminSource.getRows(request.table)
 
     // Filter out sensitive columns
     const filtered = AdminManager.filterColumnsForExport(request.table, records)

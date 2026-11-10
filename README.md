@@ -57,7 +57,7 @@ Key backend flows live under `backend/src/managers/`, while shared DTOs reside i
 
 ## CSV Import/Export
 
-Admins can visit `/admin` to upload and download CSV files for all database tables. Supported tables: `users`, `tracks`, `sessions`, `timeEntries`, and `sessionSignups`. Each upload reports created and updated row counts to confirm the data outcome. Ensure the column order matches the exported format. When adding new database tables, update `AdminManager` in `backend/src/managers/admin.manager.ts` to include them in the `TABLE_MAP` and `EXCLUDED_COL_EXPORT` configuration.
+Admins can visit `/admin` to upload and download CSV files for public application tables. Supported tables: `users`, `tracks`, `sessions`, `timeEntries`, and `sessionSignups`. Each upload reports created and updated row counts to confirm the data outcome. Ensure the column order matches the exported format. When adding new database tables, update `AdminManager` in `backend/src/managers/admin.manager.ts` to include them in the `TABLE_MAP` and `EXCLUDED_COL_EXPORT` configuration. Backend-private webhook captures, events, and result capture links are excluded; preserve them through SQLite database backups.
 
 ## Sessions Module
 
@@ -82,3 +82,9 @@ The `/sessions` route shows upcoming and past events. Authorized users may creat
 ## Contributing
 
 Follow the coding conventions from `AGENTS.md`: Prettier formatting (2 spaces, single quotes, no semicolons), organize imports, explicit TypeScript types, and the shared `Result<T>` error-handling pattern. Reuse existing components and respect the Formula 1-inspired Tailwind design system to keep UI consistent.
+
+## Trackmania webhook drafts
+
+Configure the plugin endpoint as `https://<your-host>/api/webhook` with the server's `WEBHOOK_TOKEN` as its bearer token; an empty token disables ingestion. Captures attach to the latest session that started today or yesterday (Europe/Oslo) and appear on that Session page as draft lap times (one player) or matches (two players). Captures and raw events stay private to the backend.
+
+Drafts are edited and deleted like any other entry. Times from later webhook events only replace fields that have not been edited by hand. Publishing requires a complete capture, assigned players, and a track; it stores the map UID on the track so later captures match it automatically. CSV import/export excludes captures, events, and drafts; back up the SQLite database to keep them.

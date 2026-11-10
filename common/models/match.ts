@@ -45,8 +45,6 @@ export type Match = typeof matches.$inferSelect & {
 }
 export type CreateMatch = typeof matches.$inferInsert
 
-export type MatchStatus = 'planned' | 'completed' | 'cancelled'
-
 export type CreateMatchRequest = {
   type: 'CreateMatchRequest'
 } & CreateMatch
@@ -55,7 +53,7 @@ export function isCreateMatchRequest(
   data: unknown
 ): data is CreateMatchRequest {
   if (!isRecord(data)) return false
-  return data.type === 'CreateMatchRequest' && typeof data.track === 'string'
+  return data.type === 'CreateMatchRequest'
 }
 
 export type EditMatchRequest = Partial<CreateMatch> & {

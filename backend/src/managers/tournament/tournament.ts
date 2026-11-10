@@ -626,7 +626,7 @@ export function tournamentDetails(state: TournamentState): TournamentDetails {
       .filter(lap => !lap.deletedAt)
       .map(lap => ({
         ...lap,
-        required: needs.get(lap.user) ?? false,
+        required: lap.user ? (needs.get(lap.user) ?? false) : false,
       })),
     matches: state.fixtures.map(fixture => matchDetails(state, fixture)),
     standings: state.fixtures.length ? overall.rows : [],

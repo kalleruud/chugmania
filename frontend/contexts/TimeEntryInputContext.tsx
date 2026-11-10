@@ -49,7 +49,7 @@ export default function TimeEntryInputProvider({
   const { loggedInUser, isLoggedIn } = useAuth()
   const { socket } = useConnection()
   const { matches, timeEntries, tournaments } = useData()
-  const currentTimeEntry = timeEntries?.find(
+  const currentTimeEntry: Partial<TimeEntry> | undefined = timeEntries?.find(
     entry => entry.id === editingTimeEntry.id
   )
   const timeEntryTournament = tournaments?.find(
@@ -61,7 +61,9 @@ export default function TimeEntryInputProvider({
       (currentTimeEntry.status === 'cancelled' &&
         loggedInUser?.role === 'user') ||
       (currentTimeEntry.tieBreaker && !!timeEntryTournament?.cancelled))
-  const currentMatch = matches?.find(m => m.id === editingMatch.id)
+  const currentMatch: Partial<Match> | undefined = matches?.find(
+    m => m.id === editingMatch.id
+  )
   const matchReadOnly =
     !!editingMatch.id && (!currentMatch || !!currentMatch.tournament?.readOnly)
 
@@ -104,7 +106,7 @@ export default function TimeEntryInputProvider({
 
   const isEditingSelf =
     isLoggedIn && isEditing && mode === 'timeEntry'
-      ? loggedInUser.id === editingTimeEntry.user
+      ? loggedInUser.id === (editingTimeEntry.user ?? loggedInUser.id)
       : false
 
   const canEdit =
