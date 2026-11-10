@@ -1,6 +1,6 @@
 import type { EntryStatus } from '@common/models/entry'
 import { and, asc, desc, eq, gt, gte, isNull, lte, ne } from 'drizzle-orm'
-import db from './database'
+import db from '../database'
 import {
   matches,
   sessions,
@@ -8,7 +8,7 @@ import {
   tracks,
   webhookCaptures,
   webhookEvents,
-} from './schema'
+} from '../schema'
 
 export type WebhookCapture = typeof webhookCaptures.$inferSelect
 

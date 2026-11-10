@@ -9,8 +9,8 @@ import {
   type Match,
 } from '@common/models/match'
 import type { EventReq, EventRes } from '@common/models/socket.io'
-import MatchSource from '../../database/match.source'
-import TournamentSource from '../../database/tournament.source'
+import MatchSource from '../../database/sources/match.source'
+import TournamentSource from '../../database/sources/tournament.source'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import RatingManager from './rating.manager'

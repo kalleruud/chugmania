@@ -1,8 +1,8 @@
 import type { Track } from '@common/models/track'
 import { tryCatchAsync } from '@common/utils/try-catch'
 import { and, asc, eq } from 'drizzle-orm'
-import db from './database'
-import { timeEntries, tracks } from './schema'
+import db from '../database'
+import { timeEntries, tracks } from '../schema'
 
 export default class TrackSource {
   static readonly table = tracks

@@ -1,6 +1,6 @@
 import loc from '@common/locale/locales'
 import type { Track } from '@common/models/track'
-import TrackSource from '../../database/track.source'
+import TrackSource from '../../database/sources/track.source'
 
 export default class TrackManager {
   static readonly table = TrackSource.table

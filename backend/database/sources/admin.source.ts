@@ -1,7 +1,7 @@
 import type { CsvTable } from '@common/models/importCsv'
 import { eq } from 'drizzle-orm'
-import db from './database'
-import * as tables from './schema'
+import db from '../database'
+import * as tables from '../schema'
 import TransactionSource from './transaction.source'
 
 export default class AdminSource {

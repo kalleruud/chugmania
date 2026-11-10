@@ -20,7 +20,7 @@ import type {
   SQLiteTable,
   SQLiteUpdateSetSource,
 } from 'drizzle-orm/sqlite-core'
-import db, { database } from './database'
+import db, { database } from '../database'
 import {
   matches,
   sessions,
@@ -34,7 +34,7 @@ import {
   tournamentStages,
   tracks,
   users,
-} from './schema'
+} from '../schema'
 
 const activeDraft = and(
   eq(tournaments.status, 'draft'),

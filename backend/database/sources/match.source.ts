@@ -1,7 +1,7 @@
 import type { CreateMatch, Match } from '@common/models/match'
 import { and, desc, eq, getTableColumns, isNull, sql } from 'drizzle-orm'
-import db from './database'
-import { matches, sessions } from './schema'
+import db from '../database'
+import { matches, sessions } from '../schema'
 
 export default class MatchSource {
   static async getAll(): Promise<Match[]> {

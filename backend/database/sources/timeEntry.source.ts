@@ -2,8 +2,8 @@ import type { Session } from '@common/models/session'
 import type { CreateTimeEntry, TimeEntry } from '@common/models/timeEntry'
 import type { User } from '@common/models/user'
 import { and, asc, eq, getTableColumns, isNull, sql } from 'drizzle-orm'
-import db from './database'
-import { timeEntries } from './schema'
+import db from '../database'
+import { timeEntries } from '../schema'
 
 export default class TimeEntrySource {
   static readonly table = timeEntries

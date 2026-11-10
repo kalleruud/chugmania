@@ -10,9 +10,9 @@ import {
   isEditTimeEntryRequest,
 } from '@common/models/timeEntry'
 import type { User } from '@common/models/user'
-import TimeEntrySource from '../../database/timeEntry.source'
-import TournamentSource from '../../database/tournament.source'
-import TransactionSource from '../../database/transaction.source'
+import TimeEntrySource from '../../database/sources/timeEntry.source'
+import TournamentSource from '../../database/sources/tournament.source'
+import TransactionSource from '../../database/sources/transaction.source'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import MatchManager from './match.manager'

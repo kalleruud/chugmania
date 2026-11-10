@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test'
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
-import TrackSource from '../backend/database/track.source'
+import TrackSource from '../backend/database/sources/track.source'
 import AdminManager from '../backend/src/managers/admin.manager'
 import MatchManager from '../backend/src/managers/match.manager'
 import RatingManager from '../backend/src/managers/rating.manager'

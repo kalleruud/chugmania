@@ -5,7 +5,7 @@ import {
   type ExportCsvRequest,
 } from '@common/models/importCsv'
 import type { EventReq, EventRes } from '@common/models/socket.io'
-import AdminSource from '../../database/admin.source'
+import AdminSource from '../../database/sources/admin.source'
 import { broadcast, type TypedSocket } from '../server'
 import CsvParser from '../utils/csv-parser'
 import AuthManager from './auth.manager'

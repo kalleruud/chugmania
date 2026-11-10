@@ -6,7 +6,7 @@ import type {
   TournamentStatus,
 } from '@common/models/tournament'
 import type { User } from '@common/models/user'
-import UserSource from '../../../database/user.source'
+import UserSource from '../../../database/sources/user.source'
 import type { TypedSocket } from '../../server'
 
 export default class TournamentSecurity {

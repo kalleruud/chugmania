@@ -1,7 +1,7 @@
 import type { User } from '@common/models/user'
 import { and, eq, isNull } from 'drizzle-orm'
-import db from './database'
-import { users } from './schema'
+import db from '../database'
+import { users } from '../schema'
 
 export default class UserSource {
   static getActiveById(id: string): User | undefined {
