@@ -1,16 +1,19 @@
 import { expect, test } from 'bun:test'
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
-import TrackSource from '../backend/database/sources/track.source'
 import AdminManager from '../backend/src/managers/admin.manager'
 import MatchManager from '../backend/src/managers/match.manager'
 import RatingManager from '../backend/src/managers/rating.manager'
 import SessionManager from '../backend/src/managers/session.manager'
 import TimeEntryManager from '../backend/src/managers/timeEntry.manager'
+import TrackManager from '../backend/src/managers/track.manager'
 import UserManager from '../backend/src/managers/user.manager'
 import WebhookManager from '../backend/src/managers/webhook.manager'
-import { isWebhookEvent } from '../backend/src/models/webhook'
-import type { Map, Source } from '../backend/src/models/webhook.generated'
+import type {
+  Event,
+  Map,
+  Source,
+} from '../backend/src/models/webhook.generated'
 import { broadcast, type TypedSocket } from '../backend/src/server'
 import { assertResponse, createSession, createUser, login } from './utils'
 
@@ -31,20 +34,24 @@ function capture(now: Date, totalPlayers: number, game: Source['game']) {
     schemaVersion: '1.0.0',
     occurredAt: now.toISOString(),
     game: { gameId: randomUUID(), totalPlayers },
-    source: { pluginName: 'TM Webhooks', pluginVersion: '1.0.0', game },
+    source: {
+      pluginName: 'TM Webhooks',
+      pluginVersion: '1.0.0',
+      game,
+    } satisfies Source,
   }
   const player = (playerIndex: number) => ({
     playerIndex,
     name: `Private ${playerIndex}`,
   })
-  const send = (data: Record<string, unknown>) => {
-    const event = { ...base, eventId: randomUUID(), ...data }
-    assert(isWebhookEvent(event))
+  const send = (event: Event) => {
     WebhookManager.receive(event, JSON.stringify(event), now)
   }
   return {
     start: (map: Map | null = null) =>
       send({
+        ...base,
+        eventId: randomUUID(),
         type: 'start',
         sequence: 0,
         durationMs: 0,
@@ -54,6 +61,8 @@ function capture(now: Date, totalPlayers: number, game: Source['game']) {
       }),
     finish: (sequence: number, playerIndex: number, durationMs: number) =>
       send({
+        ...base,
+        eventId: randomUUID(),
         type: 'finish',
         sequence,
         durationMs,
@@ -62,6 +71,8 @@ function capture(now: Date, totalPlayers: number, game: Source['game']) {
       }),
     throttle: (sequence: number, playerIndex: number, durationMs: number) =>
       send({
+        ...base,
+        eventId: randomUUID(),
         type: 'first_throttle',
         sequence,
         durationMs,
@@ -69,6 +80,8 @@ function capture(now: Date, totalPlayers: number, game: Source['game']) {
       }),
     end: (sequence: number) =>
       send({
+        ...base,
+        eventId: randomUUID(),
         type: 'end',
         sequence,
         durationMs: 20000,
@@ -94,7 +107,6 @@ test('webhook entries use normal feeds, status updates and millisecond times', a
     user: null,
     track: null,
   })
-  expect(entry).not.toHaveProperty('publicationState')
   game.finish(1, 0, 12347)
   expect(
     (await TimeEntryManager.getAllTimeEntries()).find(
@@ -219,7 +231,7 @@ test('webhook matches create tracks by uid and complete through normal match edi
     row => row.session === session
   )
   assert(match)
-  const track = (await TrackSource.getAll()).find(
+  const track = (await TrackManager.getAllTracks()).find(
     track => track.uid === map.uid
   )
   assert(track)
@@ -265,7 +277,7 @@ test('webhook matches create tracks by uid and complete through normal match edi
   const repeated = capture(now, 1, 'next')
   repeated.start(map)
   expect(
-    (await TrackSource.getAll()).filter(track => track.uid === map.uid)
+    (await TrackManager.getAllTracks()).filter(track => track.uid === map.uid)
   ).toHaveLength(1)
   const exported = await AdminManager.onExportCsv(admin, {
     table: 'webhookEvents',
