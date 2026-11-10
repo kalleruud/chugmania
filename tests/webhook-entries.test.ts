@@ -1,6 +1,9 @@
 import { expect, test } from 'bun:test'
+import express from 'express'
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
+import { createServer } from 'node:http'
+import { createWebhookRouter } from '../backend/src/endpoints/webhook'
 import AdminManager from '../backend/src/managers/admin.manager'
 import MatchManager from '../backend/src/managers/match.manager'
 import RatingManager from '../backend/src/managers/rating.manager'
@@ -213,6 +216,11 @@ test('webhook matches create tracks by uid and complete through normal match edi
   const first = createUser('match-entry-first')
   const second = createUser('match-entry-second')
   const outsider = await login(createUser('match-entry-outsider'))
+  const moderator = await login(
+    createUser('match-entry-moderator', 'moderator')
+  )
+  const participant = await login(first)
+  const { onEditMatch } = MatchManager
   const now = new Date('2030-01-16T12:00:00.000Z')
   const session = await startedSession(admin, now)
   const map: Map = {
@@ -240,14 +248,14 @@ test('webhook matches create tracks by uid and complete through normal match edi
   game.finish(2, 1, 12003)
   game.end(3)
   await assert.rejects(
-    MatchManager.onEditMatch(outsider, {
+    onEditMatch(outsider, {
       type: 'EditMatchRequest',
       id: match.id,
       status: 'completed',
     })
   )
   assertResponse(
-    await MatchManager.onEditMatch(admin, {
+    await onEditMatch(admin, {
       type: 'EditMatchRequest',
       id: match.id,
       user1: first.id,
@@ -257,8 +265,15 @@ test('webhook matches create tracks by uid and complete through normal match edi
   )
   expect(RatingManager.getUserRatings(first.id)).toBeUndefined()
   expect(RatingManager.getUserRatings(second.id)).toBeUndefined()
+  await assert.rejects(
+    onEditMatch(participant, {
+      type: 'EditMatchRequest',
+      id: match.id,
+      status: 'completed',
+    })
+  )
   assertResponse(
-    await MatchManager.onEditMatch(admin, {
+    await onEditMatch(moderator, {
       type: 'EditMatchRequest',
       id: match.id,
       user1: first.id,
@@ -274,6 +289,7 @@ test('webhook matches create tracks by uid and complete through normal match edi
     status: 'completed',
   })
   expect(RatingManager.getUserRatings(first.id)).toBeDefined()
+  expect(RatingManager.getUserRatings(second.id)).toBeDefined()
   const repeated = capture(now, 1, 'next')
   repeated.start(map)
   expect(
@@ -289,4 +305,115 @@ test('webhook matches create tracks by uid and complete through normal match edi
     content: exported.csv,
   })
   assertResponse(imported)
+})
+
+test('webhook HTTP rejects unsupported counts and invalid rosters without persistence', async () => {
+  const admin = await login(createUser('webhook-validation-admin', 'admin'))
+  await startedSession(admin, new Date())
+  const app = express()
+  app.use(createWebhookRouter())
+  const server = createServer(app)
+  const previousToken = process.env.WEBHOOK_TOKEN
+  process.env.WEBHOOK_TOKEN = 'webhook-validation-token'
+  try {
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
+    const address = server.address()
+    assert(address && typeof address !== 'string')
+    const endpoint = `http://127.0.0.1:${address.port}/api/webhook`
+    capture(new Date(), 1, 'turbo').start()
+    const beforeCaptures = await AdminManager.onExportCsv(admin, {
+      table: 'webhookCaptures',
+    })
+    const beforeEvents = await AdminManager.onExportCsv(admin, {
+      table: 'webhookEvents',
+    })
+    assertResponse(beforeCaptures)
+    assertResponse(beforeEvents)
+    for (const scenario of [
+      {
+        totalPlayers: 3,
+        players: [{ playerIndex: 0 }, { playerIndex: 1 }, { playerIndex: 2 }],
+        code: 'UNSUPPORTED_PLAYER_COUNT',
+      },
+      { totalPlayers: 1, players: [], code: 'INVALID_ROSTER' },
+      {
+        totalPlayers: 2,
+        players: [{ playerIndex: 0 }, { playerIndex: 0 }],
+        code: 'INVALID_ROSTER',
+      },
+    ]) {
+      const event = {
+        schemaVersion: '1.0.0',
+        type: 'start',
+        eventId: randomUUID(),
+        sequence: 0,
+        occurredAt: new Date().toISOString(),
+        durationMs: 0,
+        game: { gameId: randomUUID(), totalPlayers: scenario.totalPlayers },
+        source: {
+          pluginName: 'TM Webhooks',
+          pluginVersion: '1.0.0',
+          game: 'turbo',
+        },
+        players: scenario.players,
+        map: null,
+        mode: null,
+      }
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer webhook-validation-token',
+          'Content-Type': 'application/json',
+          event_type: event.type,
+          'event-id': event.eventId,
+          'event-sequence': String(event.sequence),
+        },
+        body: JSON.stringify(event),
+      })
+      expect(response.status).toBe(400)
+      expect(await response.json()).toMatchObject({ code: scenario.code })
+    }
+    const afterCaptures = await AdminManager.onExportCsv(admin, {
+      table: 'webhookCaptures',
+    })
+    const afterEvents = await AdminManager.onExportCsv(admin, {
+      table: 'webhookEvents',
+    })
+    assertResponse(afterCaptures)
+    assertResponse(afterEvents)
+    expect(afterCaptures.csv).toBe(beforeCaptures.csv)
+    expect(afterEvents.csv).toBe(beforeEvents.csv)
+  } finally {
+    if (previousToken === undefined) delete process.env.WEBHOOK_TOKEN
+    else process.env.WEBHOOK_TOKEN = previousToken
+    await new Promise<void>((resolve, reject) =>
+      server.close(error => (error ? reject(error) : resolve()))
+    )
+  }
+})
+
+test('track CSV round trips preserve webhook UIDs and metadata', async () => {
+  const admin = await login(createUser('track-csv-admin', 'admin'))
+  assertResponse(
+    await AdminManager.onImportCsv(admin, {
+      table: 'tracks',
+      content:
+        'id,game,name,uid,level,author\ntrack-csv-map,turbo,CSV map,track-csv-uid,custom,Mapper',
+    })
+  )
+  const before = await TrackManager.getAllTracks()
+  const exported = await AdminManager.onExportCsv(admin, { table: 'tracks' })
+  assertResponse(exported)
+  assertResponse(
+    await AdminManager.onImportCsv(admin, {
+      table: 'tracks',
+      content: exported.csv,
+    })
+  )
+  const after = await TrackManager.getAllTracks()
+  expect(after).toHaveLength(before.length)
+  for (const track of before) {
+    const { updatedAt, ...expected } = track
+    expect(after.find(row => row.id === track.id)).toMatchObject(expected)
+  }
 })

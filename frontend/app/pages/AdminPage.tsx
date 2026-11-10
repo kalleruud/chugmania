@@ -81,12 +81,6 @@ export default function AdminPage() {
   )
 }
 
-function hasSelectedFiles(
-  fileList: FileList | undefined | null
-): fileList is FileList {
-  return !!fileList && fileList.length > 0
-}
-
 function TableRow({
   table,
   className,
@@ -95,12 +89,10 @@ function TableRow({
   const { socket } = useConnection()
 
   const [isLoading, setIsLoading] = useState<boolean>(false)
-  const [selectedFiles, setSelectedFiles] = useState<FileList | undefined>(
-    undefined
-  )
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
 
   const handleImport = async () => {
-    if (!hasSelectedFiles(selectedFiles)) {
+    if (selectedFiles.length === 0) {
       toast.error(loc.no.error.messages.missing_files)
       return
     }
@@ -108,7 +100,7 @@ function TableRow({
     setIsLoading(true)
 
     await Promise.all(
-      Array.from(selectedFiles).map(async file => {
+      selectedFiles.map(async file => {
         return socket
           .emitWithAck('import_csv', {
             table,
@@ -128,7 +120,7 @@ function TableRow({
       })
     )
 
-    setSelectedFiles(undefined)
+    setSelectedFiles([])
     setIsLoading(false)
   }
 
@@ -159,15 +151,11 @@ function TableRow({
       <h4>{loc.no.admin.tables[table]}</h4>
 
       <div className='flex items-center gap-2'>
-        {hasSelectedFiles(selectedFiles) &&
-          Array.from(selectedFiles).map(f => (
-            <Badge
-              key={f.name}
-              variant='outline'
-              className='size-fit font-mono'>
-              {f.name}
-            </Badge>
-          ))}
+        {selectedFiles.map(f => (
+          <Badge key={f.name} variant='outline' className='size-fit font-mono'>
+            {f.name}
+          </Badge>
+        ))}
 
         <FileDrop
           onSelect={setSelectedFiles}
@@ -183,7 +171,7 @@ function TableRow({
           size='sm'
           variant='outline'
           onClick={handleImport}
-          disabled={!hasSelectedFiles(selectedFiles)}>
+          disabled={selectedFiles.length === 0}>
           <CloudArrowUpIcon />
           {loc.no.admin.import}
         </Button>

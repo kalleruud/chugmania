@@ -1,3 +1,4 @@
+import { isRecord } from '@common/utils/utils'
 import { DateTime } from 'luxon'
 import MatchSource from '../../database/sources/match.source'
 import SessionSource from '../../database/sources/session.source'
@@ -185,6 +186,26 @@ export default class WebhookManager {
   }
 
   static receive(event: Event, rawPayload: string, now = new Date()): string {
+    if (event.game.totalPlayers !== 1 && event.game.totalPlayers !== 2)
+      throw new WebhookError(
+        400,
+        'UNSUPPORTED_PLAYER_COUNT',
+        'Only one or two players are supported'
+      )
+    if (
+      event.type === 'start' &&
+      (!Array.isArray(event.players) ||
+        event.players.length !== event.game.totalPlayers ||
+        !event.players.every(
+          (player: unknown, index: number) =>
+            isRecord(player) && player.playerIndex === index
+        ))
+    )
+      throw new WebhookError(
+        400,
+        'INVALID_ROSTER',
+        'Start players must match the game player count and indexes'
+      )
     const existingEvent = WebhookSource.findEvent(event.eventId)
     if (existingEvent) {
       if (

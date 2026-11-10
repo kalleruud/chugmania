@@ -143,7 +143,7 @@ export default class MatchManager {
       TournamentManager.publish(socket.id)
       return { success: true }
     }
-    request = this.inferWebhookResult(request, preImageMatch)
+    request = MatchManager.inferWebhookResult(request, preImageMatch)
     MatchManager.validateMatchState(request, preImageMatch)
 
     const id = request.id
