@@ -2,15 +2,17 @@ import type { SessionWithSignups } from '@common/models/session'
 import type { Track } from '@common/models/track'
 import type { UserInfo } from '@common/models/user'
 import { formatDateWithYear } from '@common/utils/date'
-import { formatTrackName } from '@common/utils/track'
 
 export function trackToLookupItem(track: Track) {
-  const trackName = '#' + formatTrackName(track.number)
+  const trackName = '#' + track.name
+  const details = [track.level, track.environment, track.mapType].filter(
+    (value): value is string => value !== null
+  )
   return {
     ...track,
     label: trackName,
-    sublabel: `${track.level} • ${track.type}`,
-    tags: [track.level, track.type, trackName],
+    sublabel: details.join(' • '),
+    tags: [...details, trackName],
   }
 }
 

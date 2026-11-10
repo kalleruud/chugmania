@@ -1,5 +1,4 @@
 import { type Track } from '@common/models/track'
-import { formatTrackName } from '@common/utils/track'
 import { type ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
 import TrackBadge from './TrackBadge'
@@ -15,19 +14,28 @@ export default function TrackCard({
   ...props
 }: Readonly<TrackCardProps>) {
   return (
-    <div key={track.id} className={twMerge('flex p-4', className)} {...props}>
-      <div className='flex gap-2 font-kh-interface text-6xl font-black tracking-tighter tabular-nums'>
-        <p className='text-primary'>#</p>
-        {formatTrackName(track.number)}
+    <div
+      className={twMerge(
+        'flex min-w-0 flex-col gap-4 p-4 md:flex-row md:items-end',
+        className
+      )}
+      {...props}>
+      <div
+        className={twMerge(
+          'flex min-w-0 flex-1 items-baseline gap-2 font-kh-interface text-4xl leading-tight font-black tracking-tighter tabular-nums sm:text-6xl',
+          track.name.length > 3 && 'text-3xl sm:text-4xl'
+        )}>
+        <span className='shrink-0 text-primary'>#</span>
+        <span className='min-w-0 [overflow-wrap:anywhere]'>{track.name}</span>
       </div>
 
-      <div className='flex flex-1 items-end justify-end gap-1'>
-        <TrackBadge variant='outline' trackLevel={track.level}>
-          {track.level}
-        </TrackBadge>
-        <TrackBadge variant='outline' trackType={track.type}>
-          {track.type}
-        </TrackBadge>
+      <div className='flex min-w-0 flex-wrap gap-1.5 md:max-w-1/3 md:justify-end'>
+        {track.level && (
+          <TrackBadge variant='outline' trackLevel={track.level} />
+        )}
+        {track.environment && (
+          <TrackBadge variant='outline' environment={track.environment} />
+        )}
       </div>
     </div>
   )

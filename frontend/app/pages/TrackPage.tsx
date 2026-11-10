@@ -14,7 +14,6 @@ import { Spinner } from '@/components/ui/spinner'
 import { useAuth } from '@/contexts/AuthContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@common/locale/locales'
-import { formatTrackName } from '@common/utils/track'
 import { useParams } from 'react-router'
 
 export default function TrackPage() {
@@ -48,9 +47,9 @@ export default function TrackPage() {
             <BreadcrumbLink to='/tracks'>{loc.no.tracks.title}</BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>
-              {'#' + formatTrackName(track.number)}
+          <BreadcrumbItem className='max-w-full min-w-0'>
+            <BreadcrumbPage className='[overflow-wrap:anywhere]'>
+              {'#' + track.name}
             </BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
