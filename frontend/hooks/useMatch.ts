@@ -1,11 +1,10 @@
-import type { DisplayMatch } from '@/components/match/MatchProps'
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import loc from '@common/locale/locales'
-import type { EditMatchRequest } from '@common/models/match'
+import type { EditMatchRequest, Match } from '@common/models/match'
 import { toast } from 'sonner'
 
-export function useMatch(match: DisplayMatch) {
+export function useMatch(match: Match) {
   const { socket } = useConnection()
   const { isLoggedIn, loggedInUser } = useAuth()
   const canSetResult =

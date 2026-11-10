@@ -4,27 +4,6 @@ import type { SuccessResponse } from './socket.io'
 
 export type CsvTable = keyof typeof schema
 
-const csvTables: CsvTable[] = [
-  'webhookCaptures',
-  'webhookEvents',
-  'users',
-  'tracks',
-  'sessions',
-  'sessionSignups',
-  'timeEntries',
-  'matches',
-  'tournaments',
-  'tournamentStages',
-  'tournamentGroups',
-  'tournamentPlayers',
-  'tournamentMatches',
-  'tournamentMatchSlots',
-]
-
-function isCsvTable(value: unknown): value is CsvTable {
-  return csvTables.some(table => table === value)
-}
-
 export type ImportCsvRequest = {
   table: CsvTable
   content: string
@@ -32,7 +11,7 @@ export type ImportCsvRequest = {
 
 export function isImportCsvRequest(data: unknown): data is ImportCsvRequest {
   if (!isRecord(data)) return false
-  return isCsvTable(data.table) && typeof data.content === 'string'
+  return typeof data.table === 'string' && typeof data.content === 'string'
 }
 
 export type ExportCsvRequest = {
@@ -41,7 +20,7 @@ export type ExportCsvRequest = {
 
 export function isExportCsvRequest(data: unknown): data is ExportCsvRequest {
   if (!isRecord(data)) return false
-  return isCsvTable(data.table)
+  return typeof data.table === 'string'
 }
 
 export type ImportCsvResponse = SuccessResponse & {

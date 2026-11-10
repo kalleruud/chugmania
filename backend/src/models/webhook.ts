@@ -14,31 +14,6 @@ const modes = [
   'solo',
   'unknown',
 ]
-const modeTypes = [
-  'time-attack',
-  'rounds',
-  'laps',
-  'cup',
-  'royal-time-attack',
-  'platform',
-  'team',
-  'stunts',
-  'unknown',
-  'split-screen-classic-fun',
-  'split-screen-classic-pro',
-  'split-screen-smash-fun',
-  'split-screen-smash-pro',
-  'split-screen-mono-screen-fun',
-  'split-screen-mono-screen-pro',
-  'split-screen-stunt-fun',
-  'split-screen-stunt-pro',
-  'split-screen-bonus-fun',
-  'split-screen-bonus-pro',
-  'arcade-smash',
-  'arcade-stunt',
-  'hot-seat-smash',
-  'hot-seat-stunt',
-]
 function nonempty(value: unknown): value is string {
   return typeof value === 'string' && value.length > 0
 }
@@ -48,15 +23,7 @@ function integer(value: unknown, min = 0): value is number {
   )
 }
 function player(value: unknown): value is Player {
-  return (
-    isRecord(value) &&
-    integer(value.playerIndex) &&
-    ['name', 'login', 'localId', 'accountId'].every(
-      key => value[key] === undefined || nonempty(value[key])
-    ) &&
-    (value.localId === undefined ||
-      (typeof value.localId === 'string' && /^\d+$/.test(value.localId)))
-  )
+  return isRecord(value) && integer(value.playerIndex)
 }
 function map(value: unknown): value is Map {
   if (!isRecord(value) || !isRecord(value.medalTimesMs)) return false
@@ -67,9 +34,7 @@ function map(value: unknown): value is Map {
     ) &&
     ['author', 'gold', 'silver', 'bronze'].every(key => integer(medals[key])) &&
     typeof value.isLaps === 'boolean' &&
-    integer(value.checkpointsPerLap) &&
-    (value.totalLaps === undefined ||
-      (value.isLaps && integer(value.totalLaps, 1)))
+    integer(value.checkpointsPerLap)
   )
 }
 export function isWebhookEvent(value: unknown): value is Event {
@@ -111,10 +76,7 @@ export function isWebhookEvent(value: unknown): value is Event {
       (value.mode === null ||
         (isRecord(value.mode) &&
           typeof value.mode.name === 'string' &&
-          modes.includes(value.mode.name) &&
-          (value.mode.type === undefined ||
-            (typeof value.mode.type === 'string' &&
-              modeTypes.includes(value.mode.type)))))
+          modes.includes(value.mode.name)))
     )
   }
   if (value.type === 'end')
@@ -141,9 +103,6 @@ export function isWebhookEvent(value: unknown): value is Event {
       value.type === 'finish' || value.type === 'checkpoint' ? 1 : 0
     ) &&
     integer(cp.lapNumber, 1) &&
-    (cp.theoreticalDurationMs === undefined ||
-      integer(cp.theoreticalDurationMs)) &&
-    (cp.lostMs === undefined || integer(cp.lostMs)) &&
     (value.type !== 'lap' || cp.checkpointLapIndex === 0) &&
     (value.type !== 'checkpoint' ||
       (cp.checkpointIndex > 0 && cp.checkpointLapIndex > 0))

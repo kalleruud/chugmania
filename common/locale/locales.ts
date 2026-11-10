@@ -438,7 +438,6 @@ const no = {
       noTrack: 'Du må velge en bane, din bøtte!',
       noChanges: 'Du har ikke gjort noen endringer...',
       chug: 'Chuggetid',
-      removeChug: 'Fjern chugtid',
       fieldName: {
         comment: 'Kommentar',
       },
@@ -505,6 +504,7 @@ const no = {
     new: 'Ny',
     edit: 'Rediger',
     delete: 'Slett',
+    remove: 'Fjern',
     save: 'Lagre',
     showAll: 'Vis alle',
     show: 'Vis',

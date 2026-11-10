@@ -279,7 +279,7 @@ export default class TournamentSource {
         order: fixture.order,
         slot1: TournamentSource.readSlot(slots.get(`${fixture.id}:1`)),
         slot2: TournamentSource.readSlot(slots.get(`${fixture.id}:2`)),
-        match: { ...match, webhookCapture: null },
+        match,
       }))
   }
 

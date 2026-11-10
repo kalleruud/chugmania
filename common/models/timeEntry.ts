@@ -1,6 +1,5 @@
 import type { timeEntries } from '../../backend/database/schema'
 import { isRecord } from '../utils/utils'
-import { isEntryStatus } from './entry'
 import type { SuccessResponse } from './socket.io'
 import type { Track } from './track'
 import type { User } from './user'
@@ -16,17 +15,7 @@ export function isCreateTimeEntryRequest(
   data: unknown
 ): data is CreateTimeEntryRequest {
   if (!isRecord(data)) return false
-  return (
-    data.type === 'CreateTimeEntryRequest' &&
-    (data.user === undefined ||
-      data.user === null ||
-      typeof data.user === 'string') &&
-    (data.track === undefined ||
-      data.track === null ||
-      typeof data.track === 'string') &&
-    (data.tieBreaker === undefined || data.tieBreaker === false) &&
-    (data.status === undefined || isEntryStatus(data.status))
-  )
+  return data.type === 'CreateTimeEntryRequest'
 }
 
 export type EditTimeEntryRequest = Partial<CreateTimeEntry> & {
@@ -38,12 +27,7 @@ export function isEditTimeEntryRequest(
   data: unknown
 ): data is EditTimeEntryRequest {
   if (!isRecord(data)) return false
-  return (
-    data.type === 'EditTimeEntryRequest' &&
-    typeof data.id === 'string' &&
-    data.tieBreaker === undefined &&
-    (data.status === undefined || isEntryStatus(data.status))
-  )
+  return data.type === 'EditTimeEntryRequest' && typeof data.id === 'string'
 }
 
 export type LeaderboardEntryGap =

@@ -1,9 +1,7 @@
 import { expect, test } from 'bun:test'
-import { eq } from 'drizzle-orm'
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
-import db from '../backend/database/database'
-import { tracks } from '../backend/database/schema'
+import TrackSource from '../backend/database/track.source'
 import AdminManager from '../backend/src/managers/admin.manager'
 import MatchManager from '../backend/src/managers/match.manager'
 import RatingManager from '../backend/src/managers/rating.manager'
@@ -221,7 +219,9 @@ test('webhook matches create tracks by uid and complete through normal match edi
     row => row.session === session
   )
   assert(match)
-  const track = db.select().from(tracks).where(eq(tracks.uid, map.uid)).get()
+  const track = (await TrackSource.getAll()).find(
+    track => track.uid === map.uid
+  )
   assert(track)
   expect(match).toMatchObject({ status: 'in_progress', track: track.id })
   game.finish(1, 0, 10001)
@@ -265,7 +265,7 @@ test('webhook matches create tracks by uid and complete through normal match edi
   const repeated = capture(now, 1, 'next')
   repeated.start(map)
   expect(
-    db.select().from(tracks).where(eq(tracks.uid, map.uid)).all()
+    (await TrackSource.getAll()).filter(track => track.uid === map.uid)
   ).toHaveLength(1)
   const exported = await AdminManager.onExportCsv(admin, {
     table: 'webhookEvents',

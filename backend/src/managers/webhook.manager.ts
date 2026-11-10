@@ -1,14 +1,8 @@
-import { and, asc, desc, eq, gt, gte, isNull, lte, ne } from 'drizzle-orm'
 import { DateTime } from 'luxon'
-import db, { database } from '../../database/database'
-import {
-  matches,
-  sessions,
-  timeEntries,
-  tracks,
-  webhookCaptures,
-  webhookEvents,
-} from '../../database/schema'
+import TransactionSource from '../../database/transaction.source'
+import WebhookSource, {
+  type WebhookCapture,
+} from '../../database/webhook.source'
 import { isWebhookEvent } from '../models/webhook'
 import type { Event, Map, StartEvent } from '../models/webhook.generated'
 import { broadcast } from '../server'
@@ -21,7 +15,7 @@ type PlayerTimes = {
   chugDurationMs: number | null
 }
 
-type Capture = typeof webhookCaptures.$inferSelect
+type Capture = WebhookCapture
 
 export class WebhookError extends Error {
   status: number
@@ -33,10 +27,7 @@ export class WebhookError extends Error {
   }
 }
 
-function fail(message: string): never {
-  throw new Error(message)
-}
-function mapMetadata(map: Map) {
+function trackMetadataFromWebhook(map: Map) {
   return {
     uid: map.uid,
     author: map.author,
@@ -57,49 +48,20 @@ export default class WebhookManager {
       .startOf('day')
       .minus({ days: 1 })
       .toJSDate()
-    return db
-      .select()
-      .from(sessions)
-      .where(
-        and(
-          isNull(sessions.deletedAt),
-          ne(sessions.status, 'cancelled'),
-          lte(sessions.date, now),
-          gte(sessions.date, yesterday),
-          id ? eq(sessions.id, id) : undefined
-        )
-      )
-      .orderBy(desc(sessions.date), asc(sessions.id))
-      .get()
+    return WebhookSource.findSession(now, yesterday, id)
   }
 
   private static events(capture: string): Event[] {
-    return db
-      .select()
-      .from(webhookEvents)
-      .where(eq(webhookEvents.capture, capture))
-      .orderBy(asc(webhookEvents.sequence))
-      .all()
-      .map(row => {
-        const value: unknown = JSON.parse(row.rawPayload)
-        if (!isWebhookEvent(value)) fail('Invalid stored webhook event')
-        return value
-      })
+    return WebhookSource.getEvents(capture).map(row => {
+      const value: unknown = JSON.parse(row.rawPayload)
+      if (!isWebhookEvent(value))
+        throw new Error('Invalid stored webhook event')
+      return value
+    })
   }
 
   static findNextSession(now = new Date()) {
-    return db
-      .select()
-      .from(sessions)
-      .where(
-        and(
-          isNull(sessions.deletedAt),
-          ne(sessions.status, 'cancelled'),
-          gt(sessions.date, now)
-        )
-      )
-      .orderBy(asc(sessions.date), asc(sessions.id))
-      .get()
+    return WebhookSource.findNextSession(now)
   }
 
   private static derivedTimes(events: Event[]): PlayerTimes[] | null {
@@ -129,18 +91,7 @@ export default class WebhookManager {
   }
 
   private static rows(capture: Capture) {
-    return {
-      lap: db
-        .select()
-        .from(timeEntries)
-        .where(eq(timeEntries.webhookCapture, capture.id))
-        .get(),
-      match: db
-        .select()
-        .from(matches)
-        .where(eq(matches.webhookCapture, capture.id))
-        .get(),
-    }
+    return WebhookSource.getResultRows(capture.id)
   }
 
   private static rowTimes(capture: Capture): PlayerTimes[] {
@@ -205,25 +156,20 @@ export default class WebhookManager {
     )
       return
     if (capture.totalPlayers === 1)
-      db.update(timeEntries)
-        .set({
-          status,
-          duration: times[0].finishDurationMs,
-          chugDurationMs: times[0].chugDurationMs,
-        })
-        .where(eq(timeEntries.webhookCapture, capture.id))
-        .run()
+      WebhookSource.updateLapTimes(
+        capture.id,
+        status,
+        times[0].finishDurationMs,
+        times[0].chugDurationMs
+      )
     else
-      db.update(matches)
-        .set({
-          status,
-          user1DurationMs: times[0].finishDurationMs,
-          user2DurationMs: times[1].finishDurationMs,
-          user1ChugDurationMs: times[0].chugDurationMs,
-          user2ChugDurationMs: times[1].chugDurationMs,
-        })
-        .where(eq(matches.webhookCapture, capture.id))
-        .run()
+      WebhookSource.updateMatchTimes(capture.id, {
+        status,
+        user1DurationMs: times[0].finishDurationMs,
+        user2DurationMs: times[1].finishDurationMs,
+        user1ChugDurationMs: times[0].chugDurationMs,
+        user2ChugDurationMs: times[1].chugDurationMs,
+      })
   }
 
   private static publishEntries(): void {
@@ -237,11 +183,7 @@ export default class WebhookManager {
   }
 
   static receive(event: Event, rawPayload: string, now = new Date()): string {
-    const existingEvent = db
-      .select()
-      .from(webhookEvents)
-      .where(eq(webhookEvents.eventId, event.eventId))
-      .get()
+    const existingEvent = WebhookSource.findEvent(event.eventId)
     if (existingEvent) {
       if (
         JSON.stringify(JSON.parse(existingEvent.rawPayload)) !==
@@ -254,11 +196,7 @@ export default class WebhookManager {
         )
       return 'Duplicate ignored'
     }
-    const existing = db
-      .select()
-      .from(webhookCaptures)
-      .where(eq(webhookCaptures.gameId, event.game.gameId))
-      .get()
+    const existing = WebhookSource.findCapture(event.game.gameId)
     const session = this.findSession(now, existing?.session)
     if (!session)
       throw new WebhookError(
@@ -266,24 +204,20 @@ export default class WebhookManager {
         'NO_ACTIVE_SESSION',
         'No active receiver session can register this event'
       )
-    const createdTrack = database.transaction(() => {
+    const createdTrack = TransactionSource.run(() => {
       let trackCreated = false
       const capture =
         existing ??
-        db
-          .insert(webhookCaptures)
-          .values({
-            id: event.game.gameId,
-            gameId: event.game.gameId,
-            session: session.id,
-            totalPlayers: event.game.totalPlayers,
-            sourceGame: event.source.game,
-            pluginName: event.source.pluginName,
-            pluginVersion: event.source.pluginVersion,
-            createdAt: now,
-          })
-          .returning()
-          .get()
+        WebhookSource.createCapture({
+          id: event.game.gameId,
+          gameId: event.game.gameId,
+          session: session.id,
+          totalPlayers: event.game.totalPlayers,
+          sourceGame: event.source.game,
+          pluginName: event.source.pluginName,
+          pluginVersion: event.source.pluginVersion,
+          createdAt: now,
+        })
       if (
         capture.totalPlayers !== event.game.totalPlayers ||
         capture.sourceGame !== event.source.game ||
@@ -291,18 +225,7 @@ export default class WebhookManager {
         capture.pluginVersion !== event.source.pluginVersion
       )
         throw new WebhookError(409, 'GAME_CONFLICT', 'Game metadata changed')
-      if (
-        db
-          .select()
-          .from(webhookEvents)
-          .where(
-            and(
-              eq(webhookEvents.capture, capture.id),
-              eq(webhookEvents.sequence, event.sequence)
-            )
-          )
-          .get()
-      )
+      if (WebhookSource.hasSequence(capture.id, event.sequence))
         throw new WebhookError(
           409,
           'SEQUENCE_CONFLICT',
@@ -332,22 +255,17 @@ export default class WebhookManager {
       }
       if (event.type === 'end' && all.filter(e => e.type === 'end').length > 1)
         throw new WebhookError(409, 'END_CONFLICT', 'Game already ended')
-      db.insert(webhookEvents)
-        .values({
-          eventId: event.eventId,
-          capture: capture.id,
-          sequence: event.sequence,
-          type: event.type,
-          occurredAt: new Date(event.occurredAt),
-          rawPayload,
-          createdAt: now,
-        })
-        .run()
+      WebhookSource.createEvent({
+        eventId: event.eventId,
+        capture: capture.id,
+        sequence: event.sequence,
+        type: event.type,
+        occurredAt: new Date(event.occurredAt),
+        rawPayload,
+        createdAt: now,
+      })
       if (event.type === 'end')
-        db.update(webhookCaptures)
-          .set({ endedAt: new Date(event.occurredAt) })
-          .where(eq(webhookCaptures.id, capture.id))
-          .run()
+        WebhookSource.markEnded(capture.id, new Date(event.occurredAt))
       const existingRows = this.rows(capture)
       const result = existingRows.lap ?? existingRows.match
       if (
@@ -358,64 +276,38 @@ export default class WebhookManager {
       )
         return false
       let matchedTrack = start.map
-        ? db
-            .select()
-            .from(tracks)
-            .where(and(eq(tracks.uid, start.map.uid), isNull(tracks.deletedAt)))
-            .get()
+        ? WebhookSource.findTrack(start.map.uid)
         : undefined
       if (start.map && !matchedTrack) {
-        matchedTrack = db
-          .insert(tracks)
-          .values({
-            ...mapMetadata(start.map),
-            name: start.map.name,
-            mapType: start.map.type,
-            level: 'custom',
-            game: capture.sourceGame,
-          })
-          .returning()
-          .get()
+        matchedTrack = WebhookSource.createTrack({
+          ...trackMetadataFromWebhook(start.map),
+          name: start.map.name,
+          mapType: start.map.type,
+          level: 'custom',
+          game: capture.sourceGame,
+        })
         trackCreated = true
       }
-      if (
-        capture.totalPlayers === 1 &&
-        !db
-          .select()
-          .from(timeEntries)
-          .where(eq(timeEntries.webhookCapture, capture.id))
-          .get()
-      )
-        db.insert(timeEntries)
-          .values({
-            webhookCapture: capture.id,
-            session: capture.session,
-            track: matchedTrack?.id,
-            status: 'in_progress',
-            createdAt: now,
-          })
-          .run()
-      if (
-        capture.totalPlayers === 2 &&
-        !db
-          .select()
-          .from(matches)
-          .where(eq(matches.webhookCapture, capture.id))
-          .get()
-      )
-        db.insert(matches)
-          .values({
-            webhookCapture: capture.id,
-            session: capture.session,
-            track: matchedTrack?.id,
-            status: 'in_progress',
-            createdAt: now,
-          })
-          .run()
+      if (capture.totalPlayers === 1 && !existingRows.lap)
+        WebhookSource.createLap({
+          webhookCapture: capture.id,
+          session: capture.session,
+          track: matchedTrack?.id,
+          status: 'in_progress',
+          createdAt: now,
+        })
+      if (capture.totalPlayers === 2 && !existingRows.match)
+        WebhookSource.createMatch({
+          webhookCapture: capture.id,
+          session: capture.session,
+          track: matchedTrack?.id,
+          status: 'in_progress',
+          createdAt: now,
+        })
       const afterTimes = this.derivedTimes(this.events(capture.id))
       if (afterTimes) this.syncTimes(capture, beforeTimes, afterTimes)
       return trackCreated
-    })()
+    })
     if (createdTrack)
       void TrackManager.getAllTracks().then(all => broadcast('all_tracks', all))
     this.publishEntries()

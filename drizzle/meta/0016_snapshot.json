@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "a47bcb93-afc0-4192-a1d8-128771b60af0",
+  "id": "c62eb67a-bd05-4e8c-84cf-342eac72dd2b",
   "prevId": "b6b988b4-d466-4fb8-9fcf-95a407153d65",
   "tables": {
     "matches": {
@@ -34,14 +34,6 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
-        },
-        "publication_state": {
-          "name": "publication_state",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'published'"
         },
         "webhook_capture": {
           "name": "webhook_capture",
@@ -446,14 +438,6 @@
           "notNull": false,
           "autoincrement": false
         },
-        "publication_state": {
-          "name": "publication_state",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'published'"
-        },
         "webhook_capture": {
           "name": "webhook_capture",
           "type": "text",
@@ -583,17 +567,9 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {
-        "time_entry_published_assignment": {
-          "name": "time_entry_published_assignment",
-          "value": "\"time_entries\".\"publication_state\" = 'draft' OR (\"time_entries\".\"user\" IS NOT NULL AND \"time_entries\".\"track\" IS NOT NULL)"
-        },
-        "time_entry_publication": {
-          "name": "time_entry_publication",
-          "value": "\"time_entries\".\"publication_state\" IN ('draft', 'published')"
-        },
         "time_entry_status": {
           "name": "time_entry_status",
-          "value": "\"time_entries\".\"status\" IN ('planned', 'completed', 'cancelled')"
+          "value": "\"time_entries\".\"status\" IN ('planned', 'in_progress', 'draft', 'completed', 'cancelled')"
         }
       }
     },

@@ -1,6 +1,5 @@
 import type { matches } from '../../backend/database/schema'
 import { isRecord } from '../utils/utils'
-import { isEntryStatus } from './entry'
 
 export const MATCH_STAGE_CODES = {
   group: 'GS',
@@ -54,13 +53,7 @@ export function isCreateMatchRequest(
   data: unknown
 ): data is CreateMatchRequest {
   if (!isRecord(data)) return false
-  return (
-    data.type === 'CreateMatchRequest' &&
-    (data.status === undefined || isEntryStatus(data.status)) &&
-    (data.track === undefined ||
-      data.track === null ||
-      typeof data.track === 'string')
-  )
+  return data.type === 'CreateMatchRequest'
 }
 
 export type EditMatchRequest = Partial<CreateMatch> & {
@@ -70,11 +63,7 @@ export type EditMatchRequest = Partial<CreateMatch> & {
 
 export function isEditMatchRequest(data: unknown): data is EditMatchRequest {
   if (!isRecord(data)) return false
-  return (
-    data.type === 'EditMatchRequest' &&
-    typeof data.id === 'string' &&
-    (data.status === undefined || isEntryStatus(data.status))
-  )
+  return data.type === 'EditMatchRequest' && typeof data.id === 'string'
 }
 
 export type DeleteMatchRequest = {

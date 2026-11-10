@@ -1,8 +1,8 @@
 import MatchList from '@/components/match/MatchList'
-import type { DisplayMatch } from '@/components/match/MatchProps'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useData } from '@/contexts/DataContext'
 import loc from '@common/locale/locales'
+import type { Match } from '@common/models/match'
 import type { TimeEntry } from '@common/models/timeEntry'
 import type { Track } from '@common/models/track'
 import { isInactiveFinalReset } from '@common/utils/tournament'
@@ -47,7 +47,7 @@ export default function TrackLeaderboard({
     .filter(te => !user || user === te.user)
     .filter(te => (track?.id ?? null) === te.track)
 
-  const allMatches: DisplayMatch[] = [...matches]
+  const allMatches: Match[] = [...matches]
   const filteredMatches = [
     ...new Map(allMatches.map(match => [match.id, match])).values(),
   ]

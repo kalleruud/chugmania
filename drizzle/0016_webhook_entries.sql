@@ -40,7 +40,6 @@ CREATE TABLE `__new_time_entries` (
 	`user` text,
 	`track` text,
 	`session` text,
-	`publication_state` text DEFAULT 'published' NOT NULL,
 	`webhook_capture` text,
 	`chug_duration_ms` integer,
 	`duration_ms` integer,
@@ -52,9 +51,7 @@ CREATE TABLE `__new_time_entries` (
 	FOREIGN KEY (`track`) REFERENCES `tracks`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`session`) REFERENCES `sessions`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`webhook_capture`) REFERENCES `webhook_captures`(`id`) ON UPDATE no action ON DELETE no action,
-	CONSTRAINT "time_entry_published_assignment" CHECK("publication_state" = 'draft' OR ("user" IS NOT NULL AND "track" IS NOT NULL)),
-	CONSTRAINT "time_entry_publication" CHECK("publication_state" IN ('draft', 'published')),
-	CONSTRAINT "time_entry_status" CHECK("status" IN ('planned', 'completed', 'cancelled'))
+	CONSTRAINT "time_entry_status" CHECK("__new_time_entries"."status" IN ('planned', 'in_progress', 'draft', 'completed', 'cancelled'))
 );
 --> statement-breakpoint
 INSERT INTO `__new_time_entries`("id", "updated_at", "created_at", "deleted_at", "user", "track", "session", "duration_ms", "status", "tie_breaker", "amount_l", "comment") SELECT "id", "updated_at", "created_at", "deleted_at", "user", "track", "session", "duration_ms", "status", "tie_breaker", "amount_l", "comment" FROM `time_entries`;--> statement-breakpoint
@@ -63,7 +60,6 @@ ALTER TABLE `__new_time_entries` RENAME TO `time_entries`;--> statement-breakpoi
 PRAGMA foreign_keys=ON;--> statement-breakpoint
 CREATE UNIQUE INDEX `time_entries_webhook_capture_unique` ON `time_entries` (`webhook_capture`);--> statement-breakpoint
 CREATE UNIQUE INDEX `session_track_user_tie_breaker` ON `time_entries` (`session`,`track`,`user`) WHERE "time_entries"."tie_breaker" = 1;--> statement-breakpoint
-ALTER TABLE `matches` ADD `publication_state` text DEFAULT 'published' NOT NULL;--> statement-breakpoint
 ALTER TABLE `matches` ADD `webhook_capture` text REFERENCES webhook_captures(id);--> statement-breakpoint
 ALTER TABLE `matches` ADD `user1_duration_ms` integer;--> statement-breakpoint
 ALTER TABLE `matches` ADD `user2_duration_ms` integer;--> statement-breakpoint

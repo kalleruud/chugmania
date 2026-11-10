@@ -1,52 +1,15 @@
 import loc from '@common/locale/locales'
 import type { Track } from '@common/models/track'
-import { tryCatchAsync } from '@common/utils/try-catch'
-import { and, asc, eq } from 'drizzle-orm'
-import db from '../../database/database'
-import { timeEntries, tracks } from '../../database/schema'
+import TrackSource from '../../database/track.source'
 
 export default class TrackManager {
-  static readonly table = tracks
+  static readonly table = TrackSource.table
 
-  static async import(data: (typeof TrackManager.table.$inferInsert)[]) {
-    const tasks = data.map(d =>
-      db
-        .insert(TrackManager.table)
-        .values(data)
-        .onConflictDoUpdate({ target: TrackManager.table.id, set: d })
-        .returning()
-    )
-
-    return (await Promise.all(tasks)).flat()
-  }
-
-  static async getTrackIdsWithLapTimes(
-    offset = 0,
-    limit = 100
-  ): Promise<string[]> {
-    const { data, error } = await tryCatchAsync(
-      db
-        .select({ id: tracks.id })
-        .from(tracks)
-        .innerJoin(
-          timeEntries,
-          and(
-            eq(tracks.id, timeEntries.track),
-            eq(timeEntries.status, 'completed')
-          )
-        )
-        .groupBy(tracks.id)
-        .orderBy(asc(tracks.name))
-        .offset(offset)
-        .limit(limit)
-    )
-
-    if (error) throw error
-    return data.map(d => d.id)
-  }
+  static import = TrackSource.import
+  static getTrackIdsWithLapTimes = TrackSource.getTrackIdsWithLapTimes
 
   static async getAllTracks(): Promise<Track[]> {
-    const data = await db.select().from(tracks).orderBy(asc(tracks.name))
+    const data = await TrackSource.getAll()
 
     if (data.length === 0) {
       console.debug(

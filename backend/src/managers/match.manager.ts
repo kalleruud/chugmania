@@ -9,9 +9,7 @@ import {
   type Match,
 } from '@common/models/match'
 import type { EventReq, EventRes } from '@common/models/socket.io'
-import { and, desc, eq, getTableColumns, isNull, sql } from 'drizzle-orm'
-import db from '../../database/database'
-import { matches, sessions } from '../../database/schema'
+import MatchSource from '../../database/match.source'
 import TournamentSource from '../../database/tournament.source'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
@@ -42,26 +40,42 @@ export default class MatchManager {
     }
   }
 
+  private static inferWebhookResult(
+    request: EditMatchRequest,
+    match: Match
+  ): EditMatchRequest {
+    if (
+      request.status === 'completed' &&
+      match.webhookCapture &&
+      !request.winner
+    ) {
+      const first =
+        request.user1DurationMs === undefined
+          ? match.user1DurationMs
+          : request.user1DurationMs
+      const second =
+        request.user2DurationMs === undefined
+          ? match.user2DurationMs
+          : request.user2DurationMs
+      const user1 = request.user1 === undefined ? match.user1 : request.user1
+      const user2 = request.user2 === undefined ? match.user2 : request.user2
+      request = { ...request, winner: null, duration: null }
+      if (first !== null && (second === null || first < second)) {
+        request = { ...request, winner: user1, duration: first }
+      } else if (second !== null && (first === null || second < first)) {
+        request = { ...request, winner: user2, duration: second }
+      }
+    }
+    return request
+  }
+
   public static async getAllMatches(): Promise<Match[]> {
-    const matchRows = await db
-      .select({ ...getTableColumns(matches) })
-      .from(matches)
-      .leftJoin(sessions, eq(matches.session, sessions.id))
-      .where(and(isNull(matches.deletedAt)))
-      .orderBy(desc(sql`COALESCE(${sessions.date}, ${matches.createdAt})`))
-
-    return TournamentManager.enrich(TournamentSource.visibleMatches(matchRows))
+    return TournamentManager.enrich(
+      TournamentSource.visibleMatches(await MatchSource.getAll())
+    )
   }
 
-  // Returns matches sorted by creation date, most recent first.
-  public static getAllBySession(sessionId: string): Match[] {
-    return db
-      .select({ ...getTableColumns(matches) })
-      .from(matches)
-      .where(and(eq(matches.session, sessionId), isNull(matches.deletedAt)))
-      .orderBy(desc(matches.createdAt))
-      .all()
-  }
+  public static getAllBySession = MatchSource.getAllBySession
 
   static async onCreateMatch(
     socket: TypedSocket,
@@ -93,7 +107,7 @@ export default class MatchManager {
       user1ChugDurationMs: request.user1ChugDurationMs,
       user2ChugDurationMs: request.user2ChugDurationMs,
     }
-    db.insert(matches).values(matchData).run()
+    MatchSource.create(matchData)
 
     console.debug(new Date().toISOString(), socket.id, 'Created match')
 
@@ -115,9 +129,7 @@ export default class MatchManager {
 
     await AuthManager.checkAuth(socket, ['admin', 'moderator'])
 
-    const preImageMatch = await db.query.matches.findFirst({
-      where: eq(matches.id, request.id),
-    })
+    const preImageMatch = MatchSource.findById(request.id)
 
     if (!preImageMatch || preImageMatch.deletedAt) {
       throw new Error(loc.no.error.messages.not_in_db(request.id))
@@ -131,55 +143,29 @@ export default class MatchManager {
       TournamentManager.publish(socket.id)
       return { success: true }
     }
-    if (
-      request.status === 'completed' &&
-      preImageMatch.webhookCapture &&
-      !request.winner
-    ) {
-      const first =
-        request.user1DurationMs === undefined
-          ? preImageMatch.user1DurationMs
-          : request.user1DurationMs
-      const second =
-        request.user2DurationMs === undefined
-          ? preImageMatch.user2DurationMs
-          : request.user2DurationMs
-      const user1 =
-        request.user1 === undefined ? preImageMatch.user1 : request.user1
-      const user2 =
-        request.user2 === undefined ? preImageMatch.user2 : request.user2
-      request = { ...request, winner: null, duration: null }
-      if (first !== null && (second === null || first < second)) {
-        request = { ...request, winner: user1, duration: first }
-      } else if (second !== null && (first === null || second < first)) {
-        request = { ...request, winner: user2, duration: second }
-      }
-    }
+    request = this.inferWebhookResult(request, preImageMatch)
     MatchManager.validateMatchState(request, preImageMatch)
 
     const id = request.id
-    db.update(matches)
-      .set({
-        user1: request.user1,
-        user2: request.user2,
-        track: request.track,
-        session: request.session,
-        winner: request.winner,
-        duration: request.duration,
-        status: request.status,
-        stage: request.stage,
-        comment: request.comment,
-        webhookCapture: request.webhookCapture,
-        user1DurationMs: request.user1DurationMs,
-        user2DurationMs: request.user2DurationMs,
-        user1ChugDurationMs: request.user1ChugDurationMs,
-        user2ChugDurationMs: request.user2ChugDurationMs,
-        deletedAt: request.deletedAt
-          ? new Date(request.deletedAt)
-          : request.deletedAt,
-      })
-      .where(eq(matches.id, preImageMatch.id))
-      .run()
+    MatchSource.update(preImageMatch.id, {
+      user1: request.user1,
+      user2: request.user2,
+      track: request.track,
+      session: request.session,
+      winner: request.winner,
+      duration: request.duration,
+      status: request.status,
+      stage: request.stage,
+      comment: request.comment,
+      webhookCapture: request.webhookCapture,
+      user1DurationMs: request.user1DurationMs,
+      user2DurationMs: request.user2DurationMs,
+      user1ChugDurationMs: request.user1ChugDurationMs,
+      user2ChugDurationMs: request.user2ChugDurationMs,
+      deletedAt: request.deletedAt
+        ? new Date(request.deletedAt)
+        : request.deletedAt,
+    })
 
     console.debug(new Date().toISOString(), socket.id, 'Updated match', id)
 

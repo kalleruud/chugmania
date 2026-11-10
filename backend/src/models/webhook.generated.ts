@@ -3,6 +3,26 @@
  * Do not make direct changes to the file.
  */
 
+export interface paths {
+  '/webhook': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Receive one Trackmania race event */
+    post: operations['receiveTrackmaniaEvent']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+}
+export type webhooks = Record<string, never>
 export interface components {
   schemas: {
     Event:
@@ -284,3 +304,107 @@ export type PlayerCheckpointEvent =
 export type EndEvent = components['schemas']['EndEvent']
 export type ErrorResponse = components['schemas']['ErrorResponse']
 export type HeaderRetryAfter = components['headers']['RetryAfter']
+export type $defs = Record<string, never>
+export interface operations {
+  receiveTrackmaniaEvent: {
+    parameters: {
+      query?: never
+      header: {
+        /** @description Event discriminator matching the request body's `type` property. */
+        event_type:
+          | 'start'
+          | 'first_throttle'
+          | 'checkpoint'
+          | 'lap'
+          | 'respawn'
+          | 'finish'
+          | 'end'
+        /** @description Event UUID matching the request body's `eventId` property. */
+        'event-id': string
+        /** @description Event sequence matching the request body's `sequence` property. */
+        'event-sequence': number
+      }
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['Event']
+      }
+    }
+    responses: {
+      /** @description Event accepted. The plugin ignores the response body. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Event accepted with no response body. */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Request timeout. The plugin retries the event. */
+      408: {
+        headers: {
+          'Retry-After': components['headers']['RetryAfter']
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Too many requests. The plugin retries the event. */
+      429: {
+        headers: {
+          'Retry-After': components['headers']['RetryAfter']
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Service unavailable. NO_ACTIVE_SESSION means no receiver session can currently register the event. */
+      503: {
+        headers: {
+          'Retry-After': components['headers']['RetryAfter']
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Permanent delivery failure. The plugin does not follow redirects. */
+      '3XX': {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Permanent delivery failure, except for the separately documented 408 and 429 responses. */
+      '4XX': {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Temporary receiver failure. The plugin retries the event. */
+      '5XX': {
+        headers: {
+          'Retry-After': components['headers']['RetryAfter']
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+    }
+  }
+}

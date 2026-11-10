@@ -1,5 +1,4 @@
 import loc from '@common/locale/locales'
-import type { Session } from '@common/models/session'
 import type { EventReq, EventRes } from '@common/models/socket.io'
 import type {
   CreateTimeEntry,
@@ -11,10 +10,9 @@ import {
   isEditTimeEntryRequest,
 } from '@common/models/timeEntry'
 import type { User } from '@common/models/user'
-import { and, asc, eq, getTableColumns, isNull, sql } from 'drizzle-orm'
-import db, { database } from '../../database/database'
-import { timeEntries } from '../../database/schema'
+import TimeEntrySource from '../../database/timeEntry.source'
 import TournamentSource from '../../database/tournament.source'
+import TransactionSource from '../../database/transaction.source'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import MatchManager from './match.manager'
@@ -22,92 +20,15 @@ import RatingManager from './rating.manager'
 import SessionManager from './session.manager'
 import TournamentManager from './tournament/tournament.manager'
 
-type TimeEntryRow = typeof timeEntries.$inferSelect
-type TimeEntryUpdates = Partial<Omit<CreateTimeEntry, 'user' | 'track'>> & {
-  user?: string | null
-  track?: string | null
+type TimeEntryUpdates = Partial<CreateTimeEntry> & {
   status: TimeEntry['status']
 }
 
 export default class TimeEntryManager {
-  static readonly table = timeEntries
+  static readonly table = TimeEntrySource.table
 
-  static async import(data: (typeof TimeEntryManager.table.$inferInsert)[]) {
-    const tasks = data.map(d =>
-      db
-        .insert(TimeEntryManager.table)
-        .values(data)
-        .onConflictDoUpdate({ target: TimeEntryManager.table.id, set: d })
-        .returning()
-    )
-
-    return (await Promise.all(tasks)).flat()
-  }
-
-  // Returns all latest lap times for each user after a session.
-  static getAllLatestAfterSession(sessionId: Session['id']): TimeEntry[] {
-    const latestDatePerUser = db
-      .select({
-        user: timeEntries.user,
-        maxDate: sql<Date>`max(${timeEntries.createdAt})`.as('maxDate'),
-      })
-      .from(timeEntries)
-      .where(
-        and(
-          eq(timeEntries.session, sessionId),
-          isNull(timeEntries.deletedAt),
-          eq(timeEntries.status, 'completed')
-        )
-      )
-      .groupBy(timeEntries.user)
-      .as('latest_date')
-
-    const latestBestPerUser = db
-      .select({
-        user: timeEntries.user,
-        createdAt: timeEntries.createdAt,
-        minDuration: sql<number>`min(${timeEntries.duration})`.as(
-          'minDuration'
-        ),
-      })
-      .from(timeEntries)
-      .innerJoin(
-        latestDatePerUser,
-        and(
-          eq(timeEntries.user, latestDatePerUser.user),
-          eq(timeEntries.createdAt, latestDatePerUser.maxDate)
-        )
-      )
-      .where(
-        and(
-          eq(timeEntries.session, sessionId),
-          isNull(timeEntries.deletedAt),
-          eq(timeEntries.status, 'completed')
-        )
-      )
-      .groupBy(timeEntries.user, timeEntries.createdAt)
-      .as('latest_best')
-
-    return db
-      .select({ ...getTableColumns(timeEntries) })
-      .from(timeEntries)
-      .innerJoin(
-        latestBestPerUser,
-        and(
-          eq(timeEntries.user, latestBestPerUser.user),
-          eq(timeEntries.createdAt, latestBestPerUser.createdAt),
-          eq(timeEntries.duration, latestBestPerUser.minDuration)
-        )
-      )
-      .where(
-        and(
-          eq(timeEntries.session, sessionId),
-          isNull(timeEntries.deletedAt),
-          eq(timeEntries.status, 'completed')
-        )
-      )
-      .all()
-  }
+  static import = TimeEntrySource.import
+  static getAllLatestAfterSession = TimeEntrySource.getAllLatestAfterSession
 
   static async onPostTimeEntry(
     socket: TypedSocket,
@@ -118,6 +39,7 @@ export default class TimeEntryManager {
         loc.no.error.messages.invalid_request('CreateTimeEntryRequest')
       )
     }
+    if (request.tieBreaker) throw new Error(loc.no.tournament.owned)
     const user = await AuthManager.checkAuth(socket)
 
     const isModerator = user.role !== 'user'
@@ -126,29 +48,21 @@ export default class TimeEntryManager {
       throw new Error(loc.no.error.messages.insufficient_permissions)
     }
 
-    const signupChanged = database.transaction(() => {
-      db.insert(timeEntries)
-        .values({
-          id: request.id,
-          webhookCapture: isModerator ? request.webhookCapture : undefined,
-          user: request.user,
-          track: request.track,
-          session: request.session,
-          duration: request.duration,
-          chugDurationMs: request.chugDurationMs,
-          amount: request.amount,
-          comment: request.comment,
-          tieBreaker: false,
-          status:
-            (request.duration ?? 0) > 0
-              ? 'completed'
-              : (request.status ?? 'completed'),
-        })
-        .run()
+    const { type, tieBreaker, webhookCapture, ...entry } = request
+    const signupChanged = TransactionSource.run(() => {
+      TimeEntrySource.create({
+        ...entry,
+        webhookCapture: isModerator ? webhookCapture : undefined,
+        tieBreaker: false,
+        status:
+          (request.duration ?? 0) > 0
+            ? 'completed'
+            : (request.status ?? 'completed'),
+      })
       return request.session && request.user
         ? SessionManager.ensureSessionSignup(request.session, request.user)
         : false
-    })()
+    })
 
     console.debug(
       new Date().toISOString(),
@@ -196,15 +110,15 @@ export default class TimeEntryManager {
   private static async prepareTimeEntryEdit(
     socket: TypedSocket,
     request: EventReq<'edit_time_entry'>
-  ): Promise<{ lapTime: TimeEntryRow; updates: TimeEntryUpdates }> {
+  ): Promise<{ lapTime: TimeEntry; updates: TimeEntryUpdates }> {
     if (!isEditTimeEntryRequest(request))
       throw new Error(
         loc.no.error.messages.invalid_request('EditTimeEntryRequest')
       )
-    const [user, lapTime] = await Promise.all([
-      AuthManager.checkAuth(socket),
-      db.query.timeEntries.findFirst({ where: eq(timeEntries.id, request.id) }),
-    ])
+    if (request.tieBreaker !== undefined)
+      throw new Error(loc.no.tournament.owned)
+    const user = await AuthManager.checkAuth(socket)
+    const lapTime = TimeEntrySource.findById(request.id)
     if (!lapTime || lapTime.deletedAt)
       throw new Error(loc.no.error.messages.not_in_db(request.id))
     const updates = TimeEntryManager.normalizeTimeEntryUpdates(request, lapTime)
@@ -214,21 +128,9 @@ export default class TimeEntryManager {
 
   private static normalizeTimeEntryUpdates(
     request: EditTimeEntryRequest,
-    lapTime: TimeEntryRow
+    lapTime: TimeEntry
   ): TimeEntryUpdates {
-    const updates = {
-      user: request.user,
-      track: request.track,
-      session: request.session,
-      duration: request.duration,
-      chugDurationMs: request.chugDurationMs,
-      status: request.status,
-      amount: request.amount,
-      comment: request.comment,
-      deletedAt: request.deletedAt,
-      updatedAt: request.updatedAt,
-      createdAt: request.createdAt,
-    }
+    const { type, id, webhookCapture, tieBreaker, ...updates } = request
     const processed = { ...updates }
     if (typeof updates.deletedAt === 'string')
       processed.deletedAt = new Date(updates.deletedAt)
@@ -248,12 +150,12 @@ export default class TimeEntryManager {
 
   private static validateTimeEntryEdit(
     user: Pick<User, 'id' | 'role'>,
-    lapTime: TimeEntryRow,
+    lapTime: TimeEntry,
     updates: TimeEntryUpdates
   ): void {
     const isModerator = user.role !== 'user'
-    const isUnclaimedDraft = lapTime.user === null
-    if (!isModerator && lapTime.user !== user.id && !isUnclaimedDraft)
+    const isUnclaimedEntry = lapTime.user === null
+    if (!isModerator && lapTime.user !== user.id && !isUnclaimedEntry)
       throw new Error(loc.no.error.messages.insufficient_permissions)
     if (!isModerator && updates.user && updates.user !== user.id)
       throw new Error(loc.no.error.messages.insufficient_permissions)
@@ -276,19 +178,16 @@ export default class TimeEntryManager {
   }
 
   private static saveTimeEntryEdit(
-    lapTime: TimeEntryRow,
+    lapTime: TimeEntry,
     updates: TimeEntryUpdates
   ): boolean {
-    return database.transaction(() => {
+    return TransactionSource.run(() => {
       const before =
         lapTime.tieBreaker && lapTime.session
           ? TournamentManager.getState(lapTime.session)
           : null
       if (before?.cancelled) throw new Error(loc.no.tournament.session)
-      db.update(timeEntries)
-        .set(updates)
-        .where(eq(timeEntries.id, lapTime.id))
-        .run()
+      TimeEntrySource.update(lapTime.id, updates)
       if (before) TournamentManager.reconcile(before.config.session, before)
       const sessionId =
         updates.session === undefined ? lapTime.session : updates.session
@@ -296,7 +195,7 @@ export default class TimeEntryManager {
       return sessionId && userId && !updates.deletedAt
         ? SessionManager.ensureSessionSignup(sessionId, userId)
         : false
-    })()
+    })
   }
 
   private static async publishTimeEntryEdit(
@@ -313,27 +212,9 @@ export default class TimeEntryManager {
     TournamentManager.publish(actor)
   }
 
-  static deleteTimeEntriesForUser(userId: User['id']): void {
-    const deletedAt = new Date()
-    db.update(timeEntries)
-      .set({ deletedAt })
-      .where(eq(timeEntries.user, userId))
-      .run()
-  }
+  static deleteTimeEntriesForUser = TimeEntrySource.deleteTimeEntriesForUser
 
   static async getAllTimeEntries(): Promise<TimeEntry[]> {
-    const data = await db
-      .select()
-      .from(timeEntries)
-      .where(and(isNull(timeEntries.deletedAt)))
-      .orderBy(
-        asc(
-          sql`CASE WHEN ${timeEntries.duration} IS NULL OR ${timeEntries.duration} = 0 THEN 1 ELSE 0 END`
-        ),
-        asc(timeEntries.duration),
-        asc(timeEntries.createdAt)
-      )
-
-    return TournamentSource.visibleTimeEntries(data)
+    return TournamentSource.visibleTimeEntries(await TimeEntrySource.getAll())
   }
 }

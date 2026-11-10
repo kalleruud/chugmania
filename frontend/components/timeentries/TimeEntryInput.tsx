@@ -306,7 +306,7 @@ export default function TimeEntryInput({
                 variant='ghost'
                 size='icon'
                 className='absolute top-1/2 left-full ml-1 -translate-y-1/2'
-                aria-label={loc.no.timeEntry.input.removeChug}
+                aria-label={loc.no.common.remove}
                 disabled={disabled}
                 onClick={() => {
                   setShowChug(false)
