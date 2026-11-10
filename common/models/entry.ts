@@ -1,16 +1,13 @@
-export type EntryStatus =
-  | 'planned'
-  | 'in_progress'
-  | 'draft'
-  | 'completed'
-  | 'cancelled'
+const entryStatuses = [
+  'planned',
+  'in_progress',
+  'draft',
+  'completed',
+  'cancelled',
+] as const
+
+export type EntryStatus = (typeof entryStatuses)[number]
 
 export function isEntryStatus(value: unknown): value is EntryStatus {
-  return (
-    value === 'planned' ||
-    value === 'in_progress' ||
-    value === 'draft' ||
-    value === 'completed' ||
-    value === 'cancelled'
-  )
+  return entryStatuses.some(status => status === value)
 }
