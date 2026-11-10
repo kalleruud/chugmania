@@ -1,9 +1,11 @@
+import type { Result } from '@common/utils/try-catch'
 import { isRecord } from '@common/utils/utils'
 import express, {
   type ErrorRequestHandler,
   type NextFunction,
   type Request,
   type Response,
+  type Router,
 } from 'express'
 import { timingSafeEqual } from 'node:crypto'
 import SessionSource from '../../database/sources/session.source'
@@ -11,7 +13,7 @@ import WebhookManager, { WebhookError } from '../managers/webhook.manager'
 import { isWebhookEvent } from '../models/webhook'
 import type { Event } from '../models/webhook.generated'
 
-export function createWebhookRouter() {
+export function createWebhookRouter(): Router {
   const router = express.Router()
   router.post(
     '/api/webhook',
@@ -61,42 +63,73 @@ function authenticateWebhook(
   next()
 }
 
-function parseWebhookEvent(req: Request): { event: Event; rawPayload: string } {
+function parseWebhookEvent(
+  req: Request
+): Result<{ event: Event; rawPayload: string }, WebhookError> {
   if (typeof req.body !== 'string')
-    throw new WebhookError(400, 'INVALID_EVENT', 'JSON body required')
-  const event: unknown = JSON.parse(req.body)
+    return {
+      data: null,
+      error: new WebhookError(400, 'INVALID_EVENT', 'JSON body required'),
+    }
+  let event: unknown
+  try {
+    event = JSON.parse(req.body)
+  } catch {
+    return {
+      data: null,
+      error: new WebhookError(400, 'INVALID_JSON', 'Invalid JSON body'),
+    }
+  }
   if (!isWebhookEvent(event))
-    throw new WebhookError(400, 'INVALID_EVENT', 'Invalid webhook payload')
+    return {
+      data: null,
+      error: new WebhookError(400, 'INVALID_EVENT', 'Invalid webhook payload'),
+    }
   if (
     req.get('event_type') !== event.type ||
     req.get('event-id') !== event.eventId ||
     req.get('event-sequence') !== String(event.sequence)
   )
-    throw new WebhookError(
-      400,
-      'HEADER_MISMATCH',
-      'Event headers must match the payload'
-    )
-  return { event, rawPayload: req.body }
+    return {
+      data: null,
+      error: new WebhookError(
+        400,
+        'HEADER_MISMATCH',
+        'Event headers must match the payload'
+      ),
+    }
+  return { data: { event, rawPayload: req.body }, error: null }
 }
 
 function receiveWebhook(req: Request, res: Response): void {
   try {
-    const { event, rawPayload } = parseWebhookEvent(req)
-    res.locals.webhookOutcome = WebhookManager.receive(event, rawPayload)
+    const parsed = parseWebhookEvent(req)
+    if (parsed.error) {
+      respondToWebhookError(parsed.error, req, res)
+      return
+    }
+    const result = WebhookManager.receive(
+      parsed.data.event,
+      parsed.data.rawPayload
+    )
+    if (result.error) {
+      respondToWebhookError(result.error, req, res)
+      return
+    }
+    res.locals.webhookOutcome = result.data
     res.status(204).end()
   } catch (error) {
-    respondToWebhookError(error, res)
+    respondToWebhookError(error, req, res)
   }
 }
 
-function respondToWebhookError(error: unknown, res: Response): void {
+function respondToWebhookError(
+  error: unknown,
+  req: Request,
+  res: Response
+): void {
   res.locals.webhookOutcome =
     error instanceof WebhookError ? error.message : 'Rejected'
-  if (error instanceof SyntaxError) {
-    res.status(400).json({ code: 'INVALID_JSON', message: 'Invalid JSON body' })
-    return
-  }
   if (error instanceof WebhookError) {
     if (error.code === 'NO_ACTIVE_SESSION') {
       const nextSession = SessionSource.findNext(new Date())
@@ -106,6 +139,14 @@ function respondToWebhookError(error: unknown, res: Response): void {
     res.status(error.status).json({ code: error.code, message: error.message })
     return
   }
+  console.error(
+    'Webhook receiver failed',
+    {
+      eventId: req.get('event-id'),
+      eventType: req.get('event_type'),
+    },
+    error
+  )
   res.status(500).json({
     code: 'RECEIVER_ERROR',
     message: 'Could not persist webhook event',

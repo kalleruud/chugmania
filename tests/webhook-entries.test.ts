@@ -40,7 +40,8 @@ function capture(now: Date, totalPlayers: number, game: Source['game']) {
   const send = (data: Record<string, unknown>) => {
     const event = { ...base, eventId: randomUUID(), ...data }
     assert(isWebhookEvent(event))
-    WebhookManager.receive(event, JSON.stringify(event), now)
+    const result = WebhookManager.receive(event, JSON.stringify(event), now)
+    assert.equal(result.error, null)
   }
   return {
     start: (map: Map | null = null) =>
