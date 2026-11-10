@@ -1,6 +1,6 @@
 import type { Track } from '@common/models/track'
 import { tryCatchAsync } from '@common/utils/try-catch'
-import { and, asc, eq } from 'drizzle-orm'
+import { and, asc, eq, isNull } from 'drizzle-orm'
 import db from '../database'
 import { timeEntries, tracks } from '../schema'
 
@@ -46,5 +46,24 @@ export default class TrackSource {
 
   static async getAll(): Promise<Track[]> {
     return await db.select().from(tracks).orderBy(asc(tracks.name))
+  }
+  static findByUid(uid: string) {
+    return db
+      .select()
+      .from(tracks)
+      .where(and(eq(tracks.uid, uid), isNull(tracks.deletedAt)))
+      .get()
+  }
+  static create(track: typeof tracks.$inferInsert) {
+    return db.insert(tracks).values(track).returning().get()
+  }
+
+  static getActiveIds(): string[] {
+    return db
+      .select({ id: tracks.id })
+      .from(tracks)
+      .where(isNull(tracks.deletedAt))
+      .all()
+      .map(row => row.id)
   }
 }

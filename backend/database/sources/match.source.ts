@@ -29,4 +29,11 @@ export default class MatchSource {
   static update(id: string, updates: Partial<CreateMatch>): void {
     db.update(matches).set(updates).where(eq(matches.id, id)).run()
   }
+  static findByCapture(capture: string) {
+    return db
+      .select()
+      .from(matches)
+      .where(eq(matches.webhookCapture, capture))
+      .get()
+  }
 }

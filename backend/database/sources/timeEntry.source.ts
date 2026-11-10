@@ -1,9 +1,11 @@
 import type { Session } from '@common/models/session'
 import type { CreateTimeEntry, TimeEntry } from '@common/models/timeEntry'
+import type { TournamentState } from '@common/models/tournament'
 import type { User } from '@common/models/user'
 import { and, asc, eq, getTableColumns, isNull, sql } from 'drizzle-orm'
 import db from '../database'
 import { timeEntries } from '../schema'
+import TransactionSource from './transaction.source'
 
 export default class TimeEntrySource {
   static readonly table = timeEntries
@@ -115,5 +117,59 @@ export default class TimeEntrySource {
         asc(timeEntries.duration),
         asc(timeEntries.createdAt)
       )
+  }
+  static findByCapture(capture: string) {
+    return db
+      .select()
+      .from(timeEntries)
+      .where(eq(timeEntries.webhookCapture, capture))
+      .get()
+  }
+  static getTieBreakers(session: string, track: string): TimeEntry[] {
+    return db
+      .select()
+      .from(timeEntries)
+      .where(
+        and(
+          eq(timeEntries.session, session),
+          eq(timeEntries.track, track),
+          eq(timeEntries.tieBreaker, true)
+        )
+      )
+      .all()
+  }
+  static reconcileTieBreakers(
+    state: TournamentState,
+    needs: Map<string, boolean>
+  ): void {
+    TransactionSource.run(() => {
+      const track = state.config.tieBreakerTrack
+      if (!track) return
+      const laps = new Map(state.tieBreakers.map(lap => [lap.user, lap]))
+      for (const user of needs.keys()) {
+        if (!laps.has(user))
+          db.insert(timeEntries)
+            .values({
+              user,
+              track,
+              session: state.config.session,
+              tieBreaker: true,
+              status: 'planned',
+            })
+            .run()
+      }
+      for (const lap of state.tieBreakers) {
+        if (
+          !lap.user ||
+          lap.status !== 'planned' ||
+          !!lap.deletedAt === !needs.has(lap.user)
+        )
+          continue
+        db.update(timeEntries)
+          .set({ deletedAt: needs.has(lap.user) ? null : new Date() })
+          .where(eq(timeEntries.id, lap.id))
+          .run()
+      }
+    })
   }
 }

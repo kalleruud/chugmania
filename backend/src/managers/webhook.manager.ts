@@ -1,8 +1,13 @@
 import { DateTime } from 'luxon'
+import MatchSource from '../../database/sources/match.source'
+import SessionSource from '../../database/sources/session.source'
+import TimeEntrySource from '../../database/sources/timeEntry.source'
+import TrackSource from '../../database/sources/track.source'
 import TransactionSource from '../../database/sources/transaction.source'
-import WebhookSource, {
+import WebhookCaptureSource, {
   type WebhookCapture,
-} from '../../database/sources/webhook.source'
+} from '../../database/sources/webhookCapture.source'
+import WebhookEventSource from '../../database/sources/webhookEvent.source'
 import { isWebhookEvent } from '../models/webhook'
 import type { Event, Map, StartEvent } from '../models/webhook.generated'
 import { broadcast } from '../server'
@@ -48,11 +53,11 @@ export default class WebhookManager {
       .startOf('day')
       .minus({ days: 1 })
       .toJSDate()
-    return WebhookSource.findSession(now, yesterday, id)
+    return SessionSource.findStartedWithin(now, yesterday, id)
   }
 
   private static events(capture: string): Event[] {
-    return WebhookSource.getEvents(capture).map(row => {
+    return WebhookEventSource.getByCapture(capture).map(row => {
       const value: unknown = JSON.parse(row.rawPayload)
       if (!isWebhookEvent(value))
         throw new Error('Invalid stored webhook event')
@@ -61,7 +66,7 @@ export default class WebhookManager {
   }
 
   static findNextSession(now = new Date()) {
-    return WebhookSource.findNextSession(now)
+    return SessionSource.findNext(now)
   }
 
   private static derivedTimes(events: Event[]): PlayerTimes[] | null {
@@ -91,7 +96,10 @@ export default class WebhookManager {
   }
 
   private static rows(capture: Capture) {
-    return WebhookSource.getResultRows(capture.id)
+    return {
+      lap: TimeEntrySource.findByCapture(capture.id),
+      match: MatchSource.findByCapture(capture.id),
+    }
   }
 
   private static rowTimes(capture: Capture): PlayerTimes[] {
@@ -155,15 +163,14 @@ export default class WebhookManager {
       match.user2ChugDurationMs === times[1].chugDurationMs
     )
       return
-    if (capture.totalPlayers === 1)
-      WebhookSource.updateLapTimes(
-        capture.id,
+    if (lap)
+      TimeEntrySource.update(lap.id, {
         status,
-        times[0].finishDurationMs,
-        times[0].chugDurationMs
-      )
-    else
-      WebhookSource.updateMatchTimes(capture.id, {
+        duration: times[0].finishDurationMs,
+        chugDurationMs: times[0].chugDurationMs,
+      })
+    else if (match)
+      MatchSource.update(match.id, {
         status,
         user1DurationMs: times[0].finishDurationMs,
         user2DurationMs: times[1].finishDurationMs,
@@ -183,7 +190,7 @@ export default class WebhookManager {
   }
 
   static receive(event: Event, rawPayload: string, now = new Date()): string {
-    const existingEvent = WebhookSource.findEvent(event.eventId)
+    const existingEvent = WebhookEventSource.findByEventId(event.eventId)
     if (existingEvent) {
       if (
         JSON.stringify(JSON.parse(existingEvent.rawPayload)) !==
@@ -196,7 +203,7 @@ export default class WebhookManager {
         )
       return 'Duplicate ignored'
     }
-    const existing = WebhookSource.findCapture(event.game.gameId)
+    const existing = WebhookCaptureSource.findByGameId(event.game.gameId)
     const session = this.findSession(now, existing?.session)
     if (!session)
       throw new WebhookError(
@@ -208,7 +215,7 @@ export default class WebhookManager {
       let trackCreated = false
       const capture =
         existing ??
-        WebhookSource.createCapture({
+        WebhookCaptureSource.create({
           id: event.game.gameId,
           gameId: event.game.gameId,
           session: session.id,
@@ -225,7 +232,7 @@ export default class WebhookManager {
         capture.pluginVersion !== event.source.pluginVersion
       )
         throw new WebhookError(409, 'GAME_CONFLICT', 'Game metadata changed')
-      if (WebhookSource.hasSequence(capture.id, event.sequence))
+      if (WebhookEventSource.hasSequence(capture.id, event.sequence))
         throw new WebhookError(
           409,
           'SEQUENCE_CONFLICT',
@@ -255,7 +262,7 @@ export default class WebhookManager {
       }
       if (event.type === 'end' && all.filter(e => e.type === 'end').length > 1)
         throw new WebhookError(409, 'END_CONFLICT', 'Game already ended')
-      WebhookSource.createEvent({
+      WebhookEventSource.create({
         eventId: event.eventId,
         capture: capture.id,
         sequence: event.sequence,
@@ -265,7 +272,7 @@ export default class WebhookManager {
         createdAt: now,
       })
       if (event.type === 'end')
-        WebhookSource.markEnded(capture.id, new Date(event.occurredAt))
+        WebhookCaptureSource.markEnded(capture.id, new Date(event.occurredAt))
       const existingRows = this.rows(capture)
       const result = existingRows.lap ?? existingRows.match
       if (
@@ -276,10 +283,10 @@ export default class WebhookManager {
       )
         return false
       let matchedTrack = start.map
-        ? WebhookSource.findTrack(start.map.uid)
+        ? TrackSource.findByUid(start.map.uid)
         : undefined
       if (start.map && !matchedTrack) {
-        matchedTrack = WebhookSource.createTrack({
+        matchedTrack = TrackSource.create({
           ...trackMetadataFromWebhook(start.map),
           name: start.map.name,
           mapType: start.map.type,
@@ -289,7 +296,7 @@ export default class WebhookManager {
         trackCreated = true
       }
       if (capture.totalPlayers === 1 && !existingRows.lap)
-        WebhookSource.createLap({
+        TimeEntrySource.create({
           webhookCapture: capture.id,
           session: capture.session,
           track: matchedTrack?.id,
@@ -297,7 +304,7 @@ export default class WebhookManager {
           createdAt: now,
         })
       if (capture.totalPlayers === 2 && !existingRows.match)
-        WebhookSource.createMatch({
+        MatchSource.create({
           webhookCapture: capture.id,
           session: capture.session,
           track: matchedTrack?.id,
