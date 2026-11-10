@@ -4,10 +4,9 @@ import SessionSource from '../../database/sources/session.source'
 import TimeEntrySource from '../../database/sources/timeEntry.source'
 import TrackSource from '../../database/sources/track.source'
 import TransactionSource from '../../database/sources/transaction.source'
-import WebhookCaptureSource, {
+import WebhookSource, {
   type WebhookCapture,
-} from '../../database/sources/webhookCapture.source'
-import WebhookEventSource from '../../database/sources/webhookEvent.source'
+} from '../../database/sources/webhook.source'
 import { isWebhookEvent } from '../models/webhook'
 import type { Event, Map, StartEvent } from '../models/webhook.generated'
 import { broadcast } from '../server'
@@ -57,7 +56,7 @@ export default class WebhookManager {
   }
 
   private static events(capture: string): Event[] {
-    return WebhookEventSource.getByCapture(capture).map(row => {
+    return WebhookSource.getEvents(capture).map(row => {
       const value: unknown = JSON.parse(row.rawPayload)
       if (!isWebhookEvent(value))
         throw new Error('Invalid stored webhook event')
@@ -190,7 +189,7 @@ export default class WebhookManager {
   }
 
   static receive(event: Event, rawPayload: string, now = new Date()): string {
-    const existingEvent = WebhookEventSource.findByEventId(event.eventId)
+    const existingEvent = WebhookSource.findEvent(event.eventId)
     if (existingEvent) {
       if (
         JSON.stringify(JSON.parse(existingEvent.rawPayload)) !==
@@ -203,7 +202,7 @@ export default class WebhookManager {
         )
       return 'Duplicate ignored'
     }
-    const existing = WebhookCaptureSource.findByGameId(event.game.gameId)
+    const existing = WebhookSource.findCapture(event.game.gameId)
     const session = this.findSession(now, existing?.session)
     if (!session)
       throw new WebhookError(
@@ -215,7 +214,7 @@ export default class WebhookManager {
       let trackCreated = false
       const capture =
         existing ??
-        WebhookCaptureSource.create({
+        WebhookSource.createCapture({
           id: event.game.gameId,
           gameId: event.game.gameId,
           session: session.id,
@@ -232,7 +231,7 @@ export default class WebhookManager {
         capture.pluginVersion !== event.source.pluginVersion
       )
         throw new WebhookError(409, 'GAME_CONFLICT', 'Game metadata changed')
-      if (WebhookEventSource.hasSequence(capture.id, event.sequence))
+      if (WebhookSource.hasSequence(capture.id, event.sequence))
         throw new WebhookError(
           409,
           'SEQUENCE_CONFLICT',
@@ -262,7 +261,7 @@ export default class WebhookManager {
       }
       if (event.type === 'end' && all.filter(e => e.type === 'end').length > 1)
         throw new WebhookError(409, 'END_CONFLICT', 'Game already ended')
-      WebhookEventSource.create({
+      WebhookSource.createEvent({
         eventId: event.eventId,
         capture: capture.id,
         sequence: event.sequence,
@@ -272,7 +271,7 @@ export default class WebhookManager {
         createdAt: now,
       })
       if (event.type === 'end')
-        WebhookCaptureSource.markEnded(capture.id, new Date(event.occurredAt))
+        WebhookSource.markEnded(capture.id, new Date(event.occurredAt))
       const existingRows = this.rows(capture)
       const result = existingRows.lap ?? existingRows.match
       if (
