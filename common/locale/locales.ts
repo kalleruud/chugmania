@@ -116,7 +116,6 @@ const no = {
     } as Record<UserRole, string>,
   },
   session: {
-    resultsChanged: 'Oppføringene i sessionen er oppdatert',
     title: 'Sessions',
     description: 'Oversikt over kommende og tidligere sessions.',
     session: 'Session',
@@ -274,7 +273,6 @@ const no = {
     frozen: 'Gruppefordeling låst',
     finalStandings: 'Sluttresultat',
     provisional: 'Foreløpig resultat',
-    changed: 'Turneringen er oppdatert',
     saved: 'Turneringen er lagret',
     deleted: 'Turneringen er slettet',
     deleteTitle: 'Slett turnering',

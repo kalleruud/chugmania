@@ -1,4 +1,3 @@
-import loc from '@common/locale/locales'
 import type { Match } from '@common/models/match'
 import type { Ranking } from '@common/models/ranking'
 import type { SessionWithSignups } from '@common/models/session'
@@ -15,7 +14,6 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { toast } from 'sonner'
 import { useConnection } from './ConnectionContext'
 
 type DataContextType = {
@@ -108,31 +106,14 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
   )
 
   useEffect(() => {
-    let previousTournaments: string | undefined
-    socket.on('all_tournaments', (data, actor) => {
-      const serialized = JSON.stringify(data)
-      if (
-        previousTournaments !== undefined &&
-        previousTournaments !== serialized &&
-        actor !== socket.id
-      )
-        toast.info(loc.no.tournament.changed)
-      previousTournaments = serialized
+    socket.on('all_tournaments', data => {
       setTournaments(data.map(parseTournament))
     })
     socket.on('all_sessions', data => {
       setSessions(parseDatesArray(data))
     })
 
-    let previoussetTimeEntries: string | undefined
     socket.on('all_time_entries', data => {
-      const serialized = JSON.stringify(data)
-      if (
-        previoussetTimeEntries !== undefined &&
-        previoussetTimeEntries !== serialized
-      )
-        toast.info(loc.no.session.resultsChanged)
-      previoussetTimeEntries = serialized
       setTimeEntries(parseDatesArray(data))
     })
 
@@ -144,12 +125,7 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
       setUsers(parseDatesArray(data))
     })
 
-    let previoussetMatches: string | undefined
     socket.on('all_matches', data => {
-      const serialized = JSON.stringify(data)
-      if (previoussetMatches !== undefined && previoussetMatches !== serialized)
-        toast.info(loc.no.session.resultsChanged)
-      previoussetMatches = serialized
       setMatches(parseDatesArray(data))
     })
 
