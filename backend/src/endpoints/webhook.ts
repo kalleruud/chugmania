@@ -63,17 +63,24 @@ function authenticateWebhook(
   next()
 }
 
+type WebhookHeaders = {
+  eventType: string | undefined
+  eventId: string | undefined
+  eventSequence: string | undefined
+}
+
 function parseWebhookEvent(
-  req: Request
+  body: unknown,
+  headers: WebhookHeaders
 ): Result<{ event: Event; rawPayload: string }, WebhookError> {
-  if (typeof req.body !== 'string')
+  if (typeof body !== 'string')
     return {
       data: null,
       error: new WebhookError(400, 'INVALID_EVENT', 'JSON body required'),
     }
   let event: unknown
   try {
-    event = JSON.parse(req.body)
+    event = JSON.parse(body)
   } catch {
     return {
       data: null,
@@ -86,9 +93,9 @@ function parseWebhookEvent(
       error: new WebhookError(400, 'INVALID_EVENT', 'Invalid webhook payload'),
     }
   if (
-    req.get('event_type') !== event.type ||
-    req.get('event-id') !== event.eventId ||
-    req.get('event-sequence') !== String(event.sequence)
+    headers.eventType !== event.type ||
+    headers.eventId !== event.eventId ||
+    headers.eventSequence !== String(event.sequence)
   )
     return {
       data: null,
@@ -98,20 +105,26 @@ function parseWebhookEvent(
         'Event headers must match the payload'
       ),
     }
-  return { data: { event, rawPayload: req.body }, error: null }
+  return { data: { event, rawPayload: body }, error: null }
+}
+
+export function receiveWebhookEvent(
+  body: unknown,
+  headers: WebhookHeaders,
+  now = new Date()
+): Result<string> {
+  const parsed = parseWebhookEvent(body, headers)
+  if (parsed.error) return { data: null, error: parsed.error }
+  return WebhookManager.receive(parsed.data.event, parsed.data.rawPayload, now)
 }
 
 function receiveWebhook(req: Request, res: Response): void {
   try {
-    const parsed = parseWebhookEvent(req)
-    if (parsed.error) {
-      respondToWebhookError(parsed.error, req, res)
-      return
-    }
-    const result = WebhookManager.receive(
-      parsed.data.event,
-      parsed.data.rawPayload
-    )
+    const result = receiveWebhookEvent(req.body, {
+      eventType: req.get('event_type'),
+      eventId: req.get('event-id'),
+      eventSequence: req.get('event-sequence'),
+    })
     if (result.error) {
       respondToWebhookError(result.error, req, res)
       return
