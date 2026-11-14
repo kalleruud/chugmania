@@ -12,7 +12,13 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
 import { Button } from '@/components/ui/button'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useAuth } from '@/contexts/AuthContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@common/locale/locales'
@@ -98,7 +104,7 @@ export function SessionsContent({
           pageSize={ARCHIVE_PAGE_SIZE}
           hideCreate
           actions={
-            <ArchiveGroupingToggle
+            <ArchiveGroupingSelect
               value={archiveGrouping}
               onChange={setArchiveGrouping}
             />
@@ -127,7 +133,7 @@ export function SessionsContent({
   )
 }
 
-function ArchiveGroupingToggle({
+function ArchiveGroupingSelect({
   value,
   onChange,
 }: Readonly<{
@@ -137,22 +143,23 @@ function ArchiveGroupingToggle({
   const options = Object.keys(sessionGroupings) as SessionGroupingKey[]
 
   return (
-    <ToggleGroup
-      type='single'
+    <Select
       value={value}
       onValueChange={next => {
         const option = options.find(key => key === next)
         if (option) onChange(option)
-      }}
-      variant='outline'
-      size='sm'
-      className='mb-2'>
-      {options.map(key => (
-        <ToggleGroupItem key={key} value={key}>
-          {loc.no.common.groupBy[key]}
-        </ToggleGroupItem>
-      ))}
-    </ToggleGroup>
+      }}>
+      <SelectTrigger size='sm' className='mb-2 w-fit'>
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map(key => (
+          <SelectItem key={key} value={key}>
+            {loc.no.common.groupBy[key]}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   )
 }
 
