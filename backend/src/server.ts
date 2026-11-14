@@ -109,6 +109,7 @@ app.get('/api/ping', (_req, res) => {
 })
 
 if (!isProduction) {
+  await UserManager.ensureDevAdmin()
   const { createServer: createViteServer } = await import('vite')
   const vite = await createViteServer({ server: { middlewareMode: true } })
   app.use(vite.middlewares)
