@@ -525,6 +525,13 @@ const no = {
       'Her var det tomt...',
       'Har du gått feil?',
     ]),
+    showMore: (remaining: number) => `Vis flere (${remaining} igjen)`,
+    groupBy: {
+      year: 'År',
+      month: 'Måned',
+      week: 'Uke',
+    },
+    week: (week: number, year: number) => `Uke ${week}, ${year}`,
   },
 } as const
 
