@@ -94,7 +94,7 @@
   },
   "allowScripts": {
     "esbuild": true,
-    "better-sqlite3": true,
+    "better-sqlite3": false,
     "fsevents": true,
     "unrs-resolver": false
   },
