@@ -21,6 +21,7 @@ export default defineConfig({
   },
   build: {
     rolldownOptions: {
+      checks: { bundlerTimings: false },
       output: {
         codeSplitting: {
           groups: [
