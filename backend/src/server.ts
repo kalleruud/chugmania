@@ -10,6 +10,7 @@ import type {
 import type { TournamentDetails } from '@common/models/tournament'
 import express from 'express'
 import { createServer } from 'node:http'
+import { networkInterfaces } from 'node:os'
 import path from 'node:path'
 import { Server, Socket } from 'socket.io'
 import { createWebhookRouter } from './endpoints/webhook'
@@ -109,6 +110,7 @@ app.get('/api/ping', (_req, res) => {
 })
 
 if (!isProduction) {
+  await UserManager.ensureDevAdmin()
   const { createServer: createViteServer } = await import('vite')
   const vite = await createViteServer({ server: { middlewareMode: true } })
   app.use(vite.middlewares)
@@ -122,6 +124,11 @@ if (!isProduction) {
 
 server.listen(PORT, () => {
   console.log(`Hosted at ${ORIGIN.toString()}`)
+  Object.entries(networkInterfaces())
+    .filter(([name]) => !/^(docker|br-|veth)/.test(name))
+    .flatMap(([, nets]) => nets ?? [])
+    .filter(net => net.family === 'IPv4' && !net.internal)
+    .forEach(net => console.log(`Network: http://${net.address}:${PORT}/`))
 })
 
 io.on('connect', s => Connect(s))

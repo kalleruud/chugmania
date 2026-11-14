@@ -30,12 +30,19 @@ export default function Layout() {
         </div>
       </div>
 
-      <Button
-        onClick={() => open()}
-        className='fixed right-0 bottom-0 z-50 m-12 rounded-full drop-shadow-2xl drop-shadow-black backdrop-blur-2xl'
-        size='icon-2xl'>
-        <PlusIcon className='size-8' />
-      </Button>
+      <div className='fixed right-0 bottom-0 z-50 m-12 flex flex-col items-center gap-2'>
+        {!import.meta.env.PROD && (
+          <span className='rounded-full bg-primary/20 px-2 py-0.5 text-xs font-semibold tracking-wider text-primary uppercase backdrop-blur-2xl'>
+            Development
+          </span>
+        )}
+        <Button
+          onClick={() => open()}
+          className='rounded-full drop-shadow-2xl drop-shadow-black backdrop-blur-2xl'
+          size='icon-2xl'>
+          <PlusIcon className='size-8' />
+        </Button>
+      </div>
     </>
   )
 }
