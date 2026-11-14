@@ -149,7 +149,7 @@ function ArchiveGroupingSelect({
         const option = options.find(key => key === next)
         if (option) onChange(option)
       }}>
-      <SelectTrigger size='sm' className='mb-2 w-fit'>
+      <SelectTrigger size='sm' className='mb-2'>
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
