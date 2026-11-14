@@ -15,8 +15,23 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './frontend'),
-      '@common': path.resolve(__dirname, './common'),
+      '@': path.resolve(import.meta.dirname, './frontend'),
+      '@common': path.resolve(import.meta.dirname, './common'),
+    },
+  },
+  build: {
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            {
+              name: 'react',
+              test: /node_modules\/(react|react-dom|scheduler)\//,
+            },
+            { name: 'vendor', test: /node_modules/ },
+          ],
+        },
+      },
     },
   },
   server: {
