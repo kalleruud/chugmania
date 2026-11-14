@@ -1,6 +1,6 @@
 import loc from '@common/locale/locales'
 import { ChevronDown } from 'lucide-react'
-import { useState, type ComponentType, type ReactNode } from 'react'
+import { useState, type ComponentType } from 'react'
 import { PageSubheader } from '../PageHeader'
 import type { BaseRowProps } from '../row/RowProps'
 import { Button } from '../ui/button'
@@ -14,7 +14,6 @@ type GroupedListProps<T> = {
   grouping?: Grouping<T>
   pageSize?: number
   rowProps?: (item: T) => Partial<BaseRowProps<T>>
-  empty?: ReactNode
 }
 
 const UNGROUPED_KEY = ''
@@ -31,7 +30,6 @@ export default function GroupedList<T>({
   grouping,
   pageSize,
   rowProps,
-  empty,
 }: Readonly<GroupedListProps<T>>) {
   const [visibleCounts, setVisibleCounts] = useState<
     Partial<Record<string, number>>
@@ -40,7 +38,7 @@ export default function GroupedList<T>({
   if (items.length === 0) {
     return (
       <Empty className='border border-input text-sm text-muted-foreground'>
-        {empty ?? loc.no.common.noItems}
+        {loc.no.common.noItems}
       </Empty>
     )
   }
