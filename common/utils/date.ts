@@ -1,8 +1,8 @@
 import { DateTime } from 'luxon'
 import type { SessionStatus } from '../../backend/database/schema'
 
-const DEFAULT_LOCALE = 'nb-NO'
-const DEFAULT_ZONE = 'Europe/Oslo'
+export const DEFAULT_LOCALE = 'nb-NO'
+export const DEFAULT_ZONE = 'Europe/Oslo'
 
 /**
  * Format a date with full date and year

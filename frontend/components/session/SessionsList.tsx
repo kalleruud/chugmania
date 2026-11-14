@@ -1,13 +1,14 @@
-import { Empty } from '@/components/ui/empty'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAuth } from '@/contexts/AuthContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@common/locale/locales'
 import type { SessionWithSignups } from '@common/models/session'
 import { Plus } from 'lucide-react'
-import { useState, type ComponentProps } from 'react'
+import { useState, type ComponentProps, type ReactNode } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { PageSubheader } from '../PageHeader'
+import GroupedList from '../grouped-list/GroupedList'
+import type { Grouping } from '../grouped-list/grouping'
 import { Button } from '../ui/button'
 import {
   Dialog,
@@ -30,6 +31,9 @@ type SessionsListProps = {
   sessions: SessionWithSignups[]
   hideCreate?: boolean
   featured?: boolean
+  grouping?: Grouping<SessionWithSignups>
+  pageSize?: number
+  actions?: ReactNode
 }
 
 export default function SessionsList({
@@ -38,6 +42,9 @@ export default function SessionsList({
   sessions,
   hideCreate,
   featured,
+  grouping,
+  pageSize,
+  actions,
   ...rest
 }: Readonly<SessionsListProps & ComponentProps<'div'>>) {
   const { sessions: sd } = useData()
@@ -62,21 +69,17 @@ export default function SessionsList({
   return (
     <div className={twMerge('flex flex-col', className)} {...rest}>
       <PageSubheader title={header} description={sessions.length.toString()} />
-      {sessions.length > 0 ? (
-        <div className='flex flex-col gap-2'>
-          {sessions.map(session => (
-            <SessionComponent
-              key={session.id}
-              item={session}
-              className='rounded-sm bg-background-secondary p-4'
-            />
-          ))}
-        </div>
-      ) : (
-        <Empty className='border border-input text-sm text-muted-foreground'>
-          {loc.no.common.noItems}
-        </Empty>
-      )}
+      {actions}
+      <GroupedList
+        items={sessions}
+        Row={SessionComponent}
+        getKey={session => session.id}
+        grouping={grouping}
+        pageSize={pageSize}
+        rowProps={() => ({
+          className: 'rounded-sm bg-background-secondary p-4',
+        })}
+      />
 
       {!hideCreate && isModerator && (
         <Dialog open={open} onOpenChange={setOpen}>
