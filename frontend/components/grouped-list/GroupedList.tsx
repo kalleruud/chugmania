@@ -1,6 +1,7 @@
 import loc from '@common/locale/locales'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { useState, type ComponentType } from 'react'
+import { twMerge } from 'tailwind-merge'
 import { PageSubheader } from '../PageHeader'
 import { Button } from '../ui/button'
 import { Empty } from '../ui/empty'
@@ -14,6 +15,7 @@ type GroupedListProps<T, P> = {
   grouping?: Grouping<T>
   groupLimit?: number
   totalLimit?: number
+  itemsClassName?: string
 }
 
 const UNGROUPED_KEY = ''
@@ -63,6 +65,7 @@ export default function GroupedList<T, P extends object>({
   grouping,
   groupLimit,
   totalLimit,
+  itemsClassName,
 }: Readonly<GroupedListProps<T, P>>) {
   const [groupCounts, setGroupCounts] = useState<
     Partial<Record<string, number>>
@@ -103,9 +106,11 @@ export default function GroupedList<T, P extends object>({
                   description={group.items.length.toString()}
                 />
               )}
-              {group.items.slice(0, shown).map(item => (
-                <Row key={getKey(item)} {...rowProps(item)} />
-              ))}
+              <div className={twMerge('flex flex-col gap-2', itemsClassName)}>
+                {group.items.slice(0, shown).map(item => (
+                  <Row key={getKey(item)} {...rowProps(item)} />
+                ))}
+              </div>
               <LimitButtons
                 onShowMore={
                   groupLimit !== undefined && canShowMore

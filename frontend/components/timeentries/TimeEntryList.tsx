@@ -207,6 +207,7 @@ export function TimeEntryList({
         Row={TimeEntryRow}
         getKey={entry => entry.id}
         grouping={grouping}
+        itemsClassName='gap-0 rounded-sm bg-background-secondary'
         rowProps={entry => {
           const i = filteredEntries.indexOf(entry)
           return {
@@ -219,7 +220,7 @@ export function TimeEntryList({
               gapType === 'leader' ? filteredEntries.at(0) : undefined
             ),
             onClick: () => open(entry),
-            className: 'rounded-sm bg-background-secondary px-4 py-3',
+            className: 'px-4 py-3',
             gapType,
             onChangeGapType: () =>
               setGapType(gapType === 'leader' ? 'interval' : 'leader'),
