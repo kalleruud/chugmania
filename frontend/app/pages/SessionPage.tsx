@@ -35,7 +35,7 @@ import { PencilIcon, PlusIcon, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useParams, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
-import { SubscribeButton } from './SessionsPage'
+import { SubscribeButton } from './SessionsContent'
 
 export default function SessionPage() {
   const { id } = useParams()

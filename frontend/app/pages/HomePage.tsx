@@ -6,9 +6,9 @@ import { useData } from '@/contexts/DataContext'
 import loc from '@common/locale/locales'
 import { isOngoing } from '@common/utils/date'
 import { ShieldExclamationIcon } from '@heroicons/react/24/solid'
-import { SessionsContent } from './SessionsPage'
-import { TracksContent } from './TracksPage'
-import { UsersContent } from './UsersPage'
+import { SessionsContent } from './SessionsContent'
+import { TracksContent } from './TracksContent'
+import { UsersContent } from './UsersContent'
 
 export default function Home() {
   const { loggedInUser } = useAuth()

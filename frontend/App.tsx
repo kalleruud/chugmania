@@ -1,18 +1,9 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { ErrorBoundary } from 'react-error-boundary'
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router'
-import Layout from './app/Layout'
-import AdminPage from './app/pages/AdminPage'
+import { BrowserRouter } from 'react-router'
+import AppRoutes from './app/AppRoutes'
 import { ErrorPage } from './app/pages/ErrorPage'
-import Home from './app/pages/HomePage'
-import SessionPage from './app/pages/SessionPage'
-import SessionsPage from './app/pages/SessionsPage'
-import TournamentGroupPage from './app/pages/TournamentGroupPage'
-import TrackPage from './app/pages/TrackPage'
-import TracksPage from './app/pages/TracksPage'
-import UserPage from './app/pages/UserPage'
-import UsersPage from './app/pages/UsersPage'
 import { Toaster } from './components/ui/sonner'
 import { AuthProvider } from './contexts/AuthContext'
 import { ConnectionProvider } from './contexts/ConnectionContext'
@@ -33,23 +24,7 @@ createRoot(root).render(
             <AuthProvider>
               <ErrorBoundary FallbackComponent={ErrorPage}>
                 <TimeEntryInputProvider>
-                  <Routes>
-                    <Route element={<Layout />}>
-                      <Route index element={<Home />} />
-                      <Route path='tracks' element={<TracksPage />} />
-                      <Route path='tracks/:id' element={<TrackPage />} />
-                      <Route path='users' element={<UsersPage />} />
-                      <Route path='users/:id' element={<UserPage />} />
-                      <Route path='sessions' element={<SessionsPage />} />
-                      <Route
-                        path='sessions/:id/tournament/groups/:groupId'
-                        element={<TournamentGroupPage />}
-                      />
-                      <Route path='sessions/:id' element={<SessionPage />} />
-                      <Route path='admin' element={<AdminPage />} />
-                      <Route path='*' element={<Navigate to='/' replace />} />
-                    </Route>
-                  </Routes>
+                  <AppRoutes />
                   <Toaster />
                 </TimeEntryInputProvider>
               </ErrorBoundary>
