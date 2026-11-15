@@ -30,7 +30,7 @@ test('dev middleware transforms the app through the tsx Node loader', async () =
     `,
       ],
       (error, stdout) => {
-        if (error) reject(error)
+        if (error) reject(new Error(error.message, { cause: error }))
         else resolve(stdout)
       }
     )
