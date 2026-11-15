@@ -1,6 +1,8 @@
 import loc from '@common/locale/locales'
 import type { Track } from '@common/models/track'
 import TrackSource from '../../database/sources/track.source'
+import { broadcast } from '../server'
+import { fetchNextMapId } from '../utils/trackmania-io'
 
 export default class TrackManager {
   static readonly table = TrackSource.table
@@ -20,5 +22,13 @@ export default class TrackManager {
     }
 
     return data
+  }
+
+  static async resolveNextMapId(track: Track) {
+    if (track.game !== 'next' || !track.uid) return
+    const mapId = await fetchNextMapId(track.uid)
+    if (!mapId) return
+    TrackSource.update(track.id, { mapId })
+    broadcast('all_tracks', await TrackManager.getAllTracks())
   }
 }

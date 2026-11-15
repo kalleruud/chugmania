@@ -18,7 +18,7 @@ import type {
   Slot,
   TournamentStatus,
 } from '../../common/models/tournament'
-import type { Game } from '../../common/models/track'
+import type { Game, Platform } from '../../common/models/track'
 
 const metadata = {
   id: text().primaryKey().$defaultFn(randomUUID),
@@ -56,7 +56,9 @@ export const tracks = sqliteTable('tracks', {
   level: text().$type<TrackLevel>(),
   mapType: text('map_type'),
   game: text().$type<Game>().notNull(),
+  platform: text().$type<Platform>(),
   uid: text().unique(),
+  mapId: text('map_id'),
   name: text().notNull(),
   author: text(),
   environment: text(),

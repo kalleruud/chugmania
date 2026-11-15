@@ -15,6 +15,10 @@ export const db = drizzle(database, { schema })
 migrate(db, { migrationsFolder: 'drizzle' })
 
 mock.module('../backend/database/database', () => ({ default: db, database }))
+export const fetchNextMapId = mock((): Promise<string | null> =>
+  Promise.resolve(null)
+)
+mock.module('../backend/src/utils/trackmania-io', () => ({ fetchNextMapId }))
 const { default: TournamentSecurity } =
   await import('../backend/src/managers/tournament/tournament.security')
 export const tournamentSockets = new Set<TypedSocket>()

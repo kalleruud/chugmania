@@ -1,3 +1,4 @@
+import type { Track } from '@common/models/track'
 import { isRecord } from '@common/utils/utils'
 import { DateTime } from 'luxon'
 import MatchSource from '../../database/sources/match.source'
@@ -248,7 +249,7 @@ export default class WebhookManager {
         'No active receiver session can register this event'
       )
     const createdTrack = TransactionSource.run(() => {
-      let trackCreated = false
+      let createdTrack: Track | undefined
       const capture =
         existing ??
         WebhookSource.createCapture({
@@ -312,9 +313,9 @@ export default class WebhookManager {
       })
       if (event.type === 'end') {
         WebhookSource.markEnded(capture.id, new Date(event.occurredAt))
-        return false
+        return
       }
-      if (!all.some(e => e.type !== 'start' && e.type !== 'end')) return false
+      if (!all.some(e => e.type !== 'start' && e.type !== 'end')) return
       const existingRows = this.rows(capture)
       const result = existingRows.lap ?? existingRows.match
       if (
@@ -322,7 +323,7 @@ export default class WebhookManager {
         result?.status === 'completed' ||
         result?.status === 'cancelled'
       )
-        return false
+        return
       let matchedTrack = start?.map
         ? TrackSource.findByUid(start.map.uid)
         : undefined
@@ -333,8 +334,9 @@ export default class WebhookManager {
           mapType: start.map.type,
           level: trackLevelFromWebhook(start.map.level),
           game: capture.sourceGame,
+          platform: 'pc',
         })
-        trackCreated = true
+        createdTrack = matchedTrack
       }
       if (matchedTrack && existingRows.lap && !existingRows.lap.track)
         TimeEntrySource.update(existingRows.lap.id, { track: matchedTrack.id })
@@ -361,10 +363,12 @@ export default class WebhookManager {
         capture.totalPlayers
       )
       this.syncTimes(capture, beforeTimes, afterTimes)
-      return trackCreated
+      return createdTrack
     })
-    if (createdTrack)
+    if (createdTrack) {
       void TrackManager.getAllTracks().then(all => broadcast('all_tracks', all))
+      TrackManager.resolveNextMapId(createdTrack).catch(console.error)
+    }
     this.publishEntries()
     return 'Stored'
   }
