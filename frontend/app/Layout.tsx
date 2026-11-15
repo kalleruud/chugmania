@@ -5,6 +5,8 @@ import { useTimeEntryInput } from '@/contexts/TimeEntryInputContext'
 import { PlusIcon } from '@heroicons/react/24/solid'
 import { Outlet } from 'react-router'
 import LoginPage from './pages/LoginPage'
+import { Badge } from '@/components/ui/badge'
+import { Hammer } from 'lucide-react'
 
 export default function Layout() {
   const { isLoggedIn, isLoading } = useAuth()
@@ -30,11 +32,12 @@ export default function Layout() {
         </div>
       </div>
 
-      <div className='fixed right-0 bottom-0 z-50 m-12 flex flex-col items-center gap-2'>
+      <div className='fixed right-0 bottom-0 z-50 m-12 flex flex-col items-center gap-4'>
         {!import.meta.env.PROD && (
-          <span className='rounded-full bg-primary/20 px-2 py-0.5 text-xs font-semibold tracking-wider text-primary uppercase backdrop-blur-2xl'>
-            Development
-          </span>
+          <Badge className='uppercase font-kh-interface tracking-wider tabular-nums ' variant="secondary" >
+            <Hammer />
+            dev
+          </Badge>
         )}
         <Button
           onClick={() => open()}
