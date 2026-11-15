@@ -1,5 +1,6 @@
 import Markdown from '@/components/Markdown'
 import { Badge } from '@/components/ui/badge'
+import { getGoogleMapsUrl } from '@/lib/maps'
 import type { SessionStatus } from '@backend/database/schema'
 import loc from '@common/locale/locales'
 import {
@@ -47,6 +48,7 @@ export default function SessionCard({
   ...props
 }: Readonly<SesssionComponentProps>) {
   const isCancelled = session.status === 'cancelled'
+  const mapsUrl = getGoogleMapsUrl(session.location)
 
   return (
     <div
@@ -101,10 +103,16 @@ export default function SessionCard({
             {formatDateWithYear(session.date)}
           </div>
 
-          {session.location && (
+          {mapsUrl && (
             <div className='flex items-center gap-2'>
               <MapPinIcon className='size-4 text-muted-foreground' />
-              <span>{session.location}</span>
+              <a
+                href={mapsUrl}
+                target='_blank'
+                rel='noopener noreferrer'
+                className='relative rounded-sm hover:underline focus-visible:outline-2 focus-visible:outline-primary'>
+                {session.location}
+              </a>
             </div>
           )}
         </div>
