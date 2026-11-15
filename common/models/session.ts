@@ -14,8 +14,18 @@ export type SessionSignup = Omit<typeof sessionSignups.$inferSelect, 'user'> & {
   user: UserInfo
 }
 
+export type SessionDateVote = {
+  user: UserInfo
+  dates: number[]
+}
+
 export type SessionWithSignups = Session & {
   signups: SessionSignup[]
+  dateVotes: SessionDateVote[]
+}
+
+function isDateList(data: unknown): data is number[] {
+  return Array.isArray(data) && data.every(d => Number.isFinite(d))
 }
 
 export type CreateSessionRequest = CreateSession & {
@@ -42,7 +52,15 @@ export function isEditSessionRequest(
   data: unknown
 ): data is EditSessionRequest {
   if (!isRecord(data)) return false
-  return data.type === 'EditSessionRequest' && typeof data.id === 'string'
+  return (
+    data.type === 'EditSessionRequest' &&
+    typeof data.id === 'string' &&
+    (data.dateOptions === undefined ||
+      data.dateOptions === null ||
+      isDateList(data.dateOptions)) &&
+    (data.dateVotingClosed === undefined ||
+      typeof data.dateVotingClosed === 'boolean')
+  )
 }
 
 export type RsvpSessionRequest = {
@@ -61,6 +79,23 @@ export function isRsvpSessionRequest(
     typeof data.session === 'string' &&
     typeof data.user === 'string' &&
     typeof data.response === 'string'
+  )
+}
+
+export type VoteSessionDateRequest = {
+  type: 'VoteSessionDateRequest'
+  session: Session['id']
+  dates: number[]
+}
+
+export function isVoteSessionDateRequest(
+  data: unknown
+): data is VoteSessionDateRequest {
+  if (!isRecord(data)) return false
+  return (
+    data.type === 'VoteSessionDateRequest' &&
+    typeof data.session === 'string' &&
+    isDateList(data.dates)
   )
 }
 

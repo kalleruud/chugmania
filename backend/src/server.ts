@@ -168,6 +168,7 @@ async function Connect(s: TypedSocket) {
   setup(s, 'create_session', SessionManager.onCreateSession)
   setup(s, 'edit_session', SessionManager.onEditSession)
   setup(s, 'rsvp_session', SessionManager.onRsvpSession)
+  setup(s, 'vote_session_date', SessionManager.onVoteSessionDate)
   setup(s, 'delete_session', SessionManager.onDeleteSession)
 
   setup(s, 'create_tournament', TournamentManager.onCreate)

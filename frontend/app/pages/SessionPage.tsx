@@ -1,5 +1,8 @@
 import ConfirmationButton from '@/components/ConfirmationButton'
 import SessionCard from '@/components/session/SessionCard'
+import SessionDatePoll, {
+  DateOptionsDialog,
+} from '@/components/session/SessionDatePoll'
 import SessionForm from '@/components/session/SessionForm'
 import SessionSignupPanel from '@/components/session/SessionSignupPanel'
 import TournamentTab from '@/components/tournament/TournamentTab'
@@ -126,7 +129,7 @@ export default function SessionPage() {
 
       <SessionCard className='px-2' item={session} hideLink />
 
-      <div className='flex items-center gap-1'>
+      <div className='flex flex-wrap items-center gap-1'>
         <SubscribeButton className='flex-1' />
         {canEdit && (
           <>
@@ -162,6 +165,8 @@ export default function SessionPage() {
               </DialogContent>
             </Dialog>
 
+            <DateOptionsDialog session={session} />
+
             <ConfirmationButton
               variant='destructive'
               onClick={() => handleDeleteSession(session.id)}
@@ -172,6 +177,8 @@ export default function SessionPage() {
           </>
         )}
       </div>
+
+      <SessionDatePoll session={session} />
 
       <Tabs
         defaultValue={

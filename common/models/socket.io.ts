@@ -18,6 +18,7 @@ import type {
   EditSessionRequest,
   RsvpSessionRequest,
   SessionWithSignups,
+  VoteSessionDateRequest,
 } from './session'
 import type {
   AbsoluteTimeEntriesRequest,
@@ -153,6 +154,10 @@ export interface ClientToServerEvents {
   ) => void
   rsvp_session: (
     r: RsvpSessionRequest,
+    callback: (r: SuccessResponse | ErrorResponse) => void
+  ) => void
+  vote_session_date: (
+    r: VoteSessionDateRequest,
     callback: (r: SuccessResponse | ErrorResponse) => void
   ) => void
   delete_session: (

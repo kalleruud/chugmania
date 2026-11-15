@@ -47,6 +47,7 @@ const no = {
       tournamentMatches: 'Turneringsmatcher',
       tournamentMatchSlots: 'Matchplasser',
       sessionSignups: 'Sesssion Signups',
+      sessionDateVotes: 'Datoavstemninger',
       sessions: 'Sessions',
       timeEntries: 'Rundetider',
       tracks: 'Baner',
@@ -161,6 +162,24 @@ const no = {
       past: 'Avsluttet',
       ongoing: 'Pågår',
       upcoming: 'Kommer',
+    },
+    datePoll: {
+      title: 'Finn dato',
+      edit: 'Datoavstemning',
+      description: 'Velg datoene spillerne kan stemme på.',
+      open: 'Åpen',
+      closed: 'Stengt',
+      close: 'Steng',
+      reopen: 'Åpne igjen',
+      choose: 'Velg',
+      votes: (count: number) =>
+        `${count} ${count === 1 ? 'stemme' : 'stemmer'}`,
+      closedError: 'Avstemningen er stengt',
+      voteRequest: {
+        loading: 'Lagrer svar...',
+        success: 'Svar lagret',
+        error: (err: Error) => `Kunne ikke lagre svar: ${err.message}`,
+      },
     },
     rsvp: {
       signup: 'Meld meg på',

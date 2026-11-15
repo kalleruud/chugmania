@@ -4,6 +4,8 @@ import {
   isDeleteSessionRequest,
   isEditSessionRequest,
   isRsvpSessionRequest,
+  isVoteSessionDateRequest,
+  type SessionDateVote,
   type SessionSignup,
   type SessionWithSignups,
 } from '@common/models/session'
@@ -11,7 +13,12 @@ import type { EventReq, EventRes } from '@common/models/socket.io'
 import { isPast } from '@common/utils/date'
 import { and, asc, desc, eq, isNull } from 'drizzle-orm'
 import db, { database } from '../../database/database'
-import { sessions, sessionSignups, users } from '../../database/schema'
+import {
+  sessionDateVotes,
+  sessions,
+  sessionSignups,
+  users,
+} from '../../database/schema'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import ChugTimeManager from './chugtime.manager'
@@ -75,6 +82,7 @@ export default class SessionManager {
       sessionRows.map(async session => ({
         ...session,
         signups: await SessionManager.getSessionSignups(session.id),
+        dateVotes: SessionManager.getSessionDateVotes(session.id),
       }))
     )
   }
@@ -97,7 +105,24 @@ export default class SessionManager {
     return {
       ...session,
       signups: await SessionManager.getSessionSignups(session.id),
+      dateVotes: SessionManager.getSessionDateVotes(session.id),
     }
+  }
+
+  public static getSessionDateVotes(sessionId: string): SessionDateVote[] {
+    return db
+      .select({ dates: sessionDateVotes.dates, user: users })
+      .from(sessionDateVotes)
+      .innerJoin(users, eq(sessionDateVotes.user, users.id))
+      .where(
+        and(eq(sessionDateVotes.session, sessionId), isNull(users.deletedAt))
+      )
+      .orderBy(asc(sessionDateVotes.createdAt))
+      .all()
+      .map(row => ({
+        dates: row.dates,
+        user: UserManager.toUserInfo(row.user).userInfo,
+      }))
   }
 
   public static async getSessionSignups(
@@ -197,6 +222,8 @@ export default class SessionManager {
           description: request.description,
           location: request.location,
           status: request.status,
+          dateOptions: request.dateOptions,
+          dateVotingClosed: request.dateVotingClosed,
           date: request.date ? new Date(request.date) : undefined,
           deletedAt: request.deletedAt
             ? new Date(request.deletedAt)
@@ -287,6 +314,58 @@ export default class SessionManager {
 
     broadcast('all_sessions', await SessionManager.getAllSessions())
     TournamentManager.publish(socket.id)
+
+    return { success: true }
+  }
+
+  static async onVoteSessionDate(
+    socket: TypedSocket,
+    request: EventReq<'vote_session_date'>
+  ): Promise<EventRes<'vote_session_date'>> {
+    if (!isVoteSessionDateRequest(request)) {
+      throw new Error(
+        loc.no.error.messages.invalid_request('VoteSessionDateRequest')
+      )
+    }
+
+    const actor = await AuthManager.checkAuth(socket)
+
+    const session = await db.query.sessions.findFirst({
+      where: and(eq(sessions.id, request.session), isNull(sessions.deletedAt)),
+    })
+
+    if (!session?.dateOptions?.length) {
+      throw new Error(loc.no.error.messages.not_in_db(request.session))
+    }
+
+    if (session.dateVotingClosed) {
+      throw new Error(loc.no.session.datePoll.closedError)
+    }
+
+    const options = new Set(session.dateOptions)
+    if (!request.dates.every(date => options.has(date))) {
+      throw new Error(
+        loc.no.error.messages.invalid_request('VoteSessionDateRequest')
+      )
+    }
+
+    const dates = [...new Set(request.dates)]
+    db.insert(sessionDateVotes)
+      .values({ session: session.id, user: actor.id, dates })
+      .onConflictDoUpdate({
+        target: [sessionDateVotes.session, sessionDateVotes.user],
+        set: { dates },
+      })
+      .run()
+
+    console.debug(
+      new Date().toISOString(),
+      socket.id,
+      'Voted for session dates',
+      session.id
+    )
+
+    broadcast('all_sessions', await SessionManager.getAllSessions())
 
     return { success: true }
   }
