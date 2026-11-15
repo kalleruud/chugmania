@@ -24,13 +24,13 @@ import { useData } from '@/contexts/DataContext'
 import loc from '@common/locale/locales'
 import { isOngoing, isPast, isUpcoming } from '@common/utils/date'
 import { CalendarIcon } from '@heroicons/react/24/solid'
-import { ChevronDown, ChevronUp } from 'lucide-react'
 import { useState, type ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { PageHeader } from '../../components/PageHeader'
 
 const ARCHIVE_GROUP_LIMIT = 5
 const ARCHIVE_TOTAL_LIMIT = 10
+const RECENT_SESSIONS_LIMIT = 2
 
 export default function SessionsPage() {
   return (
@@ -60,7 +60,6 @@ export function SessionsContent({
   const { loggedInUser, isLoggedIn } = useAuth()
   const { sessions } = useData()
 
-  const [showPreviousSessions, setShowPreviousSessions] = useState(false)
   const [archiveGrouping, setArchiveGrouping] =
     useState<SessionGroupingKey>('year')
 
@@ -113,23 +112,13 @@ export function SessionsContent({
           }
         />
       )}
-      {showLink && showPreviousSessions && (
+      {showLink && (
         <SessionsList
           className='opacity-75'
           header={loc.no.session.past}
-          sessions={pastSessions}
+          sessions={archivedSessions.slice(0, RECENT_SESSIONS_LIMIT)}
           hideCreate
         />
-      )}
-      {showLink && (
-        <div>
-          <Button
-            variant='ghost'
-            onClick={() => setShowPreviousSessions(!showPreviousSessions)}>
-            {showPreviousSessions ? <ChevronUp /> : <ChevronDown />}
-            {loc.no.session.past}
-          </Button>
-        </div>
       )}
     </div>
   )
