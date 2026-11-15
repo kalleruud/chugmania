@@ -32,6 +32,20 @@ export class WebhookError extends Error {
   }
 }
 
+function trackLevelFromWebhook(level: unknown) {
+  switch (level) {
+    case 'white':
+    case 'green':
+    case 'blue':
+    case 'red':
+    case 'black':
+    case 'custom':
+      return level
+    default:
+      return 'custom'
+  }
+}
+
 function trackMetadataFromWebhook(map: Map) {
   return {
     uid: map.uid,
@@ -65,25 +79,26 @@ export default class WebhookManager {
     })
   }
 
-  private static derivedTimes(events: Event[]): PlayerTimes[] | null {
-    const start = events.find(
-      (event): event is StartEvent => event.type === 'start'
-    )
-    if (!start) return null
-    const end = events.find(event => event.type === 'end')
-    return start.players.map(p => {
-      const playerEvents = events.filter(
-        event =>
-          event.type !== 'start' &&
-          event.type !== 'end' &&
-          event.player.playerIndex === p.playerIndex &&
-          (!end || event.sequence < end.sequence)
-      )
-      const finishes = playerEvents
-        .filter(event => event.type === 'finish')
-        .map(event => event.durationMs)
+  private static derivedTimes(
+    events: Event[],
+    totalPlayers: number
+  ): PlayerTimes[] {
+    return Array.from({ length: totalPlayers }, (_, playerIndex) => {
+      const playerEvents = events
+        .filter(
+          event =>
+            event.type !== 'start' &&
+            event.type !== 'end' &&
+            event.player.playerIndex === playerIndex
+        )
+        .sort((a, b) => a.sequence - b.sequence)
+      const finish = playerEvents.find(event => event.type === 'finish')
       return {
-        finishDurationMs: finishes.length ? Math.min(...finishes) : null,
+        finishDurationMs:
+          finish?.durationMs ??
+          (playerEvents.length
+            ? Math.max(...playerEvents.map(event => event.durationMs))
+            : null),
         chugDurationMs:
           playerEvents.find(event => event.type === 'first_throttle')
             ?.durationMs ?? null,
@@ -121,18 +136,15 @@ export default class WebhookManager {
 
   private static syncTimes(
     capture: Capture,
-    before: PlayerTimes[] | null,
+    before: PlayerTimes[],
     after: PlayerTimes[]
   ): void {
     const events = this.events(capture.id)
-    const status = events.some(
-      event => event.type === 'finish' || event.type === 'end'
-    )
+    const status = events.some(event => event.type === 'finish')
       ? 'draft'
       : 'in_progress'
     const times = this.rowTimes(capture).map((current, i) => {
-      const keep = (key: keyof PlayerTimes) =>
-        current[key] !== (before?.[i]?.[key] ?? null)
+      const keep = (key: keyof PlayerTimes) => current[key] !== before[i][key]
       return {
         finishDurationMs: keep('finishDurationMs')
           ? current.finishDurationMs
@@ -206,6 +218,14 @@ export default class WebhookManager {
         'INVALID_ROSTER',
         'Start players must match the game player count and indexes'
       )
+    if (
+      event.type !== 'start' &&
+      event.type !== 'end' &&
+      (!Number.isInteger(event.player.playerIndex) ||
+        event.player.playerIndex < 0 ||
+        event.player.playerIndex >= event.game.totalPlayers)
+    )
+      throw new WebhookError(400, 'INVALID_PLAYER', 'Invalid player index')
     const existingEvent = WebhookSource.findEvent(event.eventId)
     if (existingEvent) {
       if (
@@ -254,7 +274,10 @@ export default class WebhookManager {
           'SEQUENCE_CONFLICT',
           'Sequence already belongs to another event'
         )
-      const beforeTimes = this.derivedTimes(this.events(capture.id))
+      const beforeTimes = this.derivedTimes(
+        this.events(capture.id),
+        capture.totalPlayers
+      )
       const all = [...this.events(capture.id), event]
       const start = all.find((e): e is StartEvent => e.type === 'start')
       if (start) {
@@ -287,30 +310,36 @@ export default class WebhookManager {
         rawPayload,
         createdAt: now,
       })
-      if (event.type === 'end')
+      if (event.type === 'end') {
         WebhookSource.markEnded(capture.id, new Date(event.occurredAt))
+        return false
+      }
+      if (!all.some(e => e.type !== 'start' && e.type !== 'end')) return false
       const existingRows = this.rows(capture)
       const result = existingRows.lap ?? existingRows.match
       if (
-        !start ||
         result?.deletedAt ||
         result?.status === 'completed' ||
         result?.status === 'cancelled'
       )
         return false
-      let matchedTrack = start.map
+      let matchedTrack = start?.map
         ? TrackSource.findByUid(start.map.uid)
         : undefined
-      if (start.map && !matchedTrack) {
+      if (start?.map && !matchedTrack) {
         matchedTrack = TrackSource.create({
           ...trackMetadataFromWebhook(start.map),
           name: start.map.name,
           mapType: start.map.type,
-          level: 'custom',
+          level: trackLevelFromWebhook(start.map.level),
           game: capture.sourceGame,
         })
         trackCreated = true
       }
+      if (matchedTrack && existingRows.lap && !existingRows.lap.track)
+        TimeEntrySource.update(existingRows.lap.id, { track: matchedTrack.id })
+      if (matchedTrack && existingRows.match && !existingRows.match.track)
+        MatchSource.update(existingRows.match.id, { track: matchedTrack.id })
       if (capture.totalPlayers === 1 && !existingRows.lap)
         TimeEntrySource.create({
           webhookCapture: capture.id,
@@ -327,8 +356,11 @@ export default class WebhookManager {
           status: 'in_progress',
           createdAt: now,
         })
-      const afterTimes = this.derivedTimes(this.events(capture.id))
-      if (afterTimes) this.syncTimes(capture, beforeTimes, afterTimes)
+      const afterTimes = this.derivedTimes(
+        this.events(capture.id),
+        capture.totalPlayers
+      )
+      this.syncTimes(capture, beforeTimes, afterTimes)
       return trackCreated
     })
     if (createdTrack)
