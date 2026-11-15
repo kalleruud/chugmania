@@ -84,11 +84,14 @@ describe('limitGroups', () => {
 
   function summarizeLimits(result: ReturnType<typeof limitGroups<number>>) {
     return {
-      groups: result.visibleGroups.map(({ group, shown, canShowMore }) => ({
-        key: group.key,
-        shown,
-        canShowMore,
-      })),
+      groups: result.visibleGroups.map(
+        ({ group, shown, canShowMore, canShowLess }) => ({
+          key: group.key,
+          shown,
+          canShowMore,
+          canShowLess,
+        })
+      ),
       canShowMore: result.canShowMore,
     }
   }
@@ -102,8 +105,8 @@ describe('limitGroups', () => {
 
     expect(summarizeLimits(result)).toEqual({
       groups: [
-        { key: 'a', shown: 5, canShowMore: true },
-        { key: 'b', shown: 3, canShowMore: false },
+        { key: 'a', shown: 5, canShowMore: true, canShowLess: false },
+        { key: 'b', shown: 3, canShowMore: false, canShowLess: false },
       ],
       canShowMore: true,
     })
@@ -118,8 +121,8 @@ describe('limitGroups', () => {
 
     expect(summarizeLimits(result)).toEqual({
       groups: [
-        { key: 'a', shown: 5, canShowMore: true },
-        { key: 'b', shown: 5, canShowMore: false },
+        { key: 'a', shown: 5, canShowMore: true, canShowLess: false },
+        { key: 'b', shown: 5, canShowMore: false, canShowLess: false },
       ],
       canShowMore: true,
     })
@@ -133,7 +136,7 @@ describe('limitGroups', () => {
     })
 
     expect(summarizeLimits(result)).toEqual({
-      groups: [{ key: 'a', shown: 5, canShowMore: false }],
+      groups: [{ key: 'a', shown: 5, canShowMore: false, canShowLess: false }],
       canShowMore: true,
     })
   })
@@ -147,11 +150,27 @@ describe('limitGroups', () => {
 
     expect(summarizeLimits(result)).toEqual({
       groups: [
-        { key: 'a', shown: 7, canShowMore: false },
-        { key: 'b', shown: 5, canShowMore: true },
-        { key: 'c', shown: 2, canShowMore: false },
+        { key: 'a', shown: 7, canShowMore: false, canShowLess: true },
+        { key: 'b', shown: 5, canShowMore: true, canShowLess: false },
+        { key: 'c', shown: 2, canShowMore: false, canShowLess: false },
       ],
       canShowMore: false,
+    })
+  })
+
+  test('hides the group collapse button when the total limit already caps the group', () => {
+    const result = limitGroups(groups, {
+      groupCounts: { b: 10 },
+      groupLimit: 5,
+      totalCount: 10,
+    })
+
+    expect(summarizeLimits(result)).toEqual({
+      groups: [
+        { key: 'a', shown: 5, canShowMore: true, canShowLess: false },
+        { key: 'b', shown: 5, canShowMore: false, canShowLess: false },
+      ],
+      canShowMore: true,
     })
   })
 

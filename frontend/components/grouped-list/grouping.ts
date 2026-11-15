@@ -31,6 +31,7 @@ export type VisibleGroup<T> = {
   limit: number
   shown: number
   canShowMore: boolean
+  canShowLess: boolean
 }
 
 type GroupLimits = {
@@ -58,6 +59,7 @@ export function limitGroups<T>(
         limit,
         shown,
         canShowMore: budget > 0 && shown < group.items.length,
+        canShowLess: groupLimit !== undefined && shown > groupLimit,
       })
     }
   }

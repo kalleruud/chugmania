@@ -92,34 +92,36 @@ export default function GroupedList<T>({
 
   return (
     <div className='flex flex-col gap-2'>
-      {visibleGroups.map(({ group, limit, shown, canShowMore }) => {
-        return (
-          <section key={group.key} className='flex flex-col gap-2'>
-            {grouping && (
-              <PageSubheader
-                className='sticky top-0 z-10 bg-black'
-                title={group.label}
-                description={group.items.length.toString()}
+      {visibleGroups.map(
+        ({ group, limit, shown, canShowMore, canShowLess }) => {
+          return (
+            <section key={group.key} className='flex flex-col gap-2'>
+              {grouping && (
+                <PageSubheader
+                  className='sticky top-0 z-10 bg-black'
+                  title={group.label}
+                  description={group.items.length.toString()}
+                />
+              )}
+              {group.items.slice(0, shown).map(item => (
+                <Row key={getKey(item)} item={item} {...rowProps?.(item)} />
+              ))}
+              <LimitButtons
+                onShowMore={
+                  groupLimit !== undefined && canShowMore
+                    ? () => setGroupCount(group.key, limit + groupLimit)
+                    : undefined
+                }
+                onShowLess={
+                  canShowLess
+                    ? () => setGroupCount(group.key, undefined)
+                    : undefined
+                }
               />
-            )}
-            {group.items.slice(0, shown).map(item => (
-              <Row key={getKey(item)} item={item} {...rowProps?.(item)} />
-            ))}
-            <LimitButtons
-              onShowMore={
-                groupLimit !== undefined && canShowMore
-                  ? () => setGroupCount(group.key, limit + groupLimit)
-                  : undefined
-              }
-              onShowLess={
-                groupLimit !== undefined && limit > groupLimit
-                  ? () => setGroupCount(group.key, undefined)
-                  : undefined
-              }
-            />
-          </section>
-        )
-      })}
+            </section>
+          )
+        }
+      )}
       {totalLimit !== undefined && (
         <LimitButtons
           onShowMore={
