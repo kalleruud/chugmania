@@ -16,18 +16,18 @@ export type TrackBadgeProps = Parameters<typeof Badge>['0'] &
 
 const levelClasses: Record<TrackLevel, string> = {
   white: 'text-black bg-white border-white',
-  green: 'text-green-300 bg-green-500/10 border-green-500/20',
-  blue: 'text-sky-300 bg-sky-500/10 border-sky-500/20',
-  red: 'text-red-300 bg-red-500/10 border-red-500/20',
-  black: 'text-white bg-black/40 border-white/40',
-  custom: 'text-amber-300 bg-amber-500/10 border-amber-500/20',
+  green: 'text-green-300 bg-green-950 border-green-900',
+  blue: 'text-sky-300 bg-sky-950 border-sky-900',
+  red: 'text-red-300 bg-red-950 border-red-900',
+  black: 'text-white bg-black border-neutral-600',
+  custom: 'text-amber-300 bg-amber-950 border-amber-900',
 }
 
 const environmentClasses: Record<string, string> = {
-  Canyon: 'text-fuchsia-300 bg-fuchsia-500/10 border-fuchsia-500/20',
-  Valley: 'text-lime-300 bg-lime-500/10 border-lime-500/20',
-  Lagoon: 'text-cyan-300 bg-cyan-500/10 border-cyan-500/20',
-  Stadium: 'text-orange-300 bg-orange-500/10 border-orange-500/20',
+  Canyon: 'text-fuchsia-300 bg-fuchsia-950 border-fuchsia-900',
+  Valley: 'text-lime-300 bg-lime-950 border-lime-900',
+  Lagoon: 'text-cyan-300 bg-cyan-950 border-cyan-900',
+  Stadium: 'text-orange-300 bg-orange-950 border-orange-900',
 }
 
 export default function TrackBadge({
@@ -39,7 +39,7 @@ export default function TrackBadge({
   const colorStyle = trackLevel
     ? levelClasses[trackLevel]
     : (environmentClasses[environment] ??
-      'text-muted-foreground bg-muted/50 border-border')
+      'text-muted-foreground bg-muted border-muted')
 
   return (
     <Badge

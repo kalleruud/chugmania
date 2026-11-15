@@ -1,4 +1,5 @@
-import { expect, test } from 'bun:test'
+import type { Track } from '@common/models/track'
+import { describe, expect, test } from 'bun:test'
 import express from 'express'
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
@@ -22,6 +23,7 @@ import type {
 import { broadcast, type TypedSocket } from '../backend/src/server'
 import nextEvents from './fixtures/webhook-next.json'
 import turboEvents from './fixtures/webhook-turbo.json'
+import { fetchNextMapId } from './setup'
 import { assertResponse, createSession, createUser, login } from './utils'
 
 async function startedSession(socket: TypedSocket, date: Date) {
@@ -410,6 +412,104 @@ test('webhook HTTP rejects unsupported counts and invalid rosters without persis
       server.close(error => (error ? reject(error) : resolve()))
     )
   }
+})
+
+function trackMap(uid: string): Map {
+  return {
+    uid,
+    name: uid,
+    author: 'Mapper',
+    environment: 'Stadium',
+    type: 'Race',
+    isLaps: false,
+    checkpointsPerLap: 2,
+    medalTimesMs: { author: 10000, gold: 12000, silver: 14000, bronze: 16000 },
+  }
+}
+
+async function findTrack(uid: string, ready: (track: Track) => boolean) {
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const track = (await TrackManager.getAllTracks()).find(t => t.uid === uid)
+    if (track && ready(track)) return track
+    await Bun.sleep(5)
+  }
+  return (await TrackManager.getAllTracks()).find(t => t.uid === uid)
+}
+
+describe('webhook-created track images', () => {
+  test.serial(
+    'turbo tracks get the pc platform without a map ID lookup',
+    async () => {
+      const admin = await login(createUser('track-image-turbo-admin', 'admin'))
+      const now = new Date('2033-01-01T12:00:00.000Z')
+      await startedSession(admin, now)
+      fetchNextMapId.mockClear()
+      const game = capture(now, 1, 'turbo')
+      game.start(trackMap('track-image-turbo'))
+      game.throttle(1, 0, 1000)
+
+      const track = await findTrack('track-image-turbo', () => true)
+      assert(track)
+      expect(track).toMatchObject({
+        game: 'turbo',
+        platform: 'pc',
+        mapId: null,
+      })
+      expect(fetchNextMapId).not.toHaveBeenCalled()
+    }
+  )
+
+  test.serial(
+    'next tracks store the map ID from trackmania.io and broadcast it',
+    async () => {
+      const admin = await login(createUser('track-image-next-admin', 'admin'))
+      const now = new Date('2033-01-03T12:00:00.000Z')
+      await startedSession(admin, now)
+      fetchNextMapId.mockClear()
+      fetchNextMapId.mockResolvedValueOnce(
+        '28ccb484-72ab-40d5-bb3c-653ca554ceb0'
+      )
+      const game = capture(now, 1, 'next')
+      game.start(trackMap('track-image-next'))
+      game.throttle(1, 0, 1000)
+
+      const track = await findTrack('track-image-next', t => t.mapId !== null)
+      assert(track)
+      expect(track).toMatchObject({
+        game: 'next',
+        platform: 'pc',
+        mapId: '28ccb484-72ab-40d5-bb3c-653ca554ceb0',
+      })
+      expect(fetchNextMapId).toHaveBeenCalledWith('track-image-next')
+      expect(broadcast).toHaveBeenCalledWith(
+        'all_tracks',
+        await TrackManager.getAllTracks()
+      )
+    }
+  )
+
+  test.serial(
+    'next tracks keep a null map ID when the lookup fails',
+    async () => {
+      const admin = await login(
+        createUser('track-image-missing-admin', 'admin')
+      )
+      const now = new Date('2033-01-05T12:00:00.000Z')
+      await startedSession(admin, now)
+      fetchNextMapId.mockClear()
+      const game = capture(now, 1, 'next')
+      game.start(trackMap('track-image-missing'))
+      game.throttle(1, 0, 1000)
+
+      const track = await findTrack('track-image-missing', () => true)
+      assert(track)
+      expect(fetchNextMapId).toHaveBeenCalledWith('track-image-missing')
+      await fetchNextMapId.mock.results[0]?.value
+      expect(
+        (await TrackManager.getAllTracks()).find(t => t.id === track.id)
+      ).toMatchObject({ platform: 'pc', mapId: null })
+    }
+  )
 })
 
 test('track CSV round trips preserve webhook UIDs and metadata', async () => {

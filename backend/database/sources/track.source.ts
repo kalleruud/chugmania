@@ -57,4 +57,7 @@ export default class TrackSource {
   static create(track: typeof tracks.$inferInsert) {
     return db.insert(tracks).values(track).returning().get()
   }
+  static update(id: string, updates: Partial<typeof tracks.$inferInsert>) {
+    db.update(tracks).set(updates).where(eq(tracks.id, id)).run()
+  }
 }

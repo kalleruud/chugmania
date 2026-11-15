@@ -55,7 +55,7 @@ export default function TrackPage() {
         </BreadcrumbList>
       </Breadcrumb>
 
-      <TrackCard track={track} className='pb-0' />
+      <TrackCard track={track} />
 
       <TimeEntryList
         track={track.id}

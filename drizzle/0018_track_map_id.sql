@@ -1,0 +1,1 @@
+ALTER TABLE `tracks` ADD `map_id` text;
