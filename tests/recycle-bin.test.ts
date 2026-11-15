@@ -1,5 +1,9 @@
 import AdminManager from '@backend/src/managers/admin.manager'
-import { isRecycleRequest, recycleTables } from '@common/models/recycleBin'
+import {
+  isRecycleRecordRequest,
+  isRecycleRequest,
+  recycleTables,
+} from '@common/models/recycleBin'
 import { describe, expect, test } from 'bun:test'
 import { eq } from 'drizzle-orm'
 import assert from 'node:assert/strict'
@@ -517,4 +521,65 @@ test('preserves logical slot and stage dependencies, including deleted records',
       .where(eq(schema.tournamentMatchSlots.id, slots[0].id))
       .get()?.deletedAt
   ).toEqual(deletedAt)
+})
+
+test('record details expose complete deleted records only to admins and never include password hashes', async () => {
+  const adminUser = createUser('recycle-detail-admin', 'admin')
+  const admin = await login(adminUser)
+  const regular = await login(createUser('recycle-detail-regular'))
+  const deleted = createUser('recycle-detail-deleted')
+  const deletedAt = new Date()
+  db.update(users).set({ deletedAt }).where(eq(users.id, deleted.id)).run()
+  const response = await AdminManager.onGetRecycleRecord(admin, {
+    table: 'users',
+    id: deleted.id,
+  })
+  assertResponse(response)
+  expect(response.record.email).toBe(deleted.email)
+  expect(response.record.deletedAt).toEqual(deletedAt)
+  expect(Object.hasOwn(response.record, 'passwordHash')).toBe(false)
+  const session = db
+    .insert(sessions)
+    .values({
+      name: 'Detail session',
+      date: new Date(),
+      description: 'Full record description',
+      deletedAt,
+    })
+    .returning()
+    .get()
+  const details = await AdminManager.onGetRecycleRecord(admin, {
+    table: 'sessions',
+    id: session.id,
+  })
+  assertResponse(details)
+  expect(details.record.description).toBe('Full record description')
+  const signup = db
+    .insert(sessionSignups)
+    .values({
+      session: session.id,
+      user: deleted.id,
+      response: 'maybe',
+      deletedAt,
+    })
+    .returning()
+    .get()
+  const signupDetails = await AdminManager.onGetRecycleRecord(admin, {
+    table: 'sessionSignups',
+    id: signup.id,
+  })
+  assertResponse(signupDetails)
+  expect(signupDetails.record.response).toBe('maybe')
+  expect(signupDetails.record.session).toBe(session.id)
+  await assert.rejects(() =>
+    AdminManager.onGetRecycleRecord(regular, { table: 'users', id: deleted.id })
+  )
+  await assert.rejects(() =>
+    AdminManager.onGetRecycleRecord(admin, { table: 'users', id: adminUser.id })
+  )
+  await assert.rejects(() =>
+    AdminManager.onGetRecycleRecord(admin, { table: 'sessions', id: 'missing' })
+  )
+  const invalid: unknown = { table: '__proto__', id: 'invalid' }
+  expect(isRecycleRecordRequest(invalid)).toBe(false)
 })

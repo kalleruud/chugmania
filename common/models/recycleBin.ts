@@ -59,12 +59,23 @@ export type RecycleRequest = {
   action: 'restore' | 'delete'
 }
 
-export function isRecycleRequest(value: unknown): value is RecycleRequest {
+export type RecycleRecordRequest = Pick<RecycleRequest, 'table' | 'id'>
+
+export function isRecycleRecordRequest(
+  value: unknown
+): value is RecycleRecordRequest {
   return (
     isRecord(value) &&
     typeof value.table === 'string' &&
     recycleTables.some(table => table === value.table) &&
-    typeof value.id === 'string' &&
-    (value.action === 'restore' || value.action === 'delete')
+    typeof value.id === 'string'
+  )
+}
+
+export function isRecycleRequest(value: unknown): value is RecycleRequest {
+  return (
+    isRecord(value) &&
+    (value.action === 'restore' || value.action === 'delete') &&
+    isRecycleRecordRequest(value)
   )
 }

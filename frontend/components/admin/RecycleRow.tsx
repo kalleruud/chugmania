@@ -1,5 +1,13 @@
 import type { BaseRowProps } from '@/components/row/RowProps'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 import { useConnection } from '@/contexts/ConnectionContext'
 import loc from '@common/locale/locales'
 import type { RecycleItem, RecycleRequest } from '@common/models/recycleBin'
@@ -7,12 +15,14 @@ import { DEFAULT_LOCALE, DEFAULT_ZONE } from '@common/utils/date'
 import { DateTime } from 'luxon'
 import { useState } from 'react'
 import { toast } from 'sonner'
+import RecycleRecordDetails from './RecycleRecordDetails'
 
 export default function RecycleRow({
   item,
   children,
 }: Readonly<BaseRowProps<RecycleItem>>) {
   const { socket } = useConnection()
+  const [detailsOpen, setDetailsOpen] = useState(false)
   const [pending, setPending] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   async function mutate(action: RecycleRequest['action']) {
@@ -41,14 +51,39 @@ export default function RecycleRow({
     .setLocale(DEFAULT_LOCALE)
     .toLocaleString(DateTime.DATETIME_MED)
   return (
-    <article className='rounded-sm border bg-background-secondary p-2'>
-      <div className='pointer-events-none'>{children}</div>
+    <article className='relative rounded-sm border bg-background-secondary p-2'>
+      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+        <DialogTrigger asChild>
+          <button
+            type='button'
+            className='absolute inset-0 z-0 cursor-pointer rounded-sm transition-colors hover:bg-accent/30 focus-visible:outline-2 focus-visible:outline-ring'
+            aria-label={`${loc.no.admin.recycleBin.details}: ${loc.no.admin.tables[item.table]}`}
+            aria-haspopup='dialog'
+          />
+        </DialogTrigger>
+        <DialogContent className='max-h-[85dvh] overflow-y-auto sm:max-w-3xl'>
+          <DialogHeader>
+            <DialogTitle>{loc.no.admin.tables[item.table]}</DialogTitle>
+            <DialogDescription>
+              {loc.no.admin.recycleBin.detailsDescription}
+            </DialogDescription>
+          </DialogHeader>
+          {detailsOpen && (
+            <RecycleRecordDetails
+              key={`${item.table}:${item.id}`}
+              table={item.table}
+              id={item.id}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+      <div className='pointer-events-none relative'>{children}</div>
       <div className='flex flex-wrap items-center justify-between gap-2 p-2'>
-        <span className='text-sm text-muted-foreground'>
+        <span className='pointer-events-none relative text-sm text-muted-foreground'>
           {loc.no.admin.recycleBin.deleted}{' '}
           <time dateTime={item.deletedAt.toISOString()}>{date}</time>
         </span>
-        <div className='flex flex-wrap gap-2'>
+        <div className='relative z-10 flex flex-wrap gap-2'>
           <Button
             size='sm'
             variant='outline'

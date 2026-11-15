@@ -11,7 +11,11 @@ import type {
   EditMatchRequest,
   Match,
 } from './match'
-import type { RecycleItem, RecycleRequest } from './recycleBin'
+import type {
+  RecycleItem,
+  RecycleRecordRequest,
+  RecycleRequest,
+} from './recycleBin'
 import type {
   CreateSessionRequest,
   DeleteSessionRequest,
@@ -70,6 +74,13 @@ export interface ServerToClientEvents {
 }
 
 export interface ClientToServerEvents {
+  get_recycle_record: (
+    request: RecycleRecordRequest,
+    callback: (
+      response:
+        { success: true; record: Record<string, unknown> } | ErrorResponse
+    ) => void
+  ) => void
   get_recycle_bin: (
     request: undefined,
     callback: (

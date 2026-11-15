@@ -4,7 +4,10 @@ import {
   isImportCsvRequest,
   type ExportCsvRequest,
 } from '@common/models/importCsv'
-import { isRecycleRequest } from '@common/models/recycleBin'
+import {
+  isRecycleRecordRequest,
+  isRecycleRequest,
+} from '@common/models/recycleBin'
 import type { EventReq, EventRes } from '@common/models/socket.io'
 import AdminSource from '../../database/sources/admin.source'
 import RecycleBinSource from '../../database/sources/recycleBin.source'
@@ -20,6 +23,18 @@ import TrackManager from './track.manager'
 import UserManager from './user.manager'
 
 export default class AdminManager {
+  static async onGetRecycleRecord(
+    socket: TypedSocket,
+    request: EventReq<'get_recycle_record'>
+  ): Promise<EventRes<'get_recycle_record'>> {
+    await AuthManager.checkAuth(socket, ['admin'])
+    if (!isRecycleRecordRequest(request))
+      throw new Error(
+        loc.no.error.messages.invalid_request('RecycleRecordRequest')
+      )
+    return { success: true, record: RecycleBinSource.getRecord(request) }
+  }
+
   static async onGetRecycleBin(
     socket: TypedSocket
   ): Promise<EventRes<'get_recycle_bin'>> {

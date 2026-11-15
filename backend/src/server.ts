@@ -178,6 +178,7 @@ async function Connect(s: TypedSocket) {
   setup(s, 'edit_match', MatchManager.onEditMatch)
   setup(s, 'delete_match', MatchManager.onDeleteMatch)
 
+  setup(s, 'get_recycle_record', AdminManager.onGetRecycleRecord)
   setup(s, 'get_recycle_bin', AdminManager.onGetRecycleBin)
   setup(s, 'mutate_recycle_bin', AdminManager.onMutateRecycleBin)
   setup(s, 'import_csv', AdminManager.onImportCsv)

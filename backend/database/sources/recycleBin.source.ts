@@ -1,6 +1,7 @@
 import loc from '@common/locale/locales'
 import type {
   RecycleItem,
+  RecycleRecordRequest,
   RecycleRequest,
   RecycleTable,
 } from '@common/models/recycleBin'
@@ -13,6 +14,19 @@ import TransactionSource from './transaction.source'
 const tables = { ...schema }
 
 export default class RecycleBinSource {
+  static getRecord(request: RecycleRecordRequest): Record<string, unknown> {
+    const table = tables[request.table]
+    const record = db
+      .select()
+      .from(table)
+      .where(and(eq(table.id, request.id), isNotNull(table.deletedAt)))
+      .get()
+    if (!record) throw new Error(loc.no.admin.recycleBin.missing)
+    const details: Record<string, unknown> = { ...record }
+    delete details.passwordHash
+    return details
+  }
+
   static getItems(): RecycleItem[] {
     const items: RecycleItem[] = []
     for (const record of db

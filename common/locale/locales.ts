@@ -17,6 +17,18 @@ const matchStageCodes: Record<MatchStage, string> = MATCH_STAGE_CODES
 
 const no = {
   chugmania: 'Chugmania',
+  objectViewer: {
+    notSet: 'Ikke satt',
+    yes: 'Ja',
+    no: 'Nei',
+    circular: 'Sirkulær referanse',
+    fields: (count: number) => `${count} felt`,
+    items: (count: number) => `${count} elementer`,
+    copy: 'Kopier verdi',
+    copied: 'Verdien er kopiert',
+    copyFailed: 'Kunne ikke kopiere verdien',
+    expand: 'Vis hele teksten',
+  },
   admin: {
     title: 'Admin',
     description: 'Det som skjer i admin panelet, blir i admin panelet.',
@@ -27,6 +39,8 @@ const no = {
     tableManagement: 'Tabeller',
     recycleBin: {
       title: 'Papirkurv',
+      details: 'Vis alle felt',
+      detailsDescription: 'Alle lagrede felt for denne slettede posten.',
       updated: 'Papirkurven er oppdatert',
       retry: 'Prøv igjen',
       deleted: 'Slettet',
