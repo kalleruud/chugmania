@@ -29,7 +29,7 @@ export default function TrackCard({
   return (
     <div
       className={twMerge(
-        'relative isolate flex min-h-36 min-w-0 items-end gap-4 overflow-hidden rounded-lg bg-black p-4',
+        'relative isolate flex min-h-72 min-w-0 items-end gap-4 overflow-hidden rounded-lg bg-black p-4',
         className
       )}
       {...props}>
