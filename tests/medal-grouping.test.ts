@@ -63,12 +63,12 @@ function summarize(entries: TimeEntry[], medalTrack = track) {
 }
 
 describe('medal grouping', () => {
-  test('groups by lap time without chug time, best medal first', () => {
+  test('groups by total time including chug time, best medal first', () => {
     const entries = [
       entry('silver', 50_000, null),
-      entry('authorWithChug', 52_000, 12_000),
+      entry('author', 39_000, null),
       entry('goldOnLimit', 45_000, 0),
-      entry('bronze', 70_000, 15_000),
+      entry('bronzeWithChug', 55_000, 15_000),
       entry('none', 61_000, 500),
     ]
 
@@ -78,7 +78,7 @@ describe('medal grouping', () => {
         label: 'Author',
         icon: '/medals/author.svg',
         description: '0:40.000',
-        ids: ['authorWithChug'],
+        ids: ['author'],
       },
       {
         key: 'gold',
@@ -99,7 +99,7 @@ describe('medal grouping', () => {
         label: 'Bronse',
         icon: '/medals/bronze.svg',
         description: '1:00.000',
-        ids: ['bronze'],
+        ids: ['bronzeWithChug'],
       },
       {
         key: 'none',

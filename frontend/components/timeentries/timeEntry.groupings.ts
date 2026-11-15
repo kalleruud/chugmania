@@ -32,18 +32,13 @@ export function hasMedalTimes(track: Track): boolean {
   return medalTimes(track).length > 0
 }
 
-export function lapTimeMs(entry: TimeEntry): number | undefined {
-  if (entry.status !== 'completed' || !entry.duration) return undefined
-  return entry.duration - (entry.chugDurationMs ?? 0)
-}
-
 export function byMedal(track: Track): Grouping<TimeEntry> {
   const medals = medalTimes(track)
   return {
     key: entry => {
-      const lapTime = lapTimeMs(entry)
-      if (lapTime === undefined) return NO_MEDAL
-      return medals.find(([, ms]) => lapTime <= ms)?.[0] ?? NO_MEDAL
+      const { duration } = entry
+      if (entry.status !== 'completed' || !duration) return NO_MEDAL
+      return medals.find(([, ms]) => duration <= ms)?.[0] ?? NO_MEDAL
     },
     label: key => loc.no.timeEntry.medals[toMedal(key) ?? NO_MEDAL],
     icon: key => {
