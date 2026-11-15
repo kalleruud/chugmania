@@ -25,3 +25,42 @@ export function groupItems<T>(items: T[], grouping: Grouping<T>): Group<T>[] {
 
   return [...groups.values()]
 }
+
+export type VisibleGroup<T> = {
+  group: Group<T>
+  limit: number
+  shown: number
+  canShowMore: boolean
+}
+
+type GroupLimits = {
+  groupCounts: Partial<Record<string, number>>
+  groupLimit?: number
+  totalCount?: number
+}
+
+export function limitGroups<T>(
+  groups: Group<T>[],
+  { groupCounts, groupLimit, totalCount }: GroupLimits
+): { visibleGroups: VisibleGroup<T>[]; canShowMore: boolean } {
+  let budget = totalCount ?? Number.POSITIVE_INFINITY
+  let hidden = 0
+  const visibleGroups: VisibleGroup<T>[] = []
+
+  for (const group of groups) {
+    const limit = groupCounts[group.key] ?? groupLimit ?? group.items.length
+    const shown = Math.min(limit, group.items.length, budget)
+    budget -= shown
+    hidden += group.items.length - shown
+    if (shown > 0) {
+      visibleGroups.push({
+        group,
+        limit,
+        shown,
+        canShowMore: budget > 0 && shown < group.items.length,
+      })
+    }
+  }
+
+  return { visibleGroups, canShowMore: budget <= 0 && hidden > 0 }
+}

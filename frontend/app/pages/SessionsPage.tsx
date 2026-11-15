@@ -29,7 +29,8 @@ import { useState, type ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { PageHeader } from '../../components/PageHeader'
 
-const ARCHIVE_PAGE_SIZE = 5
+const ARCHIVE_GROUP_LIMIT = 5
+const ARCHIVE_TOTAL_LIMIT = 10
 
 export default function SessionsPage() {
   return (
@@ -101,7 +102,8 @@ export function SessionsContent({
           header={loc.no.session.past}
           sessions={archivedSessions}
           grouping={sessionGroupings[archiveGrouping]}
-          pageSize={ARCHIVE_PAGE_SIZE}
+          groupLimit={ARCHIVE_GROUP_LIMIT}
+          totalLimit={ARCHIVE_TOTAL_LIMIT}
           hideCreate
           actions={
             <ArchiveGroupingSelect

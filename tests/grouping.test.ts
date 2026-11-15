@@ -1,5 +1,9 @@
 import { describe, expect, test } from 'bun:test'
-import { groupItems } from '../frontend/components/grouped-list/grouping'
+import {
+  groupItems,
+  limitGroups,
+  type Group,
+} from '../frontend/components/grouped-list/grouping'
 import {
   byMonth,
   byWeek,
@@ -67,5 +71,94 @@ describe('date groupings', () => {
     expect(summarize(groupItems(items, byMonth(getDate)))).toEqual([
       { label: 'november 2025', ids: ['serialized'] },
     ])
+  })
+})
+
+describe('limitGroups', () => {
+  const group = (key: string, size: number): Group<number> => ({
+    key,
+    label: key,
+    items: Array.from({ length: size }, (_, index) => index),
+  })
+  const groups = [group('a', 7), group('b', 6), group('c', 2)]
+
+  function summarizeLimits(result: ReturnType<typeof limitGroups<number>>) {
+    return {
+      groups: result.visibleGroups.map(({ group, shown, canShowMore }) => ({
+        key: group.key,
+        shown,
+        canShowMore,
+      })),
+      canShowMore: result.canShowMore,
+    }
+  }
+
+  test('cuts groups at the total limit and hides groups past it', () => {
+    const result = limitGroups(groups, {
+      groupCounts: {},
+      groupLimit: 5,
+      totalCount: 8,
+    })
+
+    expect(summarizeLimits(result)).toEqual({
+      groups: [
+        { key: 'a', shown: 5, canShowMore: true },
+        { key: 'b', shown: 3, canShowMore: false },
+      ],
+      canShowMore: true,
+    })
+  })
+
+  test('only offers the total button when the total limit is used up exactly', () => {
+    const result = limitGroups(groups, {
+      groupCounts: {},
+      groupLimit: 5,
+      totalCount: 10,
+    })
+
+    expect(summarizeLimits(result)).toEqual({
+      groups: [
+        { key: 'a', shown: 5, canShowMore: true },
+        { key: 'b', shown: 5, canShowMore: false },
+      ],
+      canShowMore: true,
+    })
+  })
+
+  test('offers the total button when only group limits hide rows', () => {
+    const result = limitGroups([group('a', 15)], {
+      groupCounts: {},
+      groupLimit: 5,
+      totalCount: 5,
+    })
+
+    expect(summarizeLimits(result)).toEqual({
+      groups: [{ key: 'a', shown: 5, canShowMore: false }],
+      canShowMore: true,
+    })
+  })
+
+  test('shows expanded groups up to the total limit', () => {
+    const result = limitGroups(groups, {
+      groupCounts: { a: 10 },
+      groupLimit: 5,
+      totalCount: 20,
+    })
+
+    expect(summarizeLimits(result)).toEqual({
+      groups: [
+        { key: 'a', shown: 7, canShowMore: false },
+        { key: 'b', shown: 5, canShowMore: true },
+        { key: 'c', shown: 2, canShowMore: false },
+      ],
+      canShowMore: false,
+    })
+  })
+
+  test('shows everything without limits', () => {
+    const result = limitGroups(groups, { groupCounts: {} })
+
+    expect(result.visibleGroups.map(({ shown }) => shown)).toEqual([7, 6, 2])
+    expect(result.canShowMore).toBe(false)
   })
 })

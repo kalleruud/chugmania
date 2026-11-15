@@ -32,7 +32,8 @@ type SessionsListProps = {
   hideCreate?: boolean
   featured?: boolean
   grouping?: Grouping<SessionWithSignups>
-  pageSize?: number
+  groupLimit?: number
+  totalLimit?: number
   actions?: ReactNode
 }
 
@@ -43,7 +44,8 @@ export default function SessionsList({
   hideCreate,
   featured,
   grouping,
-  pageSize,
+  groupLimit,
+  totalLimit,
   actions,
   ...rest
 }: Readonly<SessionsListProps & ComponentProps<'div'>>) {
@@ -75,7 +77,8 @@ export default function SessionsList({
         Row={SessionComponent}
         getKey={session => session.id}
         grouping={grouping}
-        pageSize={pageSize}
+        groupLimit={groupLimit}
+        totalLimit={totalLimit}
         rowProps={() => ({
           className: 'rounded-sm bg-background-secondary p-4',
         })}

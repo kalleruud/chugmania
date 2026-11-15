@@ -525,7 +525,8 @@ const no = {
       'Her var det tomt...',
       'Har du gått feil?',
     ]),
-    showMore: (remaining: number) => `Vis flere (${remaining} igjen)`,
+    showMore: 'Vis flere',
+    showLess: 'Vis færre',
     groupBy: {
       year: 'År',
       month: 'Måned',
