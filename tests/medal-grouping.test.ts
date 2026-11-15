@@ -57,6 +57,7 @@ function summarize(entries: TimeEntry[], medalTrack = track) {
     key: group.key,
     label: group.label,
     icon: group.icon,
+    description: group.description,
     ids: group.items.map(item => item.id),
   }))
 }
@@ -76,27 +77,37 @@ describe('medal grouping', () => {
         key: 'author',
         label: 'Author',
         icon: '/medals/author.svg',
+        description: '0:40.000',
         ids: ['authorWithChug'],
       },
       {
         key: 'gold',
         label: 'Gull',
         icon: '/medals/gold.svg',
+        description: '0:45.000',
         ids: ['goldOnLimit'],
       },
       {
         key: 'silver',
         label: 'Sølv',
         icon: '/medals/silver.svg',
+        description: '0:50.000',
         ids: ['silver'],
       },
       {
         key: 'bronze',
         label: 'Bronse',
         icon: '/medals/bronze.svg',
+        description: '1:00.000',
         ids: ['bronze'],
       },
-      { key: 'none', label: 'Ingen medalje', icon: undefined, ids: ['none'] },
+      {
+        key: 'none',
+        label: 'Ingen medalje',
+        icon: undefined,
+        description: undefined,
+        ids: ['none'],
+      },
     ])
   })
 

@@ -103,7 +103,7 @@ export default function GroupedList<T, P extends object>({
                   className='sticky top-0 z-10 bg-black'
                   title={group.label}
                   image={group.icon}
-                  description={group.items.length.toString()}
+                  description={group.description}
                 />
               )}
               <div className={twMerge('flex flex-col gap-2', itemsClassName)}>

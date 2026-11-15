@@ -2,6 +2,7 @@ export type Grouping<T> = {
   key: (item: T) => string
   label: (key: string) => string
   icon?: (key: string) => string | undefined
+  description?: (key: string) => string | undefined
   compare?: (a: string, b: string) => number
 }
 
@@ -9,6 +10,7 @@ export type Group<T> = {
   key: string
   label: string
   icon?: string
+  description?: string
   items: T[]
 }
 
@@ -27,9 +29,15 @@ export function groupItems<T>(items: T[], grouping: Grouping<T>): Group<T>[] {
     groups.set(key, group)
   }
 
+  const result = [...groups.values()].map(group => ({
+    ...group,
+    description: grouping.description
+      ? grouping.description(group.key)
+      : group.items.length.toString(),
+  }))
   const { compare } = grouping
-  if (!compare) return [...groups.values()]
-  return [...groups.values()].toSorted((a, b) => compare(a.key, b.key))
+  if (!compare) return result
+  return result.toSorted((a, b) => compare(a.key, b.key))
 }
 
 export type VisibleGroup<T> = {

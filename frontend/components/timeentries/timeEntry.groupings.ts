@@ -1,6 +1,7 @@
 import loc from '@common/locale/locales'
 import type { TimeEntry } from '@common/models/timeEntry'
 import type { Track } from '@common/models/track'
+import { formatTime } from '@common/utils/time'
 import type { Grouping } from '../grouped-list/grouping'
 
 type Medal = 'author' | 'gold' | 'silver' | 'bronze'
@@ -48,6 +49,10 @@ export function byMedal(track: Track): Grouping<TimeEntry> {
     icon: key => {
       const medal = toMedal(key)
       return medal && `/medals/${medal}.svg`
+    },
+    description: key => {
+      const time = medals.find(([medal]) => medal === key)?.[1]
+      return time === undefined ? undefined : formatTime(time).replace(/^0/, '')
     },
     compare: (a, b) => medalRank(a) - medalRank(b),
   }

@@ -207,6 +207,7 @@ export function TimeEntryList({
         Row={TimeEntryRow}
         getKey={entry => entry.id}
         grouping={grouping}
+        totalLimit={10}
         itemsClassName='gap-0 rounded-sm bg-background-secondary'
         rowProps={entry => {
           const i = filteredEntries.indexOf(entry)
