@@ -4,12 +4,12 @@ import type { Track } from '@common/models/track'
 import { formatTime } from '@common/utils/time'
 import type { Grouping } from '../grouped-list/grouping'
 
-type Medal = 'author' | 'gold' | 'silver' | 'bronze'
+export type Medal = 'author' | 'gold' | 'silver' | 'bronze'
 
 const MEDALS: Medal[] = ['author', 'gold', 'silver', 'bronze']
 const NO_MEDAL = 'none'
 
-function medalTimes(track: Track): [Medal, number][] {
+export function medalTimes(track: Track): [Medal, number][] {
   const times: [Medal, number | null][] = [
     ['author', track.authorMedalMs],
     ['gold', track.goldMedalMs],
@@ -17,6 +17,14 @@ function medalTimes(track: Track): [Medal, number][] {
     ['bronze', track.bronzeMedalMs],
   ]
   return times.filter((time): time is [Medal, number] => (time[1] ?? 0) > 0)
+}
+
+export function formatMedalTime(ms: number): string {
+  return formatTime(ms).replace(/^0/, '')
+}
+
+export function medalIcon(medal: Medal): string {
+  return `/medals/${medal}.svg`
 }
 
 function toMedal(key: string): Medal | undefined {
@@ -43,11 +51,11 @@ export function byMedal(track: Track): Grouping<TimeEntry> {
     label: key => loc.no.timeEntry.medals[toMedal(key) ?? NO_MEDAL],
     icon: key => {
       const medal = toMedal(key)
-      return medal && `/medals/${medal}.svg`
+      return medal && medalIcon(medal)
     },
     description: key => {
       const time = medals.find(([medal]) => medal === key)?.[1]
-      return time === undefined ? undefined : formatTime(time).replace(/^0/, '')
+      return time === undefined ? undefined : formatMedalTime(time)
     },
     compare: (a, b) => medalRank(a) - medalRank(b),
   }

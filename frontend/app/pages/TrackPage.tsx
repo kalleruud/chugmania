@@ -2,6 +2,7 @@ import MatchList from '@/components/match/MatchList'
 import { PageSubheader } from '@/components/PageHeader'
 import { TimeEntryList } from '@/components/timeentries/TimeEntryList'
 import TrackCard from '@/components/track/TrackCard'
+import TrackMedals from '@/components/track/TrackMedals'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -56,6 +57,8 @@ export default function TrackPage() {
       </Breadcrumb>
 
       <TrackCard track={track} />
+
+      <TrackMedals track={track} />
 
       <TimeEntryList
         track={track.id}
