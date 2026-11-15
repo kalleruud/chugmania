@@ -178,6 +178,8 @@ async function Connect(s: TypedSocket) {
   setup(s, 'edit_match', MatchManager.onEditMatch)
   setup(s, 'delete_match', MatchManager.onDeleteMatch)
 
+  setup(s, 'get_recycle_bin', AdminManager.onGetRecycleBin)
+  setup(s, 'mutate_recycle_bin', AdminManager.onMutateRecycleBin)
   setup(s, 'import_csv', AdminManager.onImportCsv)
   setup(s, 'export_csv', AdminManager.onExportCsv)
 }
@@ -203,7 +205,27 @@ function setup<Ev extends keyof ClientToServerEvents>(
     }
   ).on(event, (r, callback) =>
     Promise.resolve(handler(s, r))
-      .then(callback)
+      .then(async response => {
+        callback(response)
+        if (
+          response &&
+          typeof response === 'object' &&
+          'success' in response &&
+          response.success &&
+          event !== 'get_recycle_bin' &&
+          event !== 'get_user_data' &&
+          !event.startsWith('get_')
+        ) {
+          for (const recipient of io.sockets.sockets.values()) {
+            try {
+              await AuthManager.checkAuth(recipient, ['admin'])
+              recipient.emit('recycle_bin_changed')
+            } catch {
+              continue
+            }
+          }
+        }
+      })
       .catch((e: unknown) => {
         const message = e instanceof Error ? e.message : String(e)
         console.warn(message)

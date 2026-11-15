@@ -17,13 +17,16 @@ export default function MatchRow({
   item: match,
   highlight,
   hideTrack,
+  readOnly,
+  user1: providedUser1,
+  user2: providedUser2,
   children,
   ...rest
 }: Readonly<MatchProps>) {
   const { users, tracks, sessions } = useData()
   const { canSetResult, toggleWinner } = useMatch(match)
-  const user1 = users?.find(u => u.id === match.user1)
-  const user2 = users?.find(u => u.id === match.user2)
+  const user1 = providedUser1 ?? users?.find(u => u.id === match.user1)
+  const user2 = providedUser2 ?? users?.find(u => u.id === match.user2)
   const track = tracks?.find(t => t.id === match.track)
   const session = sessions?.find(s => s.id === match.session)
 
@@ -54,7 +57,10 @@ export default function MatchRow({
             isWinner={!!match.winner && match.winner === match.user1}
             onClick={() => user1 && toggleWinner(user1.id)}
             disabled={
-              !canSetResult || isCancelled || match.status !== 'planned'
+              readOnly ||
+              !canSetResult ||
+              isCancelled ||
+              match.status !== 'planned'
             }
             isCancelled={isCancelled}
             isCompleted={isCompleted}
@@ -90,7 +96,10 @@ export default function MatchRow({
             isWinner={!!match.winner && match.winner === match.user2}
             onClick={() => user2 && toggleWinner(user2.id)}
             disabled={
-              !canSetResult || isCancelled || match.status !== 'planned'
+              readOnly ||
+              !canSetResult ||
+              isCancelled ||
+              match.status !== 'planned'
             }
             isCancelled={isCancelled}
             isCompleted={isCompleted}

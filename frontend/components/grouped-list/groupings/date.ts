@@ -37,3 +37,14 @@ export function byWeek<T>(getDate: DateAccessor<T>): Grouping<T> {
     },
   }
 }
+
+export function byDay<T>(getDate: DateAccessor<T>): Grouping<T> {
+  return {
+    key: item => toDateTime(getDate(item)).toFormat('yyyy-MM-dd'),
+    label: key =>
+      DateTime.fromISO(key, {
+        zone: DEFAULT_ZONE,
+        locale: DEFAULT_LOCALE,
+      }).toLocaleString(DateTime.DATE_FULL),
+  }
+}
