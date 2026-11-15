@@ -41,12 +41,12 @@ export default function TrackCard({
             onError={() => setFailedImageUrl(imageUrl)}
             className='absolute inset-0 -z-10 size-full object-cover'
           />
-          <div className='absolute inset-0 -z-10 bg-linear-to-r from-black via-black/75 to-transparent' />
+          <div className='absolute inset-0 -z-10 bg-linear-to-t from-black/90 to-transparent' />
         </>
       ) : (
         <div
           className={twMerge(
-            'absolute inset-0 -z-10 bg-radial-[120%_140%_at_100%_50%] to-transparent to-60%',
+            'absolute inset-0 -z-10 bg-radial-[120%_140%_at_100%_50%] to-transparent ',
             tint
           )}
         />
