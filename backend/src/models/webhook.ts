@@ -17,8 +17,12 @@ export function isWebhookEvent(value: unknown): value is Event {
     typeof value.schemaVersion === 'string' &&
     typeof value.eventId === 'string' &&
     typeof value.sequence === 'number' &&
+    Number.isSafeInteger(value.sequence) &&
+    value.sequence >= 0 &&
     typeof value.occurredAt === 'string' &&
     typeof value.durationMs === 'number' &&
+    Number.isSafeInteger(value.durationMs) &&
+    value.durationMs >= 0 &&
     isRecord(value.game) &&
     typeof value.game.gameId === 'string' &&
     typeof value.game.totalPlayers === 'number' &&
