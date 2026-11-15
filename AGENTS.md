@@ -9,6 +9,11 @@
 - `npm run build` – build frontend + backend
 - `npm run db:gen` – generate Drizzle migration after schema changes
 
+## Testing in Development Mode
+
+- When `NODE_ENV` is not `production`, server startup creates the admin `admin@chugmania.dev` with password `chugmania` if it does not exist. Use it to log in and test the running app, including `/admin`.
+- A `Development` label above the `+` button confirms you are on a development build.
+
 ## Writing Tests
 
 - Follow [tests/tournament.test.ts](tests/tournament.test.ts); place new tests in `tests/<feature>.test.ts`.

@@ -19,8 +19,30 @@ import SessionManager from './session.manager'
 import TimeEntryManager from './timeEntry.manager'
 import TournamentManager from './tournament/tournament.manager'
 
+export const DEV_ADMIN = {
+  email: 'admin@chugmania.dev',
+  password: 'chugmania',
+}
+
 export default class UserManager {
   static readonly table = users
+
+  static async ensureDevAdmin(): Promise<void> {
+    if (await UserManager.userExists(DEV_ADMIN.email)) return
+
+    await db.insert(users).values({
+      email: DEV_ADMIN.email,
+      firstName: 'Dev',
+      lastName: 'Admin',
+      passwordHash: await AuthManager.hash(DEV_ADMIN.password),
+      role: 'admin',
+    })
+
+    console.info(
+      new Date().toISOString(),
+      `Created development admin '${DEV_ADMIN.email}' with password '${DEV_ADMIN.password}'`
+    )
+  }
 
   static async getUser(email: string) {
     const { data: user, error } = await tryCatchAsync(

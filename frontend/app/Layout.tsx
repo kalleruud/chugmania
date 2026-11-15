@@ -1,8 +1,10 @@
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTimeEntryInput } from '@/contexts/TimeEntryInputContext'
 import { PlusIcon } from '@heroicons/react/24/solid'
+import { Hammer } from 'lucide-react'
 import { Outlet } from 'react-router'
 import LoginPage from './pages/LoginPage'
 
@@ -30,12 +32,22 @@ export default function Layout() {
         </div>
       </div>
 
-      <Button
-        onClick={() => open()}
-        className='fixed right-0 bottom-0 z-50 m-12 rounded-full drop-shadow-2xl drop-shadow-black backdrop-blur-2xl'
-        size='icon-2xl'>
-        <PlusIcon className='size-8' />
-      </Button>
+      <div className='fixed right-0 bottom-0 z-50 m-12 flex flex-col items-center gap-4'>
+        {!import.meta.env.PROD && (
+          <Badge
+            className='font-kh-interface tracking-wider uppercase tabular-nums'
+            variant='secondary'>
+            <Hammer />
+            dev
+          </Badge>
+        )}
+        <Button
+          onClick={() => open()}
+          className='rounded-full drop-shadow-2xl drop-shadow-black backdrop-blur-2xl'
+          size='icon-2xl'>
+          <PlusIcon className='size-8' />
+        </Button>
+      </div>
     </>
   )
 }
