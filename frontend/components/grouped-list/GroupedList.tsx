@@ -2,19 +2,18 @@ import loc from '@common/locale/locales'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { useState, type ComponentType } from 'react'
 import { PageSubheader } from '../PageHeader'
-import type { BaseRowProps } from '../row/RowProps'
 import { Button } from '../ui/button'
 import { Empty } from '../ui/empty'
 import { groupItems, limitGroups, type Group, type Grouping } from './grouping'
 
-type GroupedListProps<T> = {
+type GroupedListProps<T, P> = {
   items: T[]
-  Row: ComponentType<BaseRowProps<T>>
+  Row: ComponentType<P>
+  rowProps: (item: T) => P
   getKey: (item: T) => string
   grouping?: Grouping<T>
   groupLimit?: number
   totalLimit?: number
-  rowProps?: (item: T) => Partial<BaseRowProps<T>>
 }
 
 const UNGROUPED_KEY = ''
@@ -56,15 +55,15 @@ function LimitButtons({
   )
 }
 
-export default function GroupedList<T>({
+export default function GroupedList<T, P extends object>({
   items,
   Row,
+  rowProps,
   getKey,
   grouping,
   groupLimit,
   totalLimit,
-  rowProps,
-}: Readonly<GroupedListProps<T>>) {
+}: Readonly<GroupedListProps<T, P>>) {
   const [groupCounts, setGroupCounts] = useState<
     Partial<Record<string, number>>
   >({})
@@ -100,11 +99,12 @@ export default function GroupedList<T>({
                 <PageSubheader
                   className='sticky top-0 z-10 bg-black'
                   title={group.label}
+                  image={group.icon}
                   description={group.items.length.toString()}
                 />
               )}
               {group.items.slice(0, shown).map(item => (
-                <Row key={getKey(item)} item={item} {...rowProps?.(item)} />
+                <Row key={getKey(item)} {...rowProps(item)} />
               ))}
               <LimitButtons
                 onShowMore={

@@ -1,0 +1,54 @@
+import loc from '@common/locale/locales'
+import type { TimeEntry } from '@common/models/timeEntry'
+import type { Track } from '@common/models/track'
+import type { Grouping } from '../grouped-list/grouping'
+
+type Medal = 'author' | 'gold' | 'silver' | 'bronze'
+
+const MEDALS: Medal[] = ['author', 'gold', 'silver', 'bronze']
+const NO_MEDAL = 'none'
+
+function medalTimes(track: Track): [Medal, number][] {
+  const times: [Medal, number | null][] = [
+    ['author', track.authorMedalMs],
+    ['gold', track.goldMedalMs],
+    ['silver', track.silverMedalMs],
+    ['bronze', track.bronzeMedalMs],
+  ]
+  return times.filter((time): time is [Medal, number] => (time[1] ?? 0) > 0)
+}
+
+function toMedal(key: string): Medal | undefined {
+  return MEDALS.find(medal => medal === key)
+}
+
+function medalRank(key: string): number {
+  const medal = toMedal(key)
+  return medal ? MEDALS.indexOf(medal) : MEDALS.length
+}
+
+export function hasMedalTimes(track: Track): boolean {
+  return medalTimes(track).length > 0
+}
+
+export function lapTimeMs(entry: TimeEntry): number | undefined {
+  if (entry.status !== 'completed' || !entry.duration) return undefined
+  return entry.duration - (entry.chugDurationMs ?? 0)
+}
+
+export function byMedal(track: Track): Grouping<TimeEntry> {
+  const medals = medalTimes(track)
+  return {
+    key: entry => {
+      const lapTime = lapTimeMs(entry)
+      if (lapTime === undefined) return NO_MEDAL
+      return medals.find(([, ms]) => lapTime <= ms)?.[0] ?? NO_MEDAL
+    },
+    label: key => loc.no.timeEntry.medals[toMedal(key) ?? NO_MEDAL],
+    icon: key => {
+      const medal = toMedal(key)
+      return medal && `/medals/${medal}.svg`
+    },
+    compare: (a, b) => medalRank(a) - medalRank(b),
+  }
+}

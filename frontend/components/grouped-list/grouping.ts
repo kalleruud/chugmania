@@ -1,11 +1,14 @@
 export type Grouping<T> = {
   key: (item: T) => string
   label: (key: string) => string
+  icon?: (key: string) => string | undefined
+  compare?: (a: string, b: string) => number
 }
 
 export type Group<T> = {
   key: string
   label: string
+  icon?: string
   items: T[]
 }
 
@@ -17,13 +20,16 @@ export function groupItems<T>(items: T[], grouping: Grouping<T>): Group<T>[] {
     const group = groups.get(key) ?? {
       key,
       label: grouping.label(key),
+      icon: grouping.icon?.(key),
       items: [],
     }
     group.items.push(item)
     groups.set(key, group)
   }
 
-  return [...groups.values()]
+  const { compare } = grouping
+  if (!compare) return [...groups.values()]
+  return [...groups.values()].toSorted((a, b) => compare(a.key, b.key))
 }
 
 export type VisibleGroup<T> = {

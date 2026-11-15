@@ -58,9 +58,10 @@ export function PageHeader({
 export function PageSubheader({
   title,
   description,
+  image,
   className,
   ...props
-}: Readonly<Omit<PageHeaderProps, 'icon'>>) {
+}: Readonly<Omit<PageHeaderProps, 'Icon'> & { image?: string }>) {
   return (
     <div
       className={twMerge(
@@ -68,7 +69,10 @@ export function PageSubheader({
         className
       )}
       {...props}>
-      <p>{title}</p>
+      <div className='flex items-center gap-2'>
+        {image && <img src={image} alt='' className='size-5' />}
+        <p>{title}</p>
+      </div>
       {description && <p className='opacity-50'>{description}</p>}
     </div>
   )
