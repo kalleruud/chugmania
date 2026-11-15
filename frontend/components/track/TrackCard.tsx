@@ -46,7 +46,7 @@ export default function TrackCard({
       ) : (
         <div
           className={twMerge(
-            'absolute inset-0 -z-10 bg-radial-[120%_140%_at_100%_50%] to-transparent ',
+            'absolute inset-0 -z-10 bg-radial-[120%_140%_at_100%_50%] to-transparent',
             tint
           )}
         />
