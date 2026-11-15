@@ -148,7 +148,7 @@ export default function SessionForm({
         disabled={disabled}
         value={description}
         onChange={e => setDescription(e.target.value)}
-        placeholder='En kort beskrivelse av sesjonen'
+        placeholder='En kort beskrivelse av sesjonen. Støtter Markdown.'
       />
     </form>
   )

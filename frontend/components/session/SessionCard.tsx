@@ -1,3 +1,4 @@
+import Markdown from '@/components/Markdown'
 import { Badge } from '@/components/ui/badge'
 import type { SessionStatus } from '@backend/database/schema'
 import loc from '@common/locale/locales'
@@ -71,7 +72,13 @@ export default function SessionCard({
       </div>
 
       {session.description && (
-        <p className='text-muted-foreground'>{session.description}</p>
+        <Markdown
+          className={twMerge(
+            'text-muted-foreground',
+            !hideLink && 'line-clamp-3'
+          )}>
+          {session.description}
+        </Markdown>
       )}
 
       <div className='mt-4 flex items-end justify-between'>
