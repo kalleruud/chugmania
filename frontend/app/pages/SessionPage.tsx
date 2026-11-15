@@ -230,7 +230,6 @@ export default function SessionPage() {
               track={track}
               session={session.id}
               highlight={e => isLoggedIn && loggedInUser.id === e.id}
-              filter='all'
               excludeTournamentMatches
             />
           ))}
@@ -238,7 +237,6 @@ export default function SessionPage() {
             <TrackLeaderboard
               track={null}
               session={session.id}
-              filter='all'
               excludeTournamentMatches
             />
           )}
