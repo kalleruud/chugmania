@@ -30,7 +30,7 @@ import { PageHeader } from '../../components/PageHeader'
 
 const ARCHIVE_GROUP_LIMIT = 5
 const ARCHIVE_TOTAL_LIMIT = 10
-const RECENT_SESSIONS_LIMIT = 2
+const RECENT_SESSIONS_LIMIT = 1
 
 export default function SessionsPage() {
   return (
@@ -115,7 +115,7 @@ export function SessionsContent({
       {showLink && (
         <SessionsList
           className='opacity-75'
-          header={loc.no.session.past}
+          header={loc.no.session.previous}
           sessions={archivedSessions.slice(0, RECENT_SESSIONS_LIMIT)}
           hideCreate
         />

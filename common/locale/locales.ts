@@ -120,6 +120,7 @@ const no = {
     description: 'Oversikt over kommende og tidligere sessions.',
     session: 'Session',
     past: 'Tidligere sessions',
+    previous: 'Forrige session',
     all: 'Alle sessions',
     edit: 'Rediger session',
     delete: 'Slett session',
