@@ -6,10 +6,7 @@ import type { TimeEntry } from './timeEntry'
 export type EliminationType = 'single' | 'double'
 export type TournamentStatus = 'draft' | 'started'
 export type PreviewVisibility =
-  | 'visible'
-  | 'hide_tracks'
-  | 'groups_only'
-  | 'stats_only'
+  'visible' | 'hide_tracks' | 'groups_only' | 'stats_only'
 
 export function isPreviewVisibility(
   value: unknown

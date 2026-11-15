@@ -121,11 +121,11 @@ export default class AuthManager {
     } catch (error) {
       if (!error || typeof error !== 'object' || !('message' in error)) {
         console.error(new Date().toISOString(), socket.id, error)
-        throw new Error(loc.no.error.messages.unknown_error)
+        throw new Error(loc.no.error.messages.unknown_error, { cause: error })
       }
       await delay(AuthManager.LOGIN_DELAY)
       console.error(new Date().toISOString(), socket.id, error.message)
-      throw new Error(loc.no.error.messages.incorrect_login)
+      throw new Error(loc.no.error.messages.incorrect_login, { cause: error })
     }
   }
 

@@ -1,7 +1,7 @@
 import eslint from '@eslint/js'
-import importPlugin from 'eslint-plugin-import'
+import { importX } from 'eslint-plugin-import-x'
 import reactHooks from 'eslint-plugin-react-hooks'
-import reactRefresh from 'eslint-plugin-react-refresh'
+import { reactRefresh } from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 import globals from 'globals'
 import { configs as tseslint } from 'typescript-eslint'
@@ -17,10 +17,10 @@ export default defineConfig([
   eslint.configs.recommended,
   tseslint.strictTypeChecked,
   reactHooks.configs.flat.recommended,
-  reactRefresh.configs.recommended,
-  importPlugin.flatConfigs.recommended,
-  importPlugin.flatConfigs.react,
-  importPlugin.flatConfigs.typescript,
+  reactRefresh.configs.recommended(),
+  importX.flatConfigs.recommended,
+  importX.flatConfigs.react,
+  importX.flatConfigs.typescript,
   {
     languageOptions: {
       globals: {
@@ -36,7 +36,8 @@ export default defineConfig([
       '@typescript-eslint/no-confusing-void-expression': 'off',
       '@typescript-eslint/no-misused-promises': 'off',
       '@typescript-eslint/no-floating-promises': 'off',
-      'import/no-unresolved': 'off',
+      'import-x/no-unresolved': 'off',
+      'import-x/no-named-as-default-member': 'off',
       'no-restricted-imports': 'off',
       'react-hooks/exhaustive-deps': 'off',
       '@typescript-eslint/unbound-method': 'off',

@@ -72,8 +72,7 @@ export interface ClientToServerEvents {
     request: TournamentRequest,
     callback: (
       response:
-        | { success: true; details: TournamentDetails | null }
-        | ErrorResponse
+        { success: true; details: TournamentDetails | null } | ErrorResponse
     ) => void
   ) => void
   update_tournament: (
@@ -98,8 +97,7 @@ export interface ClientToServerEvents {
     request: TournamentRequest,
     callback: (
       response:
-        | { success: true; details: TournamentDetails | null }
-        | ErrorResponse
+        { success: true; details: TournamentDetails | null } | ErrorResponse
     ) => void
   ) => void
   rename_tournament_group: (

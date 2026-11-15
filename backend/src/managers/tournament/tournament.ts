@@ -121,7 +121,7 @@ function groupStandings(
     }))
     .sort((a, b) => winRatio(b) - winRatio(a))
   const standings: Standing[] = []
-  for (let start = 0; start < rows.length; ) {
+  for (let start = 0; start < rows.length;) {
     const tied = rows.filter(row => winRatio(row) === winRatio(rows[start]))
     for (const place of rankTiedPlayers(
       tied.map(row => row.user),
@@ -361,7 +361,7 @@ function overallStandings(
   )
   const rows: { user: string; rank: number }[] = []
   const needs: string[][] = []
-  for (let start = 0; start < ordered.length; ) {
+  for (let start = 0; start < ordered.length;) {
     const tied = ordered.filter(player => compare(ordered[start], player) === 0)
     const placement = score(ordered[start])
     const round = placementFixtures(state, placement)

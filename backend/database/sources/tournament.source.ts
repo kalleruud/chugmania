@@ -58,7 +58,7 @@ export default class TournamentSource {
     row: T['$inferInsert'] & SQLiteUpdateSetSource<T>,
     target: IndexColumn | IndexColumn[] = getTableColumns(table).id
   ): void {
-    const set: SQLiteUpdateSetSource<T> = { ...row }
+    const set = { ...row }
     Reflect.deleteProperty(set, 'id')
     db.insert(table).values(row).onConflictDoUpdate({ target, set }).run()
   }
