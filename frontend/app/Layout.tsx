@@ -1,12 +1,12 @@
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTimeEntryInput } from '@/contexts/TimeEntryInputContext'
 import { PlusIcon } from '@heroicons/react/24/solid'
+import { Hammer } from 'lucide-react'
 import { Outlet } from 'react-router'
 import LoginPage from './pages/LoginPage'
-import { Badge } from '@/components/ui/badge'
-import { Hammer } from 'lucide-react'
 
 export default function Layout() {
   const { isLoggedIn, isLoading } = useAuth()
@@ -34,7 +34,9 @@ export default function Layout() {
 
       <div className='fixed right-0 bottom-0 z-50 m-12 flex flex-col items-center gap-4'>
         {!import.meta.env.PROD && (
-          <Badge className='uppercase font-kh-interface tracking-wider tabular-nums ' variant="secondary" >
+          <Badge
+            className='font-kh-interface tracking-wider uppercase tabular-nums'
+            variant='secondary'>
             <Hammer />
             dev
           </Badge>
