@@ -120,6 +120,7 @@ const no = {
     description: 'Oversikt over kommende og tidligere sessions.',
     session: 'Session',
     past: 'Tidligere sessions',
+    previous: 'Forrige session',
     all: 'Alle sessions',
     edit: 'Rediger session',
     delete: 'Slett session',
@@ -525,6 +526,14 @@ const no = {
       'Her var det tomt...',
       'Har du gått feil?',
     ]),
+    showMore: 'Vis flere',
+    showLess: 'Vis færre',
+    groupBy: {
+      year: 'År',
+      month: 'Måned',
+      week: 'Uke',
+    },
+    week: (week: number, year: number) => `Uke ${week}, ${year}`,
   },
 } as const
 
