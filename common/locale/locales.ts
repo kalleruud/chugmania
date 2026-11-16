@@ -2,6 +2,7 @@ import type { EntryStatus } from '@common/models/entry'
 import type { ExportCsvRequest } from '@common/models/importCsv'
 import { MATCH_STAGE_CODES, type MatchStage } from '@common/models/match'
 import type { GapType } from '@common/models/timeEntry'
+import type { ChugMode } from '@common/utils/chug'
 import { getRandomItem } from '@common/utils/utils'
 import type {
   SessionResponse,
@@ -493,7 +494,14 @@ const no = {
   },
   chugs: {
     title: 'Chuggetider',
-    description: 'Raskeste chug per spiller.',
+    description: {
+      average: 'Snitt fra de siste 3 sessions per spiller.',
+      best: 'Raskeste chug per spiller.',
+    } as Record<ChugMode, string>,
+    mode: {
+      average: 'Snitt',
+      best: 'Beste',
+    } as Record<ChugMode, string>,
   },
   users: {
     title: 'Spillere',
