@@ -1,3 +1,4 @@
+import type { ChugMode } from '@common/models/chugTime'
 import type { EntryStatus } from '@common/models/entry'
 import type { ExportCsvRequest } from '@common/models/importCsv'
 import { MATCH_STAGE_CODES, type MatchStage } from '@common/models/match'
@@ -490,6 +491,14 @@ const no = {
       lagoon: 'Lagoon',
       stadium: 'Stadium',
     } as Record<string, string>,
+  },
+  chugs: {
+    title: 'Chuggetider',
+    description: 'Top degenerates',
+    mode: {
+      average: 'Snitt',
+      best: 'Beste',
+    } as Record<ChugMode, string>,
   },
   users: {
     title: 'Spillere',

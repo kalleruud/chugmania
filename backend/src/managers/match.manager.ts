@@ -13,6 +13,7 @@ import MatchSource from '../../database/sources/match.source'
 import TournamentSource from '../../database/sources/tournament.source'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
+import ChugTimeManager from './chugtime.manager'
 import RatingManager from './rating.manager'
 import TimeEntryManager from './timeEntry.manager'
 import TournamentManager from './tournament/tournament.manager'
@@ -114,6 +115,7 @@ export default class MatchManager {
     RatingManager.recalculate()
     broadcast('all_matches', await MatchManager.getAllMatches())
     broadcast('all_rankings', RatingManager.onGetRatings())
+    await ChugTimeManager.publish()
     TournamentManager.publish(socket.id)
 
     return { success: true }
@@ -138,6 +140,7 @@ export default class MatchManager {
     if (TournamentManager.editMatch(request)) {
       RatingManager.recalculate()
       broadcast('all_rankings', RatingManager.onGetRatings())
+      await ChugTimeManager.publish()
       broadcast('all_matches', await MatchManager.getAllMatches())
       broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
       TournamentManager.publish(socket.id)
@@ -172,6 +175,7 @@ export default class MatchManager {
     RatingManager.recalculate()
     broadcast('all_matches', await MatchManager.getAllMatches())
     broadcast('all_rankings', RatingManager.onGetRatings())
+    await ChugTimeManager.publish()
     TournamentManager.publish(socket.id)
 
     return { success: true }

@@ -4,6 +4,7 @@ import { Spinner } from '../components/ui/spinner'
 import Layout from './Layout'
 
 const AdminPage = lazy(() => import('./pages/AdminPage'))
+const ChugsPage = lazy(() => import('./pages/ChugsPage'))
 const Home = lazy(() => import('./pages/HomePage'))
 const SessionPage = lazy(() => import('./pages/SessionPage'))
 const SessionsPage = lazy(() => import('./pages/SessionsPage'))
@@ -24,6 +25,7 @@ export default function AppRoutes() {
       <Routes>
         <Route element={<Layout />}>
           <Route index element={<Home />} />
+          <Route path='chugs' element={<ChugsPage />} />
           <Route path='tracks' element={<TracksPage />} />
           <Route path='tracks/:id' element={<TrackPage />} />
           <Route path='users' element={<UsersPage />} />

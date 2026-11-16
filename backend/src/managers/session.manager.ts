@@ -14,6 +14,7 @@ import db, { database } from '../../database/database'
 import { sessions, sessionSignups, users } from '../../database/schema'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
+import ChugTimeManager from './chugtime.manager'
 import MatchManager from './match.manager'
 import RatingManager from './rating.manager'
 import SessionScheduler from './session.scheduler'
@@ -217,6 +218,7 @@ export default class SessionManager {
     }
     broadcast('all_sessions', await SessionManager.getAllSessions())
     broadcast('all_rankings', RatingManager.onGetRatings())
+    await ChugTimeManager.publish()
     TournamentManager.publish(socket.id)
     await SessionScheduler.start()
 

@@ -9,6 +9,7 @@ import AdminSource from '../../database/sources/admin.source'
 import { broadcast, type TypedSocket } from '../server'
 import CsvParser from '../utils/csv-parser'
 import AuthManager from './auth.manager'
+import ChugTimeManager from './chugtime.manager'
 import MatchManager from './match.manager'
 import RatingManager from './rating.manager'
 import SessionManager from './session.manager'
@@ -73,6 +74,7 @@ export default class AdminManager {
     broadcast('all_time_entries', timeEntries)
     broadcast('all_matches', matches)
     broadcast('all_rankings', RatingManager.onGetRatings())
+    await ChugTimeManager.publish()
     TournamentManager.publish(socket.id)
 
     return {

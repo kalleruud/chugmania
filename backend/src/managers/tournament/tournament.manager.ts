@@ -22,6 +22,7 @@ import TournamentSource from '../../../database/sources/tournament.source'
 import type { TypedSocket } from '../../server'
 import { broadcast, broadcastTournaments } from '../../server'
 import AuthManager from '../auth.manager'
+import ChugTimeManager from '../chugtime.manager'
 import MatchManager from '../match.manager'
 import RatingManager from '../rating.manager'
 import TimeEntryManager from '../timeEntry.manager'
@@ -416,6 +417,7 @@ export default class TournamentManager {
     )
     RatingManager.recalculate()
     broadcast('all_rankings', RatingManager.onGetRatings())
+    await ChugTimeManager.publish()
     broadcast('all_matches', await MatchManager.getAllMatches())
     broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
     TournamentManager.publish(socket.id)

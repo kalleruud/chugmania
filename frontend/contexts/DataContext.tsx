@@ -1,3 +1,4 @@
+import type { ChugTimes } from '@common/models/chugTime'
 import type { Match } from '@common/models/match'
 import type { Ranking } from '@common/models/ranking'
 import type { SessionWithSignups } from '@common/models/session'
@@ -30,6 +31,7 @@ type DataContextType = {
       sessions: SessionWithSignups[]
       matches: Match[]
       rankings: Ranking[]
+      chugTimes: ChugTimes
       tournaments: TournamentDetails[]
     }
   | {
@@ -40,6 +42,7 @@ type DataContextType = {
       sessions?: never
       matches?: never
       rankings?: never
+      chugTimes?: never
       tournaments?: never
     }
 )
@@ -89,6 +92,8 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
   const [matches, setMatches] = useState<DataContextType['matches']>(undefined)
   const [rankings, setRankings] =
     useState<DataContextType['rankings']>(undefined)
+  const [chugTimes, setChugTimes] =
+    useState<DataContextType['chugTimes']>(undefined)
   const [tournaments, setTournaments] =
     useState<DataContextType['tournaments']>(undefined)
 
@@ -133,6 +138,10 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
       setRankings(data)
     })
 
+    socket.on('all_chug_times', data => {
+      setChugTimes(data)
+    })
+
     return () => {
       socket.off('all_sessions')
       socket.off('all_time_entries')
@@ -140,6 +149,7 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
       socket.off('all_users')
       socket.off('all_matches')
       socket.off('all_rankings')
+      socket.off('all_chug_times')
       socket.off('all_tournaments')
     }
   }, [])
@@ -152,6 +162,7 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
       sessions === undefined ||
       matches === undefined ||
       rankings === undefined ||
+      chugTimes === undefined ||
       tournaments === undefined
     ) {
       return { isLoadingData: true, applyTournamentDetails }
@@ -165,6 +176,7 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
       users,
       matches,
       rankings,
+      chugTimes,
       tournaments,
     }
   }, [
@@ -174,6 +186,7 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
     sessions,
     matches,
     rankings,
+    chugTimes,
     tournaments,
     applyTournamentDetails,
   ])

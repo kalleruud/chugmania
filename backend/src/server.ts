@@ -17,6 +17,7 @@ import { createWebhookRouter } from './endpoints/webhook'
 import AdminManager from './managers/admin.manager'
 import ApiManager from './managers/api.manager'
 import AuthManager from './managers/auth.manager'
+import ChugTimeManager from './managers/chugtime.manager'
 import MatchManager from './managers/match.manager'
 import RatingManager from './managers/rating.manager'
 import SessionManager from './managers/session.manager'
@@ -72,6 +73,7 @@ async function emitData(socket: TypedSocket) {
   socket.emit('all_time_entries', timeEntries)
   socket.emit('all_matches', matches)
   socket.emit('all_rankings', RatingManager.onGetRatings())
+  socket.emit('all_chug_times', await ChugTimeManager.getChugTimes())
   TournamentSecurity.emit(socket, TournamentManager.getAllTournaments())
 }
 

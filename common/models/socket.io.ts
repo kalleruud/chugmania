@@ -5,6 +5,7 @@ import type {
   ImportCsvResponse,
 } from '@common/models/importCsv'
 import type { LoginRequest, RegisterRequest } from './auth'
+import type { ChugTimes } from './chugTime'
 import type {
   CreateMatchRequest,
   DeleteMatchRequest,
@@ -65,6 +66,7 @@ export interface ServerToClientEvents {
   all_sessions: (r: SessionWithSignups[]) => void
   all_matches: (r: Match[]) => void
   all_rankings: (r: Ranking[]) => void
+  all_chug_times: (r: ChugTimes) => void
 }
 
 export interface ClientToServerEvents {
