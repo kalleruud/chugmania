@@ -17,6 +17,9 @@ import { useData } from '@/contexts/DataContext'
 import loc from '@common/locale/locales'
 import { useParams } from 'react-router'
 
+const sectionClassName =
+  'flex flex-col gap-2 rounded-sm border bg-background p-2'
+
 export default function TrackPage() {
   const { id } = useParams()
   const { isLoggedIn, loggedInUser } = useAuth()
@@ -60,13 +63,15 @@ export default function TrackPage() {
 
       <TrackMedals track={track} />
 
-      <TimeEntryList
-        track={track.id}
-        entries={entries}
-        highlight={e => isLoggedIn && loggedInUser.id === e.user}
-      />
+      <div className={sectionClassName}>
+        <TimeEntryList
+          track={track.id}
+          entries={entries}
+          highlight={e => isLoggedIn && loggedInUser.id === e.user}
+        />
+      </div>
 
-      <div className='flex flex-col gap-2'>
+      <div className={sectionClassName}>
         <PageSubheader
           title={loc.no.match.title}
           description={filteredMatches.length.toString()}
