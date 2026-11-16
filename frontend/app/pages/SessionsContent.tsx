@@ -70,6 +70,7 @@ export function SessionsContent({
       />
       {!showLink && (
         <SessionsList
+          className='rounded-sm border bg-background p-2 pt-4'
           header={loc.no.session.past}
           sessions={archivedSessions}
           grouping={sessionGroupings[archiveGrouping]}
