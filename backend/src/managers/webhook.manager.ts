@@ -12,6 +12,7 @@ import WebhookSource, {
 import { isWebhookEvent } from '../models/webhook'
 import type { Event, Map, StartEvent } from '../models/webhook.generated'
 import { broadcast } from '../server'
+import ChugTimeManager from './chugtime.manager'
 import MatchManager from './match.manager'
 import TimeEntryManager from './timeEntry.manager'
 import TrackManager from './track.manager'
@@ -196,6 +197,7 @@ export default class WebhookManager {
       broadcast('all_time_entries', entries)
       broadcast('all_matches', matchRows)
     })
+    void ChugTimeManager.publish()
   }
 
   static receive(event: Event, rawPayload: string, now = new Date()): string {

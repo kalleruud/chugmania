@@ -14,6 +14,7 @@ import db, { database } from '../../database/database'
 import { users } from '../../database/schema'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
+import ChugTimeManager from './chugtime.manager'
 import RatingManager from './rating.manager'
 import SessionManager from './session.manager'
 import TimeEntryManager from './timeEntry.manager'
@@ -194,6 +195,7 @@ export default class UserManager {
     if (request.deletedAt !== undefined) {
       RatingManager.recalculate()
       broadcast('all_rankings', RatingManager.onGetRatings())
+      await ChugTimeManager.publish()
       broadcast('all_sessions', await SessionManager.getAllSessions())
     }
     if (request.deletedAt !== undefined || request.role !== undefined)
@@ -235,6 +237,7 @@ export default class UserManager {
     broadcast('all_users', await UserManager.getAllUsers())
     broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
     broadcast('all_rankings', RatingManager.onGetRatings())
+    await ChugTimeManager.publish()
     broadcast('all_sessions', await SessionManager.getAllSessions())
     TournamentManager.publish(socket.id)
 

@@ -1,8 +1,8 @@
+import type { ChugMode } from '@common/models/chugTime'
 import type { EntryStatus } from '@common/models/entry'
 import type { ExportCsvRequest } from '@common/models/importCsv'
 import { MATCH_STAGE_CODES, type MatchStage } from '@common/models/match'
 import type { GapType } from '@common/models/timeEntry'
-import type { ChugMode } from '@common/utils/chug'
 import { getRandomItem } from '@common/utils/utils'
 import type {
   SessionResponse,

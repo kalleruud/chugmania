@@ -15,6 +15,7 @@ import TournamentSource from '../../database/sources/tournament.source'
 import TransactionSource from '../../database/sources/transaction.source'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
+import ChugTimeManager from './chugtime.manager'
 import MatchManager from './match.manager'
 import RatingManager from './rating.manager'
 import SessionManager from './session.manager'
@@ -76,6 +77,7 @@ export default class TimeEntryManager {
       broadcast('all_sessions', await SessionManager.getAllSessions())
     }
     broadcast('all_rankings', RatingManager.onGetRatings())
+    await ChugTimeManager.publish()
     TournamentManager.publish(socket.id)
     broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
 
@@ -207,6 +209,7 @@ export default class TimeEntryManager {
     if (signupChanged)
       broadcast('all_sessions', await SessionManager.getAllSessions())
     broadcast('all_rankings', RatingManager.onGetRatings())
+    await ChugTimeManager.publish()
     broadcast('all_time_entries', await TimeEntryManager.getAllTimeEntries())
     if (tieBreaker) broadcast('all_matches', await MatchManager.getAllMatches())
     TournamentManager.publish(actor)

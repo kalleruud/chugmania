@@ -1,21 +1,19 @@
+import type { ChugMode } from '@common/models/chugTime'
 import type { EntryStatus } from '@common/models/entry'
-import { getChugLeaderboard, type ChugMode } from '@common/utils/chug'
 import { describe, expect, test } from 'bun:test'
+import ChugTimeManager from '../backend/src/managers/chugtime.manager'
 import MatchManager from '../backend/src/managers/match.manager'
 import SessionManager from '../backend/src/managers/session.manager'
 import TimeEntryManager from '../backend/src/managers/timeEntry.manager'
+import { broadcast } from '../backend/src/server'
 import { assertResponse, createTracks, createUser, login } from './utils'
 
-async function fetchChugLeaderboard(mode: ChugMode, players: string[]) {
-  const leaderboard = getChugLeaderboard(
-    await TimeEntryManager.getAllTimeEntries(),
-    await MatchManager.getAllMatches(),
-    await SessionManager.getAllSessions(),
-    mode
-  )
-  const durations = leaderboard.map(chug => chug.durationMs)
+async function fetchChugTimes(mode: ChugMode, players: string[]) {
+  const chugTimes = await ChugTimeManager.getChugTimes()
+  expect(broadcast).toHaveBeenLastCalledWith('all_chug_times', chugTimes)
+  const durations = chugTimes[mode].map(chug => chug.durationMs)
   expect(durations).toEqual(durations.toSorted((a, b) => a - b))
-  return leaderboard.filter(chug => players.includes(chug.user))
+  return chugTimes[mode].filter(chug => players.includes(chug.user))
 }
 
 describe('Chug leaderboard', () => {
@@ -69,12 +67,7 @@ describe('Chug leaderboard', () => {
     }).then(assertResponse)
 
     expect(
-      await fetchChugLeaderboard('best', [
-        'chug-a',
-        'chug-b',
-        'chug-c',
-        'chug-none',
-      ])
+      await fetchChugTimes('best', ['chug-a', 'chug-b', 'chug-c', 'chug-none'])
     ).toEqual([
       { user: 'chug-c', durationMs: 2900 },
       { user: 'chug-a', durationMs: 3100 },
@@ -139,11 +132,11 @@ describe('Chug leaderboard', () => {
       user2ChugDurationMs: null,
     }).then(assertResponse)
 
-    expect(await fetchChugLeaderboard('average', players)).toEqual([
+    expect(await fetchChugTimes('average', players)).toEqual([
       { user: 'chug-avg-c', durationMs: 4000 },
       { user: 'chug-avg-a', durationMs: 4500 },
     ])
-    expect(await fetchChugLeaderboard('best', players)).toEqual([
+    expect(await fetchChugTimes('best', players)).toEqual([
       { user: 'chug-avg-a', durationMs: 1000 },
       { user: 'chug-avg-b', durationMs: 2500 },
       { user: 'chug-avg-c', durationMs: 4000 },

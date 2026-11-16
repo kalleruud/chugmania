@@ -11,12 +11,8 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useAuth } from '@/contexts/AuthContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@common/locale/locales'
+import type { ChugMode, ChugTime } from '@common/models/chugTime'
 import type { GapType, LeaderboardEntryGap } from '@common/models/timeEntry'
-import {
-  getChugLeaderboard,
-  type ChugMode,
-  type ChugTime,
-} from '@common/utils/chug'
 import { Beer } from 'lucide-react'
 import { useState, type ComponentProps } from 'react'
 import { Link } from 'react-router'
@@ -41,7 +37,7 @@ export function ChugsContent({
   limit,
   showLink,
 }: Readonly<ChugsContentProps>) {
-  const { users, timeEntries, matches, sessions, isLoadingData } = useData()
+  const { users, chugTimes, isLoadingData } = useData()
   const { loggedInUser } = useAuth()
   const [gapType, setGapType] = useState<GapType>('interval')
   const [mode, setMode] = useState<ChugMode>('average')
@@ -68,7 +64,7 @@ export function ChugsContent({
     )
   }
 
-  const chugs = getChugLeaderboard(timeEntries, matches, sessions, mode)
+  const chugs = chugTimes[mode]
     .filter(chug => users.some(u => u.id === chug.user))
     .slice(0, limit)
 
