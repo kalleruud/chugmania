@@ -33,12 +33,26 @@ import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
 import { useTimeEntryInput } from '@/contexts/TimeEntryInputContext'
 import loc from '@common/locale/locales'
+import type { SessionWithSignups } from '@common/models/session'
+import { isUpcoming } from '@common/utils/date'
 import { isInactiveFinalReset } from '@common/utils/tournament'
 import { PencilIcon, PlusIcon, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useParams, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
 import { SubscribeButton } from './SessionsContent'
+
+function getDefaultTab(
+  session: SessionWithSignups,
+  hasTournament: boolean,
+  userId: string | undefined
+) {
+  const isSignedUp = session.signups.some(
+    s => s.user.id === userId && s.response !== 'no'
+  )
+  if (isUpcoming(session) || !isSignedUp) return loc.no.session.participants
+  return hasTournament ? loc.no.tournament.title : loc.no.session.session
+}
 
 export default function SessionPage() {
   const { id } = useParams()
@@ -73,7 +87,7 @@ export default function SessionPage() {
     )
   }
 
-  if (isLoadingData) {
+  if (isLoadingData || isLoading) {
     return (
       <div className='flex h-dvh w-full items-center-safe justify-center-safe'>
         <Spinner className='size-6' />
@@ -178,13 +192,11 @@ export default function SessionPage() {
         )}
       </div>
 
-      <SessionDatePoll session={session} />
-
       <Tabs
         defaultValue={
-          tournament || searchParams.get('tab') === 'tournament'
+          searchParams.get('tab') === 'tournament'
             ? loc.no.tournament.title
-            : loc.no.session.session
+            : getDefaultTab(session, !!tournament, loggedInUser?.id)
         }>
         <TabsList className='-mt-2 mb-2 w-full bg-background-secondary'>
           <TabsTrigger value={loc.no.session.session}>
@@ -197,7 +209,10 @@ export default function SessionPage() {
             {loc.no.tournament.title}
           </TabsTrigger>
         </TabsList>
-        <TabsContent value={loc.no.session.participants}>
+        <TabsContent
+          className='flex flex-col gap-4'
+          value={loc.no.session.participants}>
+          <SessionDatePoll session={session} />
           <SessionSignupPanel
             className='rounded-sm border bg-background p-2'
             disabled={isCancelled}

@@ -1,4 +1,3 @@
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import {
@@ -19,7 +18,7 @@ import type {
   SessionWithSignups,
 } from '@common/models/session'
 import { getUserFullName } from '@common/models/user'
-import { formatDateWithYear, formatTimeOnly } from '@common/utils/date'
+import { formatDateWithYear } from '@common/utils/date'
 import { CalendarDaysIcon, CheckIcon } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -47,9 +46,8 @@ export default function SessionDatePoll({
   const { loggedInUser, isLoggedIn } = useAuth()
   const canEdit = isLoggedIn && loggedInUser.role !== 'user'
   const options = (session.dateOptions ?? []).toSorted((a, b) => a - b)
-  const isOpen = !session.dateVotingClosed
 
-  if (options.length === 0) return undefined
+  if (options.length === 0 || session.dateVotingClosed) return undefined
 
   const myDates = (
     session.dateVotes.find(v => isLoggedIn && v.user.id === loggedInUser.id)
@@ -79,21 +77,14 @@ export default function SessionDatePoll({
     <div className='flex flex-col gap-2 rounded-sm border bg-background p-2'>
       <div className='flex items-center gap-2 px-2 pt-2'>
         <h3 className='flex-1'>{loc.no.session.datePoll.title}</h3>
-        <Badge variant={isOpen ? 'default' : 'secondary'}>
-          {isOpen
-            ? loc.no.session.datePoll.open
-            : loc.no.session.datePoll.closed}
-        </Badge>
         {canEdit && (
           <Button
             size='sm'
             variant='outline'
             onClick={() =>
-              editSession(socket, session.id, { dateVotingClosed: isOpen })
+              editSession(socket, session.id, { dateVotingClosed: true })
             }>
-            {isOpen
-              ? loc.no.session.datePoll.close
-              : loc.no.session.datePoll.reopen}
+            {loc.no.session.datePoll.close}
           </Button>
         )}
       </div>
@@ -114,16 +105,13 @@ export default function SessionDatePoll({
               variant={isSelected ? 'default' : 'outline'}
               aria-label={formatDateWithYear(new Date(date))}
               aria-pressed={isSelected}
-              disabled={!isLoggedIn || !isOpen}
+              disabled={!isLoggedIn}
               onClick={() => toggleVote(date)}>
               {isSelected && <CheckIcon />}
             </Button>
             <div className='flex min-w-0 flex-1 flex-col'>
               <span className='capitalize'>
-                {formatDateWithYear(new Date(date))}{' '}
-                <span className='text-muted-foreground'>
-                  {formatTimeOnly(new Date(date))}
-                </span>
+                {formatDateWithYear(new Date(date))}
               </span>
               <span className='truncate text-sm text-muted-foreground'>
                 {loc.no.session.datePoll.votes(dateVoters.length)}
@@ -177,6 +165,7 @@ export function DateOptionsDialog({
     })
     editSession(socket, session.id, {
       dateOptions: dates.length > 0 ? dates : null,
+      dateVotingClosed: false,
     })
     setOpen(false)
   }

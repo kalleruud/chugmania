@@ -18,6 +18,7 @@ import {
   sessions,
   sessionSignups,
   users,
+  type SessionResponse,
 } from '../../database/schema'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
@@ -61,6 +62,49 @@ export default class SessionManager {
       .run()
 
     return true
+  }
+
+  private static setSignup(
+    sessionId: string,
+    userId: string,
+    response: SessionResponse
+  ) {
+    const existingSignup = db
+      .select({ id: sessionSignups.id })
+      .from(sessionSignups)
+      .where(
+        and(
+          eq(sessionSignups.session, sessionId),
+          eq(sessionSignups.user, userId)
+        )
+      )
+      .get()
+
+    db.insert(sessionSignups)
+      .values({
+        id: existingSignup?.id,
+        session: sessionId,
+        user: userId,
+        response,
+      })
+      .onConflictDoUpdate({
+        target: [sessionSignups.id],
+        set: { response, deletedAt: null },
+      })
+      .run()
+  }
+
+  private static applyDateVotes(sessionId: string, date: number) {
+    const votes = db
+      .select()
+      .from(sessionDateVotes)
+      .where(eq(sessionDateVotes.session, sessionId))
+      .all()
+
+    for (const vote of votes) {
+      const response = vote.dates.includes(date) ? 'yes' : 'no'
+      SessionManager.setSignup(sessionId, vote.user, response)
+    }
   }
 
   public static async getAllSessions(): Promise<SessionWithSignups[]> {
@@ -214,6 +258,11 @@ export default class SessionManager {
     }
 
     const id = request.id
+    const chosenDate =
+      request.dateVotingClosed && request.date
+        ? new Date(request.date).getTime()
+        : undefined
+
     database.transaction(() => {
       const res = db
         .update(sessions)
@@ -234,6 +283,8 @@ export default class SessionManager {
 
       if (res.changes === 0) throw new Error('Update failed')
       if (request.deletedAt) TournamentManager.remove(session.id)
+      if (chosenDate && session.dateOptions?.includes(chosenDate))
+        SessionManager.applyDateVotes(session.id, chosenDate)
     })()
 
     console.debug(new Date().toISOString(), socket.id, 'Updated session', id)
@@ -269,13 +320,6 @@ export default class SessionManager {
     const isModerator = actor.role !== 'user'
     const isSelf = actor.id === request.user
 
-    const existingSignup = await db.query.sessionSignups.findFirst({
-      where: and(
-        eq(sessionSignups.session, request.session),
-        eq(sessionSignups.user, request.user)
-      ),
-    })
-
     if (!isModerator && !isSelf) {
       throw new Error(loc.no.error.messages.insufficient_permissions)
     }
@@ -292,18 +336,7 @@ export default class SessionManager {
       throw new Error(loc.no.session.errorMessages.no_edit_historical)
     }
 
-    db.insert(sessionSignups)
-      .values({
-        id: existingSignup?.id,
-        session: request.session,
-        user: request.user,
-        response: request.response,
-      })
-      .onConflictDoUpdate({
-        target: [sessionSignups.id],
-        set: { response: request.response, deletedAt: null },
-      })
-      .run()
+    SessionManager.setSignup(request.session, request.user, request.response)
 
     console.debug(
       new Date().toISOString(),

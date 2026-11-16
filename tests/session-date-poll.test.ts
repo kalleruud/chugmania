@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import assert from 'node:assert/strict'
+import type { SessionResponse } from '../backend/database/schema'
 import SessionManager from '../backend/src/managers/session.manager'
 import { broadcast, type TypedSocket } from '../backend/src/server'
 import { assertResponse, createUser, login } from './utils'
@@ -13,6 +14,7 @@ describe('Session date poll', () => {
   const owner = createUser('poll-owner', 'moderator')
   const alice = createUser('poll-alice')
   const bob = createUser('poll-bob')
+  const carol = createUser('poll-carol')
   let ownerSocket: TypedSocket
   let aliceSocket: TypedSocket
   let bobSocket: TypedSocket
@@ -29,6 +31,15 @@ describe('Session date poll', () => {
       session: sessionId,
       dates,
     })
+  }
+
+  function rsvp(user: string, response: SessionResponse) {
+    return SessionManager.onRsvpSession(ownerSocket, {
+      type: 'RsvpSessionRequest',
+      session: sessionId,
+      user,
+      response,
+    }).then(assertResponse)
   }
 
   function votersFor(
@@ -112,6 +123,9 @@ describe('Session date poll', () => {
   })
 
   test.serial('owner closes submissions and picks a date', async () => {
+    await rsvp(bob.id, 'yes')
+    await rsvp(carol.id, 'maybe')
+
     await SessionManager.onEditSession(ownerSocket, {
       type: 'EditSessionRequest',
       id: sessionId,
@@ -125,5 +139,14 @@ describe('Session date poll', () => {
     expect(session.dateVotingClosed).toBe(true)
     expect(session.date.getTime()).toBe(TUESDAY)
     expect(votersFor(session, TUESDAY)).toEqual(['poll-alice'])
+
+    const responses = Object.fromEntries(
+      session.signups.map(s => [s.user.firstName, s.response])
+    )
+    expect(responses).toEqual({
+      'poll-alice': 'yes',
+      'poll-bob': 'no',
+      'poll-carol': 'maybe',
+    })
   })
 })

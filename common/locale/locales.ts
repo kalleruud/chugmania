@@ -167,10 +167,7 @@ const no = {
       title: 'Finn dato',
       edit: 'Datoavstemning',
       description: 'Velg datoene spillerne kan stemme på.',
-      open: 'Åpen',
-      closed: 'Stengt',
       close: 'Steng',
-      reopen: 'Åpne igjen',
       choose: 'Velg',
       votes: (count: number) =>
         `${count} ${count === 1 ? 'stemme' : 'stemmer'}`,
