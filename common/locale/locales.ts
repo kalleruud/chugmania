@@ -491,6 +491,10 @@ const no = {
       stadium: 'Stadium',
     } as Record<string, string>,
   },
+  chugs: {
+    title: 'Chuggetider',
+    description: 'Raskeste chug per spiller.',
+  },
   users: {
     title: 'Spillere',
     description: 'Oversikt over alle spillere.',

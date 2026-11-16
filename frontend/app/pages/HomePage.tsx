@@ -6,6 +6,7 @@ import { useData } from '@/contexts/DataContext'
 import loc from '@common/locale/locales'
 import { isOngoing } from '@common/utils/date'
 import { ShieldExclamationIcon } from '@heroicons/react/24/solid'
+import { ChugsContent } from './ChugsContent'
 import { SessionsContent } from './SessionsContent'
 import { TracksContent } from './TracksContent'
 import { UsersContent } from './UsersContent'
@@ -38,6 +39,11 @@ export default function Home() {
 
       <SessionsContent
         className='rounded-sm border bg-background p-2'
+        showLink
+      />
+      <ChugsContent
+        className='rounded-sm border bg-background p-2'
+        limit={3}
         showLink
       />
       <TracksContent className='rounded-sm border bg-background p-2' showLink />
