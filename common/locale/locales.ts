@@ -494,10 +494,7 @@ const no = {
   },
   chugs: {
     title: 'Chuggetider',
-    description: {
-      average: 'Snitt fra de siste 3 sessions per spiller.',
-      best: 'Raskeste chug per spiller.',
-    } as Record<ChugMode, string>,
+    description: 'Top degenerates',
     mode: {
       average: 'Snitt',
       best: 'Beste',

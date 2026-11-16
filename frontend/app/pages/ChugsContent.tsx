@@ -49,7 +49,7 @@ export function ChugsContent({
   const header = (
     <PageHeader
       title={loc.no.chugs.title}
-      description={loc.no.chugs.description[mode]}
+      description={loc.no.chugs.description}
       to={showLink ? '/chugs' : undefined}
       Icon={Beer}
     />
