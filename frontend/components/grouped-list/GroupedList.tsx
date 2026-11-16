@@ -100,7 +100,7 @@ export default function GroupedList<T, P extends object>({
             <section key={group.key} className='flex flex-col gap-2'>
               {grouping && (
                 <PageSubheader
-                  className='sticky top-0 z-10 bg-black'
+                  className='sticky top-0 z-10 bg-background'
                   title={group.label}
                   image={group.icon}
                   description={group.description}
