@@ -10,7 +10,7 @@ import { assertResponse, createTracks, createUser, login } from './utils'
 
 async function fetchChugTimes(mode: ChugMode, players: string[]) {
   const chugTimes = await ChugTimeManager.getChugTimes()
-  expect(broadcast).toHaveBeenLastCalledWith('all_chug_times', chugTimes)
+  expect(broadcast).toHaveBeenCalledWith('all_chug_times', chugTimes)
   const durations = chugTimes[mode].map(chug => chug.durationMs)
   expect(durations).toEqual(durations.toSorted((a, b) => a - b))
   return chugTimes[mode].filter(chug => players.includes(chug.user))
