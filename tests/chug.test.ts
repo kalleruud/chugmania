@@ -1,3 +1,4 @@
+import type { EntryStatus } from '@common/models/entry'
 import { getChugLeaderboard } from '@common/utils/chug'
 import { describe, expect, test } from 'bun:test'
 import MatchManager from '../backend/src/managers/match.manager'
@@ -19,7 +20,12 @@ describe('Chug leaderboard', () => {
     for (const id of ['chug-a', 'chug-b', 'chug-c', 'chug-none'])
       createUser(id, 'user', id)
 
-    const entries = [
+    const entries: {
+      id: string
+      user: string
+      chugDurationMs: number | null
+      status?: EntryStatus
+    }[] = [
       { id: 'chug-a-slow', user: 'chug-a', chugDurationMs: 5200 },
       { id: 'chug-a-fast', user: 'chug-a', chugDurationMs: 3100 },
       { id: 'chug-b-only', user: 'chug-b', chugDurationMs: 4400 },
@@ -28,7 +34,13 @@ describe('Chug leaderboard', () => {
         id: 'chug-c-cancelled',
         user: 'chug-c',
         chugDurationMs: 1000,
-        status: 'cancelled' as const,
+        status: 'cancelled',
+      },
+      {
+        id: 'chug-b-draft',
+        user: 'chug-b',
+        chugDurationMs: 900,
+        status: 'draft',
       },
     ]
     for (const entry of entries)

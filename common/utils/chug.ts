@@ -46,8 +46,7 @@ export function getChugLeaderboard(
     timeEntries,
     matches
   )) {
-    if (!user || !durationMs || durationMs <= 0 || status === 'cancelled')
-      continue
+    if (!user || !durationMs || status !== 'completed') continue
     const current = best.get(user)
     if (current === undefined || durationMs < current)
       best.set(user, durationMs)
