@@ -36,7 +36,7 @@ const breakpoints = {
   xl: 640,
 }
 
-function PositionBadgePart({
+export function PositionBadgePart({
   position,
   status,
 }: Readonly<{
@@ -132,7 +132,7 @@ export function Marker({
   )
 }
 
-function TimePart({
+export function TimePart({
   duration,
   status,
 }: Readonly<{ duration?: number | null; status: TimeEntry['status'] }>) {
@@ -154,7 +154,7 @@ function TimePart({
   )
 }
 
-function GapPart({
+export function GapPart({
   gap,
   gapType = 'leader',
 }: Readonly<{
