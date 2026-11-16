@@ -18,7 +18,7 @@ import loc from '@common/locale/locales'
 import { useParams } from 'react-router'
 
 const sectionClassName =
-  'flex flex-col gap-2 rounded-sm border bg-background p-2'
+  'flex flex-col gap-2 rounded-sm border bg-background p-2 pt-4'
 
 export default function TrackPage() {
   const { id } = useParams()
