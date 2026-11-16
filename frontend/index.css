@@ -50,6 +50,10 @@
 }
 
 @theme inline {
+  --color-medal-author: #00fc15;
+  --color-medal-gold: #bbb149;
+  --color-medal-silver: #828d97;
+  --color-medal-bronze: #8e623e;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);

@@ -1,7 +1,9 @@
+import type { ReactNode } from 'react'
+
 export type Grouping<T> = {
   key: (item: T) => string
   label: (key: string) => string
-  icon?: (key: string) => string | undefined
+  icon?: (key: string) => ReactNode
   description?: (key: string) => string | undefined
   compare?: (a: string, b: string) => number
 }
@@ -9,7 +11,7 @@ export type Grouping<T> = {
 export type Group<T> = {
   key: string
   label: string
-  icon?: string
+  icon?: ReactNode
   description?: string
   items: T[]
 }

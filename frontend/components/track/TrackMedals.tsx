@@ -1,12 +1,8 @@
-import loc from '@common/locale/locales'
 import type { Track } from '@common/models/track'
 import type { ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
-import {
-  formatMedalTime,
-  medalIcon,
-  medalTimes,
-} from '../timeentries/timeEntry.groupings'
+import { formatMedalTime, medalTimes } from '../timeentries/timeEntry.groupings'
+import MedalIcon from './MedalIcon'
 
 type TrackMedalsProps = {
   track: Track
@@ -28,11 +24,7 @@ export default function TrackMedals({
         <div
           key={medal}
           className='flex items-center justify-center gap-2 py-1'>
-          <img
-            src={medalIcon(medal)}
-            alt={loc.no.timeEntry.medals[medal]}
-            className='size-5 shrink-0'
-          />
+          <MedalIcon medal={medal} />
           <span className='font-f1-italic text-sm uppercase tabular-nums'>
             {formatMedalTime(ms)}
           </span>

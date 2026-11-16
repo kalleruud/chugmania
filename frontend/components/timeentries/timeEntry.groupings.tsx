@@ -3,6 +3,7 @@ import type { TimeEntry } from '@common/models/timeEntry'
 import type { Track } from '@common/models/track'
 import { formatTime } from '@common/utils/time'
 import type { Grouping } from '../grouped-list/grouping'
+import MedalIcon from '../track/MedalIcon'
 
 export type Medal = 'author' | 'gold' | 'silver' | 'bronze'
 
@@ -21,10 +22,6 @@ export function medalTimes(track: Track): [Medal, number][] {
 
 export function formatMedalTime(ms: number): string {
   return formatTime(ms).replace(/^0/, '')
-}
-
-export function medalIcon(medal: Medal): string {
-  return `/medals/${medal}.svg`
 }
 
 function toMedal(key: string): Medal | undefined {
@@ -51,7 +48,7 @@ export function byMedal(track: Track): Grouping<TimeEntry> {
     label: key => loc.no.timeEntry.medals[toMedal(key) ?? NO_MEDAL],
     icon: key => {
       const medal = toMedal(key)
-      return medal && medalIcon(medal)
+      return medal && <MedalIcon medal={medal} />
     },
     description: key => {
       const time = medals.find(([medal]) => medal === key)?.[1]

@@ -102,7 +102,7 @@ export default function GroupedList<T, P extends object>({
                 <PageSubheader
                   className='sticky top-0 z-10 bg-background'
                   title={group.label}
-                  image={group.icon}
+                  icon={group.icon}
                   description={group.description}
                 />
               )}
