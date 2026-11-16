@@ -16,6 +16,7 @@
 
 ## Writing Tests
 
+- Never write tests for frontend code; test backend behavior only.
 - Follow [tests/tournament.test.ts](tests/tournament.test.ts); place new tests in `tests/<feature>.test.ts`.
 - Use `bun:test` (`describe`, `test`, `expect`) and `node:assert/strict` for narrowing and rejected operations. Do not introduce another test framework.
 - Write behavior-focused integration scenarios that call real manager request handlers and verify the returned or fetched state. Arrange data, perform the action, then assert the outcome.
