@@ -1,5 +1,6 @@
 import { useData } from '@/contexts/DataContext'
 import { useMatch } from '@/hooks/useMatch'
+import { getGoogleMapsUrl } from '@/lib/maps'
 import loc from '@common/locale/locales'
 import type { UserInfo } from '@common/models/user'
 import { getUserFullName } from '@common/models/user'
@@ -29,6 +30,7 @@ export default function MatchCard({
       ? null
       : tracks?.find(track => track.id === match.track)
   const session = sessions?.find(session => session.id === match.session)
+  const sessionMapsUrl = getGoogleMapsUrl(session?.location)
   const isCancelled = match.status === 'cancelled' && !match.tournament?.awarded
   const isCompleted =
     match.status === 'completed' || !!match.tournament?.awarded
@@ -87,7 +89,18 @@ export default function MatchCard({
           <p className='text-sm text-muted-foreground'>
             {session.name} · {formatDateWithYear(session.date)} ·{' '}
             {formatTimeOnly(session.date)}
-            {session.location && ` · ${session.location}`}
+            {sessionMapsUrl && (
+              <>
+                {' · '}
+                <a
+                  href={sessionMapsUrl}
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  className='rounded-sm hover:underline focus-visible:outline-2 focus-visible:outline-primary'>
+                  {session.location}
+                </a>
+              </>
+            )}
           </p>
         )}
         <dl className='grid gap-4 sm:grid-cols-2'>
