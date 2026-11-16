@@ -79,7 +79,8 @@ export default function SessionsList({
         grouping={grouping}
         groupLimit={groupLimit}
         totalLimit={totalLimit}
-        rowProps={() => ({
+        rowProps={session => ({
+          item: session,
           className: 'rounded-sm bg-background-secondary p-4',
         })}
       />

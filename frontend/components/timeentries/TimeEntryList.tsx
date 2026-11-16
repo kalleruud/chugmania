@@ -1,4 +1,5 @@
 import { useAuth } from '@/contexts/AuthContext'
+import { useData } from '@/contexts/DataContext'
 import { useTimeEntryInput } from '@/contexts/TimeEntryInputContext'
 import loc from '@common/locale/locales'
 import type {
@@ -9,9 +10,11 @@ import type {
 import { PlusIcon } from '@heroicons/react/24/solid'
 import { Asterisk } from 'lucide-react'
 import { useState } from 'react'
+import GroupedList from '../grouped-list/GroupedList'
 import { Button } from '../ui/button'
 import { Empty } from '../ui/empty'
 import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group'
+import { byMedal, hasMedalTimes } from './timeEntry.groupings'
 import TimeEntryRow, { Marker } from './TimeEntryRow'
 
 type FilterType = 'all' | 'best' | 'latest'
@@ -133,11 +136,15 @@ export function TimeEntryList({
   filter = 'best',
 }: Readonly<TimeEntryListProps>) {
   const { isLoggedIn } = useAuth()
+  const { tracks } = useData()
   const [gapType, setGapType] = useState<GapType>('interval')
   const [filterType, setFilterType] = useState<FilterType>(filter)
   const { open } = useTimeEntryInput()
 
   const filteredEntries = filterEntries(entries, filterType)
+  const trackInfo = tracks?.find(t => t.id === track)
+  const grouping =
+    trackInfo && hasMedalTimes(trackInfo) ? byMedal(trackInfo) : undefined
 
   if (filteredEntries.length === 0) {
     return (
@@ -195,30 +202,33 @@ export function TimeEntryList({
         </ToggleGroup>
       </div>
 
-      <div className='flex flex-col rounded-sm bg-background-secondary'>
-        {filteredEntries.map((entry, i) => {
-          return (
-            <TimeEntryRow
-              key={entry.id}
-              item={entry}
-              required={entry.required === true}
-              gap={getGap(
-                i + 1,
-                entry,
-                gapType === 'interval' ? filteredEntries.at(i - 1) : undefined,
-                gapType === 'leader' ? filteredEntries.at(0) : undefined
-              )}
-              onClick={() => open(entry)}
-              className='px-4 py-3'
-              gapType={gapType}
-              onChangeGapType={() =>
-                setGapType(gapType === 'leader' ? 'interval' : 'leader')
-              }
-              highlight={highlight?.(entry)}
-            />
-          )
-        })}
-      </div>
+      <GroupedList
+        items={filteredEntries}
+        Row={TimeEntryRow}
+        getKey={entry => entry.id}
+        grouping={grouping}
+        totalLimit={10}
+        itemsClassName='gap-0 rounded-sm bg-background-secondary'
+        rowProps={entry => {
+          const i = filteredEntries.indexOf(entry)
+          return {
+            item: entry,
+            required: entry.required === true,
+            gap: getGap(
+              i + 1,
+              entry,
+              gapType === 'interval' ? filteredEntries.at(i - 1) : undefined,
+              gapType === 'leader' ? filteredEntries.at(0) : undefined
+            ),
+            onClick: () => open(entry),
+            className: 'px-4 py-3',
+            gapType,
+            onChangeGapType: () =>
+              setGapType(gapType === 'leader' ? 'interval' : 'leader'),
+            highlight: highlight?.(entry),
+          }
+        }}
+      />
 
       <div className='flex items-center gap-4'>
         {isLoggedIn && (

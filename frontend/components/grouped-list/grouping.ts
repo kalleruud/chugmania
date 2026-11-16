@@ -1,11 +1,18 @@
+import type { ReactNode } from 'react'
+
 export type Grouping<T> = {
   key: (item: T) => string
   label: (key: string) => string
+  icon?: (key: string) => ReactNode
+  description?: (key: string) => string | undefined
+  compare?: (a: string, b: string) => number
 }
 
 export type Group<T> = {
   key: string
   label: string
+  icon?: ReactNode
+  description?: string
   items: T[]
 }
 
@@ -17,13 +24,22 @@ export function groupItems<T>(items: T[], grouping: Grouping<T>): Group<T>[] {
     const group = groups.get(key) ?? {
       key,
       label: grouping.label(key),
+      icon: grouping.icon?.(key),
       items: [],
     }
     group.items.push(item)
     groups.set(key, group)
   }
 
-  return [...groups.values()]
+  const result = [...groups.values()].map(group => ({
+    ...group,
+    description: grouping.description
+      ? grouping.description(group.key)
+      : group.items.length.toString(),
+  }))
+  const { compare } = grouping
+  if (!compare) return result
+  return result.toSorted((a, b) => compare(a.key, b.key))
 }
 
 export type VisibleGroup<T> = {

@@ -1,5 +1,5 @@
 import * as HeroIcons from '@heroicons/react/24/solid'
-import type { ComponentProps } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 import { Link } from 'react-router'
 import { twMerge } from 'tailwind-merge'
 
@@ -58,9 +58,10 @@ export function PageHeader({
 export function PageSubheader({
   title,
   description,
+  icon,
   className,
   ...props
-}: Readonly<Omit<PageHeaderProps, 'icon'>>) {
+}: Readonly<Omit<PageHeaderProps, 'Icon'> & { icon?: ReactNode }>) {
   return (
     <div
       className={twMerge(
@@ -68,7 +69,10 @@ export function PageSubheader({
         className
       )}
       {...props}>
-      <p>{title}</p>
+      <div className='flex items-center gap-2'>
+        {icon}
+        <p>{title}</p>
+      </div>
       {description && <p className='opacity-50'>{description}</p>}
     </div>
   )

@@ -11,6 +11,8 @@
 
 ## Testing in Development Mode
 
+- Before starting the app, check whether it is already running (for example `curl -s localhost:$PORT`, with `PORT` from `.env`) and use that instance. Start a new one only when nothing is listening.
+- The development database always contains realistic test data. Use it as the base for testing, and add, change, or remove records as a scenario needs instead of seeding a fresh database.
 - When `NODE_ENV` is not `production`, server startup creates the admin `admin@chugmania.dev` with password `chugmania` if it does not exist. Use it to log in and test the running app, including `/admin`.
 - A `Development` label above the `+` button confirms you are on a development build.
 

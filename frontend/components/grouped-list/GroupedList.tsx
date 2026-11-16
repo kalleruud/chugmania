@@ -1,20 +1,21 @@
 import loc from '@common/locale/locales'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { useState, type ComponentType } from 'react'
+import { twMerge } from 'tailwind-merge'
 import { PageSubheader } from '../PageHeader'
-import type { BaseRowProps } from '../row/RowProps'
 import { Button } from '../ui/button'
 import { Empty } from '../ui/empty'
 import { groupItems, limitGroups, type Group, type Grouping } from './grouping'
 
-type GroupedListProps<T> = {
+type GroupedListProps<T, P> = {
   items: T[]
-  Row: ComponentType<BaseRowProps<T>>
+  Row: ComponentType<P>
+  rowProps: (item: T) => P
   getKey: (item: T) => string
   grouping?: Grouping<T>
   groupLimit?: number
   totalLimit?: number
-  rowProps?: (item: T) => Partial<BaseRowProps<T>>
+  itemsClassName?: string
 }
 
 const UNGROUPED_KEY = ''
@@ -56,15 +57,16 @@ function LimitButtons({
   )
 }
 
-export default function GroupedList<T>({
+export default function GroupedList<T, P extends object>({
   items,
   Row,
+  rowProps,
   getKey,
   grouping,
   groupLimit,
   totalLimit,
-  rowProps,
-}: Readonly<GroupedListProps<T>>) {
+  itemsClassName,
+}: Readonly<GroupedListProps<T, P>>) {
   const [groupCounts, setGroupCounts] = useState<
     Partial<Record<string, number>>
   >({})
@@ -98,14 +100,17 @@ export default function GroupedList<T>({
             <section key={group.key} className='flex flex-col gap-2'>
               {grouping && (
                 <PageSubheader
-                  className='sticky top-0 z-10 bg-black'
+                  className='sticky top-0 z-10 bg-background'
                   title={group.label}
-                  description={group.items.length.toString()}
+                  icon={group.icon}
+                  description={group.description}
                 />
               )}
-              {group.items.slice(0, shown).map(item => (
-                <Row key={getKey(item)} item={item} {...rowProps?.(item)} />
-              ))}
+              <div className={twMerge('flex flex-col gap-2', itemsClassName)}>
+                {group.items.slice(0, shown).map(item => (
+                  <Row key={getKey(item)} {...rowProps(item)} />
+                ))}
+              </div>
               <LimitButtons
                 onShowMore={
                   groupLimit !== undefined && canShowMore

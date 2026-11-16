@@ -2,6 +2,7 @@ import MatchList from '@/components/match/MatchList'
 import { PageSubheader } from '@/components/PageHeader'
 import { TimeEntryList } from '@/components/timeentries/TimeEntryList'
 import TrackCard from '@/components/track/TrackCard'
+import TrackMedals from '@/components/track/TrackMedals'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -15,6 +16,9 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@common/locale/locales'
 import { useParams } from 'react-router'
+
+const sectionClassName =
+  'flex flex-col gap-2 rounded-sm border bg-background p-2 pt-4'
 
 export default function TrackPage() {
   const { id } = useParams()
@@ -57,13 +61,17 @@ export default function TrackPage() {
 
       <TrackCard track={track} />
 
-      <TimeEntryList
-        track={track.id}
-        entries={entries}
-        highlight={e => isLoggedIn && loggedInUser.id === e.user}
-      />
+      <TrackMedals track={track} />
 
-      <div className='flex flex-col gap-2'>
+      <div className={sectionClassName}>
+        <TimeEntryList
+          track={track.id}
+          entries={entries}
+          highlight={e => isLoggedIn && loggedInUser.id === e.user}
+        />
+      </div>
+
+      <div className={sectionClassName}>
         <PageSubheader
           title={loc.no.match.title}
           description={filteredMatches.length.toString()}

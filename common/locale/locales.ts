@@ -417,6 +417,13 @@ const no = {
     title: 'Rundetider',
     receivedUpdate: 'Rundetidene ble oppdatert',
     dnf: 'DNF',
+    medals: {
+      author: 'Author',
+      gold: 'Gull',
+      silver: 'Sølv',
+      bronze: 'Bronse',
+      none: 'Ingen medalje',
+    },
     gap: {
       leader: 'Leader',
       interval: 'Interval',
