@@ -68,7 +68,7 @@ The `/sessions` route shows upcoming and past events. Authorized users may creat
 - `PORT` (optional): Server port. Defaults to `6996`; Codex worktrees generate a random `69xx` port.
 - `ORIGIN` (required in production): Allowed frontend origin for CORS.
 - `TOKEN_EXPIRY_H` (optional): Override default 1-hour auth token expiry.
-- `VITE_ALLOW_SIGNUPS` (optional): Set to `true` to show the public `Registrer` button on the login page. Keep it `false` unless you intentionally want open registration.
+- `VITE_ALLOW_SIGNUPS` (optional): Set to `true` in the server's runtime environment to enable the public `Registrer` button on the login page. It defaults to disabled. Recreate the container with the new environment to apply a change.
 - `.env.example` also exposes `SECRET` for local defaults—never commit secrets.
 
 ## Docker

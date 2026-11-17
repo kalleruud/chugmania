@@ -111,6 +111,12 @@ app.get('/api/ping', (_req, res) => {
   res.send(pong)
 })
 
+app.get('/api/registration', (_req, res) => {
+  res.set('Cache-Control', 'no-store').json({
+    allowSignups: process.env.VITE_ALLOW_SIGNUPS === 'true',
+  })
+})
+
 if (!isProduction) {
   await UserManager.ensureDevAdmin()
   const { createServer: createViteServer } = await import('vite')

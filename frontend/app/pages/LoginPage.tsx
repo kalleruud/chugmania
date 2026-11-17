@@ -21,13 +21,39 @@ import { Spinner } from '@/components/ui/spinner'
 import UserForm from '@/components/user/UserForm'
 import { useAuth } from '@/contexts/AuthContext'
 import loc from '@common/locale/locales'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 export default function LoginPage() {
   const { isLoading } = useAuth()
   const [openRegister, setOpenRegister] = useState(false)
 
-  const allowSignups = import.meta.env.VITE_ALLOW_SIGNUPS === 'true'
+  const [allowSignups, setAllowSignups] = useState(false)
+
+  useEffect(() => {
+    const controller = new AbortController()
+
+    async function loadRegistrationSetting() {
+      const response = await fetch('/api/registration', {
+        signal: controller.signal,
+      })
+      if (!response.ok) return
+
+      const settings: unknown = await response.json()
+      if (
+        !controller.signal.aborted &&
+        typeof settings === 'object' &&
+        settings !== null &&
+        'allowSignups' in settings
+      ) {
+        setAllowSignups(settings.allowSignups === true)
+      }
+    }
+
+    void loadRegistrationSetting().catch(() => {
+      if (!controller.signal.aborted) setAllowSignups(false)
+    })
+    return () => controller.abort()
+  }, [])
 
   return (
     <main className='min-h-dvh-safe bg-background text-foreground'>
@@ -49,7 +75,9 @@ export default function LoginPage() {
               <DialogTrigger asChild>
                 <Button
                   variant='outline'
-                  title={loc.no.user.register.notEnabled}
+                  title={
+                    allowSignups ? undefined : loc.no.user.register.notEnabled
+                  }
                   disabled={!allowSignups}>
                   {loc.no.user.register.description}
                 </Button>
