@@ -81,7 +81,26 @@ export const sessions = sqliteTable('sessions', {
     .$type<SessionStatus>()
     .notNull()
     .$default(() => 'confirmed'),
+  dateOptions: text('date_options', { mode: 'json' }).$type<number[]>(),
+  dateVotingClosed: integer('date_voting_closed', { mode: 'boolean' })
+    .notNull()
+    .default(false),
 })
+
+export const sessionDateVotes = sqliteTable(
+  'session_date_votes',
+  {
+    ...metadata,
+    session: text()
+      .notNull()
+      .references(() => sessions.id, { onDelete: 'cascade' }),
+    user: text()
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    dates: text({ mode: 'json' }).$type<number[]>().notNull(),
+  },
+  table => [uniqueIndex('session_date_vote').on(table.session, table.user)]
+)
 
 export const sessionSignups = sqliteTable('session_signups', {
   ...metadata,

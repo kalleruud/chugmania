@@ -4,6 +4,8 @@ import {
   isDeleteSessionRequest,
   isEditSessionRequest,
   isRsvpSessionRequest,
+  isVoteSessionDateRequest,
+  type SessionDateVote,
   type SessionSignup,
   type SessionWithSignups,
 } from '@common/models/session'
@@ -12,6 +14,7 @@ import { isPast } from '@common/utils/date'
 import { and, asc, desc, eq, isNull } from 'drizzle-orm'
 import db, { database } from '../../database/database'
 import { sessions, sessionSignups, users } from '../../database/schema'
+import SessionSource from '../../database/sources/session.source'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import ChugTimeManager from './chugtime.manager'
@@ -75,6 +78,7 @@ export default class SessionManager {
       sessionRows.map(async session => ({
         ...session,
         signups: await SessionManager.getSessionSignups(session.id),
+        dateVotes: SessionManager.getSessionDateVotes(session.id),
       }))
     )
   }
@@ -97,7 +101,15 @@ export default class SessionManager {
     return {
       ...session,
       signups: await SessionManager.getSessionSignups(session.id),
+      dateVotes: SessionManager.getSessionDateVotes(session.id),
     }
+  }
+
+  public static getSessionDateVotes(sessionId: string): SessionDateVote[] {
+    return SessionSource.getDateVotes(sessionId).map(row => ({
+      dates: row.dates,
+      user: UserManager.toUserInfo(row.user).userInfo,
+    }))
   }
 
   public static async getSessionSignups(
@@ -189,6 +201,11 @@ export default class SessionManager {
     }
 
     const id = request.id
+    const chosenDate =
+      request.dateVotingClosed && request.date
+        ? new Date(request.date).getTime()
+        : undefined
+
     database.transaction(() => {
       const res = db
         .update(sessions)
@@ -197,6 +214,8 @@ export default class SessionManager {
           description: request.description,
           location: request.location,
           status: request.status,
+          dateOptions: request.dateOptions,
+          dateVotingClosed: request.dateVotingClosed,
           date: request.date ? new Date(request.date) : undefined,
           deletedAt: request.deletedAt
             ? new Date(request.deletedAt)
@@ -207,6 +226,8 @@ export default class SessionManager {
 
       if (res.changes === 0) throw new Error('Update failed')
       if (request.deletedAt) TournamentManager.remove(session.id)
+      if (chosenDate && session.dateOptions?.includes(chosenDate))
+        SessionSource.applyDateVotes(session.id, chosenDate)
     })()
 
     console.debug(new Date().toISOString(), socket.id, 'Updated session', id)
@@ -242,13 +263,6 @@ export default class SessionManager {
     const isModerator = actor.role !== 'user'
     const isSelf = actor.id === request.user
 
-    const existingSignup = await db.query.sessionSignups.findFirst({
-      where: and(
-        eq(sessionSignups.session, request.session),
-        eq(sessionSignups.user, request.user)
-      ),
-    })
-
     if (!isModerator && !isSelf) {
       throw new Error(loc.no.error.messages.insufficient_permissions)
     }
@@ -265,18 +279,7 @@ export default class SessionManager {
       throw new Error(loc.no.session.errorMessages.no_edit_historical)
     }
 
-    db.insert(sessionSignups)
-      .values({
-        id: existingSignup?.id,
-        session: request.session,
-        user: request.user,
-        response: request.response,
-      })
-      .onConflictDoUpdate({
-        target: [sessionSignups.id],
-        set: { response: request.response, deletedAt: null },
-      })
-      .run()
+    SessionSource.setSignup(request.session, request.user, request.response)
 
     console.debug(
       new Date().toISOString(),
@@ -287,6 +290,49 @@ export default class SessionManager {
 
     broadcast('all_sessions', await SessionManager.getAllSessions())
     TournamentManager.publish(socket.id)
+
+    return { success: true }
+  }
+
+  static async onVoteSessionDate(
+    socket: TypedSocket,
+    request: EventReq<'vote_session_date'>
+  ): Promise<EventRes<'vote_session_date'>> {
+    if (!isVoteSessionDateRequest(request)) {
+      throw new Error(
+        loc.no.error.messages.invalid_request('VoteSessionDateRequest')
+      )
+    }
+
+    const actor = await AuthManager.checkAuth(socket)
+
+    const session = SessionSource.getActiveById(request.session)
+
+    if (!session?.dateOptions?.length) {
+      throw new Error(loc.no.error.messages.not_in_db(request.session))
+    }
+
+    if (session.dateVotingClosed) {
+      throw new Error(loc.no.session.datePoll.closedError)
+    }
+
+    const options = new Set(session.dateOptions)
+    if (!request.dates.every(date => options.has(date))) {
+      throw new Error(
+        loc.no.error.messages.invalid_request('VoteSessionDateRequest')
+      )
+    }
+
+    SessionSource.setDateVote(session.id, actor.id, [...new Set(request.dates)])
+
+    console.debug(
+      new Date().toISOString(),
+      socket.id,
+      'Voted for session dates',
+      session.id
+    )
+
+    broadcast('all_sessions', await SessionManager.getAllSessions())
 
     return { success: true }
   }

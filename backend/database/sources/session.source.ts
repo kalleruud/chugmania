@@ -1,6 +1,12 @@
 import { and, asc, desc, eq, gt, gte, isNull, lte, ne } from 'drizzle-orm'
 import db from '../database'
-import { sessions } from '../schema'
+import {
+  sessionDateVotes,
+  sessions,
+  sessionSignups,
+  users,
+  type SessionResponse,
+} from '../schema'
 
 export default class SessionSource {
   static findStartedWithin(now: Date, earliest: Date, id?: string) {
@@ -32,5 +38,73 @@ export default class SessionSource {
       )
       .orderBy(asc(sessions.date), asc(sessions.id))
       .get()
+  }
+
+  static getActiveById(id: string) {
+    return db
+      .select()
+      .from(sessions)
+      .where(and(eq(sessions.id, id), isNull(sessions.deletedAt)))
+      .get()
+  }
+
+  static setSignup(
+    sessionId: string,
+    userId: string,
+    response: SessionResponse
+  ) {
+    const existing = db
+      .select({ id: sessionSignups.id })
+      .from(sessionSignups)
+      .where(
+        and(
+          eq(sessionSignups.session, sessionId),
+          eq(sessionSignups.user, userId)
+        )
+      )
+      .get()
+
+    db.insert(sessionSignups)
+      .values({ id: existing?.id, session: sessionId, user: userId, response })
+      .onConflictDoUpdate({
+        target: [sessionSignups.id],
+        set: { response, deletedAt: null },
+      })
+      .run()
+  }
+
+  static getDateVotes(sessionId: string) {
+    return db
+      .select({ dates: sessionDateVotes.dates, user: users })
+      .from(sessionDateVotes)
+      .innerJoin(users, eq(sessionDateVotes.user, users.id))
+      .where(
+        and(eq(sessionDateVotes.session, sessionId), isNull(users.deletedAt))
+      )
+      .orderBy(asc(sessionDateVotes.createdAt))
+      .all()
+  }
+
+  static setDateVote(sessionId: string, userId: string, dates: number[]) {
+    db.insert(sessionDateVotes)
+      .values({ session: sessionId, user: userId, dates })
+      .onConflictDoUpdate({
+        target: [sessionDateVotes.session, sessionDateVotes.user],
+        set: { dates },
+      })
+      .run()
+  }
+
+  static applyDateVotes(sessionId: string, date: number) {
+    const votes = db
+      .select()
+      .from(sessionDateVotes)
+      .where(eq(sessionDateVotes.session, sessionId))
+      .all()
+
+    for (const vote of votes) {
+      const response = vote.dates.includes(date) ? 'yes' : 'no'
+      SessionSource.setSignup(sessionId, vote.user, response)
+    }
   }
 }
