@@ -48,6 +48,16 @@ export default class SessionSource {
       .get()
   }
 
+  static update(id: string, changes: Partial<typeof sessions.$inferInsert>) {
+    const updated = db
+      .update(sessions)
+      .set(changes)
+      .where(eq(sessions.id, id))
+      .returning({ id: sessions.id })
+      .all()
+    return updated.length > 0
+  }
+
   static setSignup(
     sessionId: string,
     userId: string,

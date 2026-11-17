@@ -12,9 +12,10 @@ import {
 import type { EventReq, EventRes } from '@common/models/socket.io'
 import { isPast } from '@common/utils/date'
 import { and, asc, desc, eq, isNull } from 'drizzle-orm'
-import db, { database } from '../../database/database'
+import db from '../../database/database'
 import { sessions, sessionSignups, users } from '../../database/schema'
 import SessionSource from '../../database/sources/session.source'
+import TransactionSource from '../../database/sources/transaction.source'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import ChugTimeManager from './chugtime.manager'
@@ -192,11 +193,9 @@ export default class SessionManager {
 
     await AuthManager.checkAuth(socket, ['admin', 'moderator'])
 
-    const session = await db.query.sessions.findFirst({
-      where: eq(sessions.id, request.id),
-    })
+    const session = SessionSource.getActiveById(request.id)
 
-    if (!session || session.deletedAt) {
+    if (!session) {
       throw new Error(loc.no.error.messages.not_in_db(request.id))
     }
 
@@ -206,29 +205,25 @@ export default class SessionManager {
         ? new Date(request.date).getTime()
         : undefined
 
-    database.transaction(() => {
-      const res = db
-        .update(sessions)
-        .set({
-          name: request.name,
-          description: request.description,
-          location: request.location,
-          status: request.status,
-          dateOptions: request.dateOptions,
-          dateVotingClosed: request.dateVotingClosed,
-          date: request.date ? new Date(request.date) : undefined,
-          deletedAt: request.deletedAt
-            ? new Date(request.deletedAt)
-            : request.deletedAt,
-        })
-        .where(eq(sessions.id, session.id))
-        .run()
+    TransactionSource.run(() => {
+      const updated = SessionSource.update(session.id, {
+        name: request.name,
+        description: request.description,
+        location: request.location,
+        status: request.status,
+        dateOptions: request.dateOptions,
+        dateVotingClosed: request.dateVotingClosed,
+        date: request.date ? new Date(request.date) : undefined,
+        deletedAt: request.deletedAt
+          ? new Date(request.deletedAt)
+          : request.deletedAt,
+      })
 
-      if (res.changes === 0) throw new Error('Update failed')
+      if (!updated) throw new Error('Update failed')
       if (request.deletedAt) TournamentManager.remove(session.id)
       if (chosenDate && session.dateOptions?.includes(chosenDate))
         SessionSource.applyDateVotes(session.id, chosenDate)
-    })()
+    })
 
     console.debug(new Date().toISOString(), socket.id, 'Updated session', id)
 

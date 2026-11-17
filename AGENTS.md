@@ -2,12 +2,13 @@
 
 ## Commands
 
-- `npm run dev` – dev mode (port 6996), this is usually already running, avoid to run it yourself.
-- `npm run check` – typecheck + Prettier format check (run before commits)
-- `npm test` – run Bun tests with `tests/setup.ts` preloaded
-- `npm test -- tests/tournament.test.ts` – run a specific test file
-- `npm run build` – build frontend + backend
-- `npm run db:gen` – generate Drizzle migration after schema changes
+- `bun install --frozen-lockfile` – install dependencies with Bun 1.4.4
+- `bun run dev` – dev mode (port 6996), this is usually already running, avoid to run it yourself.
+- `bun run check` – Drizzle, ESLint, TypeScript, and Prettier checks (run before commits)
+- `bun run test` – run Bun tests with `tests/setup.ts` preloaded
+- `bun run test tests/tournament.test.ts` – run a specific test file
+- `bun run build` – build frontend + backend
+- `bun run db:gen` – generate Drizzle migration after schema changes
 
 ## Testing in Development Mode
 
@@ -27,7 +28,7 @@
 - Group related workflows with `describe` and use `test.serial` when cases share state or build on earlier steps. Await every mutation before checking its effects.
 - Give separate scenarios distinct user names and IDs because the database is shared across the run.
 - Cover the meaningful success path and relevant invalid requests, permissions, or regressions. Use `assertResponse` for successful responses, `assert.rejects` for thrown failures, and verify broadcast payloads when testing reactive changes.
-- Run `npm test` and `npm run check` before committing test or behavior changes. Formatting and typechecking do not run the tests.
+- Run `bun run test` and `bun run check` before committing test or behavior changes. Formatting and typechecking do not run the tests.
 
 ## Code Style
 
@@ -48,7 +49,7 @@
 - Reuse existing components (Button, SearchableDropdown, etc.)
 - Use Tailwind CSS utilities; follow Formula 1 inspired dark-mode design system
 - Use `date-fns` for Calendar component internals, but prefer `luxon` for general date formatting/manipulation in the app
-- After schema changes, run `npm run db:gen` to generate Drizzle migrations
+- After schema changes, run `bun run db:gen` to generate Drizzle migrations
 - Put database access in `backend/database/sources/<entity>.source.ts` (for example `SessionSource`). Managers call source methods and contain no Drizzle queries. Some managers still query the database directly; move those queries into the source when you change them
 - When adding new database tables, include them in the CSV import/export functionality by updating `AdminManager` in `backend/src/managers/admin.manager.ts` (add table to `TABLE_MAP` and `EXCLUDED_COL_EXPORT`). Exception: `webhookCaptures` and `webhookEvents` are backend-private and must remain excluded from client CSV import/export, along with result capture links; preserve this history through SQLite database backups
 
@@ -88,7 +89,7 @@ Brief description of what and why in 1-2 sentences.
 - Feature/fix is testable and verifiable
 - Code follows existing patterns
 - All edge cases handled
-- Tests pass with `npm test`, and `npm run check` passes
+- Tests pass with `bun run test`, and `bun run check` passes
 
 ## Implementation Steps
 

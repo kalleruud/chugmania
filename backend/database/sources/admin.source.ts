@@ -43,14 +43,19 @@ export default class AdminSource {
       let created = 0
       let updated = 0
       if (toCreate.length)
-        created = db.insert(table).values(toCreate).run().changes
+        created = db
+          .insert(table)
+          .values(toCreate)
+          .returning({ id: table.id })
+          .all().length
       for (const item of toUpdate) {
         if (typeof item.id !== 'string') continue
         updated += db
           .update(table)
           .set(item)
           .where(eq(table.id, item.id))
-          .run().changes
+          .returning({ id: table.id })
+          .all().length
       }
       reconcile()
       return { created, updated }

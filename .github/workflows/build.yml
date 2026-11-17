@@ -4,7 +4,8 @@ on:
   pull_request:
     paths:
       - '**/*.ts'
-      - package*.json
+      - package.json
+      - bun.lock
       - tsconfig*
       - dockerfile
       - '**/build.yml'
@@ -20,12 +21,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-
-      - name: Install dependencies
-        run: npm ci
 
       - name: Build Docker image
         run: docker build -t chugmania .
@@ -48,6 +43,7 @@ jobs:
             fi
 
             if [ "$(curl -fsS "http://127.0.0.1:${port}/api/ping" 2>/dev/null || true)" = "pong" ]; then
+              docker exec chugmania-check sh -ec 'test "$(id -u)" -ne 0 && test -s /app/data/db.sqlite'
               exit 0
             fi
 

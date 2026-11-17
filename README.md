@@ -13,15 +13,15 @@ Chugmania is a full-stack Trackmania Turbo companion for logging lap times, shar
 
 ## Tech Stack
 
-- **Backend:** Node.js, Express 5, Socket.IO, Drizzle ORM (SQLite)
+- **Backend:** Bun, Express 5, Socket.IO, Drizzle ORM (SQLite)
 - **Frontend:** React 19, Vite, Tailwind Merge utilities, Lucide icons, shadcn/ui components (Calendar, Popover, etc.)
-- **Tooling:** TypeScript (strict), tsup bundling, Prettier with organize-imports and Tailwind plugins
+- **Tooling:** TypeScript (strict), Bun bundling, Prettier with organize-imports and Tailwind plugins
 
 ## Getting Started
 
-1. Install dependencies with `npm install`.
+1. Install Bun 1.4.4 and run `bun install --frozen-lockfile`.
 2. Copy `.env.example` to `.env` and populate required secrets (see **Configuration**).
-3. Launch the dev server via `npm run dev`; visit the URL printed in the terminal for the app and API.
+3. Launch the dev server via `bun run dev`; visit the URL printed in the terminal for the app and API.
 4. The first boot creates `data/db.sqlite`. Commit no database files—Drizzle migrations handle schema.
 5. In development (`NODE_ENV` is not `production`), startup creates a test admin if it does not exist. Log in with email `admin@chugmania.dev` and password `chugmania`. The app shows a `Development` label above the `+` button.
 6. In production there are no default login credentials. On a fresh database, the login page shows only `Registrer`; the first registered user gets the `admin` role. Additional users can be created or imported from `/admin`.
@@ -30,19 +30,18 @@ Chugmania is a full-stack Trackmania Turbo companion for logging lap times, shar
 
 | Command                         | Description                                               |
 | ------------------------------- | --------------------------------------------------------- |
-| `npm run dev`                   | Boot backend + frontend with hot reload on `PORT`.        |
-| `npm run build`                 | Produce production bundles in `dist/` and `dist/server/`. |
-| `npm run build:frontend`        | Build the Vite client only.                               |
-| `npm run build:backend`         | Bundle the Express server via tsup.                       |
-| `npm run start`                 | Apply migrations then serve the built app.                |
-| `npm run prod`                  | Serve the built backend without running migrations.       |
-| `npm run check`                 | Run `drizzle-kit check`, TypeScript, and Prettier.        |
-| `npm run db:gen`                | Emit SQL migrations after schema edits.                   |
-| `npm run db:push` / `db:studio` | Push schema OR open the Drizzle Studio UI.                |
+| `bun run dev`                   | Boot backend + frontend with hot reload on `PORT`.        |
+| `bun run build`                 | Produce production bundles in `dist/` and `dist/server/`. |
+| `bun run build:frontend`        | Build the Vite client only.                               |
+| `bun run build:backend`         | Bundle the Express server via Bun.                        |
+| `bun run start`                 | Apply migrations then serve the built app.                |
+| `bun run check`                 | Run Drizzle, ESLint, TypeScript, and Prettier checks.     |
+| `bun run db:gen`                | Emit SQL migrations after schema edits.                   |
+| `bun run db:push` / `db:studio` | Push schema OR open the Drizzle Studio UI.                |
 
 ### Testing
 
-Formal test suites are still pending. Author backend specs as `*.spec.ts` or frontend tests as `*.test.tsx`, then execute single files manually with `tsx path/to/spec.ts`.
+Run the backend suite with `bun run test`, or pass a file such as `bun run test tests/tournament.test.ts`. To produce an LCOV report, run `bun run test --coverage --coverage-reporter=lcov`.
 
 ## Project Layout
 
@@ -76,8 +75,8 @@ The `/sessions` route shows upcoming and past events. Authorized users may creat
 
 - Build: `docker build -t chugmania .`
 - Run: `docker run -p 6996:6996 -v ./data:/app/data --env-file .env chugmania`
-- The entrypoint executes `npm start`, so migrations apply automatically before serving.
-- Mount `/app/data` as a volume to persist the SQLite database across restarts.
+- The entrypoint executes `bun run start`, so migrations apply automatically before serving.
+- Mount `/app/data` as a volume to persist the SQLite database across restarts. For a bind mount, give UID and GID 65534 (`nobody:nogroup`) write access to the host directory and all SQLite files.
 
 ## Contributing
 
