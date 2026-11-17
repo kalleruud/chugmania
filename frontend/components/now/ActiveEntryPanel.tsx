@@ -44,7 +44,12 @@ export default function ActiveEntryPanel({
   const next = queue.next.slice(0, nextCount)
 
   return (
-    <section className={twMerge('flex flex-col gap-2', className)} {...props}>
+    <section
+      data-now-panel={session.id}
+      tabIndex={-1}
+      aria-label={`${loc.no.activeEntry.now}: ${session.name}`}
+      className={twMerge('flex flex-col gap-2 outline-none', className)}
+      {...props}>
       <PageHeader
         title={loc.no.activeEntry.now}
         description={session.name}

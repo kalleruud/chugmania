@@ -63,9 +63,19 @@ export default function NowButton({
     if (!response.success) throw new Error(response.message)
   }
 
+  const id = `now-${session}`
+  const plain = { id, action: undefined }
+
+  const undo = () => {
+    toast.loading(loc.no.activeEntry.toast.loading, plain)
+    send(previous)
+      .then(() => toast.success(loc.no.activeEntry.toast.undone, plain))
+      .catch(() => toast.error(loc.no.activeEntry.toast.error, plain))
+  }
+
   const change = (refocus: boolean) => {
     setPending(true)
-    const id = toast.loading(loc.no.activeEntry.toast.loading)
+    toast.loading(loc.no.activeEntry.toast.loading, plain)
     send(pinned ? null : { kind, id: entry.id })
       .then(() => {
         toast.success(
@@ -74,24 +84,29 @@ export default function NowButton({
             : loc.no.activeEntry.toast.pinned,
           {
             id,
+            duration: 10000,
             action: {
               label: loc.no.activeEntry.undo,
-              onClick: () => {
-                send(previous).catch(() =>
-                  toast.error(loc.no.activeEntry.toast.error)
-                )
+              onClick: event => {
+                event.preventDefault()
+                undo()
               },
             },
           }
         )
         if (refocus)
           requestAnimationFrame(() =>
-            document
-              .querySelector<HTMLElement>(pinSelector(kind, entry.id))
-              ?.focus()
+            (
+              document.querySelector<HTMLElement>(
+                pinSelector(kind, entry.id)
+              ) ??
+              document.querySelector<HTMLElement>(
+                `[data-now-panel="${session}"]`
+              )
+            )?.focus()
           )
       })
-      .catch(() => toast.error(loc.no.activeEntry.toast.error, { id }))
+      .catch(() => toast.error(loc.no.activeEntry.toast.error, plain))
       .finally(() => setPending(false))
   }
 

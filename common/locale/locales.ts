@@ -328,6 +328,7 @@ const no = {
       loading: 'Oppdaterer Nå…',
       pinned: 'Festet som Nå',
       cleared: 'Tilbake til automatisk valg',
+      undone: 'Angret',
       error: 'Klarte ikke oppdatere Nå',
     },
     error: {
