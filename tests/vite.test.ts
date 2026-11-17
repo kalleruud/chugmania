@@ -2,14 +2,11 @@ import { test } from 'bun:test'
 import assert from 'node:assert/strict'
 import { execFile } from 'node:child_process'
 
-test('dev middleware transforms the app through the tsx Node loader', async () => {
+test('dev middleware transforms the app under Bun', async () => {
   const stdout = await new Promise<string>((resolve, reject) => {
     execFile(
-      'node',
+      process.execPath,
       [
-        '--import',
-        'tsx',
-        '--input-type=module',
         '-e',
         `
       import assert from 'node:assert/strict'

@@ -1,21 +1,17 @@
-import { spawn } from 'node:child_process'
-
-const bin = process.platform === 'win32' ? '.cmd' : ''
-
 const checks = [
-  ['Drizzle', `drizzle-kit${bin}`, ['check']],
-  ['ESLint', `eslint${bin}`, ['.', '--cache']],
+  ['Drizzle', 'drizzle-kit', ['check']],
+  ['ESLint', 'eslint', ['.', '--cache']],
   [
-    'TypeScript node',
-    `tsc${bin}`,
+    'TypeScript backend',
+    'tsc',
     ['--noEmit', '--pretty', 'false', '-p', 'tsconfig.node.json'],
   ],
   [
     'TypeScript app',
-    `tsc${bin}`,
+    'tsc',
     ['--noEmit', '--pretty', 'false', '-p', 'tsconfig.app.json'],
   ],
-  ['Prettier', `prettier${bin}`, ['-c', '.']],
+  ['Prettier', 'prettier', ['-c', '.']],
 ]
 
 const failedChecks = []
@@ -23,20 +19,12 @@ const failedChecks = []
 for (const [name, command, args] of checks) {
   console.log(`\n==> ${name}`)
 
-  const exitCode = await new Promise(resolve => {
-    const child = spawn(command, args, { stdio: 'inherit' })
+  const { success } = Bun.spawnSync(
+    [process.execPath, '--bun', command, ...args],
+    { stdout: 'inherit', stderr: 'inherit' }
+  )
 
-    child.on('error', error => {
-      console.error(error.message)
-      resolve(1)
-    })
-
-    child.on('close', (code, signal) => {
-      resolve(code ?? (signal ? 1 : 0))
-    })
-  })
-
-  if (exitCode !== 0) {
+  if (!success) {
     failedChecks.push(name)
   }
 }
