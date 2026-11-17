@@ -4,6 +4,7 @@ import type {
   ImportCsvRequest,
   ImportCsvResponse,
 } from '@common/models/importCsv'
+import type { ActiveEntryOverrides, SetActiveEntryRequest } from './activeEntry'
 import type { LoginRequest, RegisterRequest } from './auth'
 import type { ChugTimes } from './chugTime'
 import type {
@@ -69,6 +70,7 @@ export interface ServerToClientEvents {
   all_matches: (r: Match[]) => void
   all_rankings: (r: Ranking[]) => void
   all_chug_times: (r: ChugTimes) => void
+  active_entry_overrides: (r: ActiveEntryOverrides) => void
 }
 
 export interface ClientToServerEvents {
@@ -187,6 +189,10 @@ export interface ClientToServerEvents {
   ) => void
   delete_match: (
     r: DeleteMatchRequest,
+    callback: (r: SuccessResponse | ErrorResponse) => void
+  ) => void
+  set_active_entry: (
+    r: SetActiveEntryRequest,
     callback: (r: SuccessResponse | ErrorResponse) => void
   ) => void
 }

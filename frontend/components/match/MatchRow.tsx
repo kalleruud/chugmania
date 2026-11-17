@@ -1,4 +1,5 @@
 import { useData } from '@/contexts/DataContext'
+import { useActiveEntries } from '@/hooks/useActiveEntries'
 import { useMatch } from '@/hooks/useMatch'
 import loc from '@common/locale/locales'
 import type { UserInfo } from '@common/models/user'
@@ -7,6 +8,8 @@ import { CalendarIcon } from '@heroicons/react/24/solid'
 import { ClipboardClock, FilePenLine, Timer } from 'lucide-react'
 import type { ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
+import NowButton from '../now/NowButton'
+import NowIndicator from '../now/NowIndicator'
 import { NameCellPart } from '../timeentries/TimeEntryRow'
 import { Badge } from '../ui/badge'
 import { Label } from '../ui/label'
@@ -22,6 +25,7 @@ export default function MatchRow({
 }: Readonly<MatchProps>) {
   const { users, tracks, sessions } = useData()
   const { canSetResult, toggleWinner } = useMatch(match)
+  const isNow = !!useActiveEntries().getNow('match', match.id)
   const user1 = users?.find(u => u.id === match.user1)
   const user2 = users?.find(u => u.id === match.user2)
   const track = tracks?.find(t => t.id === match.track)
@@ -38,7 +42,9 @@ export default function MatchRow({
         'group relative flex cursor-pointer items-center justify-between rounded-sm p-2 transition-colors',
         isCancelled && 'text-muted-foreground opacity-33',
         className,
-        highlight && 'border border-primary/20 bg-primary/5 hover:bg-primary/10'
+        highlight &&
+          'border border-primary/20 bg-primary/5 hover:bg-primary/10',
+        isNow && 'border border-primary/60 bg-primary/10 hover:bg-primary/15'
       )}
       {...rest}>
       <div className='mt-1 grid w-full grid-cols-1 items-center gap-1 sm:grid-cols-2'>
@@ -147,6 +153,8 @@ export default function MatchRow({
       {isInactiveFinalReset(match) && isPlanned && (
         <Badge>{loc.no.tournament.conditional}</Badge>
       )}
+      {isNow && <NowIndicator />}
+      {!isInactiveFinalReset(match) && <NowButton kind='match' entry={match} />}
     </div>
   )
 }

@@ -1,4 +1,5 @@
 import { useData } from '@/contexts/DataContext'
+import { useActiveEntries } from '@/hooks/useActiveEntries'
 import { useMatch } from '@/hooks/useMatch'
 import { getGoogleMapsUrl } from '@/lib/maps'
 import loc from '@common/locale/locales'
@@ -8,6 +9,7 @@ import { formatDateWithYear, formatTimeOnly } from '@common/utils/date'
 import { formatTime } from '@common/utils/time'
 import { isInactiveFinalReset, stageName } from '@common/utils/tournament'
 import { twMerge } from 'tailwind-merge'
+import NowButton from '../now/NowButton'
 import { NameCellPart } from '../timeentries/TimeEntryRow'
 import { TrackRow } from '../track/TrackRow'
 import { Badge } from '../ui/badge'
@@ -23,6 +25,7 @@ export default function MatchCard({
 }: Readonly<MatchProps>) {
   const { users, tracks, sessions } = useData()
   const { canSetResult, toggleWinner } = useMatch(match)
+  const now = useActiveEntries().getNow('match', match.id)
   const user1 = users?.find(user => user.id === match.user1)
   const user2 = users?.find(user => user.id === match.user2)
   const track =
@@ -77,10 +80,22 @@ export default function MatchCard({
       )}
       <div className='flex flex-col gap-4 border-t border-primary/20 pt-4'>
         <div className='flex flex-wrap items-center justify-between gap-2'>
-          <Badge>{loc.no.match.upNext}</Badge>
-          <span className='text-sm text-muted-foreground'>
-            {loc.no.common.status[match.status]}
-          </span>
+          <div className='flex items-center gap-2'>
+            {now && <Badge>{loc.no.activeEntry.now}</Badge>}
+            {now?.source === 'override' && (
+              <span className='text-xs text-muted-foreground'>
+                {loc.no.activeEntry.pinned}
+              </span>
+            )}
+          </div>
+          <div className='flex items-center gap-2'>
+            <span className='text-sm text-muted-foreground'>
+              {loc.no.common.status[match.status]}
+            </span>
+            {!isInactiveFinalReset(match) && (
+              <NowButton kind='match' entry={match} />
+            )}
+          </div>
         </div>
         {track !== undefined && !hideTrack && (
           <TrackRow item={track} hideLink className='p-0' />

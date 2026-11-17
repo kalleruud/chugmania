@@ -1,5 +1,5 @@
+import ActiveEntryPanel from '@/components/now/ActiveEntryPanel'
 import { PageHeader } from '@/components/PageHeader'
-import TournamentMatchPanel from '@/components/tournament/TournamentMatchPanel'
 import UserCard from '@/components/user/UserCard'
 import { useAuth } from '@/contexts/AuthContext'
 import { useData } from '@/contexts/DataContext'
@@ -30,7 +30,7 @@ export default function Home() {
       )}
 
       {sessions?.filter(isOngoing).map(session => (
-        <TournamentMatchPanel
+        <ActiveEntryPanel
           className='rounded-sm border bg-background p-2'
           key={session.id}
           session={session}

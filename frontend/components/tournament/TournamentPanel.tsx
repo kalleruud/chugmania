@@ -23,14 +23,18 @@ export default function TournamentPanel({
   details: TournamentDetails
 }) {
   const isPreview = details.status === 'draft'
-  const { users } = useData()
+  const { users, activeEntryQueues } = useData()
   const { isLoggedIn, loggedInUser } = useAuth()
   const canEdit = isLoggedIn && loggedInUser.role !== 'user'
   const awaitingSignups =
     details.notReadyReason === loc.no.tournament.awaitingSignups
   const workload = details.workloadSummary
   const matchesByStage = new Map<Match['stage'], Match[]>()
-  const featuredMatch = firstPendingMatch(details.matches)
+  const now = activeEntryQueues.get(details.config.session)?.now
+  const featuredMatch =
+    now?.kind === 'match'
+      ? details.matches.find(match => match.id === now.entry.id)
+      : undefined
   const allMatchesPlayed =
     details.progress.total > 0 &&
     details.progress.decided === details.progress.total

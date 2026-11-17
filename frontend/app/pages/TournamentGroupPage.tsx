@@ -15,14 +15,14 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useData } from '@/contexts/DataContext'
 import { cn } from '@/lib/utils'
 import loc from '@common/locale/locales'
-import { firstPendingMatch } from '@common/utils/tournament'
 import { ChevronRight } from 'lucide-react'
 import { Fragment } from 'react'
 import { Link, useParams } from 'react-router'
 
 export default function TournamentGroupPage() {
   const { id, groupId } = useParams()
-  const { sessions, tournaments, users, isLoadingData } = useData()
+  const { sessions, tournaments, users, isLoadingData, activeEntryQueues } =
+    useData()
   const { loggedInUser, isLoggedIn } = useAuth()
   if (isLoadingData) {
     return (
@@ -42,7 +42,11 @@ export default function TournamentGroupPage() {
   const matches = tournament.matches.filter(
     match => match.tournament?.groupId === group.id
   )
-  const featuredMatch = firstPendingMatch(matches)
+  const now = activeEntryQueues.get(session.id)?.now
+  const featuredMatch =
+    now?.kind === 'match'
+      ? matches.find(match => match.id === now.entry.id)
+      : undefined
   const canRename = isLoggedIn && loggedInUser.role !== 'user'
 
   return (

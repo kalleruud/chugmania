@@ -1,4 +1,5 @@
 import { useData } from '@/contexts/DataContext'
+import { useActiveEntries } from '@/hooks/useActiveEntries'
 import loc from '@common/locale/locales'
 import type { EntryStatus } from '@common/models/entry'
 import type {
@@ -18,6 +19,8 @@ import {
   type ComponentProps,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
+import NowButton from '../now/NowButton'
+import NowIndicator from '../now/NowIndicator'
 import type { BaseRowProps } from '../row/RowProps'
 
 type TimeEntryRowProps = BaseRowProps<TimeEntry> & {
@@ -193,6 +196,7 @@ export default function TimeEntryRow({
   const [width, setWidth] = useState(breakpoints.md)
   const { users } = useData()
   const userInfo = users ? users.find(u => u.id === lapTime.user) : null
+  const isNow = !!useActiveEntries().getNow('timeEntry', lapTime.id)
 
   const isDNF = lapTime.status === 'completed' && lapTime.duration === null
 
@@ -223,7 +227,8 @@ export default function TimeEntryRow({
         'flex cursor-pointer items-center gap-4 rounded-md hover:bg-foreground/5',
         highlight && 'bg-foreground/3',
         (isDNF || lapTime.status === 'cancelled') && 'opacity-50',
-        className
+        className,
+        isNow && 'border border-primary/60 bg-primary/10 hover:bg-primary/15'
       )}
       title={lapTime.comment ?? undefined}
       {...rest}>
@@ -261,6 +266,8 @@ export default function TimeEntryRow({
       {show.time && (
         <TimePart duration={lapTime.duration} status={lapTime.status} />
       )}
+      {isNow && <NowIndicator />}
+      <NowButton kind='timeEntry' entry={lapTime} />
     </div>
   )
 }
