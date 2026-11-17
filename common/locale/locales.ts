@@ -18,6 +18,18 @@ const matchStageCodes: Record<MatchStage, string> = MATCH_STAGE_CODES
 
 const no = {
   chugmania: 'Chugmania',
+  objectViewer: {
+    notSet: 'Ikke satt',
+    yes: 'Ja',
+    no: 'Nei',
+    circular: 'Sirkulær referanse',
+    fields: (count: number) => `${count} felt`,
+    items: (count: number) => `${count} elementer`,
+    copy: 'Kopier verdi',
+    copied: 'Verdien er kopiert',
+    copyFailed: 'Kunne ikke kopiere verdien',
+    expand: 'Vis hele teksten',
+  },
   admin: {
     title: 'Admin',
     description: 'Det som skjer i admin panelet, blir i admin panelet.',
@@ -26,6 +38,24 @@ const no = {
     export: 'Eksporter',
     selectFiles: 'Velg filer',
     tableManagement: 'Tabeller',
+    recycleBin: {
+      title: 'Papirkurv',
+      details: 'Vis alle felt',
+      detailsDescription: 'Alle lagrede felt for denne slettede posten.',
+      updated: 'Papirkurven er oppdatert',
+      retry: 'Prøv igjen',
+      deleted: 'Slettet',
+      restore: 'Gjenopprett',
+      delete: 'Slett permanent',
+      confirm: 'Bekreft sletting',
+      cancel: 'Avbryt',
+      warning: 'Dette kan ikke angres.',
+      restored: 'Posten er gjenopprettet',
+      removed: 'Posten er permanent slettet',
+      missing: 'Fant ikke den slettede posten',
+      inUse: 'Posten er i bruk. Slett avhengige poster først.',
+      deletedParent: 'Gjenopprett tilknyttede poster først.',
+    },
     exportRequest: {
       loading: 'Eksporterer...',
       success: 'Tabellen ble eksportert',

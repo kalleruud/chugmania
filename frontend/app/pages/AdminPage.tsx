@@ -1,3 +1,4 @@
+import RecycleBin from '@/components/admin/RecycleBin'
 import FileDrop from '@/components/FileDrop'
 import { PageHeader, PageSubheader } from '@/components/PageHeader'
 import { Badge } from '@/components/ui/badge'
@@ -63,6 +64,8 @@ export default function AdminPage() {
         description={loc.no.admin.description}
         Icon={ShieldExclamationIcon}
       />
+
+      <RecycleBin />
 
       <div className='grid gap-2'>
         <PageSubheader

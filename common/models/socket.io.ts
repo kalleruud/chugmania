@@ -13,6 +13,11 @@ import type {
   Match,
 } from './match'
 import type {
+  RecycleItem,
+  RecycleRecordRequest,
+  RecycleRequest,
+} from './recycleBin'
+import type {
   CreateSessionRequest,
   DeleteSessionRequest,
   EditSessionRequest,
@@ -56,6 +61,7 @@ export type ErrorResponse = {
 import type { Ranking } from './ranking'
 
 export interface ServerToClientEvents {
+  recycle_bin_changed: () => void
   all_tournaments: (
     tournaments: TournamentDetails[],
     actor?: string | null
@@ -71,6 +77,23 @@ export interface ServerToClientEvents {
 }
 
 export interface ClientToServerEvents {
+  get_recycle_record: (
+    request: RecycleRecordRequest,
+    callback: (
+      response:
+        { success: true; record: Record<string, unknown> } | ErrorResponse
+    ) => void
+  ) => void
+  get_recycle_bin: (
+    request: undefined,
+    callback: (
+      r: { success: true; items: RecycleItem[] } | ErrorResponse
+    ) => void
+  ) => void
+  mutate_recycle_bin: (
+    request: RecycleRequest,
+    callback: (r: SuccessResponse | ErrorResponse) => void
+  ) => void
   create_tournament: (
     request: TournamentRequest,
     callback: (

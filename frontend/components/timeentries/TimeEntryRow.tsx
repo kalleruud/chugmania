@@ -6,6 +6,7 @@ import type {
   LeaderboardEntryGap,
   TimeEntry,
 } from '@common/models/timeEntry'
+import type { UserInfo } from '@common/models/user'
 import { formatTime } from '@common/utils/time'
 import * as HeroIcons from '@heroicons/react/24/solid'
 import { MinusIcon } from '@heroicons/react/24/solid'
@@ -21,6 +22,7 @@ import { twMerge } from 'tailwind-merge'
 import type { BaseRowProps } from '../row/RowProps'
 
 type TimeEntryRowProps = BaseRowProps<TimeEntry> & {
+  user?: UserInfo
   required?: boolean
   position?: number | null
   gap?: LeaderboardEntryGap
@@ -182,6 +184,7 @@ export function GapPart({
 export default function TimeEntryRow({
   className,
   item: lapTime,
+  user: providedUser,
   required,
   gap,
   gapType,
@@ -192,7 +195,7 @@ export default function TimeEntryRow({
   const containerRef = useRef<HTMLDivElement | null>(null)
   const [width, setWidth] = useState(breakpoints.md)
   const { users } = useData()
-  const userInfo = users ? users.find(u => u.id === lapTime.user) : null
+  const userInfo = providedUser ?? users?.find(u => u.id === lapTime.user)
 
   const isDNF = lapTime.status === 'completed' && lapTime.duration === null
 

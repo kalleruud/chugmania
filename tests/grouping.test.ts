@@ -5,6 +5,7 @@ import {
   type Group,
 } from '../frontend/components/grouped-list/grouping'
 import {
+  byDay,
   byMonth,
   byWeek,
   byYear,
@@ -42,6 +43,17 @@ describe('groupItems', () => {
 })
 
 describe('date groupings', () => {
+  test('groups deletion dates by calendar day in Oslo', () => {
+    const items = [
+      item('a', '2026-01-01T23:30:00Z'),
+      item('b', '2026-01-02T12:00:00Z'),
+      item('c', '2026-01-01T12:00:00Z'),
+    ]
+    expect(summarize(groupItems(items, byDay(getDate)))).toEqual([
+      { label: '2. januar 2026', ids: ['a', 'b'] },
+      { label: '1. januar 2026', ids: ['c'] },
+    ])
+  })
   test('use Oslo time at the new year boundary', () => {
     const items = [item('newYear', '2025-12-31T23:30:00Z')]
 

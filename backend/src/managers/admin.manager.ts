@@ -4,8 +4,13 @@ import {
   isImportCsvRequest,
   type ExportCsvRequest,
 } from '@common/models/importCsv'
+import {
+  isRecycleRecordRequest,
+  isRecycleRequest,
+} from '@common/models/recycleBin'
 import type { EventReq, EventRes } from '@common/models/socket.io'
 import AdminSource from '../../database/sources/admin.source'
+import RecycleBinSource from '../../database/sources/recycleBin.source'
 import { broadcast, type TypedSocket } from '../server'
 import CsvParser from '../utils/csv-parser'
 import AuthManager from './auth.manager'
@@ -19,6 +24,59 @@ import TrackManager from './track.manager'
 import UserManager from './user.manager'
 
 export default class AdminManager {
+  static async onGetRecycleRecord(
+    socket: TypedSocket,
+    request: EventReq<'get_recycle_record'>
+  ): Promise<EventRes<'get_recycle_record'>> {
+    await AuthManager.checkAuth(socket, ['admin'])
+    if (!isRecycleRecordRequest(request))
+      throw new Error(
+        loc.no.error.messages.invalid_request('RecycleRecordRequest')
+      )
+    return { success: true, record: RecycleBinSource.getRecord(request) }
+  }
+
+  static async onGetRecycleBin(
+    socket: TypedSocket
+  ): Promise<EventRes<'get_recycle_bin'>> {
+    await AuthManager.checkAuth(socket, ['admin'])
+    return { success: true, items: RecycleBinSource.getItems() }
+  }
+
+  static async onMutateRecycleBin(
+    socket: TypedSocket,
+    request: EventReq<'mutate_recycle_bin'>
+  ): Promise<EventRes<'mutate_recycle_bin'>> {
+    await AuthManager.checkAuth(socket, ['admin'])
+    if (!isRecycleRequest(request))
+      throw new Error(loc.no.error.messages.invalid_request('RecycleRequest'))
+    const before = TournamentManager.getAllTournaments().flatMap(tournament => {
+      const state = TournamentManager.getState(tournament.config.session)
+      return state ? [state] : []
+    })
+    RecycleBinSource.mutate(request, () => {
+      for (const state of before)
+        TournamentManager.reconcile(state.config.session, state)
+      TournamentManager.reconcileAll()
+    })
+    RatingManager.recalculate()
+    const [users, tracks, sessions, timeEntries, matches] = await Promise.all([
+      UserManager.getAllUsers(),
+      TrackManager.getAllTracks(),
+      SessionManager.getAllSessions(),
+      TimeEntryManager.getAllTimeEntries(),
+      MatchManager.getAllMatches(),
+    ])
+    broadcast('all_users', users)
+    broadcast('all_tracks', tracks)
+    broadcast('all_sessions', sessions)
+    broadcast('all_time_entries', timeEntries)
+    broadcast('all_matches', matches)
+    broadcast('all_rankings', RatingManager.onGetRatings())
+    TournamentManager.publish(socket.id)
+    return { success: true }
+  }
+
   private static importRows(
     tableName: ExportCsvRequest['table'],
     data: Record<string, unknown>[]
