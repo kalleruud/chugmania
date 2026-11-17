@@ -13,13 +13,8 @@ import type { EventReq, EventRes } from '@common/models/socket.io'
 import { isPast } from '@common/utils/date'
 import { and, asc, desc, eq, isNull } from 'drizzle-orm'
 import db, { database } from '../../database/database'
-import {
-  sessionDateVotes,
-  sessions,
-  sessionSignups,
-  users,
-  type SessionResponse,
-} from '../../database/schema'
+import { sessions, sessionSignups, users } from '../../database/schema'
+import SessionSource from '../../database/sources/session.source'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import ChugTimeManager from './chugtime.manager'
@@ -62,49 +57,6 @@ export default class SessionManager {
       .run()
 
     return true
-  }
-
-  private static setSignup(
-    sessionId: string,
-    userId: string,
-    response: SessionResponse
-  ) {
-    const existingSignup = db
-      .select({ id: sessionSignups.id })
-      .from(sessionSignups)
-      .where(
-        and(
-          eq(sessionSignups.session, sessionId),
-          eq(sessionSignups.user, userId)
-        )
-      )
-      .get()
-
-    db.insert(sessionSignups)
-      .values({
-        id: existingSignup?.id,
-        session: sessionId,
-        user: userId,
-        response,
-      })
-      .onConflictDoUpdate({
-        target: [sessionSignups.id],
-        set: { response, deletedAt: null },
-      })
-      .run()
-  }
-
-  private static applyDateVotes(sessionId: string, date: number) {
-    const votes = db
-      .select()
-      .from(sessionDateVotes)
-      .where(eq(sessionDateVotes.session, sessionId))
-      .all()
-
-    for (const vote of votes) {
-      const response = vote.dates.includes(date) ? 'yes' : 'no'
-      SessionManager.setSignup(sessionId, vote.user, response)
-    }
   }
 
   public static async getAllSessions(): Promise<SessionWithSignups[]> {
@@ -154,19 +106,10 @@ export default class SessionManager {
   }
 
   public static getSessionDateVotes(sessionId: string): SessionDateVote[] {
-    return db
-      .select({ dates: sessionDateVotes.dates, user: users })
-      .from(sessionDateVotes)
-      .innerJoin(users, eq(sessionDateVotes.user, users.id))
-      .where(
-        and(eq(sessionDateVotes.session, sessionId), isNull(users.deletedAt))
-      )
-      .orderBy(asc(sessionDateVotes.createdAt))
-      .all()
-      .map(row => ({
-        dates: row.dates,
-        user: UserManager.toUserInfo(row.user).userInfo,
-      }))
+    return SessionSource.getDateVotes(sessionId).map(row => ({
+      dates: row.dates,
+      user: UserManager.toUserInfo(row.user).userInfo,
+    }))
   }
 
   public static async getSessionSignups(
@@ -284,7 +227,7 @@ export default class SessionManager {
       if (res.changes === 0) throw new Error('Update failed')
       if (request.deletedAt) TournamentManager.remove(session.id)
       if (chosenDate && session.dateOptions?.includes(chosenDate))
-        SessionManager.applyDateVotes(session.id, chosenDate)
+        SessionSource.applyDateVotes(session.id, chosenDate)
     })()
 
     console.debug(new Date().toISOString(), socket.id, 'Updated session', id)
@@ -336,7 +279,7 @@ export default class SessionManager {
       throw new Error(loc.no.session.errorMessages.no_edit_historical)
     }
 
-    SessionManager.setSignup(request.session, request.user, request.response)
+    SessionSource.setSignup(request.session, request.user, request.response)
 
     console.debug(
       new Date().toISOString(),
@@ -363,9 +306,7 @@ export default class SessionManager {
 
     const actor = await AuthManager.checkAuth(socket)
 
-    const session = await db.query.sessions.findFirst({
-      where: and(eq(sessions.id, request.session), isNull(sessions.deletedAt)),
-    })
+    const session = SessionSource.getActiveById(request.session)
 
     if (!session?.dateOptions?.length) {
       throw new Error(loc.no.error.messages.not_in_db(request.session))
@@ -382,14 +323,7 @@ export default class SessionManager {
       )
     }
 
-    const dates = [...new Set(request.dates)]
-    db.insert(sessionDateVotes)
-      .values({ session: session.id, user: actor.id, dates })
-      .onConflictDoUpdate({
-        target: [sessionDateVotes.session, sessionDateVotes.user],
-        set: { dates },
-      })
-      .run()
+    SessionSource.setDateVote(session.id, actor.id, [...new Set(request.dates)])
 
     console.debug(
       new Date().toISOString(),
