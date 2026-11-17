@@ -146,7 +146,7 @@ async function Connect(s: TypedSocket) {
   console.debug(new Date().toISOString(), s.id, 'Connected')
 
   const auth = await AuthManager.refreshToken(s)
-  s.emit('registration_available', process.env.VITE_ALLOW_SIGNUPS === 'true')
+  s.emit('registration_available', process.env.ALLOW_SIGNUPS === 'true')
   s.emit('user_data', auth)
   if (auth.success) {
     await emitData(s)
