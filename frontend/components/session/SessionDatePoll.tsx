@@ -56,6 +56,9 @@ export default function SessionDatePoll({
   const voters = (date: number) =>
     session.dateVotes.filter(v => v.dates.includes(date)).map(v => v.user)
   const maxVotes = Math.max(0, ...options.map(date => voters(date).length))
+  const respondents = session.dateVotes.filter(v =>
+    v.dates.some(date => options.includes(date))
+  ).length
 
   async function emitVote(dates: number[]) {
     const r = await socket.emitWithAck('vote_session_date', {
@@ -93,13 +96,24 @@ export default function SessionDatePoll({
         const dateVoters = voters(date)
         const isSelected = myDates.includes(date)
         const isTop = maxVotes > 0 && dateVoters.length === maxVotes
+        const percent =
+          respondents > 0
+            ? Math.round((dateVoters.length / respondents) * 100)
+            : 0
         return (
           <div
             key={date}
             className={twMerge(
-              'flex items-center gap-2 rounded-sm border bg-background-secondary p-2',
+              'relative isolate flex items-center gap-2 overflow-hidden rounded-sm border bg-background-secondary p-2',
               isTop && 'border-primary'
             )}>
+            <div
+              className={twMerge(
+                'absolute inset-y-0 left-0 -z-10 bg-muted-foreground/15 transition-[width]',
+                isTop && 'bg-primary/25'
+              )}
+              style={{ width: `${percent}%` }}
+            />
             <Button
               size='icon'
               variant={isSelected ? 'default' : 'outline'}
@@ -119,6 +133,7 @@ export default function SessionDatePoll({
                   `: ${dateVoters.map(getUserFullName).join(', ')}`}
               </span>
             </div>
+            <span className='text-sm tabular-nums'>{percent}%</span>
             {canEdit && (
               <Button
                 size='sm'
