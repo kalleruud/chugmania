@@ -24,6 +24,7 @@ type ConnectionContextType = {
 }
 
 const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io('/', {
+  autoConnect: false,
   auth: { token: localStorage.getItem(AUTH_KEY) },
 }).timeout(10_000)
 
@@ -64,11 +65,14 @@ export function ConnectionProvider({
       toast.error(loc.no.error.messages.connection_failed(err))
     })
 
+    socket.connect()
+
     return () => {
       socket.off('registration_available', setAllowSignups)
       socket.off('connect')
       socket.off('disconnect')
       socket.off('connect_error')
+      socket.disconnect()
     }
   }, [])
 
