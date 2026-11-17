@@ -56,6 +56,7 @@ export type ErrorResponse = {
 import type { Ranking } from './ranking'
 
 export interface ServerToClientEvents {
+  registration_available: (allowSignups: boolean) => void
   all_tournaments: (
     tournaments: TournamentDetails[],
     actor?: string | null

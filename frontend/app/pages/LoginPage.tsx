@@ -20,40 +20,15 @@ import {
 import { Spinner } from '@/components/ui/spinner'
 import UserForm from '@/components/user/UserForm'
 import { useAuth } from '@/contexts/AuthContext'
+import { useConnection } from '@/contexts/ConnectionContext'
 import loc from '@common/locale/locales'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 export default function LoginPage() {
   const { isLoading } = useAuth()
   const [openRegister, setOpenRegister] = useState(false)
 
-  const [allowSignups, setAllowSignups] = useState(false)
-
-  useEffect(() => {
-    const controller = new AbortController()
-
-    async function loadRegistrationSetting() {
-      const response = await fetch('/api/registration', {
-        signal: controller.signal,
-      })
-      if (!response.ok) return
-
-      const settings: unknown = await response.json()
-      if (
-        !controller.signal.aborted &&
-        typeof settings === 'object' &&
-        settings !== null &&
-        'allowSignups' in settings
-      ) {
-        setAllowSignups(settings.allowSignups === true)
-      }
-    }
-
-    void loadRegistrationSetting().catch(() => {
-      if (!controller.signal.aborted) setAllowSignups(false)
-    })
-    return () => controller.abort()
-  }, [])
+  const { allowSignups } = useConnection()
 
   return (
     <main className='min-h-dvh-safe bg-background text-foreground'>

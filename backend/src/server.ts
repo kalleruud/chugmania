@@ -56,7 +56,7 @@ export type TypedSocket = Socket<
 
 type ProtectedServerEvent = Exclude<
   keyof ServerToClientEvents,
-  'user_data' | 'all_tournaments'
+  'user_data' | 'all_tournaments' | 'registration_available'
 >
 
 async function emitData(socket: TypedSocket) {
@@ -111,12 +111,6 @@ app.get('/api/ping', (_req, res) => {
   res.send(pong)
 })
 
-app.get('/api/registration', (_req, res) => {
-  res.set('Cache-Control', 'no-store').json({
-    allowSignups: process.env.VITE_ALLOW_SIGNUPS === 'true',
-  })
-})
-
 if (!isProduction) {
   await UserManager.ensureDevAdmin()
   const { createServer: createViteServer } = await import('vite')
@@ -152,6 +146,7 @@ async function Connect(s: TypedSocket) {
   console.debug(new Date().toISOString(), s.id, 'Connected')
 
   const auth = await AuthManager.refreshToken(s)
+  s.emit('registration_available', process.env.VITE_ALLOW_SIGNUPS === 'true')
   s.emit('user_data', auth)
   if (auth.success) {
     await emitData(s)
