@@ -78,7 +78,12 @@ export default function SessionDatePoll({
 
   return (
     <div className='flex flex-col gap-2 rounded-sm border bg-background p-2'>
-      <h3 className='px-2 pt-2'>{loc.no.session.datePoll.title}</h3>
+      <div className='flex flex-col gap-1 px-2 pt-2'>
+        <h3>{loc.no.session.datePoll.title}</h3>
+        <p className='text-sm text-muted-foreground'>
+          {loc.no.session.datePoll.subtitle}
+        </p>
+      </div>
 
       {options.map(date => {
         const dateVoters = voters(date)

@@ -164,7 +164,9 @@ const no = {
       upcoming: 'Kommer',
     },
     datePoll: {
-      title: 'Finn dato',
+      title: 'Hvilke datoer kan du?',
+      subtitle:
+        'Velg alle datoer du har mulighet til å møte opp. Du blir automatisk påmeldt om en dato du velger blir valgt.',
       edit: 'Datoavstemning',
       description: 'Velg datoene spillerne kan stemme på.',
       choose: 'Velg',
