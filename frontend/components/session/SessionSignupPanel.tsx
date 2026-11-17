@@ -23,6 +23,7 @@ import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
 import type { SessionResponse } from '../../../backend/database/schema'
 import ManageSessionParticipantsDialog from './ManageSessionParticipantsDialog'
+import { DateOptionsDialog } from './SessionDatePoll'
 import { getUserSortName, RESPONSE_OPTIONS } from './session-signup-utils'
 
 export default function SessionSignupPanel({
@@ -97,12 +98,15 @@ export default function SessionSignupPanel({
 
   return (
     <div className={twMerge('flex flex-col gap-4', className)} {...rest}>
-      <div className='flex justify-between'>
-        <h3 className='px-2 pt-2'>
+      <div className='flex items-center justify-between gap-2 px-2 pt-2'>
+        <h3>
           {isUpcoming(session)
             ? loc.no.session.attendance
             : loc.no.session.participants}
         </h3>
+        {canManageSignups && session.status === 'tentative' && (
+          <DateOptionsDialog session={session} />
+        )}
       </div>
 
       <div

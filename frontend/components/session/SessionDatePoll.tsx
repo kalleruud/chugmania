@@ -78,19 +78,7 @@ export default function SessionDatePoll({
 
   return (
     <div className='flex flex-col gap-2 rounded-sm border bg-background p-2'>
-      <div className='flex items-center gap-2 px-2 pt-2'>
-        <h3 className='flex-1'>{loc.no.session.datePoll.title}</h3>
-        {canEdit && (
-          <Button
-            size='sm'
-            variant='outline'
-            onClick={() =>
-              editSession(socket, session.id, { dateVotingClosed: true })
-            }>
-            {loc.no.session.datePoll.close}
-          </Button>
-        )}
-      </div>
+      <h3 className='px-2 pt-2'>{loc.no.session.datePoll.title}</h3>
 
       {options.map(date => {
         const dateVoters = voters(date)
@@ -142,6 +130,7 @@ export default function SessionDatePoll({
                   editSession(socket, session.id, {
                     date: new Date(date),
                     dateVotingClosed: true,
+                    status: 'confirmed',
                   })
                 }>
                 {loc.no.session.datePoll.choose}
@@ -188,7 +177,7 @@ export function DateOptionsDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button variant='outline'>
+        <Button size='sm' variant='outline'>
           <CalendarDaysIcon />
           {loc.no.session.datePoll.edit}
         </Button>

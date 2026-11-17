@@ -1,8 +1,6 @@
 import ConfirmationButton from '@/components/ConfirmationButton'
 import SessionCard from '@/components/session/SessionCard'
-import SessionDatePoll, {
-  DateOptionsDialog,
-} from '@/components/session/SessionDatePoll'
+import SessionDatePoll from '@/components/session/SessionDatePoll'
 import SessionForm from '@/components/session/SessionForm'
 import SessionSignupPanel from '@/components/session/SessionSignupPanel'
 import TournamentTab from '@/components/tournament/TournamentTab'
@@ -34,7 +32,6 @@ import { useData } from '@/contexts/DataContext'
 import { useTimeEntryInput } from '@/contexts/TimeEntryInputContext'
 import loc from '@common/locale/locales'
 import type { SessionWithSignups } from '@common/models/session'
-import { isUpcoming } from '@common/utils/date'
 import { isInactiveFinalReset } from '@common/utils/tournament'
 import { PencilIcon, PlusIcon, Trash2 } from 'lucide-react'
 import { useState } from 'react'
@@ -50,7 +47,7 @@ function getDefaultTab(
   const isSignedUp = session.signups.some(
     s => s.user.id === userId && s.response !== 'no'
   )
-  if (isUpcoming(session) || !isSignedUp) return loc.no.session.participants
+  if (!isSignedUp) return loc.no.session.participants
   return hasTournament ? loc.no.tournament.title : loc.no.session.session
 }
 
@@ -178,8 +175,6 @@ export default function SessionPage() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
-
-            <DateOptionsDialog session={session} />
 
             <ConfirmationButton
               variant='destructive'
