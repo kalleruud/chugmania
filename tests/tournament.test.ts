@@ -10,6 +10,7 @@ import { and, eq, sql } from 'drizzle-orm'
 import assert from 'node:assert/strict'
 import {
   matches,
+  timeEntries,
   tournamentMatches,
   tournamentMatchSlots,
   tournamentStages,
@@ -1075,7 +1076,25 @@ test.serial(
         .where(eq(tournamentMatchSlots.id, `imported-${slot.id}`))
         .get()
     ).toMatchObject({ deletedAt: null, slotHolderId: slot.slotHolderId })
-    const awarded = state.fixtures[0].match
+    const [awardedFixture, plannedFixture, draftFixture] = state.fixtures
+    const awarded = awardedFixture.match
+    draftFixture.match.status = 'draft'
+    const lapStatuses: Match['status'][] = ['planned', 'draft', 'completed']
+    const laps = db
+      .insert(timeEntries)
+      .values(
+        lapStatuses.map((status, index) => ({
+          user: state.participants[index].user,
+          session: cup.session.id,
+          track: state.config.tieBreakerTrack,
+          tieBreaker: true,
+          status,
+          duration: status === 'completed' ? 30000 : null,
+        }))
+      )
+      .returning()
+      .all()
+    const [plannedLap, draftLap, completedLap] = laps
     awarded.status = 'cancelled'
     awarded.winner = awarded.user1
     TournamentSource.transaction(() => TournamentSource.saveTournament(state))
@@ -1086,6 +1105,41 @@ test.serial(
       })
     )
     expect(TournamentSource.loadTournament(cup.session.id)).toBeNull()
+    expect(
+      db
+        .select()
+        .from(matches)
+        .where(eq(matches.id, plannedFixture.match.id))
+        .get()
+    ).toMatchObject({ status: 'cancelled', deletedAt: null })
+    const deletedDraftMatch = db
+      .select()
+      .from(matches)
+      .where(eq(matches.id, draftFixture.match.id))
+      .get()
+    expect(deletedDraftMatch?.status).toBe('draft')
+    expect(deletedDraftMatch?.deletedAt).toBeInstanceOf(Date)
+    expect(
+      db
+        .select()
+        .from(timeEntries)
+        .where(eq(timeEntries.id, plannedLap.id))
+        .get()
+    ).toMatchObject({ status: 'cancelled', deletedAt: null })
+    const deletedDraftLap = db
+      .select()
+      .from(timeEntries)
+      .where(eq(timeEntries.id, draftLap.id))
+      .get()
+    expect(deletedDraftLap?.status).toBe('draft')
+    expect(deletedDraftLap?.deletedAt).toBeInstanceOf(Date)
+    expect(
+      db
+        .select()
+        .from(timeEntries)
+        .where(eq(timeEntries.id, completedLap.id))
+        .get()
+    ).toMatchObject({ status: 'completed', deletedAt: null })
     expect(
       db.select().from(matches).where(eq(matches.id, awarded.id)).get()
     ).toMatchObject({
@@ -1128,6 +1182,18 @@ test.serial(
         state.fixtures.some(previous => previous.id === match.id)
       )
     ).toBe(false)
+    const [a, b, c, d] = state.participants.map(player => player.user)
+    await setResults(await cup.getMatches('group'), {
+      [a]: [b, d],
+      [b]: [c, d],
+      [c]: [a, d],
+    })
+    const newLaps = (await cup.getState()).tieBreakers
+    for (const previous of [plannedLap, draftLap]) {
+      const replacement = newLaps.find(lap => lap.user === previous.user)
+      expect(replacement?.status).toBe('planned')
+      expect(replacement?.id).not.toBe(previous.id)
+    }
     expect(
       db.select().from(matches).where(eq(matches.id, awarded.id)).get()
     ).toMatchObject({

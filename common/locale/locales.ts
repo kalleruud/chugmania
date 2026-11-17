@@ -296,7 +296,7 @@ const no = {
     deleted: 'Turneringen er slettet',
     deleteTitle: 'Slett turnering',
     deleteDescription:
-      'Vil du beholde eller slette turneringens matcher? Andre matcher og fullførte rundetider beholdes. Planlagte tie-breakers slettes.',
+      'Vil du beholde eller slette turneringens matchresultater? Hvis du beholder resultatene, avlyses planlagte og pågående matcher og tie-breakers. Resultatutkast slettes i begge tilfeller.',
     keepResults: 'Slett turnering, behold resultater',
     deleteResults: 'Slett turnering og resultater',
     awarded: 'Tildelt seier',

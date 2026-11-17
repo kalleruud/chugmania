@@ -478,11 +478,22 @@ export default class TournamentSource {
       const deletedAt = new Date()
       const laps = state.status === 'started' ? this.loadLaps(state) : []
       for (const lap of laps) {
-        if (lap.status === 'planned')
-          db.update(timeEntries)
-            .set({ deletedAt })
-            .where(eq(timeEntries.id, lap.id))
-            .run()
+        if (lap.deletedAt) continue
+        let updates: Partial<typeof timeEntries.$inferInsert>
+        if (lap.status === 'draft') updates = { deletedAt, tieBreaker: false }
+        else if (deleteMatches && lap.status === 'planned')
+          updates = { deletedAt }
+        else if (
+          !deleteMatches &&
+          (lap.status === 'planned' || lap.status === 'in_progress')
+        )
+          updates = { status: 'cancelled', tieBreaker: false }
+        else continue
+
+        db.update(timeEntries)
+          .set(updates)
+          .where(eq(timeEntries.id, lap.id))
+          .run()
       }
       db.update(tournamentMatchSlots)
         .set({ deletedAt })
@@ -526,14 +537,24 @@ export default class TournamentSource {
         .from(tournamentMatches)
         .where(eq(tournamentMatches.tournament, tournament))
     )
-    const awarded = and(
-      eq(matches.status, 'cancelled'),
-      isNotNull(matches.winner),
-      isNull(matches.deletedAt)
-    )
+    const active = and(related, isNull(matches.deletedAt))
     db.update(matches)
-      .set(deleteMatches ? { deletedAt } : { status: 'completed' })
-      .where(and(related, deleteMatches ? undefined : awarded))
+      .set({ deletedAt })
+      .where(
+        and(active, deleteMatches ? undefined : eq(matches.status, 'draft'))
+      )
+      .run()
+    if (deleteMatches) return
+
+    db.update(matches)
+      .set({ status: 'completed' })
+      .where(
+        and(active, eq(matches.status, 'cancelled'), isNotNull(matches.winner))
+      )
+      .run()
+    db.update(matches)
+      .set({ status: 'cancelled' })
+      .where(and(active, inArray(matches.status, ['planned', 'in_progress'])))
       .run()
   }
 }

@@ -54,7 +54,11 @@ export default function TrackLeaderboard({
     .filter(m => !excludeTournamentMatches || !m.tournament)
     .filter(m => !isInactiveFinalReset(m))
     .filter(m => !session || session === m.session)
-    .filter(m => !user || user === m.user1 || user === m.user2)
+    .filter(
+      m =>
+        !user ||
+        (m.status === 'completed' && (user === m.user1 || user === m.user2))
+    )
     .filter(m => (track?.id ?? null) === m.track)
 
   if (entries.length === 0 && filteredMatches.length === 0) return undefined
