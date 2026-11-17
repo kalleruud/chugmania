@@ -42,8 +42,7 @@ export default function MatchRow({
         'group relative flex cursor-pointer items-center justify-between rounded-sm p-2 transition-colors',
         isCancelled && 'text-muted-foreground opacity-33',
         className,
-        highlight &&
-          'border border-primary/20 bg-primary/5 hover:bg-primary/10',
+        highlight && 'bg-foreground/3',
         isNow && 'border border-primary/60 bg-primary/10 hover:bg-primary/15'
       )}
       {...rest}>
@@ -106,8 +105,13 @@ export default function MatchRow({
         <div
           className={twMerge(
             'flex min-w-0 flex-wrap items-center justify-center gap-x-3 gap-y-1 sm:justify-start',
-            (!track || hideTrack) && !session && !match.stage && 'hidden'
+            (!track || hideTrack) &&
+              !session &&
+              !match.stage &&
+              !isNow &&
+              'hidden'
           )}>
+          {isNow && <NowIndicator />}
           {track && !hideTrack && (
             <div className='max-w-full min-w-0'>
               <span
@@ -153,9 +157,23 @@ export default function MatchRow({
       {isInactiveFinalReset(match) && isPlanned && (
         <Badge>{loc.no.tournament.conditional}</Badge>
       )}
-      {isNow && <NowIndicator />}
-      {!isInactiveFinalReset(match) && <NowButton kind='match' entry={match} />}
+      {!isInactiveFinalReset(match) && (
+        <NowButton
+          kind='match'
+          entry={match}
+          subject={`${shortName(user1, match.tournament?.slot1)} ${loc.no.match.vs} ${shortName(user2, match.tournament?.slot2)}`}
+        />
+      )}
     </div>
+  )
+}
+
+function shortName(user: UserInfo | undefined, slotLabel?: string): string {
+  return (
+    user?.shortName ??
+    user?.lastName ??
+    user?.firstName ??
+    (slotLabel || loc.no.match.unknownUser)
   )
 }
 

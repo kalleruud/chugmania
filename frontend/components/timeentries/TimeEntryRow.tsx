@@ -202,6 +202,11 @@ export default function TimeEntryRow({
     ? tracks?.find(t => t.id === lapTime.track)
     : undefined
   const isNow = !!useActiveEntries().getNow('timeEntry', lapTime.id)
+  const name =
+    userInfo?.shortName ??
+    userInfo?.lastName ??
+    userInfo?.firstName ??
+    loc.no.match.unknownUser
 
   const isDNF = lapTime.status === 'completed' && lapTime.duration === null
 
@@ -242,14 +247,10 @@ export default function TimeEntryRow({
       )}
 
       <NameCellPart
-        name={
-          userInfo?.shortName ??
-          userInfo?.lastName ??
-          userInfo?.firstName ??
-          loc.no.match.unknownUser
-        }
+        name={name}
         className={twMerge(isDNF && 'text-muted-foreground')}
       />
+      {isNow && <NowIndicator />}
       <Marker
         className='-mx-2 text-yellow-500'
         show={lapTime.tieBreaker}
@@ -257,7 +258,7 @@ export default function TimeEntryRow({
       />
       <Marker className='-mx-2' show={!!lapTime.comment} symbol='*' />
       {track && (
-        <span className='truncate font-kh-interface text-sm text-muted-foreground tabular-nums'>
+        <span className='truncate font-kh-interface tabular-nums'>
           <span className='mr-1 text-primary'>#</span>
           {track.name}
         </span>
@@ -277,8 +278,7 @@ export default function TimeEntryRow({
       {show.time && (
         <TimePart duration={lapTime.duration} status={lapTime.status} />
       )}
-      {isNow && <NowIndicator />}
-      <NowButton kind='timeEntry' entry={lapTime} />
+      <NowButton kind='timeEntry' entry={lapTime} subject={name} />
     </div>
   )
 }

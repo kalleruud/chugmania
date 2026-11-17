@@ -20,9 +20,10 @@ export default function MatchCard({
   className,
   highlight,
   hideTrack,
+  compact,
   children,
   ...props
-}: Readonly<MatchProps>) {
+}: Readonly<MatchProps & { compact?: boolean }>) {
   const { users, tracks, sessions } = useData()
   const { canSetResult, toggleWinner } = useMatch(match)
   const now = useActiveEntries().getNow('match', match.id)
@@ -42,14 +43,19 @@ export default function MatchCard({
   return (
     <div
       className={twMerge(
-        'group relative flex cursor-pointer flex-col gap-6 rounded-sm p-6 transition-colors sm:p-8',
+        'group relative flex cursor-pointer flex-col rounded-sm transition-colors',
+        compact ? 'gap-4 p-4 sm:p-6' : 'gap-6 p-6 sm:p-8',
         isCancelled && 'text-muted-foreground opacity-33',
         className,
         highlight &&
           'border border-primary/40 bg-primary/10 hover:bg-primary/12'
       )}
       {...props}>
-      <div className='flex items-center gap-4 py-4'>
+      <div
+        className={twMerge(
+          'flex items-center gap-4',
+          compact ? 'py-2' : 'py-4'
+        )}>
         <Player
           user={user1}
           slotLabel={match.tournament?.slot1}
@@ -81,11 +87,9 @@ export default function MatchCard({
       <div className='flex flex-col gap-4 border-t border-primary/20 pt-4'>
         <div className='flex flex-wrap items-center justify-between gap-2'>
           <div className='flex items-center gap-2'>
-            {now && <Badge>{loc.no.activeEntry.now}</Badge>}
+            {now && !compact && <Badge>{loc.no.activeEntry.now}</Badge>}
             {now?.source === 'override' && (
-              <span className='text-xs text-muted-foreground'>
-                {loc.no.activeEntry.pinned}
-              </span>
+              <Badge variant='outline'>{loc.no.activeEntry.pinned}</Badge>
             )}
           </div>
           <div className='flex items-center gap-2'>
@@ -93,14 +97,19 @@ export default function MatchCard({
               {loc.no.common.status[match.status]}
             </span>
             {!isInactiveFinalReset(match) && (
-              <NowButton kind='match' entry={match} />
+              <NowButton
+                kind='match'
+                entry={match}
+                showLabel
+                subject={`${user1 ? getUserFullName(user1) : (match.tournament?.slot1 ?? loc.no.match.unknownUser)} ${loc.no.match.vs} ${user2 ? getUserFullName(user2) : (match.tournament?.slot2 ?? loc.no.match.unknownUser)}`}
+              />
             )}
           </div>
         </div>
         {track !== undefined && !hideTrack && (
           <TrackRow item={track} hideLink className='p-0' />
         )}
-        {session && (
+        {session && !compact && (
           <p className='text-sm text-muted-foreground'>
             {session.name} · {formatDateWithYear(session.date)} ·{' '}
             {formatTimeOnly(session.date)}
@@ -118,28 +127,30 @@ export default function MatchCard({
             )}
           </p>
         )}
-        <dl className='grid gap-4 sm:grid-cols-2'>
-          <div>
-            <dt className='text-sm text-muted-foreground'>
-              {loc.no.match.duration}
-            </dt>
-            <dd className='font-kh-interface text-xl tabular-nums'>
-              {match.duration === null
-                ? loc.no.match.placeholder.none
-                : formatTime(match.duration)}
-            </dd>
-          </div>
-          {match.comment && (
-            <div>
-              <dt className='text-sm text-muted-foreground'>
-                {loc.no.match.form.comment}
-              </dt>
-              <dd className='wrap-break-word whitespace-pre-wrap'>
-                {match.comment}
-              </dd>
-            </div>
-          )}
-        </dl>
+        {(match.duration !== null || match.comment) && (
+          <dl className='grid gap-4 sm:grid-cols-2'>
+            {match.duration !== null && (
+              <div>
+                <dt className='text-sm text-muted-foreground'>
+                  {loc.no.match.duration}
+                </dt>
+                <dd className='font-kh-interface text-xl tabular-nums'>
+                  {formatTime(match.duration)}
+                </dd>
+              </div>
+            )}
+            {match.comment && (
+              <div>
+                <dt className='text-sm text-muted-foreground'>
+                  {loc.no.match.form.comment}
+                </dt>
+                <dd className='wrap-break-word whitespace-pre-wrap'>
+                  {match.comment}
+                </dd>
+              </div>
+            )}
+          </dl>
+        )}
       </div>
       {children}
       {match.tournament?.awarded && <Badge>{loc.no.tournament.awarded}</Badge>}

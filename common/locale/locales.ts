@@ -320,17 +320,19 @@ const no = {
   activeEntry: {
     now: 'Nå',
     next: 'Neste',
-    setNow: 'Sett som nå',
-    clearNow: 'Fjern overstyring',
-    pinned: 'Overstyrt',
+    setNow: 'Fest som Nå',
+    clearNow: 'Løsne fra Nå',
+    pinned: 'Festet',
+    undo: 'Angre',
     toast: {
-      loading: 'Oppdaterer nå...',
-      success: 'Nå oppdatert!',
-      error: 'Klarte ikke oppdatere nå',
+      loading: 'Oppdaterer Nå…',
+      pinned: 'Festet som Nå',
+      cleared: 'Tilbake til automatisk valg',
+      error: 'Klarte ikke oppdatere Nå',
     },
     error: {
       notSelectable:
-        'Bare uspilte oppføringer i denne sessionen kan settes som nå',
+        'Bare uspilte oppføringer i denne sessionen kan settes som Nå',
     },
   },
   match: {

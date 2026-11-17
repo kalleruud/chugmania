@@ -50,17 +50,19 @@ export default function ActiveEntryPanel({
         description={session.name}
         to={'/sessions/' + session.id}
         Icon={Radio}
-        iconClassName='animate-pulse'
+        iconClassName='motion-safe:animate-pulse'
       />
 
       {queue.now.kind === 'match' ? (
         <MatchCard
+          compact
           item={queue.now.entry}
           highlight={isMe(queue.now)}
           onClick={onOpen(queue.now)}
         />
       ) : (
         <TimeEntryCard
+          compact
           item={queue.now.entry}
           highlight={isMe(queue.now)}
           onClick={onOpen(queue.now)}

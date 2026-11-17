@@ -1,12 +1,14 @@
 import loc from '@common/locale/locales'
+import { Badge } from '../ui/badge'
 
 export default function NowIndicator() {
   return (
-    <span
-      role='status'
-      aria-label={loc.no.activeEntry.now}
-      title={loc.no.activeEntry.now}
-      className='size-2 shrink-0 animate-pulse rounded-full bg-primary'
-    />
+    <Badge className='shrink-0 gap-1 px-1.5'>
+      <span
+        aria-hidden
+        className='size-1.5 rounded-full bg-current motion-safe:animate-pulse'
+      />
+      {loc.no.activeEntry.now}
+    </Badge>
   )
 }
