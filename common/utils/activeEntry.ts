@@ -125,7 +125,12 @@ function findOverride(
     candidate =>
       candidate.kind === override.kind && candidate.entry.id === override.id
   )
-  if (!found || found.entry.session !== session || !isUnplayed(found.entry))
+  if (
+    !found ||
+    found.entry.session !== session ||
+    !isUnplayed(found.entry) ||
+    (found.kind === 'match' && isInactiveFinalReset(found.entry))
+  )
     return undefined
   return found
 }

@@ -34,7 +34,6 @@ export default function NowButton({
 
   if (!isLoggedIn || loggedInUser.role === 'user' || !session) return null
   if (!queues.has(session) || !isUnplayed(entry)) return null
-  if (now && now.source !== 'override') return null
 
   const pinned = now?.source === 'override'
   const label = pinned ? loc.no.activeEntry.clearNow : loc.no.activeEntry.setNow

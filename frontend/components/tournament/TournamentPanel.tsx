@@ -200,7 +200,7 @@ export default function TournamentPanel({
               return (
                 <details
                   key={stage ?? 'none'}
-                  open={!!firstPendingMatch(matches)}
+                  open={!!firstPendingMatch(matches) || isActive}
                   className='group/stage'>
                   <summary className='flex cursor-pointer list-none items-center gap-2 p-2 text-sm text-muted-foreground [&::-webkit-details-marker]:hidden'>
                     <h4 className='mr-auto flex flex-wrap items-center gap-2'>
