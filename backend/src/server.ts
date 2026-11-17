@@ -56,7 +56,7 @@ export type TypedSocket = Socket<
 
 type ProtectedServerEvent = Exclude<
   keyof ServerToClientEvents,
-  'user_data' | 'all_tournaments'
+  'user_data' | 'all_tournaments' | 'registration_available'
 >
 
 async function emitData(socket: TypedSocket) {
@@ -146,6 +146,7 @@ async function Connect(s: TypedSocket) {
   console.debug(new Date().toISOString(), s.id, 'Connected')
 
   const auth = await AuthManager.refreshToken(s)
+  s.emit('registration_available', process.env.ALLOW_SIGNUPS === 'true')
   s.emit('user_data', auth)
   if (auth.success) {
     await emitData(s)

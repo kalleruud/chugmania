@@ -19,10 +19,12 @@ const AUTH_KEY = 'auth'
 type ConnectionContextType = {
   socket: typeof socket
   isConnected: boolean
+  allowSignups: boolean
   setToken: typeof setToken
 }
 
 const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io('/', {
+  autoConnect: false,
   auth: { token: localStorage.getItem(AUTH_KEY) },
 }).timeout(10_000)
 
@@ -43,7 +45,10 @@ export function ConnectionProvider({
     ConnectionContextType['isConnected']
   >(socket.connected)
 
+  const [allowSignups, setAllowSignups] = useState(false)
+
   useEffect(() => {
+    socket.on('registration_available', setAllowSignups)
     socket.on('connect', () => {
       console.log('Connected to backend:', socket.id)
       setIsConnected(socket.connected)
@@ -60,10 +65,14 @@ export function ConnectionProvider({
       toast.error(loc.no.error.messages.connection_failed(err))
     })
 
+    socket.connect()
+
     return () => {
+      socket.off('registration_available', setAllowSignups)
       socket.off('connect')
       socket.off('disconnect')
       socket.off('connect_error')
+      socket.disconnect()
     }
   }, [])
 
@@ -71,9 +80,10 @@ export function ConnectionProvider({
     () => ({
       socket,
       isConnected,
+      allowSignups,
       setToken,
     }),
-    [socket, isConnected]
+    [socket, isConnected, allowSignups]
   )
 
   return (

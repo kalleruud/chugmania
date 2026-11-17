@@ -20,6 +20,7 @@ import {
 import { Spinner } from '@/components/ui/spinner'
 import UserForm from '@/components/user/UserForm'
 import { useAuth } from '@/contexts/AuthContext'
+import { useConnection } from '@/contexts/ConnectionContext'
 import loc from '@common/locale/locales'
 import { useState } from 'react'
 
@@ -27,7 +28,7 @@ export default function LoginPage() {
   const { isLoading } = useAuth()
   const [openRegister, setOpenRegister] = useState(false)
 
-  const allowSignups = import.meta.env.VITE_ALLOW_SIGNUPS === 'true'
+  const { allowSignups } = useConnection()
 
   return (
     <main className='min-h-dvh-safe bg-background text-foreground'>
@@ -49,7 +50,9 @@ export default function LoginPage() {
               <DialogTrigger asChild>
                 <Button
                   variant='outline'
-                  title={loc.no.user.register.notEnabled}
+                  title={
+                    allowSignups ? undefined : loc.no.user.register.notEnabled
+                  }
                   disabled={!allowSignups}>
                   {loc.no.user.register.description}
                 </Button>
