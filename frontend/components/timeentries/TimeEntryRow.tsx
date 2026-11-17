@@ -29,6 +29,7 @@ type TimeEntryRowProps = BaseRowProps<TimeEntry> & {
   gap?: LeaderboardEntryGap
   gapType?: GapType
   onChangeGapType: () => void
+  showTrack?: boolean
 }
 
 const breakpoints = {
@@ -190,12 +191,16 @@ export default function TimeEntryRow({
   gapType,
   onChangeGapType,
   highlight,
+  showTrack,
   ...rest
 }: Readonly<TimeEntryRowProps>) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const [width, setWidth] = useState(breakpoints.md)
-  const { users } = useData()
+  const { users, tracks } = useData()
   const userInfo = users ? users.find(u => u.id === lapTime.user) : null
+  const track = showTrack
+    ? tracks?.find(t => t.id === lapTime.track)
+    : undefined
   const isNow = !!useActiveEntries().getNow('timeEntry', lapTime.id)
 
   const isDNF = lapTime.status === 'completed' && lapTime.duration === null
@@ -251,6 +256,12 @@ export default function TimeEntryRow({
         symbol='*'
       />
       <Marker className='-mx-2' show={!!lapTime.comment} symbol='*' />
+      {track && (
+        <span className='truncate font-kh-interface text-sm text-muted-foreground tabular-nums'>
+          <span className='mr-1 text-primary'>#</span>
+          {track.name}
+        </span>
+      )}
 
       <span className='mr-auto' />
 

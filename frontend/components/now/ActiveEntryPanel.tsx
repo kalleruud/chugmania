@@ -89,6 +89,7 @@ export default function ActiveEntryPanel({
                 className='bg-background-secondary px-4 py-3'
                 onClick={onOpen(queued)}
                 onChangeGapType={() => undefined}
+                showTrack
               />
             )
           )}
