@@ -156,7 +156,7 @@ function Player({
           onSelect()
         }}
         className={twMerge(
-          'max-w-full border-b-2 border-transparent px-1 transition-all',
+          'max-w-full border-b-2 border-transparent px-1 [text-align:inherit] transition-all',
           !disabled && 'hover:border-primary',
           !isWinner && isCompleted && 'text-muted-foreground',
           isWinner && 'border-primary',
@@ -168,7 +168,7 @@ function Player({
           name={
             user ? getUserFullName(user) : slotLabel || loc.no.match.unknownUser
           }
-          className='text-lg whitespace-normal sm:text-2xl'
+          className='overflow-visible text-base wrap-break-word whitespace-normal sm:text-2xl'
         />
       </button>
       {user && slotLabel && (

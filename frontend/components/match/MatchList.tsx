@@ -57,7 +57,8 @@ export default function MatchList({
   return (
     <div className='flex flex-col gap-2'>
       {matches.map((match, index) => {
-        const MatchComponent = getNow('match', match.id) ? MatchCard : MatchRow
+        const isNow = !!getNow('match', match.id)
+        const MatchComponent = isNow ? MatchCard : MatchRow
         const showTrackSeparator =
           trackSeparators &&
           (index === 0 || match.track !== matches.at(index - 1)?.track)
@@ -76,7 +77,7 @@ export default function MatchList({
               onClick={() => {
                 if (!match.tournament?.readOnly) openMatch(match)
               }}
-              hideTrack={hideTrack || trackSeparators}
+              hideTrack={hideTrack || trackSeparators || (isNow && !!track)}
             />
           </Fragment>
         )
