@@ -688,13 +688,13 @@ test.serial(
     ).toEqual(ids)
     await tournament.editLap('tie-a', { duration: 30000 })
     expect(await tournament.getMatch('final')).toMatchObject({
-      user1: 'tie-a',
+      user1: null,
       user2: null,
     })
     await tournament.editLap('tie-b', { duration: 20000 })
     expect(await tournament.getMatch('final')).toMatchObject({
-      user1: 'tie-b',
-      user2: 'tie-a',
+      user1: null,
+      user2: null,
     })
     await tournament.editLap('tie-c', { duration: 10000 })
     expect(await tournament.getMatch('final')).toMatchObject({
@@ -729,6 +729,67 @@ test.serial(
         lap => lap.user === 'tie-a'
       )?.duration
     ).toBe(30000)
+  }
+)
+
+test.serial(
+  'Group tie stays undecided until every tied player drives their lap',
+  async () => {
+    const tournament = await CreateTournament({
+      config: {
+        groupsCount: 2,
+        advancementCount: 2,
+        eliminationType: 'single',
+      },
+      tracks: 1,
+      users: [
+        'pending-1',
+        'pending-2',
+        'pending-3',
+        'pending-4',
+        'pending-5',
+        'pending-6',
+      ],
+    })
+    const [clean, tied] = (await tournament.getState()).groups.map(group =>
+      group.standings.map(row => row.user)
+    )
+    const groups = await tournament.getMatches('group')
+    await setResults(groups, {
+      [clean[0]]: [clean[1], clean[2]],
+      [clean[1]]: [clean[2]],
+      [tied[0]]: [tied[1]],
+      [tied[1]]: [tied[2]],
+      [tied[2]]: [tied[0]],
+    })
+    const semiPlayers = async (): Promise<(string | null)[][]> =>
+      (await tournament.getMatches('semi')).map(match => [
+        match.user1,
+        match.user2,
+      ])
+    const tiedStandings = async () =>
+      (await tournament.getState()).groups
+        .flatMap(group => group.standings)
+        .filter(row => tied.includes(row.user))
+
+    await tournament.editLap(tied[0], { duration: 10000 })
+
+    expect(await tiedStandings()).toHaveLength(3)
+    for (const row of await tiedStandings())
+      expect(row).toMatchObject({ resolved: false, qualifies: false })
+    expect(await semiPlayers()).toEqual([
+      [clean[0], null],
+      [null, clean[1]],
+    ])
+
+    await tournament.editLap(tied[1], { duration: 8000 })
+    await tournament.editLap(tied[2], { duration: 12000 })
+
+    expect(await semiPlayers()).toEqual([
+      [clean[0], tied[0]],
+      [tied[1], clean[1]],
+    ])
+    for (const row of await tiedStandings()) expect(row.resolved).toBe(true)
   }
 )
 
@@ -781,8 +842,8 @@ test.serial(
     ).toBe(false)
     await tournament.editLap('cancel-c', { status: 'planned' })
     expect(await tournament.getMatch('final')).toMatchObject({
-      user1: 'cancel-a',
-      user2: 'cancel-b',
+      user1: null,
+      user2: null,
     })
     await tournament.editLap('cancel-c', {
       duration: 5000,
