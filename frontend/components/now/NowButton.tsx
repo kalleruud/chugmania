@@ -5,7 +5,7 @@ import loc from '@common/locale/locales'
 import type { EntryKind, EntryRef } from '@common/models/activeEntry'
 import type { EntryStatus } from '@common/models/entry'
 import { isUnplayed } from '@common/utils/activeEntry'
-import { Pin, PinOff } from 'lucide-react'
+import { ListStart, ListX } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
@@ -44,8 +44,9 @@ export default function NowButton({
   if (!queues.has(session) || !isUnplayed(entry)) return null
 
   const pinned = now?.source === 'override'
+  if (now && !pinned) return null
   const label = pinned ? loc.no.activeEntry.clearNow : loc.no.activeEntry.setNow
-  const Icon = pinned ? PinOff : Pin
+  const Icon = pinned ? ListX : ListStart
   const current = queues.get(session)?.now
   const previous: EntryRef | null =
     current?.source === 'override'
