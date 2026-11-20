@@ -42,7 +42,7 @@ export function SessionsContent({
   const upcomingSessions = sessions?.filter(isUpcoming) ?? []
   const pastSessions = sessions?.filter(isPast) ?? []
   const archivedSessions = pastSessions.toSorted(
-    (a, b) => (b.date?.getTime() ?? 0) - (a.date?.getTime() ?? 0)
+    (a, b) => new Date(b.date ?? 0).getTime() - new Date(a.date ?? 0).getTime()
   )
   const ongoingSessions = sessions?.filter(isOngoing) ?? []
 
