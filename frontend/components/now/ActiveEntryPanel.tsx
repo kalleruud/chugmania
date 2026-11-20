@@ -8,7 +8,7 @@ import type { ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
 import MatchCard from '../match/MatchCard'
 import MatchRow from '../match/MatchRow'
-import { PageHeader } from '../PageHeader'
+import { PageHeader, PageSubheader } from '../PageHeader'
 import TimeEntryCard from '../timeentries/TimeEntryCard'
 import TimeEntryRow from '../timeentries/TimeEntryRow'
 
@@ -51,20 +51,14 @@ export default function ActiveEntryPanel({
       />
 
       {queue.now.kind === 'match' ? (
-        <MatchCard compact item={queue.now.entry} onClick={onOpen(queue.now)} />
+        <MatchCard item={queue.now.entry} onClick={onOpen(queue.now)} />
       ) : (
-        <TimeEntryCard
-          compact
-          item={queue.now.entry}
-          onClick={onOpen(queue.now)}
-        />
+        <TimeEntryCard item={queue.now.entry} onClick={onOpen(queue.now)} />
       )}
 
       {next.length > 0 && (
-        <div className='flex flex-col gap-2 pt-2'>
-          <h3 className='px-2 text-sm text-muted-foreground'>
-            {loc.no.activeEntry.next}
-          </h3>
+        <div className='flex flex-col gap-2'>
+          <PageSubheader title={loc.no.activeEntry.next} />
           {next.map(queued =>
             queued.kind === 'match' ? (
               <MatchRow

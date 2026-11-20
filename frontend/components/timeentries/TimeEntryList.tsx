@@ -123,7 +123,14 @@ function getGap(
 function TimeEntryListItem(props: ComponentProps<typeof TimeEntryRow>) {
   const isNow = !!useActiveEntries().getNow('timeEntry', props.item.id)
   if (!isNow) return <TimeEntryRow {...props} />
-  return <TimeEntryCard item={props.item} onClick={props.onClick} />
+  return (
+    <TimeEntryCard
+      item={props.item}
+      onClick={props.onClick}
+      hideTrack
+      className='rounded-none'
+    />
+  )
 }
 
 export type TimeEntryListProps = {

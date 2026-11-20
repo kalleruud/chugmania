@@ -20,7 +20,6 @@ type NowButtonProps = {
     deletedAt: Date | null
   }
   subject?: string
-  showLabel?: boolean
   className?: string
 }
 
@@ -32,7 +31,6 @@ export default function NowButton({
   kind,
   entry,
   subject,
-  showLabel,
   className,
 }: Readonly<NowButtonProps>) {
   const { socket } = useConnection()
@@ -113,15 +111,14 @@ export default function NowButton({
   return (
     <Button
       type='button'
-      variant={showLabel ? 'outline' : 'ghost'}
-      size={showLabel ? 'sm' : 'icon'}
+      variant='ghost'
+      size='icon'
       aria-label={subject ? `${label}: ${subject}` : label}
       title={label}
       disabled={pending}
       data-now-pin={`${kind}:${entry.id}`}
       className={twMerge(
-        'shrink-0 text-muted-foreground',
-        showLabel ? 'h-11 sm:h-8' : 'size-11 sm:size-8',
+        '-my-2 size-11 shrink-0 text-muted-foreground sm:my-0 sm:size-8',
         className
       )}
       onClick={event => {
@@ -129,7 +126,6 @@ export default function NowButton({
         change(event.detail === 0)
       }}>
       <Icon className='size-4' />
-      {showLabel && label}
     </Button>
   )
 }
