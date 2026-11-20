@@ -181,4 +181,17 @@ describe('Session date poll', () => {
     await rsvp(carol.id, 'maybe')
     expect((await fetchSession()).signups).toHaveLength(3)
   })
+  test.serial('reopening the poll starts from scratch', async () => {
+    await SessionManager.onEditSession(ownerSocket, {
+      type: 'EditSessionRequest',
+      id: sessionId,
+      status: 'tentative',
+    }).then(assertResponse)
+    await openPoll(ownerSocket, [FRIDAY]).then(assertResponse)
+
+    const session = await fetchSession()
+    expect(session.date).toBeNull()
+    expect(session.dateVotes).toEqual([])
+    expect(session.signups).toEqual([])
+  })
 })

@@ -57,9 +57,12 @@ export default function SessionDatePoll({
   const { socket } = useConnection()
   const { loggedInUser, isLoggedIn } = useAuth()
   const [detailsDate, setDetailsDate] = useState<number>()
-  const [chosenDate, setChosenDate] = useState<string>()
+  const [selectedDate, setSelectedDate] = useState<string>()
   const canEdit = isLoggedIn && loggedInUser.role !== 'user'
   const options = (session.dateOptions ?? []).toSorted((a, b) => a - b)
+  const chosenDate = options.includes(Number(selectedDate))
+    ? selectedDate
+    : undefined
 
   const myDates = (
     session.dateVotes.find(v => isLoggedIn && v.user.id === loggedInUser.id)
@@ -155,7 +158,7 @@ export default function SessionDatePoll({
 
       {canEdit && (
         <div className='flex items-center gap-2 border-t px-2 pt-3 pb-1'>
-          <Select value={chosenDate ?? ''} onValueChange={setChosenDate}>
+          <Select value={chosenDate ?? ''} onValueChange={setSelectedDate}>
             <SelectTrigger
               className='min-w-0 flex-1'
               aria-label={loc.no.session.datePoll.choosePlaceholder}>

@@ -104,9 +104,9 @@ export default function SessionSignupPanel({
             ? loc.no.session.attendance
             : loc.no.session.participants}
         </h3>
-        {canManageSignups && session.status === 'tentative' && (
-          <DateOptionsDialog session={session} />
-        )}
+        {canManageSignups &&
+          session.status === 'tentative' &&
+          isUpcoming(session) && <DateOptionsDialog session={session} />}
       </div>
 
       <div

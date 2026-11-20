@@ -17,6 +17,6 @@ INSERT INTO `__new_sessions`("id", "updated_at", "created_at", "deleted_at", "na
 DROP TABLE `sessions`;--> statement-breakpoint
 ALTER TABLE `__new_sessions` RENAME TO `sessions`;--> statement-breakpoint
 PRAGMA foreign_keys=ON;--> statement-breakpoint
-UPDATE `sessions` SET `date_voting_closed` = true WHERE `date_voting_closed` = false AND `date_options` IS NOT NULL AND `status` != 'tentative';--> statement-breakpoint
+UPDATE `sessions` SET `date_voting_closed` = true WHERE `date_voting_closed` = false AND `date_options` IS NOT NULL AND (`status` != 'tentative' OR `date` <= unixepoch() * 1000);--> statement-breakpoint
 UPDATE `session_signups` SET `deleted_at` = (unixepoch() * 1000) WHERE `deleted_at` IS NULL AND `session` IN (SELECT `id` FROM `sessions` WHERE `date_voting_closed` = false AND `date_options` IS NOT NULL AND `date_options` != '[]');--> statement-breakpoint
 UPDATE `sessions` SET `date` = NULL WHERE `date_voting_closed` = false AND `date_options` IS NOT NULL AND `date_options` != '[]';

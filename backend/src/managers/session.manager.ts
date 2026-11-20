@@ -44,6 +44,8 @@ export default class SessionManager {
       .get()
 
     if (existingSignup && !existingSignup.deletedAt) return false
+    const session = SessionSource.getActiveById(sessionId)
+    if (session && isDatePollOpen(session)) return false
 
     db.insert(sessionSignups)
       .values({
@@ -235,7 +237,7 @@ export default class SessionManager {
 
       if (!updated) throw new Error('Update failed')
       if (request.deletedAt) TournamentManager.remove(session.id)
-      if (opensPoll) SessionSource.removeSignups(session.id)
+      if (opensPoll) SessionSource.resetPoll(session.id)
       if (chosenDate !== null && next.dateOptions?.includes(chosenDate))
         SessionSource.applyDateVotes(session.id, chosenDate)
     })
