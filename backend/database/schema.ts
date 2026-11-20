@@ -75,7 +75,7 @@ export const sessions = sqliteTable('sessions', {
   ...metadata,
   name: text().notNull(),
   description: text(),
-  date: integer({ mode: 'timestamp_ms' }).notNull(),
+  date: integer({ mode: 'timestamp_ms' }),
   location: text(),
   status: text()
     .$type<SessionStatus>()

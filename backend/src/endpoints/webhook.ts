@@ -100,7 +100,7 @@ function respondToWebhookError(error: unknown, res: Response): void {
   if (error instanceof WebhookError) {
     if (error.code === 'NO_ACTIVE_SESSION') {
       const nextSession = SessionSource.findNext(new Date())
-      if (nextSession)
+      if (nextSession?.date)
         res.setHeader('Retry-After', nextSession.date.toUTCString())
     }
     res.status(error.status).json({ code: error.code, message: error.message })

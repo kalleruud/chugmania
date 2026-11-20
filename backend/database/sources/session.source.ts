@@ -83,6 +83,18 @@ export default class SessionSource {
       .run()
   }
 
+  static removeSignups(sessionId: string) {
+    db.update(sessionSignups)
+      .set({ deletedAt: new Date() })
+      .where(
+        and(
+          eq(sessionSignups.session, sessionId),
+          isNull(sessionSignups.deletedAt)
+        )
+      )
+      .run()
+  }
+
   static getDateVotes(sessionId: string) {
     return db
       .select({ dates: sessionDateVotes.dates, user: users })

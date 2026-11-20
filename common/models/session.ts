@@ -24,6 +24,17 @@ export type SessionWithSignups = Session & {
   dateVotes: SessionDateVote[]
 }
 
+export function isDatePollOpen(
+  session: Pick<Session, 'date' | 'status' | 'dateOptions' | 'dateVotingClosed'>
+) {
+  return (
+    session.date === null &&
+    session.status === 'tentative' &&
+    !session.dateVotingClosed &&
+    !!session.dateOptions?.length
+  )
+}
+
 function isDateList(data: unknown): data is number[] {
   return Array.isArray(data) && data.every(d => Number.isFinite(d))
 }

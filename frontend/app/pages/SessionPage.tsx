@@ -31,7 +31,8 @@ import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
 import { useTimeEntryInput } from '@/contexts/TimeEntryInputContext'
 import loc from '@common/locale/locales'
-import type { SessionWithSignups } from '@common/models/session'
+import { isDatePollOpen, type SessionWithSignups } from '@common/models/session'
+import { isUpcoming } from '@common/utils/date'
 import { isInactiveFinalReset } from '@common/utils/tournament'
 import { PencilIcon, PlusIcon, Trash2 } from 'lucide-react'
 import { useState } from 'react'
@@ -47,7 +48,9 @@ function getDefaultTab(
   const isSignedUp = session.signups.some(
     s => s.user.id === userId && s.response !== 'no'
   )
-  if (!isSignedUp) return loc.no.session.participants
+  if (isDatePollOpen(session)) return loc.no.session.participants
+  if (isUpcoming(session) && (!isSignedUp || !hasTournament))
+    return loc.no.session.participants
   return hasTournament ? loc.no.tournament.title : loc.no.session.session
 }
 
@@ -207,12 +210,15 @@ export default function SessionPage() {
         <TabsContent
           className='flex flex-col gap-4'
           value={loc.no.session.participants}>
-          <SessionDatePoll session={session} />
-          <SessionSignupPanel
-            className='rounded-sm border bg-background p-2'
-            disabled={isCancelled}
-            session={session}
-          />
+          {isDatePollOpen(session) ? (
+            <SessionDatePoll session={session} />
+          ) : (
+            <SessionSignupPanel
+              className='rounded-sm border bg-background p-2'
+              disabled={isCancelled}
+              session={session}
+            />
+          )}
         </TabsContent>
         <TabsContent
           className='flex flex-col gap-4'

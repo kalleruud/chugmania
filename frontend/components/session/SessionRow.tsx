@@ -28,7 +28,7 @@ export function SessionRow({
   highlight,
 }: Readonly<SesssionComponentProps>) {
   const { loggedInUser, isLoggedIn } = useAuth()
-  const distance = useDistanceToNow({ date: session.date })
+  const distance = useDistanceToNow({ date: session.date ?? new Date() })
 
   const isCancelled = session.status === 'cancelled'
 
@@ -48,7 +48,10 @@ export function SessionRow({
           {session.name}
         </ItemTitle>
         <ItemDescription className='text-start'>
-          <span>{description ?? distance}</span>
+          <span>
+            {description ??
+              (session.date ? distance : loc.no.session.datePoll.pendingDate)}
+          </span>
         </ItemDescription>
       </ItemContent>
 

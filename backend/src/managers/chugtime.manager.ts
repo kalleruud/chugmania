@@ -84,7 +84,7 @@ export default class ChugTimeManager {
       .from(sessions)
       .where(isNull(sessions.deletedAt))
       .all()
-    return new Map(rows.map(row => [row.id, row.date.getTime()]))
+    return new Map(rows.map(row => [row.id, row.date?.getTime() ?? 0]))
   }
 
   private static getRecentAverage(

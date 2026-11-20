@@ -30,9 +30,14 @@ export default class CalendarManager {
     baseUrl: URL,
     calendarName: string
   ): string {
-    const events = sessionList.map(session =>
-      CalendarManager.createSessionEvent(session, baseUrl, calendarName)
-    )
+    const events = sessionList
+      .filter(
+        (session): session is SessionWithSignups & { date: Date } =>
+          session.date !== null
+      )
+      .map(session =>
+        CalendarManager.createSessionEvent(session, baseUrl, calendarName)
+      )
 
     const { error, value } = createEvents(events, {
       productId: CalendarManager.PRODUCT_ID,
@@ -46,7 +51,7 @@ export default class CalendarManager {
   }
 
   private static createSessionEvent(
-    session: SessionWithSignups,
+    session: SessionWithSignups & { date: Date },
     baseUrl: URL,
     calendarName: string
   ): EventAttributes {

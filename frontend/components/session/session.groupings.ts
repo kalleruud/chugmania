@@ -2,7 +2,7 @@ import type { SessionWithSignups } from '@common/models/session'
 import type { Grouping } from '../grouped-list/grouping'
 import { byMonth, byWeek, byYear } from '../grouped-list/groupings/date'
 
-const sessionDate = (session: SessionWithSignups) => session.date
+const sessionDate = (session: SessionWithSignups) => session.date ?? new Date()
 
 export const sessionGroupings = {
   year: byYear(sessionDate),

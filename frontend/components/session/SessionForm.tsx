@@ -68,7 +68,7 @@ export default function SessionForm({
         )
 
       case 'edit':
-        if (!date) return toast.error('Dato er påkrevd')
+        if (!date && session.date) return toast.error('Dato er påkrevd')
         if (!canCreate) {
           toast.error(loc.no.error.messages.insufficient_permissions)
           return
@@ -116,7 +116,7 @@ export default function SessionForm({
         selected={date}
         onSelect={setDate}
         disabled={disabled}
-        required={variant === 'edit'}
+        required={variant === 'edit' && !!session.date}
       />
 
       <Field

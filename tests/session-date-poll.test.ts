@@ -52,7 +52,17 @@ describe('Session date poll', () => {
       .toSorted()
   }
 
-  test.serial('owner defines the selectable dates', async () => {
+  function openPoll(socket: TypedSocket, dateOptions: number[]) {
+    return SessionManager.onEditSession(socket, {
+      type: 'EditSessionRequest',
+      id: sessionId,
+      date: null,
+      dateOptions,
+      dateVotingClosed: false,
+    })
+  }
+
+  test.serial('owner opens a poll on a tentative session', async () => {
     ownerSocket = await login(owner)
     aliceSocket = await login(alice)
     bobSocket = await login(bob)
@@ -63,34 +73,40 @@ describe('Session date poll', () => {
       name: 'Poll Cup',
       date: new Date(MONDAY),
     }).then(assertResponse)
+    await rsvp(bob.id, 'yes')
+    await rsvp(carol.id, 'maybe')
 
     await assert.rejects(vote(aliceSocket, [MONDAY]))
+    await assert.rejects(openPoll(ownerSocket, [MONDAY, TUESDAY, FRIDAY]))
 
     await SessionManager.onEditSession(ownerSocket, {
       type: 'EditSessionRequest',
       id: sessionId,
-      dateOptions: [MONDAY, TUESDAY, FRIDAY],
+      status: 'tentative',
     }).then(assertResponse)
+    await assert.rejects(openPoll(ownerSocket, []))
+    await openPoll(ownerSocket, [MONDAY, TUESDAY, FRIDAY]).then(assertResponse)
 
     const session = await fetchSession()
+    expect(session.date).toBeNull()
     expect(session.dateOptions).toEqual([MONDAY, TUESDAY, FRIDAY])
     expect(session.dateVotingClosed).toBe(false)
     expect(session.dateVotes).toEqual([])
+    expect(session.signups).toEqual([])
+  })
+
+  test.serial('players cannot sign up while the poll is open', async () => {
+    await assert.rejects(rsvp(alice.id, 'yes'))
+    expect((await fetchSession()).signups).toEqual([])
   })
 
   test.serial('players cannot change the poll', async () => {
+    await assert.rejects(openPoll(aliceSocket, [FRIDAY]))
     await assert.rejects(
       SessionManager.onEditSession(aliceSocket, {
         type: 'EditSessionRequest',
         id: sessionId,
-        dateOptions: [FRIDAY],
-      })
-    )
-    await assert.rejects(
-      SessionManager.onEditSession(aliceSocket, {
-        type: 'EditSessionRequest',
-        id: sessionId,
-        dateVotingClosed: true,
+        date: new Date(FRIDAY),
       })
     )
   })
@@ -122,31 +138,47 @@ describe('Session date poll', () => {
     expect(votersFor(await fetchSession(), MONDAY)).toEqual(['poll-bob'])
   })
 
-  test.serial('owner closes submissions and picks a date', async () => {
-    await rsvp(bob.id, 'yes')
-    await rsvp(carol.id, 'maybe')
+  test.serial('a session without a date stays tentative', async () => {
+    await assert.rejects(
+      SessionManager.onEditSession(ownerSocket, {
+        type: 'EditSessionRequest',
+        id: sessionId,
+        status: 'confirmed',
+      })
+    )
+    await assert.rejects(
+      SessionManager.onEditSession(ownerSocket, {
+        type: 'EditSessionRequest',
+        id: sessionId,
+        dateVotingClosed: true,
+      })
+    )
+    const session = await fetchSession()
+    expect(session.status).toBe('tentative')
+    expect(session.date).toBeNull()
+  })
 
+  test.serial('owner picks a date and closes the poll', async () => {
     await SessionManager.onEditSession(ownerSocket, {
       type: 'EditSessionRequest',
       id: sessionId,
       date: new Date(TUESDAY),
-      dateVotingClosed: true,
+      status: 'confirmed',
     }).then(assertResponse)
 
     await assert.rejects(vote(bobSocket, [TUESDAY]))
 
     const session = await fetchSession()
     expect(session.dateVotingClosed).toBe(true)
-    expect(session.date.getTime()).toBe(TUESDAY)
-    expect(votersFor(session, TUESDAY)).toEqual(['poll-alice'])
+    expect(session.status).toBe('confirmed')
+    expect(session.date?.getTime()).toBe(TUESDAY)
 
     const responses = Object.fromEntries(
       session.signups.map(s => [s.user.firstName, s.response])
     )
-    expect(responses).toEqual({
-      'poll-alice': 'yes',
-      'poll-bob': 'no',
-      'poll-carol': 'maybe',
-    })
+    expect(responses).toEqual({ 'poll-alice': 'yes', 'poll-bob': 'no' })
+
+    await rsvp(carol.id, 'maybe')
+    expect((await fetchSession()).signups).toHaveLength(3)
   })
 })

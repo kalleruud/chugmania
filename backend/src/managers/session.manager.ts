@@ -1,6 +1,7 @@
 import loc from '@common/locale/locales'
 import {
   isCreateSessionRequest,
+  isDatePollOpen,
   isDeleteSessionRequest,
   isEditSessionRequest,
   isRsvpSessionRequest,
@@ -165,7 +166,7 @@ export default class SessionManager {
       description: request.description,
       location: request.location,
       status: request.status,
-      date: new Date(request.date),
+      date: request.date ? new Date(request.date) : new Date(),
     })
 
     console.debug(
@@ -200,10 +201,23 @@ export default class SessionManager {
     }
 
     const id = request.id
-    const chosenDate =
-      request.dateVotingClosed && request.date
-        ? new Date(request.date).getTime()
-        : undefined
+    const date = request.date ? new Date(request.date) : request.date
+    const next = {
+      date: date === undefined ? session.date : date,
+      status: request.status ?? session.status,
+      dateOptions:
+        request.dateOptions === undefined
+          ? session.dateOptions
+          : request.dateOptions,
+      dateVotingClosed: request.dateVotingClosed ?? session.dateVotingClosed,
+    }
+    const wasPollOpen = isDatePollOpen(session)
+    const opensPoll = !wasPollOpen && next.date === null
+    const chosenDate = wasPollOpen && next.date ? next.date.getTime() : null
+
+    if (next.date === null && !isDatePollOpen(next)) {
+      throw new Error(loc.no.session.datePoll.invalidPoll)
+    }
 
     TransactionSource.run(() => {
       const updated = SessionSource.update(session.id, {
@@ -212,8 +226,8 @@ export default class SessionManager {
         location: request.location,
         status: request.status,
         dateOptions: request.dateOptions,
-        dateVotingClosed: request.dateVotingClosed,
-        date: request.date ? new Date(request.date) : undefined,
+        dateVotingClosed: chosenDate === null ? request.dateVotingClosed : true,
+        date,
         deletedAt: request.deletedAt
           ? new Date(request.deletedAt)
           : request.deletedAt,
@@ -221,7 +235,8 @@ export default class SessionManager {
 
       if (!updated) throw new Error('Update failed')
       if (request.deletedAt) TournamentManager.remove(session.id)
-      if (chosenDate && session.dateOptions?.includes(chosenDate))
+      if (opensPoll) SessionSource.removeSignups(session.id)
+      if (chosenDate !== null && next.dateOptions?.includes(chosenDate))
         SessionSource.applyDateVotes(session.id, chosenDate)
     })
 
@@ -270,6 +285,10 @@ export default class SessionManager {
       throw new Error(loc.no.error.messages.not_in_db(request.session))
     }
 
+    if (isDatePollOpen(session)) {
+      throw new Error(loc.no.session.datePoll.pendingError)
+    }
+
     if (isPast(session) && !isModerator) {
       throw new Error(loc.no.session.errorMessages.no_edit_historical)
     }
@@ -303,11 +322,11 @@ export default class SessionManager {
 
     const session = SessionSource.getActiveById(request.session)
 
-    if (!session?.dateOptions?.length) {
+    if (!session) {
       throw new Error(loc.no.error.messages.not_in_db(request.session))
     }
 
-    if (session.dateVotingClosed) {
+    if (!isDatePollOpen(session)) {
       throw new Error(loc.no.session.datePoll.closedError)
     }
 

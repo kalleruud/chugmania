@@ -13,7 +13,7 @@ export default class SessionScheduler {
   static async start(): Promise<void> {
     const nextSession = await SessionScheduler.findNextSession()
 
-    if (!nextSession) {
+    if (!nextSession?.date) {
       console.debug(
         new Date().toISOString(),
         'No upcoming sessions to schedule'

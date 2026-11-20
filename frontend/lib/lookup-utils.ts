@@ -1,3 +1,4 @@
+import loc from '@common/locale/locales'
 import type { SessionWithSignups } from '@common/models/session'
 import type { Track } from '@common/models/track'
 import type { UserInfo } from '@common/models/user'
@@ -17,7 +18,9 @@ export function trackToLookupItem(track: Track) {
 }
 
 export function sessionToLookupItem(session: SessionWithSignups) {
-  const formattedDate = formatDateWithYear(session.date)
+  const formattedDate = session.date
+    ? formatDateWithYear(session.date)
+    : loc.no.session.datePoll.pendingDate
   return {
     ...session,
     label: session.name,

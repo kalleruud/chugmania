@@ -155,7 +155,7 @@ const no = {
     },
     statusOptions: {
       confirmed: 'Bekreftet',
-      tentative: 'Usikkert',
+      tentative: 'Ubekreftet',
       cancelled: 'Avlyst',
     } as Record<SessionStatus, string>,
     status: {
@@ -169,7 +169,16 @@ const no = {
         'Velg alle datoer du har mulighet til å møte opp. Du blir automatisk påmeldt om en dato du velger blir valgt.',
       edit: 'Datoavstemning',
       description: 'Velg datoene spillerne kan stemme på.',
-      choose: 'Velg',
+      choose: 'Velg og lukk',
+      choosePlaceholder: 'Velg dato',
+      pendingDate: 'Dato ikke bestemt',
+      pendingError: 'Datoen er ikke bestemt ennå',
+      invalidPoll:
+        'En session uten dato må være ubekreftet og ha en åpen datoavstemning',
+      warning:
+        'Datoen nullstilles og alle påmeldinger fjernes til en dato er valgt.',
+      canAttend: 'Kan',
+      cannotAttend: 'Kan ikke',
       votes: (count: number) =>
         `${count} ${count === 1 ? 'stemme' : 'stemmer'}`,
       closedError: 'Avstemningen er stengt',
