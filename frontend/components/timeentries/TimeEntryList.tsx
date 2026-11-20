@@ -128,7 +128,7 @@ function TimeEntryListItem(props: ComponentProps<typeof TimeEntryRow>) {
       item={props.item}
       onClick={props.onClick}
       hideTrack
-      className='rounded-none'
+      className='rounded-none px-4 py-3'
     />
   )
 }

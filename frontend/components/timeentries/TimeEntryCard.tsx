@@ -38,15 +38,11 @@ export default function TimeEntryCard({
         now && 'border-l-2 border-primary bg-primary/5 hover:bg-primary/8'
       )}
       {...props}>
-      <div className='flex items-center gap-2'>
+      <div className='flex items-center gap-4'>
         {now && <NowBadge now={now} />}
-        <span className='mr-auto' />
-        <NowButton kind='timeEntry' entry={entry} subject={name} />
-      </div>
-      <div className='flex items-center gap-4 py-1'>
         <NameCellPart
           name={name}
-          className='min-w-0 text-lg whitespace-normal sm:text-2xl'
+          className='min-w-0 text-lg whitespace-normal sm:text-xl'
         />
         <Marker
           className='-ml-3 text-yellow-500'
@@ -54,9 +50,8 @@ export default function TimeEntryCard({
           symbol='*'
         />
         <span className='mr-auto' />
-        <div className='text-lg sm:text-2xl'>
-          <TimePart duration={entry.duration} status={entry.status} />
-        </div>
+        <TimePart duration={entry.duration} status={entry.status} />
+        <NowButton kind='timeEntry' entry={entry} subject={name} />
       </div>
       {track !== undefined && !hideTrack && (
         <div className='border-t border-primary/20 pt-3'>
