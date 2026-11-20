@@ -318,6 +318,7 @@ const no = {
     downstream: 'Angre først resultatene i: ',
   },
   activeEntry: {
+    live: 'LIVE',
     now: 'Nå',
     next: 'Neste',
     setNow: 'Fest som Nå',

@@ -36,7 +36,7 @@ export default function MatchCard({
   const canChooseWinner = canSetResult && match.status === 'planned'
   const showTrack = track !== undefined && !hideTrack
   const name = (user: UserInfo | undefined, slot: string | undefined) =>
-    user ? getUserFullName(user) : slot || loc.no.match.unknownUser
+    user ? displayName(user) : slot || loc.no.match.unknownUser
 
   return (
     <div
@@ -166,7 +166,7 @@ function Player({
         )}>
         <NameCellPart
           name={
-            user ? getUserFullName(user) : slotLabel || loc.no.match.unknownUser
+            user ? displayName(user) : slotLabel || loc.no.match.unknownUser
           }
           className='overflow-visible text-base wrap-break-word whitespace-normal sm:text-2xl'
         />
@@ -176,4 +176,8 @@ function Player({
       )}
     </div>
   )
+}
+
+function displayName(user: UserInfo): string {
+  return user.shortName ?? getUserFullName(user)
 }

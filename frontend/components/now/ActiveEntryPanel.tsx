@@ -39,11 +39,11 @@ export default function ActiveEntryPanel({
     <section
       data-now-panel={session.id}
       tabIndex={-1}
-      aria-label={`${loc.no.activeEntry.now}: ${session.name}`}
+      aria-label={`${loc.no.activeEntry.live}: ${session.name}`}
       className={twMerge('flex flex-col gap-2 outline-none', className)}
       {...props}>
       <PageHeader
-        title={loc.no.activeEntry.now}
+        title={loc.no.activeEntry.live}
         description={session.name}
         to={'/sessions/' + session.id}
         Icon={Radio}
