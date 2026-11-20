@@ -88,7 +88,7 @@ export default class SessionSource {
       .where(eq(sessionDateVotes.session, sessionId))
       .run()
     db.update(sessionSignups)
-      .set({ deletedAt: new Date() })
+      .set({ response: 'maybe' })
       .where(
         and(
           eq(sessionSignups.session, sessionId),

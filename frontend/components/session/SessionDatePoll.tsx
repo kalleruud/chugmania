@@ -145,7 +145,7 @@ export default function SessionDatePoll({
             </Button>
             <button
               type='button'
-              className='flex min-w-0 flex-1 items-center gap-2 self-stretch rounded-sm text-start hover:underline focus-visible:outline-2 focus-visible:outline-primary'
+              className='flex min-w-0 flex-1 cursor-pointer items-center gap-2 self-stretch rounded-sm text-start focus-visible:outline-2 focus-visible:outline-primary'
               onClick={() => setDetailsDate(date)}>
               <span className='flex-1 truncate capitalize'>
                 {formatDateWithYear(new Date(date))}

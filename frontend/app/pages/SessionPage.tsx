@@ -210,15 +210,12 @@ export default function SessionPage() {
         <TabsContent
           className='flex flex-col gap-4'
           value={loc.no.session.participants}>
-          {isDatePollOpen(session) ? (
-            <SessionDatePoll session={session} />
-          ) : (
-            <SessionSignupPanel
-              className='rounded-sm border bg-background p-2'
-              disabled={isCancelled}
-              session={session}
-            />
-          )}
+          {isDatePollOpen(session) && <SessionDatePoll session={session} />}
+          <SessionSignupPanel
+            className='rounded-sm border bg-background p-2'
+            disabled={isCancelled || isDatePollOpen(session)}
+            session={session}
+          />
         </TabsContent>
         <TabsContent
           className='flex flex-col gap-4'

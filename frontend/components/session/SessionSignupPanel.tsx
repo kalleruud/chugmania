@@ -15,7 +15,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@common/locale/locales'
-import type { SessionWithSignups } from '@common/models/session'
+import { isDatePollOpen, type SessionWithSignups } from '@common/models/session'
 import type { UserInfo } from '@common/models/user'
 import { isPast, isUpcoming } from '@common/utils/date'
 import { useMemo, type ComponentProps } from 'react'
@@ -64,6 +64,7 @@ export default function SessionSignupPanel({
   )
 
   const selfRsvp = isLoggedIn && signedUpUserIds.has(loggedInUser.id)
+  const isPollOpen = isDatePollOpen(session)
 
   if (isLoadingData)
     return (
@@ -106,12 +107,15 @@ export default function SessionSignupPanel({
         </h3>
         {canManageSignups &&
           session.status === 'tentative' &&
-          isUpcoming(session) && <DateOptionsDialog session={session} />}
+          isUpcoming(session) &&
+          !isPollOpen && <DateOptionsDialog session={session} />}
       </div>
 
       <div
         className='flex items-center justify-center gap-2'
-        hidden={!canManageSignups && (isPast(session) || selfRsvp)}>
+        hidden={
+          isPollOpen || (!canManageSignups && (isPast(session) || selfRsvp))
+        }>
         {canManageSignups && (
           <ManageSessionParticipantsDialog
             availableUsers={availableUsers}
@@ -170,31 +174,32 @@ export default function SessionSignupPanel({
                     className='min-h-12 w-full py-1'
                     highlight={isSelf}
                     hideRanking>
-                    {(canManageSignups || (isUpcoming(session) && isSelf)) && (
-                      <Select
-                        value={response}
-                        onValueChange={value => {
-                          if (
-                            value === 'yes' ||
-                            value === 'no' ||
-                            value === 'maybe'
-                          )
-                            handleRsvp(value, user)
-                        }}
-                        disabled={disabled}>
-                        <SelectTrigger aria-label={`${user.firstName}: RSVP`}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent align='end'>
-                          {RESPONSE_OPTIONS.map(({ response, Icon }) => (
-                            <SelectItem key={response} value={response}>
-                              <Icon className='size-4' />
-                              {loc.no.session.rsvp.responses[response]}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
+                    {!isPollOpen &&
+                      (canManageSignups || (isUpcoming(session) && isSelf)) && (
+                        <Select
+                          value={response}
+                          onValueChange={value => {
+                            if (
+                              value === 'yes' ||
+                              value === 'no' ||
+                              value === 'maybe'
+                            )
+                              handleRsvp(value, user)
+                          }}
+                          disabled={disabled}>
+                          <SelectTrigger aria-label={`${user.firstName}: RSVP`}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent align='end'>
+                            {RESPONSE_OPTIONS.map(({ response, Icon }) => (
+                              <SelectItem key={response} value={response}>
+                                <Icon className='size-4' />
+                                {loc.no.session.rsvp.responses[response]}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
                   </UserRow>
                 )
               })}

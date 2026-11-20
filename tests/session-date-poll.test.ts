@@ -33,10 +33,10 @@ describe('Session date poll', () => {
     })
   }
 
-  function rsvp(user: string, response: SessionResponse) {
+  function rsvp(user: string, response: SessionResponse, session = sessionId) {
     return SessionManager.onRsvpSession(ownerSocket, {
       type: 'RsvpSessionRequest',
-      session: sessionId,
+      session,
       user,
       response,
     }).then(assertResponse)
@@ -62,6 +62,12 @@ describe('Session date poll', () => {
     })
   }
 
+  function responses(session: Awaited<ReturnType<typeof fetchSession>>) {
+    return Object.fromEntries(
+      session.signups.map(s => [s.user.firstName, s.response])
+    )
+  }
+
   test.serial('owner opens a poll on a tentative session', async () => {
     ownerSocket = await login(owner)
     aliceSocket = await login(alice)
@@ -84,7 +90,6 @@ describe('Session date poll', () => {
       id: sessionId,
       status: 'tentative',
     }).then(assertResponse)
-    await assert.rejects(openPoll(ownerSocket, []))
     await openPoll(ownerSocket, [MONDAY, TUESDAY, FRIDAY]).then(assertResponse)
 
     const session = await fetchSession()
@@ -92,12 +97,15 @@ describe('Session date poll', () => {
     expect(session.dateOptions).toEqual([MONDAY, TUESDAY, FRIDAY])
     expect(session.dateVotingClosed).toBe(false)
     expect(session.dateVotes).toEqual([])
-    expect(session.signups).toEqual([])
+    expect(responses(session)).toEqual({
+      'poll-bob': 'maybe',
+      'poll-carol': 'maybe',
+    })
   })
 
   test.serial('players cannot sign up while the poll is open', async () => {
     await assert.rejects(rsvp(alice.id, 'yes'))
-    expect((await fetchSession()).signups).toEqual([])
+    expect(responses(await fetchSession())).not.toHaveProperty('poll-alice')
   })
 
   test.serial('players cannot change the poll', async () => {
@@ -121,6 +129,11 @@ describe('Session date poll', () => {
     expect(votersFor(session, MONDAY)).toEqual(['poll-bob'])
     expect(votersFor(session, TUESDAY)).toEqual(['poll-alice'])
     expect(votersFor(session, FRIDAY)).toEqual(['poll-alice'])
+    expect(responses(session)).toEqual({
+      'poll-alice': 'maybe',
+      'poll-bob': 'maybe',
+      'poll-carol': 'maybe',
+    })
 
     expect(broadcast).toHaveBeenCalledWith(
       'all_sessions',
@@ -146,13 +159,6 @@ describe('Session date poll', () => {
         status: 'confirmed',
       })
     )
-    await assert.rejects(
-      SessionManager.onEditSession(ownerSocket, {
-        type: 'EditSessionRequest',
-        id: sessionId,
-        dateVotingClosed: true,
-      })
-    )
     const session = await fetchSession()
     expect(session.status).toBe('tentative')
     expect(session.date).toBeNull()
@@ -173,14 +179,16 @@ describe('Session date poll', () => {
     expect(session.status).toBe('confirmed')
     expect(session.date?.getTime()).toBe(TUESDAY)
 
-    const responses = Object.fromEntries(
-      session.signups.map(s => [s.user.firstName, s.response])
-    )
-    expect(responses).toEqual({ 'poll-alice': 'yes', 'poll-bob': 'no' })
+    expect(responses(session)).toEqual({
+      'poll-alice': 'yes',
+      'poll-bob': 'no',
+      'poll-carol': 'maybe',
+    })
 
-    await rsvp(carol.id, 'maybe')
-    expect((await fetchSession()).signups).toHaveLength(3)
+    await rsvp(carol.id, 'yes')
+    expect(responses(await fetchSession())['poll-carol']).toBe('yes')
   })
+
   test.serial('reopening the poll starts from scratch', async () => {
     await SessionManager.onEditSession(ownerSocket, {
       type: 'EditSessionRequest',
@@ -192,6 +200,42 @@ describe('Session date poll', () => {
     const session = await fetchSession()
     expect(session.date).toBeNull()
     expect(session.dateVotes).toEqual([])
-    expect(session.signups).toEqual([])
+    expect(responses(session)).toEqual({
+      'poll-alice': 'maybe',
+      'poll-bob': 'maybe',
+      'poll-carol': 'maybe',
+    })
+  })
+
+  test.serial('clearing the date makes the session tentative', async () => {
+    const id = Bun.randomUUIDv7()
+    await SessionManager.onCreateSession(ownerSocket, {
+      type: 'CreateSessionRequest',
+      id,
+      name: 'Undated Cup',
+      date: new Date(MONDAY),
+    }).then(assertResponse)
+    await rsvp(bob.id, 'yes', id)
+
+    await assert.rejects(
+      SessionManager.onEditSession(ownerSocket, {
+        type: 'EditSessionRequest',
+        id,
+        date: null,
+      })
+    )
+    await SessionManager.onEditSession(ownerSocket, {
+      type: 'EditSessionRequest',
+      id,
+      date: null,
+      status: 'tentative',
+    }).then(assertResponse)
+
+    const session = await SessionManager.getSession(id)
+    assert(session)
+    expect(session.date).toBeNull()
+    expect(session.status).toBe('tentative')
+    expect(responses(session)).toEqual({ 'poll-bob': 'yes' })
+    await rsvp(alice.id, 'maybe', id)
   })
 })

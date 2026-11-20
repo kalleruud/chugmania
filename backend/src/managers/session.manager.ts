@@ -214,10 +214,10 @@ export default class SessionManager {
       dateVotingClosed: request.dateVotingClosed ?? session.dateVotingClosed,
     }
     const wasPollOpen = isDatePollOpen(session)
-    const opensPoll = !wasPollOpen && next.date === null
+    const opensPoll = !wasPollOpen && isDatePollOpen(next)
     const chosenDate = wasPollOpen && next.date ? next.date.getTime() : null
 
-    if (next.date === null && !isDatePollOpen(next)) {
+    if (next.date === null && next.status !== 'tentative') {
       throw new Error(loc.no.session.datePoll.invalidPoll)
     }
 
@@ -339,7 +339,12 @@ export default class SessionManager {
       )
     }
 
-    SessionSource.setDateVote(session.id, actor.id, [...new Set(request.dates)])
+    TransactionSource.run(() => {
+      SessionSource.setDateVote(session.id, actor.id, [
+        ...new Set(request.dates),
+      ])
+      SessionSource.setSignup(session.id, actor.id, 'maybe')
+    })
 
     console.debug(
       new Date().toISOString(),

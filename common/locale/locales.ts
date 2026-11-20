@@ -173,10 +173,10 @@ const no = {
       choosePlaceholder: 'Velg dato',
       pendingDate: 'Dato ikke bestemt',
       pendingError: 'Datoen er ikke bestemt ennå',
-      invalidPoll:
-        'En session uten dato må være ubekreftet og ha en åpen datoavstemning',
+      invalidPoll: 'En session uten dato må være ubekreftet',
+      clearDate: 'Fjern dato',
       warning:
-        'Datoen nullstilles og alle påmeldinger fjernes til en dato er valgt.',
+        'Datoen nullstilles og alle svar settes til «Skal kanskje» til en dato er valgt.',
       canAttend: 'Kan',
       cannotAttend: 'Kan ikke',
       votes: (count: number) =>

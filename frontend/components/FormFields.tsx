@@ -100,10 +100,12 @@ export function CalendarField({
   onSelect,
   disabled,
   required,
+  placeholder,
 }: Readonly<{
   id: string
   name: string
   hidden?: boolean
+  placeholder?: string
   selected?: Date
   onSelect?: (date: Date | undefined) => void
   disabled?: boolean
@@ -197,7 +199,9 @@ export function CalendarField({
                 isEmpty && 'text-muted-foreground'
               )}
               disabled={disabled}>
-              {formatDateWithYear(selected ?? now)}
+              {selected || !placeholder
+                ? formatDateWithYear(selected ?? now)
+                : placeholder}
               <ChevronDownIcon />
             </Button>
           </PopoverTrigger>

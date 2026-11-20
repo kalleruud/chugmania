@@ -1,7 +1,9 @@
+import { Button } from '@/components/ui/button'
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import loc from '@common/locale/locales'
 import type { SessionWithSignups } from '@common/models/session'
+import { XIcon } from 'lucide-react'
 import { useState, type ComponentProps, type SubmitEvent } from 'react'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
@@ -68,7 +70,6 @@ export default function SessionForm({
         )
 
       case 'edit':
-        if (!date && session.date) return toast.error('Dato er påkrevd')
         if (!canCreate) {
           toast.error(loc.no.error.messages.insufficient_permissions)
           return
@@ -80,7 +81,7 @@ export default function SessionForm({
               id: session.id,
               name,
               description: description || undefined,
-              date,
+              date: date ?? null,
               location: location || undefined,
               status,
             })
@@ -115,9 +116,26 @@ export default function SessionForm({
         name={loc.no.session.form.date}
         selected={date}
         onSelect={setDate}
+        placeholder={
+          variant === 'edit' ? loc.no.session.datePoll.pendingDate : undefined
+        }
         disabled={disabled}
-        required={variant === 'edit' && !!session.date}
       />
+      {variant === 'edit' && date && (
+        <Button
+          type='button'
+          size='sm'
+          variant='outline'
+          className='-mt-2 justify-self-start'
+          disabled={disabled}
+          onClick={() => {
+            setDate(undefined)
+            setStatus('tentative')
+          }}>
+          <XIcon />
+          {loc.no.session.datePoll.clearDate}
+        </Button>
+      )}
 
       <Field
         id='location'
