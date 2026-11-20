@@ -12,7 +12,6 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
 import { Spinner } from '@/components/ui/spinner'
-import { useAuth } from '@/contexts/AuthContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@common/locale/locales'
 import { useParams } from 'react-router'
@@ -22,7 +21,6 @@ const sectionClassName =
 
 export default function TrackPage() {
   const { id } = useParams()
-  const { isLoggedIn, loggedInUser } = useAuth()
   const { timeEntries, tracks, matches, isLoadingData } = useData()
 
   if (isLoadingData) {
@@ -64,11 +62,7 @@ export default function TrackPage() {
       <TrackMedals track={track} />
 
       <div className={sectionClassName}>
-        <TimeEntryList
-          track={track.id}
-          entries={entries}
-          highlight={e => isLoggedIn && loggedInUser.id === e.user}
-        />
+        <TimeEntryList track={track.id} entries={entries} />
       </div>
 
       <div className={sectionClassName}>

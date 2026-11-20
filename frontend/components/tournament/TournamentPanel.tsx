@@ -218,12 +218,7 @@ export default function TournamentPanel({
                       className='size-4 shrink-0 transition-transform group-open/stage:rotate-180'
                     />
                   </summary>
-                  <MatchList
-                    matches={matches}
-                    managed
-                    trackSeparators
-                    featuredMatchId={featuredMatch?.id}
-                  />
+                  <MatchList matches={matches} managed trackSeparators />
                 </details>
               )
             })}

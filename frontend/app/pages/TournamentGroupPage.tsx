@@ -21,8 +21,7 @@ import { Link, useParams } from 'react-router'
 
 export default function TournamentGroupPage() {
   const { id, groupId } = useParams()
-  const { sessions, tournaments, users, isLoadingData, activeEntryQueues } =
-    useData()
+  const { sessions, tournaments, users, isLoadingData } = useData()
   const { loggedInUser, isLoggedIn } = useAuth()
   if (isLoadingData) {
     return (
@@ -42,11 +41,6 @@ export default function TournamentGroupPage() {
   const matches = tournament.matches.filter(
     match => match.tournament?.groupId === group.id
   )
-  const now = activeEntryQueues.get(session.id)?.now
-  const featuredMatch =
-    now?.kind === 'match'
-      ? matches.find(match => match.id === now.entry.id)
-      : undefined
   const canRename = isLoggedIn && loggedInUser.role !== 'user'
 
   return (
@@ -211,12 +205,7 @@ export default function TournamentGroupPage() {
         <h2 className='text-xl wrap-break-word sm:text-2xl'>
           {loc.no.tournament.groupMatches}
         </h2>
-        <MatchList
-          matches={matches}
-          managed
-          trackSeparators
-          featuredMatchId={featuredMatch?.id}
-        />
+        <MatchList matches={matches} managed trackSeparators />
       </section>
     </div>
   )

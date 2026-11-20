@@ -1,6 +1,7 @@
 import { useAuth } from '@/contexts/AuthContext'
 import { useData } from '@/contexts/DataContext'
 import { useTimeEntryInput } from '@/contexts/TimeEntryInputContext'
+import { useActiveEntries } from '@/hooks/useActiveEntries'
 import loc from '@common/locale/locales'
 import type {
   GapType,
@@ -9,12 +10,13 @@ import type {
 } from '@common/models/timeEntry'
 import { PlusIcon } from '@heroicons/react/24/solid'
 import { Asterisk } from 'lucide-react'
-import { useState } from 'react'
+import { useState, type ComponentProps } from 'react'
 import GroupedList from '../grouped-list/GroupedList'
 import { Button } from '../ui/button'
 import { Empty } from '../ui/empty'
 import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group'
 import { byMedal, hasMedalTimes } from './timeEntry.groupings'
+import TimeEntryCard from './TimeEntryCard'
 import TimeEntryRow, { Marker } from './TimeEntryRow'
 
 type FilterType = 'all' | 'best' | 'latest'
@@ -118,8 +120,13 @@ function getGap(
   }
 }
 
+function TimeEntryListItem(props: ComponentProps<typeof TimeEntryRow>) {
+  const isNow = !!useActiveEntries().getNow('timeEntry', props.item.id)
+  if (!isNow) return <TimeEntryRow {...props} />
+  return <TimeEntryCard item={props.item} onClick={props.onClick} />
+}
+
 export type TimeEntryListProps = {
-  highlight?: (e: TimeEntry) => boolean
   track?: string
   user?: string
   session?: string
@@ -128,7 +135,6 @@ export type TimeEntryListProps = {
 }
 
 export function TimeEntryList({
-  highlight,
   track,
   user,
   session,
@@ -204,7 +210,7 @@ export function TimeEntryList({
 
       <GroupedList
         items={filteredEntries}
-        Row={TimeEntryRow}
+        Row={TimeEntryListItem}
         getKey={entry => entry.id}
         grouping={grouping}
         totalLimit={10}
@@ -225,7 +231,6 @@ export function TimeEntryList({
             gapType,
             onChangeGapType: () =>
               setGapType(gapType === 'leader' ? 'interval' : 'leader'),
-            highlight: highlight?.(entry),
           }
         }}
       />

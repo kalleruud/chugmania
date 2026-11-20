@@ -1,5 +1,4 @@
 import { useData } from '@/contexts/DataContext'
-import { useActiveEntries } from '@/hooks/useActiveEntries'
 import loc from '@common/locale/locales'
 import type { EntryStatus } from '@common/models/entry'
 import type {
@@ -20,7 +19,6 @@ import {
 } from 'react'
 import { twMerge } from 'tailwind-merge'
 import NowButton from '../now/NowButton'
-import NowIndicator from '../now/NowIndicator'
 import type { BaseRowProps } from '../row/RowProps'
 
 type TimeEntryRowProps = BaseRowProps<TimeEntry> & {
@@ -190,7 +188,6 @@ export default function TimeEntryRow({
   gap,
   gapType,
   onChangeGapType,
-  highlight,
   showTrack,
   ...rest
 }: Readonly<TimeEntryRowProps>) {
@@ -201,7 +198,6 @@ export default function TimeEntryRow({
   const track = showTrack
     ? tracks?.find(t => t.id === lapTime.track)
     : undefined
-  const isNow = !!useActiveEntries().getNow('timeEntry', lapTime.id)
   const name =
     userInfo?.shortName ??
     userInfo?.lastName ??
@@ -235,10 +231,8 @@ export default function TimeEntryRow({
       ref={containerRef}
       className={twMerge(
         'flex cursor-pointer items-center gap-4 rounded-md hover:bg-foreground/5',
-        highlight && 'bg-foreground/3',
         (isDNF || lapTime.status === 'cancelled') && 'opacity-50',
-        className,
-        isNow && 'border border-primary/60 bg-primary/10 hover:bg-primary/15'
+        className
       )}
       title={lapTime.comment ?? undefined}
       {...rest}>
@@ -250,7 +244,6 @@ export default function TimeEntryRow({
         name={name}
         className={twMerge(isDNF && 'text-muted-foreground')}
       />
-      {isNow && <NowIndicator />}
       <Marker
         className='-mx-2 text-yellow-500'
         show={lapTime.tieBreaker}

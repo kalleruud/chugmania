@@ -246,7 +246,6 @@ export default function SessionPage() {
               key={track.id}
               track={track}
               session={session.id}
-              highlight={e => isLoggedIn && loggedInUser.id === e.id}
               filter='all'
               excludeTournamentMatches
             />

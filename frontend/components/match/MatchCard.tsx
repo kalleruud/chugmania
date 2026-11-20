@@ -18,7 +18,6 @@ import type { MatchProps } from './MatchProps'
 export default function MatchCard({
   item: match,
   className,
-  highlight,
   hideTrack,
   compact,
   children,
@@ -47,8 +46,7 @@ export default function MatchCard({
         compact ? 'gap-4 p-4 sm:p-6' : 'gap-6 p-6 sm:p-8',
         isCancelled && 'text-muted-foreground opacity-33',
         className,
-        highlight &&
-          'border border-primary/40 bg-primary/10 hover:bg-primary/12'
+        now && 'border border-primary/40 bg-primary/10 hover:bg-primary/12'
       )}
       {...props}>
       <div

@@ -1,5 +1,4 @@
 import { useData } from '@/contexts/DataContext'
-import { useActiveEntries } from '@/hooks/useActiveEntries'
 import { useMatch } from '@/hooks/useMatch'
 import loc from '@common/locale/locales'
 import type { UserInfo } from '@common/models/user'
@@ -9,7 +8,6 @@ import { ClipboardClock, FilePenLine, Timer } from 'lucide-react'
 import type { ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
 import NowButton from '../now/NowButton'
-import NowIndicator from '../now/NowIndicator'
 import { NameCellPart } from '../timeentries/TimeEntryRow'
 import { Badge } from '../ui/badge'
 import { Label } from '../ui/label'
@@ -18,14 +16,12 @@ import type { MatchProps } from './MatchProps'
 export default function MatchRow({
   className,
   item: match,
-  highlight,
   hideTrack,
   children,
   ...rest
 }: Readonly<MatchProps>) {
   const { users, tracks, sessions } = useData()
   const { canSetResult, toggleWinner } = useMatch(match)
-  const isNow = !!useActiveEntries().getNow('match', match.id)
   const user1 = users?.find(u => u.id === match.user1)
   const user2 = users?.find(u => u.id === match.user2)
   const track = tracks?.find(t => t.id === match.track)
@@ -41,9 +37,7 @@ export default function MatchRow({
       className={twMerge(
         'group relative flex cursor-pointer items-center justify-between rounded-sm p-2 transition-colors',
         isCancelled && 'text-muted-foreground opacity-33',
-        className,
-        highlight && 'bg-foreground/3',
-        isNow && 'border border-primary/60 bg-primary/10 hover:bg-primary/15'
+        className
       )}
       {...rest}>
       <div className='mt-1 grid w-full grid-cols-1 items-center gap-1 sm:grid-cols-2'>
@@ -105,13 +99,8 @@ export default function MatchRow({
         <div
           className={twMerge(
             'flex min-w-0 flex-wrap items-center justify-center gap-x-3 gap-y-1 sm:justify-start',
-            (!track || hideTrack) &&
-              !session &&
-              !match.stage &&
-              !isNow &&
-              'hidden'
+            (!track || hideTrack) && !session && !match.stage && 'hidden'
           )}>
-          {isNow && <NowIndicator />}
           {track && !hideTrack && (
             <div className='max-w-full min-w-0'>
               <span

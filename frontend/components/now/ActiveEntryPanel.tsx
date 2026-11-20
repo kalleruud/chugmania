@@ -1,4 +1,3 @@
-import { useAuth } from '@/contexts/AuthContext'
 import { useData } from '@/contexts/DataContext'
 import { useTimeEntryInput } from '@/contexts/TimeEntryInputContext'
 import loc from '@common/locale/locales'
@@ -25,16 +24,9 @@ export default function ActiveEntryPanel({
   ...props
 }: Readonly<ActiveEntryPanelProps>) {
   const { activeEntryQueues } = useData()
-  const { isLoggedIn, loggedInUser } = useAuth()
   const { open, openMatch } = useTimeEntryInput()
   const queue = activeEntryQueues.get(session.id)
   if (!queue?.now) return null
-
-  const isMe = ({ kind, entry }: QueuedEntry) =>
-    isLoggedIn &&
-    (kind === 'match'
-      ? loggedInUser.id === entry.user1 || loggedInUser.id === entry.user2
-      : loggedInUser.id === entry.user)
 
   const onOpen = (queued: QueuedEntry) => () => {
     if (queued.kind === 'timeEntry') open(queued.entry)
@@ -59,17 +51,11 @@ export default function ActiveEntryPanel({
       />
 
       {queue.now.kind === 'match' ? (
-        <MatchCard
-          compact
-          item={queue.now.entry}
-          highlight={isMe(queue.now)}
-          onClick={onOpen(queue.now)}
-        />
+        <MatchCard compact item={queue.now.entry} onClick={onOpen(queue.now)} />
       ) : (
         <TimeEntryCard
           compact
           item={queue.now.entry}
-          highlight={isMe(queue.now)}
           onClick={onOpen(queue.now)}
         />
       )}
@@ -84,7 +70,6 @@ export default function ActiveEntryPanel({
               <MatchRow
                 key={queued.entry.id}
                 item={queued.entry}
-                highlight={isMe(queued)}
                 className='bg-background-secondary hover:bg-primary-foreground/6'
                 onClick={onOpen(queued)}
               />
@@ -92,7 +77,6 @@ export default function ActiveEntryPanel({
               <TimeEntryRow
                 key={queued.entry.id}
                 item={queued.entry}
-                highlight={isMe(queued)}
                 className='bg-background-secondary px-4 py-3'
                 onClick={onOpen(queued)}
                 onChangeGapType={() => undefined}
