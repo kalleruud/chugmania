@@ -7,6 +7,7 @@ import { CalendarIcon } from '@heroicons/react/24/solid'
 import { ClipboardClock, FilePenLine, Timer } from 'lucide-react'
 import type { ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
+import NowButton from '../now/NowButton'
 import { NameCellPart } from '../timeentries/TimeEntryRow'
 import { Badge } from '../ui/badge'
 import { Label } from '../ui/label'
@@ -15,7 +16,6 @@ import type { MatchProps } from './MatchProps'
 export default function MatchRow({
   className,
   item: match,
-  highlight,
   hideTrack,
   children,
   ...rest
@@ -37,8 +37,7 @@ export default function MatchRow({
       className={twMerge(
         'group relative flex cursor-pointer items-center justify-between rounded-sm p-2 transition-colors',
         isCancelled && 'text-muted-foreground opacity-33',
-        className,
-        highlight && 'border border-primary/20 bg-primary/5 hover:bg-primary/10'
+        className
       )}
       {...rest}>
       <div className='mt-1 grid w-full grid-cols-1 items-center gap-1 sm:grid-cols-2'>
@@ -147,7 +146,23 @@ export default function MatchRow({
       {isInactiveFinalReset(match) && isPlanned && (
         <Badge>{loc.no.tournament.conditional}</Badge>
       )}
+      {!isInactiveFinalReset(match) && (
+        <NowButton
+          kind='match'
+          entry={match}
+          subject={`${shortName(user1, match.tournament?.slot1)} ${loc.no.match.vs} ${shortName(user2, match.tournament?.slot2)}`}
+        />
+      )}
     </div>
+  )
+}
+
+function shortName(user: UserInfo | undefined, slotLabel?: string): string {
+  return (
+    user?.shortName ??
+    user?.lastName ??
+    user?.firstName ??
+    (slotLabel || loc.no.match.unknownUser)
   )
 }
 

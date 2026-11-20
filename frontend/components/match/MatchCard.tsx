@@ -1,13 +1,14 @@
 import { useData } from '@/contexts/DataContext'
+import { useActiveEntries } from '@/hooks/useActiveEntries'
 import { useMatch } from '@/hooks/useMatch'
-import { getGoogleMapsUrl } from '@/lib/maps'
 import loc from '@common/locale/locales'
 import type { UserInfo } from '@common/models/user'
 import { getUserFullName } from '@common/models/user'
-import { formatDateWithYear, formatTimeOnly } from '@common/utils/date'
 import { formatTime } from '@common/utils/time'
 import { isInactiveFinalReset, stageName } from '@common/utils/tournament'
 import { twMerge } from 'tailwind-merge'
+import NowBadge from '../now/NowBadge'
+import NowButton from '../now/NowButton'
 import { NameCellPart } from '../timeentries/TimeEntryRow'
 import { TrackRow } from '../track/TrackRow'
 import { Badge } from '../ui/badge'
@@ -16,37 +17,59 @@ import type { MatchProps } from './MatchProps'
 export default function MatchCard({
   item: match,
   className,
-  highlight,
   hideTrack,
   children,
   ...props
 }: Readonly<MatchProps>) {
-  const { users, tracks, sessions } = useData()
+  const { users, tracks } = useData()
   const { canSetResult, toggleWinner } = useMatch(match)
+  const now = useActiveEntries().getNow('match', match.id)
   const user1 = users?.find(user => user.id === match.user1)
   const user2 = users?.find(user => user.id === match.user2)
   const track =
     match.track === null
       ? null
       : tracks?.find(track => track.id === match.track)
-  const session = sessions?.find(session => session.id === match.session)
-  const sessionMapsUrl = getGoogleMapsUrl(session?.location)
   const isCancelled = match.status === 'cancelled' && !match.tournament?.awarded
   const isCompleted =
     match.status === 'completed' || !!match.tournament?.awarded
   const canChooseWinner = canSetResult && match.status === 'planned'
+  const showTrack = track !== undefined && !hideTrack
+  const name = (user: UserInfo | undefined, slot: string | undefined) =>
+    user ? displayName(user) : slot || loc.no.match.unknownUser
 
   return (
     <div
       className={twMerge(
-        'group relative flex cursor-pointer flex-col gap-6 rounded-sm p-6 transition-colors sm:p-8',
+        'group relative flex cursor-pointer flex-col gap-3 rounded-sm p-3 transition-colors sm:p-4',
         isCancelled && 'text-muted-foreground opacity-33',
         className,
-        highlight &&
-          'border border-primary/40 bg-primary/10 hover:bg-primary/12'
+        now && 'border-l-2 border-primary bg-primary/5 hover:bg-primary/8'
       )}
       {...props}>
-      <div className='flex items-center gap-4 py-4'>
+      <div className='flex items-center gap-2'>
+        {now && <NowBadge now={now} />}
+        {match.stage && (
+          <Badge variant='outline' className='text-muted-foreground'>
+            {match.tournament?.label ?? stageName(match.stage)}
+          </Badge>
+        )}
+        {match.tournament?.awarded && (
+          <Badge>{loc.no.tournament.awarded}</Badge>
+        )}
+        {isInactiveFinalReset(match) && match.status === 'planned' && (
+          <Badge>{loc.no.tournament.conditional}</Badge>
+        )}
+        <span className='mr-auto' />
+        {!isInactiveFinalReset(match) && (
+          <NowButton
+            kind='match'
+            entry={match}
+            subject={`${name(user1, match.tournament?.slot1)} ${loc.no.match.vs} ${name(user2, match.tournament?.slot2)}`}
+          />
+        )}
+      </div>
+      <div className='flex items-start gap-4 py-1'>
         <Player
           user={user1}
           slotLabel={match.tournament?.slot1}
@@ -70,67 +93,36 @@ export default function MatchCard({
           onSelect={() => user2 && toggleWinner(user2.id)}
         />
       </div>
-      {match.stage && (
-        <Badge variant='outline' className='self-center text-muted-foreground'>
-          {match.tournament?.label ?? stageName(match.stage)}
-        </Badge>
-      )}
-      <div className='flex flex-col gap-4 border-t border-primary/20 pt-4'>
-        <div className='flex flex-wrap items-center justify-between gap-2'>
-          <Badge>{loc.no.match.upNext}</Badge>
-          <span className='text-sm text-muted-foreground'>
-            {loc.no.common.status[match.status]}
-          </span>
-        </div>
-        {track !== undefined && !hideTrack && (
-          <TrackRow item={track} hideLink className='p-0' />
-        )}
-        {session && (
-          <p className='text-sm text-muted-foreground'>
-            {session.name} · {formatDateWithYear(session.date)} ·{' '}
-            {formatTimeOnly(session.date)}
-            {sessionMapsUrl && (
-              <>
-                {' · '}
-                <a
-                  href={sessionMapsUrl}
-                  target='_blank'
-                  rel='noopener noreferrer'
-                  className='rounded-sm hover:underline focus-visible:outline-2 focus-visible:outline-primary'>
-                  {session.location}
-                </a>
-              </>
-            )}
-          </p>
-        )}
-        <dl className='grid gap-4 sm:grid-cols-2'>
-          <div>
-            <dt className='text-sm text-muted-foreground'>
-              {loc.no.match.duration}
-            </dt>
-            <dd className='font-kh-interface text-xl tabular-nums'>
-              {match.duration === null
-                ? loc.no.match.placeholder.none
-                : formatTime(match.duration)}
-            </dd>
-          </div>
-          {match.comment && (
-            <div>
-              <dt className='text-sm text-muted-foreground'>
-                {loc.no.match.form.comment}
-              </dt>
-              <dd className='wrap-break-word whitespace-pre-wrap'>
-                {match.comment}
-              </dd>
-            </div>
+      {(showTrack || match.duration !== null || match.comment) && (
+        <div className='flex flex-col gap-3 border-t border-primary/20 pt-3'>
+          {showTrack && <TrackRow item={track} hideLink className='p-0' />}
+          {(match.duration !== null || match.comment) && (
+            <dl className='grid gap-3 sm:grid-cols-2'>
+              {match.duration !== null && (
+                <div>
+                  <dt className='text-sm text-muted-foreground'>
+                    {loc.no.match.duration}
+                  </dt>
+                  <dd className='font-kh-interface text-xl tabular-nums'>
+                    {formatTime(match.duration)}
+                  </dd>
+                </div>
+              )}
+              {match.comment && (
+                <div>
+                  <dt className='text-sm text-muted-foreground'>
+                    {loc.no.match.form.comment}
+                  </dt>
+                  <dd className='wrap-break-word whitespace-pre-wrap'>
+                    {match.comment}
+                  </dd>
+                </div>
+              )}
+            </dl>
           )}
-        </dl>
-      </div>
-      {children}
-      {match.tournament?.awarded && <Badge>{loc.no.tournament.awarded}</Badge>}
-      {isInactiveFinalReset(match) && match.status === 'planned' && (
-        <Badge>{loc.no.tournament.conditional}</Badge>
+        </div>
       )}
+      {children}
     </div>
   )
 }
@@ -164,7 +156,7 @@ function Player({
           onSelect()
         }}
         className={twMerge(
-          'max-w-full border-b-2 border-transparent px-1 transition-all',
+          'max-w-full border-b-2 border-transparent px-1 [text-align:inherit] transition-all',
           !disabled && 'hover:border-primary',
           !isWinner && isCompleted && 'text-muted-foreground',
           isWinner && 'border-primary',
@@ -174,9 +166,9 @@ function Player({
         )}>
         <NameCellPart
           name={
-            user ? getUserFullName(user) : slotLabel || loc.no.match.unknownUser
+            user ? displayName(user) : slotLabel || loc.no.match.unknownUser
           }
-          className='text-lg whitespace-normal sm:text-3xl'
+          className='overflow-visible text-base wrap-break-word whitespace-normal sm:text-2xl'
         />
       </button>
       {user && slotLabel && (
@@ -184,4 +176,8 @@ function Player({
       )}
     </div>
   )
+}
+
+function displayName(user: UserInfo): string {
+  return user.shortName ?? getUserFullName(user)
 }

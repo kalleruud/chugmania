@@ -317,6 +317,26 @@ const no = {
     owned: 'Deltakere, session og runde styres av turneringen',
     downstream: 'Angre først resultatene i: ',
   },
+  activeEntry: {
+    live: 'LIVE',
+    now: 'Nå',
+    next: 'Neste',
+    setNow: 'Fest som Nå',
+    clearNow: 'Løsne fra Nå',
+    pinned: 'Festet',
+    undo: 'Angre',
+    toast: {
+      loading: 'Oppdaterer Nå…',
+      pinned: 'Festet som Nå',
+      cleared: 'Tilbake til automatisk valg',
+      undone: 'Angret',
+      error: 'Klarte ikke oppdatere Nå',
+    },
+    error: {
+      notSelectable:
+        'Bare uspilte oppføringer i denne sessionen kan settes som Nå',
+    },
+  },
   match: {
     vs: 'vs',
     title: 'Matcher',
@@ -324,9 +344,6 @@ const no = {
     edit: 'Rediger match',
     new: 'Ny match',
     noMatches: 'Ingen matcher funnet.',
-    live: 'LIVE',
-    next: 'Neste',
-    upNext: 'Neste match',
     duration: 'Tid',
     unknownUser: '---',
     stage: {

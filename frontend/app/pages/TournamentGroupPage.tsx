@@ -15,7 +15,6 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useData } from '@/contexts/DataContext'
 import { cn } from '@/lib/utils'
 import loc from '@common/locale/locales'
-import { firstPendingMatch } from '@common/utils/tournament'
 import { ChevronRight } from 'lucide-react'
 import { Fragment } from 'react'
 import { Link, useParams } from 'react-router'
@@ -42,7 +41,6 @@ export default function TournamentGroupPage() {
   const matches = tournament.matches.filter(
     match => match.tournament?.groupId === group.id
   )
-  const featuredMatch = firstPendingMatch(matches)
   const canRename = isLoggedIn && loggedInUser.role !== 'user'
 
   return (
@@ -207,12 +205,7 @@ export default function TournamentGroupPage() {
         <h2 className='text-xl wrap-break-word sm:text-2xl'>
           {loc.no.tournament.groupMatches}
         </h2>
-        <MatchList
-          matches={matches}
-          managed
-          trackSeparators
-          featuredMatchId={featuredMatch?.id}
-        />
+        <MatchList matches={matches} managed trackSeparators />
       </section>
     </div>
   )

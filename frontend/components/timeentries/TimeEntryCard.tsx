@@ -1,0 +1,63 @@
+import { useData } from '@/contexts/DataContext'
+import { useActiveEntries } from '@/hooks/useActiveEntries'
+import loc from '@common/locale/locales'
+import type { TimeEntry } from '@common/models/timeEntry'
+import { getUserFullName } from '@common/models/user'
+import type { ComponentProps } from 'react'
+import { twMerge } from 'tailwind-merge'
+import NowBadge from '../now/NowBadge'
+import NowButton from '../now/NowButton'
+import { TrackRow } from '../track/TrackRow'
+import { Marker, NameCellPart, TimePart } from './TimeEntryRow'
+
+type TimeEntryCardProps = {
+  item: TimeEntry
+  hideTrack?: boolean
+} & ComponentProps<'div'>
+
+export default function TimeEntryCard({
+  item: entry,
+  hideTrack,
+  className,
+  ...props
+}: Readonly<TimeEntryCardProps>) {
+  const { users, tracks } = useData()
+  const now = useActiveEntries().getNow('timeEntry', entry.id)
+  const user = users?.find(user => user.id === entry.user)
+  const name = user ? getUserFullName(user) : loc.no.match.unknownUser
+  const track =
+    entry.track === null
+      ? null
+      : tracks?.find(track => track.id === entry.track)
+
+  return (
+    <div
+      className={twMerge(
+        'group relative flex cursor-pointer flex-col gap-3 rounded-sm p-3 transition-colors sm:p-4',
+        className,
+        now && 'border-l-2 border-primary bg-primary/5 hover:bg-primary/8'
+      )}
+      {...props}>
+      <div className='flex items-center gap-2 sm:gap-4'>
+        {now && <NowBadge now={now} />}
+        <NameCellPart
+          name={name}
+          className='min-w-0 text-base whitespace-normal sm:text-xl'
+        />
+        <Marker
+          className='-ml-1 shrink-0 text-yellow-500 sm:-ml-3'
+          show={entry.tieBreaker}
+          symbol='*'
+        />
+        <span className='mr-auto' />
+        <TimePart duration={entry.duration} status={entry.status} />
+        <NowButton kind='timeEntry' entry={entry} subject={name} />
+      </div>
+      {track !== undefined && !hideTrack && (
+        <div className='border-t border-primary/20 pt-3'>
+          <TrackRow item={track} hideLink className='p-0' />
+        </div>
+      )}
+    </div>
+  )
+}

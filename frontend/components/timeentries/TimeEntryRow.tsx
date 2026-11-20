@@ -18,6 +18,7 @@ import {
   type ComponentProps,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
+import NowButton from '../now/NowButton'
 import type { BaseRowProps } from '../row/RowProps'
 
 type TimeEntryRowProps = BaseRowProps<TimeEntry> & {
@@ -26,6 +27,7 @@ type TimeEntryRowProps = BaseRowProps<TimeEntry> & {
   gap?: LeaderboardEntryGap
   gapType?: GapType
   onChangeGapType: () => void
+  showTrack?: boolean
 }
 
 const breakpoints = {
@@ -186,13 +188,21 @@ export default function TimeEntryRow({
   gap,
   gapType,
   onChangeGapType,
-  highlight,
+  showTrack,
   ...rest
 }: Readonly<TimeEntryRowProps>) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const [width, setWidth] = useState(breakpoints.md)
-  const { users } = useData()
+  const { users, tracks } = useData()
   const userInfo = users ? users.find(u => u.id === lapTime.user) : null
+  const track = showTrack
+    ? tracks?.find(t => t.id === lapTime.track)
+    : undefined
+  const name =
+    userInfo?.shortName ??
+    userInfo?.lastName ??
+    userInfo?.firstName ??
+    loc.no.match.unknownUser
 
   const isDNF = lapTime.status === 'completed' && lapTime.duration === null
 
@@ -221,7 +231,6 @@ export default function TimeEntryRow({
       ref={containerRef}
       className={twMerge(
         'flex cursor-pointer items-center gap-4 rounded-md hover:bg-foreground/5',
-        highlight && 'bg-foreground/3',
         (isDNF || lapTime.status === 'cancelled') && 'opacity-50',
         className
       )}
@@ -232,12 +241,7 @@ export default function TimeEntryRow({
       )}
 
       <NameCellPart
-        name={
-          userInfo?.shortName ??
-          userInfo?.lastName ??
-          userInfo?.firstName ??
-          loc.no.match.unknownUser
-        }
+        name={name}
         className={twMerge(isDNF && 'text-muted-foreground')}
       />
       <Marker
@@ -246,6 +250,12 @@ export default function TimeEntryRow({
         symbol='*'
       />
       <Marker className='-mx-2' show={!!lapTime.comment} symbol='*' />
+      {track && (
+        <span className='truncate font-kh-interface tabular-nums'>
+          <span className='mr-1 text-primary'>#</span>
+          {track.name}
+        </span>
+      )}
 
       <span className='mr-auto' />
 
@@ -261,6 +271,7 @@ export default function TimeEntryRow({
       {show.time && (
         <TimePart duration={lapTime.duration} status={lapTime.status} />
       )}
+      <NowButton kind='timeEntry' entry={lapTime} subject={name} />
     </div>
   )
 }

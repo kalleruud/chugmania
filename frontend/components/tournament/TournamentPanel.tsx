@@ -23,14 +23,18 @@ export default function TournamentPanel({
   details: TournamentDetails
 }) {
   const isPreview = details.status === 'draft'
-  const { users } = useData()
+  const { users, activeEntryQueues } = useData()
   const { isLoggedIn, loggedInUser } = useAuth()
   const canEdit = isLoggedIn && loggedInUser.role !== 'user'
   const awaitingSignups =
     details.notReadyReason === loc.no.tournament.awaitingSignups
   const workload = details.workloadSummary
   const matchesByStage = new Map<Match['stage'], Match[]>()
-  const featuredMatch = firstPendingMatch(details.matches)
+  const now = activeEntryQueues.get(details.config.session)?.now
+  const featuredMatch =
+    now?.kind === 'match'
+      ? details.matches.find(match => match.id === now.entry.id)
+      : undefined
   const allMatchesPlayed =
     details.progress.total > 0 &&
     details.progress.decided === details.progress.total
@@ -196,7 +200,7 @@ export default function TournamentPanel({
               return (
                 <details
                   key={stage ?? 'none'}
-                  open={!!firstPendingMatch(matches)}
+                  open={!!firstPendingMatch(matches) || isActive}
                   className='group/stage'>
                   <summary className='flex cursor-pointer list-none items-center gap-2 p-2 text-sm text-muted-foreground [&::-webkit-details-marker]:hidden'>
                     <h4 className='mr-auto flex flex-wrap items-center gap-2'>
@@ -214,12 +218,7 @@ export default function TournamentPanel({
                       className='size-4 shrink-0 transition-transform group-open/stage:rotate-180'
                     />
                   </summary>
-                  <MatchList
-                    matches={matches}
-                    managed
-                    trackSeparators
-                    featuredMatchId={featuredMatch?.id}
-                  />
+                  <MatchList matches={matches} managed trackSeparators />
                 </details>
               )
             })}

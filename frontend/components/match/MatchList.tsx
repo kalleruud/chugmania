@@ -1,6 +1,7 @@
 import { useAuth } from '@/contexts/AuthContext'
 import { useData } from '@/contexts/DataContext'
 import { useTimeEntryInput } from '@/contexts/TimeEntryInputContext'
+import { useActiveEntries } from '@/hooks/useActiveEntries'
 import loc from '@common/locale/locales'
 import type { Match } from '@common/models/match'
 import { PlusIcon } from '@heroicons/react/24/solid'
@@ -19,7 +20,6 @@ export type MatchListProps = {
   managed?: boolean
   hideTrack?: boolean
   trackSeparators?: boolean
-  featuredMatchId?: string
 }
 
 export default function MatchList({
@@ -30,11 +30,11 @@ export default function MatchList({
   hideTrack,
   trackSeparators,
   managed,
-  featuredMatchId,
 }: Readonly<MatchListProps>) {
-  const { isLoggedIn, loggedInUser } = useAuth()
+  const { isLoggedIn } = useAuth()
   const { tracks } = useData()
   const { openMatch } = useTimeEntryInput()
+  const { getNow } = useActiveEntries()
 
   if (matches.length === 0) {
     return (
@@ -57,8 +57,8 @@ export default function MatchList({
   return (
     <div className='flex flex-col gap-2'>
       {matches.map((match, index) => {
-        const isFeatured = match.id === featuredMatchId
-        const MatchComponent = isFeatured ? MatchCard : MatchRow
+        const isNow = !!getNow('match', match.id)
+        const MatchComponent = isNow ? MatchCard : MatchRow
         const showTrackSeparator =
           trackSeparators &&
           (index === 0 || match.track !== matches.at(index - 1)?.track)
@@ -66,9 +66,6 @@ export default function MatchList({
           match.track === null
             ? null
             : tracks?.find(track => track.id === match.track)
-        const isMe =
-          isLoggedIn &&
-          (match.user1 === loggedInUser.id || match.user2 === loggedInUser.id)
         return (
           <Fragment key={match.id}>
             {showTrackSeparator && separatorTrack !== undefined && (
@@ -76,12 +73,11 @@ export default function MatchList({
             )}
             <MatchComponent
               item={match}
-              highlight={match.status !== 'cancelled' && (isMe || isFeatured)}
               className='bg-background-secondary hover:bg-primary-foreground/6'
               onClick={() => {
                 if (!match.tournament?.readOnly) openMatch(match)
               }}
-              hideTrack={hideTrack || trackSeparators}
+              hideTrack={hideTrack || trackSeparators || (isNow && !!track)}
             />
           </Fragment>
         )

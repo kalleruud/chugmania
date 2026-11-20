@@ -14,6 +14,7 @@ import { networkInterfaces } from 'node:os'
 import path from 'node:path'
 import { Server, Socket } from 'socket.io'
 import { createWebhookRouter } from './endpoints/webhook'
+import ActiveEntryManager from './managers/activeEntry.manager'
 import AdminManager from './managers/admin.manager'
 import ApiManager from './managers/api.manager'
 import AuthManager from './managers/auth.manager'
@@ -74,6 +75,7 @@ async function emitData(socket: TypedSocket) {
   socket.emit('all_matches', matches)
   socket.emit('all_rankings', RatingManager.onGetRatings())
   socket.emit('all_chug_times', await ChugTimeManager.getChugTimes())
+  socket.emit('active_entry_overrides', ActiveEntryManager.getOverrides())
   TournamentSecurity.emit(socket, TournamentManager.getAllTournaments())
 }
 
@@ -181,6 +183,7 @@ async function Connect(s: TypedSocket) {
   setup(s, 'create_match', MatchManager.onCreateMatch)
   setup(s, 'edit_match', MatchManager.onEditMatch)
   setup(s, 'delete_match', MatchManager.onDeleteMatch)
+  setup(s, 'set_active_entry', ActiveEntryManager.onSetActiveEntry)
 
   setup(s, 'import_csv', AdminManager.onImportCsv)
   setup(s, 'export_csv', AdminManager.onExportCsv)

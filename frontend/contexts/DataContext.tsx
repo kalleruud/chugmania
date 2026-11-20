@@ -1,3 +1,4 @@
+import type { ActiveEntryOverrides } from '@common/models/activeEntry'
 import type { ChugTimes } from '@common/models/chugTime'
 import type { Match } from '@common/models/match'
 import type { Ranking } from '@common/models/ranking'
@@ -6,6 +7,8 @@ import type { TimeEntry } from '@common/models/timeEntry'
 import type { TournamentDetails } from '@common/models/tournament'
 import type { Track } from '@common/models/track'
 import type { UserInfo } from '@common/models/user'
+import { getSessionQueue, type SessionQueue } from '@common/utils/activeEntry'
+import { isOngoing } from '@common/utils/date'
 import {
   createContext,
   useCallback,
@@ -22,6 +25,7 @@ type DataContextType = {
     details: TournamentDetails | null,
     session: string
   ) => void
+  activeEntryQueues: Map<string, SessionQueue>
 } & (
   | {
       isLoadingData: false
@@ -96,6 +100,8 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
     useState<DataContextType['chugTimes']>(undefined)
   const [tournaments, setTournaments] =
     useState<DataContextType['tournaments']>(undefined)
+  const [activeEntryOverrides, setActiveEntryOverrides] =
+    useState<ActiveEntryOverrides>({})
 
   const applyTournamentDetails = useCallback(
     (details: TournamentDetails | null, session: string) => {
@@ -142,6 +148,10 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
       setChugTimes(data)
     })
 
+    socket.on('active_entry_overrides', data => {
+      setActiveEntryOverrides(data)
+    })
+
     return () => {
       socket.off('all_sessions')
       socket.off('all_time_entries')
@@ -151,8 +161,26 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
       socket.off('all_rankings')
       socket.off('all_chug_times')
       socket.off('all_tournaments')
+      socket.off('active_entry_overrides')
     }
   }, [])
+
+  const activeEntryQueues = useMemo(() => {
+    const queues = new Map<string, SessionQueue>()
+    if (!sessions || !matches || !timeEntries || !tournaments) return queues
+    for (const session of sessions.filter(isOngoing))
+      queues.set(
+        session.id,
+        getSessionQueue(
+          session.id,
+          matches,
+          timeEntries,
+          tournaments.find(t => t.config.session === session.id),
+          activeEntryOverrides[session.id]
+        )
+      )
+    return queues
+  }, [sessions, matches, timeEntries, tournaments, activeEntryOverrides])
 
   const context = useMemo<DataContextType>(() => {
     if (
@@ -165,11 +193,12 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
       chugTimes === undefined ||
       tournaments === undefined
     ) {
-      return { isLoadingData: true, applyTournamentDetails }
+      return { isLoadingData: true, applyTournamentDetails, activeEntryQueues }
     }
     return {
       isLoadingData: false,
       applyTournamentDetails,
+      activeEntryQueues,
       timeEntries,
       sessions,
       tracks,
@@ -189,6 +218,7 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
     chugTimes,
     tournaments,
     applyTournamentDetails,
+    activeEntryQueues,
   ])
 
   return <DataContext.Provider value={context}>{children}</DataContext.Provider>
