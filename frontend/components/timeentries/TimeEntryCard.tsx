@@ -38,14 +38,14 @@ export default function TimeEntryCard({
         now && 'border-l-2 border-primary bg-primary/5 hover:bg-primary/8'
       )}
       {...props}>
-      <div className='flex items-center gap-4'>
+      <div className='flex items-center gap-2 sm:gap-4'>
         {now && <NowBadge now={now} />}
         <NameCellPart
           name={name}
-          className='min-w-0 text-lg whitespace-normal sm:text-xl'
+          className='min-w-0 text-base whitespace-normal sm:text-xl'
         />
         <Marker
-          className='-ml-3 text-yellow-500'
+          className='-ml-1 shrink-0 text-yellow-500 sm:-ml-3'
           show={entry.tieBreaker}
           symbol='*'
         />
