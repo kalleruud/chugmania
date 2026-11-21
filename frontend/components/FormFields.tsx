@@ -249,6 +249,7 @@ export function CalendarField({
             onClick={() => {
               setDate(undefined)
               setTime('')
+              setTimeError(undefined)
               onClear()
             }}>
             <XIcon />

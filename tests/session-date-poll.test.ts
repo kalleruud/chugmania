@@ -333,4 +333,39 @@ describe('Removing session signups', () => {
     assert(session)
     expect(session.signups.map(s => s.response)).toEqual(['yes'])
   })
+
+  test.serial(
+    'a removed voter stays removed when a date is chosen',
+    async () => {
+      const moderatorSocket = await login(moderator)
+      const before = await SessionManager.getSession(sessionId)
+      assert(before?.signups[0])
+      await removeSignup(moderatorSocket, before.signups[0].id).then(
+        assertResponse
+      )
+      await SessionManager.onEditSession(moderatorSocket, {
+        type: 'EditSessionRequest',
+        id: sessionId,
+        status: 'tentative',
+      }).then(assertResponse)
+      await SessionManager.onEditSession(moderatorSocket, {
+        type: 'EditSessionRequest',
+        id: sessionId,
+        date: null,
+        dateOptions: [MONDAY, TUESDAY],
+        dateVotingClosed: false,
+      }).then(assertResponse)
+      await SessionManager.onEditSession(moderatorSocket, {
+        type: 'EditSessionRequest',
+        id: sessionId,
+        date: new Date(MONDAY),
+        status: 'confirmed',
+        dateVotingClosed: true,
+      }).then(assertResponse)
+
+      const session = await SessionManager.getSession(sessionId)
+      assert(session)
+      expect(session.signups).toEqual([])
+    }
+  )
 })

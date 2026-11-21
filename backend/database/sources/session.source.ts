@@ -135,8 +135,19 @@ export default class SessionSource {
 
   static applyDateVotes(sessionId: string, date: number) {
     const votes = db
-      .select()
+      .selectDistinct({
+        user: sessionDateVotes.user,
+        dates: sessionDateVotes.dates,
+      })
       .from(sessionDateVotes)
+      .innerJoin(
+        sessionSignups,
+        and(
+          eq(sessionSignups.session, sessionDateVotes.session),
+          eq(sessionSignups.user, sessionDateVotes.user),
+          isNull(sessionSignups.deletedAt)
+        )
+      )
       .where(eq(sessionDateVotes.session, sessionId))
       .all()
 
