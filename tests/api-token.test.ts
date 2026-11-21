@@ -18,6 +18,7 @@ import { createWebhookRouter } from '../backend/src/endpoints/webhook'
 import ApiTokenManager from '../backend/src/managers/apiToken.manager'
 import AuthManager from '../backend/src/managers/auth.manager'
 import SessionManager from '../backend/src/managers/session.manager'
+import UserManager from '../backend/src/managers/user.manager'
 import type { TypedSocket } from '../backend/src/server'
 import { apiTokenSockets, db, pendingApiTokenEmits } from './setup'
 import { assertResponse, createSession, createUser, login } from './utils'
@@ -332,13 +333,14 @@ describe('calendar URL', () => {
 })
 
 describe('API token broadcasts', () => {
+  function listen(socket: TypedSocket, userId: string) {
+    const emit = mock()
+    Object.assign(socket, { data: { userId }, emit })
+    apiTokenSockets.add(socket)
+    return emit
+  }
+
   test.serial('reach only the owner and admins', async () => {
-    function listen(socket: TypedSocket, userId: string) {
-      const emit = mock()
-      Object.assign(socket, { data: { userId }, emit })
-      apiTokenSockets.add(socket)
-      return emit
-    }
     const owner = createUser('token-broadcast-owner')
     const other = createUser('token-broadcast-other')
     const admin = createUser('token-broadcast-admin', 'admin')
@@ -357,6 +359,28 @@ describe('API token broadcasts', () => {
         expect.arrayContaining([created.token])
       )
       expect(otherEmit).not.toHaveBeenCalled()
+    } finally {
+      apiTokenSockets.clear()
+    }
+  })
+
+  test.serial('re-project tokens when an admin is demoted', async () => {
+    const demoted = createUser('token-demoted-admin', 'admin')
+    const demotedSocket = await login(demoted)
+    const own = await createToken(demotedSocket, 'Own')
+    await createToken(await login(createUser('token-demoted-peer')), 'Peer')
+    const emit = listen(demotedSocket, demoted.id)
+
+    try {
+      assertResponse(
+        await UserManager.onEditUser(
+          await login(createUser('token-demoting-admin', 'admin')),
+          { type: 'EditUserRequest', id: demoted.id, role: 'user' }
+        )
+      )
+      await Promise.all(pendingApiTokenEmits.splice(0))
+
+      expect(emit).toHaveBeenLastCalledWith('api_tokens', [own.token])
     } finally {
       apiTokenSockets.clear()
     }
