@@ -28,12 +28,13 @@ export default function SessionForm({
 
   const [name, setName] = useState(session?.name ?? '')
   const [description, setDescription] = useState(session?.description ?? '')
-  const [date, setDate] = useState<Date | undefined>(
-    session?.date ? new Date(session.date) : undefined
-  )
+  const [date, setDate] = useState<Date | undefined>(() => {
+    if (!session) return new Date()
+    return session.date ? new Date(session.date) : undefined
+  })
   const [location, setLocation] = useState(session?.location ?? '')
   const [status, setStatus] = useState<SessionStatus>(
-    session?.status ?? 'tentative'
+    session?.status ?? 'confirmed'
   )
 
   const isAdmin = isLoggedIn && loggedInUser.role === 'admin'
