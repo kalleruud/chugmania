@@ -21,32 +21,14 @@ import {
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import loc from '@common/locale/locales'
-import {
-  isDatePollOpen,
-  type EditSessionRequest,
-  type SessionWithSignups,
-} from '@common/models/session'
+import { isDatePollOpen, type SessionWithSignups } from '@common/models/session'
 import { formatDateWithYear } from '@common/utils/date'
 import { CalendarDaysIcon, CheckIcon } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
+import { editSession } from './session-requests'
 import SessionUserGroup from './SessionUserGroup'
-
-type SessionEdit = Omit<EditSessionRequest, 'type' | 'id'>
-
-function editSession(
-  socket: ReturnType<typeof useConnection>['socket'],
-  id: string,
-  edit: SessionEdit
-) {
-  const request = socket
-    .emitWithAck('edit_session', { type: 'EditSessionRequest', id, ...edit })
-    .then(r => {
-      if (!r.success) throw new Error(r.message)
-    })
-  return toast.promise(request, loc.no.session.editRequest)
-}
 
 export default function SessionDatePoll({
   session,
@@ -88,11 +70,16 @@ export default function SessionDatePoll({
 
   function chooseDate() {
     if (chosenDate === undefined) return
-    editSession(socket, session.id, {
-      date: new Date(chosenDate),
-      dateVotingClosed: true,
-      status: 'confirmed',
-    })
+    editSession(
+      socket,
+      session.id,
+      {
+        date: new Date(chosenDate),
+        dateVotingClosed: true,
+        status: 'confirmed',
+      },
+      loc.no.session.datePoll.chooseRequest
+    )
   }
 
   return (
@@ -145,42 +132,52 @@ export default function SessionDatePoll({
               <span className='flex-1 truncate capitalize'>
                 {formatDateWithYear(new Date(date))}
               </span>
-              <span className='text-sm tabular-nums'>{percent}%</span>
+              <span className='text-sm text-muted-foreground tabular-nums'>
+                {loc.no.session.datePoll.votes(dateVoters.length)}
+              </span>
+              <span className='w-10 text-end text-sm tabular-nums'>
+                {percent}%
+              </span>
             </button>
           </div>
         )
       })}
 
       {canEdit && (
-        <div className='flex items-center gap-2 border-t px-2 pt-3 pb-1'>
-          <Select
-            value={String(chosenDate ?? '')}
-            onValueChange={setSelectedDate}>
-            <SelectTrigger
-              className='min-w-0 flex-1'
-              aria-label={loc.no.session.datePoll.choosePlaceholder}>
-              <SelectValue
-                placeholder={loc.no.session.datePoll.choosePlaceholder}
-              />
-            </SelectTrigger>
-            <SelectContent>
-              {options.map(date => (
-                <SelectItem key={date} value={String(date)}>
-                  <span className='capitalize'>
-                    {formatDateWithYear(new Date(date))}
-                  </span>
-                  <span className='text-muted-foreground'>
-                    {loc.no.session.datePoll.votes(voters(date).length)}
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <ConfirmationButton
-            disabled={chosenDate === undefined}
-            onClick={chooseDate}>
-            {loc.no.session.datePoll.choose}
-          </ConfirmationButton>
+        <div className='flex flex-col gap-2 border-t px-2 pt-3 pb-1'>
+          <div className='flex items-center gap-2'>
+            <Select
+              value={String(chosenDate ?? '')}
+              onValueChange={setSelectedDate}>
+              <SelectTrigger
+                className='min-w-0 flex-1'
+                aria-label={loc.no.session.datePoll.choosePlaceholder}>
+                <SelectValue
+                  placeholder={loc.no.session.datePoll.choosePlaceholder}
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {options.map(date => (
+                  <SelectItem key={date} value={String(date)}>
+                    <span className='capitalize'>
+                      {formatDateWithYear(new Date(date))}
+                    </span>
+                    <span className='text-muted-foreground'>
+                      {loc.no.session.datePoll.votes(voters(date).length)}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <ConfirmationButton
+              disabled={chosenDate === undefined}
+              onClick={chooseDate}>
+              {loc.no.session.datePoll.choose}
+            </ConfirmationButton>
+          </div>
+          <p className='text-sm text-muted-foreground'>
+            {loc.no.session.datePoll.chooseHint}
+          </p>
         </div>
       )}
 
@@ -266,11 +263,17 @@ export function DateOptionsDialog({
     })
     setOpen(false)
     if (dates.length === 0 && !isPollOpen) return
-    editSession(socket, session.id, {
-      date: null,
-      dateOptions: dates,
-      dateVotingClosed: false,
-    })
+    editSession(
+      socket,
+      session.id,
+      {
+        date: null,
+        status: 'tentative',
+        dateOptions: dates,
+        dateVotingClosed: false,
+      },
+      loc.no.session.datePoll.saveRequest
+    )
   }
 
   return (
@@ -296,6 +299,7 @@ export function DateOptionsDialog({
           showWeekNumber
           weekStartsOn={1}
           defaultMonth={selected[0]}
+          disabled={{ before: new Date() }}
           selected={selected}
           onSelect={days => setSelected(days ?? [])}
         />

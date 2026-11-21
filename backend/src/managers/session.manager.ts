@@ -145,13 +145,18 @@ export default class SessionManager {
 
     await AuthManager.checkAuth(socket, ['admin', 'moderator'])
 
+    const date = request.date ? new Date(request.date) : null
+    if (date === null && request.status !== 'tentative') {
+      throw new Error(loc.no.session.datePoll.invalidPoll)
+    }
+
     await db.insert(sessions).values({
       id: request.id,
       name: request.name,
       description: request.description,
       location: request.location,
       status: request.status,
-      date: request.date ? new Date(request.date) : new Date(),
+      date,
     })
 
     console.debug(

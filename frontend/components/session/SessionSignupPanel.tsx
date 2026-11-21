@@ -17,7 +17,7 @@ import loc from '@common/locale/locales'
 import { isDatePollOpen, type SessionWithSignups } from '@common/models/session'
 import type { UserInfo } from '@common/models/user'
 import { isPast, isUpcoming } from '@common/utils/date'
-import { Trash2 } from 'lucide-react'
+import { RotateCcwIcon, Trash2 } from 'lucide-react'
 import { useMemo, type ComponentProps } from 'react'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
@@ -25,6 +25,7 @@ import type { SessionResponse } from '../../../backend/database/schema'
 import ManageSessionParticipantsDialog from './ManageSessionParticipantsDialog'
 import { DateOptionsDialog } from './SessionDatePoll'
 import SessionUserGroup from './SessionUserGroup'
+import { editSession } from './session-requests'
 import { getUserSortName, RESPONSE_OPTIONS } from './session-signup-utils'
 
 export default function SessionSignupPanel({
@@ -42,6 +43,11 @@ export default function SessionSignupPanel({
   const canManageSignups = isLoggedIn && loggedInUser.role !== 'user'
 
   const isPollOpen = isDatePollOpen(session)
+  const canPlanPoll =
+    canManageSignups &&
+    isUpcoming(session) &&
+    session.status !== 'cancelled' &&
+    !isPollOpen
 
   const sortedSignups = useMemo(
     () =>
@@ -110,6 +116,15 @@ export default function SessionSignupPanel({
     if (!res.success) throw new Error(res.message)
   }
 
+  function reopen() {
+    editSession(
+      socket,
+      session.id,
+      { date: null, status: 'tentative', dateVotingClosed: false },
+      loc.no.session.datePoll.reopenRequest
+    )
+  }
+
   function handleRemove(id: string) {
     toast.promise(removeSignup(id), loc.no.session.rsvp.remove)
   }
@@ -170,10 +185,17 @@ export default function SessionSignupPanel({
             ? loc.no.session.attendance
             : loc.no.session.participants}
         </h3>
-        {canManageSignups &&
-          session.status === 'tentative' &&
-          isUpcoming(session) &&
-          !isPollOpen && <DateOptionsDialog session={session} />}
+        {canPlanPoll && (
+          <div className='flex items-center gap-2'>
+            {!!session.dateOptions?.length && (
+              <ConfirmationButton size='sm' variant='outline' onClick={reopen}>
+                <RotateCcwIcon />
+                {loc.no.session.datePoll.reopen}
+              </ConfirmationButton>
+            )}
+            <DateOptionsDialog session={session} />
+          </div>
+        )}
       </div>
 
       <div

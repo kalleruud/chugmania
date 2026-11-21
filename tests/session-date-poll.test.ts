@@ -243,6 +243,29 @@ describe('Session date poll', () => {
     expect(responses(session)).toEqual({ 'poll-bob': 'yes' })
     await rsvp(alice.id, 'maybe', id)
   })
+
+  test.serial('a session can be created without a date', async () => {
+    const id = Bun.randomUUIDv7()
+    await assert.rejects(
+      SessionManager.onCreateSession(ownerSocket, {
+        type: 'CreateSessionRequest',
+        id,
+        name: 'Dateless Cup',
+        status: 'confirmed',
+      })
+    )
+    await SessionManager.onCreateSession(ownerSocket, {
+      type: 'CreateSessionRequest',
+      id,
+      name: 'Dateless Cup',
+      status: 'tentative',
+    }).then(assertResponse)
+
+    const session = await SessionManager.getSession(id)
+    assert(session)
+    expect(session.date).toBeNull()
+    expect(session.status).toBe('tentative')
+  })
 })
 
 describe('Removing session signups', () => {

@@ -33,14 +33,18 @@ export default function SessionForm({
   )
   const [location, setLocation] = useState(session?.location ?? '')
   const [status, setStatus] = useState<SessionStatus>(
-    session?.status ?? 'confirmed'
+    session?.status ?? 'tentative'
   )
 
   const isAdmin = isLoggedIn && loggedInUser.role === 'admin'
   const isModerator = isLoggedIn && loggedInUser.role === 'moderator'
   const canCreate = isAdmin || isModerator
 
-  const isEdit = variant === 'edit'
+  function selectDate(next: Date | undefined) {
+    if (!date && next && status === 'tentative' && variant === 'create')
+      setStatus('confirmed')
+    setDate(next)
+  }
 
   function clearDate() {
     setDate(undefined)
@@ -62,7 +66,7 @@ export default function SessionForm({
               type: 'CreateSessionRequest',
               name,
               description: description || undefined,
-              date: date ?? new Date(),
+              date: date ?? null,
               location: location || undefined,
               status,
             })
@@ -120,9 +124,9 @@ export default function SessionForm({
         id='date'
         name={loc.no.session.form.date}
         selected={date}
-        onSelect={setDate}
-        placeholder={isEdit ? loc.no.session.datePoll.pendingDate : undefined}
-        onClear={isEdit ? clearDate : undefined}
+        onSelect={selectDate}
+        placeholder={loc.no.session.datePoll.pendingDate}
+        onClear={clearDate}
         disabled={disabled}
       />
 

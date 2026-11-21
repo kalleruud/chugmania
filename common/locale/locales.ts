@@ -170,6 +170,25 @@ const no = {
       edit: 'Datoavstemning',
       description: 'Velg datoene spillerne kan stemme på.',
       choose: 'Velg og lukk',
+      chooseHint:
+        'Setter datoen, bekrefter sessionen og gjør stemmene om til svar.',
+      reopen: 'Gjenåpne avstemning',
+      saveRequest: {
+        loading: 'Lagrer datoavstemning...',
+        success: 'Datoavstemning lagret',
+        error: (err: Error) =>
+          `Kunne ikke lagre datoavstemning: ${err.message}`,
+      },
+      reopenRequest: {
+        loading: 'Gjenåpner avstemning...',
+        success: 'Avstemningen er åpen igjen',
+        error: (err: Error) => `Kunne ikke gjenåpne avstemning: ${err.message}`,
+      },
+      chooseRequest: {
+        loading: 'Velger dato...',
+        success: 'Dato valgt',
+        error: (err: Error) => `Kunne ikke velge dato: ${err.message}`,
+      },
       choosePlaceholder: 'Velg dato',
       pendingDate: 'Dato ikke bestemt',
       pendingError: 'Datoen er ikke bestemt ennå',
