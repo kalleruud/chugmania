@@ -45,8 +45,6 @@ export function isApiTokenRequest(data: unknown): data is ApiTokenRequest {
   return data.type === 'ApiTokenRequest' && typeof data.id === 'string'
 }
 
-export type ApiTokensResponse = SuccessResponse & { tokens: ApiToken[] }
-
 export type CreateApiTokenResponse = SuccessResponse & {
   token: ApiToken
   value: string

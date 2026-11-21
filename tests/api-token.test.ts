@@ -40,9 +40,9 @@ async function createToken(
 }
 
 async function listTokens(socket: TypedSocket): Promise<ApiToken[]> {
-  const response = await ApiTokenManager.onGetApiTokens(socket)
-  assertResponse(response)
-  return response.tokens
+  return ApiTokenManager.getTokens(
+    await AuthManager.checkAuth(socket, undefined, true)
+  )
 }
 
 async function revoke(socket: TypedSocket, id: string) {
