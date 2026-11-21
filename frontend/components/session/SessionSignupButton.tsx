@@ -2,7 +2,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import type { SessionResponse } from '@backend/database/schema'
 import loc from '@common/locale/locales'
-import type { SessionWithSignups } from '@common/models/session'
+import { isDatePollOpen, type SessionWithSignups } from '@common/models/session'
 import { isPast } from '@common/utils/date'
 import { CircleCheck } from 'lucide-react'
 import { useState } from 'react'
@@ -55,6 +55,8 @@ export default function SessionSignupButton({
       }
     )
   }
+
+  if (isDatePollOpen(session)) return undefined
 
   if (!signup)
     return (

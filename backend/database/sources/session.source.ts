@@ -58,13 +58,9 @@ export default class SessionSource {
     return updated.length > 0
   }
 
-  static setSignup(
-    sessionId: string,
-    userId: string,
-    response: SessionResponse
-  ) {
-    const existing = db
-      .select({ id: sessionSignups.id })
+  static findSignup(sessionId: string, userId: string) {
+    return db
+      .select()
       .from(sessionSignups)
       .where(
         and(
@@ -72,14 +68,49 @@ export default class SessionSource {
           eq(sessionSignups.user, userId)
         )
       )
+      .orderBy(asc(sessionSignups.deletedAt))
       .get()
+  }
 
+  static setSignup(
+    sessionId: string,
+    userId: string,
+    response: SessionResponse
+  ) {
+    const existing = SessionSource.findSignup(sessionId, userId)
     db.insert(sessionSignups)
       .values({ id: existing?.id, session: sessionId, user: userId, response })
       .onConflictDoUpdate({
         target: [sessionSignups.id],
         set: { response, deletedAt: null },
       })
+      .run()
+  }
+
+  static getActiveSignup(id: string) {
+    return db
+      .select()
+      .from(sessionSignups)
+      .where(and(eq(sessionSignups.id, id), isNull(sessionSignups.deletedAt)))
+      .get()
+  }
+
+  static deleteSignup(id: string) {
+    db.update(sessionSignups)
+      .set({ deletedAt: new Date() })
+      .where(eq(sessionSignups.id, id))
+      .run()
+  }
+
+  static resetPoll(sessionId: string) {
+    db.update(sessionSignups)
+      .set({ response: 'maybe' })
+      .where(
+        and(
+          eq(sessionSignups.session, sessionId),
+          isNull(sessionSignups.deletedAt)
+        )
+      )
       .run()
   }
 
@@ -107,8 +138,19 @@ export default class SessionSource {
 
   static applyDateVotes(sessionId: string, date: number) {
     const votes = db
-      .select()
+      .selectDistinct({
+        user: sessionDateVotes.user,
+        dates: sessionDateVotes.dates,
+      })
       .from(sessionDateVotes)
+      .innerJoin(
+        sessionSignups,
+        and(
+          eq(sessionSignups.session, sessionDateVotes.session),
+          eq(sessionSignups.user, sessionDateVotes.user),
+          isNull(sessionSignups.deletedAt)
+        )
+      )
       .where(eq(sessionDateVotes.session, sessionId))
       .all()
 

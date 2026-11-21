@@ -1,7 +1,9 @@
 import loc from '@common/locale/locales'
 import {
   isCreateSessionRequest,
+  isDatePollOpen,
   isDeleteSessionRequest,
+  isDeleteSessionSignupRequest,
   isEditSessionRequest,
   isRsvpSessionRequest,
   isVoteSessionDateRequest,
@@ -26,37 +28,21 @@ import TimeEntryManager from './timeEntry.manager'
 import TournamentManager from './tournament/tournament.manager'
 import UserManager from './user.manager'
 
+function orCurrent<T>(value: T | undefined, current: T): T {
+  return value === undefined ? current : value
+}
+
 export default class SessionManager {
   public static ensureSessionSignup(
     sessionId: string,
     userId: string
   ): boolean {
-    const existingSignup = db
-      .select()
-      .from(sessionSignups)
-      .where(
-        and(
-          eq(sessionSignups.session, sessionId),
-          eq(sessionSignups.user, userId)
-        )
-      )
-      .get()
+    if (SessionSource.findSignup(sessionId, userId)?.deletedAt === null)
+      return false
+    const session = SessionSource.getActiveById(sessionId)
+    if (session && isDatePollOpen(session)) return false
 
-    if (existingSignup && !existingSignup.deletedAt) return false
-
-    db.insert(sessionSignups)
-      .values({
-        id: existingSignup?.id,
-        session: sessionId,
-        user: userId,
-        response: 'yes',
-      })
-      .onConflictDoUpdate({
-        target: [sessionSignups.id],
-        set: { response: 'yes', deletedAt: null },
-      })
-      .run()
-
+    SessionSource.setSignup(sessionId, userId, 'yes')
     return true
   }
 
@@ -159,13 +145,18 @@ export default class SessionManager {
 
     await AuthManager.checkAuth(socket, ['admin', 'moderator'])
 
+    const date = request.date ? new Date(request.date) : null
+    if (date === null && request.status !== 'tentative') {
+      throw new Error(loc.no.session.datePoll.invalidPoll)
+    }
+
     await db.insert(sessions).values({
       id: request.id,
       name: request.name,
       description: request.description,
       location: request.location,
       status: request.status,
-      date: new Date(request.date),
+      date,
     })
 
     console.debug(
@@ -200,10 +191,20 @@ export default class SessionManager {
     }
 
     const id = request.id
-    const chosenDate =
-      request.dateVotingClosed && request.date
-        ? new Date(request.date).getTime()
-        : undefined
+    const date = request.date ? new Date(request.date) : request.date
+    const next = {
+      date: orCurrent(date, session.date),
+      status: request.status ?? session.status,
+      dateOptions: orCurrent(request.dateOptions, session.dateOptions),
+      dateVotingClosed: request.dateVotingClosed ?? session.dateVotingClosed,
+    }
+    const wasPollOpen = isDatePollOpen(session)
+    const opensPoll = !wasPollOpen && isDatePollOpen(next)
+    const chosenDate = wasPollOpen && next.date ? next.date.getTime() : null
+
+    if (next.date === null && next.status !== 'tentative') {
+      throw new Error(loc.no.session.datePoll.invalidPoll)
+    }
 
     TransactionSource.run(() => {
       const updated = SessionSource.update(session.id, {
@@ -212,8 +213,8 @@ export default class SessionManager {
         location: request.location,
         status: request.status,
         dateOptions: request.dateOptions,
-        dateVotingClosed: request.dateVotingClosed,
-        date: request.date ? new Date(request.date) : undefined,
+        dateVotingClosed: chosenDate === null ? request.dateVotingClosed : true,
+        date,
         deletedAt: request.deletedAt
           ? new Date(request.deletedAt)
           : request.deletedAt,
@@ -221,7 +222,8 @@ export default class SessionManager {
 
       if (!updated) throw new Error('Update failed')
       if (request.deletedAt) TournamentManager.remove(session.id)
-      if (chosenDate && session.dateOptions?.includes(chosenDate))
+      if (opensPoll) SessionSource.resetPoll(session.id)
+      if (chosenDate !== null && next.dateOptions?.includes(chosenDate))
         SessionSource.applyDateVotes(session.id, chosenDate)
     })
 
@@ -262,12 +264,13 @@ export default class SessionManager {
       throw new Error(loc.no.error.messages.insufficient_permissions)
     }
 
-    const session = await db.query.sessions.findFirst({
-      where: eq(sessions.id, request.session),
-    })
-
-    if (!session || session.deletedAt) {
+    const session = SessionSource.getActiveById(request.session)
+    if (!session) {
       throw new Error(loc.no.error.messages.not_in_db(request.session))
+    }
+
+    if (isDatePollOpen(session)) {
+      throw new Error(loc.no.session.datePoll.pendingError)
     }
 
     if (isPast(session) && !isModerator) {
@@ -281,6 +284,43 @@ export default class SessionManager {
       socket.id,
       `Signed up for session with response: ${request.response}`,
       session.id
+    )
+
+    broadcast('all_sessions', await SessionManager.getAllSessions())
+    TournamentManager.publish(socket.id)
+
+    return { success: true }
+  }
+
+  static async onDeleteSessionSignup(
+    socket: TypedSocket,
+    request: EventReq<'delete_session_signup'>
+  ): Promise<EventRes<'delete_session_signup'>> {
+    if (!isDeleteSessionSignupRequest(request)) {
+      throw new Error(
+        loc.no.error.messages.invalid_request('DeleteSessionSignupRequest')
+      )
+    }
+
+    const actor = await AuthManager.checkAuth(socket, ['admin', 'moderator'])
+
+    const signup = SessionSource.getActiveSignup(request.id)
+    if (!signup) {
+      throw new Error(loc.no.error.messages.not_in_db(request.id))
+    }
+
+    const session = SessionSource.getActiveById(signup.session)
+    if (session && isDatePollOpen(session)) {
+      throw new Error(loc.no.session.datePoll.pendingError)
+    }
+
+    SessionSource.deleteSignup(signup.id)
+
+    console.debug(
+      new Date().toISOString(),
+      socket.id,
+      `${actor.id} removed signup ${request.id}`,
+      signup.session
     )
 
     broadcast('all_sessions', await SessionManager.getAllSessions())
@@ -303,11 +343,11 @@ export default class SessionManager {
 
     const session = SessionSource.getActiveById(request.session)
 
-    if (!session?.dateOptions?.length) {
+    if (!session) {
       throw new Error(loc.no.error.messages.not_in_db(request.session))
     }
 
-    if (session.dateVotingClosed) {
+    if (!isDatePollOpen(session)) {
       throw new Error(loc.no.session.datePoll.closedError)
     }
 
@@ -318,7 +358,12 @@ export default class SessionManager {
       )
     }
 
-    SessionSource.setDateVote(session.id, actor.id, [...new Set(request.dates)])
+    TransactionSource.run(() => {
+      SessionSource.setDateVote(session.id, actor.id, [
+        ...new Set(request.dates),
+      ])
+      SessionSource.setSignup(session.id, actor.id, 'maybe')
+    })
 
     console.debug(
       new Date().toISOString(),

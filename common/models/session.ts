@@ -24,6 +24,17 @@ export type SessionWithSignups = Session & {
   dateVotes: SessionDateVote[]
 }
 
+export function isDatePollOpen(
+  session: Pick<Session, 'date' | 'status' | 'dateOptions' | 'dateVotingClosed'>
+) {
+  return (
+    session.date === null &&
+    session.status === 'tentative' &&
+    !session.dateVotingClosed &&
+    !!session.dateOptions?.length
+  )
+}
+
 function isDateList(data: unknown): data is number[] {
   return Array.isArray(data) && data.every(d => Number.isFinite(d))
 }
@@ -79,6 +90,20 @@ export function isRsvpSessionRequest(
     typeof data.session === 'string' &&
     typeof data.user === 'string' &&
     typeof data.response === 'string'
+  )
+}
+
+export type DeleteSessionSignupRequest = {
+  type: 'DeleteSessionSignupRequest'
+  id: SessionSignup['id']
+}
+
+export function isDeleteSessionSignupRequest(
+  data: unknown
+): data is DeleteSessionSignupRequest {
+  if (!isRecord(data)) return false
+  return (
+    data.type === 'DeleteSessionSignupRequest' && typeof data.id === 'string'
   )
 }
 

@@ -1,4 +1,4 @@
-import { PageSubheader } from '@/components/PageHeader'
+import ConfirmationButton from '@/components/ConfirmationButton'
 import SegmentedProgress from '@/components/SegmentedProgress'
 import { Button } from '@/components/ui/button'
 import { Empty } from '@/components/ui/empty'
@@ -10,21 +10,23 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Spinner } from '@/components/ui/spinner'
-import UserRow from '@/components/user/UserRow'
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
+import { editSession } from '@/lib/session-utils'
 import loc from '@common/locale/locales'
-import type { SessionWithSignups } from '@common/models/session'
+import { isDatePollOpen, type SessionWithSignups } from '@common/models/session'
 import type { UserInfo } from '@common/models/user'
 import { isPast, isUpcoming } from '@common/utils/date'
+import { RotateCcwIcon, Trash2 } from 'lucide-react'
 import { useMemo, type ComponentProps } from 'react'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
 import type { SessionResponse } from '../../../backend/database/schema'
 import ManageSessionParticipantsDialog from './ManageSessionParticipantsDialog'
-import { DateOptionsDialog } from './SessionDatePoll'
 import { getUserSortName, RESPONSE_OPTIONS } from './session-signup-utils'
+import { DateOptionsDialog } from './SessionDatePoll'
+import SessionUserGroup from './SessionUserGroup'
 
 export default function SessionSignupPanel({
   session,
@@ -40,12 +42,25 @@ export default function SessionSignupPanel({
 
   const canManageSignups = isLoggedIn && loggedInUser.role !== 'user'
 
+  const isPollOpen = isDatePollOpen(session)
+  const canPlanPoll =
+    canManageSignups &&
+    isUpcoming(session) &&
+    session.status !== 'cancelled' &&
+    !isPollOpen
+
   const sortedSignups = useMemo(
     () =>
-      session.signups.toSorted((a, b) =>
-        getUserSortName(a.user).localeCompare(getUserSortName(b.user))
-      ),
-    [session.signups]
+      session.signups
+        .map(signup =>
+          isPollOpen
+            ? { ...signup, response: getPollResponse(session, signup) }
+            : signup
+        )
+        .toSorted((a, b) =>
+          getUserSortName(a.user).localeCompare(getUserSortName(b.user))
+        ),
+    [session, isPollOpen]
   )
 
   const signedUpUserIds = useMemo(
@@ -92,6 +107,72 @@ export default function SessionSignupPanel({
     })
   }
 
+  async function removeSignup(id: string) {
+    const res = await socket.emitWithAck('delete_session_signup', {
+      type: 'DeleteSessionSignupRequest',
+      id,
+    })
+
+    if (!res.success) throw new Error(res.message)
+  }
+
+  function reopen() {
+    editSession(
+      socket,
+      session.id,
+      { date: null, status: 'tentative', dateVotingClosed: false },
+      loc.no.session.datePoll.reopenRequest
+    )
+  }
+
+  function handleRemove(id: string) {
+    toast.promise(removeSignup(id), loc.no.session.rsvp.remove)
+  }
+
+  function renderActions(
+    id: string,
+    user: UserInfo,
+    response: SessionResponse
+  ) {
+    if (isPollOpen) return undefined
+    const canEdit =
+      canManageSignups || (isUpcoming(session) && loggedInUser?.id === user.id)
+    return (
+      <div className='flex items-center gap-1'>
+        {canEdit && (
+          <Select
+            value={response}
+            onValueChange={value => {
+              if (value === 'yes' || value === 'no' || value === 'maybe')
+                handleRsvp(value, user)
+            }}
+            disabled={disabled}>
+            <SelectTrigger aria-label={`${user.firstName}: RSVP`}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent align='end'>
+              {RESPONSE_OPTIONS.map(({ response, Icon }) => (
+                <SelectItem key={response} value={response}>
+                  <Icon className='size-4' />
+                  {loc.no.session.rsvp.responses[response]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+        {canManageSignups && (
+          <ConfirmationButton
+            variant='ghost'
+            size='sm'
+            aria-label={loc.no.session.rsvp.remove.label(user.firstName)}
+            onClick={() => handleRemove(id)}>
+            <Trash2 className='size-4' />
+          </ConfirmationButton>
+        )}
+      </div>
+    )
+  }
+
   async function addParticipants(response: SessionResponse, users: UserInfo[]) {
     await Promise.all(users.map(user => updateSignup(response, user)))
   }
@@ -104,14 +185,24 @@ export default function SessionSignupPanel({
             ? loc.no.session.attendance
             : loc.no.session.participants}
         </h3>
-        {canManageSignups && session.status === 'tentative' && (
-          <DateOptionsDialog session={session} />
+        {canPlanPoll && (
+          <div className='flex items-center gap-2'>
+            {!!session.dateOptions?.length && (
+              <ConfirmationButton size='sm' variant='outline' onClick={reopen}>
+                <RotateCcwIcon />
+                {loc.no.session.datePoll.reopen}
+              </ConfirmationButton>
+            )}
+            <DateOptionsDialog session={session} />
+          </div>
         )}
       </div>
 
       <div
         className='flex items-center justify-center gap-2'
-        hidden={!canManageSignups && (isPast(session) || selfRsvp)}>
+        hidden={
+          isPollOpen || (!canManageSignups && (isPast(session) || selfRsvp))
+        }>
         {canManageSignups && (
           <ManageSessionParticipantsDialog
             availableUsers={availableUsers}
@@ -155,53 +246,32 @@ export default function SessionSignupPanel({
         )
         if (responseSignups.length === 0) return undefined
         return (
-          <div key={response} className='flex flex-col'>
-            <PageSubheader
-              title={loc.no.session.rsvp.responses[response]}
-              description={responseSignups.length.toString()}
-            />
-            <div className='rounded-sm bg-background-secondary'>
-              {responseSignups.map(({ user }) => {
-                const isSelf = loggedInUser?.id === user.id
-                return (
-                  <UserRow
-                    key={user.id}
-                    item={user}
-                    className='min-h-12 w-full py-1'
-                    highlight={isSelf}
-                    hideRanking>
-                    {(canManageSignups || (isUpcoming(session) && isSelf)) && (
-                      <Select
-                        value={response}
-                        onValueChange={value => {
-                          if (
-                            value === 'yes' ||
-                            value === 'no' ||
-                            value === 'maybe'
-                          )
-                            handleRsvp(value, user)
-                        }}
-                        disabled={disabled}>
-                        <SelectTrigger aria-label={`${user.firstName}: RSVP`}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent align='end'>
-                          {RESPONSE_OPTIONS.map(({ response, Icon }) => (
-                            <SelectItem key={response} value={response}>
-                              <Icon className='size-4' />
-                              {loc.no.session.rsvp.responses[response]}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  </UserRow>
-                )
-              })}
-            </div>
-          </div>
+          <SessionUserGroup
+            key={response}
+            title={loc.no.session.rsvp.responses[response]}
+            items={responseSignups.map(({ id, user }) => ({
+              key: id,
+              user,
+              highlight: loggedInUser?.id === user.id,
+              actions: renderActions(id, user, response),
+            }))}
+          />
         )
       })}
     </div>
   )
+}
+
+function getPollResponse(
+  session: SessionWithSignups,
+  signup: SessionWithSignups['signups'][number]
+): SessionResponse {
+  const options = session.dateOptions ?? []
+  const vote = session.dateVotes.find(v => v.user.id === signup.user.id)
+  if (!vote) return signup.response
+
+  const checked = options.filter(date => vote.dates.includes(date)).length
+  if (checked === 0) return 'no'
+  if (checked === options.length) return 'yes'
+  return 'maybe'
 }

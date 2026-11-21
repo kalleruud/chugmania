@@ -9,12 +9,13 @@ type ConfirmationButtonProps = Parameters<typeof Button>[0] & {
 
 export default function ConfirmationButton({
   confirmText = loc.no.common.confirm,
-  confirmDuration = 5000,
+  confirmDuration = 8000,
   form,
   onClick,
   ...props
 }: Readonly<ConfirmationButtonProps>) {
   const [isConfirming, setIsConfirming] = useState(false)
+  const [width, setWidth] = useState<number>()
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Cleanup timeout on unmount
@@ -51,12 +52,20 @@ export default function ConfirmationButton({
           onClick?.(e)
           setIsConfirming(false)
         }}
+        style={{ ...props.style, minWidth: width }}
         variant={'default'}>
         {confirmText}
       </Button>
     )
 
   return (
-    <Button {...props} type='button' onClick={() => setIsConfirming(true)} />
+    <Button
+      {...props}
+      type='button'
+      onClick={e => {
+        setWidth(e.currentTarget.offsetWidth)
+        setIsConfirming(true)
+      }}
+    />
   )
 }

@@ -45,18 +45,26 @@ export function getEndOfDate(date: Date): Date {
     .toJSDate()
 }
 
-export function isOngoing(session: { date: Date; status: SessionStatus }) {
+type DatedSession = { date: Date | null; status: SessionStatus }
+
+export function getSessionDate(session: Pick<DatedSession, 'date'>) {
+  return new Date(session.date ?? Date.now())
+}
+
+export function isOngoing(session: DatedSession) {
   return (
     !isPast(session) && !isUpcoming(session) && session.status !== 'cancelled'
   )
 }
 
-export function isPast(session: { date: Date; status: SessionStatus }) {
+export function isPast(session: DatedSession) {
+  if (!session.date) return false
   const endDate = DateTime.fromJSDate(getEndOfDate(new Date(session.date)))
   return endDate.diffNow().milliseconds <= 0
 }
 
-export function isUpcoming(session: { date: Date; status: SessionStatus }) {
+export function isUpcoming(session: DatedSession) {
+  if (!session.date) return true
   const startDate = DateTime.fromJSDate(new Date(session.date))
   return startDate.diffNow().milliseconds > 0
 }

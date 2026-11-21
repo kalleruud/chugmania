@@ -28,9 +28,10 @@ export default function SessionForm({
 
   const [name, setName] = useState(session?.name ?? '')
   const [description, setDescription] = useState(session?.description ?? '')
-  const [date, setDate] = useState<Date | undefined>(
-    session?.date ? new Date(session.date) : undefined
-  )
+  const [date, setDate] = useState<Date | undefined>(() => {
+    if (!session) return new Date()
+    return session.date ? new Date(session.date) : undefined
+  })
   const [location, setLocation] = useState(session?.location ?? '')
   const [status, setStatus] = useState<SessionStatus>(
     session?.status ?? 'confirmed'
@@ -39,6 +40,17 @@ export default function SessionForm({
   const isAdmin = isLoggedIn && loggedInUser.role === 'admin'
   const isModerator = isLoggedIn && loggedInUser.role === 'moderator'
   const canCreate = isAdmin || isModerator
+
+  function selectDate(next: Date | undefined) {
+    if (!date && next && status === 'tentative' && variant === 'create')
+      setStatus('confirmed')
+    setDate(next)
+  }
+
+  function clearDate() {
+    setDate(undefined)
+    setStatus('tentative')
+  }
 
   function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -55,7 +67,7 @@ export default function SessionForm({
               type: 'CreateSessionRequest',
               name,
               description: description || undefined,
-              date: date ?? new Date(),
+              date: date ?? null,
               location: location || undefined,
               status,
             })
@@ -68,7 +80,6 @@ export default function SessionForm({
         )
 
       case 'edit':
-        if (!date) return toast.error('Dato er påkrevd')
         if (!canCreate) {
           toast.error(loc.no.error.messages.insufficient_permissions)
           return
@@ -80,7 +91,7 @@ export default function SessionForm({
               id: session.id,
               name,
               description: description || undefined,
-              date,
+              date: date ?? null,
               location: location || undefined,
               status,
             })
@@ -114,9 +125,10 @@ export default function SessionForm({
         id='date'
         name={loc.no.session.form.date}
         selected={date}
-        onSelect={setDate}
+        onSelect={selectDate}
+        placeholder={loc.no.session.datePoll.pendingDate}
+        onClear={clearDate}
         disabled={disabled}
-        required={variant === 'edit'}
       />
 
       <Field

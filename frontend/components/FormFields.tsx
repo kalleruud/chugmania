@@ -1,5 +1,7 @@
+import loc from '@common/locale/locales'
 import { formatDateWithYear, formatTimeOnly } from '@common/utils/date'
 import { ChevronDownIcon } from '@heroicons/react/24/solid'
+import { XIcon } from 'lucide-react'
 import { useState, type ComponentProps, type KeyboardEvent } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { Button } from './ui/button'
@@ -100,17 +102,20 @@ export function CalendarField({
   onSelect,
   disabled,
   required,
+  placeholder,
+  onClear,
 }: Readonly<{
   id: string
   name: string
   hidden?: boolean
+  placeholder?: string
+  onClear?: () => void
   selected?: Date
   onSelect?: (date: Date | undefined) => void
   disabled?: boolean
   required?: boolean
 }>) {
   const [open, setOpen] = useState(false)
-  const [date, setDate] = useState<Date | undefined>(undefined)
   const [time, setTime] = useState<string | undefined>(dateToTime(selected))
   const [timeError, setTimeError] = useState<string | undefined>()
 
@@ -143,7 +148,7 @@ export function CalendarField({
   function handleTimeBlur() {
     if (!time?.trim()) {
       setTimeError(undefined)
-      onSelect?.(date)
+      if (selected) applyDate(selected)
       return
     }
 
@@ -159,24 +164,24 @@ export function CalendarField({
     newDate.setMinutes(parsed.minutes)
     newDate.setSeconds(parsed.seconds)
     onSelect?.(newDate)
-    setDate(newDate)
     setTime(formatParsedTime(parsed))
   }
 
-  function handleDateSelect(date: Date) {
-    const newDate = new Date(date)
-    setDate(newDate)
-
-    if (time) {
-      const parsed = parseTimeInput(time)
-      if (parsed) {
-        newDate.setHours(parsed.hours)
-        newDate.setMinutes(parsed.minutes)
-        newDate.setSeconds(parsed.seconds)
-      }
+  function applyDate(day: Date) {
+    const newDate = new Date(day)
+    const parsed = time ? parseTimeInput(time) : undefined
+    if (parsed) {
+      newDate.setHours(parsed.hours, parsed.minutes, parsed.seconds)
+    } else {
+      const current = new Date()
+      newDate.setHours(current.getHours(), current.getMinutes(), 0)
+      setTime(dateToTime(newDate))
     }
-
     onSelect?.(newDate)
+  }
+
+  function handleDateSelect(day: Date) {
+    applyDate(day)
     setOpen(false)
   }
 
@@ -197,7 +202,9 @@ export function CalendarField({
                 isEmpty && 'text-muted-foreground'
               )}
               disabled={disabled}>
-              {formatDateWithYear(selected ?? now)}
+              {selected
+                ? formatDateWithYear(selected)
+                : (placeholder ?? formatDateWithYear(now))}
               <ChevronDownIcon />
             </Button>
           </PopoverTrigger>
@@ -230,6 +237,22 @@ export function CalendarField({
             )}
           />
         </div>
+
+        {onClear && !isEmpty && (
+          <Button
+            type='button'
+            variant='outline'
+            size='icon'
+            aria-label={loc.no.session.datePoll.clearDate}
+            disabled={disabled}
+            onClick={() => {
+              setTime('')
+              setTimeError(undefined)
+              onClear()
+            }}>
+            <XIcon />
+          </Button>
+        )}
       </div>
     </div>
   )

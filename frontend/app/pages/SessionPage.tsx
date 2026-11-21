@@ -31,7 +31,8 @@ import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
 import { useTimeEntryInput } from '@/contexts/TimeEntryInputContext'
 import loc from '@common/locale/locales'
-import type { SessionWithSignups } from '@common/models/session'
+import { isDatePollOpen, type SessionWithSignups } from '@common/models/session'
+import { isUpcoming } from '@common/utils/date'
 import { isInactiveFinalReset } from '@common/utils/tournament'
 import { PencilIcon, PlusIcon, Trash2 } from 'lucide-react'
 import { useState } from 'react'
@@ -47,7 +48,11 @@ function getDefaultTab(
   const isSignedUp = session.signups.some(
     s => s.user.id === userId && s.response !== 'no'
   )
-  if (!isSignedUp) return loc.no.session.participants
+  if (
+    isDatePollOpen(session) ||
+    (isUpcoming(session) && (!isSignedUp || !hasTournament))
+  )
+    return loc.no.session.participants
   return hasTournament ? loc.no.tournament.title : loc.no.session.session
 }
 
@@ -97,6 +102,7 @@ export default function SessionPage() {
     throw new Error(loc.no.error.messages.not_in_db(`sessions/${id}`))
 
   const isCancelled = session.status === 'cancelled'
+  const isPollOpen = isDatePollOpen(session)
   const tournament = tournaments.find(t => t.config.session === session.id)
   const sessionTracks = tracks.filter(track => {
     const hasLaps = timeEntries.some(
@@ -188,6 +194,7 @@ export default function SessionPage() {
       </div>
 
       <Tabs
+        key={session.id}
         defaultValue={
           searchParams.get('tab') === 'tournament'
             ? loc.no.tournament.title
@@ -207,10 +214,10 @@ export default function SessionPage() {
         <TabsContent
           className='flex flex-col gap-4'
           value={loc.no.session.participants}>
-          <SessionDatePoll session={session} />
+          {isPollOpen && <SessionDatePoll session={session} />}
           <SessionSignupPanel
             className='rounded-sm border bg-background p-2'
-            disabled={isCancelled}
+            disabled={isCancelled || isPollOpen}
             session={session}
           />
         </TabsContent>

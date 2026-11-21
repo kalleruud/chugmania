@@ -155,7 +155,7 @@ const no = {
     },
     statusOptions: {
       confirmed: 'Bekreftet',
-      tentative: 'Usikkert',
+      tentative: 'Ubekreftet',
       cancelled: 'Avlyst',
     } as Record<SessionStatus, string>,
     status: {
@@ -169,7 +169,35 @@ const no = {
         'Velg alle datoer du har mulighet til å møte opp. Du blir automatisk påmeldt om en dato du velger blir valgt.',
       edit: 'Datoavstemning',
       description: 'Velg datoene spillerne kan stemme på.',
-      choose: 'Velg',
+      choose: 'Velg og lukk',
+      chooseHint:
+        'Setter datoen, bekrefter sessionen og gjør stemmene om til svar.',
+      reopen: 'Gjenåpne avstemning',
+      saveRequest: {
+        loading: 'Lagrer datoavstemning...',
+        success: 'Datoavstemning lagret',
+        error: (err: Error) =>
+          `Kunne ikke lagre datoavstemning: ${err.message}`,
+      },
+      reopenRequest: {
+        loading: 'Gjenåpner avstemning...',
+        success: 'Avstemningen er åpen igjen',
+        error: (err: Error) => `Kunne ikke gjenåpne avstemning: ${err.message}`,
+      },
+      chooseRequest: {
+        loading: 'Velger dato...',
+        success: 'Dato valgt',
+        error: (err: Error) => `Kunne ikke velge dato: ${err.message}`,
+      },
+      choosePlaceholder: 'Velg dato',
+      pendingDate: 'Dato ikke bestemt',
+      pendingError: 'Datoen er ikke bestemt ennå',
+      invalidPoll: 'En session uten dato må være ubekreftet',
+      clearDate: 'Fjern dato',
+      warning:
+        'Datoen nullstilles og alle svar settes til «Skal kanskje» til en dato er valgt.',
+      canAttend: 'Kan',
+      cannotAttend: 'Kan ikke',
       votes: (count: number) =>
         `${count} ${count === 1 ? 'stemme' : 'stemmer'}`,
       closedError: 'Avstemningen er stengt',
@@ -192,6 +220,12 @@ const no = {
         success: (response: SessionResponse) =>
           `Svar ble oppdatert: ${no.session.rsvp.responses[response]}`,
         error: (err: Error) => `Kunne ikke registrere svar: ${err.message}`,
+      },
+      remove: {
+        label: (name: string) => `Fjern ${name}`,
+        loading: 'Fjerner påmelding...',
+        success: 'Påmelding fjernet',
+        error: (err: Error) => `Kunne ikke fjerne påmelding: ${err.message}`,
       },
       manage: {
         add: 'Legg til',
