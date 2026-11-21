@@ -1,8 +1,10 @@
 import { PageHeader } from '@/components/PageHeader'
+import type { Grouping } from '@/components/grouped-list/grouping'
 import {
-  sessionGroupings,
-  type SessionGroupingKey,
-} from '@/components/session/session.groupings'
+  byMonth,
+  byWeek,
+  byYear,
+} from '@/components/grouped-list/groupings/date'
 import SessionsList from '@/components/session/SessionsList'
 import { Button } from '@/components/ui/button'
 import {
@@ -15,6 +17,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@common/locale/locales'
+import type { SessionWithSignups } from '@common/models/session'
 import {
   getSessionDate,
   isOngoing,
@@ -24,6 +27,14 @@ import {
 import { CalendarIcon } from '@heroicons/react/24/solid'
 import { useState, type ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
+
+const sessionGroupings = {
+  year: byYear(getSessionDate),
+  month: byMonth(getSessionDate),
+  week: byWeek(getSessionDate),
+} satisfies Record<string, Grouping<SessionWithSignups>>
+
+type SessionGroupingKey = keyof typeof sessionGroupings
 
 const ARCHIVE_GROUP_LIMIT = 5
 const ARCHIVE_TOTAL_LIMIT = 10

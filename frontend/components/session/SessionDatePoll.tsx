@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/select'
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
+import { editSession } from '@/lib/session-utils'
 import loc from '@common/locale/locales'
 import { isDatePollOpen, type SessionWithSignups } from '@common/models/session'
 import { formatDateWithYear } from '@common/utils/date'
@@ -27,7 +28,6 @@ import { CalendarDaysIcon, CheckIcon } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
-import { editSession } from './session-requests'
 import SessionUserGroup from './SessionUserGroup'
 
 export default function SessionDatePoll({
