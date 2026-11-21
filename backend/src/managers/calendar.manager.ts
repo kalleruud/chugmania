@@ -1,6 +1,6 @@
-import type { SessionResponse } from '@backend/database/schema'
 import loc from '@common/locale/locales'
-import type { SessionWithSignups } from '@common/models/session'
+import type { SessionSignup, SessionWithSignups } from '@common/models/session'
+import { getUserFullName } from '@common/models/user'
 import { getEndOfDate } from '@common/utils/date'
 import {
   type Attendee,
@@ -9,35 +9,35 @@ import {
   type ParticipationStatus,
 } from 'ics'
 import SessionManager from './session.manager'
-import UserManager from './user.manager'
 
 const isProduction = process.env.NODE_ENV === 'production'
+const calendarEmailPattern =
+  /^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*$/i
 
 export default class CalendarManager {
   public static readonly PRODUCT_ID = 'chugmania/sessions'
 
   public static async getAllSessionsCalendar(baseUrl: URL): Promise<string> {
-    return await CalendarManager.createIcsCalendar(
+    return CalendarManager.createIcsCalendar(
       await SessionManager.getAllSessions(),
       baseUrl,
       isProduction ? loc.no.chugmania : loc.no.chugmania + ' (dev)'
     )
   }
 
-  private static async createIcsCalendar(
+  private static createIcsCalendar(
     sessionList: SessionWithSignups[],
     baseUrl: URL,
     calendarName: string
-  ): Promise<string> {
-    const events = await Promise.all(
-      sessionList.map(session =>
-        CalendarManager.createSessionEvent(session, baseUrl, calendarName)
-      )
+  ): string {
+    const events = sessionList.map(session =>
+      CalendarManager.createSessionEvent(session, baseUrl, calendarName)
     )
 
     const { error, value } = createEvents(events, {
       productId: CalendarManager.PRODUCT_ID,
       calName: calendarName,
+      method: '',
     })
 
     if (error || !value) throw error ?? new Error('Failed to generate calendar')
@@ -45,11 +45,11 @@ export default class CalendarManager {
     return value
   }
 
-  private static async createSessionEvent(
+  private static createSessionEvent(
     session: SessionWithSignups,
     baseUrl: URL,
     calendarName: string
-  ): Promise<EventAttributes> {
+  ): EventAttributes {
     let status: EventAttributes['status']
     switch (session.status) {
       case 'cancelled':
@@ -63,15 +63,6 @@ export default class CalendarManager {
     }
 
     baseUrl.pathname = `sessions`
-
-    const attendees = await Promise.all(
-      session.signups.map(signup =>
-        CalendarManager.createEventAttendee({
-          user: signup.user.id,
-          response: signup.response,
-        })
-      )
-    )
 
     return {
       title: '🍺 ' + session.name,
@@ -99,16 +90,20 @@ export default class CalendarManager {
       lastModified: session.updatedAt
         ? CalendarManager.toUtcArray(session.updatedAt)
         : undefined,
-      attendees: attendees,
+      attendees: session.signups
+        .map(CalendarManager.createEventAttendee)
+        .filter(attendee => attendee !== undefined),
     }
   }
 
-  private static async createEventAttendee(signup: {
-    user: string
-    response: SessionResponse
-  }): Promise<Attendee> {
+  private static createEventAttendee({
+    user,
+    response,
+  }: SessionSignup): Attendee | undefined {
+    if (!calendarEmailPattern.test(user.email)) return undefined
+
     let partstat: ParticipationStatus
-    switch (signup.response) {
+    switch (response) {
       case 'yes':
         partstat = 'ACCEPTED'
         break
@@ -122,12 +117,13 @@ export default class CalendarManager {
         partstat = 'NEEDS-ACTION'
     }
 
-    const user = await UserManager.getUserById(signup.user)
+    const separator = user.email.indexOf('@')
+    const localPart = encodeURIComponent(user.email.slice(0, separator))
 
     return {
-      name: `${user.firstName} ${user.lastName}`,
-      email: user.email.split('@')[0] + '@chugmania.no',
-      rsvp: true,
+      name: getUserFullName(user),
+      email: localPart + user.email.slice(separator),
+      rsvp: false,
       partstat: partstat,
       role: 'OPT-PARTICIPANT',
       cutype: 'INDIVIDUAL',
