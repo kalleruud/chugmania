@@ -2,7 +2,7 @@ import loc from '@common/locale/locales'
 import { isLoginRequest } from '@common/models/auth'
 import type { EventReq, EventRes, SocketData } from '@common/models/socket.io'
 import { type User, type UserInfo } from '@common/models/user'
-import { tryCatch, tryCatchAsync } from '@common/utils/try-catch'
+import { tryCatchAsync } from '@common/utils/try-catch'
 import { isRecord } from '@common/utils/utils'
 import jwt, { type JwtPayload } from 'jsonwebtoken'
 import type { TypedSocket } from '../server'
@@ -15,10 +15,15 @@ const SECRET: jwt.Secret = (() => {
 })()
 
 type TokenData = Omit<SocketData, 'token'> & JwtPayload
+type ApiTokenData = TokenData & { tokenId: string }
 
 function isTokenData(data: unknown): data is TokenData {
   if (!isRecord(data)) return false
   return typeof data.userId === 'string'
+}
+
+function isApiTokenData(data: unknown): data is ApiTokenData {
+  return isTokenData(data) && typeof data.tokenId === 'string'
 }
 
 function delay(time: number) {
@@ -38,21 +43,55 @@ export default class AuthManager {
     return jwt.sign({ userId }, SECRET, AuthManager.JWT_OPTIONS)
   }
 
-  private static async verify(token: string | undefined): Promise<TokenData> {
+  static signApiToken(
+    userId: ApiTokenData['userId'],
+    tokenId: ApiTokenData['tokenId']
+  ) {
+    return jwt.sign({ userId, tokenId }, SECRET, {
+      algorithm: 'HS512',
+      noTimestamp: true,
+    })
+  }
+
+  private static decode(token: string | undefined): TokenData {
     if (!token) throw new Error(loc.no.error.messages.missing_jwt)
-    const { data, error } = tryCatch(jwt.verify(token, SECRET))
-    if (error) {
-      console.error(new Date().toISOString(), error)
-      throw new Error(loc.no.error.messages.invalid_jwt)
+    try {
+      const data = jwt.verify(token, SECRET, { algorithms: ['HS512'] })
+      if (isTokenData(data)) return data
+    } catch (error) {
+      console.error(
+        new Date().toISOString(),
+        error instanceof Error ? error.message : error
+      )
     }
-    if (!isTokenData(data)) throw new Error(loc.no.error.messages.invalid_jwt)
+    throw new Error(loc.no.error.messages.invalid_jwt)
+  }
 
-    const { error: userError } = await tryCatchAsync(
-      UserManager.getUserById(data.userId)
-    )
-    if (userError) throw new Error(loc.no.error.messages.invalid_jwt)
-
+  static verifySession(token: string | undefined): TokenData {
+    const data = AuthManager.decode(token)
+    if ('tokenId' in data) throw new Error(loc.no.error.messages.invalid_jwt)
     return data
+  }
+
+  static verifyApiToken(token: string | undefined): ApiTokenData {
+    const data = AuthManager.decode(token)
+    if (!isApiTokenData(data) || data.exp !== undefined)
+      throw new Error(loc.no.error.messages.invalid_jwt)
+    return data
+  }
+
+  static async authorize(
+    userId: User['id'],
+    allowedRoles?: UserInfo['role'][]
+  ): Promise<User> {
+    const { data: user, error } = await tryCatchAsync(
+      UserManager.getUserById(userId)
+    )
+    if (error) throw new Error(loc.no.error.messages.invalid_jwt)
+    if (user.deletedAt || (allowedRoles && !allowedRoles.includes(user.role))) {
+      throw new Error(loc.no.error.messages.insufficient_permissions)
+    }
+    return user
   }
 
   static async isPasswordValid(
@@ -77,12 +116,8 @@ export default class AuthManager {
       throw new Error(loc.no.error.messages.missing_jwt)
     }
 
-    const { userId } = await AuthManager.verify(socket.handshake.auth.token)
-    const user = await UserManager.getUserById(userId)
-
-    if (user.deletedAt || (allowedRoles && !allowedRoles.includes(user.role))) {
-      throw new Error(loc.no.error.messages.insufficient_permissions)
-    }
+    const { userId } = AuthManager.verifySession(socket.handshake.auth.token)
+    const user = await AuthManager.authorize(userId, allowedRoles)
 
     if (user.email.includes('@chugmania.no') && !allowDefaultEmail) {
       throw new Error(loc.no.error.messages.update_email)

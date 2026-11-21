@@ -5,18 +5,18 @@ import express, {
   type Request,
   type Response,
 } from 'express'
-import { timingSafeEqual } from 'node:crypto'
 import SessionSource from '../../database/sources/session.source'
 import WebhookManager, { WebhookError } from '../managers/webhook.manager'
 import { isWebhookEvent } from '../models/webhook'
 import type { Event } from '../models/webhook.generated'
+import { getApiUser, requireApiToken } from './apiAuth'
 
 export function createWebhookRouter() {
   const router = express.Router()
   router.post(
     '/api/webhook',
     logWebhookOutcome,
-    authenticateWebhook,
+    requireApiToken(),
     express.text({ type: 'application/json', limit: '256kb' }),
     receiveWebhook
   )
@@ -36,28 +36,6 @@ function logWebhookOutcome(
       `Webhook ${req.get('event_type') ?? 'unknown'} (${req.get('event-id') ?? 'no ID'}): ${String(outcome)} [HTTP ${res.statusCode}]`
     )
   })
-  next()
-}
-
-function authenticateWebhook(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void {
-  const token = process.env.WEBHOOK_TOKEN
-  const expected = Buffer.from(`Bearer ${token ?? ''}`)
-  const provided = Buffer.from(req.get('Authorization') ?? '')
-  if (
-    !token ||
-    expected.length !== provided.length ||
-    !timingSafeEqual(expected, provided)
-  ) {
-    res.status(401).json({
-      code: 'UNAUTHORIZED',
-      message: 'Webhook authentication required',
-    })
-    return
-  }
   next()
 }
 
@@ -83,7 +61,12 @@ function parseWebhookEvent(req: Request): { event: Event; rawPayload: string } {
 function receiveWebhook(req: Request, res: Response): void {
   try {
     const { event, rawPayload } = parseWebhookEvent(req)
-    res.locals.webhookOutcome = WebhookManager.receive(event, rawPayload)
+    res.locals.webhookOutcome = WebhookManager.receive(
+      event,
+      rawPayload,
+      new Date(),
+      getApiUser(res).id
+    )
     res.status(204).end()
   } catch (error) {
     respondToWebhookError(error, res)

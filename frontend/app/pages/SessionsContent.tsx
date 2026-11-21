@@ -1,3 +1,8 @@
+import {
+  getOwnActiveTokens,
+  isAtTokenLimit,
+} from '@/components/apiToken/apiTokens'
+import TokenLimitDialog from '@/components/apiToken/TokenLimitDialog'
 import { PageHeader } from '@/components/PageHeader'
 import type { Grouping } from '@/components/grouped-list/grouping'
 import {
@@ -15,8 +20,10 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useAuth } from '@/contexts/AuthContext'
+import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@common/locale/locales'
+import { CALENDAR_TOKEN_NAME } from '@common/models/apiToken'
 import type { SessionWithSignups } from '@common/models/session'
 import {
   getSessionDate,
@@ -26,6 +33,7 @@ import {
 } from '@common/utils/date'
 import { CalendarIcon } from '@heroicons/react/24/solid'
 import { useState, type ComponentProps } from 'react'
+import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
 
 const sessionGroupings = {
@@ -147,22 +155,53 @@ export function SubscribeButton({
   className,
   ...rest
 }: Readonly<Parameters<typeof Button>[0]>) {
-  const subscribe = () => {
-    const url =
-      `${globalThis.location.origin}/api/sessions/calendar.ics`.replace(
+  const { loggedInUser } = useAuth()
+  const { apiTokens } = useData()
+  const { socket } = useConnection()
+  const [isLimitOpen, setIsLimitOpen] = useState(false)
+
+  if (!loggedInUser) return undefined
+
+  const openCalendar = async () => {
+    const response = await socket.emitWithAck('get_calendar_url')
+    if (!response.success) {
+      toast.error(response.message)
+      return
+    }
+    if (response.created) toast.success(loc.no.apiTokens.calendarCreated)
+    globalThis.location.assign(
+      `${globalThis.location.origin}${response.path}`.replace(
         /^https?:\/\//,
         'webcal://'
       )
-    window.open(url)
+    )
+  }
+
+  const subscribe = () => {
+    const ownActive = getOwnActiveTokens(apiTokens, loggedInUser)
+    const hasCalendarToken = ownActive.some(
+      token => token.name === CALENDAR_TOKEN_NAME
+    )
+    if (!hasCalendarToken && isAtTokenLimit(apiTokens, loggedInUser))
+      setIsLimitOpen(true)
+    else void openCalendar()
   }
 
   return (
-    <Button
-      className={twMerge('flex-1', className)}
-      onClick={subscribe}
-      {...rest}>
-      <CalendarIcon className='size-4' />
-      {loc.no.session.calendar.subscribe}
-    </Button>
+    <>
+      <Button
+        className={twMerge('flex-1', className)}
+        onClick={subscribe}
+        {...rest}>
+        <CalendarIcon className='size-4' />
+        {loc.no.session.calendar.subscribe}
+      </Button>
+      <TokenLimitDialog
+        open={isLimitOpen}
+        onOpenChange={setIsLimitOpen}
+        tokens={getOwnActiveTokens(apiTokens, loggedInUser)}
+        onRevoked={() => void openCalendar()}
+      />
+    </>
   )
 }

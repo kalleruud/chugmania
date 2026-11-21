@@ -1,4 +1,5 @@
 import type { ActiveEntryOverrides } from '@common/models/activeEntry'
+import type { ApiToken } from '@common/models/apiToken'
 import type { ChugTimes } from '@common/models/chugTime'
 import type { Match } from '@common/models/match'
 import type { Ranking } from '@common/models/ranking'
@@ -26,6 +27,7 @@ type DataContextType = {
     session: string
   ) => void
   activeEntryQueues: Map<string, SessionQueue>
+  apiTokens: ApiToken[] | undefined
 } & (
   | {
       isLoadingData: false
@@ -102,6 +104,7 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
     useState<DataContextType['tournaments']>(undefined)
   const [activeEntryOverrides, setActiveEntryOverrides] =
     useState<ActiveEntryOverrides>({})
+  const [apiTokens, setApiTokens] = useState<ApiToken[] | undefined>(undefined)
 
   const applyTournamentDetails = useCallback(
     (details: TournamentDetails | null, session: string) => {
@@ -152,6 +155,10 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
       setActiveEntryOverrides(data)
     })
 
+    socket.on('api_tokens', data => {
+      setApiTokens(data)
+    })
+
     return () => {
       socket.off('all_sessions')
       socket.off('all_time_entries')
@@ -162,6 +169,7 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
       socket.off('all_chug_times')
       socket.off('all_tournaments')
       socket.off('active_entry_overrides')
+      socket.off('api_tokens')
     }
   }, [])
 
@@ -193,12 +201,18 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
       chugTimes === undefined ||
       tournaments === undefined
     ) {
-      return { isLoadingData: true, applyTournamentDetails, activeEntryQueues }
+      return {
+        isLoadingData: true,
+        applyTournamentDetails,
+        activeEntryQueues,
+        apiTokens,
+      }
     }
     return {
       isLoadingData: false,
       applyTournamentDetails,
       activeEntryQueues,
+      apiTokens,
       timeEntries,
       sessions,
       tracks,
@@ -219,6 +233,7 @@ export function DataProvider({ children }: Readonly<{ children: ReactNode }>) {
     tournaments,
     applyTournamentDetails,
     activeEntryQueues,
+    apiTokens,
   ])
 
   return <DataContext.Provider value={context}>{children}</DataContext.Provider>

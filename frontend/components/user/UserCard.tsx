@@ -4,8 +4,9 @@ import { useData } from '@/contexts/DataContext'
 import loc from '@common/locale/locales'
 import { type UserInfo } from '@common/models/user'
 import { PencilIcon } from '@heroicons/react/24/solid'
-import { Award, LogOut, Minus, Trash2 } from 'lucide-react'
+import { Award, KeyRound, LogOut, Minus, Trash2 } from 'lucide-react'
 import { useState, type ComponentProps } from 'react'
+import { Link } from 'react-router'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
 import ConfirmationButton from '../ConfirmationButton'
@@ -158,6 +159,15 @@ export default function UserCard({
               </DialogFooter>
             </DialogContent>
           </Dialog>
+
+          {isSelf && (
+            <Button asChild variant='outline' size='sm'>
+              <Link to='/tokens'>
+                <KeyRound />
+                {loc.no.apiTokens.link}
+              </Link>
+            </Button>
+          )}
 
           {isSelf && (
             <Button onClick={logout} variant='destructive' size='sm'>
