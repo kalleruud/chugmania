@@ -116,7 +116,6 @@ export function CalendarField({
   required?: boolean
 }>) {
   const [open, setOpen] = useState(false)
-  const [date, setDate] = useState<Date | undefined>(undefined)
   const [time, setTime] = useState<string | undefined>(dateToTime(selected))
   const [timeError, setTimeError] = useState<string | undefined>()
 
@@ -149,7 +148,7 @@ export function CalendarField({
   function handleTimeBlur() {
     if (!time?.trim()) {
       setTimeError(undefined)
-      onSelect?.(date)
+      if (selected) applyDate(selected)
       return
     }
 
@@ -165,24 +164,24 @@ export function CalendarField({
     newDate.setMinutes(parsed.minutes)
     newDate.setSeconds(parsed.seconds)
     onSelect?.(newDate)
-    setDate(newDate)
     setTime(formatParsedTime(parsed))
   }
 
-  function handleDateSelect(date: Date) {
-    const newDate = new Date(date)
-    setDate(newDate)
-
-    if (time) {
-      const parsed = parseTimeInput(time)
-      if (parsed) {
-        newDate.setHours(parsed.hours)
-        newDate.setMinutes(parsed.minutes)
-        newDate.setSeconds(parsed.seconds)
-      }
+  function applyDate(day: Date) {
+    const newDate = new Date(day)
+    const parsed = time ? parseTimeInput(time) : undefined
+    if (parsed) {
+      newDate.setHours(parsed.hours, parsed.minutes, parsed.seconds)
+    } else {
+      const current = new Date()
+      newDate.setHours(current.getHours(), current.getMinutes(), 0)
+      setTime(dateToTime(newDate))
     }
-
     onSelect?.(newDate)
+  }
+
+  function handleDateSelect(day: Date) {
+    applyDate(day)
     setOpen(false)
   }
 
@@ -247,7 +246,6 @@ export function CalendarField({
             aria-label={loc.no.session.datePoll.clearDate}
             disabled={disabled}
             onClick={() => {
-              setDate(undefined)
               setTime('')
               setTimeError(undefined)
               onClear()
