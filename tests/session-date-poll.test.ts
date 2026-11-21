@@ -246,19 +246,18 @@ describe('Session date poll', () => {
 
 describe('Removing session signups', () => {
   const sessionId = Bun.randomUUIDv7()
+  const duplicateId = Bun.randomUUIDv7()
   const moderator = createUser('remove-mod', 'moderator')
   const dave = createUser('remove-dave')
-  const erin = createUser('remove-erin')
 
-  function removeSignup(socket: TypedSocket, user: string) {
+  function removeSignup(socket: TypedSocket, id: string) {
     return SessionManager.onDeleteSessionSignup(socket, {
       type: 'DeleteSessionSignupRequest',
-      session: sessionId,
-      user,
+      id,
     })
   }
 
-  test.serial('moderators remove every signup and vote of a user', async () => {
+  test.serial('moderators remove a single signup row', async () => {
     const moderatorSocket = await login(moderator)
     const daveSocket = await login(dave)
     await SessionManager.onCreateSession(moderatorSocket, {
@@ -281,17 +280,23 @@ describe('Removing session signups', () => {
       dates: [MONDAY],
     }).then(assertResponse)
     db.insert(sessionSignups)
-      .values({ session: sessionId, user: dave.id, response: 'no' })
+      .values({
+        id: duplicateId,
+        session: sessionId,
+        user: dave.id,
+        response: 'no',
+      })
       .run()
 
-    await assert.rejects(removeSignup(daveSocket, dave.id))
-    await removeSignup(moderatorSocket, dave.id).then(assertResponse)
+    await assert.rejects(removeSignup(daveSocket, duplicateId))
+    await removeSignup(moderatorSocket, duplicateId).then(assertResponse)
+    await assert.rejects(removeSignup(moderatorSocket, duplicateId))
 
     const session = await SessionManager.getSession(sessionId)
     assert(session)
-    expect(session.signups).toEqual([])
-    expect(session.dateVotes).toEqual([])
-    expect(broadcast).toHaveBeenCalledWith('all_sessions', expect.anything())
-    await removeSignup(moderatorSocket, erin.id).then(assertResponse)
+    expect(session.signups.map(s => [s.user.id, s.response])).toEqual([
+      [dave.id, 'maybe'],
+    ])
+    expect(session.dateVotes.map(v => v.user.id)).toEqual([dave.id])
   })
 })

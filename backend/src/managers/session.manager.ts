@@ -323,20 +323,16 @@ export default class SessionManager {
 
     const actor = await AuthManager.checkAuth(socket, ['admin', 'moderator'])
 
-    const session = SessionSource.getActiveById(request.session)
-    if (!session) {
-      throw new Error(loc.no.error.messages.not_in_db(request.session))
+    const deleted = SessionSource.deleteSignup(request.id)
+    if (!deleted) {
+      throw new Error(loc.no.error.messages.not_in_db(request.id))
     }
-
-    TransactionSource.run(() =>
-      SessionSource.deleteSignup(request.session, request.user)
-    )
 
     console.debug(
       new Date().toISOString(),
       socket.id,
-      `${actor.id} removed ${request.user} from session`,
-      session.id
+      `${actor.id} removed signup ${request.id}`,
+      deleted.session
     )
 
     broadcast('all_sessions', await SessionManager.getAllSessions())

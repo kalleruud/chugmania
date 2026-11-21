@@ -95,18 +95,17 @@ export default function SessionSignupPanel({
     })
   }
 
-  async function removeSignup(user: UserInfo) {
+  async function removeSignup(id: string) {
     const res = await socket.emitWithAck('delete_session_signup', {
       type: 'DeleteSessionSignupRequest',
-      session: session.id,
-      user: user.id,
+      id,
     })
 
     if (!res.success) throw new Error(res.message)
   }
 
-  function handleRemove(user: UserInfo) {
-    toast.promise(removeSignup(user), loc.no.session.rsvp.remove)
+  function handleRemove(id: string) {
+    toast.promise(removeSignup(id), loc.no.session.rsvp.remove)
   }
 
   async function addParticipants(response: SessionResponse, users: UserInfo[]) {
@@ -181,52 +180,56 @@ export default function SessionSignupPanel({
               description={responseSignups.length.toString()}
             />
             <div className='rounded-sm bg-background-secondary'>
-              {responseSignups.map(({ user }) => {
+              {responseSignups.map(({ id, user }) => {
                 const isSelf = loggedInUser?.id === user.id
                 return (
                   <UserRow
-                    key={user.id}
+                    key={id}
                     item={user}
                     className='min-h-12 w-full py-1'
                     highlight={isSelf}
                     hideRanking>
-                    {!isPollOpen &&
-                      (canManageSignups || (isUpcoming(session) && isSelf)) && (
-                        <Select
-                          value={response}
-                          onValueChange={value => {
-                            if (
-                              value === 'yes' ||
-                              value === 'no' ||
-                              value === 'maybe'
-                            )
-                              handleRsvp(value, user)
-                          }}
-                          disabled={disabled}>
-                          <SelectTrigger aria-label={`${user.firstName}: RSVP`}>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent align='end'>
-                            {RESPONSE_OPTIONS.map(({ response, Icon }) => (
-                              <SelectItem key={response} value={response}>
-                                <Icon className='size-4' />
-                                {loc.no.session.rsvp.responses[response]}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    {canManageSignups && (
-                      <ConfirmationButton
-                        variant='ghost'
-                        size='sm'
-                        aria-label={loc.no.session.rsvp.remove.label(
-                          user.firstName
+                    <div className='flex items-center gap-1'>
+                      {!isPollOpen &&
+                        (canManageSignups ||
+                          (isUpcoming(session) && isSelf)) && (
+                          <Select
+                            value={response}
+                            onValueChange={value => {
+                              if (
+                                value === 'yes' ||
+                                value === 'no' ||
+                                value === 'maybe'
+                              )
+                                handleRsvp(value, user)
+                            }}
+                            disabled={disabled}>
+                            <SelectTrigger
+                              aria-label={`${user.firstName}: RSVP`}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent align='end'>
+                              {RESPONSE_OPTIONS.map(({ response, Icon }) => (
+                                <SelectItem key={response} value={response}>
+                                  <Icon className='size-4' />
+                                  {loc.no.session.rsvp.responses[response]}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         )}
-                        onClick={() => handleRemove(user)}>
-                        <Trash2 className='size-4' />
-                      </ConfirmationButton>
-                    )}
+                      {canManageSignups && (
+                        <ConfirmationButton
+                          variant='ghost'
+                          size='sm'
+                          aria-label={loc.no.session.rsvp.remove.label(
+                            user.firstName
+                          )}
+                          onClick={() => handleRemove(id)}>
+                          <Trash2 className='size-4' />
+                        </ConfirmationButton>
+                      )}
+                    </div>
                   </UserRow>
                 )
               })}

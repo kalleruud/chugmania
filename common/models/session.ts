@@ -95,8 +95,7 @@ export function isRsvpSessionRequest(
 
 export type DeleteSessionSignupRequest = {
   type: 'DeleteSessionSignupRequest'
-  session: Session['id']
-  user: UserInfo['id']
+  id: SessionSignup['id']
 }
 
 export function isDeleteSessionSignupRequest(
@@ -104,9 +103,7 @@ export function isDeleteSessionSignupRequest(
 ): data is DeleteSessionSignupRequest {
   if (!isRecord(data)) return false
   return (
-    data.type === 'DeleteSessionSignupRequest' &&
-    typeof data.session === 'string' &&
-    typeof data.user === 'string'
+    data.type === 'DeleteSessionSignupRequest' && typeof data.id === 'string'
   )
 }
 
