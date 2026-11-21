@@ -299,4 +299,32 @@ describe('Removing session signups', () => {
     ])
     expect(session.dateVotes.map(v => v.user.id)).toEqual([dave.id])
   })
+
+  test.serial('changing a response updates the active row', async () => {
+    const moderatorSocket = await login(moderator)
+    const before = await SessionManager.getSession(sessionId)
+    assert(before?.signups[0])
+    await removeSignup(moderatorSocket, before.signups[0].id).then(
+      assertResponse
+    )
+    db.insert(sessionSignups)
+      .values({ session: sessionId, user: dave.id, response: 'no' })
+      .run()
+    await SessionManager.onEditSession(moderatorSocket, {
+      type: 'EditSessionRequest',
+      id: sessionId,
+      date: new Date(MONDAY),
+    }).then(assertResponse)
+
+    await SessionManager.onRsvpSession(moderatorSocket, {
+      type: 'RsvpSessionRequest',
+      session: sessionId,
+      user: dave.id,
+      response: 'yes',
+    }).then(assertResponse)
+
+    const session = await SessionManager.getSession(sessionId)
+    assert(session)
+    expect(session.signups.map(s => s.response)).toEqual(['yes'])
+  })
 })

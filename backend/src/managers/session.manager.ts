@@ -42,6 +42,7 @@ export default class SessionManager {
           eq(sessionSignups.user, userId)
         )
       )
+      .orderBy(asc(sessionSignups.deletedAt))
       .get()
 
     if (existingSignup && !existingSignup.deletedAt) return false

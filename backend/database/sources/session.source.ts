@@ -72,6 +72,7 @@ export default class SessionSource {
           eq(sessionSignups.user, userId)
         )
       )
+      .orderBy(asc(sessionSignups.deletedAt))
       .get()
 
     db.insert(sessionSignups)
