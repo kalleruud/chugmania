@@ -42,12 +42,20 @@ export default function SessionSignupPanel({
 
   const canManageSignups = isLoggedIn && loggedInUser.role !== 'user'
 
+  const isPollOpen = isDatePollOpen(session)
+
   const sortedSignups = useMemo(
     () =>
-      session.signups.toSorted((a, b) =>
-        getUserSortName(a.user).localeCompare(getUserSortName(b.user))
-      ),
-    [session.signups]
+      session.signups
+        .map(signup =>
+          isPollOpen
+            ? { ...signup, response: getPollResponse(session, signup) }
+            : signup
+        )
+        .toSorted((a, b) =>
+          getUserSortName(a.user).localeCompare(getUserSortName(b.user))
+        ),
+    [session, isPollOpen]
   )
 
   const signedUpUserIds = useMemo(
@@ -66,7 +74,6 @@ export default function SessionSignupPanel({
   )
 
   const selfRsvp = isLoggedIn && signedUpUserIds.has(loggedInUser.id)
-  const isPollOpen = isDatePollOpen(session)
 
   if (isLoadingData)
     return (
@@ -218,7 +225,7 @@ export default function SessionSignupPanel({
                             </SelectContent>
                           </Select>
                         )}
-                      {canManageSignups && (
+                      {canManageSignups && !isPollOpen && (
                         <ConfirmationButton
                           variant='ghost'
                           size='sm'
@@ -239,4 +246,18 @@ export default function SessionSignupPanel({
       })}
     </div>
   )
+}
+
+function getPollResponse(
+  session: SessionWithSignups,
+  signup: SessionWithSignups['signups'][number]
+): SessionResponse {
+  const options = session.dateOptions ?? []
+  const vote = session.dateVotes.find(v => v.user.id === signup.user.id)
+  if (!vote) return signup.response
+
+  const checked = options.filter(date => vote.dates.includes(date)).length
+  if (checked === 0) return 'no'
+  if (checked === options.length) return 'yes'
+  return 'maybe'
 }

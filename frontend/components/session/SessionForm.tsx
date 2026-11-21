@@ -1,9 +1,7 @@
-import { Button } from '@/components/ui/button'
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import loc from '@common/locale/locales'
 import type { SessionWithSignups } from '@common/models/session'
-import { XIcon } from 'lucide-react'
 import { useState, type ComponentProps, type SubmitEvent } from 'react'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
@@ -119,23 +117,16 @@ export default function SessionForm({
         placeholder={
           variant === 'edit' ? loc.no.session.datePoll.pendingDate : undefined
         }
+        onClear={
+          variant === 'edit'
+            ? () => {
+                setDate(undefined)
+                setStatus('tentative')
+              }
+            : undefined
+        }
         disabled={disabled}
       />
-      {variant === 'edit' && date && (
-        <Button
-          type='button'
-          size='sm'
-          variant='outline'
-          className='-mt-2 justify-self-start'
-          disabled={disabled}
-          onClick={() => {
-            setDate(undefined)
-            setStatus('tentative')
-          }}>
-          <XIcon />
-          {loc.no.session.datePoll.clearDate}
-        </Button>
-      )}
 
       <Field
         id='location'

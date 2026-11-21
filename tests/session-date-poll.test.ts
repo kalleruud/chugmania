@@ -257,48 +257,58 @@ describe('Removing session signups', () => {
     })
   }
 
-  test.serial('moderators remove a single signup row', async () => {
-    const moderatorSocket = await login(moderator)
-    const daveSocket = await login(dave)
-    await SessionManager.onCreateSession(moderatorSocket, {
-      type: 'CreateSessionRequest',
-      id: sessionId,
-      name: 'Remove Cup',
-      date: new Date(MONDAY),
-    }).then(assertResponse)
-    await SessionManager.onEditSession(moderatorSocket, {
-      type: 'EditSessionRequest',
-      id: sessionId,
-      date: null,
-      status: 'tentative',
-      dateOptions: [MONDAY, TUESDAY],
-      dateVotingClosed: false,
-    }).then(assertResponse)
-    await SessionManager.onVoteSessionDate(daveSocket, {
-      type: 'VoteSessionDateRequest',
-      session: sessionId,
-      dates: [MONDAY],
-    }).then(assertResponse)
-    db.insert(sessionSignups)
-      .values({
-        id: duplicateId,
+  test.serial(
+    'moderators remove a single signup row after the poll',
+    async () => {
+      const moderatorSocket = await login(moderator)
+      const daveSocket = await login(dave)
+      await SessionManager.onCreateSession(moderatorSocket, {
+        type: 'CreateSessionRequest',
+        id: sessionId,
+        name: 'Remove Cup',
+        date: new Date(MONDAY),
+      }).then(assertResponse)
+      await SessionManager.onEditSession(moderatorSocket, {
+        type: 'EditSessionRequest',
+        id: sessionId,
+        date: null,
+        status: 'tentative',
+        dateOptions: [MONDAY, TUESDAY],
+        dateVotingClosed: false,
+      }).then(assertResponse)
+      await SessionManager.onVoteSessionDate(daveSocket, {
+        type: 'VoteSessionDateRequest',
         session: sessionId,
-        user: dave.id,
-        response: 'no',
-      })
-      .run()
+        dates: [MONDAY],
+      }).then(assertResponse)
+      db.insert(sessionSignups)
+        .values({
+          id: duplicateId,
+          session: sessionId,
+          user: dave.id,
+          response: 'no',
+        })
+        .run()
 
-    await assert.rejects(removeSignup(daveSocket, duplicateId))
-    await removeSignup(moderatorSocket, duplicateId).then(assertResponse)
-    await assert.rejects(removeSignup(moderatorSocket, duplicateId))
+      await assert.rejects(removeSignup(moderatorSocket, duplicateId))
+      await SessionManager.onEditSession(moderatorSocket, {
+        type: 'EditSessionRequest',
+        id: sessionId,
+        date: new Date(MONDAY),
+        status: 'confirmed',
+        dateVotingClosed: true,
+      }).then(assertResponse)
 
-    const session = await SessionManager.getSession(sessionId)
-    assert(session)
-    expect(session.signups.map(s => [s.user.id, s.response])).toEqual([
-      [dave.id, 'maybe'],
-    ])
-    expect(session.dateVotes.map(v => v.user.id)).toEqual([dave.id])
-  })
+      await assert.rejects(removeSignup(daveSocket, duplicateId))
+      await removeSignup(moderatorSocket, duplicateId).then(assertResponse)
+      await assert.rejects(removeSignup(moderatorSocket, duplicateId))
+
+      const session = await SessionManager.getSession(sessionId)
+      assert(session)
+      expect(session.signups.map(s => s.user.id)).toEqual([dave.id])
+      expect(session.dateVotes.map(v => v.user.id)).toEqual([dave.id])
+    }
+  )
 
   test.serial('changing a response updates the active row', async () => {
     const moderatorSocket = await login(moderator)
@@ -310,11 +320,6 @@ describe('Removing session signups', () => {
     db.insert(sessionSignups)
       .values({ session: sessionId, user: dave.id, response: 'no' })
       .run()
-    await SessionManager.onEditSession(moderatorSocket, {
-      type: 'EditSessionRequest',
-      id: sessionId,
-      date: new Date(MONDAY),
-    }).then(assertResponse)
 
     await SessionManager.onRsvpSession(moderatorSocket, {
       type: 'RsvpSessionRequest',

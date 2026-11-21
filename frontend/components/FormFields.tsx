@@ -1,5 +1,7 @@
+import loc from '@common/locale/locales'
 import { formatDateWithYear, formatTimeOnly } from '@common/utils/date'
 import { ChevronDownIcon } from '@heroicons/react/24/solid'
+import { XIcon } from 'lucide-react'
 import { useState, type ComponentProps, type KeyboardEvent } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { Button } from './ui/button'
@@ -101,11 +103,13 @@ export function CalendarField({
   disabled,
   required,
   placeholder,
+  onClear,
 }: Readonly<{
   id: string
   name: string
   hidden?: boolean
   placeholder?: string
+  onClear?: () => void
   selected?: Date
   onSelect?: (date: Date | undefined) => void
   disabled?: boolean
@@ -234,6 +238,22 @@ export function CalendarField({
             )}
           />
         </div>
+
+        {onClear && !isEmpty && (
+          <Button
+            type='button'
+            variant='outline'
+            size='icon'
+            aria-label={loc.no.session.datePoll.clearDate}
+            disabled={disabled}
+            onClick={() => {
+              setDate(undefined)
+              setTime('')
+              onClear()
+            }}>
+            <XIcon />
+          </Button>
+        )}
       </div>
     </div>
   )

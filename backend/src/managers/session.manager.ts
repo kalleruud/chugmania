@@ -324,16 +324,23 @@ export default class SessionManager {
 
     const actor = await AuthManager.checkAuth(socket, ['admin', 'moderator'])
 
-    const deleted = SessionSource.deleteSignup(request.id)
-    if (!deleted) {
+    const signup = SessionSource.getActiveSignup(request.id)
+    if (!signup) {
       throw new Error(loc.no.error.messages.not_in_db(request.id))
     }
+
+    const session = SessionSource.getActiveById(signup.session)
+    if (session && isDatePollOpen(session)) {
+      throw new Error(loc.no.session.datePoll.pendingError)
+    }
+
+    SessionSource.deleteSignup(signup.id)
 
     console.debug(
       new Date().toISOString(),
       socket.id,
       `${actor.id} removed signup ${request.id}`,
-      deleted.session
+      signup.session
     )
 
     broadcast('all_sessions', await SessionManager.getAllSessions())
