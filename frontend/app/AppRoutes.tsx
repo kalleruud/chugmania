@@ -8,6 +8,7 @@ const ChugsPage = lazy(() => import('./pages/ChugsPage'))
 const Home = lazy(() => import('./pages/HomePage'))
 const SessionPage = lazy(() => import('./pages/SessionPage'))
 const SessionsPage = lazy(() => import('./pages/SessionsPage'))
+const TokensPage = lazy(() => import('./pages/TokensPage'))
 const TournamentGroupPage = lazy(() => import('./pages/TournamentGroupPage'))
 const TrackPage = lazy(() => import('./pages/TrackPage'))
 const TracksPage = lazy(() => import('./pages/TracksPage'))
@@ -37,6 +38,7 @@ export default function AppRoutes() {
           />
           <Route path='sessions/:id' element={<SessionPage />} />
           <Route path='admin' element={<AdminPage />} />
+          <Route path='tokens' element={<TokensPage />} />
           <Route path='*' element={<Navigate to='/' replace />} />
         </Route>
       </Routes>

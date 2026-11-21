@@ -200,7 +200,12 @@ export default class WebhookManager {
     void ChugTimeManager.publish()
   }
 
-  static receive(event: Event, rawPayload: string, now = new Date()): string {
+  static receive(
+    event: Event,
+    rawPayload: string,
+    now = new Date(),
+    user: string | null = null
+  ): string {
     if (event.game.totalPlayers !== 1 && event.game.totalPlayers !== 2)
       throw new WebhookError(
         400,
@@ -258,6 +263,7 @@ export default class WebhookManager {
           id: event.game.gameId,
           gameId: event.game.gameId,
           session: session.id,
+          user,
           totalPlayers: event.game.totalPlayers,
           sourceGame: event.source.game,
           pluginName: event.source.pluginName,

@@ -60,7 +60,7 @@ Admins can visit `/admin` to upload and download CSV files for public applicatio
 
 ## Sessions Module
 
-The `/sessions` route shows upcoming and past events. Authorized users may create, edit, or delete sessions with optional locations and descriptions. Attendees can RSVP; ICS feeds are available via `/api/sessions/calendar.ics`, and individual invites can be downloaded per session. Session deletion is soft-delete (retained for audit), cascading to all signups, and only available to admin/moderator roles.
+The `/sessions` route shows upcoming and past events. Authorized users may create, edit, or delete sessions with optional locations and descriptions. Attendees can RSVP; the ICS feed at `/api/sessions/calendar.ics` requires a personal API token in `?token=`. The "Abonner på kalender" button creates or reuses the user's `calendar` token and opens the subscription URL. Individual invites can be downloaded per session. Session deletion is soft-delete (retained for audit), cascading to all signups, and only available to admin/moderator roles.
 
 ## Configuration
 
@@ -68,6 +68,7 @@ The `/sessions` route shows upcoming and past events. Authorized users may creat
 - `PORT` (optional): Server port. Defaults to `6996`; Codex worktrees generate a random `69xx` port.
 - `ORIGIN` (required in production): Allowed frontend origin for CORS.
 - `TOKEN_EXPIRY_H` (optional): Override default 1-hour auth token expiry.
+- API tokens: users manage personal tokens on `/tokens` (max 10 active for non-admins). Tokens are signed with `SECRET`, so changing it invalidates every API token as well as every session. API tokens work only on HTTP `/api/*` routes, never as a Socket.IO session.
 - `ALLOW_SIGNUPS` (optional): Set to `true` in the server's runtime environment to enable the public `Registrer` button on the login page. It defaults to disabled. Recreate the container with the new environment to apply a change.
 - `.env.example` also exposes `SECRET` for local defaults—never commit secrets.
 
@@ -84,7 +85,7 @@ Follow the coding conventions from `AGENTS.md`: Prettier formatting (2 spaces, s
 
 ## Trackmania webhook results
 
-Configure the plugin endpoint as `https://<your-host>/api/webhook` with the server's `WEBHOOK_TOKEN` as its bearer token; an empty token disables ingestion. Captures attach to the latest session that started today or yesterday (Europe/Oslo). Raw events and capture metadata stay private to the backend. Planned result assignments are stored separately and excluded from CSV import and export.
+Create a personal API token on `/tokens` and configure the plugin endpoint as `https://<your-host>/api/webhook` with that token as its bearer token (`Authorization: Bearer <token>`). Requests without a valid token are rejected with `401`, and each new capture records the token's owner. Captures attach to the latest session that started today or yesterday (Europe/Oslo). Raw events and capture metadata stay private to the backend. Planned result assignments are stored separately and excluded from CSV import and export.
 
 When a capture starts on a known map, it latches onto the session's active (**Nå**) entry if that entry is planned, has no capture yet, is on the same track, and fits the player count: a lap for one player, a match for two. Capture slot 0 is player 1 and slot 1 is player 2. The entry keeps its players and links, shows live timing, and completes automatically once no events are missing and either every player has finished or the end event arrives. Players without a finish are recorded as DNF, and the faster finisher wins a match (no winner on a tie). If completion is rejected, for example by tournament rules, the entry becomes a draft for manual resolution. Setting the entry back to planned releases the capture.
 

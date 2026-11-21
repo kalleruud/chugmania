@@ -28,9 +28,18 @@ export const broadcastTournaments = mock(
       TournamentSecurity.emit(socket, details, actor)
   }
 )
+const { default: ApiTokenManager } =
+  await import('../backend/src/managers/apiToken.manager')
+export const apiTokenSockets = new Set<TypedSocket>()
+export const pendingApiTokenEmits: Promise<void>[] = []
+export const broadcastApiTokens = mock((owner: string) => {
+  for (const socket of apiTokenSockets)
+    pendingApiTokenEmits.push(ApiTokenManager.emit(socket, owner))
+})
 mock.module('../backend/src/server', () => ({
   broadcast: mock(),
   broadcastTournaments,
+  broadcastApiTokens,
 }))
 
 afterAll(() => database.close())
