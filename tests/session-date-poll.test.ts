@@ -1,6 +1,10 @@
 import { describe, expect, test } from 'bun:test'
 import assert from 'node:assert/strict'
-import type { SessionResponse } from '../backend/database/schema'
+import db from '../backend/database/database'
+import {
+  sessionSignups,
+  type SessionResponse,
+} from '../backend/database/schema'
 import SessionManager from '../backend/src/managers/session.manager'
 import { broadcast, type TypedSocket } from '../backend/src/server'
 import { assertResponse, createUser, login } from './utils'
@@ -237,5 +241,57 @@ describe('Session date poll', () => {
     expect(session.status).toBe('tentative')
     expect(responses(session)).toEqual({ 'poll-bob': 'yes' })
     await rsvp(alice.id, 'maybe', id)
+  })
+})
+
+describe('Removing session signups', () => {
+  const sessionId = Bun.randomUUIDv7()
+  const moderator = createUser('remove-mod', 'moderator')
+  const dave = createUser('remove-dave')
+  const erin = createUser('remove-erin')
+
+  function removeSignup(socket: TypedSocket, user: string) {
+    return SessionManager.onDeleteSessionSignup(socket, {
+      type: 'DeleteSessionSignupRequest',
+      session: sessionId,
+      user,
+    })
+  }
+
+  test.serial('moderators remove every signup and vote of a user', async () => {
+    const moderatorSocket = await login(moderator)
+    const daveSocket = await login(dave)
+    await SessionManager.onCreateSession(moderatorSocket, {
+      type: 'CreateSessionRequest',
+      id: sessionId,
+      name: 'Remove Cup',
+      date: new Date(MONDAY),
+    }).then(assertResponse)
+    await SessionManager.onEditSession(moderatorSocket, {
+      type: 'EditSessionRequest',
+      id: sessionId,
+      date: null,
+      status: 'tentative',
+      dateOptions: [MONDAY, TUESDAY],
+      dateVotingClosed: false,
+    }).then(assertResponse)
+    await SessionManager.onVoteSessionDate(daveSocket, {
+      type: 'VoteSessionDateRequest',
+      session: sessionId,
+      dates: [MONDAY],
+    }).then(assertResponse)
+    db.insert(sessionSignups)
+      .values({ session: sessionId, user: dave.id, response: 'no' })
+      .run()
+
+    await assert.rejects(removeSignup(daveSocket, dave.id))
+    await removeSignup(moderatorSocket, dave.id).then(assertResponse)
+
+    const session = await SessionManager.getSession(sessionId)
+    assert(session)
+    expect(session.signups).toEqual([])
+    expect(session.dateVotes).toEqual([])
+    expect(broadcast).toHaveBeenCalledWith('all_sessions', expect.anything())
+    await removeSignup(moderatorSocket, erin.id).then(assertResponse)
   })
 })

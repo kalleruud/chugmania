@@ -3,6 +3,7 @@ import {
   isCreateSessionRequest,
   isDatePollOpen,
   isDeleteSessionRequest,
+  isDeleteSessionSignupRequest,
   isEditSessionRequest,
   isRsvpSessionRequest,
   isVoteSessionDateRequest,
@@ -301,6 +302,40 @@ export default class SessionManager {
       new Date().toISOString(),
       socket.id,
       `Signed up for session with response: ${request.response}`,
+      session.id
+    )
+
+    broadcast('all_sessions', await SessionManager.getAllSessions())
+    TournamentManager.publish(socket.id)
+
+    return { success: true }
+  }
+
+  static async onDeleteSessionSignup(
+    socket: TypedSocket,
+    request: EventReq<'delete_session_signup'>
+  ): Promise<EventRes<'delete_session_signup'>> {
+    if (!isDeleteSessionSignupRequest(request)) {
+      throw new Error(
+        loc.no.error.messages.invalid_request('DeleteSessionSignupRequest')
+      )
+    }
+
+    const actor = await AuthManager.checkAuth(socket, ['admin', 'moderator'])
+
+    const session = SessionSource.getActiveById(request.session)
+    if (!session) {
+      throw new Error(loc.no.error.messages.not_in_db(request.session))
+    }
+
+    TransactionSource.run(() =>
+      SessionSource.deleteSignup(request.session, request.user)
+    )
+
+    console.debug(
+      new Date().toISOString(),
+      socket.id,
+      `${actor.id} removed ${request.user} from session`,
       session.id
     )
 

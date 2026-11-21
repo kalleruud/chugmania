@@ -202,6 +202,12 @@ const no = {
           `Svar ble oppdatert: ${no.session.rsvp.responses[response]}`,
         error: (err: Error) => `Kunne ikke registrere svar: ${err.message}`,
       },
+      remove: {
+        label: (name: string) => `Fjern ${name}`,
+        loading: 'Fjerner påmelding...',
+        success: 'Påmelding fjernet',
+        error: (err: Error) => `Kunne ikke fjerne påmelding: ${err.message}`,
+      },
       manage: {
         add: 'Legg til',
         addSelected: 'Legg til valgte',

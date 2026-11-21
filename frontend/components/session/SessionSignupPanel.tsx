@@ -1,3 +1,4 @@
+import ConfirmationButton from '@/components/ConfirmationButton'
 import { PageSubheader } from '@/components/PageHeader'
 import SegmentedProgress from '@/components/SegmentedProgress'
 import { Button } from '@/components/ui/button'
@@ -18,6 +19,7 @@ import loc from '@common/locale/locales'
 import { isDatePollOpen, type SessionWithSignups } from '@common/models/session'
 import type { UserInfo } from '@common/models/user'
 import { isPast, isUpcoming } from '@common/utils/date'
+import { Trash2 } from 'lucide-react'
 import { useMemo, type ComponentProps } from 'react'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
@@ -91,6 +93,20 @@ export default function SessionSignupPanel({
       success: loc.no.session.rsvp.response.success(response),
       error: loc.no.session.rsvp.response.error,
     })
+  }
+
+  async function removeSignup(user: UserInfo) {
+    const res = await socket.emitWithAck('delete_session_signup', {
+      type: 'DeleteSessionSignupRequest',
+      session: session.id,
+      user: user.id,
+    })
+
+    if (!res.success) throw new Error(res.message)
+  }
+
+  function handleRemove(user: UserInfo) {
+    toast.promise(removeSignup(user), loc.no.session.rsvp.remove)
   }
 
   async function addParticipants(response: SessionResponse, users: UserInfo[]) {
@@ -200,6 +216,17 @@ export default function SessionSignupPanel({
                           </SelectContent>
                         </Select>
                       )}
+                    {canManageSignups && (
+                      <ConfirmationButton
+                        variant='ghost'
+                        size='sm'
+                        aria-label={loc.no.session.rsvp.remove.label(
+                          user.firstName
+                        )}
+                        onClick={() => handleRemove(user)}>
+                        <Trash2 className='size-4' />
+                      </ConfirmationButton>
+                    )}
                   </UserRow>
                 )
               })}
