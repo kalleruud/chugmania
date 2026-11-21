@@ -52,6 +52,7 @@ export function rankLapTie(
     user => laps.get(user)?.status === 'cancelled'
   )
   const firstPlanned = ordered.findIndex(user => lapOrder(user) === 1)
+  const pending = firstPlanned >= 0
   return ordered.map((user, index) => {
     if (lapOrder(user) === 1)
       return { user, rank: firstPlanned + 1, resolved: false }
@@ -62,9 +63,10 @@ export function rankLapTie(
           ? firstCancelled + 1
           : index + 1,
       resolved:
-        required ||
-        laps.get(user)?.status !== 'cancelled' ||
-        firstCancelled === ordered.length - 1,
+        !pending &&
+        (required ||
+          laps.get(user)?.status !== 'cancelled' ||
+          firstCancelled === ordered.length - 1),
     }
   })
 }
