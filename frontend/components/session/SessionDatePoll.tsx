@@ -129,15 +129,15 @@ export default function SessionDatePoll({
               type='button'
               className='flex min-w-0 flex-1 cursor-pointer items-center gap-2 self-stretch rounded-sm text-start focus-visible:outline-2 focus-visible:outline-primary'
               onClick={() => setDetailsDate(date)}>
-              <span className='flex-1 truncate capitalize'>
-                {formatDateWithYear(new Date(date))}
+              <span className='flex min-w-0 flex-1 flex-col'>
+                <span className='truncate capitalize'>
+                  {formatDateWithYear(new Date(date))}
+                </span>
+                <span className='text-sm text-muted-foreground tabular-nums'>
+                  {loc.no.session.datePoll.votes(dateVoters.length)}
+                </span>
               </span>
-              <span className='text-sm text-muted-foreground tabular-nums'>
-                {loc.no.session.datePoll.votes(dateVoters.length)}
-              </span>
-              <span className='w-10 text-end text-sm tabular-nums'>
-                {percent}%
-              </span>
+              <span className='text-sm tabular-nums'>{percent}%</span>
             </button>
           </div>
         )
