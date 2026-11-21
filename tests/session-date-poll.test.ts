@@ -193,17 +193,18 @@ describe('Session date poll', () => {
     expect(responses(await fetchSession())['poll-carol']).toBe('yes')
   })
 
-  test.serial('reopening the poll starts from scratch', async () => {
+  test.serial('reopening the poll keeps the votes', async () => {
     await SessionManager.onEditSession(ownerSocket, {
       type: 'EditSessionRequest',
       id: sessionId,
       status: 'tentative',
     }).then(assertResponse)
-    await openPoll(ownerSocket, [FRIDAY]).then(assertResponse)
+    await openPoll(ownerSocket, [MONDAY, TUESDAY, FRIDAY]).then(assertResponse)
 
     const session = await fetchSession()
     expect(session.date).toBeNull()
-    expect(session.dateVotes).toEqual([])
+    expect(votersFor(session, MONDAY)).toEqual(['poll-bob'])
+    expect(votersFor(session, FRIDAY)).toEqual(['poll-alice'])
     expect(responses(session)).toEqual({
       'poll-alice': 'maybe',
       'poll-bob': 'maybe',

@@ -100,9 +100,6 @@ export default class SessionSource {
   }
 
   static resetPoll(sessionId: string) {
-    db.delete(sessionDateVotes)
-      .where(eq(sessionDateVotes.session, sessionId))
-      .run()
     db.update(sessionSignups)
       .set({ response: 'maybe' })
       .where(
