@@ -217,17 +217,16 @@ function setup<Ev extends keyof ClientToServerEvents>(
 ) {
   ;(
     s as TypedSocket & {
-      on: (
-        event: Ev,
-        listener: (
-          ...args: [EventReq<Ev>, SocketCallback<Ev>] | [SocketCallback<Ev>]
-        ) => void
-      ) => void
+      on: (event: Ev, listener: (...args: unknown[]) => void) => void
     }
   ).on(event, (...args) => {
     // Events without a request payload receive the acknowledgement first.
-    const [r, callback] =
-      args.length === 2 ? args : [undefined as EventReq<Ev>, args[0]]
+    const ack = args.at(-1)
+    const hasAck = typeof ack === 'function'
+    const callback = (hasAck ? ack : () => undefined) as SocketCallback<Ev>
+    const r = (
+      hasAck && args.length === 1 ? undefined : args[0]
+    ) as EventReq<Ev>
     Promise.resolve(handler(s, r))
       .then(callback)
       .catch((e: unknown) => {
