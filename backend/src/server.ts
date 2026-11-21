@@ -199,7 +199,6 @@ async function Connect(s: TypedSocket) {
   setup(s, 'delete_match', MatchManager.onDeleteMatch)
   setup(s, 'set_active_entry', ActiveEntryManager.onSetActiveEntry)
 
-  setup(s, 'get_api_tokens', ApiTokenManager.onGetApiTokens)
   setup(s, 'create_api_token', ApiTokenManager.onCreateApiToken)
   setup(s, 'revoke_api_token', ApiTokenManager.onRevokeApiToken)
   setup(s, 'reveal_api_token', ApiTokenManager.onRevealApiToken)

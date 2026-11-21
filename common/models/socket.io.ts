@@ -8,7 +8,6 @@ import type { ActiveEntryOverrides, SetActiveEntryRequest } from './activeEntry'
 import type {
   ApiToken,
   ApiTokenRequest,
-  ApiTokensResponse,
   CalendarUrlResponse,
   CreateApiTokenRequest,
   CreateApiTokenResponse,
@@ -209,9 +208,6 @@ export interface ClientToServerEvents {
   set_active_entry: (
     r: SetActiveEntryRequest,
     callback: (r: SuccessResponse | ErrorResponse) => void
-  ) => void
-  get_api_tokens: (
-    callback: (r: ApiTokensResponse | ErrorResponse) => void
   ) => void
   create_api_token: (
     r: CreateApiTokenRequest,

@@ -154,13 +154,6 @@ export default class ApiTokenManager {
     return { value, created: true }
   }
 
-  static async onGetApiTokens(
-    socket: TypedSocket
-  ): Promise<EventRes<'get_api_tokens'>> {
-    const viewer = await AuthManager.checkAuth(socket, undefined, true)
-    return { success: true, tokens: ApiTokenManager.getTokens(viewer) }
-  }
-
   static async onCreateApiToken(
     socket: TypedSocket,
     request: EventReq<'create_api_token'>
