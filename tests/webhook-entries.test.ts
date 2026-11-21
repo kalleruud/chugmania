@@ -7,6 +7,7 @@ import { createServer } from 'node:http'
 import WebhookSource from '../backend/database/sources/webhook.source'
 import { createWebhookRouter } from '../backend/src/endpoints/webhook'
 import AdminManager from '../backend/src/managers/admin.manager'
+import ApiTokenManager from '../backend/src/managers/apiToken.manager'
 import MatchManager from '../backend/src/managers/match.manager'
 import RatingManager from '../backend/src/managers/rating.manager'
 import SessionManager from '../backend/src/managers/session.manager'
@@ -329,8 +330,10 @@ test('webhook HTTP rejects unsupported counts and invalid rosters without persis
   const app = express()
   app.use(createWebhookRouter())
   const server = createServer(app)
-  const previousToken = process.env.WEBHOOK_TOKEN
-  process.env.WEBHOOK_TOKEN = 'webhook-validation-token'
+  const { value: token } = ApiTokenManager.create(
+    createUser('webhook-validation-plugin'),
+    { name: 'Plugin' }
+  )
   try {
     await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
     const address = server.address()
@@ -384,7 +387,7 @@ test('webhook HTTP rejects unsupported counts and invalid rosters without persis
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
-          Authorization: 'Bearer webhook-validation-token',
+          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
           event_type: event.type,
           'event-id': event.eventId,
@@ -406,8 +409,6 @@ test('webhook HTTP rejects unsupported counts and invalid rosters without persis
     expect(afterCaptures.csv).toBe(beforeCaptures.csv)
     expect(afterEvents.csv).toBe(beforeEvents.csv)
   } finally {
-    if (previousToken === undefined) delete process.env.WEBHOOK_TOKEN
-    else process.env.WEBHOOK_TOKEN = previousToken
     await new Promise<void>((resolve, reject) =>
       server.close(error => (error ? reject(error) : resolve()))
     )

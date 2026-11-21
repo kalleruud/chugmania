@@ -5,6 +5,14 @@ import type {
   ImportCsvResponse,
 } from '@common/models/importCsv'
 import type { ActiveEntryOverrides, SetActiveEntryRequest } from './activeEntry'
+import type {
+  ApiToken,
+  ApiTokenRequest,
+  CalendarUrlResponse,
+  CreateApiTokenRequest,
+  CreateApiTokenResponse,
+  RevealApiTokenResponse,
+} from './apiToken'
 import type { LoginRequest, RegisterRequest } from './auth'
 import type { ChugTimes } from './chugTime'
 import type {
@@ -72,6 +80,7 @@ export interface ServerToClientEvents {
   all_rankings: (r: Ranking[]) => void
   all_chug_times: (r: ChugTimes) => void
   active_entry_overrides: (r: ActiveEntryOverrides) => void
+  api_tokens: (r: ApiToken[]) => void
 }
 
 export interface ClientToServerEvents {
@@ -199,6 +208,21 @@ export interface ClientToServerEvents {
   set_active_entry: (
     r: SetActiveEntryRequest,
     callback: (r: SuccessResponse | ErrorResponse) => void
+  ) => void
+  create_api_token: (
+    r: CreateApiTokenRequest,
+    callback: (r: CreateApiTokenResponse | ErrorResponse) => void
+  ) => void
+  revoke_api_token: (
+    r: ApiTokenRequest,
+    callback: (r: SuccessResponse | ErrorResponse) => void
+  ) => void
+  reveal_api_token: (
+    r: ApiTokenRequest,
+    callback: (r: RevealApiTokenResponse | ErrorResponse) => void
+  ) => void
+  get_calendar_url: (
+    callback: (r: CalendarUrlResponse | ErrorResponse) => void
   ) => void
 }
 

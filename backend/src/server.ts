@@ -13,10 +13,11 @@ import { createServer } from 'node:http'
 import { networkInterfaces } from 'node:os'
 import path from 'node:path'
 import { Server, Socket } from 'socket.io'
+import { createCalendarRouter } from './endpoints/calendar'
 import { createWebhookRouter } from './endpoints/webhook'
 import ActiveEntryManager from './managers/activeEntry.manager'
 import AdminManager from './managers/admin.manager'
-import ApiManager from './managers/api.manager'
+import ApiTokenManager from './managers/apiToken.manager'
 import AuthManager from './managers/auth.manager'
 import ChugTimeManager from './managers/chugtime.manager'
 import MatchManager from './managers/match.manager'
@@ -57,7 +58,7 @@ export type TypedSocket = Socket<
 
 type ProtectedServerEvent = Exclude<
   keyof ServerToClientEvents,
-  'user_data' | 'all_tournaments' | 'registration_available'
+  'user_data' | 'all_tournaments' | 'registration_available' | 'api_tokens'
 >
 
 async function emitData(socket: TypedSocket) {
@@ -77,6 +78,7 @@ async function emitData(socket: TypedSocket) {
   socket.emit('all_chug_times', await ChugTimeManager.getChugTimes())
   socket.emit('active_entry_overrides', ActiveEntryManager.getOverrides())
   TournamentSecurity.emit(socket, TournamentManager.getAllTournaments())
+  await ApiTokenManager.emit(socket)
 }
 
 export function broadcast<Ev extends ProtectedServerEvent>(
@@ -101,11 +103,16 @@ export function broadcastTournaments(
   })
 }
 
-app.use(createWebhookRouter())
+// API tokens are visible only to their owner and to admins, so each socket
+// gets its own projection instead of a shared broadcast payload.
+export function broadcastApiTokens(owner: string): void {
+  io.sockets.sockets.forEach(socket => {
+    if (socket.data.userId) void ApiTokenManager.emit(socket, owner)
+  })
+}
 
-app.get('/api/sessions/calendar.ics', (req, res) =>
-  ApiManager.onGetCalendar(ORIGIN, req, res)
-)
+app.use(createWebhookRouter())
+app.use(createCalendarRouter(ORIGIN))
 
 app.get('/api/ping', (_req, res) => {
   const pong = 'pong'
@@ -186,6 +193,11 @@ async function Connect(s: TypedSocket) {
   setup(s, 'delete_match', MatchManager.onDeleteMatch)
   setup(s, 'set_active_entry', ActiveEntryManager.onSetActiveEntry)
 
+  setup(s, 'create_api_token', ApiTokenManager.onCreateApiToken)
+  setup(s, 'revoke_api_token', ApiTokenManager.onRevokeApiToken)
+  setup(s, 'reveal_api_token', ApiTokenManager.onRevealApiToken)
+  setup(s, 'get_calendar_url', ApiTokenManager.onGetCalendarUrl)
+
   setup(s, 'import_csv', AdminManager.onImportCsv)
   setup(s, 'export_csv', AdminManager.onExportCsv)
 }
@@ -204,12 +216,16 @@ function setup<Ev extends keyof ClientToServerEvents>(
 ) {
   ;(
     s as TypedSocket & {
-      on: (
-        event: Ev,
-        listener: (r: EventReq<Ev>, callback: SocketCallback<Ev>) => void
-      ) => void
+      on: (event: Ev, listener: (...args: unknown[]) => void) => void
     }
-  ).on(event, (r, callback) =>
+  ).on(event, (...args) => {
+    // Events without a request payload receive the acknowledgement first.
+    const ack = args.at(-1)
+    const hasAck = typeof ack === 'function'
+    const callback = (hasAck ? ack : () => undefined) as SocketCallback<Ev>
+    const r = (
+      hasAck && args.length === 1 ? undefined : args[0]
+    ) as EventReq<Ev>
     Promise.resolve(handler(s, r))
       .then(callback)
       .catch((e: unknown) => {
@@ -217,5 +233,5 @@ function setup<Ev extends keyof ClientToServerEvents>(
         console.warn(message)
         callback({ success: false, message })
       })
-  )
+  })
 }

@@ -2,7 +2,7 @@ import type * as schema from '../../backend/database/schema'
 import { isRecord } from '../utils/utils'
 import type { SuccessResponse } from './socket.io'
 
-export type CsvTable = keyof typeof schema
+export type CsvTable = Exclude<keyof typeof schema, 'apiTokens'>
 
 export type ImportCsvRequest = {
   table: CsvTable
