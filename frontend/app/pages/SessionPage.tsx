@@ -48,8 +48,10 @@ function getDefaultTab(
   const isSignedUp = session.signups.some(
     s => s.user.id === userId && s.response !== 'no'
   )
-  if (isDatePollOpen(session)) return loc.no.session.participants
-  if (isUpcoming(session) && (!isSignedUp || !hasTournament))
+  if (
+    isDatePollOpen(session) ||
+    (isUpcoming(session) && (!isSignedUp || !hasTournament))
+  )
     return loc.no.session.participants
   return hasTournament ? loc.no.tournament.title : loc.no.session.session
 }
@@ -100,6 +102,7 @@ export default function SessionPage() {
     throw new Error(loc.no.error.messages.not_in_db(`sessions/${id}`))
 
   const isCancelled = session.status === 'cancelled'
+  const isPollOpen = isDatePollOpen(session)
   const tournament = tournaments.find(t => t.config.session === session.id)
   const sessionTracks = tracks.filter(track => {
     const hasLaps = timeEntries.some(
@@ -211,10 +214,10 @@ export default function SessionPage() {
         <TabsContent
           className='flex flex-col gap-4'
           value={loc.no.session.participants}>
-          {isDatePollOpen(session) && <SessionDatePoll session={session} />}
+          {isPollOpen && <SessionDatePoll session={session} />}
           <SessionSignupPanel
             className='rounded-sm border bg-background p-2'
-            disabled={isCancelled || isDatePollOpen(session)}
+            disabled={isCancelled || isPollOpen}
             session={session}
           />
         </TabsContent>

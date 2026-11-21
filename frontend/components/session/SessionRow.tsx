@@ -10,7 +10,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useTimeAgoStrict as useDistanceToNow } from '@/hooks/useTimeAgoStrict'
 import loc from '@common/locale/locales'
 import type { SessionWithSignups } from '@common/models/session'
-import { isOngoing, isUpcoming } from '@common/utils/date'
+import { getSessionDate, isOngoing, isUpcoming } from '@common/utils/date'
 import { ChevronRight } from 'lucide-react'
 import { Link } from 'react-router'
 import { twMerge } from 'tailwind-merge'
@@ -28,7 +28,7 @@ export function SessionRow({
   highlight,
 }: Readonly<SesssionComponentProps>) {
   const { loggedInUser, isLoggedIn } = useAuth()
-  const distance = useDistanceToNow({ date: session.date ?? new Date() })
+  const distance = useDistanceToNow({ date: getSessionDate(session) })
 
   const isCancelled = session.status === 'cancelled'
 

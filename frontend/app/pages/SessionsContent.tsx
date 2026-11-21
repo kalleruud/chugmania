@@ -15,7 +15,12 @@ import {
 import { useAuth } from '@/contexts/AuthContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@common/locale/locales'
-import { isOngoing, isPast, isUpcoming } from '@common/utils/date'
+import {
+  getSessionDate,
+  isOngoing,
+  isPast,
+  isUpcoming,
+} from '@common/utils/date'
 import { CalendarIcon } from '@heroicons/react/24/solid'
 import { useState, type ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -42,7 +47,7 @@ export function SessionsContent({
   const upcomingSessions = sessions?.filter(isUpcoming) ?? []
   const pastSessions = sessions?.filter(isPast) ?? []
   const archivedSessions = pastSessions.toSorted(
-    (a, b) => new Date(b.date ?? 0).getTime() - new Date(a.date ?? 0).getTime()
+    (a, b) => getSessionDate(b).getTime() - getSessionDate(a).getTime()
   )
   const ongoingSessions = sessions?.filter(isOngoing) ?? []
 

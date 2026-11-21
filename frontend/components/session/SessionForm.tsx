@@ -40,6 +40,13 @@ export default function SessionForm({
   const isModerator = isLoggedIn && loggedInUser.role === 'moderator'
   const canCreate = isAdmin || isModerator
 
+  const isEdit = variant === 'edit'
+
+  function clearDate() {
+    setDate(undefined)
+    setStatus('tentative')
+  }
+
   function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault()
 
@@ -114,17 +121,8 @@ export default function SessionForm({
         name={loc.no.session.form.date}
         selected={date}
         onSelect={setDate}
-        placeholder={
-          variant === 'edit' ? loc.no.session.datePoll.pendingDate : undefined
-        }
-        onClear={
-          variant === 'edit'
-            ? () => {
-                setDate(undefined)
-                setStatus('tentative')
-              }
-            : undefined
-        }
+        placeholder={isEdit ? loc.no.session.datePoll.pendingDate : undefined}
+        onClear={isEdit ? clearDate : undefined}
         disabled={disabled}
       />
 

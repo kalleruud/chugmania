@@ -203,9 +203,9 @@ export function CalendarField({
                 isEmpty && 'text-muted-foreground'
               )}
               disabled={disabled}>
-              {selected || !placeholder
-                ? formatDateWithYear(selected ?? now)
-                : placeholder}
+              {selected
+                ? formatDateWithYear(selected)
+                : (placeholder ?? formatDateWithYear(now))}
               <ChevronDownIcon />
             </Button>
           </PopoverTrigger>

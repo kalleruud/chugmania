@@ -1,5 +1,4 @@
 import ConfirmationButton from '@/components/ConfirmationButton'
-import { PageSubheader } from '@/components/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import {
@@ -12,7 +11,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { Empty } from '@/components/ui/empty'
 import {
   Select,
   SelectContent,
@@ -20,7 +18,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import UserRow from '@/components/user/UserRow'
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import loc from '@common/locale/locales'
@@ -29,12 +26,12 @@ import {
   type EditSessionRequest,
   type SessionWithSignups,
 } from '@common/models/session'
-import type { UserInfo } from '@common/models/user'
 import { formatDateWithYear } from '@common/utils/date'
 import { CalendarDaysIcon, CheckIcon } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
+import SessionUserGroup from './SessionUserGroup'
 
 type SessionEdit = Omit<EditSessionRequest, 'type' | 'id'>
 
@@ -60,9 +57,7 @@ export default function SessionDatePoll({
   const [selectedDate, setSelectedDate] = useState<string>()
   const canEdit = isLoggedIn && loggedInUser.role !== 'user'
   const options = (session.dateOptions ?? []).toSorted((a, b) => a - b)
-  const chosenDate = options.includes(Number(selectedDate))
-    ? selectedDate
-    : undefined
+  const chosenDate = options.find(date => String(date) === selectedDate)
 
   const myDates = (
     session.dateVotes.find(v => isLoggedIn && v.user.id === loggedInUser.id)
@@ -92,9 +87,9 @@ export default function SessionDatePoll({
   }
 
   function chooseDate() {
-    if (!chosenDate) return
+    if (chosenDate === undefined) return
     editSession(socket, session.id, {
-      date: new Date(Number(chosenDate)),
+      date: new Date(chosenDate),
       dateVotingClosed: true,
       status: 'confirmed',
     })
@@ -158,7 +153,9 @@ export default function SessionDatePoll({
 
       {canEdit && (
         <div className='flex items-center gap-2 border-t px-2 pt-3 pb-1'>
-          <Select value={chosenDate ?? ''} onValueChange={setSelectedDate}>
+          <Select
+            value={String(chosenDate ?? '')}
+            onValueChange={setSelectedDate}>
             <SelectTrigger
               className='min-w-0 flex-1'
               aria-label={loc.no.session.datePoll.choosePlaceholder}>
@@ -179,7 +176,9 @@ export default function SessionDatePoll({
               ))}
             </SelectContent>
           </Select>
-          <ConfirmationButton disabled={!chosenDate} onClick={chooseDate}>
+          <ConfirmationButton
+            disabled={chosenDate === undefined}
+            onClick={chooseDate}>
             {loc.no.session.datePoll.choose}
           </ConfirmationButton>
         </div>
@@ -187,12 +186,7 @@ export default function SessionDatePoll({
 
       <DateDetailsDialog
         date={detailsDate}
-        canAttend={detailsDate === undefined ? [] : voters(detailsDate)}
-        cannotAttend={session.dateVotes
-          .filter(
-            v => detailsDate === undefined || !v.dates.includes(detailsDate)
-          )
-          .map(v => v.user)}
+        votes={session.dateVotes}
         onClose={() => setDetailsDate(undefined)}
       />
     </div>
@@ -201,57 +195,43 @@ export default function SessionDatePoll({
 
 function DateDetailsDialog({
   date,
-  canAttend,
-  cannotAttend,
+  votes,
   onClose,
 }: Readonly<{
   date: number | undefined
-  canAttend: UserInfo[]
-  cannotAttend: UserInfo[]
+  votes: SessionWithSignups['dateVotes']
   onClose: () => void
 }>) {
+  if (date === undefined) return undefined
+
+  const canAttend = votes.filter(v => v.dates.includes(date))
+  const cannotAttend = votes.filter(v => !v.dates.includes(date))
   const groups = [
-    { title: loc.no.session.datePoll.canAttend, users: canAttend },
-    { title: loc.no.session.datePoll.cannotAttend, users: cannotAttend },
+    { title: loc.no.session.datePoll.canAttend, votes: canAttend },
+    { title: loc.no.session.datePoll.cannotAttend, votes: cannotAttend },
   ]
+
   return (
     <Dialog
-      open={date !== undefined}
+      open
       onOpenChange={isOpen => {
         if (!isOpen) onClose()
       }}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle className='capitalize'>
-            {date !== undefined && formatDateWithYear(new Date(date))}
+            {formatDateWithYear(new Date(date))}
           </DialogTitle>
           <DialogDescription>
             {loc.no.session.datePoll.votes(canAttend.length)}
           </DialogDescription>
         </DialogHeader>
-        {groups.map(({ title, users }) => (
-          <div key={title} className='flex flex-col'>
-            <PageSubheader
-              title={title}
-              description={users.length.toString()}
-            />
-            {users.length === 0 ? (
-              <Empty className='border border-input text-sm text-muted-foreground'>
-                {loc.no.common.noItems}
-              </Empty>
-            ) : (
-              <div className='rounded-sm bg-background-secondary'>
-                {users.map(user => (
-                  <UserRow
-                    key={user.id}
-                    item={user}
-                    className='min-h-12 w-full py-1'
-                    hideRanking
-                  />
-                ))}
-              </div>
-            )}
-          </div>
+        {groups.map(({ title, votes }) => (
+          <SessionUserGroup
+            key={title}
+            title={title}
+            items={votes.map(({ user }) => ({ key: user.id, user }))}
+          />
         ))}
       </DialogContent>
     </Dialog>

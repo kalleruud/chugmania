@@ -93,26 +93,21 @@ export default function SessionCard({
             <span>{loc.no.session.statusOptions[session.status]}</span>
           </div>
 
-          {session.date ? (
-            <>
-              <div className='flex items-center gap-2'>
-                <ClockIcon className='size-4 text-muted-foreground' />
-                <span className='capitalize'>
-                  {formatTimeOnly(session.date)}
-                </span>
-              </div>
-
-              <div className='flex items-center gap-2 capitalize'>
-                <CalendarIcon className='size-4 text-muted-foreground' />
-                {formatDateWithYear(session.date)}
-              </div>
-            </>
-          ) : (
+          {session.date && (
             <div className='flex items-center gap-2'>
-              <CalendarIcon className='size-4 text-muted-foreground' />
-              {loc.no.session.datePoll.pendingDate}
+              <ClockIcon className='size-4 text-muted-foreground' />
+              <span className='capitalize'>{formatTimeOnly(session.date)}</span>
             </div>
           )}
+
+          <div className='flex items-center gap-2'>
+            <CalendarIcon className='size-4 text-muted-foreground' />
+            <span className={twMerge(session.date && 'capitalize')}>
+              {session.date
+                ? formatDateWithYear(session.date)
+                : loc.no.session.datePoll.pendingDate}
+            </span>
+          </div>
 
           {mapsUrl && (
             <div className='flex items-center gap-2'>

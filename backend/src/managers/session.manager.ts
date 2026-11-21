@@ -28,40 +28,21 @@ import TimeEntryManager from './timeEntry.manager'
 import TournamentManager from './tournament/tournament.manager'
 import UserManager from './user.manager'
 
+function orCurrent<T>(value: T | undefined, current: T): T {
+  return value === undefined ? current : value
+}
+
 export default class SessionManager {
   public static ensureSessionSignup(
     sessionId: string,
     userId: string
   ): boolean {
-    const existingSignup = db
-      .select()
-      .from(sessionSignups)
-      .where(
-        and(
-          eq(sessionSignups.session, sessionId),
-          eq(sessionSignups.user, userId)
-        )
-      )
-      .orderBy(asc(sessionSignups.deletedAt))
-      .get()
-
-    if (existingSignup && !existingSignup.deletedAt) return false
+    if (SessionSource.findSignup(sessionId, userId)?.deletedAt === null)
+      return false
     const session = SessionSource.getActiveById(sessionId)
     if (session && isDatePollOpen(session)) return false
 
-    db.insert(sessionSignups)
-      .values({
-        id: existingSignup?.id,
-        session: sessionId,
-        user: userId,
-        response: 'yes',
-      })
-      .onConflictDoUpdate({
-        target: [sessionSignups.id],
-        set: { response: 'yes', deletedAt: null },
-      })
-      .run()
-
+    SessionSource.setSignup(sessionId, userId, 'yes')
     return true
   }
 
@@ -207,12 +188,9 @@ export default class SessionManager {
     const id = request.id
     const date = request.date ? new Date(request.date) : request.date
     const next = {
-      date: date === undefined ? session.date : date,
+      date: orCurrent(date, session.date),
       status: request.status ?? session.status,
-      dateOptions:
-        request.dateOptions === undefined
-          ? session.dateOptions
-          : request.dateOptions,
+      dateOptions: orCurrent(request.dateOptions, session.dateOptions),
       dateVotingClosed: request.dateVotingClosed ?? session.dateVotingClosed,
     }
     const wasPollOpen = isDatePollOpen(session)
@@ -281,11 +259,8 @@ export default class SessionManager {
       throw new Error(loc.no.error.messages.insufficient_permissions)
     }
 
-    const session = await db.query.sessions.findFirst({
-      where: eq(sessions.id, request.session),
-    })
-
-    if (!session || session.deletedAt) {
+    const session = SessionSource.getActiveById(request.session)
+    if (!session) {
       throw new Error(loc.no.error.messages.not_in_db(request.session))
     }
 

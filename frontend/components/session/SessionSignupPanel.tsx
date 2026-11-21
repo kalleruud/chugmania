@@ -1,5 +1,4 @@
 import ConfirmationButton from '@/components/ConfirmationButton'
-import { PageSubheader } from '@/components/PageHeader'
 import SegmentedProgress from '@/components/SegmentedProgress'
 import { Button } from '@/components/ui/button'
 import { Empty } from '@/components/ui/empty'
@@ -11,7 +10,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Spinner } from '@/components/ui/spinner'
-import UserRow from '@/components/user/UserRow'
 import { useAuth } from '@/contexts/AuthContext'
 import { useConnection } from '@/contexts/ConnectionContext'
 import { useData } from '@/contexts/DataContext'
@@ -26,6 +24,7 @@ import { twMerge } from 'tailwind-merge'
 import type { SessionResponse } from '../../../backend/database/schema'
 import ManageSessionParticipantsDialog from './ManageSessionParticipantsDialog'
 import { DateOptionsDialog } from './SessionDatePoll'
+import SessionUserGroup from './SessionUserGroup'
 import { getUserSortName, RESPONSE_OPTIONS } from './session-signup-utils'
 
 export default function SessionSignupPanel({
@@ -115,6 +114,50 @@ export default function SessionSignupPanel({
     toast.promise(removeSignup(id), loc.no.session.rsvp.remove)
   }
 
+  function renderActions(
+    id: string,
+    user: UserInfo,
+    response: SessionResponse
+  ) {
+    if (isPollOpen) return undefined
+    const canEdit =
+      canManageSignups || (isUpcoming(session) && loggedInUser?.id === user.id)
+    return (
+      <div className='flex items-center gap-1'>
+        {canEdit && (
+          <Select
+            value={response}
+            onValueChange={value => {
+              if (value === 'yes' || value === 'no' || value === 'maybe')
+                handleRsvp(value, user)
+            }}
+            disabled={disabled}>
+            <SelectTrigger aria-label={`${user.firstName}: RSVP`}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent align='end'>
+              {RESPONSE_OPTIONS.map(({ response, Icon }) => (
+                <SelectItem key={response} value={response}>
+                  <Icon className='size-4' />
+                  {loc.no.session.rsvp.responses[response]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+        {canManageSignups && (
+          <ConfirmationButton
+            variant='ghost'
+            size='sm'
+            aria-label={loc.no.session.rsvp.remove.label(user.firstName)}
+            onClick={() => handleRemove(id)}>
+            <Trash2 className='size-4' />
+          </ConfirmationButton>
+        )}
+      </div>
+    )
+  }
+
   async function addParticipants(response: SessionResponse, users: UserInfo[]) {
     await Promise.all(users.map(user => updateSignup(response, user)))
   }
@@ -181,67 +224,16 @@ export default function SessionSignupPanel({
         )
         if (responseSignups.length === 0) return undefined
         return (
-          <div key={response} className='flex flex-col'>
-            <PageSubheader
-              title={loc.no.session.rsvp.responses[response]}
-              description={responseSignups.length.toString()}
-            />
-            <div className='rounded-sm bg-background-secondary'>
-              {responseSignups.map(({ id, user }) => {
-                const isSelf = loggedInUser?.id === user.id
-                return (
-                  <UserRow
-                    key={id}
-                    item={user}
-                    className='min-h-12 w-full py-1'
-                    highlight={isSelf}
-                    hideRanking>
-                    <div className='flex items-center gap-1'>
-                      {!isPollOpen &&
-                        (canManageSignups ||
-                          (isUpcoming(session) && isSelf)) && (
-                          <Select
-                            value={response}
-                            onValueChange={value => {
-                              if (
-                                value === 'yes' ||
-                                value === 'no' ||
-                                value === 'maybe'
-                              )
-                                handleRsvp(value, user)
-                            }}
-                            disabled={disabled}>
-                            <SelectTrigger
-                              aria-label={`${user.firstName}: RSVP`}>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent align='end'>
-                              {RESPONSE_OPTIONS.map(({ response, Icon }) => (
-                                <SelectItem key={response} value={response}>
-                                  <Icon className='size-4' />
-                                  {loc.no.session.rsvp.responses[response]}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
-                      {canManageSignups && !isPollOpen && (
-                        <ConfirmationButton
-                          variant='ghost'
-                          size='sm'
-                          aria-label={loc.no.session.rsvp.remove.label(
-                            user.firstName
-                          )}
-                          onClick={() => handleRemove(id)}>
-                          <Trash2 className='size-4' />
-                        </ConfirmationButton>
-                      )}
-                    </div>
-                  </UserRow>
-                )
-              })}
-            </div>
-          </div>
+          <SessionUserGroup
+            key={response}
+            title={loc.no.session.rsvp.responses[response]}
+            items={responseSignups.map(({ id, user }) => ({
+              key: id,
+              user,
+              highlight: loggedInUser?.id === user.id,
+              actions: renderActions(id, user, response),
+            }))}
+          />
         )
       })}
     </div>

@@ -58,13 +58,9 @@ export default class SessionSource {
     return updated.length > 0
   }
 
-  static setSignup(
-    sessionId: string,
-    userId: string,
-    response: SessionResponse
-  ) {
-    const existing = db
-      .select({ id: sessionSignups.id })
+  static findSignup(sessionId: string, userId: string) {
+    return db
+      .select()
       .from(sessionSignups)
       .where(
         and(
@@ -74,7 +70,14 @@ export default class SessionSource {
       )
       .orderBy(asc(sessionSignups.deletedAt))
       .get()
+  }
 
+  static setSignup(
+    sessionId: string,
+    userId: string,
+    response: SessionResponse
+  ) {
+    const existing = SessionSource.findSignup(sessionId, userId)
     db.insert(sessionSignups)
       .values({ id: existing?.id, session: sessionId, user: userId, response })
       .onConflictDoUpdate({

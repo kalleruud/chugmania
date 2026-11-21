@@ -47,6 +47,10 @@ export function getEndOfDate(date: Date): Date {
 
 type DatedSession = { date: Date | null; status: SessionStatus }
 
+export function getSessionDate(session: Pick<DatedSession, 'date'>) {
+  return new Date(session.date ?? Date.now())
+}
+
 export function isOngoing(session: DatedSession) {
   return (
     !isPast(session) && !isUpcoming(session) && session.status !== 'cancelled'
