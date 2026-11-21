@@ -191,6 +191,7 @@ export default function SessionPage() {
       </div>
 
       <Tabs
+        key={session.id}
         defaultValue={
           searchParams.get('tab') === 'tournament'
             ? loc.no.tournament.title

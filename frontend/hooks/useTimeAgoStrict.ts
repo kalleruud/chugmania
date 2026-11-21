@@ -20,23 +20,18 @@ export function useTimeAgoStrict({
   date,
   updateInterval = 1000,
 }: UseTimeAgoStrictProps): string {
-  const parsedDate = new Date(date)
+  const time = new Date(date).getTime()
   const [formattedDistance, setFormattedDistance] = useState(
-    getString(parsedDate)
+    getString(new Date(time))
   )
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      const newString = getString(parsedDate)
-
-      // Only trigger re-render if the string changed
-      if (newString !== formattedDistance) {
-        setFormattedDistance(newString)
-      }
-    }, updateInterval)
+    const update = () => setFormattedDistance(getString(new Date(time)))
+    update()
+    const interval = setInterval(update, updateInterval)
 
     return () => clearInterval(interval)
-  }, [])
+  }, [time, updateInterval])
 
   return formattedDistance
 }

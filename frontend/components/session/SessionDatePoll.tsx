@@ -188,7 +188,7 @@ export default function SessionDatePoll({
       <DateDetailsDialog
         date={detailsDate}
         canAttend={detailsDate === undefined ? [] : voters(detailsDate)}
-        cannotAttend={respondents
+        cannotAttend={session.dateVotes
           .filter(
             v => detailsDate === undefined || !v.dates.includes(detailsDate)
           )
