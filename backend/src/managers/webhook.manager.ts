@@ -1,4 +1,3 @@
-import loc from '@common/locale/locales'
 import type { Track } from '@common/models/track'
 import { getSessionQueue } from '@common/utils/activeEntry'
 import { isRecord } from '@common/utils/utils'
@@ -29,6 +28,11 @@ type PlayerTimes = {
 }
 
 type Capture = WebhookCapture
+
+type Rows = {
+  lap: ReturnType<typeof TimeEntrySource.findByCapture>
+  match: ReturnType<typeof MatchSource.findByCapture>
+}
 
 export class WebhookError extends Error {
   status: number
@@ -114,15 +118,17 @@ export default class WebhookManager {
     })
   }
 
-  private static rows(capture: Capture) {
+  private static rows(capture: Capture): Rows {
     return {
       lap: TimeEntrySource.findByCapture(capture.id),
       match: MatchSource.findByCapture(capture.id),
     }
   }
 
-  private static rowTimes(capture: Capture): PlayerTimes[] {
-    const { lap, match } = this.rows(capture)
+  private static rowTimes(
+    capture: Capture,
+    { lap, match }: Rows
+  ): PlayerTimes[] {
     if (capture.totalPlayers === 1)
       return [
         {
@@ -142,8 +148,7 @@ export default class WebhookManager {
     ]
   }
 
-  private static hasPlayers(capture: Capture): boolean {
-    const { lap, match } = this.rows(capture)
+  private static hasPlayers({ lap, match }: Rows): boolean {
     return lap ? !!lap.user : !!match?.user1 && !!match.user2
   }
 
@@ -151,7 +156,9 @@ export default class WebhookManager {
     const tournament =
       TournamentManager.getDetails(capture.session) ?? undefined
     const ready =
-      tournament?.status === 'started' && !tournament.notReadyReason
+      tournament?.status === 'started' &&
+      !tournament.cancelled &&
+      !tournament.notReadyReason
         ? tournament
         : undefined
     const { now } = getSessionQueue(
@@ -209,17 +216,18 @@ export default class WebhookManager {
       start?.type !== 'start' ||
       end?.type !== 'end' ||
       end.endReason !== 'completed' ||
-      events.length !== end.sequence - start.sequence + 1 ||
-      !this.hasPlayers(capture)
+      events.length !== end.sequence - start.sequence + 1
     )
       return
+    const rows = this.rows(capture)
+    if (!this.hasPlayers(rows)) return
     const finishes = Array.from({ length: capture.totalPlayers }, (_, index) =>
       events.find(
         event => event.type === 'finish' && event.player.playerIndex === index
       )
     )
     if (finishes.some(event => !event || event.durationMs <= 0)) return
-    const { lap, match } = this.rows(capture)
+    const { lap, match } = rows
     const result = lap ?? match
     if (result?.session !== capture.session || result.track !== track) return
 
@@ -261,17 +269,7 @@ export default class WebhookManager {
         return { signupChanged: false }
       })
     } catch (error) {
-      if (
-        error instanceof Error &&
-        (error.message.startsWith(loc.no.tournament.downstream) ||
-          [
-            loc.no.tournament.session,
-            loc.no.tournament.roster,
-            loc.no.tournament.result,
-          ].some(message => message === error.message))
-      )
-        return
-      throw error
+      console.error(error)
     }
   }
 
@@ -281,13 +279,15 @@ export default class WebhookManager {
     after: PlayerTimes[],
     events: Event[]
   ): void {
-    const latched = this.hasPlayers(capture)
-    const status = events.some(
-      event => event.type === 'finish' || (latched && event.type === 'end')
-    )
-      ? 'draft'
-      : 'in_progress'
-    const times = this.rowTimes(capture).map((current, i) => {
+    const rows = this.rows(capture)
+    const { lap, match } = rows
+    const doneOn = this.hasPlayers(rows) ? 'end' : 'finish'
+    const status =
+      (lap ?? match)?.status === 'draft' ||
+      events.some(event => event.type === doneOn)
+        ? 'draft'
+        : 'in_progress'
+    const times = this.rowTimes(capture, rows).map((current, i) => {
       const keep = (key: keyof PlayerTimes) => current[key] !== before[i][key]
       return {
         finishDurationMs: keep('finishDurationMs')
@@ -298,7 +298,6 @@ export default class WebhookManager {
           : after[i].chugDurationMs,
       }
     })
-    const { lap, match } = this.rows(capture)
     if (
       lap &&
       lap.status === status &&
@@ -479,7 +478,7 @@ export default class WebhookManager {
         this.latchActiveEntry(capture, matchedTrack.id)
       )
         existingRows = this.rows(capture)
-      const latched = this.hasPlayers(capture)
+      const latched = this.hasPlayers(existingRows)
       if (!latched && (!hasTiming || event.type === 'end')) return {}
       if (start?.map && !matchedTrack) {
         matchedTrack = TrackSource.create({

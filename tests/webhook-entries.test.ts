@@ -289,9 +289,22 @@ describe('webhook captures latch onto the active entry', () => {
     expect(
       rows.filter(row => row.status === 'draft' && row.user === null)
     ).toHaveLength(2)
-    expect(MatchManager.getAllBySession(session)).toMatchObject([
-      { status: 'draft', user1: null, user2: null },
-    ])
+    const [draft] = MatchManager.getAllBySession(session)
+    expect(draft).toMatchObject({ status: 'draft', user1: null, user2: null })
+    const opponent = createUser('fallback-webhook-opponent')
+    assertResponse(
+      await MatchManager.onEditMatch(socket, {
+        type: 'EditMatchRequest',
+        id: draft.id,
+        user1: driver.id,
+        user2: opponent.id,
+      })
+    )
+    twoPlayers.finish(2, 1, 1200)
+    expect(MatchManager.getAllBySession(session)[0]).toMatchObject({
+      status: 'draft',
+      user2DurationMs: 1200,
+    })
   })
 
   test('a pinned match takes the capture with slot 0 as player 1', async () => {
@@ -330,6 +343,10 @@ describe('webhook captures latch onto the active entry', () => {
     const game = capture(now, 2, 'turbo')
     game.start(map)
     game.finish(1, 1, 1000)
+    expect(MatchManager.getAllBySession(session)[0]).toMatchObject({
+      status: 'in_progress',
+      user2DurationMs: 1000,
+    })
     game.finish(2, 0, 1200)
     game.throttle(3, 1, 300)
     game.end(4)
