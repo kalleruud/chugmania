@@ -10,7 +10,6 @@ import {
   isEditTimeEntryRequest,
 } from '@common/models/timeEntry'
 import type { User } from '@common/models/user'
-import PlannedResultAssignmentSource from '../../database/sources/plannedResultAssignment.source'
 import TimeEntrySource from '../../database/sources/timeEntry.source'
 import TournamentSource from '../../database/sources/tournament.source'
 import TransactionSource from '../../database/sources/transaction.source'
@@ -190,10 +189,7 @@ export default class TimeEntryManager {
           ? TournamentManager.getState(lapTime.session)
           : null
       if (before?.cancelled) throw new Error(loc.no.tournament.session)
-      const reset =
-        updates.status === 'planned' &&
-        lapTime.webhookCapture &&
-        PlannedResultAssignmentSource.find(lapTime.webhookCapture)
+      const reset = updates.status === 'planned' && !!lapTime.webhookCapture
       TimeEntrySource.update(
         lapTime.id,
         reset

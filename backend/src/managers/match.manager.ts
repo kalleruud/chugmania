@@ -10,7 +10,6 @@ import {
 } from '@common/models/match'
 import type { EventReq, EventRes } from '@common/models/socket.io'
 import MatchSource from '../../database/sources/match.source'
-import PlannedResultAssignmentSource from '../../database/sources/plannedResultAssignment.source'
 import TournamentSource from '../../database/sources/tournament.source'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
@@ -151,10 +150,7 @@ export default class MatchManager {
     MatchManager.validateMatchState(request, preImageMatch)
 
     const id = request.id
-    const reset =
-      request.status === 'planned' &&
-      preImageMatch.webhookCapture &&
-      PlannedResultAssignmentSource.find(preImageMatch.webhookCapture)
+    const reset = request.status === 'planned' && !!preImageMatch.webhookCapture
     MatchSource.update(preImageMatch.id, {
       user1: request.user1,
       user2: request.user2,

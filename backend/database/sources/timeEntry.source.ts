@@ -171,10 +171,6 @@ export default class TimeEntrySource {
     )
   }
 
-  static removeWebhookPlaceholder(id: string): void {
-    db.delete(timeEntries).where(eq(timeEntries.id, id)).run()
-  }
-
   static findByCapture(capture: string) {
     return db
       .select()

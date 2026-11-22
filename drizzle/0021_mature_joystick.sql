@@ -1,1 +1,0 @@
-ALTER TABLE `webhook_captures` ADD `planned_users` text;

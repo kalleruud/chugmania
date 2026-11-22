@@ -127,18 +127,6 @@ export const webhookCaptures = sqliteTable('webhook_captures', {
   publishedAt: integer('published_at', { mode: 'timestamp_ms' }),
 })
 
-export const plannedResultAssignments = sqliteTable(
-  'planned_result_assignments',
-  {
-    capture: text()
-      .primaryKey()
-      .notNull()
-      .references(() => webhookCaptures.id, { onDelete: 'cascade' }),
-    users: text({ mode: 'json' }).$type<string[]>().notNull(),
-    reversed: integer({ mode: 'boolean' }).notNull(),
-  }
-)
-
 export const webhookEvents = sqliteTable(
   'webhook_events',
   {

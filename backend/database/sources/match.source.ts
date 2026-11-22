@@ -61,10 +61,6 @@ export default class MatchSource {
   static update(id: string, updates: Partial<CreateMatch>): void {
     db.update(matches).set(updates).where(eq(matches.id, id)).run()
   }
-  static removeWebhookPlaceholder(id: string): void {
-    db.delete(matches).where(eq(matches.id, id)).run()
-  }
-
   static findByCapture(capture: string) {
     return db
       .select()
