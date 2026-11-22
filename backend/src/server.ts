@@ -9,10 +9,12 @@ import type {
 } from '@common/models/socket.io'
 import type { TournamentDetails } from '@common/models/tournament'
 import express from 'express'
+import { readFile } from 'node:fs/promises'
 import { createServer } from 'node:http'
 import { networkInterfaces } from 'node:os'
 import path from 'node:path'
 import { Server, Socket } from 'socket.io'
+import { createPreviewRouter } from './endpoints/preview'
 import { createWebhookRouter } from './endpoints/webhook'
 import ActiveEntryManager from './managers/activeEntry.manager'
 import AdminManager from './managers/admin.manager'
@@ -117,13 +119,17 @@ if (!isProduction) {
   await UserManager.ensureDevAdmin()
   const { createServer: createViteServer } = await import('vite')
   const vite = await createViteServer({ server: { middlewareMode: true } })
+  app.use(
+    createPreviewRouter(ORIGIN, async url =>
+      vite.transformIndexHtml(url, await readFile('index.html', 'utf8'))
+    )
+  )
   app.use(vite.middlewares)
   server.on('close', () => void vite.close())
 } else {
-  app.use(express.static('dist'))
-  app.get('/{*splat}', (_req, res) =>
-    res.sendFile('index.html', { root: path.resolve('dist') })
-  )
+  const template = readFile(path.resolve('dist/index.html'), 'utf8')
+  app.use(express.static('dist', { index: false }))
+  app.use(createPreviewRouter(ORIGIN, () => template))
 }
 
 server.listen(PORT, () => {

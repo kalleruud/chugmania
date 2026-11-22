@@ -47,6 +47,13 @@ export default class TrackSource {
   static async getAll(): Promise<Track[]> {
     return await db.select().from(tracks).orderBy(asc(tracks.name))
   }
+  static getActiveById(id: string): Track | undefined {
+    return db
+      .select()
+      .from(tracks)
+      .where(and(eq(tracks.id, id), isNull(tracks.deletedAt)))
+      .get()
+  }
   static findByUid(uid: string) {
     return db
       .select()
