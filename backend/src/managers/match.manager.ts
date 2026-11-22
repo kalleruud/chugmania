@@ -11,6 +11,7 @@ import {
 import type { EventReq, EventRes } from '@common/models/socket.io'
 import MatchSource from '../../database/sources/match.source'
 import TournamentSource from '../../database/sources/tournament.source'
+import WebhookSource from '../../database/sources/webhook.source'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import ChugTimeManager from './chugtime.manager'
@@ -150,21 +151,25 @@ export default class MatchManager {
     MatchManager.validateMatchState(request, preImageMatch)
 
     const id = request.id
+    const reset =
+      request.status === 'planned' &&
+      preImageMatch.webhookCapture &&
+      WebhookSource.findCapture(preImageMatch.webhookCapture)?.plannedUsers
     MatchSource.update(preImageMatch.id, {
       user1: request.user1,
       user2: request.user2,
       track: request.track,
       session: request.session,
       winner: request.winner,
-      duration: request.duration,
+      duration: reset ? null : request.duration,
       status: request.status,
       stage: request.stage,
       comment: request.comment,
-      webhookCapture: request.webhookCapture,
-      user1DurationMs: request.user1DurationMs,
-      user2DurationMs: request.user2DurationMs,
-      user1ChugDurationMs: request.user1ChugDurationMs,
-      user2ChugDurationMs: request.user2ChugDurationMs,
+      webhookCapture: reset ? null : undefined,
+      user1DurationMs: reset ? null : request.user1DurationMs,
+      user2DurationMs: reset ? null : request.user2DurationMs,
+      user1ChugDurationMs: reset ? null : request.user1ChugDurationMs,
+      user2ChugDurationMs: reset ? null : request.user2ChugDurationMs,
       deletedAt: request.deletedAt
         ? new Date(request.deletedAt)
         : request.deletedAt,

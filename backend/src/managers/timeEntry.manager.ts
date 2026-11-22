@@ -13,6 +13,7 @@ import type { User } from '@common/models/user'
 import TimeEntrySource from '../../database/sources/timeEntry.source'
 import TournamentSource from '../../database/sources/tournament.source'
 import TransactionSource from '../../database/sources/transaction.source'
+import WebhookSource from '../../database/sources/webhook.source'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import ChugTimeManager from './chugtime.manager'
@@ -179,7 +180,7 @@ export default class TimeEntryManager {
       throw new Error(loc.no.tournament.owned)
   }
 
-  private static saveTimeEntryEdit(
+  static saveTimeEntryEdit(
     lapTime: TimeEntry,
     updates: TimeEntryUpdates
   ): boolean {
@@ -189,7 +190,21 @@ export default class TimeEntryManager {
           ? TournamentManager.getState(lapTime.session)
           : null
       if (before?.cancelled) throw new Error(loc.no.tournament.session)
-      TimeEntrySource.update(lapTime.id, updates)
+      const reset =
+        updates.status === 'planned' &&
+        lapTime.webhookCapture &&
+        WebhookSource.findCapture(lapTime.webhookCapture)?.plannedUsers
+      TimeEntrySource.update(
+        lapTime.id,
+        reset
+          ? {
+              ...updates,
+              webhookCapture: null,
+              duration: null,
+              chugDurationMs: null,
+            }
+          : updates
+      )
       if (before) TournamentManager.reconcile(before.config.session, before)
       const sessionId =
         updates.session === undefined ? lapTime.session : updates.session

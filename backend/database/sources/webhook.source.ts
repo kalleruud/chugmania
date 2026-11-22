@@ -15,6 +15,15 @@ export default class WebhookSource {
   static createCapture(capture: typeof webhookCaptures.$inferInsert) {
     return db.insert(webhookCaptures).values(capture).returning().get()
   }
+  static assignPlannedUsers(
+    capture: string,
+    plannedUsers: NonNullable<WebhookCapture['plannedUsers']>
+  ): void {
+    db.update(webhookCaptures)
+      .set({ plannedUsers })
+      .where(eq(webhookCaptures.id, capture))
+      .run()
+  }
   static markEnded(capture: string, endedAt: Date): void {
     db.update(webhookCaptures)
       .set({ endedAt })

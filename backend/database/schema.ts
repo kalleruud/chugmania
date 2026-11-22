@@ -125,6 +125,10 @@ export const webhookCaptures = sqliteTable('webhook_captures', {
   pluginVersion: text('plugin_version').notNull(),
   endedAt: integer('ended_at', { mode: 'timestamp_ms' }),
   publishedAt: integer('published_at', { mode: 'timestamp_ms' }),
+  plannedUsers: text('planned_users', { mode: 'json' }).$type<{
+    users: string[]
+    reversed: boolean
+  }>(),
 })
 
 export const webhookEvents = sqliteTable(

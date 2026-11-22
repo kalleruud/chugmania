@@ -82,8 +82,10 @@ The `/sessions` route shows upcoming and past events. Authorized users may creat
 
 Follow the coding conventions from `AGENTS.md`: Prettier formatting (2 spaces, single quotes, no semicolons), organize imports, explicit TypeScript types, and the shared `Result<T>` error-handling pattern. Reuse existing components and respect the Formula 1-inspired Tailwind design system to keep UI consistent.
 
-## Trackmania webhook drafts
+## Trackmania webhook results
 
-Configure the plugin endpoint as `https://<your-host>/api/webhook` with the server's `WEBHOOK_TOKEN` as its bearer token; an empty token disables ingestion. Captures attach to the latest session that started today or yesterday (Europe/Oslo) and appear on that Session page as draft lap times (one player) or matches (two players). Captures and raw events stay private to the backend.
+Configure the plugin endpoint as `https://<your-host>/api/webhook` with the server's `WEBHOOK_TOKEN` as its bearer token; an empty token disables ingestion. Captures attach to the latest session that started today or yesterday (Europe/Oslo). Raw events and capture metadata stay private to the backend.
 
-Drafts are edited and deleted like any other entry. Times from later webhook events only replace fields that have not been edited by hand. Publishing requires a complete capture, assigned players, and a track; it stores the map UID on the track so later captures match it automatically. CSV import/export excludes captures, events, and drafts; back up the SQLite database to keep them.
+A capture with a known map UID can reserve a planned lap or match with the same track and roster. Each driver’s name or login must match a unique active user's short name or full name (case-insensitive). When several eligible entries have that track and roster, the session’s **Nå** and **Neste** queue decides which one is first. A compatible moderator pin comes first, followed by ready tournament matches in fixture order, required tie-breaker laps, other tie-breaker laps, and standalone entries. Tie-breaker laps within each priority and standalone entries are ordered by oldest creation time, then ID.
+
+The reserved row shows live timing. A contiguous capture ending normally with a positive finish time for every slot can complete that row automatically. Identical match times and incomplete captures remain available for manual resolution. Captures that cannot reserve an entry use the existing live row and draft flow. Moderators can still correct the result, and incoming timing preserves manual corrections. Back up the SQLite database to retain captures and their associations.

@@ -228,7 +228,7 @@ export function protectResults(
   const affected = before.fixtures.filter(
     f =>
       f.id !== editing &&
-      decided(f.match) &&
+      (decided(f.match) || isLiveCapture(f.match)) &&
       after.fixtures.some(
         next =>
           next.id === f.id &&
@@ -415,7 +415,15 @@ function playerSlot(fixture: TournamentFixture, key: 'user1' | 'user2'): Slot {
   return key === 'user1' ? fixture.slot1 : fixture.slot2
 }
 
+function isLiveCapture(match: Match): boolean {
+  return (
+    !!match.webhookCapture &&
+    (match.status === 'in_progress' || match.status === 'draft')
+  )
+}
+
 function editableSlots(fixture: TournamentFixture): ('user1' | 'user2')[] {
+  if (isLiveCapture(fixture.match)) return []
   const keys: ('user1' | 'user2')[] = ['user1', 'user2']
   return keys.filter(key => {
     const slot = playerSlot(fixture, key)
@@ -487,7 +495,8 @@ function applyMatchResult(match: Match, request: EditMatchRequest): void {
   const status = request.status ?? match.status
   const winner = request.winner === undefined ? match.winner : request.winner
   if (
-    !['planned', 'completed', 'cancelled'].includes(status) ||
+    (!['planned', 'completed', 'cancelled'].includes(status) &&
+      (!match.webhookCapture || status !== match.status)) ||
     (status !== 'planned' && (!match.user1 || !match.user2)) ||
     (winner !== null && winner !== match.user1 && winner !== match.user2) ||
     (status === 'planned' && winner) ||
@@ -501,6 +510,27 @@ function applyMatchResult(match: Match, request: EditMatchRequest): void {
   }
   if (request.comment !== undefined) match.comment = request.comment
   if (request.duration !== undefined) match.duration = request.duration
+  if (match.webhookCapture) {
+    if (status === 'planned') {
+      Object.assign(match, {
+        webhookCapture: null,
+        duration: null,
+        user1DurationMs: null,
+        user2DurationMs: null,
+        user1ChugDurationMs: null,
+        user2ChugDurationMs: null,
+      })
+      return
+    }
+    if (request.user1DurationMs !== undefined)
+      match.user1DurationMs = request.user1DurationMs
+    if (request.user2DurationMs !== undefined)
+      match.user2DurationMs = request.user2DurationMs
+    if (request.user1ChugDurationMs !== undefined)
+      match.user1ChugDurationMs = request.user1ChugDurationMs
+    if (request.user2ChugDurationMs !== undefined)
+      match.user2ChugDurationMs = request.user2ChugDurationMs
+  }
 }
 
 function groupCode(index: number): string {

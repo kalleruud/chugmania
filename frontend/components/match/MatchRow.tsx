@@ -2,6 +2,7 @@ import { useData } from '@/contexts/DataContext'
 import { useMatch } from '@/hooks/useMatch'
 import loc from '@common/locale/locales'
 import type { UserInfo } from '@common/models/user'
+import { formatTime } from '@common/utils/time'
 import { isInactiveFinalReset, stageName } from '@common/utils/tournament'
 import { CalendarIcon } from '@heroicons/react/24/solid'
 import { ClipboardClock, FilePenLine, Timer } from 'lucide-react'
@@ -49,6 +50,7 @@ export default function MatchRow({
           <UserCell
             className='min-w-0 flex-1 text-right'
             user={user1}
+            duration={match.user1DurationMs}
             slotLabel={match.tournament?.slot1}
             isWinner={!!match.winner && match.winner === match.user1}
             onClick={() => user1 && toggleWinner(user1.id)}
@@ -85,6 +87,7 @@ export default function MatchRow({
           <UserCell
             className='min-w-0 flex-1'
             user={user2}
+            duration={match.user2DurationMs}
             slotLabel={match.tournament?.slot2}
             isWinner={!!match.winner && match.winner === match.user2}
             onClick={() => user2 && toggleWinner(user2.id)}
@@ -169,6 +172,7 @@ function shortName(user: UserInfo | undefined, slotLabel?: string): string {
 function UserCell({
   user,
   slotLabel,
+  duration,
   isWinner,
   onClick,
   disabled,
@@ -180,6 +184,7 @@ function UserCell({
     user: UserInfo | undefined
     isWinner: boolean
     onClick?: () => void
+    duration: number | null
     slotLabel?: string
     disabled?: boolean
     isCancelled: boolean
@@ -216,6 +221,11 @@ function UserCell({
           }
         />
       </button>
+      {duration !== null && (
+        <div className='font-kh-interface text-sm tabular-nums'>
+          {formatTime(duration)}
+        </div>
+      )}
     </div>
   )
 }
