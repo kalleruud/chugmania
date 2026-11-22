@@ -3,6 +3,9 @@ import type { Track } from '@common/models/track'
 import { isRecord } from '@common/utils/utils'
 import { DateTime } from 'luxon'
 import MatchSource from '../../database/sources/match.source'
+import PlannedResultAssignmentSource, {
+  type PlannedResultAssignment,
+} from '../../database/sources/plannedResultAssignment.source'
 import SessionSource from '../../database/sources/session.source'
 import TimeEntrySource from '../../database/sources/timeEntry.source'
 import TrackSource from '../../database/sources/track.source'
@@ -141,16 +144,17 @@ export default class WebhookManager {
     ]
   }
 
-  private static hasOriginalRoster(capture: Capture): boolean {
-    const { plannedUsers } = capture
-    if (!plannedUsers) return true
+  private static hasOriginalRoster(
+    capture: Capture,
+    assignment: PlannedResultAssignment
+  ): boolean {
     const { lap, match } = this.rows(capture)
-    const [first, second] = plannedUsers.users
+    const [first, second] = assignment.users
     return lap
       ? lap.user === first
       : !!match &&
-          match.user1 === (plannedUsers.reversed ? second : first) &&
-          match.user2 === (plannedUsers.reversed ? first : second)
+          match.user1 === (assignment.reversed ? second : first) &&
+          match.user2 === (assignment.reversed ? first : second)
   }
 
   private static replaceablePlaceholder(
@@ -193,21 +197,22 @@ export default class WebhookManager {
 
   private static completePlanned(
     capture: Capture,
+    assignment: PlannedResultAssignment | undefined,
     track: string,
     events: Event[]
   ): { signupChanged: boolean } | undefined {
     const start = events.at(0)
     const end = events.at(-1)
     if (
-      !capture.plannedUsers ||
+      !assignment ||
       start?.type !== 'start' ||
       end?.type !== 'end' ||
       end.endReason !== 'completed' ||
       events.length !== end.sequence - start.sequence + 1 ||
-      !this.hasOriginalRoster(capture)
+      !this.hasOriginalRoster(capture, assignment)
     )
       return
-    const finishes = capture.plannedUsers.users.map((_, index) =>
+    const finishes = assignment.users.map((_, index) =>
       events.find(
         event => event.type === 'finish' && event.player.playerIndex === index
       )
@@ -271,26 +276,25 @@ export default class WebhookManager {
 
   private static syncTimes(
     capture: Capture,
+    assignment: PlannedResultAssignment | undefined,
     before: PlayerTimes[],
     after: PlayerTimes[],
     events: Event[],
     track: string | undefined
   ): void {
     const status = events.some(
-      event =>
-        event.type === 'finish' ||
-        (!!capture.plannedUsers && event.type === 'end')
+      event => event.type === 'finish' || (!!assignment && event.type === 'end')
     )
       ? 'draft'
       : 'in_progress'
     const { lap, match } = this.rows(capture)
     const result = lap ?? match
     const preserveTiming =
-      !!capture.plannedUsers &&
-      (!this.hasOriginalRoster(capture) ||
+      !!assignment &&
+      (!this.hasOriginalRoster(capture, assignment) ||
         result?.session !== capture.session ||
         result.track !== track)
-    const indexes = capture.plannedUsers?.reversed ? [1, 0] : [0, 1]
+    const indexes = assignment?.reversed ? [1, 0] : [0, 1]
     const times = this.rowTimes(capture).map((current, slot) => {
       const i = indexes[slot]
       const keep = (key: keyof PlayerTimes) =>
@@ -399,7 +403,7 @@ export default class WebhookManager {
           'NO_ACTIVE_SESSION',
           'No active receiver session can register this event'
         )
-      let capture =
+      const capture =
         existing ??
         WebhookSource.createCapture({
           id: event.game.gameId,
@@ -474,13 +478,14 @@ export default class WebhookManager {
       )
         return {}
 
+      let assignment = PlannedResultAssignmentSource.find(capture.id)
       let matchedTrack = start?.map
         ? TrackSource.findByUid(start.map.uid)
         : undefined
       if (
         start &&
         matchedTrack?.game === capture.sourceGame &&
-        !capture.plannedUsers &&
+        !assignment &&
         event.type === 'start' &&
         this.replaceablePlaceholder(
           capture,
@@ -506,13 +511,13 @@ export default class WebhookManager {
           if (candidate.kind === 'timeEntry')
             TimeEntrySource.update(candidate.entry.id, updates)
           else MatchSource.update(candidate.entry.id, updates)
-          const plannedUsers = {
+          assignment = {
+            capture: capture.id,
             users,
             reversed:
               candidate.kind === 'match' && candidate.entry.user1 !== users[0],
           }
-          WebhookSource.assignPlannedUsers(capture.id, plannedUsers)
-          capture = { ...capture, plannedUsers }
+          PlannedResultAssignmentSource.create(assignment)
           existingRows = this.rows(capture)
           result = existingRows.lap ?? existingRows.match
           // Compare corrections against the timing fields of the newly reserved row.
@@ -522,10 +527,9 @@ export default class WebhookManager {
           }))
         }
       }
-      if (capture.plannedUsers && result?.status === 'planned') return {}
-      if (!capture.plannedUsers && (!hasTiming || event.type === 'end'))
-        return {}
-      if (capture.plannedUsers && !result) return {}
+      if (assignment && result?.status === 'planned') return {}
+      if (!assignment && (!hasTiming || event.type === 'end')) return {}
+      if (assignment && !result) return {}
       if (start?.map && !matchedTrack) {
         matchedTrack = TrackSource.create({
           ...trackMetadataFromWebhook(start.map),
@@ -538,14 +542,14 @@ export default class WebhookManager {
         createdTrack = matchedTrack
       }
       if (
-        !capture.plannedUsers &&
+        !assignment &&
         matchedTrack &&
         existingRows.lap &&
         !existingRows.lap.track
       )
         TimeEntrySource.update(existingRows.lap.id, { track: matchedTrack.id })
       if (
-        !capture.plannedUsers &&
+        !assignment &&
         matchedTrack &&
         existingRows.match &&
         !existingRows.match.track
@@ -568,10 +572,18 @@ export default class WebhookManager {
           createdAt: now,
         })
       const afterTimes = this.derivedTimes(all, capture.totalPlayers)
-      this.syncTimes(capture, beforeTimes, afterTimes, all, matchedTrack?.id)
+      this.syncTimes(
+        capture,
+        assignment,
+        beforeTimes,
+        afterTimes,
+        all,
+        matchedTrack?.id
+      )
       const completed =
-        matchedTrack && this.completePlanned(capture, matchedTrack.id, all)
-      return { createdTrack, completed, planned: !!capture.plannedUsers }
+        matchedTrack &&
+        this.completePlanned(capture, assignment, matchedTrack.id, all)
+      return { createdTrack, completed, planned: !!assignment }
     }, true)
     if (outcome.duplicate) return 'Duplicate ignored'
     const { createdTrack, completed } = outcome

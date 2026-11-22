@@ -10,10 +10,10 @@ import {
   isEditTimeEntryRequest,
 } from '@common/models/timeEntry'
 import type { User } from '@common/models/user'
+import PlannedResultAssignmentSource from '../../database/sources/plannedResultAssignment.source'
 import TimeEntrySource from '../../database/sources/timeEntry.source'
 import TournamentSource from '../../database/sources/tournament.source'
 import TransactionSource from '../../database/sources/transaction.source'
-import WebhookSource from '../../database/sources/webhook.source'
 import { broadcast, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import ChugTimeManager from './chugtime.manager'
@@ -193,7 +193,7 @@ export default class TimeEntryManager {
       const reset =
         updates.status === 'planned' &&
         lapTime.webhookCapture &&
-        WebhookSource.findCapture(lapTime.webhookCapture)?.plannedUsers
+        PlannedResultAssignmentSource.find(lapTime.webhookCapture)
       TimeEntrySource.update(
         lapTime.id,
         reset

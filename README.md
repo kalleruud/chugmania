@@ -84,7 +84,7 @@ Follow the coding conventions from `AGENTS.md`: Prettier formatting (2 spaces, s
 
 ## Trackmania webhook results
 
-Configure the plugin endpoint as `https://<your-host>/api/webhook` with the server's `WEBHOOK_TOKEN` as its bearer token; an empty token disables ingestion. Captures attach to the latest session that started today or yesterday (Europe/Oslo). Raw events and capture metadata stay private to the backend.
+Configure the plugin endpoint as `https://<your-host>/api/webhook` with the server's `WEBHOOK_TOKEN` as its bearer token; an empty token disables ingestion. Captures attach to the latest session that started today or yesterday (Europe/Oslo). Raw events and capture metadata stay private to the backend. Planned result assignments are stored separately and excluded from CSV import and export.
 
 A capture with a known map UID can reserve a planned lap or match with the same track and roster. Each driver’s name or login must match a unique active user's short name or full name (case-insensitive). When several eligible entries have that track and roster, the session’s **Nå** and **Neste** queue decides which one is first. A compatible moderator pin comes first, followed by ready tournament matches in fixture order, required tie-breaker laps, other tie-breaker laps, and standalone entries. Tie-breaker laps within each priority and standalone entries are ordered by oldest creation time, then ID.
 

@@ -6,6 +6,7 @@ import express from 'express'
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { createServer } from 'node:http'
+import PlannedResultAssignmentSource from '../backend/database/sources/plannedResultAssignment.source'
 import TrackSource from '../backend/database/sources/track.source'
 import WebhookSource from '../backend/database/sources/webhook.source'
 import { createWebhookRouter } from '../backend/src/endpoints/webhook'
@@ -279,7 +280,9 @@ test('late starts adopt untouched match placeholders and persist reversed captur
     user2: second.id,
     user2DurationMs: 1000,
   })
-  expect(WebhookSource.findCapture(game.id)?.plannedUsers).toEqual({
+  expect(WebhookSource.findCapture(game.id)).not.toHaveProperty('plannedUsers')
+  expect(PlannedResultAssignmentSource.find(game.id)).toEqual({
+    capture: game.id,
     users: [second.id, first.id],
     reversed: true,
   })
