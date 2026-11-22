@@ -3,6 +3,7 @@ import type { EntryStatus } from '@common/models/entry'
 import type { ExportCsvRequest } from '@common/models/importCsv'
 import { MATCH_STAGE_CODES, type MatchStage } from '@common/models/match'
 import type { GapType } from '@common/models/timeEntry'
+import type { Game } from '@common/models/track'
 import { getRandomItem } from '@common/utils/utils'
 import type {
   SessionResponse,
@@ -18,6 +19,26 @@ const matchStageCodes: Record<MatchStage, string> = MATCH_STAGE_CODES
 
 const no = {
   chugmania: 'Chugmania',
+  preview: {
+    description: 'Rundetider, chugging og turneringer i Trackmania.',
+    imageAlt: (title: string) => `${title} på Chugmania`,
+    signups: (count: number) => `${count} påmeldt`,
+    ranking: (ranking: number) => `#${ranking} på rankingen`,
+    record: (time: string, holder: string) => `Rekord ${time} av ${holder}`,
+    noRecord: 'Ingen tider ennå',
+    drivers: (count: number) =>
+      `${count} ${count === 1 ? 'spiller' : 'spillere'}`,
+    author: (author: string) => `Laget av ${author}`,
+    kind: {
+      session: 'Session',
+      track: 'Bane',
+      user: 'Spiller',
+    },
+    game: {
+      turbo: 'Trackmania Turbo',
+      next: 'Trackmania',
+    } as Record<Game, string>,
+  },
   admin: {
     title: 'Admin',
     description: 'Det som skjer i admin panelet, blir i admin panelet.',

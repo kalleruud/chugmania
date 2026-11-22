@@ -1,9 +1,18 @@
 import type { Session } from '@common/models/session'
 import type { CreateTimeEntry, TimeEntry } from '@common/models/timeEntry'
 import type { User } from '@common/models/user'
-import { and, asc, eq, getTableColumns, isNull, sql } from 'drizzle-orm'
+import {
+  and,
+  asc,
+  countDistinct,
+  eq,
+  getTableColumns,
+  gt,
+  isNull,
+  sql,
+} from 'drizzle-orm'
 import db from '../database'
-import { timeEntries } from '../schema'
+import { timeEntries, users } from '../schema'
 
 export default class TimeEntrySource {
   static readonly table = timeEntries
@@ -116,6 +125,42 @@ export default class TimeEntrySource {
         asc(timeEntries.createdAt)
       )
   }
+  static findTrackRecord(
+    trackId: string
+  ): { duration: number; user: User } | undefined {
+    const record = db
+      .select({ duration: timeEntries.duration, user: users })
+      .from(timeEntries)
+      .innerJoin(users, eq(timeEntries.user, users.id))
+      .where(TimeEntrySource.completedOnTrack(trackId))
+      .orderBy(asc(timeEntries.duration), asc(timeEntries.createdAt))
+      .limit(1)
+      .get()
+    if (!record?.duration) return undefined
+    return { duration: record.duration, user: record.user }
+  }
+
+  static countTrackDrivers(trackId: string): number {
+    return (
+      db
+        .select({ count: countDistinct(timeEntries.user) })
+        .from(timeEntries)
+        .innerJoin(users, eq(timeEntries.user, users.id))
+        .where(TimeEntrySource.completedOnTrack(trackId))
+        .get()?.count ?? 0
+    )
+  }
+
+  private static completedOnTrack(trackId: string) {
+    return and(
+      eq(timeEntries.track, trackId),
+      eq(timeEntries.status, 'completed'),
+      gt(timeEntries.duration, 0),
+      isNull(timeEntries.deletedAt),
+      isNull(users.deletedAt)
+    )
+  }
+
   static findByCapture(capture: string) {
     return db
       .select()
