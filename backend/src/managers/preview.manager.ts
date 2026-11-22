@@ -334,7 +334,10 @@ export default class PreviewManager {
           `<meta name="${key}" content="${escapeHtml(value)}" />`
       ),
     ]
-    return html.replace('</head>', `    ${tags.join('\n    ')}\n  </head>`)
+    return html.replace(
+      '</head>',
+      () => `    ${tags.join('\n    ')}\n  </head>`
+    )
   }
 
   private static getCardKey(card: PreviewCard): string {

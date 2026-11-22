@@ -66,7 +66,7 @@ describe('page link previews', () => {
     await SessionManager.onEditSession(socket, {
       type: 'EditSessionRequest',
       id: session.id,
-      name: 'Fredags <Cup> & "venner"',
+      name: 'Fredags <Cup> & "venner" $$ $&',
       location: 'Garasjen',
       description: '## Info\n**Ta med** [kontroller](https://x.test)!',
       date: new Date('2030-06-07T17:00:00Z'),
@@ -77,7 +77,7 @@ describe('page link previews', () => {
     expect(html).toContain('<title>Chugmania</title>')
     expect(html).not.toContain('<Cup>')
     expect(getMeta(html, 'og:title')).toBe(
-      'Fredags &lt;Cup&gt; &amp; &quot;venner&quot;'
+      'Fredags &lt;Cup&gt; &amp; &quot;venner&quot; $$ $&amp;'
     )
     expect(getMeta(html, 'og:description')).toBe(
       'Fredag 7. juni 2030 kl. 19:00 · Garasjen · 1 påmeldt. Info Ta med kontroller!'
