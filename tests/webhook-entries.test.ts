@@ -229,7 +229,10 @@ describe('webhook captures latch onto the active entry', () => {
       user: other.id,
     })
     second.end(1, 'aborted')
-    expect((await row('next-lap'))?.status).toBe('draft')
+    expect(await row('next-lap')).toMatchObject({
+      status: 'completed',
+      duration: null,
+    })
     assertResponse(
       await TimeEntryManager.onEditTimeEntry(socket, {
         type: 'EditTimeEntryRequest',
@@ -300,10 +303,15 @@ describe('webhook captures latch onto the active entry', () => {
         user2: opponent.id,
       })
     )
-    twoPlayers.finish(2, 1, 1200)
+    twoPlayers.throttle(2, 1, 250)
     expect(MatchManager.getAllBySession(session)[0]).toMatchObject({
       status: 'draft',
-      user2DurationMs: 1200,
+      user2ChugDurationMs: 250,
+    })
+    twoPlayers.finish(3, 1, 1200)
+    expect(MatchManager.getAllBySession(session)[0]).toMatchObject({
+      status: 'completed',
+      winner: driver.id,
     })
   })
 
@@ -342,14 +350,13 @@ describe('webhook captures latch onto the active entry', () => {
     )
     const game = capture(now, 2, 'turbo')
     game.start(map)
-    game.finish(1, 1, 1000)
+    game.throttle(1, 1, 300)
+    game.finish(2, 1, 1000)
     expect(MatchManager.getAllBySession(session)[0]).toMatchObject({
       status: 'in_progress',
       user2DurationMs: 1000,
     })
-    game.finish(2, 0, 1200)
-    game.throttle(3, 1, 300)
-    game.end(4)
+    game.finish(3, 0, 1200)
     expect(MatchManager.getAllBySession(session)).toHaveLength(1)
     expect(MatchManager.getAllBySession(session)[0]).toMatchObject({
       id: planned.id,

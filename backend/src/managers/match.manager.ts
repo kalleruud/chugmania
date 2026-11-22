@@ -41,7 +41,7 @@ export default class MatchManager {
     }
   }
 
-  private static inferWebhookResult(
+  static inferWebhookResult(
     request: EditMatchRequest,
     match: Match
   ): EditMatchRequest {

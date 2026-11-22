@@ -211,29 +211,31 @@ export default class WebhookManager {
     events: Event[]
   ): { signupChanged: boolean } | undefined {
     const start = events.at(0)
-    const end = events.at(-1)
+    const last = events.at(-1)
     if (
       start?.type !== 'start' ||
-      end?.type !== 'end' ||
-      end.endReason !== 'completed' ||
-      events.length !== end.sequence - start.sequence + 1
+      !last ||
+      events.length !== last.sequence - start.sequence + 1
     )
       return
     const rows = this.rows(capture)
     if (!this.hasPlayers(rows)) return
-    const finishes = Array.from({ length: capture.totalPlayers }, (_, index) =>
-      events.find(
-        event => event.type === 'finish' && event.player.playerIndex === index
+    const finished = Array.from({ length: capture.totalPlayers }, (_, index) =>
+      events.some(
+        event =>
+          event.type === 'finish' &&
+          event.player.playerIndex === index &&
+          event.durationMs > 0
       )
     )
-    if (finishes.some(event => !event || event.durationMs <= 0)) return
+    if (!finished.every(Boolean) && last.type !== 'end') return
     const { lap, match } = rows
     const result = lap ?? match
     if (result?.session !== capture.session || result.track !== track) return
 
     try {
       return TransactionSource.run(() => {
-        if (lap && (lap.duration ?? 0) > 0) {
+        if (lap) {
           if (lap.tieBreaker) {
             const tournament = TournamentManager.getDetails(capture.session)
             if (
@@ -246,26 +248,29 @@ export default class WebhookManager {
           return {
             signupChanged: TimeEntryManager.saveTimeEntryEdit(lap, {
               status: 'completed',
+              duration: finished[0] ? lap.duration : null,
             }),
           }
         }
-        if (!match?.user1 || !match.user2) return
-        const first = match.user1DurationMs ?? 0
-        const second = match.user2DurationMs ?? 0
-        if (first <= 0 || second <= 0 || first === second) return
-        const result = {
-          status: 'completed',
-          winner: first < second ? match.user1 : match.user2,
-          duration: Math.min(first, second),
-        } satisfies Pick<typeof match, 'status' | 'winner' | 'duration'>
-        if (
-          !TournamentManager.editMatch({
+        if (!match) return
+        const request = MatchManager.inferWebhookResult(
+          {
             type: 'EditMatchRequest',
             id: match.id,
-            ...result,
-          })
+            status: 'completed',
+            user1DurationMs: finished[0] ? match.user1DurationMs : null,
+            user2DurationMs: finished[1] ? match.user2DurationMs : null,
+          },
+          match
         )
-          MatchSource.update(match.id, result)
+        if (!TournamentManager.editMatch(request))
+          MatchSource.update(match.id, {
+            status: 'completed',
+            winner: request.winner,
+            duration: request.duration,
+            user1DurationMs: request.user1DurationMs,
+            user2DurationMs: request.user2DurationMs,
+          })
         return { signupChanged: false }
       })
     } catch (error) {
