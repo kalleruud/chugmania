@@ -109,8 +109,7 @@ export default function ApiTokenRow({
         )}
         <ConfirmationButton
           size='sm'
-          variant='ghost'
-          className='text-muted-foreground hover:text-destructive'
+          variant='destructive'
           title={removeLabel}
           aria-label={removeLabel}
           onClick={() =>
