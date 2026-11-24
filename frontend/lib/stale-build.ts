@@ -9,11 +9,12 @@ function readLastReload(): number {
   }
 }
 
-function writeLastReload(time: number) {
+function writeLastReload(time: number): boolean {
   try {
     sessionStorage.setItem(RELOAD_KEY, String(time))
+    return true
   } catch {
-    return
+    return false
   }
 }
 
@@ -21,8 +22,8 @@ export function reloadOnStaleBuild() {
   window.addEventListener('vite:preloadError', event => {
     const now = Date.now()
     if (now - readLastReload() < RELOAD_COOLDOWN_MS) return
+    if (!writeLastReload(now)) return
     event.preventDefault()
-    writeLastReload(now)
     window.location.reload()
   })
 }
