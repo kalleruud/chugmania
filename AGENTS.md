@@ -13,7 +13,7 @@
 ## Testing in Development Mode
 
 - Before starting the app, check whether it is already running (for example `curl -s localhost:$PORT`, with `PORT` from `.env`) and use that instance. Start a new one only when nothing is listening.
-- Production (chugmania.no) runs on `localhost:6996`, the default `PORT`. Never use it for testing: do not connect to it, log in, or proxy to it. Always set `PORT` to another port when starting a server yourself.
+- Production (chugmania.no) runs on `localhost:6996`, the fallback when `PORT` is unset. Never use it for testing: do not connect to it, log in, or proxy to it. Use the randomly generated `PORT` from `.env` instead.
 - The development database always contains realistic test data. Use it as the base for testing, and add, change, or remove records as a scenario needs instead of seeding a fresh database.
 - When `NODE_ENV` is not `production`, server startup creates the admin `admin@chugmania.dev` with password `chugmania` if it does not exist. Use it to log in and test the running app, including `/admin`.
 - A `Development` label above the `+` button confirms you are on a development build.
