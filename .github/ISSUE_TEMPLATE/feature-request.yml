@@ -1,0 +1,54 @@
+# Filing through gh or the API: the form is not applied. Write the body with each
+# field label as a level-3 heading (### Overview, ### Acceptance requirements,
+# ### Implementation design, optional ### Out of scope), never ## or #.
+name: Feature request
+description: Propose new or changed behaviour, described as an outcome and a design rather than step-by-step tasks.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Keep it short: the whole issue should be readable in two minutes. Describe what should exist when this is done and how it works, not how to build it. Build steps go stale quickly; whoever builds this plans them against the code as it is then.
+        Base every section on the request. Do not add requirements, scope, or exclusions nobody asked for.
+  - type: textarea
+    id: overview
+    attributes:
+      label: Overview
+      description: One to three sentences in plain language that a player or admin would understand. What changes for them, and why it matters. No code names.
+      placeholder: Players can pin their best lap on each track to their profile, so others see the times to beat without searching the leaderboards.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance requirements
+      description: The few observable outcomes that define done, usually three to seven bullets. Say what users see and what is allowed or refused. They say what must be true; the design says how. Edge cases, error states, and limits belong in the design only; do not repeat them here. Leave out project-wide rules such as passing tests.
+      placeholder: |
+        - A player can pin one lap time per track to their own profile
+        - Anyone who can view the profile sees the pinned laps
+        - A faster lap time on a pinned track replaces the pin without a reload
+    validations:
+      required: true
+  - type: textarea
+    id: design
+    attributes:
+      label: Implementation design
+      description: |
+        Explain how the finished feature works, in short prose: aim for under 400 words plus tables. Cover how the system behaves, how data flows from a user action to what others see, and the rules and edge cases that decide the outcome. Describe new or changed screens in words: what appears where and what it shows. Database changes go in a table of columns; with none, say so in one sentence. Describe the solution, not the steps to build it: no task lists, file paths, or function names.
+      placeholder: |
+        A player can pin one best lap per track to their profile. Saving a lap time that beats the pinned one moves the pin to the new time, and everyone viewing the profile sees the change without a reload. Removing the pinned lap time unpins it rather than falling back to an older time. Pins are visible to anyone who can view the profile.
+
+        | Table | Column | Type | Purpose |
+        | --- | --- | --- | --- |
+        | pinnedLaps | user | user reference | Owner of the pin |
+        | pinnedLaps | lapTime | lap time reference | The pinned time; one per user and track |
+    validations:
+      required: false
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of scope
+      description: Optional. Only exclusions the request itself names. If it names none, omit this section entirely; do not infer exclusions from the design.
+      placeholder: Pinning lap times to other players' profiles.
+    validations:
+      required: false

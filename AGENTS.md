@@ -70,47 +70,31 @@
 
 ## Issue Creation & Formatting
 
-All GitHub issues must follow a consistent, concise format:
+Write issues to the templates in `.github/ISSUE_TEMPLATE/`. When filing through `gh` or an API, the form is not applied, so build the body yourself with each field label as a `###` heading, in template order, and set the template's label.
 
-**Structure:**
+- **Features** (`feature-request.yml`, label `enhancement`). Use this skeleton; the headings are level 3 (`###`), matching what the form produces:
 
-1. **Overview** (1-2 sentences): What is being built and why
-2. **Acceptance Requirements** (bullet list): Clear, testable requirements
-3. **Implementation Plan** (checkbox list): Actionable steps organized by phase/area
+  ```markdown
+  ### Overview
 
-**Example:**
+  ### Acceptance requirements
 
-```markdown
-## Overview
+  ### Implementation design
 
-Brief description of what and why in 1-2 sentences.
+  ### Out of scope
+  ```
 
-## Acceptance Requirements
+- **Bugs** (`bug-report.yml`, label `bug`): written mainly by people. Agents filing a bug use the same fields and leave unknowns as "Unknown".
 
-- Feature/fix is testable and verifiable
-- Code follows existing patterns
-- All edge cases handled
-- Tests pass with `bun run test`, and `bun run check` passes
+Feature issues describe the outcome and the design, not the work:
 
-## Implementation Steps
+- **Overview**: one to three plain-language sentences a player or admin understands. No code names.
+- **Acceptance requirements**: the few observable outcomes that define done, usually three to seven bullets. They say what must be true; the design says how. Edge cases, error states, and limits go in the design only; do not repeat them in acceptance requirements. Leave out project-wide rules such as "tests pass" or "follows existing patterns"; this file already requires them.
+- **Implementation design**: explain in prose how the finished feature works: system behaviour, how data flows from a user action to what others see, and the rules that decide outcomes. Aim for under 400 words of prose plus tables. Describe new or changed screens in words: what appears where and what it shows. Database changes go in a table of columns; with none, say so in one sentence. Describe how the solution works, not how to build it: no steps, checklists, file paths, or function names. They go stale and mislead whoever builds the feature, who plans against the current code instead.
+- **Out of scope**: only exclusions the request names; otherwise omit the section.
+- Base every section on the request; do not invent scope.
 
-### Backend
-
-- [ ] Step 1
-- [ ] Step 2
-
-### Frontend
-
-- [ ] Step 3
-- [ ] Step 4
-
-### Testing
-
-- [ ] Test scenario 1
-- [ ] Test scenario 2
-```
-
-Keep descriptions concise—avoid lengthy explanations of current state or background unless critical to understanding.
+Keep issues short enough to read in two minutes. Add background only when the design cannot be understood without it.
 
 ## Tools
 
