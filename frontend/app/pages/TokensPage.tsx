@@ -26,7 +26,11 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuth } from '@/contexts/AuthContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@common/locale/locales'
-import { MAX_API_TOKENS, type ApiToken } from '@common/models/apiToken'
+import {
+  isApiTokenExpired,
+  MAX_API_TOKENS,
+  type ApiToken,
+} from '@common/models/apiToken'
 import { getUserFullName, type UserInfo } from '@common/models/user'
 import { KeyIcon, PlusIcon } from '@heroicons/react/24/solid'
 import { useState } from 'react'
@@ -41,6 +45,11 @@ function userGrouping(users: UserInfo[]): Grouping<ApiToken> {
       return user ? getUserFullName(user) : key
     },
   }
+}
+
+function byStatusAndAge(a: ApiToken, b: ApiToken) {
+  const expired = Number(isApiTokenExpired(a)) - Number(isApiTokenExpired(b))
+  return expired || b.createdAt - a.createdAt
 }
 
 export default function TokensPage() {
@@ -63,9 +72,11 @@ export default function TokensPage() {
 
   const isAdmin = loggedInUser.role === 'admin'
   const ownActive = getOwnActiveTokens(apiTokens, loggedInUser)
-  const visibleTokens = (apiTokens ?? []).filter(
-    token => (isAdmin && scope === 'all') || token.user === loggedInUser.id
-  )
+  const visibleTokens = (apiTokens ?? [])
+    .filter(
+      token => (isAdmin && scope === 'all') || token.user === loggedInUser.id
+    )
+    .toSorted(byStatusAndAge)
 
   const handleCreate = () => {
     if (isAtTokenLimit(apiTokens, loggedInUser)) setIsLimitOpen(true)
@@ -138,6 +149,7 @@ export default function TokensPage() {
         Row={ApiTokenRow}
         rowProps={rowProps}
         getKey={token => token.id}
+        itemsClassName='gap-0 rounded-sm bg-background-secondary'
         grouping={scope === 'all' && users ? userGrouping(users) : undefined}
       />
 

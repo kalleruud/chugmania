@@ -102,8 +102,6 @@ const no = {
     neverExpires: 'Utløper aldri',
     expires: (date: string) => `Utløper ${date}`,
     expired: 'Utløpt',
-    active: 'Aktiv',
-    calendar: 'Kalender',
     neverUsed: 'Aldri brukt',
     lastUsed: (ago: string) => `Brukt ${ago}`,
     createdTitle: 'Nøkkelen er opprettet',
