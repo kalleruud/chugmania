@@ -51,3 +51,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Mockups
+frontend/mockup/.cache

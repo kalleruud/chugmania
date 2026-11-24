@@ -1,12 +1,29 @@
-import { compile } from '@tailwindcss/node'
 import { existsSync } from 'node:fs'
-import { readFile, rm } from 'node:fs/promises'
+import { copyFile, mkdir, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { parseArgs } from 'node:util'
+import { io } from 'socket.io-client'
+import { build } from 'vite'
 
 const ROOT = path.resolve(import.meta.dir, '..')
+const HARNESS = path.join(ROOT, 'frontend', 'mockup')
+const CACHE = path.join(HARNESS, '.cache')
 const ASSET_BRANCH = 'issue-assets'
+const PRODUCTION_PORT = '6996'
+const DEV_ADMIN = { email: 'admin@chugmania.dev', password: 'chugmania' }
+const SNAPSHOT_EVENTS = [
+  'user_data',
+  'all_users',
+  'all_tracks',
+  'all_sessions',
+  'all_time_entries',
+  'all_matches',
+  'all_rankings',
+  'all_chug_times',
+  'active_entry_overrides',
+  'all_tournaments',
+]
 const CHROMIUM_CANDIDATES = [
   process.env.CHROMIUM_PATH,
   'chromium',
@@ -14,26 +31,120 @@ const CHROMIUM_CANDIDATES = [
   'google-chrome',
   'google-chrome-stable',
 ]
-
 const MEASURE_HEIGHT = 844
-const MEASURE_SCRIPT = `<script>addEventListener('load', () => document.fonts.ready.then(() => document.body.setAttribute('data-height', Math.ceil(document.getElementById('mockup').getBoundingClientRect().height))))</script>`
 
 const USAGE = `Usage:
-  bun run mockup render <file.html> [--width 390] [--height <px>]
+  bun run mockup render <file.tsx> [--width 390] [--height <px>] [--path /route] [--bare]
   bun run mockup publish <slug> <file.png>...`
 
-async function buildCss(html: string): Promise<string> {
-  const base = path.join(ROOT, 'frontend')
-  const css = await readFile(path.join(base, 'index.css'), 'utf8')
-  const compiler = await compile(css, { base, onDependency: () => {} })
-  const candidates = [
-    ...html.matchAll(/(?<![\w-])class=(["'])(.*?)\1/gs),
-  ].flatMap(match => match[2].split(/\s+/))
-  return compiler.build(candidates)
+type Recording = [string, ...unknown[]][]
+
+function devOrigin(): string {
+  const port = process.env.PORT
+  if (!port || port === PRODUCTION_PORT)
+    throw new Error('Set PORT in .env to the development port, not production.')
+  return `http://localhost:${port}`
 }
 
-function wrapHtml(fragment: string, css: string): string {
-  return `<!doctype html><html class="dark"><head><meta charset="utf-8"><style>${css}</style></head><body class="min-h-screen font-sans antialiased"><div id="mockup" class="flow-root">${fragment}</div></body></html>`
+async function isUp(origin: string): Promise<boolean> {
+  try {
+    return (await fetch(`${origin}/api/ping`)).ok
+  } catch {
+    return false
+  }
+}
+
+async function startDevServer(origin: string) {
+  const server = Bun.spawn(['bun', 'backend/src/server.ts'], {
+    cwd: ROOT,
+    stdout: 'ignore',
+    stderr: 'ignore',
+  })
+  for (let attempt = 0; attempt < 120; attempt++) {
+    if (await isUp(origin)) return server
+    await Bun.sleep(500)
+  }
+  server.kill()
+  throw new Error(`Development server did not start on ${origin}.`)
+}
+
+async function recordFrom(origin: string): Promise<Recording> {
+  const login = io(origin, { transports: ['websocket'] })
+  const response = await login
+    .timeout(10_000)
+    .emitWithAck('login', { type: 'LoginRequest', ...DEV_ADMIN })
+  login.disconnect()
+  if (!response.success) throw new Error(`Login failed: ${response.message}`)
+
+  const socket = io(origin, {
+    transports: ['websocket'],
+    auth: { token: response.token },
+  })
+  const events: Recording = []
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(
+        () => reject(new Error('Timed out recording development data.')),
+        15_000
+      )
+      socket.onAny((event: string, ...args: unknown[]) => {
+        if (!SNAPSHOT_EVENTS.includes(event)) return
+        events.push([event, ...args])
+        const seen = new Set(events.map(([name]) => name))
+        if (SNAPSHOT_EVENTS.every(name => seen.has(name))) {
+          clearTimeout(timer)
+          resolve()
+        }
+      })
+    })
+  } finally {
+    socket.disconnect()
+  }
+  return events.map(([event, ...args]) =>
+    event === 'user_data'
+      ? [event, { ...(args[0] as object), token: 'mockup' }]
+      : [event, ...args]
+  )
+}
+
+async function record(): Promise<Recording> {
+  const origin = devOrigin()
+  if (await isUp(origin)) return recordFrom(origin)
+  const server = await startDevServer(origin)
+  try {
+    return await recordFrom(origin)
+  } finally {
+    server.kill()
+    await server.exited
+  }
+}
+
+async function buildMockup(file: string, outDir: string) {
+  await rm(CACHE, { recursive: true, force: true })
+  await mkdir(CACHE, { recursive: true })
+  const entry = path.join(CACHE, `Mockup${path.extname(file)}`)
+  await copyFile(file, entry)
+  try {
+    await build({
+      configFile: path.join(ROOT, 'vite.config.ts'),
+      root: ROOT,
+      logLevel: 'error',
+      publicDir: false,
+      resolve: {
+        alias: {
+          'socket.io-client': path.join(HARNESS, 'socket.ts'),
+          'virtual:mockup': entry,
+        },
+      },
+      build: {
+        outDir,
+        emptyOutDir: true,
+        rolldownOptions: { input: path.join(HARNESS, 'index.html') },
+      },
+    })
+  } finally {
+    await rm(CACHE, { recursive: true, force: true })
+  }
 }
 
 function findChromium(): string {
@@ -54,7 +165,7 @@ async function runChromium(args: string[]): Promise<string> {
       '--no-sandbox',
       '--disable-gpu',
       '--hide-scrollbars',
-      '--virtual-time-budget=2000',
+      '--virtual-time-budget=5000',
       `--user-data-dir=${profile}`,
       ...args,
     ],
@@ -74,43 +185,65 @@ async function measureHeight(url: string, width: number): Promise<number> {
   const dom = await runChromium([
     `--window-size=${width},${MEASURE_HEIGHT}`,
     '--dump-dom',
-    `${url}?measure`,
+    url,
   ])
-  return Number(/data-height="(\d+)"/.exec(dom)?.[1]) || MEASURE_HEIGHT
+  const error = /data-error="([^"]*)"/.exec(dom)?.[1]
+  if (error) throw new Error(`Mockup failed: ${error}`)
+  const height = /data-height="(\d+)"/.exec(dom)?.[1]
+  if (!height) throw new Error('Mockup never finished loading.')
+  return Number(height) || MEASURE_HEIGHT
 }
 
-async function render(file: string, width: number, height?: number) {
-  const fragment = await readFile(file, 'utf8')
-  const page = wrapHtml(fragment, await buildCss(wrapHtml(fragment, '')))
-  const server = Bun.serve({
+function serve(outDir: string, page: string) {
+  return Bun.serve({
     port: 0,
     fetch: req => {
       const { pathname } = new URL(req.url)
-      if (pathname === '/') {
-        const measure = new URL(req.url).searchParams.has('measure')
-        const body = measure
-          ? page.replace('</body>', `${MEASURE_SCRIPT}</body>`)
-          : page
-        return new Response(body, { headers: { 'content-type': 'text/html' } })
+      for (const dir of [outDir, path.join(ROOT, 'public')]) {
+        const asset = path.join(dir, path.normalize(pathname))
+        if (pathname !== '/' && existsSync(asset) && Bun.file(asset).size)
+          return new Response(Bun.file(asset))
       }
-      const asset = path.join(ROOT, 'public', path.normalize(pathname))
-      return existsSync(asset)
-        ? new Response(Bun.file(asset))
-        : new Response(null, { status: 404 })
+      return new Response(page, {
+        headers: { 'content-type': 'text/html; charset=utf-8' },
+      })
     },
   })
+}
 
-  const output = file.replace(/\.html?$/, '') + '.png'
+async function render(
+  file: string,
+  options: { width: number; height?: number; route: string; bare: boolean }
+) {
+  const outDir = path.join(tmpdir(), `mockup-build-${process.pid}`)
+  const [events] = await Promise.all([record(), buildMockup(file, outDir)])
+  const html = await readFile(
+    path.join(outDir, 'frontend', 'mockup', 'index.html'),
+    'utf8'
+  )
+  const data = JSON.stringify({ events, bare: options.bare }).replaceAll(
+    '<',
+    String.raw`<`
+  )
+  const page = html.replace(
+    '</head>',
+    `<script>window.mockup = ${data}</script></head>`
+  )
+
+  const server = serve(outDir, page)
+  const url = new URL(options.route, server.url).href
+  const output = file.replace(/\.[jt]sx?$/, '') + '.png'
   try {
-    const finalHeight = height ?? (await measureHeight(server.url.href, width))
+    const measured = await measureHeight(url, options.width)
     await runChromium([
       '--force-device-scale-factor=2',
-      `--window-size=${width},${finalHeight}`,
+      `--window-size=${options.width},${options.height ?? measured}`,
       `--screenshot=${path.resolve(output)}`,
-      server.url.href,
+      url,
     ])
   } finally {
     await server.stop(true)
+    await rm(outDir, { recursive: true, force: true })
   }
   console.log(output)
 }
@@ -204,13 +337,19 @@ const { positionals, values } = parseArgs({
   options: {
     width: { type: 'string', default: '390' },
     height: { type: 'string' },
+    path: { type: 'string', default: '/' },
+    bare: { type: 'boolean', default: false },
   },
 })
 const [command, ...rest] = positionals
 
 if (command === 'render' && rest.length === 1) {
-  const height = values.height ? Number(values.height) : undefined
-  await render(rest[0], Number(values.width), height)
+  await render(rest[0], {
+    width: Number(values.width),
+    height: values.height ? Number(values.height) : undefined,
+    route: values.path,
+    bare: values.bare,
+  })
 } else if (command === 'publish' && rest.length >= 2) {
   await publish(rest[0], rest.slice(1))
 } else {

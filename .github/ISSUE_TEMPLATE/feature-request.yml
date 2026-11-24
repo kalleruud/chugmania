@@ -34,7 +34,7 @@ body:
     attributes:
       label: Implementation design
       description: |
-        Explain how the finished feature works, in short prose: aim for under 400 words plus tables and mockups. Cover how the system behaves, how data flows from a user action to what others see, and the rules and edge cases that decide the outcome. Every new or changed screen gets a screenshot of an HTML mockup in the app's style; agents follow the mockup steps in AGENTS.md. Database changes go in a table of columns; with none, say so in one sentence. Describe the solution, not the steps to build it: no task lists, file paths, or function names.
+        Explain how the finished feature works, in short prose: aim for under 400 words plus tables and mockups. Cover how the system behaves, how data flows from a user action to what others see, and the rules and edge cases that decide the outcome. Every new or changed screen gets a screenshot of a mockup built from the app's own components; agents follow the mockup steps in AGENTS.md. Database changes go in a table of columns; with none, say so in one sentence. Describe the solution, not the steps to build it: no task lists, file paths, or function names.
       placeholder: |
         A player can pin one best lap per track to their profile. Saving a lap time that beats the pinned one moves the pin to the new time, and everyone viewing the profile sees the change without a reload. Removing the pinned lap time unpins it rather than falling back to an older time. Pins are visible to anyone who can view the profile.
 
