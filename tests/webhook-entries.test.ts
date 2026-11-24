@@ -522,6 +522,14 @@ describe('webhook captures latch onto the active entry', () => {
       user2: readyFinal.user2,
       user1ChugDurationMs: 320,
     })
+    finalGame.finish(2, 0, 1500)
+    finalGame.finish(3, 1, 1500)
+    expect(match(final.id)).toMatchObject({
+      status: 'draft',
+      winner: null,
+      user1DurationMs: 1500,
+      user2DurationMs: 1500,
+    })
   })
 })
 

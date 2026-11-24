@@ -154,6 +154,8 @@ export default class WebhookPlanned {
       })
     } catch (error) {
       console.error(error)
+      if (lap) TimeEntrySource.update(lap.id, { status: 'draft' })
+      else if (match) MatchSource.update(match.id, { status: 'draft' })
     }
   }
 
