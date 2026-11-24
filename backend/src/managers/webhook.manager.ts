@@ -1,5 +1,4 @@
 import type { Track } from '@common/models/track'
-import { getSessionQueue } from '@common/utils/activeEntry'
 import { isRecord } from '@common/utils/utils'
 import { DateTime } from 'luxon'
 import MatchSource from '../../database/sources/match.source'
@@ -13,14 +12,11 @@ import WebhookSource, {
 import { isWebhookEvent } from '../models/webhook'
 import type { Event, Map, StartEvent } from '../models/webhook.generated'
 import { broadcast } from '../server'
-import ActiveEntryManager from './activeEntry.manager'
 import ChugTimeManager from './chugtime.manager'
 import MatchManager from './match.manager'
-import RatingManager from './rating.manager'
-import SessionManager from './session.manager'
 import TimeEntryManager from './timeEntry.manager'
-import TournamentManager from './tournament/tournament.manager'
 import TrackManager from './track.manager'
+import WebhookPlanned, { type Rows } from './webhook.planned'
 
 type PlayerTimes = {
   finishDurationMs: number | null
@@ -28,11 +24,6 @@ type PlayerTimes = {
 }
 
 type Capture = WebhookCapture
-
-type Rows = {
-  lap: ReturnType<typeof TimeEntrySource.findByCapture>
-  match: ReturnType<typeof MatchSource.findByCapture>
-}
 
 export class WebhookError extends Error {
   status: number
@@ -118,13 +109,6 @@ export default class WebhookManager {
     })
   }
 
-  private static rows(capture: Capture): Rows {
-    return {
-      lap: TimeEntrySource.findByCapture(capture.id),
-      match: MatchSource.findByCapture(capture.id),
-    }
-  }
-
   private static rowTimes(
     capture: Capture,
     { lap, match }: Rows
@@ -148,145 +132,15 @@ export default class WebhookManager {
     ]
   }
 
-  private static hasPlayers({ lap, match }: Rows): boolean {
-    return lap ? !!lap.user : !!match?.user1 && !!match.user2
-  }
-
-  private static latchActiveEntry(capture: Capture, track: string): boolean {
-    const tournament =
-      TournamentManager.getDetails(capture.session) ?? undefined
-    const ready =
-      tournament?.status === 'started' &&
-      !tournament.cancelled &&
-      !tournament.notReadyReason
-        ? tournament
-        : undefined
-    const { now } = getSessionQueue(
-      capture.session,
-      [
-        ...MatchSource.getStandaloneBySession(capture.session),
-        ...(ready?.matches ?? []),
-      ],
-      TimeEntrySource.getAllBySession(capture.session),
-      ready,
-      ActiveEntryManager.getOverrides()[capture.session]
-    )
-    if (
-      !now ||
-      now.entry.status !== 'planned' ||
-      now.entry.webhookCapture ||
-      now.entry.track !== track
-    )
-      return false
-    if (now.kind === 'timeEntry') {
-      const { user, tieBreaker, id } = now.entry
-      if (
-        capture.totalPlayers !== 1 ||
-        !user ||
-        (tieBreaker && !ready?.tieBreakers.some(lap => lap.id === id))
-      )
-        return false
-    } else {
-      const { user1, user2, tournament } = now.entry
-      if (
-        capture.totalPlayers !== 2 ||
-        !user1 ||
-        !user2 ||
-        tournament?.readOnly
-      )
-        return false
-    }
-    const updates = {
-      webhookCapture: capture.id,
-      status: 'in_progress',
-    } satisfies Pick<typeof now.entry, 'webhookCapture' | 'status'>
-    if (now.kind === 'timeEntry') TimeEntrySource.update(now.entry.id, updates)
-    else MatchSource.update(now.entry.id, updates)
-    return true
-  }
-
-  private static completePlanned(
-    capture: Capture,
-    track: string,
-    events: Event[]
-  ): { signupChanged: boolean } | undefined {
-    const start = events.at(0)
-    const last = events.at(-1)
-    if (
-      start?.type !== 'start' ||
-      !last ||
-      events.length !== last.sequence - start.sequence + 1
-    )
-      return
-    const rows = this.rows(capture)
-    if (!this.hasPlayers(rows)) return
-    const finished = Array.from({ length: capture.totalPlayers }, (_, index) =>
-      events.some(
-        event =>
-          event.type === 'finish' &&
-          event.player.playerIndex === index &&
-          event.durationMs > 0
-      )
-    )
-    if (!finished.every(Boolean) && last.type !== 'end') return
-    const { lap, match } = rows
-    const result = lap ?? match
-    if (result?.session !== capture.session || result.track !== track) return
-
-    try {
-      return TransactionSource.run(() => {
-        if (lap) {
-          if (lap.tieBreaker) {
-            const tournament = TournamentManager.getDetails(capture.session)
-            if (
-              tournament?.status !== 'started' ||
-              tournament.cancelled ||
-              tournament.notReadyReason
-            )
-              return
-          }
-          return {
-            signupChanged: TimeEntryManager.saveTimeEntryEdit(lap, {
-              status: 'completed',
-              duration: finished[0] ? lap.duration : null,
-            }),
-          }
-        }
-        if (!match) return
-        const request = MatchManager.inferWebhookResult(
-          {
-            type: 'EditMatchRequest',
-            id: match.id,
-            status: 'completed',
-            user1DurationMs: finished[0] ? match.user1DurationMs : null,
-            user2DurationMs: finished[1] ? match.user2DurationMs : null,
-          },
-          match
-        )
-        if (!TournamentManager.editMatch(request))
-          MatchSource.update(match.id, {
-            status: 'completed',
-            winner: request.winner,
-            duration: request.duration,
-            user1DurationMs: request.user1DurationMs,
-            user2DurationMs: request.user2DurationMs,
-          })
-        return { signupChanged: false }
-      })
-    } catch (error) {
-      console.error(error)
-    }
-  }
-
   private static syncTimes(
     capture: Capture,
     before: PlayerTimes[],
     after: PlayerTimes[],
     events: Event[]
   ): void {
-    const rows = this.rows(capture)
+    const rows = WebhookPlanned.rows(capture)
     const { lap, match } = rows
-    const doneOn = this.hasPlayers(rows) ? 'end' : 'finish'
+    const doneOn = WebhookPlanned.hasPlayers(rows) ? 'end' : 'finish'
     const status =
       (lap ?? match)?.status === 'draft' ||
       events.some(event => event.type === doneOn)
@@ -464,7 +318,7 @@ export default class WebhookManager {
       if (event.type === 'end')
         WebhookSource.markEnded(capture.id, new Date(event.occurredAt))
       const hasTiming = all.some(e => e.type !== 'start' && e.type !== 'end')
-      let existingRows = this.rows(capture)
+      let existingRows = WebhookPlanned.rows(capture)
       const result = existingRows.lap ?? existingRows.match
       if (
         result?.deletedAt ||
@@ -480,10 +334,10 @@ export default class WebhookManager {
         event.type === 'start' &&
         !result &&
         matchedTrack &&
-        this.latchActiveEntry(capture, matchedTrack.id)
+        WebhookPlanned.latch(capture, matchedTrack.id)
       )
-        existingRows = this.rows(capture)
-      const latched = this.hasPlayers(existingRows)
+        existingRows = WebhookPlanned.rows(capture)
+      const latched = WebhookPlanned.hasPlayers(existingRows)
       if (!latched && (!hasTiming || event.type === 'end')) return {}
       if (start?.map && !matchedTrack) {
         matchedTrack = TrackSource.create({
@@ -519,7 +373,7 @@ export default class WebhookManager {
       const afterTimes = this.derivedTimes(all, capture.totalPlayers)
       this.syncTimes(capture, beforeTimes, afterTimes, all)
       const completed =
-        matchedTrack && this.completePlanned(capture, matchedTrack.id, all)
+        matchedTrack && WebhookPlanned.complete(capture, matchedTrack.id, all)
       return { createdTrack, completed, latched }
     }, true)
     if (outcome.duplicate) return 'Duplicate ignored'
@@ -528,15 +382,7 @@ export default class WebhookManager {
       void TrackManager.getAllTracks().then(all => broadcast('all_tracks', all))
       TrackManager.resolveNextMapId(createdTrack).catch(console.error)
     }
-    if (completed) {
-      RatingManager.recalculate()
-      broadcast('all_rankings', RatingManager.onGetRatings())
-      if (completed.signupChanged)
-        void SessionManager.getAllSessions().then(rows =>
-          broadcast('all_sessions', rows)
-        )
-    }
-    if (outcome.latched) TournamentManager.publish()
+    WebhookPlanned.publish(completed, !!outcome.latched)
     this.publishEntries()
     return 'Stored'
   }
