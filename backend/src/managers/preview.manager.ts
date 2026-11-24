@@ -52,6 +52,7 @@ const listPages: Partial<
   users: loc.no.users,
   chugs: loc.no.chugs,
   admin: loc.no.admin,
+  tokens: loc.no.apiTokens,
 }
 
 function escapeHtml(value: string): string {
