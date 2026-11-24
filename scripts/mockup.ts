@@ -16,7 +16,7 @@ const CHROMIUM_CANDIDATES = [
 ]
 
 const MEASURE_HEIGHT = 844
-const MEASURE_SCRIPT = `<script>addEventListener('load', () => document.fonts.ready.then(() => document.body.setAttribute('data-height', document.body.scrollHeight)))</script>`
+const MEASURE_SCRIPT = `<script>addEventListener('load', () => document.fonts.ready.then(() => document.body.setAttribute('data-height', Math.ceil(document.getElementById('mockup').getBoundingClientRect().height))))</script>`
 
 const USAGE = `Usage:
   bun run mockup render <file.html> [--width 390] [--height <px>]
@@ -26,14 +26,14 @@ async function buildCss(html: string): Promise<string> {
   const base = path.join(ROOT, 'frontend')
   const css = await readFile(path.join(base, 'index.css'), 'utf8')
   const compiler = await compile(css, { base, onDependency: () => {} })
-  const candidates = [...html.matchAll(/class="([^"]*)"/g)].flatMap(match =>
-    match[1].split(/\s+/)
-  )
+  const candidates = [
+    ...html.matchAll(/(?<![\w-])class=(["'])(.*?)\1/gs),
+  ].flatMap(match => match[2].split(/\s+/))
   return compiler.build(candidates)
 }
 
 function wrapHtml(fragment: string, css: string): string {
-  return `<!doctype html><html class="dark"><head><meta charset="utf-8"><style>${css}</style></head><body class="min-h-screen font-sans antialiased">${fragment}</body></html>`
+  return `<!doctype html><html class="dark"><head><meta charset="utf-8"><style>${css}</style></head><body class="min-h-screen font-sans antialiased"><div id="mockup" class="flow-root">${fragment}</div></body></html>`
 }
 
 function findChromium(): string {
@@ -81,7 +81,7 @@ async function measureHeight(url: string, width: number): Promise<number> {
 
 async function render(file: string, width: number, height?: number) {
   const fragment = await readFile(file, 'utf8')
-  const page = wrapHtml(fragment, await buildCss(fragment))
+  const page = wrapHtml(fragment, await buildCss(wrapHtml(fragment, '')))
   const server = Bun.serve({
     port: 0,
     fetch: req => {
