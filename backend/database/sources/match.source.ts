@@ -1,7 +1,15 @@
 import type { CreateMatch, Match } from '@common/models/match'
-import { and, desc, eq, getTableColumns, isNull, sql } from 'drizzle-orm'
+import {
+  and,
+  desc,
+  eq,
+  getTableColumns,
+  isNull,
+  notExists,
+  sql,
+} from 'drizzle-orm'
 import db from '../database'
-import { matches, sessions } from '../schema'
+import { matches, sessions, tournamentMatches } from '../schema'
 
 export default class MatchSource {
   static async getAll(): Promise<Match[]> {
@@ -20,6 +28,30 @@ export default class MatchSource {
       .orderBy(desc(matches.createdAt))
       .all()
   }
+  static getStandaloneBySession(session: string): Match[] {
+    return db
+      .select()
+      .from(matches)
+      .where(
+        and(
+          eq(matches.session, session),
+          isNull(matches.deletedAt),
+          notExists(
+            db
+              .select()
+              .from(tournamentMatches)
+              .where(
+                and(
+                  eq(tournamentMatches.matchId, matches.id),
+                  isNull(tournamentMatches.deletedAt)
+                )
+              )
+          )
+        )
+      )
+      .all()
+  }
+
   static findById(id: string): Match | undefined {
     return db.select().from(matches).where(eq(matches.id, id)).get()
   }

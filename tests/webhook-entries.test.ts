@@ -1,16 +1,21 @@
+import type { TournamentConfig } from '@common/models/tournament'
 import type { Track } from '@common/models/track'
+import { getTournamentStages } from '@common/utils/tournament'
 import { describe, expect, test } from 'bun:test'
 import express from 'express'
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { createServer } from 'node:http'
+import TrackSource from '../backend/database/sources/track.source'
 import WebhookSource from '../backend/database/sources/webhook.source'
 import { createWebhookRouter } from '../backend/src/endpoints/webhook'
+import ActiveEntryManager from '../backend/src/managers/activeEntry.manager'
 import AdminManager from '../backend/src/managers/admin.manager'
 import MatchManager from '../backend/src/managers/match.manager'
 import RatingManager from '../backend/src/managers/rating.manager'
 import SessionManager from '../backend/src/managers/session.manager'
 import TimeEntryManager from '../backend/src/managers/timeEntry.manager'
+import TournamentManager from '../backend/src/managers/tournament/tournament.manager'
 import TrackManager from '../backend/src/managers/track.manager'
 import UserManager from '../backend/src/managers/user.manager'
 import WebhookManager from '../backend/src/managers/webhook.manager'
@@ -54,9 +59,23 @@ function capture(now: Date, totalPlayers: number, game: Source['game']) {
     name: `Private ${playerIndex}`,
   })
   const send = (event: Event) => {
-    WebhookManager.receive(event, JSON.stringify(event), now)
+    return WebhookManager.receive(event, JSON.stringify(event), now)
   }
   return {
+    id: base.game.gameId,
+    retryFinish: (sequence: number, durationMs: number) => {
+      const event: Event = {
+        ...base,
+        eventId: randomUUID(),
+        type: 'finish',
+        sequence,
+        durationMs,
+        player: player(0),
+        checkpoint: { checkpointIndex: 2, checkpointLapIndex: 2, lapNumber: 1 },
+      }
+      expect(send(event)).toBe('Stored')
+      expect(send(event)).toBe('Duplicate ignored')
+    },
     start: (map: Map | null = null) =>
       send({
         ...base,
@@ -92,17 +111,427 @@ function capture(now: Date, totalPlayers: number, game: Source['game']) {
         durationMs,
         player: player(playerIndex),
       }),
-    end: (sequence: number) =>
+    end: (sequence: number, endReason: 'completed' | 'aborted' = 'completed') =>
       send({
         ...base,
         eventId: randomUUID(),
         type: 'end',
         sequence,
         durationMs: 20000,
-        endReason: 'completed',
+        endReason,
       }),
   }
 }
+
+function knownMap(uid: string) {
+  const map: Map = {
+    uid,
+    name: uid,
+    author: 'Mapper',
+    environment: 'Stadium',
+    type: 'Race',
+    isLaps: false,
+    checkpointsPerLap: 2,
+    medalTimesMs: { author: 10000, gold: 12000, silver: 14000, bronze: 16000 },
+  }
+  const track = TrackSource.create({ uid, name: map.name, game: 'turbo' })
+  return { map, track }
+}
+
+async function planLap(
+  socket: TypedSocket,
+  id: string,
+  user: string,
+  session: string,
+  track: string,
+  createdAt: Date
+) {
+  assertResponse(
+    await TimeEntryManager.onPostTimeEntry(socket, {
+      type: 'CreateTimeEntryRequest',
+      id,
+      createdAt,
+      user,
+      session,
+      track,
+      status: 'planned',
+    })
+  )
+}
+
+describe('webhook captures latch onto the active entry', () => {
+  test('the active planned lap takes the capture and completes once', async () => {
+    const driver = createUser('active-webhook-driver', 'admin')
+    const other = createUser('active-webhook-other')
+    const socket = await login(driver)
+    const now = new Date('2035-02-01T12:00:00Z')
+    const session = await startedSession(socket, now)
+    const { map, track } = knownMap('active-webhook-laps')
+    await planLap(
+      socket,
+      'active-lap',
+      driver.id,
+      session,
+      track.id,
+      new Date(1)
+    )
+    await planLap(socket, 'next-lap', other.id, session, track.id, new Date(2))
+    const rows = async () =>
+      (await TimeEntryManager.getAllTimeEntries()).filter(
+        row => row.session === session
+      )
+    const row = async (id: string) => (await rows()).find(row => row.id === id)
+
+    const first = capture(now, 1, 'turbo')
+    first.start(map)
+    expect(await row('active-lap')).toMatchObject({
+      status: 'in_progress',
+      webhookCapture: first.id,
+      user: driver.id,
+    })
+
+    const competing = capture(now, 1, 'turbo')
+    competing.start(map)
+    competing.finish(1, 0, 900)
+    expect(await row('next-lap')).toMatchObject({
+      status: 'planned',
+      webhookCapture: null,
+    })
+    expect(
+      (await rows()).find(row => row.webhookCapture === competing.id)
+    ).toMatchObject({ status: 'draft', user: null })
+
+    first.end(3)
+    first.retryFinish(2, 1100)
+    expect(await row('active-lap')).toMatchObject({ status: 'draft' })
+    first.throttle(1, 0, 200)
+    expect(await rows()).toHaveLength(3)
+    expect(await row('active-lap')).toMatchObject({
+      status: 'completed',
+      user: driver.id,
+      track: track.id,
+      duration: 1100,
+      chugDurationMs: 200,
+    })
+    expect(broadcast).toHaveBeenCalledWith('all_rankings', expect.any(Array))
+    expect(broadcast).toHaveBeenCalledWith(
+      'all_time_entries',
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'active-lap', status: 'completed' }),
+      ])
+    )
+
+    const second = capture(now, 1, 'turbo')
+    second.start(map)
+    expect(await row('next-lap')).toMatchObject({
+      status: 'in_progress',
+      webhookCapture: second.id,
+      user: other.id,
+    })
+    second.end(1, 'aborted')
+    expect(await row('next-lap')).toMatchObject({
+      status: 'completed',
+      duration: null,
+    })
+    assertResponse(
+      await TimeEntryManager.onEditTimeEntry(socket, {
+        type: 'EditTimeEntryRequest',
+        id: 'next-lap',
+        status: 'planned',
+      })
+    )
+    expect(await row('next-lap')).toMatchObject({
+      status: 'planned',
+      webhookCapture: null,
+      duration: null,
+    })
+    const rerun = capture(now, 1, 'turbo')
+    rerun.start(map)
+    expect(await row('next-lap')).toMatchObject({
+      status: 'in_progress',
+      webhookCapture: rerun.id,
+    })
+  })
+
+  test('other tracks, player counts and late starts fall back to drafts', async () => {
+    const driver = createUser('fallback-webhook-driver', 'admin')
+    const socket = await login(driver)
+    const now = new Date('2035-02-05T12:00:00Z')
+    const session = await startedSession(socket, now)
+    const { map, track } = knownMap('fallback-webhook-planned')
+    const { map: otherMap } = knownMap('fallback-webhook-other')
+    await planLap(
+      socket,
+      'fallback-lap',
+      driver.id,
+      session,
+      track.id,
+      new Date(1)
+    )
+
+    const wrongTrack = capture(now, 1, 'turbo')
+    wrongTrack.start(otherMap)
+    wrongTrack.finish(1, 0, 1000)
+    wrongTrack.end(2)
+
+    const twoPlayers = capture(now, 2, 'turbo')
+    twoPlayers.start(map)
+    twoPlayers.finish(1, 0, 1000)
+
+    const lateStart = capture(now, 1, 'turbo')
+    lateStart.finish(1, 0, 1000)
+    lateStart.start(map)
+
+    const rows = (await TimeEntryManager.getAllTimeEntries()).filter(
+      row => row.session === session
+    )
+    expect(rows.find(row => row.id === 'fallback-lap')).toMatchObject({
+      status: 'planned',
+      webhookCapture: null,
+    })
+    expect(
+      rows.filter(row => row.status === 'draft' && row.user === null)
+    ).toHaveLength(2)
+    const [draft] = MatchManager.getAllBySession(session)
+    expect(draft).toMatchObject({ status: 'draft', user1: null, user2: null })
+    const opponent = createUser('fallback-webhook-opponent')
+    assertResponse(
+      await MatchManager.onEditMatch(socket, {
+        type: 'EditMatchRequest',
+        id: draft.id,
+        user1: driver.id,
+        user2: opponent.id,
+      })
+    )
+    twoPlayers.throttle(2, 1, 250)
+    expect(MatchManager.getAllBySession(session)[0]).toMatchObject({
+      status: 'draft',
+      user2ChugDurationMs: 250,
+    })
+    twoPlayers.finish(3, 1, 1200)
+    expect(MatchManager.getAllBySession(session)[0]).toMatchObject({
+      status: 'completed',
+      winner: driver.id,
+    })
+  })
+
+  test('a pinned match takes the capture with slot 0 as player 1', async () => {
+    const first = createUser('pinned-match-first', 'admin')
+    const second = createUser('pinned-match-second')
+    const socket = await login(first)
+    const now = new Date('2035-02-03T12:00:00Z')
+    const session = await startedSession(socket, now)
+    const { map, track } = knownMap('pinned-webhook-match')
+    await planLap(
+      socket,
+      'unpinned-lap',
+      first.id,
+      session,
+      track.id,
+      new Date(1)
+    )
+    assertResponse(
+      await MatchManager.onCreateMatch(socket, {
+        type: 'CreateMatchRequest',
+        user1: first.id,
+        user2: second.id,
+        session,
+        track: track.id,
+        status: 'planned',
+      })
+    )
+    const [planned] = MatchManager.getAllBySession(session)
+    assertResponse(
+      await ActiveEntryManager.onSetActiveEntry(socket, {
+        type: 'SetActiveEntryRequest',
+        session,
+        entry: { kind: 'match', id: planned.id },
+      })
+    )
+    const game = capture(now, 2, 'turbo')
+    game.start(map)
+    game.throttle(1, 1, 300)
+    game.finish(2, 1, 1000)
+    expect(MatchManager.getAllBySession(session)[0]).toMatchObject({
+      status: 'in_progress',
+      user2DurationMs: 1000,
+    })
+    game.finish(3, 0, 1200)
+    expect(MatchManager.getAllBySession(session)).toHaveLength(1)
+    expect(MatchManager.getAllBySession(session)[0]).toMatchObject({
+      id: planned.id,
+      status: 'completed',
+      webhookCapture: game.id,
+      user1: first.id,
+      user2: second.id,
+      user1DurationMs: 1200,
+      user2DurationMs: 1000,
+      user2ChugDurationMs: 300,
+      winner: second.id,
+      duration: 1000,
+    })
+  })
+
+  test('captures complete the original tournament fixture and publish progression', async () => {
+    const players = ['a', 'b', 'c', 'd'].map((suffix, index) =>
+      createUser(`webhook-tournament-${suffix}`, index === 0 ? 'admin' : 'user')
+    )
+    const socket = await login(players[0])
+    const now = new Date('2035-02-07T12:00:00Z')
+    const session = await createSession(
+      socket,
+      players.map(({ id }) => ({ user: id, response: 'yes' }))
+    )
+    assertResponse(
+      await SessionManager.onEditSession(socket, {
+        type: 'EditSessionRequest',
+        id: session.id,
+        date: now,
+      })
+    )
+    const { map, track } = knownMap('webhook-tournament')
+    const config: TournamentConfig = {
+      session: session.id,
+      owner: players[0].id,
+      previewVisibility: 'visible',
+      groupsCount: 1,
+      advancementCount: 2,
+      eliminationType: 'single',
+      stageTracks: {},
+      tieBreakerTrack: track.id,
+    }
+    for (const stage of getTournamentStages(config, players.length))
+      config.stageTracks[stage] = [track.id]
+    const draft = await TournamentManager.onCreate(socket, {
+      session: session.id,
+    })
+    assertResponse(draft)
+    assert(draft.details?.configKey)
+    const saved = await TournamentManager.onUpdate(socket, {
+      config,
+      configKey: draft.details.configKey,
+    })
+    assertResponse(saved)
+    assert(saved.details?.previewKey)
+    const started = await TournamentManager.onStart(socket, {
+      session: session.id,
+      previewKey: saved.details.previewKey,
+    })
+    assertResponse(started)
+    const planned = started.details?.matches.find(
+      match => match.stage === 'group'
+    )
+    const final = started.details?.matches.find(
+      match => match.stage === 'final'
+    )
+    assert(planned?.user1 && planned.user2 && final)
+    const match = (id: string) =>
+      TournamentManager.getDetails(session.id)?.matches.find(
+        match => match.id === id
+      )
+
+    const game = capture(now, 2, 'turbo')
+    game.start(map)
+    expect(match(planned.id)).toMatchObject({
+      status: 'in_progress',
+      webhookCapture: game.id,
+      tournament: planned.tournament,
+    })
+    game.retryFinish(1, 1000)
+    game.finish(2, 1, 1200)
+    game.end(3)
+    const details = TournamentManager.getDetails(session.id)
+    expect(details?.progress.groupDecided).toBe(1)
+    expect(match(planned.id)).toMatchObject({
+      status: 'completed',
+      winner: planned.user1,
+      tournament: planned.tournament,
+      user1DurationMs: 1000,
+      user2DurationMs: 1200,
+    })
+    expect(match(final.id)).toMatchObject({
+      status: 'planned',
+      webhookCapture: null,
+    })
+    expect(MatchManager.getAllBySession(session.id)).toHaveLength(
+      details?.matches.length ?? 0
+    )
+
+    const tied = players.find(
+      player => ![planned.user1, planned.user2].includes(player.id)
+    )
+    assert(tied)
+    const winsAgainst = new Map([
+      [planned.user1, planned.user2],
+      [planned.user2, tied.id],
+      [tied.id, planned.user1],
+    ])
+    for (const row of details?.matches ?? []) {
+      if (row.stage !== 'group' || row.id === planned.id) continue
+      assert(row.user1 && row.user2)
+      const winner =
+        winsAgainst.get(row.user1) === row.user2 ||
+        (winsAgainst.has(row.user1) && !winsAgainst.has(row.user2))
+          ? row.user1
+          : row.user2
+      assertResponse(
+        await MatchManager.onEditMatch(socket, {
+          type: 'EditMatchRequest',
+          id: row.id,
+          status: 'completed',
+          winner,
+        })
+      )
+    }
+    const tieBreakers = TournamentManager.getDetails(session.id)?.tieBreakers
+    assert(tieBreakers)
+    assert(tieBreakers.some(lap => lap.required))
+    for (const [index] of tieBreakers.entries()) {
+      const lap = capture(now, 1, 'turbo')
+      lap.start(map)
+      lap.finish(1, 0, 1450 + index)
+      lap.end(2)
+      expect(
+        TournamentManager.getDetails(session.id)?.tieBreakers.find(
+          row => row.webhookCapture === lap.id
+        )
+      ).toMatchObject({
+        status: 'completed',
+        tieBreaker: true,
+        duration: 1450 + index,
+      })
+    }
+
+    const readyFinal = match(final.id)
+    assert(readyFinal?.user1 && readyFinal.user2)
+    const finalGame = capture(now, 2, 'turbo')
+    finalGame.start(map)
+    finalGame.throttle(1, 0, 320)
+    await assert.rejects(
+      MatchManager.onEditMatch(socket, {
+        type: 'EditMatchRequest',
+        id: planned.id,
+        status: 'planned',
+        winner: null,
+      })
+    )
+    expect(match(final.id)).toMatchObject({
+      status: 'in_progress',
+      webhookCapture: finalGame.id,
+      user1: readyFinal.user1,
+      user2: readyFinal.user2,
+      user1ChugDurationMs: 320,
+    })
+    finalGame.finish(2, 0, 1500)
+    finalGame.finish(3, 1, 1500)
+    expect(match(final.id)).toMatchObject({
+      status: 'draft',
+      winner: null,
+      user1DurationMs: 1500,
+      user2DurationMs: 1500,
+    })
+  })
+})
 
 test('webhook entries use normal feeds, status updates and millisecond times', async () => {
   const participant = createUser('entry-lifecycle')

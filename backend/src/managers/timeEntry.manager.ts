@@ -179,7 +179,7 @@ export default class TimeEntryManager {
       throw new Error(loc.no.tournament.owned)
   }
 
-  private static saveTimeEntryEdit(
+  static saveTimeEntryEdit(
     lapTime: TimeEntry,
     updates: TimeEntryUpdates
   ): boolean {
@@ -189,7 +189,18 @@ export default class TimeEntryManager {
           ? TournamentManager.getState(lapTime.session)
           : null
       if (before?.cancelled) throw new Error(loc.no.tournament.session)
-      TimeEntrySource.update(lapTime.id, updates)
+      const reset = updates.status === 'planned' && !!lapTime.webhookCapture
+      TimeEntrySource.update(
+        lapTime.id,
+        reset
+          ? {
+              ...updates,
+              webhookCapture: null,
+              duration: null,
+              chugDurationMs: null,
+            }
+          : updates
+      )
       if (before) TournamentManager.reconcile(before.config.session, before)
       const sessionId =
         updates.session === undefined ? lapTime.session : updates.session

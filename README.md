@@ -82,8 +82,10 @@ The `/sessions` route shows upcoming and past events. Authorized users may creat
 
 Follow the coding conventions from `AGENTS.md`: Prettier formatting (2 spaces, single quotes, no semicolons), organize imports, explicit TypeScript types, and the shared `Result<T>` error-handling pattern. Reuse existing components and respect the Formula 1-inspired Tailwind design system to keep UI consistent.
 
-## Trackmania webhook drafts
+## Trackmania webhook results
 
-Configure the plugin endpoint as `https://<your-host>/api/webhook` with the server's `WEBHOOK_TOKEN` as its bearer token; an empty token disables ingestion. Captures attach to the latest session that started today or yesterday (Europe/Oslo) and appear on that Session page as draft lap times (one player) or matches (two players). Captures and raw events stay private to the backend.
+Configure the plugin endpoint as `https://<your-host>/api/webhook` with the server's `WEBHOOK_TOKEN` as its bearer token; an empty token disables ingestion. Captures attach to the latest session that started today or yesterday (Europe/Oslo). Raw events and capture metadata stay private to the backend. Planned result assignments are stored separately and excluded from CSV import and export.
 
-Drafts are edited and deleted like any other entry. Times from later webhook events only replace fields that have not been edited by hand. Publishing requires a complete capture, assigned players, and a track; it stores the map UID on the track so later captures match it automatically. CSV import/export excludes captures, events, and drafts; back up the SQLite database to keep them.
+When a capture starts on a known map, it latches onto the session's active (**Nå**) entry if that entry is planned, has no capture yet, is on the same track, and fits the player count: a lap for one player, a match for two. Capture slot 0 is player 1 and slot 1 is player 2. The entry keeps its players and links, shows live timing, and completes automatically once no events are missing and either every player has finished or the end event arrives. Players without a finish are recorded as DNF, and the faster finisher wins a match (no winner on a tie). If completion is rejected, for example by tournament rules, the entry becomes a draft for manual resolution. Setting the entry back to planned releases the capture.
+
+Any other capture, such as one on a different track or one whose timing arrives before its start, uses the draft flow. Drafts are edited and deleted like any other entry, and timing from later events only replaces fields that have not been edited by hand. Back up the SQLite database to retain captures.

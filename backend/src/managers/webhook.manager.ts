@@ -16,6 +16,7 @@ import ChugTimeManager from './chugtime.manager'
 import MatchManager from './match.manager'
 import TimeEntryManager from './timeEntry.manager'
 import TrackManager from './track.manager'
+import WebhookPlanned, { type Rows } from './webhook.planned'
 
 type PlayerTimes = {
   finishDurationMs: number | null
@@ -108,15 +109,10 @@ export default class WebhookManager {
     })
   }
 
-  private static rows(capture: Capture) {
-    return {
-      lap: TimeEntrySource.findByCapture(capture.id),
-      match: MatchSource.findByCapture(capture.id),
-    }
-  }
-
-  private static rowTimes(capture: Capture): PlayerTimes[] {
-    const { lap, match } = this.rows(capture)
+  private static rowTimes(
+    capture: Capture,
+    { lap, match }: Rows
+  ): PlayerTimes[] {
     if (capture.totalPlayers === 1)
       return [
         {
@@ -139,13 +135,18 @@ export default class WebhookManager {
   private static syncTimes(
     capture: Capture,
     before: PlayerTimes[],
-    after: PlayerTimes[]
+    after: PlayerTimes[],
+    events: Event[]
   ): void {
-    const events = this.events(capture.id)
-    const status = events.some(event => event.type === 'finish')
-      ? 'draft'
-      : 'in_progress'
-    const times = this.rowTimes(capture).map((current, i) => {
+    const rows = WebhookPlanned.rows(capture)
+    const { lap, match } = rows
+    const doneOn = WebhookPlanned.hasPlayers(rows) ? 'end' : 'finish'
+    const status =
+      (lap ?? match)?.status === 'draft' ||
+      events.some(event => event.type === doneOn)
+        ? 'draft'
+        : 'in_progress'
+    const times = this.rowTimes(capture, rows).map((current, i) => {
       const keep = (key: keyof PlayerTimes) => current[key] !== before[i][key]
       return {
         finishDurationMs: keep('finishDurationMs')
@@ -156,7 +157,6 @@ export default class WebhookManager {
           : after[i].chugDurationMs,
       }
     })
-    const { lap, match } = this.rows(capture)
     if (
       lap &&
       lap.status === status &&
@@ -229,29 +229,29 @@ export default class WebhookManager {
         event.player.playerIndex >= event.game.totalPlayers)
     )
       throw new WebhookError(400, 'INVALID_PLAYER', 'Invalid player index')
-    const existingEvent = WebhookSource.findEvent(event.eventId)
-    if (existingEvent) {
-      if (
-        JSON.stringify(JSON.parse(existingEvent.rawPayload)) !==
-        JSON.stringify(JSON.parse(rawPayload))
-      )
-        throw new WebhookError(
-          409,
-          'EVENT_CONFLICT',
-          'Event ID already has a different payload'
-        )
-      return 'Duplicate ignored'
-    }
-    const existing = WebhookSource.findCapture(event.game.gameId)
-    const session = this.findSession(now, existing?.session)
-    if (!session)
-      throw new WebhookError(
-        503,
-        'NO_ACTIVE_SESSION',
-        'No active receiver session can register this event'
-      )
-    const createdTrack = TransactionSource.run(() => {
+    const outcome = TransactionSource.run(() => {
       let createdTrack: Track | undefined
+      const existingEvent = WebhookSource.findEvent(event.eventId)
+      if (existingEvent) {
+        if (
+          JSON.stringify(JSON.parse(existingEvent.rawPayload)) !==
+          JSON.stringify(JSON.parse(rawPayload))
+        )
+          throw new WebhookError(
+            409,
+            'EVENT_CONFLICT',
+            'Event ID already has a different payload'
+          )
+        return { duplicate: true }
+      }
+      const existing = WebhookSource.findCapture(event.game.gameId)
+      const session = this.findSession(now, existing?.session)
+      if (!session)
+        throw new WebhookError(
+          503,
+          'NO_ACTIVE_SESSION',
+          'No active receiver session can register this event'
+        )
       const capture =
         existing ??
         WebhookSource.createCapture({
@@ -277,12 +277,14 @@ export default class WebhookManager {
           'SEQUENCE_CONFLICT',
           'Sequence already belongs to another event'
         )
-      const beforeTimes = this.derivedTimes(
-        this.events(capture.id),
-        capture.totalPlayers
+      const previous = this.events(capture.id)
+      const beforeTimes = this.derivedTimes(previous, capture.totalPlayers)
+      const all = [...previous, event].toSorted(
+        (a, b) => a.sequence - b.sequence
       )
-      const all = [...this.events(capture.id), event]
       const start = all.find((e): e is StartEvent => e.type === 'start')
+      if (event.type === 'start' && previous.some(e => e.type === 'start'))
+        throw new WebhookError(409, 'START_CONFLICT', 'Game already started')
       if (start) {
         for (const e of all) {
           if (e.type === 'start' || e.type === 'end') continue
@@ -313,22 +315,30 @@ export default class WebhookManager {
         rawPayload,
         createdAt: now,
       })
-      if (event.type === 'end') {
+      if (event.type === 'end')
         WebhookSource.markEnded(capture.id, new Date(event.occurredAt))
-        return
-      }
-      if (!all.some(e => e.type !== 'start' && e.type !== 'end')) return
-      const existingRows = this.rows(capture)
+      const hasTiming = all.some(e => e.type !== 'start' && e.type !== 'end')
+      let existingRows = WebhookPlanned.rows(capture)
       const result = existingRows.lap ?? existingRows.match
       if (
         result?.deletedAt ||
         result?.status === 'completed' ||
         result?.status === 'cancelled'
       )
-        return
+        return {}
+
       let matchedTrack = start?.map
         ? TrackSource.findByUid(start.map.uid)
         : undefined
+      if (
+        event.type === 'start' &&
+        !result &&
+        matchedTrack &&
+        WebhookPlanned.latch(capture, matchedTrack.id)
+      )
+        existingRows = WebhookPlanned.rows(capture)
+      const latched = WebhookPlanned.hasPlayers(existingRows)
+      if (!latched && (!hasTiming || event.type === 'end')) return {}
       if (start?.map && !matchedTrack) {
         matchedTrack = TrackSource.create({
           ...trackMetadataFromWebhook(start.map),
@@ -360,17 +370,19 @@ export default class WebhookManager {
           status: 'in_progress',
           createdAt: now,
         })
-      const afterTimes = this.derivedTimes(
-        this.events(capture.id),
-        capture.totalPlayers
-      )
-      this.syncTimes(capture, beforeTimes, afterTimes)
-      return createdTrack
-    })
+      const afterTimes = this.derivedTimes(all, capture.totalPlayers)
+      this.syncTimes(capture, beforeTimes, afterTimes, all)
+      const completed =
+        matchedTrack && WebhookPlanned.complete(capture, matchedTrack.id, all)
+      return { createdTrack, completed, latched }
+    }, true)
+    if (outcome.duplicate) return 'Duplicate ignored'
+    const { createdTrack, completed } = outcome
     if (createdTrack) {
       void TrackManager.getAllTracks().then(all => broadcast('all_tracks', all))
       TrackManager.resolveNextMapId(createdTrack).catch(console.error)
     }
+    WebhookPlanned.publish(completed, !!outcome.latched)
     this.publishEntries()
     return 'Stored'
   }

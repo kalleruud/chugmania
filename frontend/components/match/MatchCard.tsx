@@ -72,6 +72,7 @@ export default function MatchCard({
       <div className='flex items-start gap-4 py-1'>
         <Player
           user={user1}
+          duration={match.user1DurationMs}
           slotLabel={match.tournament?.slot1}
           isWinner={!!match.winner && match.winner === match.user1}
           isCompleted={isCompleted}
@@ -85,6 +86,7 @@ export default function MatchCard({
         </span>
         <Player
           user={user2}
+          duration={match.user2DurationMs}
           slotLabel={match.tournament?.slot2}
           isWinner={!!match.winner && match.winner === match.user2}
           isCompleted={isCompleted}
@@ -130,6 +132,7 @@ export default function MatchCard({
 function Player({
   user,
   slotLabel,
+  duration,
   isWinner,
   isCompleted,
   isCancelled,
@@ -138,6 +141,7 @@ function Player({
   className,
 }: Readonly<{
   user: UserInfo | undefined
+  duration: number | null
   slotLabel?: string
   isWinner: boolean
   isCompleted: boolean
@@ -171,6 +175,11 @@ function Player({
           className='overflow-visible text-base wrap-break-word whitespace-normal sm:text-2xl'
         />
       </button>
+      {duration !== null && (
+        <div className='font-kh-interface text-sm tabular-nums'>
+          {formatTime(duration)}
+        </div>
+      )}
       {user && slotLabel && (
         <p className='mt-2 text-sm text-muted-foreground'>{slotLabel}</p>
       )}

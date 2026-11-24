@@ -93,6 +93,16 @@ export default class TimeEntrySource {
       .all()
   }
 
+  static getAllBySession(session: string): TimeEntry[] {
+    return db
+      .select()
+      .from(timeEntries)
+      .where(
+        and(eq(timeEntries.session, session), isNull(timeEntries.deletedAt))
+      )
+      .all()
+  }
+
   static findById(id: string): TimeEntry | undefined {
     return db.select().from(timeEntries).where(eq(timeEntries.id, id)).get()
   }
