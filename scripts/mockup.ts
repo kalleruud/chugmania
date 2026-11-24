@@ -15,6 +15,7 @@ const CHROMIUM_CANDIDATES = [
   'google-chrome-stable',
 ]
 
+const MEASURE_HEIGHT = 844
 const MEASURE_SCRIPT = `<script>addEventListener('load', () => document.fonts.ready.then(() => document.body.setAttribute('data-height', document.body.scrollHeight)))</script>`
 
 const USAGE = `Usage:
@@ -25,7 +26,9 @@ async function buildCss(html: string): Promise<string> {
   const base = path.join(ROOT, 'frontend')
   const css = await readFile(path.join(base, 'index.css'), 'utf8')
   const compiler = await compile(css, { base, onDependency: () => {} })
-  const candidates = html.match(/[^\s"'<>`=]+/g) ?? []
+  const candidates = [...html.matchAll(/class="([^"]*)"/g)].flatMap(match =>
+    match[1].split(/\s+/)
+  )
   return compiler.build(candidates)
 }
 
@@ -69,13 +72,11 @@ async function runChromium(args: string[]): Promise<string> {
 
 async function measureHeight(url: string, width: number): Promise<number> {
   const dom = await runChromium([
-    `--window-size=${width},800`,
+    `--window-size=${width},${MEASURE_HEIGHT}`,
     '--dump-dom',
     `${url}?measure`,
   ])
-  const height = Number(/data-height="(\d+)"/.exec(dom)?.[1])
-  if (!height) throw new Error('Could not measure the mockup height.')
-  return height
+  return Number(/data-height="(\d+)"/.exec(dom)?.[1]) || MEASURE_HEIGHT
 }
 
 async function render(file: string, width: number, height?: number) {
@@ -178,7 +179,7 @@ async function publish(slug: string, files: string[]) {
   await ensureAssetBranch(nameWithOwner)
 
   for (const file of files) {
-    const target = `${slug}/${path.basename(file)}`
+    const target = `${slug}/${encodeURIComponent(path.basename(file))}`
     const existing = (await ghOptional([
       `repos/${nameWithOwner}/contents/${target}?ref=${ASSET_BRANCH}`,
     ])) as { sha: string } | undefined
