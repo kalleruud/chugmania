@@ -1,12 +1,7 @@
 import { useConnection } from '@/contexts/ConnectionContext'
 import { useTimeAgoStrict } from '@/hooks/useTimeAgoStrict'
 import loc from '@common/locale/locales'
-import {
-  CALENDAR_TOKEN_NAME,
-  isApiTokenExpired,
-  type ApiToken,
-} from '@common/models/apiToken'
-import { CalendarDaysIcon, KeyIcon } from '@heroicons/react/24/solid'
+import { isApiTokenExpired, type ApiToken } from '@common/models/apiToken'
 import { Copy, Trash2 } from 'lucide-react'
 import { type ComponentProps } from 'react'
 import { toast } from 'sonner'
@@ -19,7 +14,6 @@ import {
   ItemActions,
   ItemContent,
   ItemDescription,
-  ItemMedia,
   ItemTitle,
 } from '../ui/item'
 import { copyToClipboard, formatTokenDate, revokeApiToken } from './apiTokens'
@@ -61,7 +55,6 @@ export default function ApiTokenRow({
 }: Readonly<ApiTokenRowProps>) {
   const { socket } = useConnection()
   const isExpired = isApiTokenExpired(token)
-  const Icon = token.name === CALENDAR_TOKEN_NAME ? CalendarDaysIcon : KeyIcon
   const removeLabel = isExpired
     ? loc.no.apiTokens.remove
     : loc.no.apiTokens.revoke
@@ -85,14 +78,6 @@ export default function ApiTokenRow({
         'flex-nowrap rounded-none py-3 first:pt-4 last:pb-4',
         isExpired && 'text-muted-foreground'
       )}>
-      <ItemMedia
-        variant='icon'
-        className={twMerge(
-          'text-primary',
-          isExpired && 'text-muted-foreground'
-        )}>
-        <Icon />
-      </ItemMedia>
       <ItemContent className='min-w-0 gap-0.5'>
         <ItemTitle className='w-full min-w-0'>
           <span className='truncate' title={token.name}>

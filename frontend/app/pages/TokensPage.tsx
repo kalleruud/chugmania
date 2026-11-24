@@ -90,7 +90,7 @@ export default function TokensPage() {
   })
 
   return (
-    <div className='flex flex-col gap-4'>
+    <div className='flex flex-col gap-2'>
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
@@ -103,55 +103,60 @@ export default function TokensPage() {
         </BreadcrumbList>
       </Breadcrumb>
 
-      <div className='flex flex-wrap items-center justify-between gap-2'>
+      <div className='flex flex-col gap-2 rounded-sm border bg-background p-2'>
         <PageHeader
           title={loc.no.apiTokens.title}
           description={loc.no.apiTokens.description}
           Icon={KeyIcon}
         />
-        <Button onClick={handleCreate}>
+
+        {!isAdmin && (
+          <SegmentedProgress
+            segments={[
+              {
+                label: loc.no.apiTokens.activeCount,
+                value: ownActive.length,
+                total: MAX_API_TOKENS,
+                colorClassName:
+                  ownActive.length >= MAX_API_TOKENS
+                    ? 'bg-destructive'
+                    : 'bg-primary',
+              },
+            ]}
+          />
+        )}
+
+        {isAdmin && (
+          <Tabs
+            value={scope}
+            onValueChange={value => {
+              if (value === 'mine' || value === 'all') setScope(value)
+            }}>
+            <TabsList>
+              <TabsTrigger value='mine'>{loc.no.apiTokens.mine}</TabsTrigger>
+              <TabsTrigger value='all'>{loc.no.apiTokens.allUsers}</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        )}
+
+        <GroupedList
+          items={visibleTokens}
+          Row={ApiTokenRow}
+          rowProps={rowProps}
+          getKey={token => token.id}
+          itemsClassName='gap-0 rounded-sm bg-background-secondary'
+          grouping={scope === 'all' && users ? userGrouping(users) : undefined}
+        />
+
+        <Button
+          variant='ghost'
+          size='sm'
+          className='w-fit text-muted-foreground'
+          onClick={handleCreate}>
           <PlusIcon />
           {loc.no.apiTokens.create}
         </Button>
       </div>
-
-      {!isAdmin && (
-        <SegmentedProgress
-          segments={[
-            {
-              label: loc.no.apiTokens.activeCount,
-              value: ownActive.length,
-              total: MAX_API_TOKENS,
-              colorClassName:
-                ownActive.length >= MAX_API_TOKENS
-                  ? 'bg-destructive'
-                  : 'bg-primary',
-            },
-          ]}
-        />
-      )}
-
-      {isAdmin && (
-        <Tabs
-          value={scope}
-          onValueChange={value => {
-            if (value === 'mine' || value === 'all') setScope(value)
-          }}>
-          <TabsList>
-            <TabsTrigger value='mine'>{loc.no.apiTokens.mine}</TabsTrigger>
-            <TabsTrigger value='all'>{loc.no.apiTokens.allUsers}</TabsTrigger>
-          </TabsList>
-        </Tabs>
-      )}
-
-      <GroupedList
-        items={visibleTokens}
-        Row={ApiTokenRow}
-        rowProps={rowProps}
-        getKey={token => token.id}
-        itemsClassName='gap-0 rounded-sm bg-background-secondary'
-        grouping={scope === 'all' && users ? userGrouping(users) : undefined}
-      />
 
       <CreateApiTokenDialog
         open={isCreateOpen}
