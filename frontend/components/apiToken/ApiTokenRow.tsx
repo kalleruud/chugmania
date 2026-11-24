@@ -6,12 +6,8 @@ import {
   isApiTokenExpired,
   type ApiToken,
 } from '@common/models/apiToken'
-import {
-  CalendarDaysIcon,
-  ClipboardIcon,
-  KeyIcon,
-} from '@heroicons/react/24/solid'
-import { Trash2 } from 'lucide-react'
+import { CalendarDaysIcon, KeyIcon } from '@heroicons/react/24/solid'
+import { Copy, Trash2 } from 'lucide-react'
 import { type ComponentProps } from 'react'
 import { toast } from 'sonner'
 import { twMerge } from 'tailwind-merge'
@@ -123,7 +119,7 @@ export default function ApiTokenRow({
             title={loc.no.apiTokens.copy}
             aria-label={loc.no.apiTokens.copy}
             onClick={handleCopy}>
-            <ClipboardIcon />
+            <Copy />
           </Button>
         )}
         <ConfirmationButton
