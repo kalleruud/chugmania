@@ -3,7 +3,7 @@
 ## Commands
 
 - `bun install --frozen-lockfile` – install dependencies with Bun 1.4.4
-- `bun run dev` – dev mode (port 6996), this is usually already running, avoid to run it yourself.
+- `bun run dev` – dev mode on `PORT` from `.env`, this is usually already running, avoid to run it yourself.
 - `bun run check` – Drizzle, ESLint, TypeScript, and Prettier checks (run before commits)
 - `bun run test` – run Bun tests with `tests/setup.ts` preloaded
 - `bun run test tests/tournament.test.ts` – run a specific test file
@@ -13,6 +13,7 @@
 ## Testing in Development Mode
 
 - Before starting the app, check whether it is already running (for example `curl -s localhost:$PORT`, with `PORT` from `.env`) and use that instance. Start a new one only when nothing is listening.
+- Production (chugmania.no) runs on `localhost:6996`, the fallback when `PORT` is unset. Never use it for testing: do not connect to it, log in, or proxy to it. Use the randomly generated `PORT` from `.env` instead.
 - The development database always contains realistic test data. Use it as the base for testing, and add, change, or remove records as a scenario needs instead of seeding a fresh database.
 - When `NODE_ENV` is not `production`, server startup creates the admin `admin@chugmania.dev` with password `chugmania` if it does not exist. Use it to log in and test the running app, including `/admin`.
 - A `Development` label above the `+` button confirms you are on a development build.
