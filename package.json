@@ -13,6 +13,7 @@
     "build": "bun run build:frontend && bun run build:backend",
     "build:frontend": "bun --bun vite build",
     "build:backend": "bun build --production --target=bun --packages=external --outdir=dist/server backend/src/server.ts",
+    "mockup": "bun scripts/mockup.ts",
     "db:gen": "bun --bun drizzle-kit generate",
     "db:push": "bun --bun drizzle-kit push --force",
     "db:studio": "bun --bun drizzle-kit studio",

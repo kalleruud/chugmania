@@ -70,47 +70,38 @@
 
 ## Issue Creation & Formatting
 
-All GitHub issues must follow a consistent, concise format:
+Write issues to the templates in `.github/ISSUE_TEMPLATE/`. When filing through `gh` or an API, the form is not applied, so build the body yourself with each field label as a `###` heading, in template order, and set the template's label.
 
-**Structure:**
+- **Features** (`feature-request.yml`, label `enhancement`). Use this skeleton; the headings are level 3 (`###`), matching what the form produces:
 
-1. **Overview** (1-2 sentences): What is being built and why
-2. **Acceptance Requirements** (bullet list): Clear, testable requirements
-3. **Implementation Plan** (checkbox list): Actionable steps organized by phase/area
+  ```markdown
+  ### Overview
 
-**Example:**
+  ### Acceptance requirements
 
-```markdown
-## Overview
+  ### Implementation design
 
-Brief description of what and why in 1-2 sentences.
+  ### Out of scope
+  ```
 
-## Acceptance Requirements
+- **Bugs** (`bug-report.yml`, label `bug`): written mainly by people. Agents filing a bug use the same fields and leave unknowns as "Unknown".
 
-- Feature/fix is testable and verifiable
-- Code follows existing patterns
-- All edge cases handled
-- Tests pass with `bun run test`, and `bun run check` passes
+Feature issues describe the outcome and the design, not the work:
 
-## Implementation Steps
+- **Overview**: one to three plain-language sentences a player or admin understands. No code names.
+- **Acceptance requirements**: the few observable outcomes that define done, usually three to seven bullets. They say what must be true; the design says how. Edge cases, error states, and limits go in the design only; do not repeat them in acceptance requirements. Leave out project-wide rules such as "tests pass" or "follows existing patterns"; this file already requires them.
+- **Implementation design**: explain in prose how the finished feature works: system behaviour, how data flows from a user action to what others see, and the rules that decide outcomes. Aim for under 400 words of prose plus tables and mockups. Every new or changed screen gets a screenshot of an HTML mockup (see below). Database changes go in a table of columns; with none, say so in one sentence. Describe how the solution works, not how to build it: no steps, checklists, file paths, or function names. They go stale and mislead whoever builds the feature, who plans against the current code instead.
+- **Out of scope**: only exclusions the request names; otherwise omit the section.
+- Base every section on the request; do not invent scope.
 
-### Backend
+Mockups for new or changed screens:
 
-- [ ] Step 1
-- [ ] Step 2
+1. Write the screen as an HTML body fragment in a scratch directory outside the repo. Use the app's Tailwind classes, copied from the existing components the screen resembles, so it looks like the real app; the dark theme and fonts are applied for you. Write labels in the app's language, taken from `common/locale/locales.ts`. Show records the way existing components display them (for example how tracks, players, and lap times appear), with realistic values; never invent names or formats the app does not use. Show only what the feature changes, plus enough surrounding context to place it.
+2. Run `bun run mockup render <file.html>`. It writes a PNG next to the file, at phone width (390px) and fitted to the content. Use `--width 1440` for desktop-only screens, or `--width 1920 --height 1080` for the projector.
+3. Look at the PNG and fix anything that would mislead the reader before using it.
+4. Run `bun run mockup publish <issue-slug> <file.png>...`. It uploads the images to the `issue-assets` branch and prints Markdown image links to put in the design.
 
-### Frontend
-
-- [ ] Step 3
-- [ ] Step 4
-
-### Testing
-
-- [ ] Test scenario 1
-- [ ] Test scenario 2
-```
-
-Keep descriptions concise—avoid lengthy explanations of current state or background unless critical to understanding.
+Keep issues short enough to read in two minutes. Add background only when the design cannot be understood without it.
 
 ## Tools
 
