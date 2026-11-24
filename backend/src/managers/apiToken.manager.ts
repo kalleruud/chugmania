@@ -100,9 +100,10 @@ export default class ApiTokenManager {
       return DateTime.fromJSDate(now)
         .plus({ days: DEFAULT_API_TOKEN_DAYS })
         .toJSDate()
-    if (!Number.isFinite(expiresAt) || expiresAt <= now.getTime())
+    const date = new Date(expiresAt)
+    if (Number.isNaN(date.getTime()) || date <= now)
       throw new Error(loc.no.apiTokens.errors.invalidExpiry)
-    return new Date(expiresAt)
+    return date
   }
 
   static create(

@@ -93,6 +93,7 @@ describe('creating API tokens', () => {
   test.serial('rejects past expiry dates and blank names', async () => {
     const socket = await login(createUser('token-invalid'))
     await assert.rejects(createToken(socket, 'Past', Date.now() - 1000))
+    await assert.rejects(createToken(socket, 'Huge', 1e20))
     await assert.rejects(createToken(socket, '   '))
     await assert.rejects(createToken(socket, 'x'.repeat(65)))
   })
@@ -409,7 +410,7 @@ describe('HTTP endpoints', () => {
       )
   )
 
-  function postWebhook(authorization?: string) {
+  function postWebhook(authorization?: string, gameId = randomUUID()) {
     const event = {
       schemaVersion: '1.0.0',
       type: 'start',
@@ -417,7 +418,7 @@ describe('HTTP endpoints', () => {
       sequence: 0,
       occurredAt: new Date().toISOString(),
       durationMs: 0,
-      game: { gameId: randomUUID(), totalPlayers: 1 },
+      game: { gameId, totalPlayers: 1 },
       source: {
         pluginName: 'TM Webhooks',
         pluginVersion: '1.0.0',
@@ -434,8 +435,15 @@ describe('HTTP endpoints', () => {
       'event-sequence': String(event.sequence),
     }
     if (authorization) headers.Authorization = authorization
+    const send = (auth: string) =>
+      fetch(`${origin}/api/webhook`, {
+        method: 'POST',
+        headers: { ...headers, Authorization: auth },
+        body: JSON.stringify(event),
+      })
     return {
       gameId: event.game.gameId,
+      replay: send,
       response: fetch(`${origin}/api/webhook`, {
         method: 'POST',
         headers,
@@ -469,6 +477,15 @@ describe('HTTP endpoints', () => {
       const accepted = postWebhook(`Bearer ${value}`)
       expect((await accepted.response).status).toBe(204)
       expect(WebhookSource.findCapture(accepted.gameId)?.user).toBe(owner.id)
+
+      const other = await createToken(
+        await login(createUser('token-webhook-other')),
+        'Plugin'
+      )
+      const hijack = postWebhook(`Bearer ${other.value}`, accepted.gameId)
+      expect((await hijack.response).status).toBe(403)
+      expect((await accepted.replay(`Bearer ${other.value}`)).status).toBe(403)
+      expect((await accepted.replay(`Bearer ${value}`)).status).toBe(204)
     }
   )
 

@@ -238,6 +238,12 @@ export default class WebhookManager {
       let createdTrack: Track | undefined
       const existingEvent = WebhookSource.findEvent(event.eventId)
       if (existingEvent) {
+        if (WebhookSource.findCapture(existingEvent.capture)?.user !== user)
+          throw new WebhookError(
+            403,
+            'CAPTURE_FORBIDDEN',
+            'Game belongs to another user'
+          )
         if (
           JSON.stringify(JSON.parse(existingEvent.rawPayload)) !==
           JSON.stringify(JSON.parse(rawPayload))
@@ -250,6 +256,12 @@ export default class WebhookManager {
         return { duplicate: true }
       }
       const existing = WebhookSource.findCapture(event.game.gameId)
+      if (existing && existing.user !== user)
+        throw new WebhookError(
+          403,
+          'CAPTURE_FORBIDDEN',
+          'Game belongs to another user'
+        )
       const session = this.findSession(now, existing?.session)
       if (!session)
         throw new WebhookError(
