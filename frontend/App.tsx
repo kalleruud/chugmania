@@ -11,6 +11,9 @@ import { DataProvider } from './contexts/DataContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import TimeEntryInputProvider from './contexts/TimeEntryInputContext'
 import './index.css'
+import { reloadOnStaleBuild } from './lib/stale-build'
+
+reloadOnStaleBuild()
 
 const root = document.getElementById('root')
 if (!root) throw new Error("HTML element has no 'root'-tag.")
