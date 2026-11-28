@@ -228,28 +228,31 @@ describe('webhook captures latch onto the active entry', () => {
       webhookCapture: second.id,
       user: other.id,
     })
-    second.end(1, 'aborted')
-    expect(await row('next-lap')).toMatchObject({
-      status: 'completed',
-      duration: null,
-    })
-    assertResponse(
-      await TimeEntryManager.onEditTimeEntry(socket, {
-        type: 'EditTimeEntryRequest',
-        id: 'next-lap',
-        status: 'planned',
-      })
-    )
+    second.throttle(1, 0, 99)
+    second.finish(2, 0, 400, 'respawn')
+    second.end(3, 'aborted')
     expect(await row('next-lap')).toMatchObject({
       status: 'planned',
       webhookCapture: null,
       duration: null,
+      chugDurationMs: null,
     })
+    expect(await rows()).toHaveLength(3)
+
     const rerun = capture(now, 1, 'turbo')
     rerun.start(map)
     expect(await row('next-lap')).toMatchObject({
       status: 'in_progress',
       webhookCapture: rerun.id,
+    })
+    rerun.throttle(1, 0, 50)
+    rerun.finish(2, 0, 700, 'checkpoint')
+    rerun.end(3, 'aborted')
+    expect(await row('next-lap')).toMatchObject({
+      status: 'completed',
+      webhookCapture: rerun.id,
+      duration: null,
+      chugDurationMs: null,
     })
   })
 
@@ -348,6 +351,18 @@ describe('webhook captures latch onto the active entry', () => {
         entry: { kind: 'match', id: planned.id },
       })
     )
+    const skip = capture(now, 2, 'turbo')
+    skip.start(map)
+    skip.throttle(1, 0, 30)
+    skip.end(2)
+    expect(MatchManager.getAllBySession(session)).toHaveLength(1)
+    expect(MatchManager.getAllBySession(session)[0]).toMatchObject({
+      id: planned.id,
+      status: 'planned',
+      webhookCapture: null,
+      duration: null,
+      user1ChugDurationMs: null,
+    })
     const game = capture(now, 2, 'turbo')
     game.start(map)
     game.throttle(1, 1, 300)

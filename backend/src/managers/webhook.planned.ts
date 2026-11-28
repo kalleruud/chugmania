@@ -19,6 +19,21 @@ export type Rows = {
 
 type Completed = { signupChanged: boolean }
 
+const MIN_CHUG_MS = 100
+
+export function isChug(event: Event): boolean {
+  return event.type === 'first_throttle' && event.durationMs >= MIN_CHUG_MS
+}
+
+function isRun(event: Event): boolean {
+  return (
+    isChug(event) ||
+    event.type === 'checkpoint' ||
+    event.type === 'lap' ||
+    event.type === 'finish'
+  )
+}
+
 export default class WebhookPlanned {
   static rows(capture: WebhookCapture): Rows {
     return {
@@ -111,6 +126,26 @@ export default class WebhookPlanned {
     const { lap, match } = rows
     const result = lap ?? match
     if (result?.session !== capture.session || result.track !== track) return
+    if (!events.some(isRun)) {
+      if (lap)
+        TimeEntrySource.update(lap.id, {
+          status: 'planned',
+          webhookCapture: null,
+          duration: null,
+          chugDurationMs: null,
+        })
+      else
+        MatchSource.update(result.id, {
+          status: 'planned',
+          webhookCapture: null,
+          duration: null,
+          user1DurationMs: null,
+          user2DurationMs: null,
+          user1ChugDurationMs: null,
+          user2ChugDurationMs: null,
+        })
+      return
+    }
 
     try {
       return TransactionSource.run(() => {
