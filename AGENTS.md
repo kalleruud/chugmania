@@ -9,6 +9,7 @@
 - `bun run test tests/tournament.test.ts` – run a specific test file
 - `bun run build` – build frontend + backend
 - `bun run db:gen` – generate Drizzle migration after schema changes
+- `bun run screenshot <route>...` – phone and desktop screenshots of the running dev app; see the `ui-preview` skill
 
 ## Testing in Development Mode
 
@@ -17,6 +18,10 @@
 - The development database always contains realistic test data. Use it as the base for testing, and add, change, or remove records as a scenario needs instead of seeding a fresh database.
 - When `NODE_ENV` is not `production`, server startup creates the admin `admin@chugmania.dev` with password `chugmania` if it does not exist. Use it to log in and test the running app, including `/admin`.
 - A `Development` label above the `+` button confirms you are on a development build.
+
+## UI Changes
+
+- Whenever a request adds, changes, or mocks up UI, follow [.agents/skills/ui-preview/SKILL.md](.agents/skills/ui-preview/SKILL.md): show screenshots of the running dev app in chat, and add before/after screenshots to UI issues and PRs.
 
 ## Writing Tests
 
