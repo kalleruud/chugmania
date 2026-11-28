@@ -113,9 +113,28 @@ export const sessionSignups = sqliteTable('session_signups', {
   response: text().$type<SessionResponse>().notNull(),
 })
 
+export const apiTokens = sqliteTable(
+  'api_tokens',
+  {
+    ...metadata,
+    user: text()
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    name: text().notNull(),
+    expiresAt: integer('expires_at', { mode: 'timestamp_ms' }),
+    lastUsedAt: integer('last_used_at', { mode: 'timestamp_ms' }),
+  },
+  table => [
+    uniqueIndex('active_api_token_name')
+      .on(table.user, table.name)
+      .where(sql`${table.deletedAt} IS NULL`),
+  ]
+)
+
 export const webhookCaptures = sqliteTable('webhook_captures', {
   ...metadata,
   gameId: text('game_id').notNull().unique(),
+  user: text().references(() => users.id),
   session: text()
     .notNull()
     .references(() => sessions.id),

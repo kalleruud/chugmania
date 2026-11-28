@@ -1,11 +1,13 @@
 import type { CsvTable } from '@common/models/importCsv'
 import { eq } from 'drizzle-orm'
 import db from '../database'
-import * as tables from '../schema'
+import * as schema from '../schema'
 import TransactionSource from './transaction.source'
 
+const { apiTokens, ...tables } = schema
+
 export default class AdminSource {
-  private static readonly tables = { ...tables }
+  private static readonly tables = tables
   private static table(name: CsvTable) {
     if (!Object.hasOwn(this.tables, name)) throw new Error('Unknown CSV table')
     return this.tables[name]

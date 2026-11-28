@@ -12,7 +12,7 @@ import { tryCatchAsync } from '@common/utils/try-catch'
 import { eq, isNull } from 'drizzle-orm'
 import db, { database } from '../../database/database'
 import { users } from '../../database/schema'
-import { broadcast, type TypedSocket } from '../server'
+import { broadcast, broadcastApiTokens, type TypedSocket } from '../server'
 import AuthManager from './auth.manager'
 import ChugTimeManager from './chugtime.manager'
 import RatingManager from './rating.manager'
@@ -200,6 +200,7 @@ export default class UserManager {
     }
     if (request.deletedAt !== undefined || request.role !== undefined)
       TournamentManager.publish(socket.id)
+    if (isAdmin && request.role !== undefined) broadcastApiTokens(request.id)
 
     return {
       success: true,

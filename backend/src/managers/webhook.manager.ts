@@ -198,7 +198,12 @@ export default class WebhookManager {
     void ChugTimeManager.publish()
   }
 
-  static receive(event: Event, rawPayload: string, now = new Date()): string {
+  static receive(
+    event: Event,
+    rawPayload: string,
+    now = new Date(),
+    user: string | null = null
+  ): string {
     if (event.game.totalPlayers !== 1 && event.game.totalPlayers !== 2)
       throw new WebhookError(
         400,
@@ -231,6 +236,12 @@ export default class WebhookManager {
       let createdTrack: Track | undefined
       const existingEvent = WebhookSource.findEvent(event.eventId)
       if (existingEvent) {
+        if (WebhookSource.findCapture(existingEvent.capture)?.user !== user)
+          throw new WebhookError(
+            403,
+            'CAPTURE_FORBIDDEN',
+            'Game belongs to another user'
+          )
         if (
           JSON.stringify(JSON.parse(existingEvent.rawPayload)) !==
           JSON.stringify(JSON.parse(rawPayload))
@@ -243,6 +254,12 @@ export default class WebhookManager {
         return { duplicate: true }
       }
       const existing = WebhookSource.findCapture(event.game.gameId)
+      if (existing && existing.user !== user)
+        throw new WebhookError(
+          403,
+          'CAPTURE_FORBIDDEN',
+          'Game belongs to another user'
+        )
       const session = this.findSession(now, existing?.session)
       if (!session)
         throw new WebhookError(
@@ -256,6 +273,7 @@ export default class WebhookManager {
           id: event.game.gameId,
           gameId: event.game.gameId,
           session: session.id,
+          user,
           totalPlayers: event.game.totalPlayers,
           sourceGame: event.source.game,
           pluginName: event.source.pluginName,
