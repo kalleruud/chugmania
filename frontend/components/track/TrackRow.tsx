@@ -1,5 +1,5 @@
 import { Item, ItemActions, ItemContent, ItemTitle } from '@/components/ui/item'
-import type { Track } from '@common/models/track'
+import { getTrackName, type Track } from '@common/models/track'
 import { ChevronRight } from 'lucide-react'
 import { Link } from 'react-router'
 import { twMerge } from 'tailwind-merge'
@@ -25,7 +25,7 @@ export function TrackRow({
           </span>
           {track ? (
             <span className='min-w-0 [overflow-wrap:anywhere]'>
-              {track.name}
+              {getTrackName(track)}
             </span>
           ) : (
             <span className='text-muted-foreground/50'>000</span>

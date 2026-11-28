@@ -1,0 +1,1 @@
+DELETE FROM `tracks` WHERE NOT EXISTS (SELECT 1 FROM `time_entries` e WHERE e.`track` = `tracks`.`id`) AND NOT EXISTS (SELECT 1 FROM `matches` m WHERE m.`track` = `tracks`.`id`) AND NOT EXISTS (SELECT 1 FROM `tournaments` t WHERE t.`tie_breaker_track` = `tracks`.`id`) AND NOT EXISTS (SELECT 1 FROM `tournament_stages` s, json_each(s.`tracks`) j WHERE j.`value` = `tracks`.`id`);

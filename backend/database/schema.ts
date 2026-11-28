@@ -60,6 +60,7 @@ export const tracks = sqliteTable('tracks', {
   uid: text().unique(),
   mapId: text('map_id'),
   name: text().notNull(),
+  nickname: text(),
   author: text(),
   environment: text(),
   authorMedalMs: integer('author_medal_ms'),

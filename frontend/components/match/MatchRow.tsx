@@ -1,6 +1,7 @@
 import { useData } from '@/contexts/DataContext'
 import { useMatch } from '@/hooks/useMatch'
 import loc from '@common/locale/locales'
+import { getTrackName } from '@common/models/track'
 import type { UserInfo } from '@common/models/user'
 import { formatTime } from '@common/utils/time'
 import { isInactiveFinalReset, stageName } from '@common/utils/tournament'
@@ -107,13 +108,13 @@ export default function MatchRow({
           {track && !hideTrack && (
             <div className='max-w-full min-w-0'>
               <span
-                title={track.name}
+                title={getTrackName(track)}
                 className={twMerge(
                   'block truncate font-kh-interface tabular-nums',
                   isCancelled && 'line-through'
                 )}>
                 <span className='mr-1 text-primary'>#</span>
-                {track.name}
+                {getTrackName(track)}
               </span>
             </div>
           )}

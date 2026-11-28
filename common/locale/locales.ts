@@ -566,6 +566,30 @@ const no = {
     description: 'Oversikt over banetider per bane.',
     customDescription: 'Baner vi har laget selv.',
     receivedUpdate: 'Banene ble oppdatert',
+    nickname: {
+      title: 'Kallenavn',
+      add: 'Gi kallenavn',
+      edit: 'Endre kallenavn',
+      description:
+        'Kallenavnet vises i stedet for banenavnet. La feltet stå tomt for å fjerne det.',
+      saved: 'Kallenavnet ble lagret',
+      removed: 'Kallenavnet ble fjernet',
+      tooLong: (max: number) =>
+        `Kallenavnet kan ikke være lengre enn ${max} tegn`,
+    },
+    import: {
+      title: 'Legg til bane',
+      description:
+        'Lim inn en lenke fra Trackmania Turbo, trackmania.com eller Trackmania Exchange.',
+      link: 'Lenke til banen',
+      submit: 'Legg til',
+      added: (name: string) => `${name} ble lagt til`,
+      unsupportedLink:
+        'Lenken støttes ikke. Bruk en banelenke fra Trackmania Turbo, trackmania.com eller Trackmania Exchange.',
+      notFound: 'Fant ikke banen bak lenken.',
+      fetchFailed: 'Klarte ikke å hente baneinformasjon. Prøv igjen senere.',
+      alreadyExists: (name: string) => `${name} finnes allerede`,
+    },
     level: {
       custom: 'Custom',
       white: 'White',

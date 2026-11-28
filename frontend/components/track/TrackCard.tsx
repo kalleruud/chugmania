@@ -1,5 +1,5 @@
 import { trackImageUrl } from '@/lib/track-image'
-import { type Track } from '@common/models/track'
+import { getTrackName, type Track } from '@common/models/track'
 import { useState, type ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
 import TrackBadge from './TrackBadge'
@@ -21,6 +21,7 @@ export default function TrackCard({
   className,
   ...props
 }: Readonly<TrackCardProps>) {
+  const name = getTrackName(track)
   const imageUrl = trackImageUrl(track)
   const [failedImageUrl, setFailedImageUrl] = useState<string>()
   const showImage = imageUrl !== undefined && imageUrl !== failedImageUrl
@@ -52,13 +53,20 @@ export default function TrackCard({
         />
       )}
 
-      <div
-        className={twMerge(
-          'flex min-w-0 flex-1 items-baseline gap-2 font-kh-interface text-4xl leading-tight font-black tracking-tighter tabular-nums sm:text-6xl',
-          track.name.length > 3 && 'text-3xl sm:text-4xl'
-        )}>
-        <span className='shrink-0 text-primary'>#</span>
-        <span className='min-w-0 [overflow-wrap:anywhere]'>{track.name}</span>
+      <div className='flex min-w-0 flex-1 flex-col'>
+        <div
+          className={twMerge(
+            'flex min-w-0 items-baseline gap-2 font-kh-interface text-4xl leading-tight font-black tracking-tighter tabular-nums sm:text-6xl',
+            name.length > 3 && 'text-3xl sm:text-4xl'
+          )}>
+          <span className='shrink-0 text-primary'>#</span>
+          <span className='min-w-0 [overflow-wrap:anywhere]'>{name}</span>
+        </div>
+        {track.nickname && (
+          <p className='font-kh-interface text-lg font-bold tracking-tight [overflow-wrap:anywhere] text-muted-foreground tabular-nums'>
+            {'#' + track.name}
+          </p>
+        )}
       </div>
 
       <div className='flex max-w-1/3 min-w-0 flex-wrap justify-end gap-1.5'>

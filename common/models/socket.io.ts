@@ -38,7 +38,7 @@ import type {
   TournamentRequest,
   UpdateTournamentRequest,
 } from './tournament'
-import type { Track } from './track'
+import type { EditTrackRequest, ImportTrackRequest, Track } from './track'
 import type {
   DeleteUserRequest,
   EditUserRequest,
@@ -199,6 +199,14 @@ export interface ClientToServerEvents {
   set_active_entry: (
     r: SetActiveEntryRequest,
     callback: (r: SuccessResponse | ErrorResponse) => void
+  ) => void
+  edit_track: (
+    r: EditTrackRequest,
+    callback: (r: { success: true; track: Track } | ErrorResponse) => void
+  ) => void
+  import_track: (
+    r: ImportTrackRequest,
+    callback: (r: { success: true; track: Track } | ErrorResponse) => void
   ) => void
 }
 

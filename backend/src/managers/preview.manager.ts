@@ -1,6 +1,6 @@
 import loc from '@common/locale/locales'
 import { isDatePollOpen, type SessionWithSignups } from '@common/models/session'
-import type { Track } from '@common/models/track'
+import { getTrackName, type Track } from '@common/models/track'
 import { getUserFullName, type User } from '@common/models/user'
 import {
   formatDateWithYear,
@@ -149,6 +149,7 @@ function getTrackPreview(track: Track): PagePreview {
       )
     : loc.no.preview.noRecord
   const lines = [
+    track.nickname ? `#${track.name}` : undefined,
     [loc.no.preview.game[track.game], track.environment]
       .filter(Boolean)
       .join(' · '),
@@ -165,14 +166,14 @@ function getTrackPreview(track: Track): PagePreview {
     })
 
   return {
-    title: `#${track.name}`,
+    title: `#${getTrackName(track)}`,
     description: [recordLabel, loc.no.preview.drivers(drivers), ...lines].join(
       ' · '
     ),
     card: {
       kind: loc.no.preview.kind.track,
       titlePrefix: '#',
-      title: track.name,
+      title: getTrackName(track),
       lines,
       badges,
     },

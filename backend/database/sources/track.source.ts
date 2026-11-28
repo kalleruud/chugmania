@@ -1,6 +1,6 @@
-import type { Track } from '@common/models/track'
+import type { Game, Track } from '@common/models/track'
 import { tryCatchAsync } from '@common/utils/try-catch'
-import { and, asc, eq, isNull } from 'drizzle-orm'
+import { and, asc, eq, isNull, ne } from 'drizzle-orm'
 import db from '../database'
 import { timeEntries, tracks } from '../schema'
 
@@ -61,10 +61,33 @@ export default class TrackSource {
       .where(and(eq(tracks.uid, uid), isNull(tracks.deletedAt)))
       .get()
   }
+  static findByUidIncludingDeleted(uid: string) {
+    return db.select().from(tracks).where(eq(tracks.uid, uid)).get()
+  }
+  static findUnlinkedByName(game: Game, name: string) {
+    return db
+      .select()
+      .from(tracks)
+      .where(
+        and(
+          eq(tracks.game, game),
+          eq(tracks.name, name),
+          ne(tracks.level, 'custom'),
+          isNull(tracks.uid),
+          isNull(tracks.deletedAt)
+        )
+      )
+      .get()
+  }
   static create(track: typeof tracks.$inferInsert) {
     return db.insert(tracks).values(track).returning().get()
   }
   static update(id: string, updates: Partial<typeof tracks.$inferInsert>) {
-    db.update(tracks).set(updates).where(eq(tracks.id, id)).run()
+    return db
+      .update(tracks)
+      .set(updates)
+      .where(eq(tracks.id, id))
+      .returning()
+      .get()
   }
 }
