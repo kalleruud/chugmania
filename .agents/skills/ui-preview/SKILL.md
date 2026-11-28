@@ -52,7 +52,7 @@ bun run screenshot <route>... [--login admin] [--wait <text>] [--viewport] [--si
 **Chat:** embed the images with their absolute paths, before and after side by side:
 
 ```markdown
-![After, phone](/abs/path/.screenshots/after/sessions--phone.png)
+![After, phone](/abs/path/.screenshots/after/1-sessions--phone.png)
 ```
 
 **Issues and PRs:** capture with `--anonymize` and open every image. Then publish that folder with `--publish <label>`. Publishing uploads the exact files from that capture to the `screenshots` branch without capturing again. It prints Markdown to paste and saves it as `comment.md` in the folder.

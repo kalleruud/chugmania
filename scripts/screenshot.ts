@@ -3,7 +3,13 @@ import type {
   ServerToClientEvents,
 } from '@common/models/socket.io'
 import { Database } from 'bun:sqlite'
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
 import path from 'node:path'
 import { parseArgs } from 'node:util'
 import { chromium } from 'playwright'
@@ -139,7 +145,7 @@ function replaceNames(pairs: [string, string][]) {
       if (value !== node.nodeValue) node.nodeValue = value
     }
     if (root instanceof Element)
-      for (const input of root.querySelectorAll('input, textarea'))
+      for (const input of [root, ...root.querySelectorAll('input, textarea')])
         if (
           input instanceof HTMLInputElement ||
           input instanceof HTMLTextAreaElement
@@ -320,6 +326,8 @@ const outDir = path.resolve(values.out)
 const manifestFile = path.join(outDir, 'shots.json')
 
 if (values.publish) {
+  if (!existsSync(manifestFile))
+    fail(`Capture with --anonymize into ${outDir} before publishing it.`)
   const manifest = JSON.parse(readFileSync(manifestFile, 'utf8')) as Manifest
   if (!manifest.anonymized)
     fail(`Capture with --anonymize before publishing ${outDir}.`)
@@ -329,6 +337,7 @@ if (values.publish) {
   console.log(`${md}\n\nMarkdown saved to ${path.join(outDir, 'comment.md')}`)
 } else {
   mkdirSync(outDir, { recursive: true })
+  rmSync(manifestFile, { force: true })
   const anonymized = values.anonymize
   const shots = await capture(
     await loginToken(values.login),
