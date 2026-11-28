@@ -26,10 +26,8 @@ const exchangeMap = {
   Medals: { Author: 534719, Gold: 567000, Silver: 642000, Bronze: 803000 },
 }
 
-const fetchSpy = spyOn(globalThis, 'fetch')
-
 function serve(routes: Routes) {
-  fetchSpy.mockImplementation(
+  return spyOn(globalThis, 'fetch').mockImplementation(
     mock((input: string | URL | Request) => {
       const url = input instanceof Request ? input.url : String(input)
       const route = Object.entries(routes).find(([prefix]) =>
@@ -54,7 +52,7 @@ function storedTrack(id: string): Track | undefined {
   return db.select().from(tracks).where(eq(tracks.id, id)).get()
 }
 
-afterEach(() => fetchSpy.mockReset())
+afterEach(() => mock.restore())
 
 describe('importing tracks from links', () => {
   const moderator = createUser('import-moderator', 'moderator')
@@ -292,7 +290,7 @@ describe('importing tracks from links', () => {
   })
 
   test('rejects links from other sites without fetching', async () => {
-    serve({})
+    const fetchSpy = serve({})
 
     for (const url of [
       'https://example.com/tracks/abc',
@@ -306,7 +304,7 @@ describe('importing tracks from links', () => {
   })
 
   test('only admins and moderators can import tracks', async () => {
-    serve({})
+    const fetchSpy = serve({})
 
     await assert.rejects(
       importTrack(player.email, 'https://trackmania.exchange/mapshow/1')
