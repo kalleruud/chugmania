@@ -3,13 +3,13 @@ import type {
   ServerToClientEvents,
 } from '@common/models/socket.io'
 import { Database } from 'bun:sqlite'
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { parseArgs } from 'node:util'
 import { chromium } from 'playwright'
 import { io, type Socket } from 'socket.io-client'
 
-const PRODUCTION_PORT = '6996'
+const PRODUCTION_PORT = 6996
 const BRANCH = 'screenshots'
 const DEV_ADMIN = { email: 'admin@chugmania.dev', password: 'chugmania' }
 const SIZES = {
@@ -19,6 +19,7 @@ const SIZES = {
 
 type Size = keyof typeof SIZES
 type Shot = { route: string; size: Size; file: string }
+type Manifest = { anonymized: boolean; shots: Shot[] }
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,
@@ -39,13 +40,15 @@ function fail(message: string): never {
   process.exit(1)
 }
 
-const port = process.env.PORT
-if (!port || port === PRODUCTION_PORT)
+const port = Number(process.env.PORT)
+if (!Number.isInteger(port) || port <= 0 || port === PRODUCTION_PORT)
   fail(`Set PORT in .env to the dev server port. Never use ${PRODUCTION_PORT}.`)
 const baseUrl = `http://localhost:${port}`
 
-const anonymize = values.anonymize || Boolean(values.publish)
 const routes = positionals.length ? positionals : ['/']
+for (const route of routes)
+  if (!route.startsWith('/') || new URL(route, baseUrl).origin !== baseUrl)
+    fail(`Route ${route} must be a path on the dev server, such as /sessions.`)
 const sizes = (values.size ?? Object.keys(SIZES)) as Size[]
 for (const size of sizes)
   if (!(size in SIZES)) fail(`Unknown size ${size}. Use phone or desktop.`)
@@ -124,15 +127,35 @@ function replaceNames(pairs: [string, string][]) {
       (value, [pattern, alias]) => value.replace(pattern, alias),
       text
     )
-  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
-  for (let node = walker.nextNode(); node; node = walker.nextNode())
-    if (node.nodeValue) node.nodeValue = replace(node.nodeValue)
-  for (const input of document.querySelectorAll('input, textarea'))
-    if (
-      input instanceof HTMLInputElement ||
-      input instanceof HTMLTextAreaElement
-    )
-      input.value = replace(input.value)
+  const replaceIn = (root: Node) => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
+    for (
+      let node: Node | null = walker.currentNode;
+      node;
+      node = walker.nextNode()
+    ) {
+      if (node.nodeType !== Node.TEXT_NODE || !node.nodeValue) continue
+      const value = replace(node.nodeValue)
+      if (value !== node.nodeValue) node.nodeValue = value
+    }
+    if (root instanceof Element)
+      for (const input of root.querySelectorAll('input, textarea'))
+        if (
+          input instanceof HTMLInputElement ||
+          input instanceof HTMLTextAreaElement
+        )
+          input.value = replace(input.value)
+  }
+  replaceIn(document.body)
+  new MutationObserver(mutations => {
+    for (const mutation of mutations)
+      if (mutation.type === 'characterData') replaceIn(mutation.target)
+      else mutation.addedNodes.forEach(replaceIn)
+  }).observe(document.body, {
+    subtree: true,
+    childList: true,
+    characterData: true,
+  })
 }
 
 function slug(route: string) {
@@ -140,7 +163,11 @@ function slug(route: string) {
   return name || 'home'
 }
 
-async function capture(token: string | undefined, outDir: string) {
+async function capture(
+  token: string | undefined,
+  outDir: string,
+  anonymize: boolean
+) {
   const names = anonymize ? pseudonyms() : []
   const browser = await chromium.launch()
   const shots: Shot[] = []
@@ -155,7 +182,7 @@ async function capture(token: string | undefined, outDir: string) {
         [values.theme, token ?? ''] satisfies [string, string]
       )
       const page = await context.newPage()
-      for (const route of routes) {
+      for (const [index, route] of routes.entries()) {
         await page.goto(new URL(route, baseUrl).href, { waitUntil: 'load' })
         if (values.wait)
           await page
@@ -166,9 +193,9 @@ async function capture(token: string | undefined, outDir: string) {
         await page.evaluate(() => document.fonts.ready)
         await page.waitForTimeout(1_500)
         if (anonymize) await page.evaluate(replaceNames, names)
-        const file = path.join(outDir, `${slug(route)}--${size}.png`)
+        const file = `${index + 1}-${slug(route)}--${size}.png`
         await page.screenshot({
-          path: file,
+          path: path.join(outDir, file),
           fullPage: !values.viewport,
           animations: 'disabled',
         })
@@ -235,7 +262,7 @@ async function ensureBranch(repo: string) {
   )
 }
 
-async function publish(label: string, shots: Shot[]) {
+async function publish(label: string, outDir: string, shots: Shot[]) {
   const repo = (
     await ghJson<{ nameWithOwner: string }>([
       'repo',
@@ -248,7 +275,7 @@ async function publish(label: string, shots: Shot[]) {
   const folder = `${label}/${new Date().toISOString().replace(/[:.]/g, '-')}`
   const urls = new Map<string, string>()
   for (const shot of shots) {
-    const remotePath = `${folder}/${path.basename(shot.file)}`
+    const remotePath = `${folder}/${shot.file}`
     await ghJson(
       [
         'api',
@@ -261,7 +288,7 @@ async function publish(label: string, shots: Shot[]) {
       {
         message: `Add ${remotePath}`,
         branch: BRANCH,
-        content: readFileSync(shot.file).toString('base64'),
+        content: readFileSync(path.join(outDir, shot.file)).toString('base64'),
       }
     )
     urls.set(
@@ -273,6 +300,8 @@ async function publish(label: string, shots: Shot[]) {
 }
 
 function markdown(shots: Shot[], urls: Map<string, string>) {
+  const routes = [...new Set(shots.map(shot => shot.route))]
+  const sizes = [...new Set(shots.map(shot => shot.size))]
   return routes
     .map(route => {
       const row = sizes.map(size => {
@@ -288,14 +317,27 @@ function markdown(shots: Shot[], urls: Map<string, string>) {
 }
 
 const outDir = path.resolve(values.out)
-rmSync(outDir, { recursive: true, force: true })
-mkdirSync(outDir, { recursive: true })
-
-const shots = await capture(await loginToken(values.login), outDir)
-for (const shot of shots) console.log(shot.file)
+const manifestFile = path.join(outDir, 'shots.json')
 
 if (values.publish) {
-  const md = markdown(shots, await publish(values.publish, shots))
+  const manifest = JSON.parse(readFileSync(manifestFile, 'utf8')) as Manifest
+  if (!manifest.anonymized)
+    fail(`Capture with --anonymize before publishing ${outDir}.`)
+  const urls = await publish(values.publish, outDir, manifest.shots)
+  const md = markdown(manifest.shots, urls)
   writeFileSync(path.join(outDir, 'comment.md'), `${md}\n`)
-  console.log(`\n${md}\n\nMarkdown saved to ${path.join(outDir, 'comment.md')}`)
+  console.log(`${md}\n\nMarkdown saved to ${path.join(outDir, 'comment.md')}`)
+} else {
+  mkdirSync(outDir, { recursive: true })
+  const anonymized = values.anonymize
+  const shots = await capture(
+    await loginToken(values.login),
+    outDir,
+    anonymized
+  )
+  writeFileSync(
+    manifestFile,
+    `${JSON.stringify({ anonymized, shots } satisfies Manifest, null, 2)}\n`
+  )
+  for (const shot of shots) console.log(path.join(outDir, shot.file))
 }

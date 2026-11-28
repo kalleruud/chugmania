@@ -41,7 +41,7 @@ If nothing answers, start `bun run dev` in the background and wait for `Hosted a
 bun run screenshot <route>... [--login admin] [--wait <text>] [--viewport] [--size phone|desktop] [--theme light] [--out <dir>]
 ```
 
-- It takes each route at phone (390×844) and desktop (1280×800) size and prints the file paths.
+- It takes each route at phone (390×844) and desktop (1280×800) size and prints the file paths. Routes must be paths such as `/sessions`.
 - `--wait <text>` waits until that text is visible. Use it for content that loads late.
 - `--viewport` captures only the first screen instead of the whole page. Use it for long pages.
 - Capture **before** you edit the code (`--out .screenshots/before`), then **after** (`--out .screenshots/after`). The dev server reloads your changes.
@@ -55,11 +55,11 @@ bun run screenshot <route>... [--login admin] [--wait <text>] [--viewport] [--si
 ![After, phone](/abs/path/.screenshots/after/sessions--phone.png)
 ```
 
-**Issues and PRs:** add `--publish <label>`. The script uploads the images to the `screenshots` branch and prints Markdown to paste. It also saves that Markdown as `comment.md` in the output folder.
+**Issues and PRs:** capture with `--anonymize` and open every image. Then publish that folder with `--publish <label>`. Publishing uploads the exact files from that capture to the `screenshots` branch without capturing again. It prints Markdown to paste and saves it as `comment.md` in the folder.
 
 ```bash
-bun run screenshot /sessions --login admin --publish pr-123-before --out .screenshots/before
-bun run screenshot /sessions --login admin --publish pr-123-after --out .screenshots/after
+bun run screenshot /sessions --login admin --anonymize --out .screenshots/after
+bun run screenshot --publish pr-123-after --out .screenshots/after
 ```
 
 - PR: add a **Screenshots** section to the description with **Before** and **After**, or post the Markdown with `gh pr comment <number> --body-file .screenshots/after/comment.md`.
@@ -69,6 +69,6 @@ bun run screenshot /sessions --login admin --publish pr-123-after --out .screens
 
 The repository is public, so published screenshots are public too. The development database contains people's names.
 
-- `--publish` always replaces user names, short names, and emails with placeholders such as `Spiller 7`. Use `--anonymize` to do the same for local screenshots.
+- `--anonymize` replaces user names, short names, and emails with placeholders such as `Spiller 7`, including text that renders after the page loads. `--publish` refuses folders captured without it.
 - Before you publish, open each image and check that no real names, emails, or other personal data remain. Anonymizing only covers user fields, so session names, comments, and descriptions stay as they are.
 - Never publish `/admin` or a user's edit form.
