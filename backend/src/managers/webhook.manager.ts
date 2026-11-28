@@ -16,7 +16,7 @@ import ChugTimeManager from './chugtime.manager'
 import MatchManager from './match.manager'
 import TimeEntryManager from './timeEntry.manager'
 import TrackManager from './track.manager'
-import WebhookPlanned, { type Rows } from './webhook.planned'
+import WebhookPlanned, { isChug, type Rows } from './webhook.planned'
 
 type PlayerTimes = {
   finishDurationMs: number | null
@@ -102,9 +102,7 @@ export default class WebhookManager {
           (playerEvents.length
             ? Math.max(...playerEvents.map(event => event.durationMs))
             : null),
-        chugDurationMs:
-          playerEvents.find(event => event.type === 'first_throttle')
-            ?.durationMs ?? null,
+        chugDurationMs: playerEvents.find(isChug)?.durationMs ?? null,
       }
     })
   }
