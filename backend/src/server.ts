@@ -192,6 +192,9 @@ async function Connect(s: TypedSocket) {
   setup(s, 'delete_match', MatchManager.onDeleteMatch)
   setup(s, 'set_active_entry', ActiveEntryManager.onSetActiveEntry)
 
+  setup(s, 'import_track', TrackManager.onImportTrack)
+  setup(s, 'edit_track', TrackManager.onEditTrack)
+
   setup(s, 'import_csv', AdminManager.onImportCsv)
   setup(s, 'export_csv', AdminManager.onExportCsv)
 }

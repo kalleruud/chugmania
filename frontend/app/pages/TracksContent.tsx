@@ -1,8 +1,10 @@
 import { PageHeader } from '@/components/PageHeader'
+import ImportTrackDialog from '@/components/track/ImportTrackDialog'
 import { TrackRow } from '@/components/track/TrackRow'
 import { Empty } from '@/components/ui/empty'
 import { Item, ItemContent, ItemMedia } from '@/components/ui/item'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useAuth } from '@/contexts/AuthContext'
 import { useData } from '@/contexts/DataContext'
 import loc from '@common/locale/locales'
 import type { Track } from '@common/models/track'
@@ -37,7 +39,9 @@ export function TracksContent({
   className,
   showLink,
 }: Readonly<TracksContentProps>) {
-  const { tracks, timeEntries, isLoadingData } = useData()
+  const { tracks, isLoadingData } = useData()
+  const { isLoggedIn, loggedInUser } = useAuth()
+  const canImport = !showLink && isLoggedIn && loggedInUser.role !== 'user'
 
   if (isLoadingData) {
     return (
@@ -61,9 +65,7 @@ export function TracksContent({
     )
   }
 
-  const tracksWithEntries = tracks.filter(t =>
-    timeEntries.some(te => te.track === t.id)
-  )
+  const activeTracks = tracks.filter(t => !t.deletedAt)
 
   return (
     <div className={twMerge('flex flex-col', className)}>
@@ -74,9 +76,7 @@ export function TracksContent({
         Icon={MapIcon}
       />
 
-      <TrackRowList
-        tracks={tracksWithEntries.filter(t => t.level !== 'custom')}
-      />
+      <TrackRowList tracks={activeTracks.filter(t => t.level !== 'custom')} />
 
       <PageHeader
         title={loc.no.tracks.level.custom}
@@ -84,9 +84,9 @@ export function TracksContent({
         Icon={WrenchIcon}
       />
 
-      <TrackRowList
-        tracks={tracksWithEntries.filter(t => t.level === 'custom')}
-      />
+      <TrackRowList tracks={activeTracks.filter(t => t.level === 'custom')} />
+
+      {canImport && <ImportTrackDialog />}
     </div>
   )
 }

@@ -6,6 +6,7 @@ import type {
   LeaderboardEntryGap,
   TimeEntry,
 } from '@common/models/timeEntry'
+import { getTrackName } from '@common/models/track'
 import { formatTime } from '@common/utils/time'
 import * as HeroIcons from '@heroicons/react/24/solid'
 import { MinusIcon } from '@heroicons/react/24/solid'
@@ -253,7 +254,7 @@ export default function TimeEntryRow({
       {track && (
         <span className='truncate font-kh-interface tabular-nums'>
           <span className='mr-1 text-primary'>#</span>
-          {track.name}
+          {getTrackName(track)}
         </span>
       )}
 
