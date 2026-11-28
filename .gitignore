@@ -26,6 +26,9 @@ data
 *.db-*
 *.sqlite*
 
+# Screenshots
+.screenshots
+
 # Logs
 logs
 *.log

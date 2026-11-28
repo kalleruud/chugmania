@@ -16,6 +16,7 @@
     "db:gen": "bun --bun drizzle-kit generate",
     "db:push": "bun --bun drizzle-kit push --force",
     "db:studio": "bun --bun drizzle-kit studio",
+    "screenshot": "bun scripts/screenshot.ts",
     "webhook:gen": "bunx --bun --package openapi-typescript@7.13.0 openapi-typescript https://raw.githubusercontent.com/kalleruud/tm-webhooks-plugin/refs/heads/develop/openapi.yaml --root-types --root-types-no-schema-prefix --output backend/src/models/webhook.generated.ts && bun --bun eslint backend/src/models/webhook.generated.ts --fix && bun --bun prettier --write backend/src/models/webhook.generated.ts"
   },
   "dependencies": {
@@ -84,6 +85,7 @@
     "eslint-plugin-react-refresh": "^0.5.7",
     "globals": "^17.14.0",
     "jiti": "^2.7.0",
+    "playwright": "^1.65.1",
     "prettier": "^3.10.1",
     "prettier-plugin-organize-imports": "^4.3.0",
     "prettier-plugin-tailwindcss": "^0.8.1",
